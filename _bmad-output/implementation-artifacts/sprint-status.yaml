@@ -1,5 +1,5 @@
 # generated: 2026-02-28
-# updated: 2026-02-28 (14.3 story creee - statut passe ready-for-dev)
+# updated: 2026-03-01 (14.5 revue QA finale approuvee - statut done)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -138,5 +138,5 @@ development_status:
   14-2-configurer-paheko-oidc-et-strategie-de-mapping-utilisateur: done
   14-3-finaliser-integration-recyclique-oidc-runtime-env-secrets-checks: done
   14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed: done
-  14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback: backlog
+  14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback: done
   epic-14-retrospective: optional
