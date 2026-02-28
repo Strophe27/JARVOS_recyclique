@@ -1,0 +1,75 @@
+{
+  "domaine": "Auth",
+  "generated_at": "2026-02-28",
+  "captures": [
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-01-login-page.png",
+      "ecran": "Login",
+      "route": "/login",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-02-profil-page.png",
+      "ecran": "Profil",
+      "route": "/profil",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-03-forgot-password-page.png",
+      "ecran": "Forgot password",
+      "route": "/forgot-password",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-04-reset-password-redirect-login.png",
+      "ecran": "Reset password sans token",
+      "route": "/reset-password",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-05-signup-page.png",
+      "ecran": "Signup",
+      "route": "/signup",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-06-pin-login-blank-logged.png",
+      "ecran": "PIN login (connecte)",
+      "route": "/pin-login",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-07-pin-login-blank-anon.png",
+      "ecran": "PIN login (anonyme)",
+      "route": "/pin-login",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-08-reset-password-page.png",
+      "ecran": "Reset password",
+      "route": "/reset-password?token=test-token",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-09-login-invalid-no-feedback.png",
+      "ecran": "Login erreur identifiants invalides",
+      "route": "/login",
+      "horodatage": "2026-02-28",
+      "anonymized": true
+    }
+  ],
+  "inaccessible_screens": [],
+  "zones_non_verifiees": [
+    "Validation token reset reel (email)",
+    "Soumission formulaire PIN (non testable, page vide)",
+    "Creation de compte effective (non executee sur staging)"
+  ]
+}

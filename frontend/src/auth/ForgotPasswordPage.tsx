@@ -4,8 +4,9 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Title, TextInput, Button, Stack, Alert, Paper, Anchor } from '@mantine/core';
+import { TextInput, Button, Stack, Alert, Anchor } from '@mantine/core';
 import { postForgotPassword } from '../api/auth';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -29,22 +30,20 @@ export function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-        <Title order={1}>Mot de passe oublié</Title>
+      <PageContainer title="Mot de passe oublié" maxWidth={420} gap="lg" topMargin="xl">
         <Alert color="green" title="Demande envoyée">
           Si cet email correspond à un compte, un lien de réinitialisation vous a été envoyé.
         </Alert>
         <Anchor component={Link} to="/login" size="sm">
           Retour à la connexion
         </Anchor>
-      </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-      <Title order={1}>Mot de passe oublié</Title>
-      <Paper p="lg" shadow="sm" radius="md" withBorder>
+    <PageContainer title="Mot de passe oublié" maxWidth={420} gap="lg" topMargin="xl">
+      <PageSection>
         <form onSubmit={handleSubmit} data-testid="forgot-password-form">
           <Stack gap="md">
             {error && (
@@ -67,10 +66,10 @@ export function ForgotPasswordPage() {
             </Button>
           </Stack>
         </form>
-      </Paper>
+      </PageSection>
       <Anchor component={Link} to="/login" size="sm">
         Retour à la connexion
       </Anchor>
-    </Stack>
+    </PageContainer>
   );
 }

@@ -35,6 +35,12 @@ class LoginResponse(BaseModel):
     permissions: list[str] = Field(default_factory=list)
 
 
+class SessionResponse(BaseModel):
+    authenticated: bool
+    user: UserInToken | None = None
+    permissions: list[str] = Field(default_factory=list)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(..., min_length=1)
 

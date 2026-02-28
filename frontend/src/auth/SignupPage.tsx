@@ -4,8 +4,9 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Title, TextInput, PasswordInput, Button, Stack, Alert, Paper, Anchor } from '@mantine/core';
+import { TextInput, PasswordInput, Button, Stack, Alert, Anchor } from '@mantine/core';
 import { postSignup } from '../api/auth';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function SignupPage() {
   const [username, setUsername] = useState('');
@@ -39,22 +40,20 @@ export function SignupPage() {
 
   if (success) {
     return (
-      <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-        <Title order={1}>Inscription</Title>
+      <PageContainer title="Inscription" maxWidth={420} gap="lg" topMargin="xl">
         <Alert color="green" title="Demande envoyée">
           Votre demande d'inscription a été enregistrée. Un administrateur doit l'approuver. Vous serez notifié par email.
         </Alert>
         <Anchor component={Link} to="/login" size="sm">
           Retour à la connexion
         </Anchor>
-      </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-      <Title order={1}>Inscription</Title>
-      <Paper p="lg" shadow="sm" radius="md" withBorder>
+    <PageContainer title="Inscription" maxWidth={420} gap="lg" topMargin="xl">
+      <PageSection>
         <form onSubmit={handleSubmit} data-testid="signup-form">
           <Stack gap="md">
             {error && (
@@ -112,10 +111,10 @@ export function SignupPage() {
             </Button>
           </Stack>
         </form>
-      </Paper>
+      </PageSection>
       <Anchor component={Link} to="/login" size="sm">
         Déjà un compte ? Se connecter
       </Anchor>
-    </Stack>
+    </PageContainer>
   );
 }

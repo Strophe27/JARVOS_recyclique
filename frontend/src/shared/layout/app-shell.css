@@ -1,0 +1,95 @@
+.app-shell {
+  --app-shell-header-height: 56px;
+  --app-shell-sidebar-width: 248px;
+  --app-shell-page-padding-y: var(--ui-spacing-md);
+  --app-shell-page-padding-x: 20px;
+  --app-shell-content-max-width: 1400px;
+  --app-shell-border-color: var(--ui-color-border);
+
+  min-height: 100vh;
+  background: var(--ui-color-app-background);
+}
+
+.app-shell__header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: var(--app-shell-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--app-shell-page-padding-x);
+  background: var(--ui-color-surface);
+  border-bottom: 1px solid var(--app-shell-border-color);
+}
+
+.app-shell__brand {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.app-shell__header-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ui-color-text-secondary);
+}
+
+.app-shell__body {
+  display: flex;
+  min-height: calc(100vh - var(--app-shell-header-height));
+}
+
+.app-shell__sidebar {
+  flex: 0 0 var(--app-shell-sidebar-width);
+  width: var(--app-shell-sidebar-width);
+  border-right: 1px solid var(--app-shell-border-color);
+  background: var(--ui-color-surface);
+  padding: var(--app-shell-page-padding-y) 12px;
+}
+
+.app-shell__main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--app-shell-page-padding-y) var(--app-shell-page-padding-x);
+}
+
+.app-shell__content {
+  width: 100%;
+  max-width: var(--app-shell-content-max-width);
+}
+
+.app-shell-nav {
+  display: block;
+}
+
+.app-shell-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-shell-nav__item {
+  margin: 0;
+}
+
+.app-shell-nav__link {
+  display: block;
+  padding: var(--ui-spacing-xs) 10px;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-color-text-primary);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+
+.app-shell-nav__link:hover {
+  background: var(--ui-color-nav-hover);
+}
+
+.app-shell-nav__link--active {
+  background: var(--ui-color-nav-active-bg);
+  color: var(--ui-color-nav-active-text);
+  font-weight: 700;
+}

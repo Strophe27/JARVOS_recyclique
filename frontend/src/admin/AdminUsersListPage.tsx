@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Table, Select, Button, Tabs, Alert, Loader, Stack, Group, Title, Card } from '@mantine/core';
+import { Table, Select, Button, Tabs, Alert, Loader, Group, Card } from '@mantine/core';
 import { useAuth } from '../auth/AuthContext';
 import {
   getAdminUsers,
@@ -15,6 +15,7 @@ import {
   type AdminUser,
   type AdminPendingUser,
 } from '../api/adminUsers';
+import { PageContainer } from '../shared/layout';
 
 const PAGE_SIZE = 20;
 
@@ -115,9 +116,8 @@ export function AdminUsersListPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-users-list-page">
-      <Group justify="space-between">
-        <Title order={2}>Utilisateurs</Title>
+    <PageContainer title="Utilisateurs" maxWidth={1200} testId="admin-users-list-page">
+      <Group justify="flex-end">
         <Button
           component={Link}
           to="/admin/users/new"
@@ -295,6 +295,6 @@ export function AdminUsersListPage() {
         </Tabs.Panel>
       </Tabs>
       </Card>
-    </Stack>
+    </PageContainer>
   );
 }

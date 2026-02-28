@@ -29,7 +29,6 @@ import {
 } from './offlineQueue';
 import {
   Stack,
-  Title,
   Text,
   Alert,
   Button,
@@ -39,7 +38,9 @@ import {
   TextInput,
   Table,
   Loader,
+  Card,
 } from '@mantine/core';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export interface CartLine {
   id: string;
@@ -281,28 +282,26 @@ export function CashRegisterSalePage() {
 
   if (loading) {
     return (
-      <Stack gap="md" p="md" data-testid="page-sale">
-        <Title order={1}>Saisie vente</Title>
+      <PageContainer title="Saisie vente" maxWidth={980} testId="page-sale">
         <Loader size="sm" />
         <Text size="sm">Chargement…</Text>
-      </Stack>
+      </PageContainer>
     );
   }
 
   if (!session) {
     return (
-      <Stack gap="md" p="md" data-testid="page-sale">
-        <Title order={1}>Saisie vente</Title>
+      <PageContainer title="Saisie vente" maxWidth={980} testId="page-sale">
         <Text>Aucune session en cours.</Text>
         <Button variant="light" onClick={() => navigate('/caisse')}>
           Retour dashboard
         </Button>
-      </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <Stack gap="md" p="md" data-testid="page-sale">
+    <PageContainer title="Saisie vente" maxWidth={980} testId="page-sale">
       {!online && (
         <Alert color="yellow" role="status" aria-live="polite" data-testid="offline-banner">
           Hors ligne — Les ventes sont enregistrées localement et seront envoyées au retour en ligne.
@@ -315,201 +314,210 @@ export function CashRegisterSalePage() {
             : `Synchronisation en attente : ${pendingOfflineCount} ticket(s) à envoyer.`}
         </Alert>
       )}
-      <Title order={1}>Saisie vente</Title>
       <Text size="sm">
         Session : {session.id.slice(0, 8)}… — Fond de caisse : {(session.initial_amount / 100).toFixed(2)} €
       </Text>
 
-      <Stack gap="xs">
-        <Text fw={500}>Boutons rapides</Text>
-        <Group gap="xs">
-          {presets.map((p) => (
-            <Button
-              key={p.id}
-              variant="light"
-              size="sm"
-              data-testid={`preset-${p.id}`}
-              onClick={() => addPresetToCart(p)}
-            >
-              {p.name} ({(p.preset_price / 100).toFixed(2)} €)
-            </Button>
-          ))}
-        </Group>
-      </Stack>
-
-      <Stack gap="xs">
-        <Text fw={500}>Panier</Text>
-        {cart.length === 0 ? (
-          <Text size="sm" data-testid="cart-empty">Panier vide</Text>
-        ) : (
-          <Table data-testid="cart-lines">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Désignation</Table.Th>
-                <Table.Th>Qté</Table.Th>
-                <Table.Th>Total</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {cart.map((l) => (
-                <Table.Tr key={l.id}>
-                  <Table.Td>{l.preset_name ?? l.category_name}</Table.Td>
-                  <Table.Td>{l.quantity}</Table.Td>
-                  <Table.Td>{(l.total_price / 100).toFixed(2)} €{l.weight != null ? ` — ${l.weight} kg` : ''}</Table.Td>
-                  <Table.Td>
-                    <Button
-                      type="button"
-                      variant="subtle"
-                      size="xs"
-                      data-testid={`remove-line-${l.id}`}
-                      onClick={() => removeCartLine(l.id)}
-                    >
-                      Retirer
-                    </Button>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        )}
-        <Text fw={500} data-testid="cart-total">
-          Total : {(cartTotal / 100).toFixed(2)} €
-        </Text>
-      </Stack>
-
-      <Stack gap="xs">
-        <Text fw={500}>Ajouter une ligne (catégorie)</Text>
-        <Group align="flex-end" gap="xs">
-          <Select
-            placeholder="— Choisir catégorie —"
-            data-testid="category-select"
-            value={selectedCategoryId}
-            onChange={(v) => setSelectedCategoryId(v)}
-            data={categories.map((c) => ({ value: c.id, label: c.name }))}
-            clearable
-          />
-          <NumberInput
-            min={1}
-            value={catQuantity}
-            onChange={(v) => setCatQuantity(Number(v) || 1)}
-            data-testid="cat-quantity"
-            placeholder="Qté"
-            w={80}
-          />
-          <NumberInput
-            decimalScale={2}
-            min={0}
-            value={catPriceEur}
-            onChange={(v) => setCatPriceEur(String(v ?? ''))}
-            data-testid="cat-price"
-            placeholder="Prix €"
-            w={100}
-          />
-          <NumberInput
-            decimalScale={3}
-            min={0}
-            value={catWeight}
-            onChange={(v) => setCatWeight(String(v ?? ''))}
-            data-testid="cat-weight"
-            placeholder="Poids kg"
-            w={100}
-          />
-          <Button type="button" variant="light" size="sm" onClick={handleAddCategoryLine}>
-            Ajouter
-          </Button>
-        </Group>
-      </Stack>
-
-      <Stack gap="xs">
-        <Text fw={500}>Paiements</Text>
-        <Group align="flex-end" gap="xs">
-          <Select
-            data-testid="payment-method"
-            value={paymentMethod}
-            onChange={(v) => setPaymentMethod(v ?? 'especes')}
-            data={[
-              { value: 'especes', label: 'Espèces' },
-              { value: 'cheque', label: 'Chèque' },
-              { value: 'cb', label: 'Carte bancaire' },
-            ]}
-            w={140}
-          />
-          <NumberInput
-            decimalScale={2}
-            min={0}
-            value={paymentAmountEur}
-            onChange={(v) => setPaymentAmountEur(String(v ?? ''))}
-            data-testid="payment-amount"
-            placeholder="Montant €"
-            w={120}
-          />
-          <Button type="button" variant="light" size="sm" data-testid="add-payment" onClick={addPayment}>
-            Ajouter
-          </Button>
-        </Group>
-        {payments.length > 0 && (
-          <Table data-testid="payments-list">
-            <Table.Tbody>
-              {payments.map((p, i) => (
-                <Table.Tr key={i}>
-                  <Table.Td>{p.payment_method}</Table.Td>
-                  <Table.Td>{(p.amount / 100).toFixed(2)} €</Table.Td>
-                  <Table.Td>
-                    <Button
-                      type="button"
-                      variant="subtle"
-                      size="xs"
-                      data-testid={`remove-payment-${i}`}
-                      onClick={() => removePayment(i)}
-                    >
-                      Retirer
-                    </Button>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        )}
-        <Text size="sm">Total paiements : {(paymentsTotal / 100).toFixed(2)} €</Text>
-      </Stack>
-
-      <form onSubmit={handleSubmit}>
-        <Stack gap="sm">
-          <TextInput
-            label="Note ticket"
-            id="sale-note"
-            data-testid="sale-note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          <TextInput
-            label="Date réelle (optionnel, YYYY-MM-DD)"
-            id="sale-date"
-            type="date"
-            data-testid="sale-date"
-            value={saleDate}
-            onChange={(e) => setSaleDate(e.target.value)}
-          />
-          {error && (
-            <Alert color="red" data-testid="sale-error">
-              {error}
-            </Alert>
-          )}
-          <Button
-            type="submit"
-            loading={submitting}
-            disabled={submitting || cart.length === 0 || paymentsTotal !== cartTotal}
-            data-testid="sale-submit"
-          >
-            {submitting ? 'Enregistrement…' : 'Enregistrer le ticket'}
-          </Button>
+      <PageSection>
+        <Stack gap="xs">
+          <Text fw={500}>Boutons rapides</Text>
+          <Group gap="xs">
+            {presets.map((p) => (
+              <Button
+                key={p.id}
+                variant="light"
+                size="sm"
+                data-testid={`preset-${p.id}`}
+                onClick={() => addPresetToCart(p)}
+              >
+                {p.name} ({(p.preset_price / 100).toFixed(2)} €)
+              </Button>
+            ))}
+          </Group>
         </Stack>
-      </form>
+      </PageSection>
+
+      <PageSection>
+        <Stack gap="xs">
+          <Text fw={500}>Panier</Text>
+          {cart.length === 0 ? (
+            <Text size="sm" data-testid="cart-empty">Panier vide</Text>
+          ) : (
+            <Table data-testid="cart-lines">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Désignation</Table.Th>
+                  <Table.Th>Qté</Table.Th>
+                  <Table.Th>Total</Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {cart.map((l) => (
+                  <Table.Tr key={l.id}>
+                    <Table.Td>{l.preset_name ?? l.category_name}</Table.Td>
+                    <Table.Td>{l.quantity}</Table.Td>
+                    <Table.Td>{(l.total_price / 100).toFixed(2)} €{l.weight != null ? ` — ${l.weight} kg` : ''}</Table.Td>
+                    <Table.Td>
+                      <Button
+                        type="button"
+                        variant="subtle"
+                        size="xs"
+                        data-testid={`remove-line-${l.id}`}
+                        onClick={() => removeCartLine(l.id)}
+                      >
+                        Retirer
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          )}
+          <Text fw={500} data-testid="cart-total">
+            Total : {(cartTotal / 100).toFixed(2)} €
+          </Text>
+        </Stack>
+      </PageSection>
+
+      <PageSection>
+        <Stack gap="xs">
+          <Text fw={500}>Ajouter une ligne (catégorie)</Text>
+          <Group align="flex-end" gap="xs">
+            <Select
+              placeholder="— Choisir catégorie —"
+              data-testid="category-select"
+              value={selectedCategoryId}
+              onChange={(v) => setSelectedCategoryId(v)}
+              data={categories.map((c) => ({ value: c.id, label: c.name }))}
+              clearable
+            />
+            <NumberInput
+              min={1}
+              value={catQuantity}
+              onChange={(v) => setCatQuantity(Number(v) || 1)}
+              data-testid="cat-quantity"
+              placeholder="Qté"
+              w={80}
+            />
+            <NumberInput
+              decimalScale={2}
+              min={0}
+              value={catPriceEur}
+              onChange={(v) => setCatPriceEur(String(v ?? ''))}
+              data-testid="cat-price"
+              placeholder="Prix €"
+              w={100}
+            />
+            <NumberInput
+              decimalScale={3}
+              min={0}
+              value={catWeight}
+              onChange={(v) => setCatWeight(String(v ?? ''))}
+              data-testid="cat-weight"
+              placeholder="Poids kg"
+              w={100}
+            />
+            <Button type="button" variant="light" size="sm" onClick={handleAddCategoryLine}>
+              Ajouter
+            </Button>
+          </Group>
+        </Stack>
+      </PageSection>
+
+      <PageSection>
+        <Stack gap="xs">
+          <Text fw={500}>Paiements</Text>
+          <Group align="flex-end" gap="xs">
+            <Select
+              data-testid="payment-method"
+              value={paymentMethod}
+              onChange={(v) => setPaymentMethod(v ?? 'especes')}
+              data={[
+                { value: 'especes', label: 'Espèces' },
+                { value: 'cheque', label: 'Chèque' },
+                { value: 'cb', label: 'Carte bancaire' },
+              ]}
+              w={140}
+            />
+            <NumberInput
+              decimalScale={2}
+              min={0}
+              value={paymentAmountEur}
+              onChange={(v) => setPaymentAmountEur(String(v ?? ''))}
+              data-testid="payment-amount"
+              placeholder="Montant €"
+              w={120}
+            />
+            <Button type="button" variant="light" size="sm" data-testid="add-payment" onClick={addPayment}>
+              Ajouter
+            </Button>
+          </Group>
+          {payments.length > 0 && (
+            <Table data-testid="payments-list">
+              <Table.Tbody>
+                {payments.map((p, i) => (
+                  <Table.Tr key={i}>
+                    <Table.Td>{p.payment_method}</Table.Td>
+                    <Table.Td>{(p.amount / 100).toFixed(2)} €</Table.Td>
+                    <Table.Td>
+                      <Button
+                        type="button"
+                        variant="subtle"
+                        size="xs"
+                        data-testid={`remove-payment-${i}`}
+                        onClick={() => removePayment(i)}
+                      >
+                        Retirer
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          )}
+          <Text size="sm">Total paiements : {(paymentsTotal / 100).toFixed(2)} €</Text>
+        </Stack>
+      </PageSection>
+
+      <Card withBorder padding="md" radius="md">
+        <form onSubmit={handleSubmit}>
+          <Stack gap="sm">
+            <TextInput
+              label="Note ticket"
+              id="sale-note"
+              data-testid="sale-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+            <TextInput
+              label="Date réelle (optionnel, YYYY-MM-DD)"
+              id="sale-date"
+              type="date"
+              data-testid="sale-date"
+              value={saleDate}
+              onChange={(e) => setSaleDate(e.target.value)}
+            />
+            {error && (
+              <Alert color="red" data-testid="sale-error">
+                {error}
+              </Alert>
+            )}
+            <Button
+              type="submit"
+              loading={submitting}
+              disabled={submitting || cart.length === 0 || paymentsTotal !== cartTotal}
+              data-testid="sale-submit"
+            >
+              {submitting ? 'Enregistrement…' : 'Enregistrer le ticket'}
+            </Button>
+          </Stack>
+        </form>
+      </Card>
 
       <Button variant="light" onClick={() => navigate('/cash-register/session/close')}>
         Fermer la session
       </Button>
-    </Stack>
+    </PageContainer>
   );
 }

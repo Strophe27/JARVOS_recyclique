@@ -8,7 +8,6 @@ import {
   Button,
   Stack,
   Group,
-  Title,
   Alert,
   Loader,
   Modal,
@@ -24,6 +23,7 @@ import {
   type CashSessionReportItem,
 } from '../api/adminReports';
 import { getSites } from '../api/admin';
+import { PageContainer } from '../shared/layout';
 
 export function AdminReportsPage() {
   const { accessToken, permissions } = useAuth();
@@ -114,9 +114,8 @@ export function AdminReportsPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-reports-page">
-      <Group justify="space-between">
-        <Title order={2}>Rapports caisse</Title>
+    <PageContainer title="Rapports caisse" maxWidth={1200} testId="admin-reports-page">
+      <Group justify="flex-end">
         <Button data-testid="admin-reports-bulk" variant="filled" onClick={() => { setBulkModalOpen(true); setBulkResult(null); }}>
           Export bulk
         </Button>
@@ -196,6 +195,6 @@ export function AdminReportsPage() {
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+    </PageContainer>
   );
 }

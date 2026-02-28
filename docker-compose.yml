@@ -31,8 +31,10 @@ services:
       - jarvos_net
 
   paheko:
-    image: paheko/paheko
+    image: paheko/paheko@sha256:fa2b4a6188802447cc3c43f51d3bac55a73cb203e17e05ed68c8a2d4d29a15ec
     restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "8080:80"
     volumes:
@@ -67,6 +69,20 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+    networks:
+      - jarvos_net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    command: start-dev --http-port=8080
+    ports:
+      - "8081:8080"
     networks:
       - jarvos_net
 

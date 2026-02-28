@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Les ecarts du 1er passage sont corriges (checkpoint cursor/watermark, resolution locale deterministe sub>email, retries 429/408 avec Retry-After, tests dedies) et les tests cibles passent (10/10). Aucun ecart High/Medium restant dans le perimetre story 12.3."
+}

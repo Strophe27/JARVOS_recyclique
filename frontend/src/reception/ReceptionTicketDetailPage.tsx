@@ -37,6 +37,7 @@ import type {
   CategoryEntryItem,
 } from '../api/reception';
 import { useAuth } from '../auth/AuthContext';
+import { PageContainer } from '../shared/layout';
 
 const DESTINATION_OPTIONS = [
   { value: 'recyclage', label: 'Recyclage' },
@@ -220,7 +221,7 @@ export function ReceptionTicketDetailPage() {
   const lignes = ticket.lignes ?? [];
 
   return (
-    <Stack gap="md" maw={900} mx="auto" p="md" data-testid="reception-ticket-detail-page">
+    <PageContainer title="Detail ticket reception" maxWidth={1100} testId="reception-ticket-detail-page">
       <Anchor component={Link} to="/reception" size="sm">← Retour réception</Anchor>
 
       <Card withBorder padding="md" radius="md">
@@ -437,6 +438,6 @@ export function ReceptionTicketDetailPage() {
           </Stack>
         )}
       </Modal>
-    </Stack>
+    </PageContainer>
   );
 }

@@ -1,0 +1,56 @@
+{
+  "domaine": "Admin3/Categories",
+  "generated_at": "2026-02-28T12:40:25+01:00",
+  "captures": [
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-01-groupes.png",
+      "ecran": "Groupes",
+      "route": "/admin/groups",
+      "horodatage": "2026-02-28T12:41:08+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-02-permissions-blank.png",
+      "ecran": "Permissions",
+      "route": "/admin/permissions",
+      "horodatage": "2026-02-28T12:41:38+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-03-bdd.png",
+      "ecran": "BDD (section settings)",
+      "route": "/admin/settings",
+      "horodatage": "2026-02-28T12:42:10+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-04-bdd-route-blank.png",
+      "ecran": "BDD (route dediee vide)",
+      "route": "/admin/db",
+      "horodatage": "2026-02-28T12:42:22+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-05-import-legacy.png",
+      "ecran": "Import legacy",
+      "route": "/admin/import/legacy",
+      "horodatage": "2026-02-28T12:42:33+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-06-categories.png",
+      "ecran": "Categories",
+      "route": "/admin/categories",
+      "horodatage": "2026-02-28T12:42:44+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-07-quick-analysis.png",
+      "ecran": "Analyse rapide",
+      "route": "/admin/quick-analysis",
+      "horodatage": "2026-02-28T12:42:55+01:00",
+      "anonymized": true
+    }
+  ],
+  "inaccessible_screens": []
+}

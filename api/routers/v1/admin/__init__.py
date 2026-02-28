@@ -20,6 +20,8 @@ from api.routers.v1.admin.email_logs import router as email_logs_router
 from api.routers.v1.admin.db import router as db_router
 from api.routers.v1.admin.import_legacy import router as import_legacy_router
 from api.routers.v1.admin.paheko_compta import router as paheko_compta_router
+from api.routers.v1.admin.member_sync import router as member_sync_router
+from api.routers.v1.admin.paheko_iam import router as paheko_iam_router
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -37,3 +39,5 @@ router.include_router(email_logs_router)
 router.include_router(db_router)
 router.include_router(import_legacy_router)
 router.include_router(paheko_compta_router)
+router.include_router(member_sync_router)
+router.include_router(paheko_iam_router)

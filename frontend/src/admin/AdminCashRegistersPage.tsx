@@ -8,7 +8,6 @@ import {
   Button,
   Stack,
   Group,
-  Title,
   Alert,
   Loader,
   Modal,
@@ -29,6 +28,7 @@ import {
   type CashRegisterCreateBody,
   type CashRegisterUpdateBody,
 } from '../api/admin';
+import { PageContainer } from '../shared/layout';
 
 export function AdminCashRegistersPage() {
   const { accessToken, permissions } = useAuth();
@@ -147,9 +147,8 @@ export function AdminCashRegistersPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-cash-registers-page">
-      <Group justify="space-between">
-        <Title order={2}>Postes de caisse</Title>
+    <PageContainer title="Postes de caisse" maxWidth={1200} testId="admin-cash-registers-page">
+      <Group justify="flex-end">
         <Button data-testid="admin-registers-new" variant="filled" onClick={openCreate} disabled={sites.length === 0}>
           Nouveau poste
         </Button>
@@ -237,6 +236,6 @@ export function AdminCashRegistersPage() {
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+    </PageContainer>
   );
 }

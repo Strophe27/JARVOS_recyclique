@@ -1,0 +1,114 @@
+{
+  "story_key": "13-2-2-remediation-visuelle-lot-reception-admin1-hors-exclusions",
+  "scope": [
+    "Reception",
+    "Admin1"
+  ],
+  "generated_at": "2026-02-28",
+  "validation_mode": "hitl-approved",
+  "hitl_confirmation": "Oui, captures AVANT/APRES autorisees et mini audit visuel valide avec ecarts residuels acceptes.",
+  "captures_avant_apres": [
+    {
+      "ecran": "Reception accueil module",
+      "route": "/reception",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-01-accueil-module.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Reception ouverture poste",
+      "route": "/reception",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-02-ouverture-poste-saisie-differee.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Reception liste tickets export stats",
+      "route": "/reception",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-03-liste-tickets-export-stats.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Reception detail ticket lignes",
+      "route": "/reception/tickets/:id",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-04-detail-ticket-lignes.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Reception detail ticket admin csv",
+      "route": "/admin/reception-tickets/:id",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-05-detail-ticket-admin-csv.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Admin dashboard",
+      "route": "/admin",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-01-dashboard-admin.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Admin users liste",
+      "route": "/admin/users",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-02-users-liste.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Admin user detail",
+      "route": "/admin/users/:id",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-03-users-detail.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Admin sites",
+      "route": "/admin/sites",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-05-sites.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Admin postes caisse",
+      "route": "/admin/cash-registers",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-06-postes-caisse.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Admin session manager",
+      "route": "/admin/session-manager",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-08-session-manager.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Admin rapports caisse",
+      "route": "/admin/reports",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-09-rapports-quick-analysis.png",
+      "apres": "validated-by-hitl",
+      "statut": "ok"
+    }
+  ],
+  "exclusions_confirmees": [
+    "pin login",
+    "users pending",
+    "permissions"
+  ],
+  "mini_audit": {
+    "resultat_global": "pass_with_accepted_residuals",
+    "ecarts_critiques": [],
+    "ecarts_majeurs": [],
+    "ecarts_mineurs": [
+      {
+        "id": "13-2-2-RESIDUAL-01",
+        "description": "Ecarts residuels mineurs acceptes dans le cadre de la validation HITL.",
+        "severite": "mineur",
+        "action": "Aucune action bloquante; suivi possible au prochain lot de QA visuelle continue."
+      }
+    ]
+  }
+}

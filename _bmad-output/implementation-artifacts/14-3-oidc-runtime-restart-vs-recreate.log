@@ -1,0 +1,8 @@
+﻿[initial_snapshot]
+{"enabled": true, "status": "ok", "loaded_in_process": true, "strict_fail_closed": true, "http_timeout_seconds": 10.0, "issuer_configured": true, "client_id_configured": true, "redirect_uri_configured": true, "client_secret_configured": true, "audience_configured": false, "missing_required": []}
+[after_env_change_restart]
+{"enabled": true, "status": "ok", "loaded_in_process": true, "strict_fail_closed": true, "http_timeout_seconds": 10.0, "issuer_configured": true, "client_id_configured": true, "redirect_uri_configured": true, "client_secret_configured": true, "audience_configured": false, "missing_required": []}
+[after_force_recreate]
+{"enabled": true, "status": "ok", "loaded_in_process": true, "strict_fail_closed": true, "http_timeout_seconds": 77.0, "issuer_configured": true, "client_id_configured": true, "redirect_uri_configured": true, "client_secret_configured": true, "audience_configured": false, "missing_required": []}
+[restore_original_and_recreate]
+{"enabled": true, "status": "ok", "loaded_in_process": true, "strict_fail_closed": true, "http_timeout_seconds": 10.0, "issuer_configured": true, "client_id_configured": true, "redirect_uri_configured": true, "client_secret_configured": true, "audience_configured": false, "missing_required": []}

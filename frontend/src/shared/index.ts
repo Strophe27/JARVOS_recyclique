@@ -4,4 +4,5 @@
  */
 export * from './display-services';
 export * from './layout';
+export * from './theme';
 export * from './visual';

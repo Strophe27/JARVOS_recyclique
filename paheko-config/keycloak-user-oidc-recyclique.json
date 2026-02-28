@@ -1,0 +1,14 @@
+{
+  "username": "oidc.recyclique",
+  "enabled": true,
+  "email": "test@reception.local",
+  "emailVerified": true,
+  "attributes": {
+    "role": [
+      "operator"
+    ],
+    "tenant": [
+      "tenant-a"
+    ]
+  }
+}

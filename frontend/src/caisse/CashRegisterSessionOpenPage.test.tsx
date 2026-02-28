@@ -1,12 +1,10 @@
 /**
  * Tests CashRegisterSessionOpenPage — Story 5.1, 11.2 (Vitest + RTL + MantineProvider).
  */
-import { useEffect } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
-import { AuthProvider, useAuth } from '../auth/AuthContext';
 import { CashRegisterSessionOpenPage } from './CashRegisterSessionOpenPage';
 
 vi.mock('../api/caisse', () => ({
@@ -14,24 +12,18 @@ vi.mock('../api/caisse', () => ({
   getCashSessionDeferredCheck: vi.fn().mockResolvedValue({ date: '2026-02-27', has_session: false, session_id: null }),
   openCashSession: vi.fn().mockResolvedValue({}),
 }));
-
-function SetToken({ token }: { token: string }) {
-  const { setTokens } = useAuth();
-  useEffect(() => {
-    setTokens(token, null);
-  }, [setTokens, token]);
-  return null;
-}
+vi.mock('../auth/AuthContext', () => ({
+  useAuth: () => ({
+    accessToken: 'bff-session',
+  }),
+}));
 
 function renderWithRouter() {
   return render(
     <MantineProvider>
-      <AuthProvider>
-        <SetToken token="fake-token" />
-        <BrowserRouter>
-          <CashRegisterSessionOpenPage />
-        </BrowserRouter>
-      </AuthProvider>
+      <BrowserRouter>
+        <CashRegisterSessionOpenPage />
+      </BrowserRouter>
     </MantineProvider>
   );
 }
@@ -48,7 +40,7 @@ describe('CashRegisterSessionOpenPage', () => {
 
   it('has page test id', async () => {
     renderWithRouter();
-    expect(screen.getByTestId('page-session-open')).toBeInTheDocument();
+    expect(await screen.findByTestId('page-session-open')).toBeInTheDocument();
   });
 
   it('has session type select and submit button', async () => {

@@ -43,6 +43,7 @@ describe('AdminUsersListPage', () => {
     expect(screen.getByTestId('admin-users-list-page')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Utilisateurs/ })).toBeInTheDocument();
     expect(screen.getByTestId('admin-users-new')).toBeInTheDocument();
+    await screen.findByTestId('admin-users-empty');
   });
 
   it('shows forbidden when user lacks admin permission', () => {
@@ -51,10 +52,11 @@ describe('AdminUsersListPage', () => {
     expect(screen.getByTestId('admin-users-forbidden')).toBeInTheDocument();
   });
 
-  it('shows Liste and En attente tabs', () => {
+  it('shows Liste and En attente tabs', async () => {
     renderWithProviders();
     expect(screen.getByTestId('tab-list')).toBeInTheDocument();
     expect(screen.getByTestId('tab-pending')).toBeInTheDocument();
+    await screen.findByTestId('admin-users-empty');
   });
 
   it('shows pagination controls when on list tab', async () => {

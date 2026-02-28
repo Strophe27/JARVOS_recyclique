@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr" class="nojs" data-version="04dfaa3890" data-url="http://localhost:8080/admin/">
+<head>
+	<meta charset="utf-8" />
+	<meta name="v" content="04dfaa3890" />
+	<title>Connexion</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" type="text/css" href="/admin/static/admin.css?04dfaa3890" media="all" />
+	<script type="text/javascript" src="/admin/static/scripts/global.js?04dfaa3890"></script>
+	
+	
+	
+	
+	<link rel="stylesheet" type="text/css" href="/admin/static/print.css?04dfaa3890" media="print" />
+	
+		<link rel="stylesheet" type="text/css" href="/admin/static/handheld.css?04dfaa3890" media="handheld,screen and (max-width:981px)" />
+	
+	<link rel="manifest" href="/admin/manifest.php" />
+	
+		<link rel="icon" type="image/png" href="http://localhost:8080/admin/static/favicon.png" />
+		<link rel="apple-touch-icon" href="http://localhost:8080/admin/static/icon.png" />
+	
+	
+		<style type="text/css">
+		:root {
+			--gMainColor: 32, 120, 122;
+			--gSecondColor: 133, 185, 186;
+			--gBgImage: url("http://localhost:8080/admin/static/bg.png");
+		}
+		</style>
+	
+</head>
+
+
+
+<body>
+
+
+
+
+<nav id="skip">
+	<a href="#content">Aller au contenu</a>
+</nav>
+
+<nav id="menu">
+	<figure class="logo">
+	
+	</figure>
+	<ul>
+	
+		
+		<li class="current"><h3><a href="http://localhost:8080/admin/"><span aria-hidden="true" data-icon="⇥"></span><b>Connexion</b></a></h3></li>
+	
+	</ul>
+</nav>
+
+
+
+<main id="content">
+	
+	<h1 class="main">Connexion</h1>
+	
+
+
+
+
+<div class="block error"><ul><li>Le fournisseur OpenID Connect n&#039;a pas fourni d&#039;adresse e-mail dans sa réponse.</li></ul></div>
+
+
+
+<p class="block error" style="display: none;" id="old_browser">
+	Le navigateur que vous utilisez n'est pas supporté. Des fonctionnalités peuvent ne pas fonctionner.<br />
+	Merci d'utiliser un navigateur web moderne comme <a href="https://www.getfirefox.com/" target="_blank">Firefox</a> ou <a href="https://vivaldi.com/fr/" target="_blank">Vivaldi</a>.
+</p>
+
+<form method="post" action="/admin/login.php?oidc&amp;state=698054e5135ef78f213cbde484da731ed3ae07d1&amp;session_state=1cb6fc65-6230-4d6e-a630-f1c839a405e8&amp;iss=http%3A%2F%2Flocalhost%3A8081%2Frealms%2Frecyclique-dev&amp;code=d2c1047c-35d9-4d2b-afed-90346146fc03.1cb6fc65-6230-4d6e-a630-f1c839a405e8.0234fff3-1b0a-49ad-8dd2-b24fcd443b36" data-focus="1">
+	
+
+	<fieldset>
+		<legend>
+			
+				<span class="alert"><span aria-hidden="true" data-icon="🔓"></span> Connexion non-sécurisée</span>
+			
+		</legend>
+		<dl>
+			<dt><label for="f_id">Adresse E-Mail</label> <b title="Champ obligatoire">(obligatoire)</b></dt><dd><input type="email" required="required" id="f_id" name="id"  value="" /></dd>
+			<dt><label for="f_password">Mot de passe</label> <b title="Champ obligatoire">(obligatoire)</b></dt><dd><input type="password" required="required" id="f_password" name="password" autocomplete="off"  value="" /></dd>
+			
+			<dd><input type="hidden" name="permanent_present" value="1" /><input type="checkbox" id="f_permanent_1" name="permanent" aria-describedby="help_f_permanent" value="1"  /> <label for="f_permanent_1">Rester connecté⋅e</label> <em class="help" id="help_f_permanent_1">(recommandé seulement sur ordinateur personnel)</em></dd>
+			
+		</dl>
+	</fieldset>
+
+	
+
+	<p class="submit">
+		<input type="hidden" name="ct_38a3b869d0c2a261cdc9270e0c5cba321e8b95c7" value="33b61219acb182c150e8ca6ec266729ce0d2c58db971b58bf39a71cd22542812/7831b/69296b5a444e71ab" />
+		<button type="submit" name="login" class="main icn-btn" data-icon="→" value="1">Se connecter</button>
+		
+			<a href="?oidc" data-icon="⇥" class=" icn-btn"><span>Se connecter avec host.docker.internal</span></a>
+		
+		
+			<a href="http://localhost:8080/admin/password.php" data-icon="❓" class=" icn-btn"><span>Mot de passe perdu ?</span></a>
+			<a href="http://localhost:8080/admin/password.php?new" data-icon="👤" class=" icn-btn"><span>Première connexion ?</span></a>
+		
+	</p>
+
+	<p class="help">
+		Suggestion : mettez cette page dans vos favoris pour la retrouver facilement :-)<br />
+		<small>(Sur ordinateur appuyez sur <tt>Ctrl</tt> + <tt>D</tt>. Aide&nbsp;: <a href="https://support.mozilla.org/fr/kb/marque-pages-firefox#w_marquer-une-page" target="_blank">Firefox</a>, <a href="https://support.google.com/chrome/answer/188842?hl=fr&co=GENIE.Platform%3DDesktop&oco=0" target="_blank">Chrome</a>)</small>
+	</p>
+
+</form>
+
+
+<script type="text/javascript" async="async">
+if (window.navigator.userAgent.match(/MSIE|Trident\/|Edge\//)) {
+	document.getElementById('old_browser').style.display = 'block';
+}
+</script>
+
+
+</main>
+
+
+
+
+
+
+
+</body>
+</html>

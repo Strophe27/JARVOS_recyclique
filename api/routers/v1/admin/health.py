@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends
 
 from api.core.deps import require_permissions
 from api.models import User
-from api.services.health_checks import check_database, check_redis, check_push_worker
+from api.services.health_checks import check_database, check_redis, check_push_worker, check_oidc_runtime
+from api.services.resilience import get_resilience_snapshot
 from api.workers.push_consumer import get_push_worker_state
 
 router = APIRouter(prefix="/health", tags=["admin-health"])
@@ -18,12 +19,27 @@ def admin_health(current_user: User = _Admin) -> dict:
     db = check_database()
     redis_status = check_redis()
     push_worker_status = check_push_worker()
-    status = "ok" if (db == "ok" and redis_status == "ok") else "degraded"
+    auth_runtime = check_oidc_runtime()
+    resilience = get_resilience_snapshot()
+    status = (
+        "ok"
+        if (
+            db == "ok"
+            and redis_status == "ok"
+            and resilience.get("mode") == "ok"
+            and auth_runtime.get("status") in ("ok", "disabled")
+        )
+        else "degraded"
+    )
     return {
         "status": status,
         "database": db,
         "redis": redis_status,
         "push_worker": push_worker_status,
+        "iam_mode": resilience.get("mode"),
+        "dependencies": resilience.get("dependencies"),
+        "iam_counters": resilience.get("counters"),
+        "auth_runtime": auth_runtime,
     }
 
 
@@ -51,6 +67,12 @@ def admin_health_scheduler(current_user: User = _Admin) -> dict:
 def admin_health_anomalies(current_user: User = _Admin) -> dict:
     """GET /v1/admin/health/anomalies — stub v1 (liste vide)."""
     return {"items": [], "count": 0}
+
+
+@router.get("/auth")
+def admin_health_auth(current_user: User = _Admin) -> dict:
+    """GET /v1/admin/health/auth — état runtime OIDC fail-closed (sanitisé)."""
+    return check_oidc_runtime()
 
 
 @router.post("/test-notifications")

@@ -3,13 +3,14 @@
  * Route : /admin/db. Export, Purge transactions, Import (POST /v1/admin/db/*).
  */
 import { useCallback, useState } from 'react';
-import { Stack, Title, Card, Text, Button, Alert, Modal, Group } from '@mantine/core';
+import { Card, Text, Button, Alert, Modal, Group } from '@mantine/core';
 import { useAuth } from '../auth/AuthContext';
 import {
   postAdminDbExport,
   postAdminDbPurgeTransactions,
   postAdminDbImport,
 } from '../api/adminDb';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminDbPage() {
   const { accessToken, permissions } = useAuth();
@@ -83,15 +84,15 @@ export function AdminDbPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-db-page">
-      <Title order={2}>Base de données</Title>
+    <PageContainer title="Base de données" maxWidth={1200} testId="admin-db-page">
       <Text size="sm" c="dimmed" mb="xs">
         Export, purge des transactions et import BDD (stub v1).
       </Text>
       {error && <Alert color="red">{error}</Alert>}
       {message && <Alert color="green">{message}</Alert>}
 
-      <Card withBorder padding="md" radius="md" shadow="sm">
+      <PageSection>
+        <Card withBorder padding="md" radius="md" shadow="sm">
         <Text fw={500} mb="xs">Export BDD</Text>
         <Text size="sm" c="dimmed" mb="md">
           Télécharge une sauvegarde (dump SQL stub en v1).
@@ -103,9 +104,11 @@ export function AdminDbPage() {
         >
           Export BDD
         </Button>
-      </Card>
+        </Card>
+      </PageSection>
 
-      <Card withBorder padding="md" radius="md" shadow="sm">
+      <PageSection>
+        <Card withBorder padding="md" radius="md" shadow="sm">
         <Text fw={500} mb="xs">Purge transactions</Text>
         <Text size="sm" c="dimmed" mb="md">
           Supprime les données de transactions selon le périmètre (stub v1 : aucune suppression).
@@ -118,7 +121,8 @@ export function AdminDbPage() {
         >
           Purge transactions
         </Button>
-      </Card>
+        </Card>
+      </PageSection>
 
       <Modal
         opened={purgeModalOpen}
@@ -137,7 +141,8 @@ export function AdminDbPage() {
         </Group>
       </Modal>
 
-      <Card withBorder padding="md" radius="md" shadow="sm">
+      <PageSection>
+        <Card withBorder padding="md" radius="md" shadow="sm">
         <Text fw={500} mb="xs">Import BDD</Text>
         <Text size="sm" c="dimmed" mb="md">
           Envoie un fichier de sauvegarde pour restauration (stub v1 : validation uniquement).
@@ -157,7 +162,8 @@ export function AdminDbPage() {
         >
           Importer
         </Button>
-      </Card>
-    </Stack>
+        </Card>
+      </PageSection>
+    </PageContainer>
   );
 }

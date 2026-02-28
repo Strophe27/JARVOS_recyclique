@@ -1,0 +1,61 @@
+{
+  "schema_version": "13.3.1",
+  "story": "<story_key>",
+  "domaine": "<domaine>",
+  "generated_at": "YYYY-MM-DD",
+  "scope_inclus": [
+    "<route-ou-ecran>"
+  ],
+  "scope_exclu": [
+    "pin login",
+    "users pending",
+    "permissions"
+  ],
+  "preuves": [
+    {
+      "ecran": "<nom-ecran>",
+      "route": "<route>",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/<domaine>/<domaine>-before-XX-<slug>.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/<story_key>/<domaine>/<domaine>-after-XX-<slug>.png"
+      },
+      "ecarts": [
+        {
+          "id": "<id-ecart>",
+          "severite": "critique|majeur|mineur",
+          "description": "<description>",
+          "accepte": false,
+          "justification": "<justification-si-accepte>"
+        }
+      ],
+      "decision": "conforme|conforme-avec-residuel-accepte|non-conforme-bloquant"
+    }
+  ],
+  "mini_audit": {
+    "resultat_global": "conforme|conforme-avec-residuel-accepte|non-conforme-bloquant",
+    "ecarts_critiques": [],
+    "ecarts_majeurs": [],
+    "ecarts_mineurs": []
+  },
+  "mapping_legacy_obligatoire": {
+    "preuves_decision": {
+      "ok": "conforme",
+      "partiel": "conforme-avec-residuel-accepte",
+      "ok-hitl": "conforme-avec-residuel-accepte",
+      "blocked": "non-conforme-bloquant"
+    },
+    "mini_audit_resultat_global": {
+      "pass": "conforme",
+      "pass_with_accepted_residuals": "conforme-avec-residuel-accepte",
+      "blocked": "non-conforme-bloquant"
+    },
+    "decision_statut_final": {
+      "go-review": "go-review",
+      "blocked": "blocked"
+    }
+  },
+  "decision": {
+    "statut": "go-review|blocked",
+    "justification": "<justification-de-cloture>"
+  }
+}

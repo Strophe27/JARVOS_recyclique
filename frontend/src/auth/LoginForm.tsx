@@ -3,7 +3,8 @@
  * Soumet username/password vers POST /v1/auth/login. Rendu Mantine aligné 1.4.4.
  */
 import React, { useState } from 'react';
-import { TextInput, PasswordInput, Button, Stack, Alert, Paper } from '@mantine/core';
+import { TextInput, PasswordInput, Button, Stack, Alert } from '@mantine/core';
+import { PageSection } from '../shared/layout';
 
 export interface LoginFormProps {
   onSubmit?: (username: string, password: string) => void;
@@ -21,7 +22,7 @@ export function LoginForm({ onSubmit, error, loading }: LoginFormProps) {
   };
 
   return (
-    <Paper p="lg" shadow="sm" radius="md" withBorder>
+    <PageSection>
       <form onSubmit={handleSubmit} data-testid="login-form" role="form" aria-label="Connexion">
         <Stack gap="md">
           {error && (
@@ -54,6 +55,6 @@ export function LoginForm({ onSubmit, error, loading }: LoginFormProps) {
           </Button>
         </Stack>
       </form>
-    </Paper>
+    </PageSection>
   );
 }

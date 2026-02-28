@@ -19,6 +19,7 @@ import {
 } from '../api/reception';
 import type { PosteReceptionItem, TicketDepotItem, ReceptionStatsLive } from '../api/reception';
 import { useAuth } from '../auth/AuthContext';
+import { PageContainer } from '../shared/layout';
 
 export function ReceptionAccueilPage() {
   const { accessToken } = useAuth();
@@ -185,8 +186,7 @@ export function ReceptionAccueilPage() {
   );
 
   return (
-    <Stack gap="md" maw={900} mx="auto" p="md" data-testid="reception-accueil-page">
-      <Title order={1}>Réception</Title>
+    <PageContainer title="Réception" maxWidth={1100} testId="reception-accueil-page">
       {loading && <Loader size="sm" data-testid="reception-loading" />}
       {error && (
         <Alert color="red" data-testid="reception-error">
@@ -397,6 +397,6 @@ export function ReceptionAccueilPage() {
           </Table>
         </Card>
       )}
-    </Stack>
+    </PageContainer>
   );
 }

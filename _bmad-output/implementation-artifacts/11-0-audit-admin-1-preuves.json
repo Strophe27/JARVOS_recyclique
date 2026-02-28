@@ -1,0 +1,70 @@
+{
+  "domaine": "Admin1",
+  "generated_at": "2026-02-28T12:29:56.5442033+01:00",
+  "captures": [
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-01-dashboard-admin.png",
+      "ecran": "Tableau de Bord d'Administration",
+      "route": "/admin",
+      "horodatage": "2026-02-28T12:30:34.4959309+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-02-users-liste.png",
+      "ecran": "Gestion des Utilisateurs - liste",
+      "route": "/admin/users",
+      "horodatage": "2026-02-28T12:31:09.5345857+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-03-users-detail.png",
+      "ecran": "Gestion des Utilisateurs - detail",
+      "route": "/admin/users",
+      "horodatage": "2026-02-28T12:31:19.2115011+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-04-users-pending-blank.png",
+      "ecran": "Gestion des Utilisateurs - pending",
+      "route": "/admin/users/pending",
+      "horodatage": "2026-02-28T12:31:30.1948260+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-05-sites.png",
+      "ecran": "Sites",
+      "route": "/admin/sites",
+      "horodatage": "2026-02-28T12:31:43.0647378+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-06-postes-caisse.png",
+      "ecran": "Postes de caisse",
+      "route": "/admin/cash-registers",
+      "horodatage": "2026-02-28T12:31:51.3576705+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-07-sessions-blank.png",
+      "ecran": "Route legacy sessions vide",
+      "route": "/admin/cash-sessions",
+      "horodatage": "2026-02-28T12:32:03.5488576+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-08-session-manager.png",
+      "ecran": "Gestionnaire de Sessions de Caisse",
+      "route": "/admin/session-manager?skip=0&limit=20",
+      "horodatage": "2026-02-28T12:32:21.5061618+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-1/admin1-09-rapports-quick-analysis.png",
+      "ecran": "Analyse Rapide - Comparaison de Periodes",
+      "route": "/admin/quick-analysis",
+      "horodatage": "2026-02-28T12:32:32.9154986+01:00",
+      "anonymized": true
+    }
+  ],
+  "inaccessible_screens": []
+}

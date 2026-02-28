@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "2e passe adversarial post-corrections: les findings HIGH/MEDIUM precedents sont resolus (logout federes IdP, tracabilite auth complete avec request_id, deny-by-default benevole Paheko avec exception explicite, durcissement OIDC alg/kid/JWKS, hygiene logs callback, tests SSO/logout complementaires). AC1-AC5 valides."
+}

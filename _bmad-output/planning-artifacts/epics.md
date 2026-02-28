@@ -4,6 +4,7 @@ inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/architecture.md
   - _bmad-output/planning-artifacts/ux-design-specification.md
+  - _bmad-output/planning-artifacts/research/technical-sso-transversal-recyclique-paheko-multi-structures-research-2026-02-28.md
   - references/artefacts/2026-02-26_01_analyse-separation-frontend-backend-recyclic.md
   - references/artefacts/2026-02-26_02_track-enterprise-multi-utilisateur.md
   - references/artefacts/2026-02-26_03_checklist-v0.1-architecture.md
@@ -14,8 +15,12 @@ inputDocuments:
   - references/ancien-repo/checklist-import-1.4.4.md
   - references/ou-on-en-est.md
   - references/versioning.md
-lastEdited: '2026-02-27'
+lastEdited: '2026-02-28'
 editHistory:
+  - date: '2026-02-28'
+    changes: >
+      Correct Course approuve: ajout Epic 14 "Operationalisation identite unifiee RecyClique-Paheko"
+      (gate faisabilite OIDC, IdP commun, config Paheko/RecyClique, E2E auth, runbooks).
   - date: '2026-02-27'
     changes: >
       Renforcements qualité refactor (Create Epic/Story) : dans Règle refactor brownfield — « Copie » = réécriture/adaptation (pas collage) ;
@@ -217,11 +222,11 @@ FR10: Epic 6 — Réception source de vérité matière/poids
 FR11: Epic 5 — Sync caisse vers Paheko à la clôture (syncAccounting)
 FR12: Epic 8 — Administrer compta via Paheko (v1)
 FR13: (Post-MVP)
-FR13b: Epic 7 — Mapping RecyClique↔Paheko
+FR13b: Epic 7 — Mapping RecyClique↔Paheko (et Epic 12 pour la gouvernance IAM cross-plateforme)
 FR14: Epic 2 (modèle cash_registers) + Epic 3 (démarrage poste avec compte admin)
 FR15: Epic 3 — PIN par opérateur caisse
-FR16: Epic 3 — Authentification JWT terrain et Paheko admin
-FR17: Epic 3 — SSO RecyClique↔Paheko (phase ultérieure, documentation)
+FR16: Epic 3 — Authentification locale v1 (transition) ; Epic 12 — convergence IAM cross-plateforme
+FR17: Epic 12 — SSO RecyClique↔Paheko (surface RecyClique, fédération OIDC)
 FR18: Epic 1 — Déployer et configurer instance (Docker Compose)
 FR19: Epic 4 — Configurer canal push (endpoint, secret, résilience)
 FR20: Epic 4 (file Redis) + Epic 5 (retry)
@@ -246,6 +251,9 @@ FR27: (Post-MVP) Epic 10 — Fonds documentaire RecyClique
 - **Epic 9**: Données déclaratives et éco-organismes
 - **Epic 10**: Extension points et évolution
 - **Epic 11**: Conformité visuelle 1.4.4
+- **Epic 12**: Identité cross-plateforme (SSO, source de vérité Paheko, gouvernance rôles/groupes)
+- **Epic 13**: Remédiation visuelle pixel-perfect 1.4.4 (charte + QA continue)
+- **Epic 14**: Operationalisation identite unifiee RecyClique-Paheko (IdP, mise en service, runbooks)
 
 ---
 
@@ -1024,4 +1032,287 @@ afin d’assurer la parité visuelle pour la gestion technique et le référenti
 **Quand** on applique la checklist import 1.4.4 et qu’on aligne le rendu sur le code 1.4.4  
 **Alors** le rendu de ces écrans est identique aux écrans 1.4.4 correspondants  
 **Et** l’import respecte `references/ancien-repo/checklist-import-1.4.4.md`.
+
+---
+
+## Epic 12: Identité cross-plateforme (SSO + gouvernance Paheko)
+
+Mettre en place une identité unifiée RecyClique-Paheko sans double mécanisme, en gardant RecyClique comme surface principale et Paheko comme source de vérité membres. La trajectoire suit la décision validée: API Paheko d'abord, puis plugin Paheko pour combler le gap groupes/permissions avancés.
+
+**Prérequis :** Epics 3, 7, 8 et 11 stables (auth locale, mapping, admin, UI).
+
+**FRs couverts :** FR17 (principal), FR16 (transition), FR13b (gouvernance mapping IAM), FR25 (coexistence modules/plugins).
+
+### Story 12.1: Cadrage IAM cible et matrice d'accès cross-plateforme
+
+En tant que product owner,
+je veux une matrice IAM unique (rôles, groupes, exceptions, accès Paheko),
+afin d'éviter les ambiguïtés d'autorisation entre RecyClique et Paheko.
+
+**Critères d'acceptation :**
+
+**Étant donné** les rôles métier validés (Super Admin, Admin, Bénévole + exceptions)  
+**Quand** la matrice IAM est formalisée dans les artefacts projet  
+**Alors** chaque rôle a des permissions explicites côté RecyClique et côté Paheko  
+**Et** la règle "bénévole sans accès Paheko par défaut" est documentée avec gestion d'exception tracée.
+
+### Story 12.2: Intégration IdP + BFF pour login unifié RecyClique
+
+En tant qu'utilisateur autorisé,
+je veux me connecter via un flux SSO standard depuis RecyClique,
+afin d'avoir une session unifiée sans manipuler les tokens dans le navigateur.
+
+**Critères d'acceptation :**
+
+**Étant donné** une configuration IdP OIDC active  
+**Quand** un utilisateur lance la connexion depuis RecyClique  
+**Alors** le flux Authorization Code + PKCE passe via BFF et établit une session sécurisée HTTP-only  
+**Et** les claims nécessaires (identité, rôle, structure) sont validés (`iss`, `aud`, `exp`, `sub`) avant tout accès applicatif.
+
+### Story 12.3: Synchronisation membres depuis API Paheko (phase 1)
+
+En tant qu'admin,
+je veux que la gestion membres repose sur Paheko via son API standard,
+afin que Paheko reste la source de vérité sans bloquer la livraison SSO.
+
+**Critères d'acceptation :**
+
+**Étant donné** les endpoints API Paheko disponibles pour les membres  
+**Quand** un membre est créé/modifié/supprimé dans Paheko  
+**Alors** RecyClique synchronise l'identité et met à jour son extension locale (périmètres propres RecyClique)  
+**Et** l'audit journalise les opérations de sync et les erreurs de cohérence.
+
+### Story 12.4: Contrôle d'accès Paheko par rôle (garde-fous opérationnels)
+
+En tant qu'organisation,
+je veux restreindre l'accès Paheko aux seuls rôles autorisés,
+afin de réserver Paheko aux usages experts/secours.
+
+**Critères d'acceptation :**
+
+**Étant donné** un utilisateur connecté via SSO  
+**Quand** son rôle est évalué  
+**Alors** Super Admin et Admin peuvent accéder à Paheko  
+**Et** Bénévole est refusé par défaut, sauf exception explicite autorisée et tracée.
+
+### Story 12.5: Résilience IAM et mode dégradé
+
+En tant qu'admin technique,
+je veux un comportement défini en cas de panne IdP ou Paheko,
+afin d'éviter les pannes en cascade et les contournements dangereux.
+
+**Critères d'acceptation :**
+
+**Étant donné** une indisponibilité IdP ou Paheko  
+**Quand** le système entre en mode dégradé  
+**Alors** les routes sensibles appliquent un comportement fail-closed documenté  
+**Et** des runbooks + alertes permettent diagnostic, reprise et traçabilité de l'incident.
+
+### Story 12.6: Plugin Paheko pour groupes/permissions avancés (phase 2)
+
+En tant qu'équipe produit,
+je veux un plugin Paheko exposant les capacités manquantes de groupes/permissions,
+afin de finaliser la gouvernance RBAC cross-plateforme sans divergence.
+
+**Critères d'acceptation :**
+
+**Étant donné** les limites de l'API Paheko standard sur les groupes/permissions  
+**Quand** le plugin est livré et branché  
+**Alors** RecyClique peut piloter les opérations groupes/permissions prévues via interfaces stables  
+**Et** la cohérence des droits est vérifiée par des tests de non-régression et d'audit de synchronisation.
+
+---
+
+## Epic 13: Remédiation visuelle pixel-perfect 1.4.4
+
+Mettre en conformité visuelle l'existant Epic 11 avec une approche anti-dette: charte operatoire, socle UI commun, correction écran par écran, et QA visuelle continue. L'objectif est de converger vers une parité 1.4.4 quasi pixel perfect sans redéveloppement from scratch.
+
+**Prérequis :** Epic 11 livré (base fonctionnelle) + artefacts de cadrage visuel validés:
+- `_bmad-output/implementation-artifacts/11-x-point-de-verite-parite-v1.4.4.md`
+- `_bmad-output/implementation-artifacts/11-x-charte-visuelle-operatoire.md`
+- `_bmad-output/implementation-artifacts/11-x-guide-refactor-propre.md`
+- `_bmad-output/implementation-artifacts/11-x-gate-qualite-epic11.md`
+
+**Exclusions validées (hors scope correctif prioritaire) :** `pin login`, `users pending`, `permissions`.
+
+**FRs couverts :** FR24 (cohérence structure modulaire), FR25 (cohérence interface cross-modules), FR26 (discipline de points d'extension), qualité transversale Epic 11.
+
+### Story 13.1.1: Socle visuel - shell global (bandeau, menu, layout)
+
+En tant qu'équipe produit,
+je veux un shell global homogène aligné 1.4.4 (bandeau, menu, grille),
+afin de supprimer les écarts structurels transverses avant les corrections écran par écran.
+
+**Critères d'acceptation :**
+
+**Étant donné** la charte visuelle opératoire validée  
+**Quand** le shell global est refactoré dans les composants partagés  
+**Alors** les domaines Epic 11 partagent un header/menu/layout cohérents  
+**Et** aucune divergence locale non tracée n'est introduite.
+
+### Story 13.1.2: Socle visuel - tokens et composants UI clés
+
+En tant qu'équipe produit,
+je veux un jeu de tokens visuels et des composants UI clés normalisés,
+afin d'éviter les variations de couleurs/typo/spacing et les patchs répétitifs.
+
+**Critères d'acceptation :**
+
+**Étant donné** le shell global stabilisé  
+**Quand** les tokens et composants clés (boutons, champs, tables, alertes, modales) sont harmonisés  
+**Alors** les écrans Epic 11 réutilisent les mêmes briques visuelles  
+**Et** les styles inline opportunistes sont éliminés du périmètre traité.
+
+### Story 13.2.1: Remédiation visuelle - lot Auth + Caisse
+
+En tant qu'équipe produit,
+je veux corriger les écarts visuels du lot Auth + Caisse (hors exclusions),
+afin de traiter un premier lot court et fortement visible avec contexte réduit.
+
+**Critères d'acceptation :**
+
+**Étant donné** les écrans des stories 11.1 et 11.2 (hors exclusions)  
+**Quand** le lot est corrigé selon la checklist copy/consolidate/security  
+**Alors** les écarts critiques/majeurs du lot sont fermés  
+**Et** chaque écran modifié a des preuves avant/après dans les manifests.
+
+### Story 13.2.2: Remédiation visuelle - lot Réception + Admin1
+
+En tant qu'équipe produit,
+je veux corriger les écarts visuels du lot Réception + Admin1 (hors exclusions),
+afin de maintenir des stories courtes tout en couvrant les parcours métiers clés.
+
+**Critères d'acceptation :**
+
+**Étant donné** les écrans des stories 11.3 et 11.4 (hors exclusions)  
+**Quand** le lot est corrigé selon la checklist copy/consolidate/security  
+**Alors** les écarts critiques/majeurs du lot sont fermés  
+**Et** chaque écran modifié a des preuves avant/après dans les manifests.
+
+### Story 13.2.3: Remédiation visuelle - lot Admin2 + Admin3/Categories
+
+En tant qu'équipe produit,
+je veux corriger les écarts visuels du lot Admin2 + Admin3/Categories (hors exclusions),
+afin de terminer la convergence visuelle admin sans surcharge de contexte.
+
+**Critères d'acceptation :**
+
+**Étant donné** les écrans des stories 11.5 et 11.6 (hors exclusions)  
+**Quand** le lot est corrigé selon la checklist copy/consolidate/security  
+**Alors** les écarts critiques/majeurs du lot sont fermés  
+**Et** chaque écran modifié a des preuves avant/après dans les manifests.
+
+### Story 13.3.1: QA visuelle continue - process et livrables
+
+En tant qu'organisation,
+je veux un process QA visuelle standardisé pour chaque livraison UI,
+afin que chaque story produise les mêmes preuves et soit reprise facilement.
+
+**Critères d'acceptation :**
+
+**Étant donné** le gate qualité Epic 11 défini  
+**Quand** une story visuelle est livrée  
+**Alors** build + tests co-locés + captures avant/après + mini-audit domaine sont exécutés  
+**Et** les manifests/preuves sont complets et vérifiables.
+
+### Story 13.3.2: QA visuelle continue - enforcement et non-régression
+
+En tant qu'organisation,
+je veux un mécanisme d'enforcement systématique avant validation finale,
+afin de bloquer les régressions visuelles et maintenir la parité dans le temps.
+
+**Critères d'acceptation :**
+
+**Étant donné** le process QA défini  
+**Quand** un lot visuel est proposé en "done"  
+**Alors** la validation est refusée si un écart critique/majeur non accepté subsiste  
+**Et** toute régression est tracée avec action corrective planifiée avant clôture.
+
+---
+
+## Epic 14: Operationalisation identite unifiee RecyClique-Paheko
+
+Transformer la fondation technique IAM/SSO de l'Epic 12 en parcours reel "pret a l'emploi" (dev puis prod), avec un IdP commun, une configuration OIDC coherente entre RecyClique et Paheko, et des runbooks d'exploitation.
+
+**Prerequis :** Epic 12 done (12.1 a 12.6), Epic 13 stable.
+
+**FRs couverts :** FR17 (principal), FR16 (fallback/transition), FR13b (coherence mapping identite), NFR-S1 a NFR-S4, NFR-I1.
+
+### Story 14.0: Gate de faisabilite OIDC cible (Paheko image/version/environnement)
+
+En tant qu'admin technique,
+je veux valider officiellement la faisabilite OIDC sur l'image/version Paheko cible,
+afin de lever toute ambiguite avant la generalisation.
+
+**Criteres d'acceptation :**
+
+**Etant donne** l'image Paheko cible dev/prod  
+**Quand** un test controle active OIDC (config minimale + verification login)  
+**Alors** la capacite est confirmee/invalidee avec preuves techniques  
+**Et** les limites/contraintes (version, mode hebergement, prerequis) sont documentees dans un runbook.
+
+### Story 14.1: Provisionner IdP commun (dev/prod) et clients OIDC
+
+En tant qu'equipe technique,
+je veux provisionner un IdP commun et declarer les clients OIDC RecyClique/Paheko,
+afin d'avoir un socle d'identite unique.
+
+**Criteres d'acceptation :**
+
+**Etant donne** un environnement dev (puis prod)  
+**Quand** l'IdP est deploye et les clients OIDC configures  
+**Alors** les redirect URIs, secrets et scopes sont en place  
+**Et** les secrets sont geres hors code source.
+
+### Story 14.2: Configurer Paheko OIDC et strategie de mapping utilisateur
+
+En tant qu'admin technique,
+je veux configurer Paheko en client OIDC avec une strategie de mapping claire,
+afin de garantir la continuite d'identite sans ambiguite.
+
+**Criteres d'acceptation :**
+
+**Etant donne** un IdP commun operationnel  
+**Quand** Paheko est configure OIDC  
+**Alors** le login OIDC Paheko fonctionne avec les utilisateurs attendus  
+**Et** la regle de mapping (`email`/`sub`) est documentee et testee.
+
+### Story 14.3: Finaliser integration RecyClique OIDC runtime (env, secrets, checks)
+
+En tant qu'equipe backend,
+je veux finaliser la configuration runtime OIDC de RecyClique,
+afin que le flux BFF livre en Epic 12 soit exploitable sans bricolage.
+
+**Criteres d'acceptation :**
+
+**Etant donne** un IdP commun et la config runtime  
+**Quand** un utilisateur lance la connexion depuis RecyClique  
+**Alors** le flux `/v1/auth/sso/start` -> callback -> session fonctionne en conditions reelles  
+**Et** les health checks / logs permettent le diagnostic des incidents auth.
+
+### Story 14.4: E2E auth cross-plateforme et non-regression fail-closed
+
+En tant que QA,
+je veux des tests E2E et de non-regression sur les parcours auth,
+afin de securiser la mise en service et les evolutions futures.
+
+**Criteres d'acceptation :**
+
+**Etant donne** la configuration OIDC complete  
+**Quand** les tests auth sont executes  
+**Alors** les parcours nominaux et deny/fail-closed sont valides  
+**Et** les regressions critiques bloquent la validation.
+
+### Story 14.5: Runbooks d'exploitation (onboarding, incident auth, rollback)
+
+En tant qu'equipe exploitation,
+je veux des runbooks operationnels de bout en bout,
+afin d'exploiter, diagnostiquer et revenir en arriere en securite.
+
+**Criteres d'acceptation :**
+
+**Etant donne** la mise en service identite unifiee  
+**Quand** un incident auth survient ou qu'un rollback est necessaire  
+**Alors** les runbooks permettent une action rapide et reproductible  
+**Et** les criteres de succes/retour a la normale sont explicites.
 

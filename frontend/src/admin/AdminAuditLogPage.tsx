@@ -4,15 +4,12 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Stack,
-  Title,
   Alert,
   Loader,
   Table,
   Group,
   Button,
   TextInput,
-  Card,
   Text,
 } from '@mantine/core';
 import { useAuth } from '../auth/AuthContext';
@@ -21,6 +18,7 @@ import {
   type AuditEventItem,
   type AuditLogListResponse,
 } from '../api/adminHealthAudit';
+import { PageContainer, PageSection } from '../shared/layout';
 
 const PAGE_SIZE = 20;
 
@@ -67,9 +65,8 @@ export function AdminAuditLogPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-audit-log-page">
-      <Title order={2}>Audit log</Title>
-      <Card withBorder padding="md" radius="md">
+    <PageContainer title="Audit log" maxWidth={1200} testId="admin-audit-log-page">
+      <PageSection>
         <Group gap="sm" mb="md">
           <TextInput
             placeholder="Date début"
@@ -149,7 +146,7 @@ export function AdminAuditLogPage() {
           )}
         </>
       )}
-      </Card>
-    </Stack>
+      </PageSection>
+    </PageContainer>
   );
 }

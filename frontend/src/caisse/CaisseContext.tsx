@@ -53,7 +53,7 @@ export function CaisseProvider({ children }: { children: React.ReactNode }) {
   const unlockWithPin = useCallback(
     async (pin: string) => {
       const data = await postPinUnlock(pin);
-      auth.setFromPinLogin(data.user, data.access_token, data.refresh_token, data.permissions);
+      auth.setFromPinLogin(data.user, data.permissions);
       setState((s) => ({ ...s, isLocked: false, unlockedBy: data.user }));
     },
     [auth]

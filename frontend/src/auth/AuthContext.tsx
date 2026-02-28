@@ -1,23 +1,24 @@
 /**
- * Contexte auth minimal — Story 3.3, 3.5, 11.1.
- * Expose setFromPinLogin, login, logout et accessToken pour les appels API.
+ * Contexte auth — Story 12.2.
+ * Session BFF via cookie HTTP-only + hydration GET /v1/auth/session.
+ * Compatibilité transitoire: expose accessToken marqueur (non-JWT) pour anciens appels frontend.
  */
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { UserInToken } from '../api/auth';
-import { postLogin, postLogout } from '../api/auth';
+import { getSession, getSsoStartUrl, postLogin, postLogout } from '../api/auth';
 
 export interface AuthState {
   user: UserInToken | null;
   accessToken: string | null;
-  refreshToken: string | null;
   permissions: string[];
+  isHydrated: boolean;
 }
 
 interface AuthContextValue extends AuthState {
-  setFromPinLogin: (user: UserInToken, accessToken: string, refreshToken: string, permissions?: string[]) => void;
-  setTokens: (accessToken: string | null, refreshToken: string | null) => void;
-  login: (username: string, password: string) => Promise<void>;
+  setFromPinLogin: (user: UserInToken, permissions?: string[]) => void;
+  login: (username?: string, password?: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -26,55 +27,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     accessToken: null,
-    refreshToken: null,
     permissions: [],
+    isHydrated: false,
   });
 
   const setFromPinLogin = useCallback(
-    (user: UserInToken, accessToken: string, refreshToken: string, permissions?: string[]) => {
-      setState({ user, accessToken, refreshToken, permissions: permissions ?? [] });
+    (user: UserInToken, permissions?: string[]) => {
+      setState({ user, accessToken: 'bff-session', permissions: permissions ?? [], isHydrated: true });
     },
     []
   );
 
-  const setTokens = useCallback((accessToken: string | null, refreshToken: string | null) => {
-    setState((s) => ({ ...s, accessToken, refreshToken }));
+  const refreshSession = useCallback(async () => {
+    try {
+      const session = await getSession();
+      if (!session.authenticated || !session.user) {
+        setState({
+          user: null,
+          accessToken: null,
+          permissions: [],
+          isHydrated: true,
+        });
+        return;
+      }
+      setState({
+        user: session.user,
+        accessToken: 'bff-session',
+        permissions: session.permissions ?? [],
+        isHydrated: true,
+      });
+    } catch {
+      setState((s) => ({ ...s, isHydrated: true }));
+    }
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const data = await postLogin(username, password);
-    setState({
-      user: data.user,
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      permissions: data.permissions ?? [],
-    });
+  useEffect(() => {
+    void refreshSession();
+  }, [refreshSession]);
+
+  const login = useCallback(async (username?: string, password?: string) => {
+    const mode = (import.meta.env?.VITE_AUTH_MODE as string | undefined) ?? 'sso';
+    if (mode === 'legacy') {
+      if (!username || !password) {
+        throw new Error('Identifiant/mot de passe requis');
+      }
+      const data = await postLogin(username, password);
+      setState({
+        user: data.user,
+        accessToken: data.access_token,
+        permissions: data.permissions ?? [],
+        isHydrated: true,
+      });
+      return;
+    }
+    const currentPath = window.location.pathname || '/';
+    window.location.assign(getSsoStartUrl(currentPath));
   }, []);
 
   const logout = useCallback(async () => {
-    if (state.refreshToken) {
-      try {
-        await postLogout(state.refreshToken);
-      } catch {
-        // ignore
-      }
+    try {
+      await postLogout();
+    } catch {
+      // ignore
     }
     setState({
       user: null,
       accessToken: null,
-      refreshToken: null,
       permissions: [],
+      isHydrated: true,
     });
-  }, [state.refreshToken]);
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         ...state,
         setFromPinLogin,
-        setTokens,
         login,
         logout,
+        refreshSession,
       }}
     >
       {children}

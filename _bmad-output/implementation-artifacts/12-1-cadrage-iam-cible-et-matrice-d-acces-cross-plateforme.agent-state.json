@@ -1,0 +1,14 @@
+{
+  "storyKey": "12-1-cadrage-iam-cible-et-matrice-d-acces-cross-plateforme",
+  "phase": "code-review",
+  "lastCompletedStep": "code-review-complete",
+  "blockedAt": null,
+  "blockReason": null,
+  "questions": [],
+  "artifactsProduced": [
+    "_bmad-output/implementation-artifacts/12-1-iam-matrice-acces-cross-plateforme.md",
+    "_bmad-output/implementation-artifacts/12-1-iam-decision-log.md",
+    "_bmad-output/implementation-artifacts/12-1-cadrage-iam-cible-et-matrice-d-acces-cross-plateforme.md",
+    "_bmad-output/implementation-artifacts/12-1-cadrage-iam-cible-et-matrice-d-acces-cross-plateforme.agent-state.json"
+  ]
+}

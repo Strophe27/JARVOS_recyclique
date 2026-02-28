@@ -5,10 +5,11 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Stack, Title, Anchor, Card, Text, SimpleGrid } from '@mantine/core';
+import { Stack, Anchor, Card, Text, SimpleGrid } from '@mantine/core';
 import { useAuth } from '../auth/AuthContext';
-import { getPahekoComptaUrl } from '../api/adminPahekoCompta';
+import { getPahekoAccessDecision, getPahekoComptaUrl } from '../api/adminPahekoCompta';
 import { getDashboardStats } from '../api/adminDashboard';
+import { PageContainer } from '../shared/layout';
 
 const ADMIN_LINKS = [
   { to: '/admin/users', label: 'Utilisateurs' },
@@ -30,20 +31,42 @@ const ADMIN_LINKS = [
 ] as const;
 
 export function AdminDashboardPage() {
-  const { permissions, accessToken } = useAuth();
-  const isAdmin = permissions.includes('admin');
+  const { permissions, accessToken, user } = useAuth();
+  const isAdmin =
+    user?.role === 'admin' || user?.role === 'super_admin' || permissions.includes('admin');
+  const [pahekoAccessDecision, setPahekoAccessDecision] = useState<{
+    allowed: boolean;
+    reason: string;
+  } | null>(null);
+  const canAccessPaheko = pahekoAccessDecision?.allowed === true;
   const [pahekoComptaUrl, setPahekoComptaUrl] = useState<string | null>(null);
   const [stats, setStats] = useState<{ users_count?: number; sites_count?: number; cash_registers_count?: number; open_sessions_count?: number; pending_users_count?: number } | null>(null);
 
+  const loadPahekoAccessDecision = useCallback(async () => {
+    if (!accessToken) {
+      setPahekoAccessDecision(null);
+      return;
+    }
+    try {
+      const data = await getPahekoAccessDecision(accessToken);
+      setPahekoAccessDecision({ allowed: data.allowed, reason: data.reason });
+    } catch {
+      setPahekoAccessDecision({ allowed: false, reason: 'decision_unavailable' });
+    }
+  }, [accessToken]);
+
   const loadPahekoUrl = useCallback(async () => {
-    if (!isAdmin || !accessToken) return;
+    if (!accessToken || !canAccessPaheko) {
+      setPahekoComptaUrl(null);
+      return;
+    }
     try {
       const data = await getPahekoComptaUrl(accessToken);
       setPahekoComptaUrl(data.url ?? null);
     } catch {
       setPahekoComptaUrl(null);
     }
-  }, [isAdmin, accessToken]);
+  }, [accessToken, canAccessPaheko]);
 
   const loadStats = useCallback(async () => {
     if (!isAdmin || !accessToken) return;
@@ -56,6 +79,10 @@ export function AdminDashboardPage() {
   }, [isAdmin, accessToken]);
 
   useEffect(() => {
+    loadPahekoAccessDecision();
+  }, [loadPahekoAccessDecision]);
+
+  useEffect(() => {
     loadPahekoUrl();
   }, [loadPahekoUrl]);
 
@@ -64,8 +91,7 @@ export function AdminDashboardPage() {
   }, [loadStats]);
 
   return (
-    <Stack gap="md" data-testid="page-admin">
-      <Title order={1}>Admin</Title>
+    <PageContainer title="Admin" maxWidth={1200} testId="page-admin">
       {isAdmin && (
         <>
           {stats != null && (stats.users_count != null || stats.sites_count != null || stats.cash_registers_count != null || stats.open_sessions_count != null || stats.pending_users_count != null) && (
@@ -119,10 +145,15 @@ export function AdminDashboardPage() {
                   </Anchor>
                 </p>
               )}
+              {pahekoAccessDecision != null && !pahekoAccessDecision.allowed && (
+                <Text size="sm" c="dimmed" data-testid="paheko-access-restricted">
+                  Acces reserve roles autorises (admin/super_admin) ou exception explicite.
+                </Text>
+              )}
             </Stack>
           </Card>
         </>
       )}
-    </Stack>
+    </PageContainer>
   );
 }

@@ -25,6 +25,8 @@ from api.models.mapping import (
     PaymentMethodMapping,
 )
 from api.models.declarative import DeclarativeAggregate
+from api.models.member_sync import PahekoMemberLink, PahekoMemberSyncState
+from api.models.paheko_access_exception import PahekoAccessException
 
 __all__ = [
     "Base",
@@ -52,4 +54,7 @@ __all__ = [
     "CategoryMapping",
     "LocationMapping",
     "DeclarativeAggregate",
+    "PahekoMemberLink",
+    "PahekoMemberSyncState",
+    "PahekoAccessException",
 ]

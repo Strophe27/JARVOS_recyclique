@@ -1,0 +1,48 @@
+{
+  "domaine": "Reception",
+  "generated_at": "2026-02-28T12:27:39+01:00",
+  "captures": [
+    {
+      "fichier": "d:/users/Strophe/Documents/1-IA/La Clique Qui Recycle/JARVOS_recyclique/_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-01-accueil-module.png",
+      "ecran": "Accueil module reception",
+      "route": "/reception",
+      "horodatage": "2026-02-28T12:20:00+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "d:/users/Strophe/Documents/1-IA/La Clique Qui Recycle/JARVOS_recyclique/_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-02-ouverture-poste-saisie-differee.png",
+      "ecran": "Ouverture poste reception (saisie differee)",
+      "route": "/reception",
+      "horodatage": "2026-02-28T12:26:00+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "d:/users/Strophe/Documents/1-IA/La Clique Qui Recycle/JARVOS_recyclique/_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-03-liste-tickets-export-stats.png",
+      "ecran": "Liste tickets reception + stats + export",
+      "route": "/admin/reception-sessions?page=1&per_page=20",
+      "horodatage": "2026-02-28T12:24:00+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "d:/users/Strophe/Documents/1-IA/La Clique Qui Recycle/JARVOS_recyclique/_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-04-detail-ticket-lignes.png",
+      "ecran": "Detail ticket reception (saisie ligne/poids)",
+      "route": "/reception/ticket/641f4403-a13c-4f57-b498-5b730cda461a",
+      "horodatage": "2026-02-28T12:22:00+01:00",
+      "anonymized": true
+    },
+    {
+      "fichier": "d:/users/Strophe/Documents/1-IA/La Clique Qui Recycle/JARVOS_recyclique/_bmad-output/implementation-artifacts/screenshots/11-0/reception/reception-05-detail-ticket-admin-csv.png",
+      "ecran": "Detail ticket reception admin (CSV)",
+      "route": "/admin/reception-tickets/cc5e4d9d-d643-4b92-96d2-1fc880f99d08",
+      "horodatage": "2026-02-28T12:25:00+01:00",
+      "anonymized": true
+    }
+  ],
+  "inaccessible_screens": [],
+  "notes": {
+    "ecarts_critiques": 0,
+    "ecarts_majeurs": 0,
+    "ecarts_mineurs": 0
+  },
+  "inaccessible_screens_detail": []
+}

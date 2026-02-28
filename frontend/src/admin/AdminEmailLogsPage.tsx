@@ -3,9 +3,10 @@
  * Route : /admin/email-logs. GET /v1/admin/email-logs. Rendu Mantine 1.4.4.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Stack, Title, Alert, Loader, Table, Text, Card } from '@mantine/core';
+import { Alert, Loader, Table, Text } from '@mantine/core';
 import { useAuth } from '../auth/AuthContext';
 import { getAdminEmailLogs, type EmailLogItem } from '../api/adminHealthAudit';
+import { PageContainer, PageSection } from '../shared/layout';
 
 const PAGE_SIZE = 20;
 
@@ -43,12 +44,11 @@ export function AdminEmailLogsPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-email-logs-page">
-      <Title order={2}>Logs email</Title>
+    <PageContainer title="Logs email" maxWidth={1200} testId="admin-email-logs-page">
       <Text size="sm" c="dimmed" mb="xs">
         Consultation des envois email (stub v1 : liste vide si non implémenté).
       </Text>
-      <Card withBorder padding="md" radius="md">
+      <PageSection>
         {error && <Alert color="red">{error}</Alert>}
         {loading ? (
           <Loader size="sm" data-testid="admin-email-logs-loading" />
@@ -79,7 +79,7 @@ export function AdminEmailLogsPage() {
             )}
           </>
         )}
-      </Card>
-    </Stack>
+      </PageSection>
+    </PageContainer>
   );
 }

@@ -4,8 +4,6 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Stack,
-  Title,
   Card,
   Text,
   Button,
@@ -25,6 +23,7 @@ import {
   type LegacyValidateResponse,
   type LegacyExecuteResponse,
 } from '../api/adminImportLegacy';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminImportLegacyPage() {
   const { accessToken, permissions } = useAuth();
@@ -99,100 +98,105 @@ export function AdminImportLegacyPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-import-legacy-page">
-      <Title order={2}>Import legacy</Title>
+    <PageContainer title="Import legacy" maxWidth={1200} testId="admin-import-legacy-page">
       <Text size="sm" c="dimmed" mb="xs">
         Analyse, prévisualisation, validation et exécution d&apos;un import CSV (stub v1).
       </Text>
       {error && <Alert color="red">{error}</Alert>}
 
       {llmModels.length > 0 && (
-        <Card withBorder padding="md" radius="md" shadow="sm">
-          <Text fw={500} mb="xs">Modèles LLM</Text>
-          <List size="sm">
-            {llmModels.map((m) => (
-              <List.Item key={m}>{m}</List.Item>
-            ))}
-          </List>
-        </Card>
+        <PageSection>
+          <Card withBorder padding="md" radius="md" shadow="sm">
+            <Text fw={500} mb="xs">Modèles LLM</Text>
+            <List size="sm">
+              {llmModels.map((m) => (
+                <List.Item key={m}>{m}</List.Item>
+              ))}
+            </List>
+          </Card>
+        </PageSection>
       )}
 
-      <Card withBorder padding="md" radius="md" shadow="sm">
-        <Text fw={500} mb="xs">Fichier CSV</Text>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={(e) => {
-            setCsvFile(e.target.files?.[0] ?? null);
-            setAnalyzeResult(null);
-            setPreviewResult(null);
-            setValidateResult(null);
-            setExecuteResult(null);
-          }}
-          data-testid="input-legacy-csv"
-        />
-      </Card>
+      <PageSection>
+        <Card withBorder padding="md" radius="md" shadow="sm">
+          <Text fw={500} mb="xs">Fichier CSV</Text>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={(e) => {
+              setCsvFile(e.target.files?.[0] ?? null);
+              setAnalyzeResult(null);
+              setPreviewResult(null);
+              setValidateResult(null);
+              setExecuteResult(null);
+            }}
+            data-testid="input-legacy-csv"
+          />
+        </Card>
+      </PageSection>
 
-      <Card withBorder padding="md" radius="md" shadow="sm">
-        <Text fw={500} mb="xs">Étapes</Text>
-        <Group mb="md">
-          <Button
-            size="sm"
-            loading={loading === 'analyze'}
-            onClick={handleAnalyze}
-            data-testid="btn-legacy-analyze"
-          >
-            Analyser
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            loading={loading === 'preview'}
-            onClick={handlePreview}
-            data-testid="btn-legacy-preview"
-          >
-            Prévisualisation
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            loading={loading === 'validate'}
-            onClick={handleValidate}
-            data-testid="btn-legacy-validate"
-          >
-            Valider
-          </Button>
-          <Button
-            size="sm"
-            color="green"
-            loading={loading === 'execute'}
-            onClick={handleExecute}
-            data-testid="btn-legacy-execute"
-          >
-            Exécuter
-          </Button>
-        </Group>
-        {analyzeResult && (
-          <Alert color="blue" mb="xs" data-testid="result-analyze">
-            <Text size="sm">Colonnes : {analyzeResult.columns.length ? analyzeResult.columns.join(', ') : '—'}. Lignes : {analyzeResult.row_count ?? 0}. Erreurs : {analyzeResult.errors.length}. Avertissements : {analyzeResult.warnings.length}.</Text>
-          </Alert>
-        )}
-        {previewResult && (
-          <Alert color="gray" mb="xs" data-testid="result-preview">
-            <Text size="sm">Aperçu : {previewResult.total} ligne(s).</Text>
-          </Alert>
-        )}
-        {validateResult && (
-          <Alert color={validateResult.valid ? 'green' : 'red'} mb="xs" data-testid="result-validate">
-            <Text size="sm">Validation : {validateResult.valid ? 'OK' : 'Erreurs'}. Erreurs : {validateResult.errors.length}. Avertissements : {validateResult.warnings.length}.</Text>
-          </Alert>
-        )}
-        {executeResult && (
-          <Alert color="green" data-testid="result-execute">
-            <Text size="sm">Importé : {executeResult.imported_count}. Message : {executeResult.message ?? '—'}.</Text>
-          </Alert>
-        )}
-      </Card>
-    </Stack>
+      <PageSection>
+        <Card withBorder padding="md" radius="md" shadow="sm">
+          <Text fw={500} mb="xs">Étapes</Text>
+          <Group mb="md">
+            <Button
+              size="sm"
+              loading={loading === 'analyze'}
+              onClick={handleAnalyze}
+              data-testid="btn-legacy-analyze"
+            >
+              Analyser
+            </Button>
+            <Button
+              size="sm"
+              variant="light"
+              loading={loading === 'preview'}
+              onClick={handlePreview}
+              data-testid="btn-legacy-preview"
+            >
+              Prévisualisation
+            </Button>
+            <Button
+              size="sm"
+              variant="light"
+              loading={loading === 'validate'}
+              onClick={handleValidate}
+              data-testid="btn-legacy-validate"
+            >
+              Valider
+            </Button>
+            <Button
+              size="sm"
+              color="green"
+              loading={loading === 'execute'}
+              onClick={handleExecute}
+              data-testid="btn-legacy-execute"
+            >
+              Exécuter
+            </Button>
+          </Group>
+          {analyzeResult && (
+            <Alert color="blue" mb="xs" data-testid="result-analyze">
+              <Text size="sm">Colonnes : {analyzeResult.columns.length ? analyzeResult.columns.join(', ') : '—'}. Lignes : {analyzeResult.row_count ?? 0}. Erreurs : {analyzeResult.errors.length}. Avertissements : {analyzeResult.warnings.length}.</Text>
+            </Alert>
+          )}
+          {previewResult && (
+            <Alert color="gray" mb="xs" data-testid="result-preview">
+              <Text size="sm">Aperçu : {previewResult.total} ligne(s).</Text>
+            </Alert>
+          )}
+          {validateResult && (
+            <Alert color={validateResult.valid ? 'green' : 'red'} mb="xs" data-testid="result-validate">
+              <Text size="sm">Validation : {validateResult.valid ? 'OK' : 'Erreurs'}. Erreurs : {validateResult.errors.length}. Avertissements : {validateResult.warnings.length}.</Text>
+            </Alert>
+          )}
+          {executeResult && (
+            <Alert color="green" data-testid="result-execute">
+              <Text size="sm">Importé : {executeResult.imported_count}. Message : {executeResult.message ?? '—'}.</Text>
+            </Alert>
+          )}
+        </Card>
+      </PageSection>
+    </PageContainer>
   );
 }

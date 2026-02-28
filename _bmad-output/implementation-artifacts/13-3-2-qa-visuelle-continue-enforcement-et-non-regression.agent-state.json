@@ -1,0 +1,17 @@
+{
+  "storyKey": "13-3-2-qa-visuelle-continue-enforcement-et-non-regression",
+  "phase": "code-review",
+  "lastCompletedStep": "code-review-complete",
+  "blockedAt": null,
+  "blockReason": null,
+  "questions": [],
+  "artifactsProduced": [
+    "_bmad-output/implementation-artifacts/13-3-2-qa-visuelle-enforcement-standard.md",
+    "_bmad-output/implementation-artifacts/13-3-2-qa-visuelle-rejeu-enforcement-lot-13-2-3.md",
+    "_bmad-output/implementation-artifacts/13-3-2-qa-visuelle-rejeu-enforcement-lot-13-2-3-preuves.json",
+    "_bmad-output/implementation-artifacts/tools/qa_visuelle_enforcement_gate.py",
+    "_bmad-output/implementation-artifacts/13-3-2-qa-visuelle-continue-enforcement-et-non-regression.md",
+    "_bmad-output/implementation-artifacts/13-3-2-qa-visuelle-continue-enforcement-et-non-regression.review.json",
+    "_bmad-output/implementation-artifacts/sprint-status.yaml"
+  ]
+}

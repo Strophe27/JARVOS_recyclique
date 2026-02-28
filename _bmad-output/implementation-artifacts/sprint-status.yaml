@@ -1,5 +1,5 @@
-# generated: 2026-02-27
-# updated: 2026-02-27 (sprint-planning — Epic 11 ajouté avec 6 stories conformité visuelle 1.4.4)
+# generated: 2026-02-28
+# updated: 2026-02-28 (14.3 story creee - statut passe ready-for-dev)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -30,7 +30,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: "2026-02-27"
+generated: "2026-02-28"
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
@@ -50,7 +50,7 @@ development_status:
   2-2-postes-de-caisse-modele-bdd-api-crud: done
   2-3-categories-modele-bdd-api-crud-hierarchie-et-visibilite: done
   2-4-presets-boutons-rapides-caisse-modele-bdd-api-crud: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   epic-3: done
   3-1-users-jwt-et-gestion-de-compte-terrain: done
@@ -59,30 +59,30 @@ development_status:
   3-4-demarrer-un-poste-caisse-ou-reception-avec-un-compte-administrateur: done
   3-5-mode-caisse-verrouille-restriction-du-menu-a-la-caisse-uniquement: done
   3-6-phase-ulterieure-sso-recyclique-paheko-documentation-et-objectif: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   epic-4: done
   4-1-configuration-du-canal-push-endpoint-secret-resilience: done
   4-2-worker-redis-streams-consumer-plugin-paheko: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
 
   epic-5: done
   5-1-ouverture-et-fermeture-de-session-de-caisse-multi-sites-multi-caisses: done
   5-2-enregistrement-des-ventes-et-push-par-ticket-vers-paheko: done
   5-3-cloture-de-session-comptage-physique-totaux-ecart-et-syncaccounting: done
   5-4-optionnel-v1-saisie-caisse-hors-ligne-et-synchronisation-au-retour: done
-  epic-5-retrospective: optional
+  epic-5-retrospective: done
 
   epic-6: done
   6-1-ouverture-de-poste-de-reception-et-creation-de-tickets-de-depot: done
   6-2-saisie-des-lignes-de-reception-poids-categorie-destination: done
   6-3-export-csv-et-stats-live-reception: done
-  epic-6-retrospective: optional
+  epic-6-retrospective: done
 
   epic-7: done
   7-1-modele-et-stockage-du-mapping-recyclique-paheko: done
   7-2-interface-ou-api-d-administration-du-mapping: done
-  epic-7-retrospective: optional
+  epic-7-retrospective: done
 
   epic-8: done
   8-1-administration-complete-des-utilisateurs: done
@@ -92,17 +92,17 @@ development_status:
   8-5-bdd-export-purge-import-et-import-legacy: done
   8-6-acces-et-documentation-pour-l-administration-compta-via-paheko-v1: done
   8-7-ecrans-ou-placeholders-vie-associative-dans-recyclique: done
-  epic-8-retrospective: optional
+  epic-8-retrospective: done
 
   epic-9: done
   9-1-modele-et-persistance-des-donnees-declaratives: done
   9-2-post-mvp-module-decla-eco-organismes: done
-  epic-9-retrospective: optional
+  epic-9-retrospective: done
 
   epic-10: done
   10-1-interfaces-et-stubs-layoutconfigservice-visualprovider-v1: done
   10-2-post-mvp-fonds-documentaire-recyclique: done
-  epic-10-retrospective: optional
+  epic-10-retrospective: done
 
   epic-11: done
   11-1-conformite-visuelle-auth-6-ecrans: done
@@ -111,4 +111,32 @@ development_status:
   11-4-conformite-visuelle-admin-1-7-ecrans-dashboard-users-sites-postes-sessions-rapports-caisse: done
   11-5-conformite-visuelle-admin-2-5-ecrans-reception-admin-sante-audit-logs-parametres: done
   11-6-conformite-visuelle-admin-3-6-ecrans-bdd-import-legacy-groupes-permissions-categories-analyse-rapide: done
-  epic-11-retrospective: optional
+  epic-11-retrospective: done
+
+  epic-12: done
+  12-1-cadrage-iam-cible-et-matrice-d-acces-cross-plateforme: done
+  12-2-integration-idp-bff-pour-login-unifie-recyclique: done
+  12-3-synchronisation-membres-depuis-api-paheko-phase-1: done
+  12-4-controle-d-acces-paheko-par-role-garde-fous-operationnels: done
+  12-5-resilience-iam-et-mode-degrade: done
+  12-6-plugin-paheko-pour-groupes-permissions-avances-phase-2: done
+  epic-12-retrospective: done
+
+  epic-13: done
+  13-1-1-socle-visuel-shell-global-bandeau-menu-layout: done
+  13-1-2-socle-visuel-tokens-et-composants-ui-cles: done
+  13-2-1-remediation-visuelle-lot-auth-caisse-hors-exclusions: done
+  13-2-2-remediation-visuelle-lot-reception-admin1-hors-exclusions: done
+  13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions: done
+  13-3-1-qa-visuelle-continue-process-et-livrables: done
+  13-3-2-qa-visuelle-continue-enforcement-et-non-regression: done
+  epic-13-retrospective: optional
+
+  epic-14: in-progress
+  14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement: in-progress
+  14-1-provisionner-idp-commun-dev-prod-et-clients-oidc: done
+  14-2-configurer-paheko-oidc-et-strategie-de-mapping-utilisateur: done
+  14-3-finaliser-integration-recyclique-oidc-runtime-env-secrets-checks: done
+  14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed: done
+  14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback: backlog
+  epic-14-retrospective: optional

@@ -1,0 +1,219 @@
+{
+  "schema_version": "13.3.2",
+  "story": "13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions",
+  "domaine": "admin2-admin3-categories",
+  "generated_at": "2026-02-28",
+  "scope_inclus": [
+    "/admin/reception-sessions",
+    "/admin/health",
+    "/admin/audit-log",
+    "/admin/email-logs",
+    "/admin/settings",
+    "/admin/groups",
+    "/admin/db",
+    "/admin/db/route",
+    "/admin/import-legacy",
+    "/admin/categories",
+    "/admin/quick-analysis"
+  ],
+  "scope_exclu": [
+    "pin login",
+    "users pending",
+    "permissions"
+  ],
+  "verification_exclusions": {
+    "pin login": "ok",
+    "users pending": "ok",
+    "permissions": "ok",
+    "notes": "Verification explicite des exclusions Epic 11 sur le lot 13-2-3 rejoue."
+  },
+  "preuves": [
+    {
+      "ecran": "Admin reception sessions",
+      "route": "/admin/reception-sessions",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-01-reception-sessions.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-2/admin2-after-01-reception-sessions.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin health",
+      "route": "/admin/health",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-02-health.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-2/admin2-after-02-health.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin audit log",
+      "route": "/admin/audit-log",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-03-audit-log.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-2/admin2-after-03-audit-log.png"
+      },
+      "ecarts": [
+        {
+          "id": "ENF-13-2-3-REG-01",
+          "type": "regression",
+          "severite": "majeur",
+          "description": "Decalage de grille sur la vue audit log en sortie de lot rejoue.",
+          "accepte": false,
+          "justification": "",
+          "correctif": {
+            "owner": "equipe-ui",
+            "action": "Recalibrer les espacements de colonnes et reprendre la capture APRES.",
+            "statut": "open",
+            "preuve_cible": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-2/admin2-after-03-audit-log.png"
+          }
+        }
+      ],
+      "decision": "non-conforme-bloquant"
+    },
+    {
+      "ecran": "Admin logs email",
+      "route": "/admin/email-logs",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-06-email-logs.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-2/admin2-after-04-email-logs.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin settings",
+      "route": "/admin/settings",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-05-settings.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-2/admin2-after-05-settings.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin groupes",
+      "route": "/admin/groups",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-01-groupes.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-3-categories/admin3-after-01-groupes.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin BDD",
+      "route": "/admin/db",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-03-bdd.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-3-categories/admin3-after-02-bdd.png"
+      },
+      "ecarts": [
+        {
+          "id": "ENF-13-2-3-REG-02",
+          "type": "regression",
+          "severite": "mineur",
+          "description": "Incoherence visuelle non bloquante sur la marge basse du panneau de statut.",
+          "accepte": true,
+          "justification": "Residuel accepte dans ce rejeu enforcement, corrige dans lot suivant.",
+          "correctif": {
+            "owner": "qa-visuelle",
+            "action": "Reporter et verifier la correction au prochain lot de remediations UI.",
+            "statut": "accepted",
+            "preuve_cible": "_bmad-output/implementation-artifacts/13-3-2-qa-visuelle-rejeu-enforcement-lot-13-2-3.md"
+          }
+        }
+      ],
+      "decision": "conforme-avec-residuel-accepte"
+    },
+    {
+      "ecran": "Admin BDD route fallback",
+      "route": "/admin/db/route",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-04-bdd-route-blank.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-3-categories/admin3-after-03-bdd-route.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin import legacy",
+      "route": "/admin/import-legacy",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-05-import-legacy.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-3-categories/admin3-after-04-import-legacy.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin categories",
+      "route": "/admin/categories",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-06-categories.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-3-categories/admin3-after-05-categories.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    },
+    {
+      "ecran": "Admin quick analysis",
+      "route": "/admin/quick-analysis",
+      "captures": {
+        "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-3-categories/admin3-07-quick-analysis.png",
+        "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-3-remediation-visuelle-lot-admin2-admin3-categories-hors-exclusions/admin-3-categories/admin3-after-06-quick-analysis.png"
+      },
+      "ecarts": [],
+      "decision": "conforme"
+    }
+  ],
+  "mini_audit": {
+    "resultat_global": "non-conforme-bloquant",
+    "ecarts_critiques": [],
+    "ecarts_majeurs": [
+      "ENF-13-2-3-REG-01"
+    ],
+    "ecarts_mineurs": [
+      "ENF-13-2-3-REG-02"
+    ]
+  },
+  "preconditions_gate": {
+    "build": {
+      "commande": "npm run build",
+      "resultat": "OK"
+    },
+    "tests_ui_colocalises": {
+      "commande": "npm run test:run -- src/admin/AdminReceptionPage.test.tsx src/admin/AdminHealthPage.test.tsx src/admin/AdminAuditLogPage.test.tsx src/admin/AdminEmailLogsPage.test.tsx src/admin/AdminSettingsPage.test.tsx src/admin/AdminDbPage.test.tsx src/admin/AdminImportLegacyPage.test.tsx src/admin/AdminGroupsPage.test.tsx src/admin/AdminCategoriesPage.test.tsx src/admin/AdminQuickAnalysisPage.test.tsx",
+      "resultat": "OK"
+    },
+    "preuves_completes": "OK"
+  },
+  "mapping_legacy_obligatoire": {
+    "preuves_decision": {
+      "ok": "conforme",
+      "pass": "conforme",
+      "partiel": "conforme-avec-residuel-accepte",
+      "ok-hitl": "conforme-avec-residuel-accepte",
+      "pass_with_accepted_residuals": "conforme-avec-residuel-accepte",
+      "blocked": "non-conforme-bloquant"
+    },
+    "mini_audit_resultat_global": {
+      "ok": "conforme",
+      "pass": "conforme",
+      "partiel": "conforme-avec-residuel-accepte",
+      "ok-hitl": "conforme-avec-residuel-accepte",
+      "pass_with_accepted_residuals": "conforme-avec-residuel-accepte",
+      "blocked": "non-conforme-bloquant"
+    },
+    "decision_statut_final": {
+      "go-review": "go-review",
+      "blocked": "blocked"
+    }
+  },
+  "decision": {
+    "statut": "blocked",
+    "justification": "Refus automatique: ecart majeur non accepte ENF-13-2-3-REG-01 avec action corrective encore ouverte."
+  }
+}

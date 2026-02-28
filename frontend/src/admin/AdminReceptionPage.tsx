@@ -5,9 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Stack,
   Group,
-  Title,
   Alert,
   Loader,
   Table,
@@ -26,6 +24,7 @@ import {
   type ReceptionStatsLive,
 } from '../api/reception';
 import { postAdminReceptionTicketsExportBulk } from '../api/adminHealthAudit';
+import { PageContainer, PageSection } from '../shared/layout';
 
 const PAGE_SIZE = 20;
 
@@ -101,9 +100,7 @@ export function AdminReceptionPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-reception-page">
-      <Title order={2}>Admin réception</Title>
-
+    <PageContainer title="Admin réception" maxWidth={1200} testId="admin-reception-page">
       <Tabs defaultValue="stats">
         <Tabs.List>
           <Tabs.Tab value="stats">Stats</Tabs.Tab>
@@ -114,31 +111,33 @@ export function AdminReceptionPage() {
           {stats === null ? (
             <Loader size="sm" data-testid="admin-reception-stats-loading" />
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mt="md">
-              <Card withBorder padding="md" radius="md" shadow="sm">
-                <Text size="sm" c="dimmed">Tickets aujourd&apos;hui</Text>
-                <Text fw={700} size="xl" data-testid="admin-reception-tickets-today">
-                  {stats?.tickets_today ?? 0}
-                </Text>
-              </Card>
-              <Card withBorder padding="md" radius="md" shadow="sm">
-                <Text size="sm" c="dimmed">Poids total (kg)</Text>
-                <Text fw={700} size="xl" data-testid="admin-reception-weight">
-                  {stats?.total_weight_kg ?? 0}
-                </Text>
-              </Card>
-              <Card withBorder padding="md" radius="md" shadow="sm">
-                <Text size="sm" c="dimmed">Lignes aujourd&apos;hui</Text>
-                <Text fw={700} size="xl" data-testid="admin-reception-lines">
-                  {stats?.lines_count ?? 0}
-                </Text>
-              </Card>
-            </SimpleGrid>
+            <PageSection>
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                <Card withBorder padding="md" radius="md" shadow="sm">
+                  <Text size="sm" c="dimmed">Tickets aujourd&apos;hui</Text>
+                  <Text fw={700} size="xl" data-testid="admin-reception-tickets-today">
+                    {stats?.tickets_today ?? 0}
+                  </Text>
+                </Card>
+                <Card withBorder padding="md" radius="md" shadow="sm">
+                  <Text size="sm" c="dimmed">Poids total (kg)</Text>
+                  <Text fw={700} size="xl" data-testid="admin-reception-weight">
+                    {stats?.total_weight_kg ?? 0}
+                  </Text>
+                </Card>
+                <Card withBorder padding="md" radius="md" shadow="sm">
+                  <Text size="sm" c="dimmed">Lignes aujourd&apos;hui</Text>
+                  <Text fw={700} size="xl" data-testid="admin-reception-lines">
+                    {stats?.lines_count ?? 0}
+                  </Text>
+                </Card>
+              </SimpleGrid>
+            </PageSection>
           )}
         </Tabs.Panel>
 
         <Tabs.Panel value="tickets">
-          <Card withBorder padding="md" radius="md" mt="md">
+          <PageSection>
             <Group gap="sm" mb="md">
               <Select
                 placeholder="Statut"
@@ -224,9 +223,9 @@ export function AdminReceptionPage() {
               )}
             </>
           )}
-          </Card>
+          </PageSection>
         </Tabs.Panel>
       </Tabs>
-    </Stack>
+    </PageContainer>
   );
 }

@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentCashSession, closeCashSession } from '../api/caisse';
 import type { CashSessionItem } from '../api/caisse';
 import { useAuth } from '../auth/AuthContext';
-import { Stack, Title, Text, TextInput, Button, Alert, Loader } from '@mantine/core';
+import { Stack, Text, TextInput, Button, Alert, Loader } from '@mantine/core';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function CashRegisterSessionClosePage() {
   const { accessToken } = useAuth();
@@ -70,29 +71,26 @@ export function CashRegisterSessionClosePage() {
 
   if (loading) {
     return (
-      <Stack gap="md" p="md" data-testid="cash-register-session-close-page">
-        <Title order={1}>Fermeture de session</Title>
+      <PageContainer title="Fermeture de session" maxWidth={560} testId="cash-register-session-close-page">
         <Loader size="sm" />
         <Text size="sm">Chargement…</Text>
-      </Stack>
+      </PageContainer>
     );
   }
 
   if (!session) {
     return (
-      <Stack gap="md" p="md" data-testid="cash-register-session-close-page">
-        <Title order={1}>Fermeture de session</Title>
+      <PageContainer title="Fermeture de session" maxWidth={560} testId="cash-register-session-close-page">
         <Text>Aucune session en cours.</Text>
         <Button variant="light" onClick={() => navigate('/caisse')}>
           Retour dashboard
         </Button>
-      </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <Stack gap="md" maw={500} mx="auto" p="md" data-testid="cash-register-session-close-page">
-      <Title order={1}>Fermeture de session</Title>
+    <PageContainer title="Fermeture de session" maxWidth={560} testId="cash-register-session-close-page">
       <Text size="sm">Session ouverte le {new Date(session.opened_at).toLocaleString()}</Text>
       <Text size="sm">Fond de caisse : {(session.initial_amount / 100).toFixed(2)} €</Text>
       {(session.total_sales != null || session.total_items != null) && (
@@ -100,8 +98,9 @@ export function CashRegisterSessionClosePage() {
           Total ventes : {((session.total_sales ?? 0) / 100).toFixed(2)} € — Nombre de lignes : {session.total_items ?? 0}
         </Text>
       )}
-      <form onSubmit={handleSubmit}>
-        <Stack gap="sm">
+      <PageSection>
+        <form onSubmit={handleSubmit}>
+          <Stack gap="sm">
           <TextInput
             label="Montant de clôture (€)"
             id="closing-amount"
@@ -136,8 +135,9 @@ export function CashRegisterSessionClosePage() {
           <Button type="submit" loading={submitting} disabled={submitting} data-testid="session-close-submit">
             {submitting ? 'Fermeture…' : 'Fermer la session'}
           </Button>
-        </Stack>
-      </form>
-    </Stack>
+          </Stack>
+        </form>
+      </PageSection>
+    </PageContainer>
   );
 }

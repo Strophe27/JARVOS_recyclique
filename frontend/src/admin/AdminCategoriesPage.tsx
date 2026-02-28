@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   Stack,
   Group,
-  Title,
   Button,
   Breadcrumbs,
   Anchor,
@@ -17,6 +16,7 @@ import {
   Text,
   Checkbox,
   Card,
+  Box,
 } from '@mantine/core';
 import { useAuth } from '../auth/AuthContext';
 import {
@@ -32,6 +32,8 @@ import {
   type CategoryHierarchyNode,
   type CategoryImportAnalyzeResponse,
 } from '../api/categories';
+import { getHierarchyIndentPx } from '../shared/theme';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminCategoriesPage() {
   const { accessToken, permissions } = useAuth();
@@ -187,14 +189,13 @@ export function AdminCategoriesPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-categories-page">
+    <PageContainer title="Catégories" maxWidth={1200} testId="admin-categories-page">
       <Breadcrumbs data-testid="admin-categories-breadcrumb">
         <Anchor href="/admin">Admin</Anchor>
         <span>Catégories</span>
       </Breadcrumbs>
 
       <Group justify="space-between">
-        <Title order={2}>Catégories</Title>
         <Group>
           <Checkbox
             label="Inclure supprimées"
@@ -217,7 +218,8 @@ export function AdminCategoriesPage() {
       {error && <Alert color="red">{error}</Alert>}
       {actionError && <Alert color="orange">{actionError}</Alert>}
 
-      <Card withBorder padding="md" radius="md">
+      <PageSection>
+        <Card withBorder padding="md" radius="md">
       {loading ? (
         <Loader size="sm" data-testid="admin-categories-loading" />
       ) : (
@@ -236,7 +238,9 @@ export function AdminCategoriesPage() {
           <Table.Tbody>
             {flatList.map(({ node, depth }) => (
               <Table.Tr key={node.id} data-testid={`category-row-${node.id}`}>
-                <Table.Td style={{ paddingLeft: `${depth * 16 + 8}px` }}>{node.name}</Table.Td>
+                <Table.Td>
+                  <Box pl={getHierarchyIndentPx(depth)}>{node.name}</Box>
+                </Table.Td>
                 <Table.Td>{node.official_name ?? '—'}</Table.Td>
                 <Table.Td>{node.is_visible_sale ? 'Oui' : 'Non'}</Table.Td>
                 <Table.Td>{node.is_visible_reception ? 'Oui' : 'Non'}</Table.Td>
@@ -267,7 +271,8 @@ export function AdminCategoriesPage() {
       {flatList.length === 0 && !loading && (
         <Text data-testid="admin-categories-empty">Aucune catégorie.</Text>
       )}
-      </Card>
+        </Card>
+      </PageSection>
 
       <Modal
         opened={importModalOpen}
@@ -307,6 +312,6 @@ export function AdminCategoriesPage() {
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+    </PageContainer>
   );
 }

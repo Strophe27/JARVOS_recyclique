@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "2e passe review adversarial BMAD approuvee: les ecarts HIGH/MEDIUM du 1er passage sont corriges (intersection stricte permissions + garde-fous Paheko, revoke par exception_id explicite, enveloppe 503 stable), la couverture AC4 a ete etendue et la suite ciblee pytest est passante (25/25)."
+}

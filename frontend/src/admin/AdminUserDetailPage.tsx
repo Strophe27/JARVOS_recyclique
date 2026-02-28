@@ -35,6 +35,7 @@ import {
   type AdminGroup,
   type AuditEventItem,
 } from '../api/adminUsers';
+import { PageContainer } from '../shared/layout';
 
 export function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -166,7 +167,7 @@ export function AdminUserDetailPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-user-detail-page">
+    <PageContainer title="Detail utilisateur" maxWidth={1200} testId="admin-user-detail-page">
       <Group justify="space-between">
         <Group>
           <Button component={Link} to="/admin/users" variant="subtle" size="sm">
@@ -323,6 +324,6 @@ export function AdminUserDetailPage() {
           Enregistrer
         </Button>
       </Modal>
-    </Stack>
+    </PageContainer>
   );
 }

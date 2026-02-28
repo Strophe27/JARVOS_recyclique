@@ -3,9 +3,10 @@
  * Route : /admin/quick-analysis. Comparaison de périodes, stats (GET /v1/admin/dashboard/stats, etc.). Rendu Mantine 1.4.4.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Stack, Title, Text, Card, Alert, Loader, SimpleGrid } from '@mantine/core';
+import { Text, Card, Alert, Loader, SimpleGrid } from '@mantine/core';
 import { useAuth } from '../auth/AuthContext';
 import { getDashboardStats } from '../api/adminDashboard';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminQuickAnalysisPage() {
   const { accessToken, permissions } = useAuth();
@@ -48,56 +49,57 @@ export function AdminQuickAnalysisPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-quick-analysis-page">
-      <Title order={2}>Analyse rapide</Title>
+    <PageContainer title="Analyse rapide" maxWidth={1200} testId="admin-quick-analysis-page">
       <Text size="sm" c="dimmed" mb="xs">
         Indicateurs agrégés et comparaison de périodes (§7.12). Rechargement manuel.
       </Text>
       {error && <Alert color="red">{error}</Alert>}
 
-      <Card withBorder padding="md" radius="md">
-        <Text fw={500} mb="md">Indicateurs</Text>
-        {loading ? (
-          <Loader size="sm" data-testid="admin-quick-analysis-loading" />
-        ) : stats ? (
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-            {stats.users_count != null && (
-              <Card withBorder padding="sm" radius="md" data-testid="quick-stat-users">
-                <Text size="sm" c="dimmed">Utilisateurs</Text>
-                <Text fw={600} size="xl">{stats.users_count}</Text>
-              </Card>
-            )}
-            {stats.sites_count != null && (
-              <Card withBorder padding="sm" radius="md" data-testid="quick-stat-sites">
-                <Text size="sm" c="dimmed">Sites</Text>
-                <Text fw={600} size="xl">{stats.sites_count}</Text>
-              </Card>
-            )}
-            {stats.cash_registers_count != null && (
-              <Card withBorder padding="sm" radius="md" data-testid="quick-stat-registers">
-                <Text size="sm" c="dimmed">Postes de caisse</Text>
-                <Text fw={600} size="xl">{stats.cash_registers_count}</Text>
-              </Card>
-            )}
-            {stats.open_sessions_count != null && (
-              <Card withBorder padding="sm" radius="md" data-testid="quick-stat-sessions">
-                <Text size="sm" c="dimmed">Sessions ouvertes</Text>
-                <Text fw={600} size="xl">{stats.open_sessions_count}</Text>
-              </Card>
-            )}
-            {stats.pending_users_count != null && (
-              <Card withBorder padding="sm" radius="md" data-testid="quick-stat-pending">
-                <Text size="sm" c="dimmed">Inscriptions en attente</Text>
-                <Text fw={600} size="xl">{stats.pending_users_count}</Text>
-              </Card>
-            )}
-          </SimpleGrid>
-        ) : (
-          <Text size="sm" c="dimmed" data-testid="admin-quick-analysis-no-stats">
-            Aucune statistique disponible (endpoint optionnel).
-          </Text>
-        )}
-      </Card>
-    </Stack>
+      <PageSection>
+        <Card withBorder padding="md" radius="md">
+          <Text fw={500} mb="md">Indicateurs</Text>
+          {loading ? (
+            <Loader size="sm" data-testid="admin-quick-analysis-loading" />
+          ) : stats ? (
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+              {stats.users_count != null && (
+                <Card withBorder padding="sm" radius="md" data-testid="quick-stat-users">
+                  <Text size="sm" c="dimmed">Utilisateurs</Text>
+                  <Text fw={600} size="xl">{stats.users_count}</Text>
+                </Card>
+              )}
+              {stats.sites_count != null && (
+                <Card withBorder padding="sm" radius="md" data-testid="quick-stat-sites">
+                  <Text size="sm" c="dimmed">Sites</Text>
+                  <Text fw={600} size="xl">{stats.sites_count}</Text>
+                </Card>
+              )}
+              {stats.cash_registers_count != null && (
+                <Card withBorder padding="sm" radius="md" data-testid="quick-stat-registers">
+                  <Text size="sm" c="dimmed">Postes de caisse</Text>
+                  <Text fw={600} size="xl">{stats.cash_registers_count}</Text>
+                </Card>
+              )}
+              {stats.open_sessions_count != null && (
+                <Card withBorder padding="sm" radius="md" data-testid="quick-stat-sessions">
+                  <Text size="sm" c="dimmed">Sessions ouvertes</Text>
+                  <Text fw={600} size="xl">{stats.open_sessions_count}</Text>
+                </Card>
+              )}
+              {stats.pending_users_count != null && (
+                <Card withBorder padding="sm" radius="md" data-testid="quick-stat-pending">
+                  <Text size="sm" c="dimmed">Inscriptions en attente</Text>
+                  <Text fw={600} size="xl">{stats.pending_users_count}</Text>
+                </Card>
+              )}
+            </SimpleGrid>
+          ) : (
+            <Text size="sm" c="dimmed" data-testid="admin-quick-analysis-no-stats">
+              Aucune statistique disponible (endpoint optionnel).
+            </Text>
+          )}
+        </Card>
+      </PageSection>
+    </PageContainer>
   );
 }

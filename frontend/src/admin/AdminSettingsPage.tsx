@@ -4,8 +4,6 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Stack,
-  Title,
   Alert,
   Loader,
   Card,
@@ -21,6 +19,7 @@ import {
   postAdminSettingsEmailTest,
   type SettingsResponse,
 } from '../api/adminHealthAudit';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminSettingsPage() {
   const { accessToken, permissions } = useAuth();
@@ -91,67 +90,72 @@ export function AdminSettingsPage() {
   }
 
   if (loading) {
-    return <Loader size="sm" data-testid="admin-settings-loading" />;
+    return (
+      <PageContainer title="Paramètres" maxWidth={1200} testId="admin-settings-page">
+        <Loader size="sm" data-testid="admin-settings-loading" />
+      </PageContainer>
+    );
   }
 
   return (
-    <Stack gap="md" data-testid="admin-settings-page">
-      <Title order={2}>Paramètres</Title>
+    <PageContainer title="Paramètres" maxWidth={1200} testId="admin-settings-page">
       <Text size="sm" c="dimmed" mb="xs">
         Seuils d&apos;alertes, session, email, activité (stub v1 : lecture/écriture minimale).
       </Text>
       {error && <Alert color="red">{error}</Alert>}
-      <Tabs defaultValue="activity">
-        <Tabs.List>
-          <Tabs.Tab value="activity">Seuil d&apos;activité</Tabs.Tab>
-          <Tabs.Tab value="alerts">Alertes</Tabs.Tab>
-          <Tabs.Tab value="session">Session</Tabs.Tab>
-          <Tabs.Tab value="email">Email</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="activity">
-          <Card withBorder padding="md" radius="md" mt="md">
-            <NumberInput
-              label="Seuil d'activité"
-              placeholder="Optionnel"
-              value={activityThreshold}
-              onChange={(v) => setActivityThreshold(String(v ?? ''))}
-              data-testid="input-activity-threshold"
-            />
-            <Button mt="md" loading={saving} onClick={handleSaveActivity} data-testid="save-activity">
-              Enregistrer
-            </Button>
-          </Card>
-        </Tabs.Panel>
-        <Tabs.Panel value="alerts">
-          <Card withBorder padding="md" radius="md" mt="md">
-            <Text size="sm" c="dimmed">Seuils d&apos;alertes — à configurer (stub).</Text>
-          </Card>
-        </Tabs.Panel>
-        <Tabs.Panel value="session">
-          <Card withBorder padding="md" radius="md" mt="md">
-            <Text size="sm" c="dimmed">Paramètres de session — à configurer (stub).</Text>
-          </Card>
-        </Tabs.Panel>
-        <Tabs.Panel value="email">
-          <Card withBorder padding="md" radius="md" mt="md">
-            <Text size="sm" c="dimmed">Paramètres email et test — à configurer (stub).</Text>
-            <Button
-              mt="md"
-              variant="light"
-              loading={emailTestLoading}
-              onClick={handleTestEmail}
-              data-testid="btn-test-email"
-            >
-              Test email
-            </Button>
-            {emailTestMessage && (
-              <Text size="sm" c="dimmed" mt="xs" data-testid="email-test-message">
-                {emailTestMessage}
-              </Text>
-            )}
-          </Card>
-        </Tabs.Panel>
-      </Tabs>
-    </Stack>
+      <PageSection>
+        <Tabs defaultValue="activity">
+          <Tabs.List>
+            <Tabs.Tab value="activity">Seuil d&apos;activité</Tabs.Tab>
+            <Tabs.Tab value="alerts">Alertes</Tabs.Tab>
+            <Tabs.Tab value="session">Session</Tabs.Tab>
+            <Tabs.Tab value="email">Email</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="activity">
+            <Card withBorder padding="md" radius="md" mt="md">
+              <NumberInput
+                label="Seuil d'activité"
+                placeholder="Optionnel"
+                value={activityThreshold}
+                onChange={(v) => setActivityThreshold(String(v ?? ''))}
+                data-testid="input-activity-threshold"
+              />
+              <Button mt="md" loading={saving} onClick={handleSaveActivity} data-testid="save-activity">
+                Enregistrer
+              </Button>
+            </Card>
+          </Tabs.Panel>
+          <Tabs.Panel value="alerts">
+            <Card withBorder padding="md" radius="md" mt="md">
+              <Text size="sm" c="dimmed">Seuils d&apos;alertes — à configurer (stub).</Text>
+            </Card>
+          </Tabs.Panel>
+          <Tabs.Panel value="session">
+            <Card withBorder padding="md" radius="md" mt="md">
+              <Text size="sm" c="dimmed">Paramètres de session — à configurer (stub).</Text>
+            </Card>
+          </Tabs.Panel>
+          <Tabs.Panel value="email">
+            <Card withBorder padding="md" radius="md" mt="md">
+              <Text size="sm" c="dimmed">Paramètres email et test — à configurer (stub).</Text>
+              <Button
+                mt="md"
+                variant="light"
+                loading={emailTestLoading}
+                onClick={handleTestEmail}
+                data-testid="btn-test-email"
+              >
+                Test email
+              </Button>
+              {emailTestMessage && (
+                <Text size="sm" c="dimmed" mt="xs" data-testid="email-test-message">
+                  {emailTestMessage}
+                </Text>
+              )}
+            </Card>
+          </Tabs.Panel>
+        </Tabs>
+      </PageSection>
+    </PageContainer>
   );
 }

@@ -8,7 +8,6 @@ import {
   Button,
   Stack,
   Group,
-  Title,
   Alert,
   Loader,
   Modal,
@@ -26,6 +25,7 @@ import {
   type SiteCreateBody,
   type SiteUpdateBody,
 } from '../api/admin';
+import { PageContainer } from '../shared/layout';
 
 export function AdminSitesPage() {
   const { accessToken, permissions } = useAuth();
@@ -111,9 +111,8 @@ export function AdminSitesPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-sites-page">
-      <Group justify="space-between">
-        <Title order={2}>Sites</Title>
+    <PageContainer title="Sites" maxWidth={1200} testId="admin-sites-page">
+      <Group justify="flex-end">
         <Button data-testid="admin-sites-new" variant="filled" onClick={openCreate}>
           Nouveau site
         </Button>
@@ -180,6 +179,6 @@ export function AdminSitesPage() {
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+    </PageContainer>
   );
 }

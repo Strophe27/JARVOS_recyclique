@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Stack,
-  Title,
   Text,
   Card,
   Alert,
@@ -28,6 +27,7 @@ import {
   type AdminGroup,
   type AdminGroupDetail,
 } from '../api/adminGroups';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminGroupsPage() {
   const { accessToken, permissions } = useAuth();
@@ -127,14 +127,14 @@ export function AdminGroupsPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-groups-page">
-      <Title order={2}>Groupes</Title>
+    <PageContainer title="Groupes" maxWidth={1200} testId="admin-groups-page">
       <Text size="sm" c="dimmed" mb="xs">
         Gestion des groupes et liaisons avec les permissions et utilisateurs (§7.11).
       </Text>
       {error && <Alert color="red">{error}</Alert>}
 
-      <Card withBorder padding="md" radius="md">
+      <PageSection>
+        <Card withBorder padding="md" radius="md">
         <Group justify="space-between" mb="md">
           <Text fw={500}>Liste des groupes</Text>
           <Button size="sm" onClick={openCreate} data-testid="admin-groups-create">
@@ -197,20 +197,23 @@ export function AdminGroupsPage() {
             Aucun groupe.
           </Text>
         )}
-      </Card>
+        </Card>
+      </PageSection>
 
       {detail && (
-        <Card withBorder padding="md" radius="md">
-          <Group justify="space-between" mb="xs">
-            <Text fw={500}>Détail : {detail.name}</Text>
-            <Button variant="subtle" size="xs" onClick={() => setDetail(null)}>
-              Fermer
-            </Button>
-          </Group>
-          <Text size="sm" c="dimmed">
-            Permissions : {detail.permission_ids.length}. Utilisateurs : {detail.user_ids.length}.
-          </Text>
-        </Card>
+        <PageSection>
+          <Card withBorder padding="md" radius="md">
+            <Group justify="space-between" mb="xs">
+              <Text fw={500}>Détail : {detail.name}</Text>
+              <Button variant="subtle" size="xs" onClick={() => setDetail(null)}>
+                Fermer
+              </Button>
+            </Group>
+            <Text size="sm" c="dimmed">
+              Permissions : {detail.permission_ids.length}. Utilisateurs : {detail.user_ids.length}.
+            </Text>
+          </Card>
+        </PageSection>
       )}
 
       <Modal
@@ -243,6 +246,6 @@ export function AdminGroupsPage() {
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+    </PageContainer>
   );
 }

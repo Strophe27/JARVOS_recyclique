@@ -23,6 +23,7 @@ from api.routers.sales import router as sales_router
 from api.routers.mapping import router as mapping_router
 from api.routers.declarative import router as declarative_router
 from api.workers.push_consumer import run_push_consumer, set_shutdown_event
+from api.workers.member_sync_worker import run_member_sync_worker, set_member_sync_shutdown_event
 
 
 @asynccontextmanager
@@ -30,11 +31,15 @@ async def lifespan(app: FastAPI):
     """Démarre le worker push en arrière-plan ; arrêt propre au shutdown."""
     shutdown = threading.Event()
     set_shutdown_event(shutdown)
+    set_member_sync_shutdown_event(shutdown)
     thread = threading.Thread(target=run_push_consumer, daemon=True)
+    member_sync_thread = threading.Thread(target=run_member_sync_worker, daemon=True)
     thread.start()
+    member_sync_thread.start()
     yield
     shutdown.set()
     thread.join(timeout=10)
+    member_sync_thread.join(timeout=10)
 
 
 app = FastAPI(title="RecyClique API", lifespan=lifespan)

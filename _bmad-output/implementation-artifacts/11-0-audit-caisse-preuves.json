@@ -1,0 +1,55 @@
+{
+  "domaine": "Caisse",
+  "generated_at": "2026-02-28T12:23:45.8242099+01:00",
+  "captures": [
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-01-dashboard.png",
+      "ecran": "Dashboard caisses",
+      "route": "/caisse",
+      "horodatage": "2026-02-28T12:23:45.8242099+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-02-ouverture-session.png",
+      "ecran": "Ouverture session",
+      "route": "/cash-register/session/open",
+      "horodatage": "2026-02-28T12:23:45.8242099+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-03-ouverture-erreur-montant-vide.png",
+      "ecran": "Ouverture session - erreur montant vide",
+      "route": "/cash-register/session/open",
+      "horodatage": "2026-02-28T12:23:45.8242099+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-04-saisie-vente.png",
+      "ecran": "Saisie vente (sale)",
+      "route": "/cash-register/sale",
+      "horodatage": "2026-02-28T12:23:45.8242099+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-05-fermeture-session-sans-transaction.png",
+      "ecran": "Fermeture session",
+      "route": "/cash-register/session/close",
+      "horodatage": "2026-02-28T12:23:45.8242099+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-06-detail-session-admin.png",
+      "ecran": "Detail session admin",
+      "route": "/admin/cash-sessions/:id",
+      "horodatage": "2026-02-28T12:23:45.8242099+01:00",
+      "anonymized": false
+    }
+  ],
+  "inaccessible_screens": [],
+  "zones_non_verifiees": [
+    "/cash-register/virtual",
+    "/cash-register/deferred",
+    "Finalisation ticket complete avec paiements multiples",
+    "Cloture avec transactions et verification ecart complet"
+  ]
+}

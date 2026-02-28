@@ -4,9 +4,10 @@
  */
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Title, Stack, Anchor } from '@mantine/core';
+import { Anchor } from '@mantine/core';
 import { LoginForm } from './LoginForm';
 import { useAuth } from './AuthContext';
+import { PageContainer } from '../shared/layout';
 
 export function LoginPage() {
   const { user, login } = useAuth();
@@ -37,8 +38,7 @@ export function LoginPage() {
   };
 
   return (
-    <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-      <Title order={1}>Connexion</Title>
+    <PageContainer title="Connexion" maxWidth={420} gap="lg" topMargin="xl">
       <LoginForm onSubmit={handleSubmit} error={error ?? undefined} loading={loading} />
       <Anchor component={Link} to="/forgot-password" size="sm">
         Mot de passe oublié ?
@@ -46,6 +46,6 @@ export function LoginPage() {
       <Anchor component={Link} to="/signup" size="sm">
         Créer un compte
       </Anchor>
-    </Stack>
+    </PageContainer>
   );
 }

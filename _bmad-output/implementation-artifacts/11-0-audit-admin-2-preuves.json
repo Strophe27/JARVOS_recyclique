@@ -1,0 +1,84 @@
+{
+  "domaine": "Admin2",
+  "generated_at": "2026-02-28T12:38:01+01:00",
+  "captures": [
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-01-reception-sessions.png",
+      "ecran": "Sessions de Reception admin",
+      "route": "/admin/reception-sessions?page=1&per_page=20",
+      "horodatage": "2026-02-28T12:31:00+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-02-health.png",
+      "ecran": "Sante Systeme",
+      "route": "/admin/health",
+      "horodatage": "2026-02-28T12:33:00+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-03-audit-log.png",
+      "ecran": "Audit Log",
+      "route": "/admin/audit-log",
+      "horodatage": "2026-02-28T12:35:00+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-04-logs-transactionnels.png",
+      "ecran": "Logs transactionnels",
+      "route": "/admin/audit-log",
+      "horodatage": "2026-02-28T12:36:00+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-05-settings.png",
+      "ecran": "Parametres avances",
+      "route": "/admin/settings",
+      "horodatage": "2026-02-28T12:37:00+01:00",
+      "anonymized": false
+    },
+    {
+      "fichier": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-06-email-logs.png",
+      "ecran": "Logs email",
+      "route": "/admin/email-logs",
+      "horodatage": "2026-02-28T12:38:00+01:00",
+      "anonymized": false
+    }
+  ],
+  "inaccessible_screens": [],
+  "ecarts": [
+    {
+      "id_ecart": "ADM2-001",
+      "ecran": "Audit Log",
+      "route": "/admin/audit-log",
+      "type_ecart": "visuel",
+      "severite": "majeur",
+      "preuve_capture": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-03-audit-log.png"
+    },
+    {
+      "id_ecart": "ADM2-002",
+      "ecran": "Logs email",
+      "route": "/admin/email-logs",
+      "type_ecart": "comportemental/AC",
+      "severite": "majeur",
+      "preuve_capture": "_bmad-output/implementation-artifacts/screenshots/11-0/admin-2/admin2-06-email-logs.png"
+    }
+  ],
+  "zones_non_verifiees": [
+    {
+      "ecran": "Export CSV reception admin",
+      "route": "/admin/reception-sessions?page=1&per_page=20",
+      "raison": "telechargement binaire non verifie dans ce run"
+    },
+    {
+      "ecran": "Actions destructives settings",
+      "route": "/admin/settings",
+      "raison": "import BDD et purge non executes volontairement"
+    },
+    {
+      "ecran": "Envoi email de test",
+      "route": "/admin/settings",
+      "raison": "test d'envoi non execute pour eviter pollution staging"
+    }
+  ]
+}

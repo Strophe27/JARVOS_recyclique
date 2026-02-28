@@ -1,0 +1,110 @@
+{
+  "story_key": "13-2-1-remediation-visuelle-lot-auth-caisse-hors-exclusions",
+  "scope": [
+    "Auth",
+    "Caisse"
+  ],
+  "generated_at": "2026-02-28",
+  "captures_avant_apres": [
+    {
+      "ecran": "Login",
+      "route": "/login",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-01-login-page.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/auth/auth-after-01-login.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Signup",
+      "route": "/signup",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-05-signup-page.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/auth/auth-after-02-signup.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Forgot password",
+      "route": "/forgot-password",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-03-forgot-password-page.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/auth/auth-after-03-forgot-password.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Reset password",
+      "route": "/reset-password?token=story1321",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-08-reset-password-page.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/auth/auth-after-04-reset-password.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Profil (route)",
+      "route": "/profil",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/auth/auth-02-profil-page.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/auth/auth-after-05-profil-route.png",
+      "statut": "partiel",
+      "note": "Route verifiee; redirection login observee sans session API persistante locale."
+    },
+    {
+      "ecran": "Dashboard caisse",
+      "route": "/caisse",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-01-dashboard.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/caisse/caisse-after-01-dashboard.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Ouverture session",
+      "route": "/cash-register/session/open",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-02-ouverture-session.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/caisse/caisse-after-02-session-open.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Saisie vente",
+      "route": "/cash-register/sale",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-04-saisie-vente.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/caisse/caisse-after-03-sale.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Fermeture session",
+      "route": "/cash-register/session/close",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-05-fermeture-session-sans-transaction.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/caisse/caisse-after-04-session-close.png",
+      "statut": "ok"
+    },
+    {
+      "ecran": "Detail session admin (route)",
+      "route": "/admin/cash-sessions/:id",
+      "avant": "_bmad-output/implementation-artifacts/screenshots/11-0/caisse/caisse-06-detail-session-admin.png",
+      "apres": "_bmad-output/implementation-artifacts/screenshots/13-2-1/admin/admin-after-01-cash-session-detail-route.png",
+      "statut": "partiel",
+      "note": "Route verifiee; redirection login observee sans session admin locale."
+    }
+  ],
+  "exclusions_confirmees": [
+    "/cash-register/pin",
+    "/admin/users-pending",
+    "/admin/permissions"
+  ],
+  "mini_audit": {
+    "resultat_global": "pass_with_minor_residuals",
+    "ecarts_critiques": [],
+    "ecarts_majeurs": [],
+    "ecarts_mineurs": [
+      {
+        "id": "13-2-1-AUTH-RESIDUAL-01",
+        "ecran": "Profil",
+        "type": "comportemental",
+        "description": "La capture locale montre la redirection vers /login sans session persistante injectee.",
+        "severite": "mineur",
+        "action": "Rejouer la preuve visuelle en environnement avec session API authentifiee."
+      },
+      {
+        "id": "13-2-1-CAISSE-RESIDUAL-01",
+        "ecran": "Detail session admin",
+        "type": "comportemental",
+        "description": "La capture locale montre la redirection vers /login sans session admin persistante injectee.",
+        "severite": "mineur",
+        "action": "Rejouer la preuve visuelle avec un compte admin sur environnement cible."
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "storyKey": "14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement",
+  "phase": "blocked-no-go-provisoire",
+  "lastCompletedStep": "review-followups-partially-addressed",
+  "blockedAt": "ai-review-high-nominal-oidc-reel",
+  "blockReason": "manual_test_required",
+  "questions": [
+    {
+      "id": "q1-nominal-oidc-reel-preprod",
+      "question": "Peux-tu fournir un environnement cible (au minimum preprod) avec IdP OIDC reel et HTTPS pour executer la preuve nominale complete (initiation -> callback -> session ouverte via /v1/auth/session) ?",
+      "context": "Les variables OIDC actuelles sont placeholders (`...`) en local et ne permettent pas de produire une preuve nominale hors simulation. Les follow-ups HIGH image/version et tracabilite ont ete corriges, mais il manque encore la preuve nominale reelle demandee par la review.",
+      "answer": "Non, pas de preprod OIDC HTTPS dispo pour l'instant. Cloturer 14.0 en blocked / NO-GO provisoire et reprendre la preuve nominale lors de 14-1."
+    }
+  ],
+  "artifactsProduced": [
+    "_bmad-output/implementation-artifacts/14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement.md",
+    "_bmad-output/implementation-artifacts/14-0-oidc-gate-preuves.md",
+    "_bmad-output/implementation-artifacts/14-0-oidc-gate-runbook.md",
+    "_bmad-output/implementation-artifacts/14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement.agent-state.json",
+    "docker-compose.yml"
+  ]
+}

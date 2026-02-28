@@ -19,7 +19,8 @@ import type {
 } from '../api/caisse';
 import { useAuth } from '../auth/AuthContext';
 import { useCaisse } from './CaisseContext';
-import { Stack, Title, Alert, Loader, Button, Card, Group, Text, Anchor } from '@mantine/core';
+import { Stack, Alert, Loader, Button, Card, Group, Text, Anchor } from '@mantine/core';
+import { PageContainer } from '../shared/layout';
 
 type RegisterWithStatus = CashRegisterItem & {
   registerStatus: CashRegisterStatusItem;
@@ -96,8 +97,7 @@ export function CaisseDashboardPage() {
   );
 
   return (
-    <Stack gap="md" maw={800} mx="auto" p="md" data-testid="caisse-dashboard-page">
-      <Title order={1}>Dashboard caisses</Title>
+    <PageContainer title="Dashboard caisses" maxWidth={920} testId="caisse-dashboard-page">
       {currentSession && (
         <Text size="sm" data-testid="caisse-current-session">
           <Anchor component={Link} to="/cash-register/session/close">
@@ -149,6 +149,6 @@ export function CaisseDashboardPage() {
           ))}
         </Stack>
       )}
-    </Stack>
+    </PageContainer>
   );
 }

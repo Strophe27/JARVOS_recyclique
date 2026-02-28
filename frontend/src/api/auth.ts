@@ -24,6 +24,12 @@ export interface LoginResponse {
   permissions?: string[];
 }
 
+export interface SessionResponse {
+  authenticated: boolean;
+  user: UserInToken | null;
+  permissions: string[];
+}
+
 /**
  * Connexion classique — POST /v1/auth/login.
  */
@@ -40,6 +46,24 @@ export async function postLogin(username: string, password: string): Promise<Log
     throw new Error(message);
   }
   return res.json() as Promise<LoginResponse>;
+}
+
+export function getSsoStartUrl(nextPath = '/'): string {
+  const base = getBase();
+  const qs = new URLSearchParams({ next: nextPath });
+  return `${base}/v1/auth/sso/start?${qs.toString()}`;
+}
+
+export async function getSession(): Promise<SessionResponse> {
+  const base = getBase();
+  const res = await fetch(`${base}/v1/auth/session`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error('Erreur de session');
+  }
+  return res.json() as Promise<SessionResponse>;
 }
 
 /**
@@ -132,12 +156,14 @@ export async function postPinUnlock(pin: string): Promise<PinLoginResponse> {
 /**
  * Déconnexion — POST /v1/auth/logout (invalide le refresh_token).
  */
-export async function postLogout(refresh_token: string): Promise<void> {
+export async function postLogout(refresh_token?: string): Promise<void> {
   const base = getBase();
+  const body = refresh_token ? JSON.stringify({ refresh_token }) : undefined;
   const res = await fetch(`${base}/v1/auth/logout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token }),
+    body,
+    credentials: 'include',
   });
   if (!res.ok) {
     throw new Error('Erreur de déconnexion');

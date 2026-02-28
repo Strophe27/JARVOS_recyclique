@@ -1,0 +1,42 @@
+---
+description: Epic 11 - parite visuelle 1.4.4 et refactor propre obligatoire
+alwaysApply: true
+---
+
+# Epic 11 - Regle de conduite
+
+## Objectif fixe
+
+- V1 = parite 1.4.4 quasi pixel perfect.
+- Modernisation minimale, seulement si necessaire et validee.
+- Pas de redesign libre.
+
+## Exclusions validees
+
+- `pin login`
+- `users pending`
+- `permissions`
+
+Ces ecrans sont hors scope correctif visuel prioritaire sauf instruction explicite.
+
+## Sources obligatoires avant toute modif Epic 11
+
+- `_bmad-output/implementation-artifacts/11-x-point-de-verite-parite-v1.4.4.md`
+- `_bmad-output/implementation-artifacts/11-x-charte-visuelle-operatoire.md`
+- `_bmad-output/implementation-artifacts/11-x-guide-refactor-propre.md`
+- `_bmad-output/implementation-artifacts/11-x-gate-qualite-epic11.md`
+- `references/ancien-repo/checklist-import-1.4.4.md`
+
+## Regles d implementation
+
+- Reecrire proprement, pas de patch opportuniste.
+- Centraliser tokens/styles, eviter styles inline.
+- Conserver conventions structurelles du projet.
+- Pour chaque ecran touche: preuve avant/apres obligatoire.
+
+## Gate "Done" obligatoire
+
+- Build OK.
+- Tests UI co-loces passes.
+- Checklist gate qualite completee.
+- Aucun ecart critique restant dans le scope traite.

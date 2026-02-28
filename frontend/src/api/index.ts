@@ -4,8 +4,8 @@
  */
 export { getCashRegistersStatus } from './caisse';
 export type { CashRegisterStatusItem } from './caisse';
-export { postPinUnlock } from './auth';
-export type { UserInToken, PinLoginResponse } from './auth';
+export { postPinUnlock, getSession, getSsoStartUrl } from './auth';
+export type { UserInToken, PinLoginResponse, SessionResponse } from './auth';
 export {
   getSites,
   getCashRegisters,

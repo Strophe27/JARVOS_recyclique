@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Re-review final 14-2 approuve: les findings precedents sont resolus (preuves de rejets OIDC Paheko ajoutees, mapping runtime centralise via `PAHEKO_OIDC_CLIENT_MATCH_EMAIL`, suppression des defaults implicites URL/client_id en fail-closed, File List alignee avec les fichiers versionnes). Hardening complementaire identifie mais non bloquant hors scope 14-2."
+}

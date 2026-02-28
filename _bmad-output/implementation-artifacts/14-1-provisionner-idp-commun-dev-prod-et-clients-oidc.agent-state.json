@@ -1,0 +1,20 @@
+{
+  "storyKey": "14-1-provisionner-idp-commun-dev-prod-et-clients-oidc",
+  "phase": "code-review",
+  "lastCompletedStep": "code-review-final-approved-dev-local-scope",
+  "questions": [],
+  "artifactsProduced": [
+    "_bmad-output/implementation-artifacts/14-1-provisionner-idp-commun-dev-prod-et-clients-oidc.md",
+    "_bmad-output/implementation-artifacts/14-1-idp-provisionnement-dev-prod-checklist.md",
+    "_bmad-output/implementation-artifacts/14-1-idp-inventaire-configuration-sanitise.md",
+    "_bmad-output/implementation-artifacts/14-0-oidc-gate-preuves.md",
+    "_bmad-output/implementation-artifacts/14-0-oidc-gate-runbook.md",
+    "_bmad-output/implementation-artifacts/sprint-status.yaml",
+    "doc/deployment.md",
+    ".env.example"
+  ],
+  "reviewNotes": {
+    "relecture": "code-review final post-corrections valide: preuve metadata dev/local verifiable, URIs Paheko explicites sur scope dev/local, File List BMAD complete",
+    "escalade": false
+  }
+}

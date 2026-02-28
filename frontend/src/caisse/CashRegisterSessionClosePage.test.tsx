@@ -2,12 +2,10 @@
  * Tests CashRegisterSessionClosePage — Story 5.3, 11.2 (Vitest + RTL + MantineProvider).
  * Affichage totaux, saisie closing/actual/variance_comment, envoi POST close, redirection.
  */
-import { useEffect } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
-import { AuthProvider, useAuth } from '../auth/AuthContext';
 import { CashRegisterSessionClosePage } from './CashRegisterSessionClosePage';
 
 const mockSessionWithTotals = {
@@ -36,24 +34,18 @@ vi.mock('../api/caisse', () => ({
   getCurrentCashSession: vi.fn(),
   closeCashSession: vi.fn().mockResolvedValue({ id: 'session-close-1', status: 'closed' }),
 }));
-
-function SetToken({ token }: { token: string }) {
-  const { setTokens } = useAuth();
-  useEffect(() => {
-    setTokens(token, null);
-  }, [setTokens, token]);
-  return null;
-}
+vi.mock('../auth/AuthContext', () => ({
+  useAuth: () => ({
+    accessToken: 'bff-session',
+  }),
+}));
 
 function renderClosePage() {
   return render(
     <MantineProvider>
-      <AuthProvider>
-        <SetToken token="fake-token" />
-        <BrowserRouter>
-          <CashRegisterSessionClosePage />
-        </BrowserRouter>
-      </AuthProvider>
+      <BrowserRouter>
+        <CashRegisterSessionClosePage />
+      </BrowserRouter>
     </MantineProvider>
   );
 }
@@ -89,11 +81,13 @@ describe('CashRegisterSessionClosePage', () => {
   it('calls closeCashSession on submit', async () => {
     renderClosePage();
     await screen.findByTestId('session-close-submit');
-    fireEvent.click(screen.getByTestId('session-close-submit'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('session-close-submit'));
+    });
     const { closeCashSession } = await import('../api/caisse');
     await waitFor(() => {
       expect(closeCashSession).toHaveBeenCalledWith(
-        'fake-token',
+        'bff-session',
         'session-close-1',
         expect.objectContaining({
           closing_amount: 15000,

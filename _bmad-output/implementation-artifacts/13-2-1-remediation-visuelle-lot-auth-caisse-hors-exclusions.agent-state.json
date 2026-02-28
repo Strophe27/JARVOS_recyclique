@@ -1,0 +1,14 @@
+{
+  "storyKey": "13-2-1-remediation-visuelle-lot-auth-caisse-hors-exclusions",
+  "phase": "code-review",
+  "lastCompletedStep": "Re-review adversarial BMAD post-corrections terminee (follow-ups revalides, tests cibles + build verifies)",
+  "blockedAt": null,
+  "blockReason": null,
+  "questions": [],
+  "artifactsProduced": [
+    "_bmad-output/implementation-artifacts/13-2-1-remediation-visuelle-lot-auth-caisse-hors-exclusions.md",
+    "_bmad-output/implementation-artifacts/sprint-status.yaml",
+    "_bmad-output/implementation-artifacts/13-2-1-remediation-visuelle-lot-auth-caisse-hors-exclusions.review.json",
+    "_bmad-output/implementation-artifacts/13-2-1-remediation-visuelle-lot-auth-caisse-hors-exclusions.agent-state.json"
+  ]
+}

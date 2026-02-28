@@ -1,9 +1,11 @@
 {
-  "epicId": "epic-11",
-  "currentStoryKey": null,
+  "epicId": "epic-14",
+  "currentStoryKey": "14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed",
   "status": "paused",
-  "startedAt": "2026-02-27",
-  "completedAt": "2026-02-28",
-  "lastStoryCompleted": "11-6-conformite-visuelle-admin-3-6-ecrans-bdd-import-legacy-groupes-permissions-categories-analyse-rapide",
-  "summary": "Epic 11 Conformité visuelle 1.4.4 terminé. Stories 11-1 à 11-6 : Auth (6 écrans), Caisse (5), Réception (5), Admin 1 (7), Admin 2 (5), Admin 3 (6). Build frontend et docker documentés à chaque story ; visuel global 1.4.4 (couleurs, typo, layout) respecté avec Mantine. Toutes les stories approved et done."
+  "startedAt": "2026-02-28",
+  "resumedAt": "2026-02-28",
+  "updatedAt": "2026-02-28",
+  "lastStoryCompleted": "14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed",
+  "lastBlockedStory": "14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement",
+  "lastRunSummary": "Story 14-4 approuvee et terminee: campagne E2E cross-plateforme nominale + continuite session + deny fail-closed validee avec matrice PASS, traces coherentes et corrections QA appliquees."
 }

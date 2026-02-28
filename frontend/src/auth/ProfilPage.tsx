@@ -5,18 +5,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Title,
   TextInput,
   PasswordInput,
   Button,
   Stack,
   Alert,
-  Paper,
   Loader,
   Center,
+  Text,
 } from '@mantine/core';
 import { useAuth } from './AuthContext';
 import { getMe, putMe, putMePassword, putMePin, type UserMe } from '../api/users';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function ProfilPage() {
   const { user, accessToken, logout } = useAuth();
@@ -147,26 +147,22 @@ export function ProfilPage() {
 
   if (error || !profile) {
     return (
-      <Stack gap="md" maw={500} mx="auto" mt="xl" p="md">
-        <Title order={1}>Profil</Title>
+      <PageContainer title="Profil" maxWidth={560} topMargin="xl">
         <Alert color="red" title="Erreur">
           {error ?? 'Profil introuvable'}
         </Alert>
-      </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <Stack gap="xl" maw={500} mx="auto" mt="xl" p="md" data-testid="page-profil">
-      <Title order={1}>Profil</Title>
+    <PageContainer title="Profil" maxWidth={560} gap="xl" topMargin="xl" testId="page-profil">
       <div>
         <strong>Identifiant :</strong> {profile.username}
       </div>
 
-      <Paper p="lg" shadow="sm" radius="md" withBorder>
-        <Title order={2} size="h3" mb="md">
-          Informations personnelles
-        </Title>
+      <PageSection>
+        <Text fw={700} size="lg" mb="md">Informations personnelles</Text>
         <form onSubmit={handleProfileSubmit} data-testid="profil-form">
           <Stack gap="md">
             {profileError && (
@@ -203,12 +199,10 @@ export function ProfilPage() {
             </Button>
           </Stack>
         </form>
-      </Paper>
+      </PageSection>
 
-      <Paper p="lg" shadow="sm" radius="md" withBorder>
-        <Title order={2} size="h3" mb="md">
-          Changer le mot de passe
-        </Title>
+      <PageSection>
+        <Text fw={700} size="lg" mb="md">Changer le mot de passe</Text>
         <form onSubmit={handlePasswordSubmit} data-testid="profil-password-form">
           <Stack gap="md">
             {passwordError && (
@@ -241,12 +235,10 @@ export function ProfilPage() {
             </Button>
           </Stack>
         </form>
-      </Paper>
+      </PageSection>
 
-      <Paper p="lg" shadow="sm" radius="md" withBorder>
-        <Title order={2} size="h3" mb="md">
-          Code PIN caisse
-        </Title>
+      <PageSection>
+        <Text fw={700} size="lg" mb="md">Code PIN caisse</Text>
         <form onSubmit={handlePinSubmit} data-testid="profil-pin-form">
           <Stack gap="md">
             {pinError && (
@@ -271,11 +263,11 @@ export function ProfilPage() {
             </Button>
           </Stack>
         </form>
-      </Paper>
+      </PageSection>
 
       <Button variant="light" color="red" onClick={handleLogout} data-testid="profil-logout">
         Se déconnecter
       </Button>
-    </Stack>
+    </PageContainer>
   );
 }

@@ -7,9 +7,7 @@ import { Link } from 'react-router-dom';
 import {
   Table,
   Button,
-  Stack,
   Group,
-  Title,
   Alert,
   Loader,
   Select,
@@ -19,6 +17,7 @@ import {
 import { useAuth } from '../auth/AuthContext';
 import { getCashSessionsList, type CashSessionItem } from '../api/caisse';
 import { getSites, getCashRegisters, getUsers, type Site, type CashRegister, type User } from '../api/admin';
+import { PageContainer } from '../shared/layout';
 
 const PAGE_SIZE = 20;
 
@@ -96,8 +95,7 @@ export function AdminSessionManagerPage() {
   }
 
   return (
-    <Stack gap="md" data-testid="admin-session-manager-page">
-      <Title order={2}>Gestionnaire de sessions caisse</Title>
+    <PageContainer title="Gestionnaire de sessions caisse" maxWidth={1200} testId="admin-session-manager-page">
 
       <Group gap="sm">
         <TextInput
@@ -218,6 +216,6 @@ export function AdminSessionManagerPage() {
           </Button>
         </Group>
       )}
-    </Stack>
+    </PageContainer>
   );
 }

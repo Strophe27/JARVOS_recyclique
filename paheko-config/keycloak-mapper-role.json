@@ -1,0 +1,13 @@
+{
+  "name": "role-claim",
+  "protocol": "openid-connect",
+  "protocolMapper": "oidc-usermodel-attribute-mapper",
+  "config": {
+    "user.attribute": "role",
+    "claim.name": "role",
+    "jsonType.label": "String",
+    "id.token.claim": "true",
+    "access.token.claim": "false",
+    "userinfo.token.claim": "true"
+  }
+}

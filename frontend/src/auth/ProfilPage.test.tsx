@@ -5,7 +5,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
-import { AuthProvider } from './AuthContext';
 import { ProfilPage } from './ProfilPage';
 
 const mockNavigate = vi.fn();
@@ -16,15 +15,20 @@ vi.mock('react-router-dom', async (importOriginal) => {
     useNavigate: () => mockNavigate,
   };
 });
+vi.mock('./AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    accessToken: null,
+    logout: vi.fn(),
+  }),
+}));
 
 function renderProfilPage() {
   return render(
     <MantineProvider>
-      <AuthProvider>
-        <MemoryRouter>
-          <ProfilPage />
-        </MemoryRouter>
-      </AuthProvider>
+      <MemoryRouter>
+        <ProfilPage />
+      </MemoryRouter>
     </MantineProvider>
   );
 }

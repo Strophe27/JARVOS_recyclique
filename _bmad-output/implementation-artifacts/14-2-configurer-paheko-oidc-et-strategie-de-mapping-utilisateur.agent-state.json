@@ -1,0 +1,25 @@
+{
+  "storyKey": "14-2-configurer-paheko-oidc-et-strategie-de-mapping-utilisateur",
+  "phase": "code-review",
+  "lastCompletedStep": "code-review-final-approved",
+  "blockedAt": null,
+  "blockReason": null,
+  "questions": [],
+  "artifactsProduced": [
+    "_bmad-output/implementation-artifacts/14-2-paheko-oidc-configuration-et-strategie-mapping.md",
+    "_bmad-output/implementation-artifacts/14-2-paheko-oidc-preuves-validation-dev-local.md",
+    "_bmad-output/implementation-artifacts/14-2-configurer-paheko-oidc-et-strategie-de-mapping-utilisateur.md",
+    "_bmad-output/implementation-artifacts/sprint-status.yaml",
+    "_bmad-output/implementation-artifacts/14-2-paheko-oidc-nominal-run.log",
+    "_bmad-output/implementation-artifacts/14-2-configurer-paheko-oidc-et-strategie-de-mapping-utilisateur.review.json",
+    "_bmad-output/implementation-artifacts/14-2-paheko-oidc-rejet-account-not-found.log",
+    "_bmad-output/implementation-artifacts/14-2-paheko-oidc-rejet-missing-email.log",
+    "doc/deployment.md",
+    ".env.example",
+    "docker-compose.yml",
+    "paheko-config/config.local.php",
+    "paheko-config/keycloak-client-paheko-web-dev.json",
+    "paheko-config/seed_paheko_member.php",
+    "paheko-config/check_paheko_oidc_nominal.py"
+  ]
+}

@@ -13,7 +13,8 @@ import {
 } from '../api/caisse';
 import type { CashRegisterItem } from '../api/caisse';
 import { useAuth } from '../auth/AuthContext';
-import { Stack, Title, Text, TextInput, Select, Button, Alert } from '@mantine/core';
+import { Stack, Text, TextInput, Select, Button, Alert } from '@mantine/core';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function CashRegisterSessionOpenPage() {
   const { accessToken } = useAuth();
@@ -113,18 +114,17 @@ export function CashRegisterSessionOpenPage() {
 
   if (loading) {
     return (
-      <Stack gap="md" p="md" data-testid="page-session-open">
-        <Title order={1}>Ouverture de session</Title>
+      <PageContainer title="Ouverture de session" maxWidth={560} testId="page-session-open">
         <Text size="sm">Chargement…</Text>
-      </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <Stack gap="md" maw={500} mx="auto" p="md" data-testid="page-session-open">
-      <Title order={1}>Ouverture de session</Title>
-      <form onSubmit={handleSubmit}>
-        <Stack gap="sm">
+    <PageContainer title="Ouverture de session" maxWidth={560} testId="page-session-open">
+      <PageSection>
+        <form onSubmit={handleSubmit}>
+          <Stack gap="sm">
           <Select
             label="Type"
             id="session-type"
@@ -185,11 +185,12 @@ export function CashRegisterSessionOpenPage() {
               {error}
             </Alert>
           )}
-          <Button type="submit" loading={submitting} disabled={submitting} data-testid="session-open-submit">
-            {submitting ? 'Ouverture…' : 'Ouvrir la session'}
-          </Button>
-        </Stack>
-      </form>
-    </Stack>
+            <Button type="submit" loading={submitting} disabled={submitting} data-testid="session-open-submit">
+              {submitting ? 'Ouverture…' : 'Ouvrir la session'}
+            </Button>
+          </Stack>
+        </form>
+      </PageSection>
+    </PageContainer>
   );
 }

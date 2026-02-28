@@ -59,8 +59,8 @@ describe('AdminImportLegacyPage', () => {
     expect(screen.getByTestId('btn-legacy-execute')).toBeInTheDocument();
   });
 
-  it('affiche input fichier CSV', () => {
+  it('affiche input fichier CSV', async () => {
     renderWithProviders(<AdminImportLegacyPage />);
-    expect(screen.getByTestId('input-legacy-csv')).toBeInTheDocument();
+    expect(await screen.findByTestId('input-legacy-csv')).toBeInTheDocument();
   });
 });

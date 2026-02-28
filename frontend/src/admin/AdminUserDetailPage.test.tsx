@@ -59,6 +59,7 @@ describe('AdminUserDetailPage', () => {
   it('renders detail page after loading user', async () => {
     renderWithProviders();
     expect(screen.getByTestId('admin-user-detail-loading')).toBeInTheDocument();
+    expect(await screen.findByTestId('admin-user-detail-page')).toBeInTheDocument();
   });
 
   it('shows forbidden when user lacks admin permission', () => {

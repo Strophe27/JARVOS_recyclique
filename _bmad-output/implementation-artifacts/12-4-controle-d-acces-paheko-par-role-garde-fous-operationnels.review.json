@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "2e passe de revue adversariale: les ecarts HIGH precedents sont corriges (endpoints d'exception operables, decision frontend alignee sur signal serveur autoritatif, suppression du fallback legacy non temporel). Les AC 1 a 5 sont couverts; seuls des points LOW de qualite de tests/lisibilite restent a optimiser."
+}

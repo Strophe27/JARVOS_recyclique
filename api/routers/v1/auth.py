@@ -2,9 +2,11 @@
 # POST /v1/auth/login, refresh, logout, signup, forgot-password, reset-password, pin.
 # 3.3 : PIN restreint aux utilisateurs avec permission caisse ; audit déverrouillage.
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi.responses import RedirectResponse
+from jose import JWTError
 from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import Session
 
@@ -20,14 +22,28 @@ from api.schemas.auth import (
     PinLoginRequest,
     SignupRequest,
     UserInToken,
+    SessionResponse,
 )
 from api.services.auth import AuthService
+from api.services.auth import OidcDependencyUnavailableError
+from api.services.auth import OidcRuntimeConfigurationError
 from api.services.permissions import get_user_permission_codes_from_user
+from api.services.resilience import (
+    DEPENDENCY_IDP,
+    record_dependency_result,
+    record_fail_closed_counter,
+    write_resilience_audit_event,
+)
 
 router = APIRouter(tags=["auth"])
 
 # Permission requise pour déverrouillage caisse par PIN (Story 3.3)
 CAISSE_ACCESS_PERMISSION = "caisse.access"
+OIDC_STATE_COOKIE_PATH = "/v1/auth/sso/callback"
+
+
+def _request_id_from_request(request: Request) -> str:
+    return request.headers.get("x-request-id") or request.headers.get("X-Request-Id") or str(uuid4())
 
 
 def _user_to_in_token(user: User) -> UserInToken:
@@ -39,6 +55,49 @@ def _user_to_in_token(user: User) -> UserInToken:
         status=user.status,
         first_name=user.first_name,
         last_name=user.last_name,
+    )
+
+
+def _handle_oidc_runtime_config_error(
+    *,
+    auth: AuthService,
+    db: Session,
+    request: Request,
+    request_id: str,
+    errors: list[str],
+) -> None:
+    record_fail_closed_counter()
+    record_dependency_result(
+        dependency=DEPENDENCY_IDP,
+        ok=False,
+        reason="oidc_runtime_config_incomplete",
+        request_id=request_id,
+    )
+    auth.log_security_event(
+        event="FAIL_CLOSED_TRIGGERED",
+        request_id=request_id,
+        success=False,
+        details={
+            "dependency": DEPENDENCY_IDP,
+            "decision": "deny",
+            "reason": "oidc_runtime_config_incomplete",
+            "path": request.url.path,
+            "missing_required": errors,
+        },
+    )
+    write_resilience_audit_event(
+        db,
+        user_id=None,
+        request_id=request_id,
+        dependency=DEPENDENCY_IDP,
+        decision="deny",
+        reason="oidc_runtime_config_incomplete",
+        route=request.url.path,
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+    )
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="OIDC runtime configuration incomplete",
     )
 
 
@@ -63,12 +122,19 @@ def login(
 ) -> LoginResponse:
     """POST /v1/auth/login — identifiants → JWT access + refresh."""
     auth = AuthService(db)
+    request_id = _request_id_from_request(request)
     user = auth.get_user_by_username(body.username)
     if user is None:
         auth.log_login(
             None, body.username, False,
             request.client.host if request.client else None,
             request.headers.get("user-agent"),
+        )
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": "invalid_credentials"},
         )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
     if not auth.verify_password(body.password, user.password_hash):
@@ -77,8 +143,20 @@ def login(
             request.client.host if request.client else None,
             request.headers.get("user-agent"),
         )
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": "invalid_credentials", "user_id": str(user.id)},
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
     if user.status != "active":
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": "user_inactive", "user_id": str(user.id)},
+        )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is not active")
     auth.log_login(
         user.id, body.username, True,
@@ -88,7 +166,277 @@ def login(
     access_token = auth.create_access_token(user.id)
     refresh_token = auth.create_refresh_token()
     auth.create_session(user.id, refresh_token)
+    auth.log_security_event(
+        event="LOGIN_SUCCESS",
+        request_id=request_id,
+        success=True,
+        details={"user_id": str(user.id)},
+    )
     return _make_login_response(auth, user, access_token, refresh_token, db)
+
+
+@router.get("/sso/start")
+def sso_start(
+    request: Request,
+    next_path: str = Query("/", alias="next"),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    """GET /v1/auth/sso/start — démarre Authorization Code + PKCE côté BFF."""
+    auth = AuthService(db)
+    request_id = _request_id_from_request(request)
+    if not auth.settings.oidc_enabled:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="OIDC is disabled")
+    try:
+        auth.ensure_oidc_runtime_ready()
+    except OidcRuntimeConfigurationError as exc:
+        _handle_oidc_runtime_config_error(
+            auth=auth,
+            db=db,
+            request=request,
+            request_id=request_id,
+            errors=exc.errors,
+        )
+    redirect_to, state_binding = auth.build_oidc_authorization_redirect(next_path=next_path)
+    response = RedirectResponse(url=redirect_to, status_code=status.HTTP_302_FOUND)
+    response.set_cookie(
+        key=f"{auth.settings.auth_session_cookie_name}_oidc_state",
+        value=state_binding,
+        httponly=True,
+        secure=auth.settings.auth_session_cookie_secure,
+        samesite=auth.settings.auth_session_cookie_samesite,
+        max_age=600,
+        expires=600,
+        path=OIDC_STATE_COOKIE_PATH,
+    )
+    return response
+
+
+@router.get("/sso/callback")
+async def sso_callback(
+    request: Request,
+    code: str,
+    state: str,
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    """GET /v1/auth/sso/callback — échange code OIDC, valide claims, ouvre session BFF."""
+    auth = AuthService(db)
+    request_id = _request_id_from_request(request)
+    if not auth.settings.oidc_enabled:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="OIDC is disabled")
+    try:
+        auth.ensure_oidc_runtime_ready()
+    except OidcRuntimeConfigurationError as exc:
+        _handle_oidc_runtime_config_error(
+            auth=auth,
+            db=db,
+            request=request,
+            request_id=request_id,
+            errors=exc.errors,
+        )
+    oidc_state_binding = request.cookies.get(f"{auth.settings.auth_session_cookie_name}_oidc_state")
+    flow, flow_status = auth.consume_oidc_flow(state=state, state_binding=oidc_state_binding)
+    if flow is None:
+        reason = flow_status if flow_status != "ok" else "invalid_state"
+        record_fail_closed_counter()
+        auth.log_security_event(
+            event="OIDC_CLAIMS_VALIDATION_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": reason, "status_code": status.HTTP_400_BAD_REQUEST},
+        )
+        auth.log_security_event(
+            event="FAIL_CLOSED_TRIGGERED",
+            request_id=request_id,
+            success=False,
+            details={
+                "dependency": DEPENDENCY_IDP,
+                "decision": "deny",
+                "reason": reason,
+                "path": request.url.path,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+            },
+        )
+        write_resilience_audit_event(
+            db,
+            user_id=None,
+            request_id=request_id,
+            dependency=DEPENDENCY_IDP,
+            decision="deny",
+            reason=reason,
+            route=request.url.path,
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": reason, "status_code": status.HTTP_400_BAD_REQUEST},
+        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid state")
+    try:
+        tokens = await auth.exchange_oidc_code(code=code, code_verifier=flow.code_verifier)
+        id_token = tokens.get("id_token")
+        if not isinstance(id_token, str) or not id_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing id_token")
+        claims = await auth.decode_and_validate_oidc_id_token(id_token=id_token, nonce=flow.nonce)
+        user = auth.resolve_user_from_oidc_claims(claims)
+        if user is None:
+            record_fail_closed_counter()
+            reason = "user_mapping_failed"
+            auth.log_security_event(
+                event="FAIL_CLOSED_TRIGGERED",
+                request_id=request_id,
+                success=False,
+                details={
+                    "dependency": DEPENDENCY_IDP,
+                    "decision": "deny",
+                    "reason": reason,
+                    "path": request.url.path,
+                },
+            )
+            write_resilience_audit_event(
+                db,
+                user_id=None,
+                request_id=request_id,
+                dependency=DEPENDENCY_IDP,
+                decision="deny",
+                reason=reason,
+                route=request.url.path,
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+            auth.log_security_event(
+                event="LOGIN_FAILED",
+                request_id=request_id,
+                success=False,
+                details={"reason": reason},
+            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        session_row, session_token = auth.create_bff_session(user.id)
+        response = RedirectResponse(url=flow.next_path, status_code=status.HTTP_302_FOUND)
+        response.set_cookie(
+            key=auth.settings.auth_session_cookie_name,
+            value=session_token,
+            httponly=True,
+            secure=auth.settings.auth_session_cookie_secure,
+            samesite=auth.settings.auth_session_cookie_samesite,
+            max_age=auth.settings.auth_session_cookie_max_age_seconds,
+            expires=auth.settings.auth_session_cookie_max_age_seconds,
+            path="/",
+        )
+        auth.log_security_event(
+            event="LOGIN_SUCCESS",
+            request_id=request_id,
+            success=True,
+            details={"session_id": str(session_row.id), "user_id": str(user.id)},
+        )
+        record_dependency_result(
+            dependency=DEPENDENCY_IDP,
+            ok=True,
+            reason="oidc_callback_success",
+            request_id=request_id,
+        )
+        return response
+    except OidcDependencyUnavailableError:
+        record_dependency_result(
+            dependency=DEPENDENCY_IDP,
+            ok=False,
+            reason="oidc_dependency_unavailable",
+            request_id=request_id,
+        )
+        record_fail_closed_counter()
+        auth.log_security_event(
+            event="FAIL_CLOSED_TRIGGERED",
+            request_id=request_id,
+            success=False,
+            details={
+                "dependency": DEPENDENCY_IDP,
+                "decision": "degraded",
+                "reason": "oidc_dependency_unavailable",
+                "path": request.url.path,
+                "status_code": status.HTTP_503_SERVICE_UNAVAILABLE,
+            },
+        )
+        write_resilience_audit_event(
+            db,
+            user_id=None,
+            request_id=request_id,
+            dependency=DEPENDENCY_IDP,
+            decision="degraded",
+            reason="oidc_dependency_unavailable",
+            route=request.url.path,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service d'authentification temporairement indisponible",
+        )
+    except JWTError as exc:
+        raw_reason = (str(exc) or "").strip().lower()
+        if raw_reason == "invalid_iss" or "issuer" in raw_reason:
+            reason = "invalid_iss"
+        elif raw_reason == "invalid_aud" or "audience" in raw_reason:
+            reason = "invalid_aud"
+        else:
+            reason = "oidc_claims_invalid"
+        record_dependency_result(
+            dependency=DEPENDENCY_IDP,
+            ok=False,
+            reason=reason,
+            request_id=request_id,
+        )
+        record_fail_closed_counter()
+        auth.log_security_event(
+            event="OIDC_CLAIMS_VALIDATION_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": reason, "status_code": status.HTTP_401_UNAUTHORIZED},
+        )
+        auth.log_security_event(
+            event="FAIL_CLOSED_TRIGGERED",
+            request_id=request_id,
+            success=False,
+            details={
+                "dependency": DEPENDENCY_IDP,
+                "decision": "deny",
+                "reason": reason,
+                "path": request.url.path,
+                "status_code": status.HTTP_401_UNAUTHORIZED,
+            },
+        )
+        write_resilience_audit_event(
+            db,
+            user_id=None,
+            request_id=request_id,
+            dependency=DEPENDENCY_IDP,
+            decision="deny",
+            reason=reason,
+            route=request.url.path,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": reason, "status_code": status.HTTP_401_UNAUTHORIZED},
+        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="OIDC callback failed")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        request_id = _request_id_from_request(request)
+        auth.log_security_event(
+            event="OIDC_CLAIMS_VALIDATION_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": exc.__class__.__name__},
+        )
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": "oidc_callback_failed"},
+        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="OIDC callback failed")
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -114,14 +462,132 @@ def refresh(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
-    body: RefreshRequest,
+    request: Request,
+    response: Response,
+    body: RefreshRequest | None = None,
     db: Session = Depends(get_db),
 ) -> None:
-    """POST /v1/auth/logout — invalide la session (refresh_token)."""
+    """POST /v1/auth/logout — invalide la session locale (legacy refresh ou cookie BFF)."""
     auth = AuthService(db)
-    session = auth.find_session_by_refresh_token(body.refresh_token)
-    if session is not None:
-        auth.delete_session(session)
+    request_id = _request_id_from_request(request)
+    refresh_session_revoked = False
+    bff_session_revoked = False
+    logout_hint: str | None = None
+    if body is not None:
+        session = auth.find_session_by_refresh_token(body.refresh_token)
+        if session is not None:
+            auth.delete_session(session)
+            refresh_session_revoked = True
+    session_token = request.cookies.get(auth.settings.auth_session_cookie_name)
+    if session_token:
+        bff_session = auth.find_bff_session(session_token)
+        if bff_session is not None:
+            session_user = auth.get_user_by_id(bff_session.user_id)
+            if session_user is not None:
+                logout_hint = session_user.email or session_user.username
+            auth.delete_session(bff_session)
+            bff_session_revoked = True
+    federated_logout_attempted = bool(auth.settings.oidc_enabled and auth.settings.oidc_end_session_endpoint)
+    federated_logout_success = auth.trigger_oidc_federated_logout(
+        request_id=request_id,
+        logout_hint=logout_hint,
+    ) if federated_logout_attempted else False
+    response.delete_cookie(
+        key=auth.settings.auth_session_cookie_name,
+        path="/",
+    )
+    auth.log_security_event(
+        event="LOGOUT",
+        request_id=request_id,
+        success=True,
+        details={
+            "refresh_session_revoked": refresh_session_revoked,
+            "bff_session_revoked": bff_session_revoked,
+            "federated_logout_attempted": federated_logout_attempted,
+            "federated_logout_success": federated_logout_success,
+        },
+    )
+
+
+@router.get("/session", response_model=SessionResponse)
+def get_session(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> SessionResponse:
+    """GET /v1/auth/session — hydrate le frontend via cookie HTTP-only."""
+    auth = AuthService(db)
+    session_token = request.cookies.get(auth.settings.auth_session_cookie_name)
+    if not session_token:
+        return SessionResponse(authenticated=False, user=None, permissions=[])
+    session_row = auth.find_bff_session(session_token)
+    if session_row is None:
+        response.delete_cookie(key=auth.settings.auth_session_cookie_name, path="/")
+        request_id = _request_id_from_request(request)
+        record_fail_closed_counter()
+        auth.log_security_event(
+            event="FAIL_CLOSED_TRIGGERED",
+            request_id=request_id,
+            success=False,
+            details={
+                "dependency": DEPENDENCY_IDP,
+                "decision": "deny",
+                "reason": "session_not_found",
+            },
+        )
+        write_resilience_audit_event(
+            db,
+            user_id=None,
+            request_id=request_id,
+            dependency=DEPENDENCY_IDP,
+            decision="deny",
+            reason="session_not_found",
+            route=request.url.path,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+        return SessionResponse(authenticated=False, user=None, permissions=[])
+    user = auth.get_user_by_id(session_row.user_id)
+    if user is None or user.status != "active":
+        response.delete_cookie(key=auth.settings.auth_session_cookie_name, path="/")
+        request_id = _request_id_from_request(request)
+        record_fail_closed_counter()
+        auth.log_security_event(
+            event="FAIL_CLOSED_TRIGGERED",
+            request_id=request_id,
+            success=False,
+            details={
+                "dependency": DEPENDENCY_IDP,
+                "decision": "deny",
+                "reason": "user_inactive_or_missing",
+            },
+        )
+        write_resilience_audit_event(
+            db,
+            user_id=None,
+            request_id=request_id,
+            dependency=DEPENDENCY_IDP,
+            decision="deny",
+            reason="user_inactive_or_missing",
+            route=request.url.path,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+        return SessionResponse(authenticated=False, user=None, permissions=[])
+    _, rotated_token = auth.rotate_bff_session(session_row)
+    response.set_cookie(
+        key=auth.settings.auth_session_cookie_name,
+        value=rotated_token,
+        httponly=True,
+        secure=auth.settings.auth_session_cookie_secure,
+        samesite=auth.settings.auth_session_cookie_samesite,
+        max_age=auth.settings.auth_session_cookie_max_age_seconds,
+        expires=auth.settings.auth_session_cookie_max_age_seconds,
+        path="/",
+    )
+    return SessionResponse(
+        authenticated=True,
+        user=_user_to_in_token(user),
+        permissions=list(get_user_permission_codes_from_user(db, user)),
+    )
 
 
 @router.post("/pin", response_model=LoginResponse)
@@ -138,6 +604,7 @@ def login_with_pin(
     pour éviter le scan complet (ex. table dédiée PIN → user_id si besoin).
     """
     auth = AuthService(db)
+    request_id = _request_id_from_request(request)
     users_with_pin = db.execute(
         select(User).where(and_(User.pin_hash.isnot(None), User.status == "active"))
     ).scalars().all()
@@ -147,10 +614,22 @@ def login_with_pin(
             found = u
             break
     if found is None:
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": "invalid_pin"},
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid PIN")
     # Story 3.3 : restriction aux opérateurs avec permission caisse
     codes = get_user_permission_codes_from_user(db, found)
     if CAISSE_ACCESS_PERMISSION not in codes:
+        auth.log_security_event(
+            event="LOGIN_FAILED",
+            request_id=request_id,
+            success=False,
+            details={"reason": "missing_caisse_permission", "user_id": str(found.id)},
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions",
@@ -174,6 +653,12 @@ def login_with_pin(
     )
     db.add(evt)
     db.commit()
+    auth.log_security_event(
+        event="LOGIN_SUCCESS",
+        request_id=request_id,
+        success=True,
+        details={"user_id": str(found.id), "method": "pin"},
+    )
     return _make_login_response(auth, found, access_token, refresh_token, db)
 
 

@@ -1,0 +1,4 @@
+{
+  "reviewResult": "changes-requested",
+  "summary": "Revue adversariale: 2 ecarts HIGH et 1 MEDIUM. Les taches cochees sur le nominal reel OIDC et la preuve image/version ne sont pas completement justifiees par les preuves actuelles (nominal surtout en simulation, image Paheko non epinglee). La tracabilite git/story doit aussi etre completee avant approbation."
+}

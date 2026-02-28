@@ -4,8 +4,9 @@
  */
 import { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Title, PasswordInput, Button, Stack, Alert, Paper, Anchor } from '@mantine/core';
+import { PasswordInput, Button, Stack, Alert, Anchor } from '@mantine/core';
 import { postResetPassword } from '../api/auth';
+import { PageContainer, PageSection } from '../shared/layout';
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -44,36 +45,33 @@ export function ResetPasswordPage() {
 
   if (success) {
     return (
-      <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-        <Title order={1}>Réinitialisation du mot de passe</Title>
+      <PageContainer title="Réinitialisation du mot de passe" maxWidth={420} gap="lg" topMargin="xl">
         <Alert color="green" title="Mot de passe modifié">
           Votre mot de passe a été réinitialisé. Vous pouvez vous connecter.
         </Alert>
         <Anchor component={Link} to="/login" size="sm">
           Se connecter
         </Anchor>
-      </Stack>
+      </PageContainer>
     );
   }
 
   if (!token) {
     return (
-      <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-        <Title order={1}>Réinitialisation du mot de passe</Title>
+      <PageContainer title="Réinitialisation du mot de passe" maxWidth={420} gap="lg" topMargin="xl">
         <Alert color="red" title="Lien invalide">
           Ce lien est invalide ou incomplet. Demandez un nouveau lien depuis la page « Mot de passe oublié ».
         </Alert>
         <Anchor component={Link} to="/forgot-password" size="sm">
           Mot de passe oublié
         </Anchor>
-      </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <Stack gap="lg" maw={400} mx="auto" mt="xl" p="md">
-      <Title order={1}>Réinitialisation du mot de passe</Title>
-      <Paper p="lg" shadow="sm" radius="md" withBorder>
+    <PageContainer title="Réinitialisation du mot de passe" maxWidth={420} gap="lg" topMargin="xl">
+      <PageSection>
         <form onSubmit={handleSubmit} data-testid="reset-password-form">
           <Stack gap="md">
             {error && (
@@ -105,10 +103,10 @@ export function ResetPasswordPage() {
             </Button>
           </Stack>
         </form>
-      </Paper>
+      </PageSection>
       <Anchor component={Link} to="/login" size="sm">
         Retour à la connexion
       </Anchor>
-    </Stack>
+    </PageContainer>
   );
 }

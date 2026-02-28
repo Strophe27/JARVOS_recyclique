@@ -1,0 +1,11 @@
+﻿[health]
+{"status":"ok","database":"ok","redis":"ok","push_worker":"unconfigured","iam_mode":"ok","dependencies":{"idp":{"status":"ok","consecutive_failures":0,"alert_triggered":false,"alert_threshold":3,"last_reason":null,"last_incident_at":null,"last_transition_at":null,"last_request_id":null},"paheko":{"status":"ok","consecutive_failures":0,"alert_triggered":false,"alert_threshold":3,"last_reason":null,"last_incident_at":null,"last_transition_at":null,"last_request_id":null}},"iam_counters":{"fail_closed_total":0,"mode_transition_total":0},"auth_runtime":{"enabled":true,"status":"ok","loaded_in_process":true,"strict_fail_closed":true,"http_timeout_seconds":10.0,"issuer_configured":true,"client_id_configured":true,"redirect_uri_configured":true,"client_secret_configured":true,"audience_configured":false,"missing_required":[]}}
+[sso_start_headers]
+HTTP/1.1 302 Found
+date: Sat, 28 Feb 2026 21:12:38 GMT
+server: uvicorn
+content-length: 0
+location: .../authorize?response_type=code&client_id=...&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fv1%2Fauth%2Fsso%2Fcallback&scope=openid+profile+email&state=q9Lrtocu4D3GOYJhzSJtcwsfaz0d6xBY&nonce=qG65J_bnpSfRwyNsKduUGH4xX_i4uS4A&code_challenge=LQ372VxLGoAiZyUgzS9w8EQfuv7jAVoy0epCucTxnwo&code_challenge_method=S256
+
+[sso_callback_invalid_state]
+{"detail":"Invalid state"}

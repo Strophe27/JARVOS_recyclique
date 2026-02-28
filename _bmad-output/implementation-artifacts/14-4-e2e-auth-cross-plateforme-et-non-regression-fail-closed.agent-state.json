@@ -1,0 +1,12 @@
+{
+  "storyKey": "14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed",
+  "phase": "code-review",
+  "lastCompletedStep": "Final adversarial review complete: approved, story set done, sprint-status synced",
+  "questions": [],
+  "artifactsProduced": [
+    "_bmad-output/implementation-artifacts/14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed.md",
+    "_bmad-output/implementation-artifacts/14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed.review.json",
+    "_bmad-output/implementation-artifacts/14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed.agent-state.json",
+    "_bmad-output/implementation-artifacts/sprint-status.yaml"
+  ]
+}

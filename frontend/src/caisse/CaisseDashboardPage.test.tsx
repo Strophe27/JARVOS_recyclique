@@ -1,13 +1,10 @@
 /**
  * Tests CaisseDashboardPage — Story 5.1, 11.2 (Vitest + RTL + MantineProvider).
  */
-import { useEffect } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
-import { AuthProvider, useAuth } from '../auth/AuthContext';
-import { CaisseProvider } from './CaisseContext';
 import { CaisseDashboardPage } from './CaisseDashboardPage';
 
 vi.mock('../api/caisse', () => ({
@@ -16,26 +13,24 @@ vi.mock('../api/caisse', () => ({
   getCashSessionStatus: vi.fn().mockResolvedValue({ has_open_session: false, register_id: '', session_id: null, opened_at: null }),
   getCurrentCashSession: vi.fn().mockResolvedValue(null),
 }));
-
-function SetToken({ token }: { token: string }) {
-  const { setTokens } = useAuth();
-  useEffect(() => {
-    setTokens(token, null);
-  }, [setTokens, token]);
-  return null;
-}
+vi.mock('../auth/AuthContext', () => ({
+  useAuth: () => ({
+    accessToken: 'bff-session',
+  }),
+}));
+vi.mock('./CaisseContext', () => ({
+  useCaisse: () => ({
+    setCurrentRegister: vi.fn(),
+    currentRegisterId: null,
+  }),
+}));
 
 function renderWithRouter() {
   return render(
     <MantineProvider>
-      <AuthProvider>
-        <SetToken token="fake-token" />
-        <CaisseProvider>
-          <BrowserRouter>
-            <CaisseDashboardPage />
-          </BrowserRouter>
-        </CaisseProvider>
-      </AuthProvider>
+      <BrowserRouter>
+        <CaisseDashboardPage />
+      </BrowserRouter>
     </MantineProvider>
   );
 }
@@ -47,11 +42,11 @@ describe('CaisseDashboardPage', () => {
 
   it('renders dashboard title', async () => {
     renderWithRouter();
-    expect(screen.getByRole('heading', { name: /dashboard caisses/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /dashboard caisses/i })).toBeInTheDocument();
   });
 
   it('has dashboard page test id', async () => {
     renderWithRouter();
-    expect(screen.getByTestId('caisse-dashboard-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('caisse-dashboard-page')).toBeInTheDocument();
   });
 });
