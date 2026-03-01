@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const login = useCallback(async (username?: string, password?: string) => {
-    const mode = (import.meta.env?.VITE_AUTH_MODE as string | undefined) ?? 'sso';
+    const mode = (import.meta.env?.VITE_AUTH_MODE as string | undefined) ?? 'legacy';
     if (mode === 'legacy') {
       if (!username || !password) {
         throw new Error('Identifiant/mot de passe requis');

@@ -1,5 +1,5 @@
 # generated: 2026-02-28
-# updated: 2026-03-01 (14.5 revue QA finale approuvee - statut done)
+# updated: 2026-03-01 (rollback minimal 14.6 lance: keycloak retire, retour auth legacy frontend)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -133,10 +133,11 @@ development_status:
   epic-13-retrospective: optional
 
   epic-14: in-progress
-  14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement: in-progress
+  14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement: backlog
   14-1-provisionner-idp-commun-dev-prod-et-clients-oidc: done
   14-2-configurer-paheko-oidc-et-strategie-de-mapping-utilisateur: done
   14-3-finaliser-integration-recyclique-oidc-runtime-env-secrets-checks: done
   14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed: done
   14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback: done
+  14-6-demantelement-oidc-et-retour-auth-simple-recyclique-paheko: in-progress
   epic-14-retrospective: optional

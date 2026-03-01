@@ -72,20 +72,6 @@ services:
     networks:
       - jarvos_net
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.1
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-    command: start-dev --http-port=8080
-    ports:
-      - "8081:8080"
-    networks:
-      - jarvos_net
-
 volumes:
   postgres_data:
   redis_data:
