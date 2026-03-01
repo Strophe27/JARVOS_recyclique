@@ -1,0 +1,24 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique
+plugins: anyio-4.9.0, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 14 items
+
+api/tests/routers/test_admin_settings.py::test_settings_put_then_get_nominal PASSED [  7%]
+api/tests/routers/test_admin_settings.py::test_settings_get_structure PASSED [ 14%]
+api/tests/routers/test_admin_settings.py::test_settings_unauthenticated_401 PASSED [ 21%]
+api/tests/routers/test_admin_settings.py::test_settings_admin_forbidden_403 PASSED [ 28%]
+api/tests/routers/test_admin_settings.py::test_settings_get_empty_db_defaults PASSED [ 35%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_super_admin_authorized[/v1/admin/health] PASSED [ 42%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_super_admin_authorized[/v1/admin/settings] PASSED [ 50%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_super_admin_authorized[/v1/sites] PASSED [ 57%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_admin_non_super_admin_forbidden[/v1/admin/health] PASSED [ 64%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_admin_non_super_admin_forbidden[/v1/admin/settings] PASSED [ 71%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_admin_non_super_admin_forbidden[/v1/sites] PASSED [ 78%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_unauthenticated_rejected[/v1/admin/health] PASSED [ 85%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_unauthenticated_rejected[/v1/admin/settings] PASSED [ 92%]
+api/tests/routers/test_admin_phase1_super_admin_rbac.py::test_phase1_unauthenticated_rejected[/v1/sites] PASSED [100%]
+
+============================= 14 passed in 4.81s ==============================

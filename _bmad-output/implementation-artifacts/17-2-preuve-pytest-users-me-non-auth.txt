@@ -1,0 +1,17 @@
+Story: 17-2-correction-controle-acces-users-me-etat-deconnecte
+Scope: Epic 17 / Story 17.2 / E16-C-001 (strict)
+Date: 2026-03-01
+
+Commande 1 (test cible):
+PYTHONPATH=. pytest api/tests/routers/test_auth.py -k test_get_me_unauthorized -q
+
+Sortie:
+.                                                                        [100%]
+1 passed, 36 deselected in 0.12s
+
+Commande 2 (campagne standard auth):
+PYTHONPATH=. pytest api/tests/routers/test_auth.py -q
+
+Sortie:
+.....................................                                    [100%]
+37 passed in 14.29s

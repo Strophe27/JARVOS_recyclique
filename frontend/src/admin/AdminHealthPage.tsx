@@ -1,6 +1,6 @@
 /**
- * Page admin Santé — Story 8.4, 11.5.
- * Route : /admin/health. GET /v1/admin/health, /health/database, /health/scheduler. Rendu Mantine 1.4.4.
+ * Page admin Santé — Story 8.4, 11.5, 17.7.
+ * Route : /admin/health. GET /v1/admin/health, /health/database, /health/scheduler, /health/anomalies. Rendu Mantine 1.4.4.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Loader, Card, Text, Group, Badge, Button, SimpleGrid } from '@mantine/core';
@@ -9,41 +9,47 @@ import {
   getAdminHealth,
   getAdminHealthDatabase,
   getAdminHealthScheduler,
+  getAdminHealthAnomalies,
   postAdminHealthTestNotifications,
   type AdminHealthResponse,
   type AdminHealthSchedulerResponse,
+  type AdminHealthAnomalyItem,
 } from '../api/adminHealthAudit';
 import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminHealthPage() {
-  const { accessToken, permissions } = useAuth();
+  const { accessToken, permissions, user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin' || permissions.includes('super_admin');
   const [health, setHealth] = useState<AdminHealthResponse | null>(null);
   const [dbStatus, setDbStatus] = useState<string | null>(null);
   const [scheduler, setScheduler] = useState<AdminHealthSchedulerResponse | null>(null);
+  const [anomalies, setAnomalies] = useState<AdminHealthAnomalyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [testNotifLoading, setTestNotifLoading] = useState(false);
   const [testNotifMessage, setTestNotifMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!accessToken || !permissions.includes('admin')) return;
+    if (!accessToken || !isSuperAdmin) return;
     setLoading(true);
     setError(null);
     try {
-      const [h, db, s] = await Promise.all([
+      const [h, db, s, a] = await Promise.all([
         getAdminHealth(accessToken),
         getAdminHealthDatabase(accessToken),
         getAdminHealthScheduler(accessToken),
+        getAdminHealthAnomalies(accessToken),
       ]);
       setHealth(h);
       setDbStatus(db.status);
       setScheduler(s);
+      setAnomalies(a.items ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur chargement');
     } finally {
       setLoading(false);
     }
-  }, [accessToken, permissions]);
+  }, [accessToken, isSuperAdmin]);
 
   const handleTestNotifications = useCallback(async () => {
     if (!accessToken) return;
@@ -52,7 +58,10 @@ export function AdminHealthPage() {
     setError(null);
     try {
       const data = await postAdminHealthTestNotifications(accessToken);
-      setTestNotifMessage(data.message ?? 'OK');
+      const msg = data.configured === false
+        ? `${data.message ?? 'Configuration email incomplete'}`
+        : (data.message ?? 'OK');
+      setTestNotifMessage(msg);
     } catch (e) {
       setTestNotifMessage(e instanceof Error ? e.message : 'Erreur');
     } finally {
@@ -64,10 +73,10 @@ export function AdminHealthPage() {
     load();
   }, [load]);
 
-  if (!permissions.includes('admin')) {
+  if (!isSuperAdmin) {
     return (
       <div data-testid="admin-health-forbidden">
-        <p>Accès réservé aux administrateurs.</p>
+        <p>Acces reserve aux super-administrateurs.</p>
       </div>
     );
   }
@@ -123,6 +132,21 @@ export function AdminHealthPage() {
           </Card>
         </SimpleGrid>
       </PageSection>
+      {anomalies.length > 0 && (
+        <PageSection>
+          <Text size="sm" fw={500} c="dimmed" mb="xs">Anomalies</Text>
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm">
+            {anomalies.map((a, i) => (
+              <Card key={`${a.code}-${i}`} withBorder padding="sm" radius="md" data-testid="anomaly-card">
+                <Badge color={a.severity === 'error' ? 'red' : 'yellow'} size="sm" mb="xs">
+                  {a.component}
+                </Badge>
+                <Text size="sm">{a.message}</Text>
+              </Card>
+            ))}
+          </SimpleGrid>
+        </PageSection>
+      )}
       <PageSection>
         <Group>
           <Button

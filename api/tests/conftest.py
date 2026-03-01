@@ -8,6 +8,7 @@ from pathlib import Path
 _conftest_dir = Path(__file__).resolve().parent
 _api_dir = _conftest_dir.parent
 os.environ.setdefault("MODULES_CONFIG_PATH", str(_api_dir / "config" / "modules.test.toml"))
+os.environ.setdefault("OIDC_CLIENT_SECRET", "test-secret")
 
 import uuid
 from collections.abc import Generator
@@ -35,6 +36,31 @@ TEST_ENGINE = create_engine(
 Base.metadata.create_all(bind=TEST_ENGINE)
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=TEST_ENGINE)
 TestingSessionLocal = TestSessionLocal  # alias for test_cash_sessions
+
+
+def _reset_test_database() -> None:
+    """Nettoie toutes les tables pour isoler les campagnes de test critiques."""
+    with TEST_ENGINE.begin() as connection:
+        for table in reversed(Base.metadata.sorted_tables):
+            connection.execute(table.delete())
+
+
+def _seed_fake_user_for_auth_flows() -> None:
+    """Réinjecte le site/user de test requis pour certains flux auth (OIDC callback)."""
+    from api.models import Site
+
+    db = TestingSessionLocal()
+    try:
+        site = db.get(Site, FAKE_SITE_ID)
+        if site is None:
+            db.add(Site(id=FAKE_SITE_ID, name="Test Site", is_active=True))
+            db.flush()
+        user = db.get(User, FAKE_USER_ID)
+        if user is None:
+            db.add(_get_fake_user())
+        db.commit()
+    finally:
+        db.close()
 
 
 def override_get_db() -> Generator[Session, None, None]:
@@ -112,6 +138,32 @@ def client(_db_with_user):
         yield c
     app.dependency_overrides.clear()
     deps.get_user_permission_codes_from_user = original_get_codes
+
+
+@pytest.fixture
+def db_session() -> Generator[Session, None, None]:
+    """Session DB isolée pour les suites auth/session."""
+    _reset_test_database()
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        _reset_test_database()
+
+
+@pytest.fixture
+def auth_client() -> Generator[TestClient, None, None]:
+    """Client API sans override get_current_user pour tests auth/session."""
+    _reset_test_database()
+    _seed_fake_user_for_auth_flows()
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
+        _reset_test_database()
 
 
 @pytest.fixture

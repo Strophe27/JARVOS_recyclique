@@ -28,7 +28,8 @@ import {
 import { PageContainer } from '../shared/layout';
 
 export function AdminSitesPage() {
-  const { accessToken, permissions } = useAuth();
+  const { accessToken, permissions, user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin' || permissions.includes('super_admin');
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export function AdminSitesPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadSites = useCallback(async () => {
-    if (!accessToken || !permissions.includes('admin')) return;
+    if (!accessToken || !isSuperAdmin) return;
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +51,7 @@ export function AdminSitesPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, permissions]);
+  }, [accessToken, isSuperAdmin]);
 
   useEffect(() => {
     loadSites();
@@ -102,10 +103,10 @@ export function AdminSitesPage() {
     }
   };
 
-  if (!permissions.includes('admin')) {
+  if (!isSuperAdmin) {
     return (
       <div data-testid="admin-sites-forbidden">
-        <p>Accès réservé aux administrateurs.</p>
+        <p>Acces reserve aux super-administrateurs.</p>
       </div>
     );
   }

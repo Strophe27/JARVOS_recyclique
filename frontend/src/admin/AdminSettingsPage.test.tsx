@@ -34,7 +34,7 @@ describe('AdminSettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseAuth.mockReturnValue({
-      user: { id: '1' },
+      user: { id: '1', username: 'superadmin', role: 'super_admin' },
       permissions: ['admin'],
       accessToken: 'token',
     });
@@ -46,8 +46,12 @@ describe('AdminSettingsPage', () => {
     });
   });
 
-  it('affiche forbidden quand pas admin', () => {
-    mockUseAuth.mockReturnValue({ permissions: [], accessToken: 'token' });
+  it('affiche forbidden pour admin non super_admin', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: '2', username: 'admin', role: 'admin' },
+      permissions: ['admin'],
+      accessToken: 'token',
+    });
     renderWithProviders();
     expect(screen.getByTestId('admin-settings-forbidden')).toBeInTheDocument();
   });

@@ -1,0 +1,21 @@
+Story 17.1 - preuve tests frontend RBAC super-admin (phase 1)
+Date: 2026-03-01
+
+Commande:
+cd frontend && npm run test -- src/admin/SuperAdminGuard.test.tsx src/admin/AdminHealthPage.test.tsx src/admin/AdminSettingsPage.test.tsx src/admin/AdminSitesPage.test.tsx
+
+Sortie utile:
+- Test Files: 4 passed (4)
+- Tests: 18 passed (18)
+- Fichiers verifies:
+  - src/admin/SuperAdminGuard.test.tsx (9 tests)
+  - src/admin/AdminHealthPage.test.tsx (3 tests)
+  - src/admin/AdminSettingsPage.test.tsx (2 tests)
+  - src/admin/AdminSitesPage.test.tsx (4 tests)
+
+Conclusion:
+La couverture RBAC front ciblee Story 17.1 est verte:
+- routes /admin/health, /admin/settings, /admin/sites
+- cas super_admin autorise
+- cas admin non super_admin bloque
+- cas non authentifie redirige login via guard

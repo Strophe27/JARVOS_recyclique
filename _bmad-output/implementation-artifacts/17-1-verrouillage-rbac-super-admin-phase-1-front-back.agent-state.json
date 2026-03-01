@@ -1,0 +1,27 @@
+{
+  "storyKey": "17-1-verrouillage-rbac-super-admin-phase-1-front-back",
+  "phase": "dev",
+  "lastCompletedStep": "completed",
+  "blockedAt": null,
+  "blockReason": null,
+  "questions": [],
+  "artifactsProduced": [
+    "frontend/src/App.tsx",
+    "frontend/src/admin/SuperAdminGuard.tsx",
+    "frontend/src/admin/SuperAdminGuard.test.tsx",
+    "frontend/src/admin/AdminHealthPage.tsx",
+    "frontend/src/admin/AdminHealthPage.test.tsx",
+    "frontend/src/admin/AdminSettingsPage.tsx",
+    "frontend/src/admin/AdminSettingsPage.test.tsx",
+    "frontend/src/admin/AdminSitesPage.tsx",
+    "frontend/src/admin/AdminSitesPage.test.tsx",
+    "api/routers/v1/admin/health.py",
+    "api/routers/v1/admin/settings.py",
+    "api/routers/sites.py",
+    "api/tests/routers/test_admin_phase1_super_admin_rbac.py",
+    "_bmad-output/implementation-artifacts/16-1-matrice-acces-role-route.md",
+    "_bmad-output/implementation-artifacts/16-0-tableau-unique-ecarts.md",
+    "_bmad-output/implementation-artifacts/sprint-status.yaml",
+    "_bmad-output/implementation-artifacts/17-1-verrouillage-rbac-super-admin-phase-1-front-back.md"
+  ]
+}

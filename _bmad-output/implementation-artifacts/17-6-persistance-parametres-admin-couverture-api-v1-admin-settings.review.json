@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Story 17.6 approuvee. AC implémentes : persistance backend (AdminSetting singleton, migration, service get/put), tests API 5 cibles (nominal, structure, 401, 403, empty DB). Preuve pytest 14/14, journal et tableau 16-0 mis à jour. Observations LOW non bloquantes : POST email/test en stub, duplication fixture role_client, onglets alertes/session/email en stub UI (scope assumé)."
+}

@@ -1,0 +1,19 @@
+Story 17.1 - preuve tests backend RBAC super-admin (phase 1)
+Date: 2026-03-01
+
+Commande (PowerShell):
+$env:PYTHONPATH='.'; pytest api/tests/routers/test_admin_phase1_super_admin_rbac.py
+
+Sortie utile:
+- collected 9 items
+- api/tests/routers/test_admin_phase1_super_admin_rbac.py ......... [100%]
+- 9 passed in 0.68s
+
+Conclusion:
+La couverture RBAC backend ciblee Story 17.1 est verte:
+- /v1/admin/health
+- /v1/admin/settings
+- /v1/sites
+- super_admin autorise (200)
+- admin non super_admin interdit (403)
+- non authentifie refuse (401)

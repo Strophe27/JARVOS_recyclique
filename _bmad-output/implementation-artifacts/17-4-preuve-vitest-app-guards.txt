@@ -1,0 +1,8 @@
+﻿
+> frontend@0.0.0 test:run
+> vitest run src/App.test.tsx src/admin/AdminGuard.test.tsx
+
+
+ RUN  v4.0.18 D:/Users/Strophe/Documents/1-IA/La Clique Qui Recycle/JARVOS_recyclique/frontend
+
+ Ô£ô src/App.test.tsx (3 tests) 267ms

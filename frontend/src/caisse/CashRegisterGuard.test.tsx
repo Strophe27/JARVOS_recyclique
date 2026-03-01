@@ -55,13 +55,19 @@ describe('CashRegisterGuard', () => {
     unmount();
   });
 
-  it('ne redirige pas quand path autorisé (/caisse)', () => {
-    renderGuard('/caisse');
-    expect(screen.getByTestId('location')).toHaveTextContent('/caisse');
+  it('ne redirige pas quand path autorisé (/caisse)', async () => {
+    const { unmount } = renderGuard('/caisse');
+    await vi.waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/caisse');
+    });
+    unmount();
   });
 
-  it('ne redirige pas quand path autorisé (/cash-register/pin)', () => {
-    renderGuard('/cash-register/pin');
-    expect(screen.getByTestId('location')).toHaveTextContent('/cash-register/pin');
+  it('ne redirige pas quand path autorisé (/cash-register/pin)', async () => {
+    const { unmount } = renderGuard('/cash-register/pin');
+    await vi.waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/cash-register/pin');
+    });
+    unmount();
   });
 });

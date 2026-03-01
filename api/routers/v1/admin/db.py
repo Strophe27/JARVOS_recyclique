@@ -1,11 +1,8 @@
-# Story 8.5 — POST /v1/admin/db/export, purge-transactions, import.
+# Story 8.5 / 17.3 — POST /v1/admin/db/export, purge-transactions, import.
 # Permissions (v1) : super_admin OU admin.
-# Choix v1 « fallback admin » : tant que la permission super_admin n'existe pas dans le seed
-# (api/db/alembic/versions/…_seed_permissions_groups.py), on autorise admin pour ne pas bloquer
-# les actions BDD. Quand super_admin sera ajoutée au seed et attribuée à un groupe (ex. admin_technique),
-# le code pourra être restreint à super_admin uniquement sans autre changement.
+# Story 17.3 : implementation operationnelle (export dump reel, purge FK, import SQL).
 
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -13,22 +10,35 @@ from api.core.deps import require_permissions
 from api.db import get_db
 from api.models import User
 from api.services.audit import write_audit_event
+from api.services.db_admin import (
+    execute_import_sql,
+    export_dump,
+    purge_transactions,
+)
 
 router = APIRouter(prefix="/db", tags=["admin-db"])
-# super_admin OU admin (v1 fallback : admin suffit si super_admin absent du seed)
 _DbAdmin = Depends(require_permissions("super_admin", "admin"))
 
 
 @router.post("/export")
-def admin_db_export(current_user: User = _DbAdmin) -> Response:
-    """POST /v1/admin/db/export — stub v1 : retourne un dump SQL minimal (safe) ou message."""
-    # Stub v1 : contenu texte minimal (pas d'exécution BDD réelle pour sécurité tests)
-    content = b"-- RecyClique DB export stub v1\n-- Aucune donnee exportee en mode stub.\n"
-    return Response(
-        content=content,
-        media_type="application/sql",
-        headers={"Content-Disposition": 'attachment; filename="recyclique-export-stub.sql"'},
-    )
+def admin_db_export(
+    db: Session = Depends(get_db),
+    current_user: User = _DbAdmin,
+) -> Response:
+    """POST /v1/admin/db/export — dump SQL reel de la base RecyClique."""
+    try:
+        engine = db.get_bind()
+        content = export_dump(engine)
+        return Response(
+            content=content,
+            media_type="application/sql",
+            headers={"Content-Disposition": 'attachment; filename="recyclique-export.sql"'},
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur export BDD: {str(e)}",
+        )
 
 
 @router.post("/purge-transactions")
@@ -36,21 +46,28 @@ def admin_db_purge_transactions(
     db: Session = Depends(get_db),
     current_user: User = _DbAdmin,
 ) -> dict:
-    """POST /v1/admin/db/purge-transactions — stub v1 : soft / pas de suppression réelle."""
-    # Stub v1 : retourne structure attendue, pas de purge réelle
-    result = {
-        "message": "Purge transactions (stub v1 : aucune suppression effectuee)",
-        "deleted_count": 0,
-    }
-    write_audit_event(
-        db,
-        user_id=current_user.id,
-        action="admin.db.purge_transactions",
-        resource_type="db",
-        details="purge-transactions (stub v1)",
-    )
-    db.commit()
-    return result
+    """POST /v1/admin/db/purge-transactions — suppression reelle des transactions (FK)."""
+    try:
+        deleted = purge_transactions(db)
+        total = sum(deleted.values())
+        write_audit_event(
+            db,
+            user_id=current_user.id,
+            action="admin.db.purge_transactions",
+            resource_type="db",
+            details=f"purge-transactions: {total} enregistrement(s) supprime(s)",
+        )
+        db.commit()
+        return {
+            "message": f"Purge terminee : {total} enregistrement(s) supprime(s)",
+            "deleted_count": total,
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur purge BDD: {str(e)}",
+        )
 
 
 @router.post("/import")
@@ -59,21 +76,45 @@ def admin_db_import(
     current_user: User = _DbAdmin,
     file: UploadFile = File(...),
 ) -> dict:
-    """POST /v1/admin/db/import — stub v1 : validation format uniquement, pas de restauration."""
-    # Stub v1 : validation minimale (présence fichier), pas d'exécution
+    """POST /v1/admin/db/import — restauration depuis un fichier SQL."""
     if not file.filename:
-        return {"ok": False, "detail": "Fichier requis"}
-    result = {
-        "ok": True,
-        "message": "Import BDD (stub v1 : validation uniquement, aucune restauration effectuee)",
-        "filename": file.filename,
-    }
+        raise HTTPException(status_code=400, detail="Fichier requis")
+    ext = (file.filename or "").lower()
+    if not (ext.endswith(".sql") or ext.endswith(".dump")):
+        raise HTTPException(
+            status_code=400,
+            detail="Format invalide : fichier .sql ou .dump attendu",
+        )
+    try:
+        content = file.file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Impossible de lire le fichier: {str(e)}")
+    if not content:
+        raise HTTPException(status_code=400, detail="Fichier vide")
+
+    try:
+        sql_content = content.decode("utf-8", errors="replace")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Fichier invalide (encodage): {str(e)}")
+
+    ok, message = execute_import_sql(db, sql_content)
+    if not ok:
+        db.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail=message,
+        )
+
     write_audit_event(
         db,
         user_id=current_user.id,
         action="admin.db.import",
         resource_type="db",
-        details=f"import file={file.filename} (stub v1)",
+        details=f"import file={file.filename}",
     )
     db.commit()
-    return result
+    return {
+        "ok": True,
+        "message": f"Import termine : {message}",
+        "filename": file.filename,
+    }

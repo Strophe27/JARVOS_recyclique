@@ -17,6 +17,12 @@ from tests.conftest import TestingSessionLocal
 
 
 @pytest.fixture
+def client(auth_client: TestClient) -> TestClient:
+    """Utilise un client non-auth override pour fiabiliser la suite auth/session."""
+    return auth_client
+
+
+@pytest.fixture
 def active_user(db_session: Session):
     """Utilisateur actif avec mot de passe connu (pour tests login)."""
     auth = AuthService(db_session)
@@ -455,6 +461,9 @@ def test_sso_callback_invalid_state_returns_400(
     """GET /v1/auth/sso/callback retourne 400 si state inconnu (fail-closed)."""
     get_settings.cache_clear()
     monkeypatch.setenv("OIDC_ENABLED", "true")
+    monkeypatch.setenv("OIDC_ISSUER", "https://idp.test")
+    monkeypatch.setenv("OIDC_CLIENT_ID", "recyclique-client")
+    monkeypatch.setenv("OIDC_REDIRECT_URI", "http://testserver/v1/auth/sso/callback")
     try:
         resp = client.get("/v1/auth/sso/callback", params={"code": "dummy", "state": "missing"})
         assert resp.status_code == 400

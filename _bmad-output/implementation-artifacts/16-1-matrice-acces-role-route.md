@@ -37,7 +37,7 @@ Mode: audit strict (lecture + execution de tests uniquement, zero remediation co
 | benevole + `vie_asso.access` | `/admin/vie-associative` (front) | acces autorise | garde autorise `admin` ou `vie_asso.access` | conforme | `frontend/src/admin/VieAssociativeGuard.tsx`, `frontend/src/admin/VieAssociativeGuard.test.tsx` |
 | benevole sans `vie_asso.access` | `/admin/vie-associative` (front) | acces refuse | message refus affiche | conforme | `frontend/src/admin/VieAssociativeGuard.tsx`, `frontend/src/admin/VieAssociativeGuard.test.tsx` |
 | deconnecte | `/admin` (front) | blocage explicite route sensible | route non enveloppee par `AdminGuard` (rendu page admin avec contenu conditionnel) | non conforme | `frontend/src/App.tsx`, `frontend/src/admin/AdminDashboardPage.tsx` |
-| admin (non super_admin) | `/admin/health`, `/admin/settings`, `/admin/sites` (front) | super-admin phase 1: acces restreint | routes protegees par `AdminGuard` generic, pas de garde front super_admin dediee | non conforme | `frontend/src/App.tsx` |
+| admin (non super_admin) | `/admin/health`, `/admin/settings`, `/admin/sites` (front) | super-admin phase 1: acces restreint | routes protegees par `SuperAdminGuard`; admin non super_admin bloque explicitement, super_admin autorise | conforme | `frontend/src/App.tsx`, `frontend/src/admin/SuperAdminGuard.tsx`, `frontend/src/admin/SuperAdminGuard.test.tsx` |
 | super_admin | section super-admin dashboard (front) | visibilite section dediee | section visible uniquement si `user.role === super_admin` | conforme | `frontend/src/admin/AdminDashboardPage.tsx`, `frontend/src/admin/AdminDashboardPage.test.tsx` |
 | admin | `/v1/admin/paheko-compta-url` | autorise | tests: `status in (200,404)` et pas 403 | conforme | `api/tests/routers/test_admin_paheko_compta.py` (run 2026-03-01) |
 | super_admin | `/v1/admin/paheko-compta-url` | autorise | tests: `status in (200,404)` et pas 403 | conforme | `api/tests/routers/test_admin_paheko_compta.py` (run 2026-03-01) |
@@ -46,7 +46,7 @@ Mode: audit strict (lecture + execution de tests uniquement, zero remediation co
 | benevole avec exception expiree | `/v1/admin/paheko-compta-url` | retour deny-by-default + audit | tests: 403 + trace decision `deny_by_default_benevole` | conforme | `api/tests/routers/test_admin_paheko_compta.py` (run 2026-03-01) |
 | admin/super_admin | `/v1/admin/paheko-access/exceptions*` | grant/revoke operables | tests grant/revoke OK | conforme | `api/tests/routers/test_admin_paheko_compta.py` (run 2026-03-01) |
 | benevole (meme avec exception active) | `/v1/admin/paheko-access/exceptions` | interdiction gestion exceptions | tests: 403 confirme | conforme | `api/tests/routers/test_admin_paheko_compta.py` (run 2026-03-01) |
-| admin (non super_admin) | `/v1/admin/health*` (back) | super-admin phase 1: droits restreints (attendu cible) | route backend gatee `require_permissions("admin")` | non conforme | `api/routers/v1/admin/health.py` |
+| admin (non super_admin) | `/v1/admin/health*`, `/v1/admin/settings*`, `/v1/sites*` (back) | super-admin phase 1: droits restreints (attendu cible) | endpoints gates `require_permissions("super_admin")`; admin non super_admin en 403, super_admin autorise, non-authentifie refuse (401) | conforme | `api/routers/v1/admin/health.py`, `api/routers/v1/admin/settings.py`, `api/routers/sites.py`, `api/tests/routers/test_admin_phase1_super_admin_rbac.py` |
 | deconnecte | `/v1/users/me` | 401 | campagne courante invalidee (fixture client override auth globale) + test cible retourne 200 dans ce contexte | non verifiable | `api/tests/conftest.py`, `api/tests/routers/test_auth.py::test_get_me_unauthorized` |
 | connecte/deconnecte | `/v1/auth/logout`, `/v1/auth/session`, `/v1/auth/sso/*` | verification lot A complete | campagne `test_auth.py` partiellement invalidee (`db_session` absent + setup auth override) | non verifiable | execution pytest 2026-03-01 + `api/tests/conftest.py` |
 
@@ -54,8 +54,8 @@ Mode: audit strict (lecture + execution de tests uniquement, zero remediation co
 
 - Routes sensibles listees dans ce scope: 20/20
 - Repartition:
-  - conforme: 13
-  - non conforme: 3
+  - conforme: 15
+  - non conforme: 1
   - non verifiable: 4
 
 ## Impact audit des statuts non verifiables (16.1-R)

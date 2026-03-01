@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Re-review adversarial 17.3 : Les deux corrections MEDIUM sont adequates. 1) test_db_import_invalid_sql_returns_422_with_exploitable_detail : verifie 422, detail non vide et exploitable (syntax, error, sql, etc.). 2) _split_sql_statements renforce : split hors chaines ' et \", gestion '' SQL, escape backslash ; test de regression ;\\n dans chaine litterale vert. Docstring _export_sqlite corrigee. Tests 12/12 verts. Story approuvee."
+}

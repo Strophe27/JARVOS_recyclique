@@ -21,9 +21,9 @@ function renderLoginPage() {
 }
 
 describe('LoginPage', () => {
-  it('affiche le titre Connexion et le formulaire', () => {
+  it('affiche le titre Connexion et le formulaire', async () => {
     renderLoginPage();
-    expect(screen.getByRole('heading', { name: /connexion/i })).toBeInTheDocument();
-    expect(screen.getByTestId('login-form')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /connexion/i })).toBeInTheDocument();
+    expect(await screen.findByTestId('login-form')).toBeInTheDocument();
   });
 });

@@ -1,0 +1,28 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique
+plugins: anyio-4.9.0, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 18 items
+
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_export_returns_200_and_sql_content PASSED [  5%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_purge_transactions_returns_200 PASSED [ 11%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_purge_transactions_deletes_data PASSED [ 16%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_returns_200_with_file PASSED [ 22%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_executes_sql PASSED [ 27%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_invalid_sql_returns_422_with_exploitable_detail PASSED [ 33%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_sql_with_semicolon_newline_in_string_literal PASSED [ 38%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_llm_models_returns_200_and_list PASSED [ 44%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_analyze_valid_csv PASSED [ 50%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_analyze_invalid_csv PASSED [ 55%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_analyze_no_file_returns_400 PASSED [ 61%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_preview_valid_csv PASSED [ 66%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_preview_no_file_returns_400 PASSED [ 72%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_validate_valid_csv PASSED [ 77%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_validate_invalid_csv PASSED [ 83%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_execute_valid_csv PASSED [ 88%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_execute_invalid_csv PASSED [ 94%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_execute_no_file_returns_400 PASSED [100%]
+
+============================= 18 passed in 2.96s ==============================

@@ -1,14 +1,17 @@
-# Story 8.4 — Tests GET /v1/admin/health et GET /v1/admin/audit-log.
+# Story 8.4, 17.7 — Tests GET /v1/admin/health et GET /v1/admin/audit-log.
 
 import json
+from collections.abc import Generator
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from api.core import deps
 from api.db import get_db
 from api.main import app
-from api.models import AuditEvent
+from api.models import AuditEvent, User
 from api.services.resilience import (
     DEPENDENCY_IDP,
     record_dependency_result,
@@ -17,16 +20,44 @@ from api.services.resilience import (
 from tests.conftest import TestingSessionLocal, override_get_db
 
 
+def _build_user(role: str) -> User:
+    return User(
+        id=uuid4(),
+        username=f"{role}-user-{uuid4().hex[:8]}",
+        email=f"{role}-{uuid4().hex[:8]}@test.local",
+        password_hash="hash",
+        role=role,
+        status="active",
+    )
+
+
+@pytest.fixture
+def super_admin_client() -> Generator[TestClient, None, None]:
+    """Client avec user super_admin pour routes health/settings."""
+    original_get_codes = deps.get_user_permission_codes_from_user
+    app.dependency_overrides[get_db] = override_get_db
+
+    def _get_current_user() -> User:
+        return _build_user("super_admin")
+
+    deps.get_user_permission_codes_from_user = lambda db, current_user: {"admin"}
+    app.dependency_overrides[deps.get_current_user] = _get_current_user
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+    deps.get_user_permission_codes_from_user = original_get_codes
+
+
 class TestAdminHealth:
     """GET /v1/admin/health (agrégé), /health/database, /health/scheduler, /health/anomalies."""
 
     def test_admin_health_returns_200_and_status(
         self,
-        client: TestClient,
+        super_admin_client: TestClient,
         auth_headers: dict,
     ) -> None:
-        """GET /v1/admin/health avec admin : 200 et champs status, database, redis, push_worker."""
-        r = client.get("/v1/admin/health", headers=auth_headers)
+        """GET /v1/admin/health avec super_admin : 200 et champs status, database, redis, push_worker."""
+        r = super_admin_client.get("/v1/admin/health", headers=auth_headers)
         assert r.status_code == 200
         data = r.json()
         assert "status" in data
@@ -41,7 +72,7 @@ class TestAdminHealth:
 
     def test_admin_health_exposes_dependency_alerts(
         self,
-        client: TestClient,
+        super_admin_client: TestClient,
         auth_headers: dict,
     ) -> None:
         reset_runtime_state_for_tests()
@@ -52,7 +83,7 @@ class TestAdminHealth:
                 reason="oidc_dependency_unavailable",
                 request_id=f"req-idp-{idx}",
             )
-        r = client.get("/v1/admin/health", headers=auth_headers)
+        r = super_admin_client.get("/v1/admin/health", headers=auth_headers)
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "degraded"
@@ -64,7 +95,7 @@ class TestAdminHealth:
 
     def test_admin_health_exposes_transition_from_degraded_to_ok(
         self,
-        client: TestClient,
+        super_admin_client: TestClient,
         auth_headers: dict,
     ) -> None:
         reset_runtime_state_for_tests()
@@ -74,7 +105,7 @@ class TestAdminHealth:
             reason="oidc_dependency_unavailable",
             request_id="req-transition-down",
         )
-        degraded_resp = client.get("/v1/admin/health", headers=auth_headers)
+        degraded_resp = super_admin_client.get("/v1/admin/health", headers=auth_headers)
         assert degraded_resp.status_code == 200
         assert degraded_resp.json()["status"] == "degraded"
 
@@ -84,7 +115,7 @@ class TestAdminHealth:
             reason="oidc_dependency_restored",
             request_id="req-transition-up",
         )
-        recovered_resp = client.get("/v1/admin/health", headers=auth_headers)
+        recovered_resp = super_admin_client.get("/v1/admin/health", headers=auth_headers)
         assert recovered_resp.status_code == 200
         data = recovered_resp.json()
         assert data["iam_mode"] == "ok"
@@ -92,29 +123,28 @@ class TestAdminHealth:
         assert data["iam_counters"]["mode_transition_total"] == 2
         reset_runtime_state_for_tests()
 
-    def test_admin_health_without_auth_returns_401(self, client: TestClient) -> None:
-        """Sans token : 401 (ou 200 si conftest injecte un user par défaut)."""
-        r = client.get("/v1/admin/health")
-        # Conftest peut injecter get_current_user : 200 attendu si user injecté, 401 sinon.
-        assert r.status_code in (200, 401)
+    def test_admin_health_without_auth_returns_401(self, auth_client: TestClient) -> None:
+        """Sans token : 401."""
+        r = auth_client.get("/v1/admin/health")
+        assert r.status_code == 401
 
     def test_admin_health_database_returns_200(
         self,
-        client: TestClient,
+        super_admin_client: TestClient,
         auth_headers: dict,
     ) -> None:
         """GET /v1/admin/health/database : 200 et status."""
-        r = client.get("/v1/admin/health/database", headers=auth_headers)
+        r = super_admin_client.get("/v1/admin/health/database", headers=auth_headers)
         assert r.status_code == 200
         assert "status" in r.json()
 
     def test_admin_health_scheduler_returns_200(
         self,
-        client: TestClient,
+        super_admin_client: TestClient,
         auth_headers: dict,
     ) -> None:
         """GET /v1/admin/health/scheduler : 200 et status, configured, running."""
-        r = client.get("/v1/admin/health/scheduler", headers=auth_headers)
+        r = super_admin_client.get("/v1/admin/health/scheduler", headers=auth_headers)
         assert r.status_code == 200
         data = r.json()
         assert "status" in data
@@ -123,11 +153,11 @@ class TestAdminHealth:
 
     def test_admin_health_auth_runtime_returns_200(
         self,
-        client: TestClient,
+        super_admin_client: TestClient,
         auth_headers: dict,
     ) -> None:
         """GET /v1/admin/health/auth : 200 et statut runtime OIDC sanitisé."""
-        r = client.get("/v1/admin/health/auth", headers=auth_headers)
+        r = super_admin_client.get("/v1/admin/health/auth", headers=auth_headers)
         assert r.status_code == 200
         data = r.json()
         assert "status" in data
@@ -137,15 +167,70 @@ class TestAdminHealth:
 
     def test_admin_health_anomalies_returns_200(
         self,
-        client: TestClient,
+        super_admin_client: TestClient,
         auth_headers: dict,
     ) -> None:
-        """GET /v1/admin/health/anomalies : 200 et items (stub)."""
-        r = client.get("/v1/admin/health/anomalies", headers=auth_headers)
+        """GET /v1/admin/health/anomalies : 200, structure items/count, pas de stub."""
+        r = super_admin_client.get("/v1/admin/health/anomalies", headers=auth_headers)
         assert r.status_code == 200
         data = r.json()
         assert "items" in data
-        assert data["count"] == 0
+        assert "count" in data
+        assert data["count"] == len(data["items"])
+        assert "stub" not in str(data).lower()
+        for item in data["items"]:
+            assert "code" in item
+            assert "component" in item
+            assert "message" in item
+            assert "severity" in item
+
+    def test_admin_health_anomalies_degraded_returns_items(
+        self,
+        super_admin_client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """GET /v1/admin/health/anomalies : contenu reel si resilience degradee."""
+        reset_runtime_state_for_tests()
+        for idx in range(3):
+            record_dependency_result(
+                dependency=DEPENDENCY_IDP,
+                ok=False,
+                reason="oidc_dependency_unavailable",
+                request_id=f"req-anomalies-{idx}",
+            )
+        r = super_admin_client.get("/v1/admin/health/anomalies", headers=auth_headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["count"] >= 1
+        assert len(data["items"]) >= 1
+        codes = [a["code"] for a in data["items"]]
+        assert "resilience_idp_alert" in codes
+        reset_runtime_state_for_tests()
+
+    def test_admin_health_test_notifications_configured_false(
+        self,
+        super_admin_client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """POST /v1/admin/health/test-notifications : configured false si email non configuré."""
+        r = super_admin_client.post("/v1/admin/health/test-notifications", headers=auth_headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert "message" in data
+        assert "configured" in data
+        assert data["configured"] is False
+        assert "stub" not in str(data).lower()
+
+    def test_admin_health_test_notifications_no_stub_in_message(
+        self,
+        super_admin_client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """POST /v1/admin/health/test-notifications : message ne contient pas 'stub'."""
+        r = super_admin_client.post("/v1/admin/health/test-notifications", headers=auth_headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert "stub" not in data.get("message", "").lower()
 
 
 class TestAdminAuditLog:

@@ -75,8 +75,35 @@ export async function getAdminHealthScheduler(
   return res.json() as Promise<AdminHealthSchedulerResponse>;
 }
 
+export interface AdminHealthAnomalyItem {
+  code: string;
+  component: string;
+  message: string;
+  severity: string;
+}
+
+export interface AdminHealthAnomaliesResponse {
+  items: AdminHealthAnomalyItem[];
+  count: number;
+}
+
+export async function getAdminHealthAnomalies(
+  accessToken: string
+): Promise<AdminHealthAnomaliesResponse> {
+  const res = await fetch(`${getBase()}/v1/admin/health/anomalies`, {
+    headers: getAuthHeaders(accessToken),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const msg = typeof data?.detail === 'string' ? data.detail : `Erreur ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json() as Promise<AdminHealthAnomaliesResponse>;
+}
+
 export interface TestNotificationsResponse {
   message: string;
+  configured?: boolean;
 }
 
 export async function postAdminHealthTestNotifications(
@@ -183,6 +210,7 @@ export async function putAdminSettings(
 
 export interface SettingsEmailTestResponse {
   message: string;
+  configured?: boolean;
 }
 
 export async function postAdminSettingsEmailTest(

@@ -68,3 +68,26 @@ Operateur: agent QA (execution + inspection manuelle)
 | T16A-009 | guard admin (preuve code/tests) | moyenne | code clair, mais run groupe guard non consolide |
 | T16A-010 | guard vie associative (preuve code/tests) | moyenne | code clair, mais run groupe guard non consolide |
 
+## Addendum 17.0 - Stabilisation harness critique (cible stricte 4 IDs)
+
+Date: 2026-03-01  
+Story source: `17-0-stabilisation-qa-harness-critique-clusters-auth-harness-vitest-runtime`
+
+### Commandes de preuve executees
+
+- Backend auth/session:
+  - `python -m pytest api/tests/routers/test_auth.py`
+  - sortie archivee: `_bmad-output/implementation-artifacts/17-0-preuve-pytest-auth-session.txt`
+  - resultat: `37 passed` (aucune erreur de setup bloquante)
+- Frontend Vitest multi-fichiers:
+  - `npm run test:run -- src/caisse/CashRegisterGuard.test.tsx src/auth/AuthContext.test.tsx src/auth/LoginPage.test.tsx src/auth/LoginForm.test.tsx src/App.test.tsx`
+  - sortie archivee: `_bmad-output/implementation-artifacts/17-0-preuve-vitest-runtime.txt`
+  - resultat: `5 passed` / `12 passed`, fin de process propre (pas de blocage runtime)
+
+### Mapping preuves -> IDs E16 autorises
+
+- `E16-A-003`: fiabilisation harness backend (`api/tests/conftest.py`: `db_session`, `auth_client`) + preuve pytest (`17-0-preuve-pytest-auth-session.txt`).
+- `E16-C-002`: suite auth/session exploitable (`api/tests/routers/test_auth.py`) + preuve `37 passed`.
+- `E16-A-004`: run groupe Vitest termine proprement + warnings critiques `act(...)` traites (`CashRegisterGuard.test.tsx`, `LoginPage.test.tsx`).
+- `E16-C-003`: stabilite runtime Vitest multi-fichiers confirmee par sortie complete (`17-0-preuve-vitest-runtime.txt`).
+

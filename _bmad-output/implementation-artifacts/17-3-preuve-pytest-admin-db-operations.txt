@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique
+plugins: anyio-4.9.0, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 12 items
+
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_export_returns_200_and_sql_content PASSED [  8%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_purge_transactions_returns_200 PASSED [ 16%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_purge_transactions_deletes_data PASSED [ 25%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_returns_200_with_file PASSED [ 33%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_executes_sql PASSED [ 41%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_invalid_sql_returns_422_with_exploitable_detail PASSED [ 50%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminDb::test_db_import_sql_with_semicolon_newline_in_string_literal PASSED [ 58%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_llm_models_returns_200_and_list PASSED [ 66%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_analyze_returns_200_with_file PASSED [ 75%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_preview_returns_200 PASSED [ 83%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_validate_returns_200 PASSED [ 91%]
+api/tests/routers/test_admin_db_import_legacy.py::TestAdminImportLegacy::test_legacy_execute_returns_200 PASSED [100%]
+
+============================= 12 passed in 0.38s ==============================

@@ -1,7 +1,7 @@
 /**
- * App — Story 3.5, 8.1.
+ * App — Story 3.5, 8.1, 17.4.
  * Structure minimale pour AC1/AC2 : BrowserRouter, CashRegisterGuard, AppNav, Routes.
- * Routes /admin/users protégées par AdminGuard (permission admin).
+ * Route /admin racine et /admin/* protégées par AdminGuard (permission admin).
  */
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { CashRegisterGuard, CaisseDashboardPage, CAISSE_PIN_PATH } from './caisse';
@@ -34,6 +34,7 @@ import { AdminGroupsPage } from './admin/AdminGroupsPage';
 import { AdminPermissionsPage } from './admin/AdminPermissionsPage';
 import { AdminQuickAnalysisPage } from './admin/AdminQuickAnalysisPage';
 import { VieAssociativeGuard } from './admin/VieAssociativeGuard';
+import { SuperAdminGuard } from './admin/SuperAdminGuard';
 import { AdminVieAssociativePage } from './admin/AdminVieAssociativePage';
 import { DashboardPage } from './dashboard';
 import { LoginPage } from './auth/LoginPage';
@@ -65,13 +66,13 @@ function AppRoutes() {
       <Route path="/cash-register/sale" element={<CashRegisterSalePage />} />
       <Route path="/cash-register/session/close" element={<CashRegisterSessionClosePage />} />
       <Route path={CAISSE_PIN_PATH} element={<CashRegisterPinPage />} />
-      <Route path="/admin" element={<AdminDashboardPage />} />
+      <Route path="/admin" element={<AdminGuard><AdminDashboardPage /></AdminGuard>} />
       <Route
         path="/admin/sites"
         element={
-          <AdminGuard>
+          <SuperAdminGuard>
             <AdminSitesPage />
-          </AdminGuard>
+          </SuperAdminGuard>
         }
       />
       <Route
@@ -176,9 +177,9 @@ function AppRoutes() {
       <Route
         path="/admin/health"
         element={
-          <AdminGuard>
+          <SuperAdminGuard>
             <AdminHealthPage />
-          </AdminGuard>
+          </SuperAdminGuard>
         }
       />
       <Route
@@ -200,9 +201,9 @@ function AppRoutes() {
       <Route
         path="/admin/settings"
         element={
-          <AdminGuard>
+          <SuperAdminGuard>
             <AdminSettingsPage />
-          </AdminGuard>
+          </SuperAdminGuard>
         }
       />
       <Route

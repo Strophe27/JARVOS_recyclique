@@ -62,11 +62,15 @@ export interface LegacyPreviewResponse {
 }
 
 export async function postAdminImportLegacyPreview(
-  accessToken: string
+  accessToken: string,
+  file: File
 ): Promise<LegacyPreviewResponse> {
+  const form = new FormData();
+  form.append('file', file);
   const res = await fetch(`${getBase()}/v1/admin/import/legacy/preview`, {
     method: 'POST',
     headers: getAuthHeaders(accessToken),
+    body: form,
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
@@ -83,11 +87,15 @@ export interface LegacyValidateResponse {
 }
 
 export async function postAdminImportLegacyValidate(
-  accessToken: string
+  accessToken: string,
+  file: File
 ): Promise<LegacyValidateResponse> {
+  const form = new FormData();
+  form.append('file', file);
   const res = await fetch(`${getBase()}/v1/admin/import/legacy/validate`, {
     method: 'POST',
     headers: getAuthHeaders(accessToken),
+    body: form,
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
@@ -104,11 +112,15 @@ export interface LegacyExecuteResponse {
 }
 
 export async function postAdminImportLegacyExecute(
-  accessToken: string
+  accessToken: string,
+  file: File
 ): Promise<LegacyExecuteResponse> {
+  const form = new FormData();
+  form.append('file', file);
   const res = await fetch(`${getBase()}/v1/admin/import/legacy/execute`, {
     method: 'POST',
     headers: getAuthHeaders(accessToken),
+    body: form,
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

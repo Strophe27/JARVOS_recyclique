@@ -78,16 +78,28 @@ export function AdminImportLegacyPage() {
   }, [accessToken, canAccess, csvFile, run]);
 
   const handlePreview = useCallback(() => {
-    run('preview', () => postAdminImportLegacyPreview(accessToken!), setPreviewResult);
-  }, [accessToken, canAccess, run]);
+    if (!csvFile) {
+      setError('Veuillez sélectionner un fichier CSV.');
+      return;
+    }
+    run('preview', () => postAdminImportLegacyPreview(accessToken!, csvFile), setPreviewResult);
+  }, [accessToken, canAccess, csvFile, run]);
 
   const handleValidate = useCallback(() => {
-    run('validate', () => postAdminImportLegacyValidate(accessToken!), setValidateResult);
-  }, [accessToken, canAccess, run]);
+    if (!csvFile) {
+      setError('Veuillez sélectionner un fichier CSV.');
+      return;
+    }
+    run('validate', () => postAdminImportLegacyValidate(accessToken!, csvFile), setValidateResult);
+  }, [accessToken, canAccess, csvFile, run]);
 
   const handleExecute = useCallback(() => {
-    run('execute', () => postAdminImportLegacyExecute(accessToken!), setExecuteResult);
-  }, [accessToken, canAccess, run]);
+    if (!csvFile) {
+      setError('Veuillez sélectionner un fichier CSV.');
+      return;
+    }
+    run('execute', () => postAdminImportLegacyExecute(accessToken!, csvFile), setExecuteResult);
+  }, [accessToken, canAccess, csvFile, run]);
 
   if (!canAccess) {
     return (
@@ -100,7 +112,7 @@ export function AdminImportLegacyPage() {
   return (
     <PageContainer title="Import legacy" maxWidth={1200} testId="admin-import-legacy-page">
       <Text size="sm" c="dimmed" mb="xs">
-        Analyse, prévisualisation, validation et exécution d&apos;un import CSV (stub v1).
+        Analyse, prévisualisation, validation et exécution d&apos;un import CSV.
       </Text>
       {error && <Alert color="red">{error}</Alert>}
 

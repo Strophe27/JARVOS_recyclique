@@ -1,5 +1,5 @@
 /**
- * Page admin BDD — Story 8.5.
+ * Page admin BDD — Story 8.5 / 17.3.
  * Route : /admin/db. Export, Purge transactions, Import (POST /v1/admin/db/*).
  */
 import { useCallback, useState } from 'react';
@@ -46,7 +46,7 @@ export function AdminDbPage() {
     setMessage(null);
     try {
       const res = await postAdminDbPurgeTransactions(accessToken);
-      setMessage(res.message ?? 'Purge effectuée (stub).');
+      setMessage(res.message ?? 'Purge effectuée.');
       setPurgeModalOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur purge');
@@ -63,7 +63,7 @@ export function AdminDbPage() {
     try {
       const res = await postAdminDbImport(accessToken, importFile);
       if (res.ok) {
-        setMessage(res.message ?? `Fichier ${res.filename} reçu (stub).`);
+        setMessage(res.message ?? `Fichier ${res.filename} importé.`);
         setImportFile(null);
       } else {
         setError(res.detail ?? 'Import refusé');
@@ -86,7 +86,7 @@ export function AdminDbPage() {
   return (
     <PageContainer title="Base de données" maxWidth={1200} testId="admin-db-page">
       <Text size="sm" c="dimmed" mb="xs">
-        Export, purge des transactions et import BDD (stub v1).
+        Export, purge des transactions et import BDD.
       </Text>
       {error && <Alert color="red">{error}</Alert>}
       {message && <Alert color="green">{message}</Alert>}
@@ -95,7 +95,7 @@ export function AdminDbPage() {
         <Card withBorder padding="md" radius="md" shadow="sm">
         <Text fw={500} mb="xs">Export BDD</Text>
         <Text size="sm" c="dimmed" mb="md">
-          Télécharge une sauvegarde (dump SQL stub en v1).
+          Télécharge une sauvegarde (dump SQL) de la base.
         </Text>
         <Button
           loading={exportLoading}
@@ -111,7 +111,7 @@ export function AdminDbPage() {
         <Card withBorder padding="md" radius="md" shadow="sm">
         <Text fw={500} mb="xs">Purge transactions</Text>
         <Text size="sm" c="dimmed" mb="md">
-          Supprime les données de transactions selon le périmètre (stub v1 : aucune suppression).
+          Supprime les données de transactions (sessions caisse, ventes, paiements).
         </Text>
         <Button
           color="orange"
@@ -131,7 +131,7 @@ export function AdminDbPage() {
         data-testid="modal-purge-confirm"
       >
         <Text size="sm" mb="md">
-          Êtes-vous sûr de vouloir lancer la purge des transactions ? (Stub v1 : aucune donnée ne sera supprimée.)
+          Êtes-vous sûr de vouloir lancer la purge des transactions ? Les sessions caisse, ventes et paiements seront définitivement supprimés.
         </Text>
         <Group>
           <Button loading={purgeLoading} color="red" onClick={handlePurgeConfirm} data-testid="btn-db-purge-confirm">
@@ -145,7 +145,7 @@ export function AdminDbPage() {
         <Card withBorder padding="md" radius="md" shadow="sm">
         <Text fw={500} mb="xs">Import BDD</Text>
         <Text size="sm" c="dimmed" mb="md">
-          Envoie un fichier de sauvegarde pour restauration (stub v1 : validation uniquement).
+          Envoie un fichier de sauvegarde SQL pour restauration.
         </Text>
         <input
           type="file"

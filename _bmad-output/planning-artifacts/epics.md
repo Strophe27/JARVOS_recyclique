@@ -245,6 +245,24 @@ FR24: Epic 1 — Charger modules (TOML, ModuleBase, EventBus, slots)
 FR25: Epic 1 — Coexistence plugins Paheko et modules RecyClique
 FR26: Epic 10 — Points d'extension (LayoutConfigService, VisualProvider) stubs v1
 FR27: (Post-MVP) Epic 10 — Fonds documentaire RecyClique
+FR-R01: Epic 17 — Verrouillage RBAC super-admin phase 1 (front + back)
+FR-R02: Epic 17 — Guard explicite route front `/admin`
+FR-R03: Epic 17 — Stabilisation harness auth/session backend (cluster Auth Harness)
+FR-R04: Epic 17 — Stabilisation runtime Vitest groupé guard/session (cluster Vitest Runtime)
+FR-R05: Epic 17 — Completion opérationnelle admin BDD (export/purge/import)
+FR-R06: Epic 17 — Completion opérationnelle pipeline import legacy CSV
+FR-R07: Epic 17 — Persistance réelle des paramètres admin (alertes/session/email)
+FR-R08: Epic 17 — Supervision admin non-stub (anomalies + test notifications)
+FR-R09: Epic 17 — Logs email admin exploitables
+FR-R10: Epic 17 — Rapports admin complets (by-session/export-bulk)
+FR-R11: Epic 17 — Discoverabilité super-admin phase 2 restaurée
+FR-R12: Epic 17 — Contrôle d'accès `/v1/users/me` déconnecté corrigé
+FR-R13: Epic 17 — Fiabilisation suite `api/tests/routers/test_auth.py` (cluster Auth Harness)
+FR-R14: Epic 17 — Suppression des blocages Vitest multi-fichiers (cluster Vitest Runtime)
+FR-R15: Epic 17 — Couverture role-based routes sensibles super-admin phase 1
+FR-R16: Epic 17 — Tests d'intégration routeur global/guards critiques
+FR-R17: Epic 17 — Tests API ciblés `/v1/admin/settings`
+FR-R18: Epic 17 — Tests admin technique au-delà du "happy path stub"
 
 ### Epic List
 
@@ -264,6 +282,7 @@ FR27: (Post-MVP) Epic 10 — Fonds documentaire RecyClique
 - **Epic 14**: Operationalisation identite unifiee RecyClique-Paheko (IdP, mise en service, runbooks)
 - **Epic 15**: Conformite visuelle et fonctionnelle : parite 1.4.4
 - **Epic 16**: Audit global de conformation et audit de derive BMAD (sans remediation)
+- **Epic 17**: Remediation post-audit 16-0 (vagues P0/P1/P2, execution story par story)
 
 ---
 
@@ -1689,4 +1708,271 @@ afin de lancer ensuite les remediations sur une base stable et objective.
 - priorisation unique `bloquant / important / confort`
 - zones non verifiees explicitement listees
 - decision de passage a la phase remediation possible sans nouveau recadrage
+
+---
+
+## Epic 17: Remediation post-audit 16-0 (sans nouveau scope)
+
+Livrer une remediation strictement limitee aux 18 ecarts du tableau unique `16-0-tableau-unique-ecarts.md`, avec priorisation en vagues P0/P1/P2, preuves obligatoires de fermeture par ID, et execution strictement story par story.
+
+**Prerequis :** Epic 16 done et valide (DoD atteint).
+
+**Contrainte ferme de perimetre :**
+- Source unique de priorisation/cadrage: `_bmad-output/implementation-artifacts/16-0-tableau-unique-ecarts.md`.
+- Aucun nouvel audit global.
+- Aucun nouveau perimetre hors ecarts `E16-*`.
+- Execution: une story a la fois, avec validation avant la suivante.
+
+**FRs couverts :** FR-R01 a FR-R18.
+
+### Vague 1 — P0 (bloquant)
+
+### Story 17.0: Stabilisation QA/Harness critique (clusters Auth Harness + Vitest Runtime)
+
+As a equipe produit/QA,
+I want stabiliser d'abord la base de preuve backend et frontend,
+So that toutes les remediations suivantes puissent etre validees de facon fiable, sans faux positifs ni faux negatifs.
+
+**Acceptance Criteria:**
+
+**Given** la campagne actuelle invalidee sur auth/session et les runs Vitest groupes instables  
+**When** la story de stabilisation est executee en tete de vague 1  
+**Then** le cluster Auth Harness est fiabilise sans doublon d'implementation pour `E16-A-003` + `E16-C-002`  
+**And** le cluster Vitest Runtime est fiabilise sans doublon d'implementation pour `E16-A-004` + `E16-C-003`.
+
+**Mapping E16-\* :** `E16-A-003`, `E16-C-002`, `E16-A-004`, `E16-C-003`  
+**Dependances :** aucune (story de depart obligatoire)  
+**Preuves obligatoires de fermeture :**
+- sortie pytest montrant la suite auth/session exploitable (sans erreurs setup bloquantes),
+- sortie Vitest multi-fichiers sans blocage de process en fin de run,
+- mise a jour du journal de preuves avec liens vers commandes/fichiers concernes.
+
+### Story 17.1: Verrouillage RBAC super-admin phase 1 (front + back)
+
+As a responsable securite,
+I want imposer un verrouillage role-based coherent des routes super-admin phase 1 sur front et back,
+So that aucun role admin non autorise ne puisse acceder aux surfaces sensibles.
+
+**Acceptance Criteria:**
+
+**Given** les routes super-admin phase 1 actuellement exposées de manière non conforme  
+**When** la politique d'accès est appliquee et alignee front/back  
+**Then** les routes sensibles super-admin phase 1 ne sont accessibles qu'aux roles autorises  
+**And** les cas interdits sont bloques explicitement et traces dans les tests.
+
+**Mapping E16-\* :** `E16-A-001`, `E16-C-004`  
+**Dependances :** Story `17.0`  
+**Preuves obligatoires de fermeture :**
+- matrice role x route mise a jour et conforme,
+- tests front/back des routes sensibles (autorise/interdit) verts,
+- preuve code sur routes `/admin/health`, `/admin/settings`, `/admin/sites` et guards associes.
+
+### Story 17.2: Correction controle d'acces `/v1/users/me` en etat deconnecte
+
+As a utilisateur non authentifie,
+I want recevoir un refus 401 sur `/v1/users/me`,
+So that le controle d'acces utilisateur courant respecte le contrat de securite.
+
+**Acceptance Criteria:**
+
+**Given** une requete sur `/v1/users/me` sans session/token valide  
+**When** l'endpoint est appele  
+**Then** la reponse est 401 (et non 200)  
+**And** le test automatique correspondant passe dans la campagne standard.
+
+**Mapping E16-\* :** `E16-C-001`  
+**Dependances :** Story `17.0`  
+**Preuves obligatoires de fermeture :**
+- test `test_get_me_unauthorized` vert,
+- sortie pytest de la campagne cible integree,
+- reference explicite au diff backend concerné.
+
+### Story 17.3: Completion operationnelle admin BDD (export/purge/import)
+
+As a admin technique,
+I want des actions BDD admin reelement operationnelles (sans stub),
+So that la maintenance et la reprise de donnees puissent etre executees en conditions reelles.
+
+**Acceptance Criteria:**
+
+**Given** les actions admin BDD actuellement en mode stub  
+**When** j'exécute export, purge transactionnelle et import  
+**Then** chaque action produit un effet metier reel et verifiable  
+**And** les erreurs sont gerees proprement avec reponses API explicites.
+
+**Mapping E16-\* :** `E16-B-001`  
+**Dependances :** Story `17.0`  
+**Preuves obligatoires de fermeture :**
+- test(s) API/integre validant effet reel des trois actions,
+- preuve fonctionnelle front reliée a des reponses non-stub,
+- artefact de verification (journal manuel ou sortie commande) lie a `E16-B-001`.
+
+### Vague 2 — P1 (important)
+
+### Story 17.4: Guard explicite `/admin` + tests d'integration routeur global
+
+As a administrateur legitime,
+I want une protection explicite de la route `/admin` et une couverture d'integration du routeur global,
+So that les regressions de guard/routage critiques soient detectees automatiquement.
+
+**Acceptance Criteria:**
+
+**Given** la route front `/admin` et le routeur global critique  
+**When** les guards et tests d'integration sont mis en place  
+**Then** l'acces non autorise a `/admin` est bloque explicitement  
+**And** les parcours de routage critiques ne reposent plus sur un test placeholder.
+
+**Mapping E16-\* :** `E16-A-002`, `E16-C-005`  
+**Dependances :** Story `17.1`  
+**Preuves obligatoires de fermeture :**
+- tests d'integration `App`/guards verts (plus de placeholder),
+- verification manuelle autorise/interdit sur `/admin`,
+- lien explicite vers les fichiers de tests et routeur modifies.
+
+### Story 17.5: Completion pipeline import legacy CSV (analyze/preview/validate/execute)
+
+As a admin technique,
+I want un pipeline import legacy completement operationnel,
+So that la migration legacy puisse etre executee de bout en bout sans reponses stub.
+
+**Acceptance Criteria:**
+
+**Given** un jeu de donnees CSV legacy representatif  
+**When** je lance analyze, preview, validate puis execute  
+**Then** chaque etape retourne un resultat metier reel et coherent  
+**And** les cas d'erreur de donnees invalides sont explicitement geres.
+
+**Mapping E16-\* :** `E16-B-002`  
+**Dependances :** Story `17.3`  
+**Preuves obligatoires de fermeture :**
+- trace complete du pipeline (4 etapes) sur jeu de test,
+- resultats API non-stub avec assertions sur effets reels,
+- preuve UI correspondante sur `AdminImportLegacyPage`.
+
+### Story 17.6: Persistance parametres admin + couverture API `/v1/admin/settings`
+
+As a administrateur,
+I want que les parametres admin soient vraiment persistés et couverts par des tests API ciblés,
+So that les regressions de configuration ne passent plus silencieusement.
+
+**Acceptance Criteria:**
+
+**Given** des modifications de parametres alertes/session/email  
+**When** elles sont enregistrees puis relues  
+**Then** les valeurs persistent effectivement et sont restituées correctement  
+**And** une couverture de tests API cibles `/v1/admin/settings` valide les parcours nominaux et erreurs.
+
+**Mapping E16-\* :** `E16-B-003`, `E16-C-006`  
+**Dependances :** Story `17.0`  
+**Preuves obligatoires de fermeture :**
+- tests API `/v1/admin/settings` ajoutes et verts,
+- preuve de persistance reelle (ecriture + relecture),
+- verification front `AdminSettingsPage` sur donnees persistées.
+
+### Story 17.7: Supervision admin non-stub (anomalies + test notifications)
+
+As a admin exploitation,
+I want une supervision admin complete et non-stub,
+So that la detection d'anomalies et les notifications de test soient exploitables en production.
+
+**Acceptance Criteria:**
+
+**Given** la page de sante admin et les endpoints associes  
+**When** je consulte les anomalies et lance un test de notification  
+**Then** les informations retournees correspondent a des controles reels  
+**And** le test de notification execute un flux effectif, pas un placeholder.
+
+**Mapping E16-\* :** `E16-B-004`  
+**Dependances :** Story `17.0`  
+**Preuves obligatoires de fermeture :**
+- test(s) API sur endpoints health/admin concernes,
+- validation front `AdminHealthPage` avec donnees non-stub,
+- artefact de verification notification (resultat attendu/observe).
+
+### Vague 3 — P2 (confort)
+
+### Story 17.8: Logs email admin exploitables
+
+As a admin,
+I want consulter des logs email utiles,
+So that je puisse auditer l'historique des envois et diagnostiquer les incidents.
+
+**Acceptance Criteria:**
+
+**Given** des envois email existants dans le systeme  
+**When** j'ouvre la vue logs email admin  
+**Then** la liste affiche des donnees exploitables (pas vide par défaut hors cas réel)  
+**And** les filtres/champs essentiels permettent une lecture operationnelle.
+
+**Mapping E16-\* :** `E16-B-005`  
+**Dependances :** Story `17.7`  
+**Preuves obligatoires de fermeture :**
+- test(s) API de consultation logs email,
+- verification front `AdminEmailLogsPage`,
+- preuve de donnees de logs reelles ou jeu de test reproductible.
+
+### Story 17.9: Rapports admin complets (by-session/export-bulk)
+
+As a administrateur,
+I want des rapports admin complets et exportables en masse,
+So that le reporting operationnel ne soit plus limite a des sorties minimales.
+
+**Acceptance Criteria:**
+
+**Given** des sessions et donnees de caisse disponibles  
+**When** je consulte les rapports by-session et lance un export-bulk  
+**Then** les sorties contiennent les informations metier attendues  
+**And** le format d'export est exploitable sans retraitement manuel lourd.
+
+**Mapping E16-\* :** `E16-B-006`  
+**Dependances :** Story `17.3`  
+**Preuves obligatoires de fermeture :**
+- test(s) API rapports + export-bulk,
+- verification front `AdminReportsPage`,
+- exemple de sortie export valide.
+
+### Story 17.10: Discoverabilite super-admin phase 2 dans la navigation
+
+As a super-admin,
+I want retrouver les routes techniques phase 2 via la navigation,
+So that l'acces fonctionnel ne depenne plus de chemins caches.
+
+**Acceptance Criteria:**
+
+**Given** les routes techniques phase 2 existantes mais peu visibles  
+**When** la navigation super-admin est revue dans le perimetre 16-0  
+**Then** les routes techniques cibles sont accessibles depuis le menu attendu  
+**And** cette exposition n'ouvre pas de droits supplementaires non autorises.
+
+**Mapping E16-\* :** `E16-B-007`  
+**Dependances :** Story `17.1`  
+**Preuves obligatoires de fermeture :**
+- verification navigation super-admin sur routes techniques ciblees,
+- tests de non-regression d'acces (autorise/interdit),
+- trace de conformité avec annexe super-admin phase 2.
+
+### Story 17.11: Renforcement tests admin technique hors "happy path stub"
+
+As a equipe QA,
+I want des tests admin technique qui valident des effets metier reels et cas d'erreur,
+So that la robustesse ne soit plus surestimee par des tests purement structurels.
+
+**Acceptance Criteria:**
+
+**Given** les modules admin BDD/import legacy et leurs parcours critiques  
+**When** les tests sont elargis au-dela du contrat de stub  
+**Then** les assertions couvrent des effets metier reels et des chemins d'erreur significatifs  
+**And** les tests servent de garde-fous de non-regression sur les zones techniques critiques.
+
+**Mapping E16-\* :** `E16-C-007`  
+**Dependances :** Stories `17.3` et `17.5`  
+**Preuves obligatoires de fermeture :**
+- nouveaux tests backend admin technique verts,
+- couverture minimale documentee des cas d'erreur critiques,
+- lien explicite entre tests ajoutes et fermeture `E16-C-007`.
+
+**Regle d'execution transversale Epic 17 (obligatoire):**
+- ordre strict des vagues: V1 -> V2 -> V3,
+- execution stricte story par story (aucun run massif),
+- fermeture d'un `E16-*` uniquement apres preuve associee validee.
 

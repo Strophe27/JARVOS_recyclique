@@ -22,7 +22,8 @@ import {
 import { PageContainer, PageSection } from '../shared/layout';
 
 export function AdminSettingsPage() {
-  const { accessToken, permissions } = useAuth();
+  const { accessToken, permissions, user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin' || permissions.includes('super_admin');
   const [_settings, setSettings] = useState<SettingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export function AdminSettingsPage() {
   const [emailTestMessage, setEmailTestMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!accessToken || !permissions.includes('admin')) return;
+    if (!accessToken || !isSuperAdmin) return;
     setLoading(true);
     setError(null);
     try {
@@ -44,7 +45,7 @@ export function AdminSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, permissions]);
+  }, [accessToken, isSuperAdmin]);
 
   useEffect(() => {
     load();
@@ -81,10 +82,10 @@ export function AdminSettingsPage() {
     }
   };
 
-  if (!permissions.includes('admin')) {
+  if (!isSuperAdmin) {
     return (
       <div data-testid="admin-settings-forbidden">
-        <p>Accès réservé aux administrateurs.</p>
+        <p>Acces reserve aux super-administrateurs.</p>
       </div>
     );
   }
@@ -100,7 +101,7 @@ export function AdminSettingsPage() {
   return (
     <PageContainer title="Paramètres" maxWidth={1200} testId="admin-settings-page">
       <Text size="sm" c="dimmed" mb="xs">
-        Seuils d&apos;alertes, session, email, activité (stub v1 : lecture/écriture minimale).
+        Seuils d&apos;alertes, session, email, activité (persistance BDD).
       </Text>
       {error && <Alert color="red">{error}</Alert>}
       <PageSection>

@@ -36,6 +36,7 @@ describe('AdminSitesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseAuth.mockReturnValue({
+      user: { id: '1', username: 'superadmin', role: 'super_admin' },
       accessToken: 'token',
       permissions: ['admin'],
     });
@@ -50,8 +51,12 @@ describe('AdminSitesPage', () => {
     expect(screen.getByTestId('admin-sites-new')).toBeInTheDocument();
   });
 
-  it('shows forbidden when user lacks admin permission', () => {
-    mockUseAuth.mockReturnValue({ accessToken: null, permissions: ['operator'] });
+  it('shows forbidden for admin non super_admin', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: '2', username: 'admin', role: 'admin' },
+      accessToken: 'token',
+      permissions: ['admin'],
+    });
     renderWithProviders();
     expect(screen.getByTestId('admin-sites-forbidden')).toBeInTheDocument();
   });

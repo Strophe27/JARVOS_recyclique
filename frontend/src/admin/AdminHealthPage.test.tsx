@@ -15,10 +15,14 @@ vi.mock('../auth/AuthContext', () => ({ useAuth: () => mockUseAuth() }));
 const mockGetAdminHealth = vi.fn();
 const mockGetAdminHealthDatabase = vi.fn();
 const mockGetAdminHealthScheduler = vi.fn();
+const mockGetAdminHealthAnomalies = vi.fn();
+const mockPostAdminHealthTestNotifications = vi.fn();
 vi.mock('../api/adminHealthAudit', () => ({
   getAdminHealth: (...args: unknown[]) => mockGetAdminHealth(...args),
   getAdminHealthDatabase: (...args: unknown[]) => mockGetAdminHealthDatabase(...args),
   getAdminHealthScheduler: (...args: unknown[]) => mockGetAdminHealthScheduler(...args),
+  getAdminHealthAnomalies: (...args: unknown[]) => mockGetAdminHealthAnomalies(...args),
+  postAdminHealthTestNotifications: (...args: unknown[]) => mockPostAdminHealthTestNotifications(...args),
 }));
 
 function renderWithProviders(ui: ReactElement) {
@@ -33,7 +37,7 @@ describe('AdminHealthPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseAuth.mockReturnValue({
-      user: { id: '1', username: 'admin' },
+      user: { id: '1', username: 'superadmin', role: 'super_admin' },
       permissions: ['admin'],
       accessToken: 'token',
     });
@@ -51,17 +55,22 @@ describe('AdminHealthPage', () => {
       last_error: null,
       last_success_at: null,
     });
+    mockGetAdminHealthAnomalies.mockResolvedValue({ items: [], count: 0 });
+    mockPostAdminHealthTestNotifications.mockResolvedValue({
+      message: 'Email de test envoye',
+      configured: true,
+    });
   });
 
-  it('affiche forbidden quand pas admin', () => {
+  it('affiche forbidden pour admin non super_admin', () => {
     mockUseAuth.mockReturnValue({
-      user: { id: '1' },
-      permissions: [],
+      user: { id: '1', username: 'admin', role: 'admin' },
+      permissions: ['admin'],
       accessToken: 'token',
     });
     renderWithProviders(<AdminHealthPage />);
     expect(screen.getByTestId('admin-health-forbidden')).toBeInTheDocument();
-    expect(screen.getByText(/Accès réservé aux administrateurs/)).toBeInTheDocument();
+    expect(screen.getByText(/super-administrateurs/i)).toBeInTheDocument();
   });
 
   it('appelle les APIs health et affiche le statut global', async () => {
@@ -70,6 +79,7 @@ describe('AdminHealthPage', () => {
       expect(mockGetAdminHealth).toHaveBeenCalledWith('token');
       expect(mockGetAdminHealthDatabase).toHaveBeenCalledWith('token');
       expect(mockGetAdminHealthScheduler).toHaveBeenCalledWith('token');
+      expect(mockGetAdminHealthAnomalies).toHaveBeenCalledWith('token');
     });
     await waitFor(() => {
       expect(screen.getByTestId('admin-health-page')).toBeInTheDocument();
@@ -85,6 +95,38 @@ describe('AdminHealthPage', () => {
     renderWithProviders(<AdminHealthPage />);
     await waitFor(() => {
       expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
+  });
+
+  it('charge et affiche les anomalies', async () => {
+    mockGetAdminHealthAnomalies.mockResolvedValue({
+      items: [{ code: 'redis_error', component: 'redis', message: 'Redis unreachable', severity: 'error' }],
+      count: 1,
+    });
+    renderWithProviders(<AdminHealthPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-health-page')).toBeInTheDocument();
+      expect(mockGetAdminHealthAnomalies).toHaveBeenCalledWith('token');
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Redis unreachable')).toBeInTheDocument();
+      expect(screen.getByTestId('anomaly-card')).toBeInTheDocument();
+    });
+  });
+
+  it('test notifications affiche le message reel', async () => {
+    mockPostAdminHealthTestNotifications.mockResolvedValue({
+      message: 'Configuration email incomplete',
+      configured: false,
+    });
+    renderWithProviders(<AdminHealthPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-test-notifications')).toBeInTheDocument();
+    });
+    screen.getByTestId('btn-test-notifications').click();
+    await waitFor(() => {
+      expect(mockPostAdminHealthTestNotifications).toHaveBeenCalledWith('token');
+      expect(screen.getByTestId('test-notifications-message')).toHaveTextContent('Configuration email incomplete');
     });
   });
 });

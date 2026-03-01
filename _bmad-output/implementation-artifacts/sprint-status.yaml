@@ -1,5 +1,5 @@
 # generated: 2026-02-28
-# updated: 2026-03-01 (ajout Epic 15 backlog - conformite visuelle parite 1.4.4 - 6 stories)
+# updated: 2026-03-01 (story 17.3 creee, passage ready-for-dev)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -150,3 +150,13 @@ development_status:
   15-4-page-reception-interface-complete: done
   15-5-dashboard-admin-stats-et-navigation: done
   epic-15-retrospective: optional
+
+  epic-17: in-progress
+  17-0-stabilisation-qa-harness-critique-clusters-auth-harness-vitest-runtime: done
+  17-1-verrouillage-rbac-super-admin-phase-1-front-back: done
+  17-2-correction-controle-acces-users-me-etat-deconnecte: done
+  17-3-completion-operationnelle-admin-bdd-export-purge-import: done
+  17-4-guard-explicite-admin-tests-integration-routeur-global: done
+  17-5-completion-pipeline-import-legacy-csv-analyze-preview-validate-execute: done
+  17-6-persistance-parametres-admin-couverture-api-v1-admin-settings: done
+  17-7-supervision-admin-non-stub-anomalies-test-notifications: review

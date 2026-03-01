@@ -27,6 +27,7 @@ from api.models.mapping import (
 from api.models.declarative import DeclarativeAggregate
 from api.models.member_sync import PahekoMemberLink, PahekoMemberSyncState
 from api.models.paheko_access_exception import PahekoAccessException
+from api.models.admin_setting import AdminSetting
 
 __all__ = [
     "Base",
@@ -57,4 +58,5 @@ __all__ = [
     "PahekoMemberLink",
     "PahekoMemberSyncState",
     "PahekoAccessException",
+    "AdminSetting",
 ]

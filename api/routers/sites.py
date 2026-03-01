@@ -1,4 +1,4 @@
-"""Router sites — CRUD /v1/sites (Story 2.1). Protégé RBAC (Story 3.2) : admin."""
+"""Router sites — CRUD /v1/sites (Story 2.1). Protégé RBAC (Story 17.1) : super_admin."""
 
 from datetime import datetime, timezone
 from uuid import UUID
@@ -14,14 +14,14 @@ from api.schemas.site import SiteCreate, SiteResponse, SiteUpdate
 
 router = APIRouter(prefix="/sites", tags=["sites"])
 
-_Admin = Depends(require_permissions("admin"))
+_SuperAdmin = Depends(require_permissions("super_admin"))
 
 
 @router.get("", response_model=list[SiteResponse])
 def list_sites(
     is_active: bool | None = None,
     db: Session = Depends(get_db),
-    current_user: User = _Admin,
+    current_user: User = _SuperAdmin,
 ) -> list[Site]:
     """GET /v1/sites — liste des sites (filtre optionnel is_active)."""
     q = select(Site)
@@ -34,7 +34,7 @@ def list_sites(
 def get_site(
     site_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = _Admin,
+    current_user: User = _SuperAdmin,
 ) -> Site:
     """GET /v1/sites/{site_id} — détail d'un site (404 si absent)."""
     row = db.execute(select(Site).where(Site.id == site_id)).scalars().one_or_none()
@@ -47,7 +47,7 @@ def get_site(
 def create_site(
     body: SiteCreate,
     db: Session = Depends(get_db),
-    current_user: User = _Admin,
+    current_user: User = _SuperAdmin,
 ) -> Site:
     """POST /v1/sites — création (body : name, is_active optionnel)."""
     site = Site(name=body.name, is_active=body.is_active)
@@ -62,7 +62,7 @@ def update_site(
     site_id: UUID,
     body: SiteUpdate,
     db: Session = Depends(get_db),
-    current_user: User = _Admin,
+    current_user: User = _SuperAdmin,
 ) -> Site:
     """PATCH /v1/sites/{site_id} — mise à jour partielle (name, is_active)."""
     site = db.execute(select(Site).where(Site.id == site_id)).scalars().one_or_none()
@@ -86,7 +86,7 @@ def update_site(
 def delete_site(
     site_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = _Admin,
+    current_user: User = _SuperAdmin,
 ) -> None:
     """DELETE /v1/sites/{site_id} — suppression (204 ou 404)."""
     site = db.execute(select(Site).where(Site.id == site_id)).scalars().one_or_none()
