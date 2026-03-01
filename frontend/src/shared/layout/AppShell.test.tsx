@@ -33,7 +33,7 @@ describe('AppShell', () => {
     expect(screen.getByTestId('app-shell-body')).toBeInTheDocument();
     expect(screen.getByTestId('app-shell-main')).toContainElement(screen.getByTestId('test-content'));
     expect(screen.getByTestId('app-shell-user')).toHaveTextContent('Alex Dupont');
-    expect(screen.getByTestId('app-shell-logo')).toHaveAttribute('href', '/caisse');
+    expect(screen.getByTestId('app-shell-logo')).toHaveAttribute('href', '/dashboard');
   });
 
   it('affiche un libelle anonyme si aucun utilisateur', () => {

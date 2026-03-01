@@ -35,6 +35,7 @@ import { AdminPermissionsPage } from './admin/AdminPermissionsPage';
 import { AdminQuickAnalysisPage } from './admin/AdminQuickAnalysisPage';
 import { VieAssociativeGuard } from './admin/VieAssociativeGuard';
 import { AdminVieAssociativePage } from './admin/AdminVieAssociativePage';
+import { DashboardPage } from './dashboard';
 import { LoginPage } from './auth/LoginPage';
 import { SignupPage } from './auth/SignupPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
@@ -46,7 +47,7 @@ import { AppShell } from './shared/layout';
 function AppRoutes() {
   const { user, isHydrated } = useAuth();
   const rootRedirect = !isHydrated ? null : (
-    <Navigate to={user ? '/caisse' : '/login'} replace />
+    <Navigate to={user ? '/dashboard' : '/login'} replace />
   );
 
   return (
@@ -56,6 +57,7 @@ function AppRoutes() {
       <Route path="/inscription" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/caisse" element={<CaisseDashboardPage />} />
       <Route path="/cash-register/virtual" element={<CaisseDashboardPage />} />
       <Route path="/cash-register/deferred" element={<CaisseDashboardPage />} />

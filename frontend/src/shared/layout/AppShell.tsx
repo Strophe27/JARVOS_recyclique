@@ -49,7 +49,7 @@ export function AppShell({ children }: AppShellProps) {
         data-testid="app-shell-header"
       >
         <div className="app-shell__header-left">
-          <Link to="/caisse" className="app-shell__logo" data-testid="app-shell-logo">
+          <Link to="/dashboard" className="app-shell__logo" data-testid="app-shell-logo">
             <RecycleIcon />
             <span className="app-shell__brand-text">RecyClique</span>
           </Link>

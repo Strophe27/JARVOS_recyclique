@@ -13,7 +13,7 @@ export interface ShellNavItem {
 
 /** Onglets principaux — navigation horizontale parite 1.4.4. */
 const HORIZONTAL_NAV_ITEMS: ShellNavItem[] = [
-  { to: '/caisse', label: 'Tableau de bord' },
+  { to: '/dashboard', label: 'Tableau de bord' },
   { to: '/caisse', label: 'Caisse' },
   { to: '/reception', label: 'Réception', permissionCode: 'reception.access' },
   { to: '/admin', label: 'Administration', permissionCode: 'admin' },

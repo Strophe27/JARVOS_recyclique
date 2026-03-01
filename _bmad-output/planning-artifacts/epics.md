@@ -262,6 +262,8 @@ FR27: (Post-MVP) Epic 10 — Fonds documentaire RecyClique
 - **Epic 12**: Identité cross-plateforme (SSO, source de vérité Paheko, gouvernance rôles/groupes)
 - **Epic 13**: Remédiation visuelle pixel-perfect 1.4.4 (charte + QA continue)
 - **Epic 14**: Operationalisation identite unifiee RecyClique-Paheko (IdP, mise en service, runbooks)
+- **Epic 15**: Conformite visuelle et fonctionnelle : parite 1.4.4
+- **Epic 16**: Audit global de conformation et audit de derive BMAD (sans remediation)
 
 ---
 
@@ -1535,4 +1537,156 @@ afin d'avoir une vue d'ensemble et d'acceder aux fonctions admin rapidement.
 - API stats du jour a creer si inexistante (ou adapter ce qui existe)
 - Blocs navigation avec icones Mantine et couleurs de fond specifiques
 - Garder la logique existante (pahekoAccessDecision, etc.)
+
+---
+
+## Epic 16: Audit global de conformation + derive BMAD (sans remediation)
+
+Produire un audit global de conformation de RecyClique (securite/session/acces, conformite fonctionnelle, robustesse/qualite) et un audit de derive BMAD (intention initiale vs etat observe), avec preuves factuelles, priorisation claire et **sans correction de code dans cet epic**.
+
+**Objectif non negociable :** cadrer proprement l'etat reel avant toute remediations.
+
+**Perimetre inclus (sources de preuve) :**
+- `_bmad-output/planning-artifacts/prd.md`
+- `_bmad-output/planning-artifacts/architecture.md`
+- `_bmad-output/planning-artifacts/epics.md` (epics/stories initiaux et evolutions)
+- `_bmad-output/implementation-artifacts/` (audits, reviews, snapshots, retros, captures)
+- `references/ancien-repo/` (baseline 1.4.4)
+- audits precedents deja produits (ex. `11-0-audit-derive-global-staging-vs-1.4.4.md`)
+
+**Exclusions explicites :**
+- bruit technique d'execution (`node_modules`, caches, logs runtime)
+- etats machine/autopilot (`*.agent-state.json`, `README-autopilot-state`)
+- secrets/credentials
+- documents hors perimetre conformation RecyClique
+
+**FRs couverts (mode audit/verif uniquement) :** verification transversale FR1 a FR27, avec focus prioritaire FR4/FR5/FR14/FR15/FR16/FR17 (acces et roles), FR21/FR26 (placeholders/stubs), NFR-S*, NFR-I*, NFR-P*.
+
+### Story 16.1: [BLOQUANT] Lot A — Audit securite, session et acces (front + back)
+
+En tant que product owner,
+je veux un audit factuel du comportement securite/session/acces (logout, guards front et back, routes sensibles, super-admin phase 1),
+afin d'identifier les risques bloquants avant toute remediations.
+
+**Contrainte ferme :** audit seulement, sans remediation code.
+
+**Acceptance Criteria:**
+
+**Given** un environnement de verification et les references PRD/Architecture/Epics/artefacts existants  
+**When** l'audit Lot A est execute sur les parcours connecte/deconnecte et sur les routes sensibles  
+**Then** un inventaire des ecarts est produit avec severite, reproduction, preuve, impact et hypothese de cause  
+**And** le livrable couvre au minimum: logout effectif (token/session), guards front, guards back (API), acces routes sensibles, visibilite/droits super-admin phase 1.
+
+**Given** les role matrices cible et etat observe  
+**When** la verif de droits est faite role par role  
+**Then** chaque route/ecran sensible est classe en conforme / non conforme / non verifiable  
+**And** toute non-conformite est classee avec priorite `bloquant`, `important` ou `confort`.
+
+**Livrables de preuve obligatoires :**
+- matrice d'acces (role x route x etat attendu/observe)
+- journal de tests manuels cible (logout, routes deconnecte, routes admin, APIs sensibles)
+- liste des ecarts P0/P1/P2 avec references aux captures/artefacts existants
+
+### Story 16.2: [IMPORTANT] Lot B — Audit conformite fonctionnelle + inventaire stubs/placeholders
+
+En tant que product owner,
+je veux un audit de conformite fonctionnelle et un inventaire des stubs/placeholders (incluant super-admin phase 2 contenu),
+afin de distinguer clairement ce qui est reellement implemente de ce qui est partiel ou fictif.
+
+**Contrainte ferme :** audit seulement, sans remediation code.
+
+**Acceptance Criteria:**
+
+**Given** les stories livrees (jusqu'a Epic 15) et les references 1.4.4  
+**When** le lot B est audite ecran par ecran et flux par flux  
+**Then** chaque fonctionnalite est etiquetee `conforme`, `ecart`, `stub`, `placeholder`, `hors-perimetre`  
+**And** les ecarts incluent la preuve associee (artifact/review/snapshot/capture) et le niveau de criticite.
+
+**Given** le domaine super-admin  
+**When** l'audit phase 2 contenu est realise  
+**Then** la liste des contenus attendus vs observes est completee  
+**And** chaque manque est classe entre `manque de role`, `stub`, `dette technique` ou `derive assumee`.
+
+**Livrables de preuve obligatoires :**
+- registre stubs/placeholders consolide (avec statut et impact metier)
+- matrice conformite fonctionnelle (attendu PRD/epics vs observe)
+- annexe super-admin phase 2 (contenus presents/manquants + classification)
+
+### Story 16.3: [IMPORTANT] Lot C — Audit robustesse et qualite (tests, couverture, zones fragiles)
+
+En tant que product owner,
+je veux un audit robustesse/qualite focalise sur les tests manquants, la couverture et les zones fragiles,
+afin d'objectiver le risque de regression avant remediations.
+
+**Contrainte ferme :** audit seulement, sans remediation code.
+
+**Acceptance Criteria:**
+
+**Given** le code et les preuves QA existantes  
+**When** le lot C est audite sur les zones critiques (auth, sessions, admin, routes sensibles)  
+**Then** une cartographie des trous de couverture est produite (tests presents vs manquants)  
+**And** chaque trou est associe a un risque (securite, fonctionnel, non-regression) et a une priorite.
+
+**Given** les retro/reviews/audits deja produits  
+**When** les zones fragiles recurrentes sont consolidees  
+**Then** une shortlist des modules a forte fragilite est fournie  
+**And** les justifications pointent vers des preuves existantes (review JSON, retro, captures, logs de build/test).
+
+**Livrables de preuve obligatoires :**
+- heatmap risque x couverture (par domaine)
+- inventaire tests critiques manquants (sans implementation)
+- liste des "zones rouges" a surveiller en remediation
+
+### Story 16.4: [BLOQUANT] Audit de derive BMAD — intention initiale vs etat observe
+
+En tant que sponsor produit,
+je veux un audit de derive qui compare l'intention initiale (PRD/architecture/epics initiaux) a l'etat observe,
+afin de classifier les ecarts et aligner la suite sans ambiguite.
+
+**Contrainte ferme :** audit seulement, sans remediation code.
+
+**Acceptance Criteria:**
+
+**Given** les documents d'intention (PRD, architecture, epics initiaux) et les preuves d'etat actuel  
+**When** la comparaison est faite exigence par exigence et story par story  
+**Then** chaque ecart est classe dans une taxonomie unique: `bug`, `stub`, `derive assumee`, `manque de role`, `dette technique`  
+**And** chaque classification est justifiee par une preuve et une decision explicite (a confirmer si ambigu).
+
+**Given** les ecarts classes  
+**When** la priorisation globale est etablie  
+**Then** la sortie fournit un backlog d'audit priorise `bloquant / important / confort`  
+**And** ce backlog ne contient aucune tache de correction, uniquement des constats et cadrages.
+
+**Livrables de preuve obligatoires :**
+- matrice de derive (intention -> observe -> classification -> impact)
+- tableau de priorites globales (P0/P1/P2)
+- synthese "derive assumee vs derive subie" validable produit
+
+### Story 16.5: [BLOQUANT] Consolidation finale audit global + Definition of Done
+
+En tant que decideur projet,
+je veux une sortie audit unique, exécutable et partageable,
+afin de lancer ensuite les remediations sur une base stable et objective.
+
+**Contrainte ferme :** audit seulement, sans remediation code.
+
+**Acceptance Criteria:**
+
+**Given** les livrables des lots A/B/C et de l'audit de derive  
+**When** la consolidation finale est produite  
+**Then** le dossier d'audit contient l'ensemble des preuves et un ordre de priorite unique `bloquant / important / confort`  
+**And** chaque item est actionnable sans re-ouvrir un chantier de cadrage.
+
+**Given** la Definition of Done de l'audit global  
+**When** la revue de cloture est faite  
+**Then** l'audit est considere done uniquement si tous les criteres ci-dessous sont atteints  
+**And** aucune remediation code n'a ete introduite dans le cadre de cet epic.
+
+**Definition of Done — Audit Global (obligatoire):**
+- perimetre complet couvert (Lot A, Lot B, Lot C, derive BMAD)
+- preuves tracees pour chaque ecart (artifact/review/capture/reference)
+- classification complete des ecarts (`bug`, `stub`, `derive assumee`, `manque de role`, `dette technique`)
+- priorisation unique `bloquant / important / confort`
+- zones non verifiees explicitement listees
+- decision de passage a la phase remediation possible sans nouveau recadrage
 
