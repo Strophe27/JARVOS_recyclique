@@ -3,6 +3,8 @@
  * GET/POST/PUT /v1/admin/users, /v1/admin/users/pending, /v1/admin/groups, etc.
  */
 
+import { buildUrl } from './_buildUrl';
+
 const getBase = (): string => (import.meta.env?.VITE_API_BASE_URL as string) ?? '';
 
 function getAuthHeaders(accessToken: string): Record<string, string> {
@@ -66,7 +68,7 @@ export async function getAdminUsers(
   accessToken: string,
   params?: { role?: string; status?: string; page?: number; page_size?: number }
 ): Promise<AdminUser[]> {
-  const url = new URL(`${getBase()}/v1/admin/users`);
+  const url = buildUrl('/v1/admin/users');
   if (params?.role) url.searchParams.set('role', params.role);
   if (params?.status) url.searchParams.set('status', params.status);
   if (params?.page) url.searchParams.set('page', String(params.page));

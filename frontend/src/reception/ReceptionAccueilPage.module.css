@@ -1,0 +1,140 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--mantine-spacing-md);
+}
+
+/* ── Header section ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+
+.headerIcon {
+  width: 28px;
+  height: 28px;
+  color: var(--ui-color-brand-header);
+}
+
+/* ── Action buttons ── */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.openPosteBtn {
+  height: 80px;
+  font-size: 20px;
+  font-weight: 700;
+  background-color: var(--ui-color-brand-header);
+  color: var(--ui-color-surface);
+  border-radius: var(--ui-radius-lg);
+}
+
+.openPosteBtn:hover {
+  background-color: var(--mantine-color-brand-9);
+}
+
+.deferredBtn {
+  align-self: center;
+  min-width: 260px;
+  background-color: var(--ui-color-deferred-bg);
+  color: var(--ui-color-deferred-text);
+  border: 1px solid var(--ui-color-deferred-border);
+  border-radius: var(--ui-radius-md);
+  font-weight: 600;
+}
+
+.deferredBtn:hover {
+  background-color: var(--ui-color-deferred-hover);
+}
+
+/* ── Tickets section ── */
+.ticketsSection {
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.ticketsSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: var(--mantine-spacing-sm);
+}
+
+.ticketsSectionIcon {
+  width: 22px;
+  height: 22px;
+  color: var(--ui-color-text-secondary);
+}
+
+.ticketCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: var(--ui-border-width) solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-surface);
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.ticketInfo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+}
+
+.ticketMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ui-color-text-secondary);
+  font-size: 14px;
+}
+
+.ticketMetaIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  padding-top: var(--mantine-spacing-sm);
+}
+
+.paginationInfo {
+  font-size: 13px;
+  color: var(--ui-color-text-secondary);
+}
+
+.paginationCenter {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+
+.paginationButtons {
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+}

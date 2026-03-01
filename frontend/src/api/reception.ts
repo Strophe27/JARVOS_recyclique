@@ -3,6 +3,8 @@
  * GET/POST /v1/reception/postes/*, tickets/*, lignes. GET /v1/categories/entry-tickets.
  */
 
+import { buildUrl } from './_buildUrl';
+
 const getBase = (): string =>
   (import.meta.env?.VITE_API_BASE_URL as string) ?? '';
 
@@ -118,7 +120,7 @@ export async function getTickets(
   accessToken: string,
   params?: { poste_id?: string; status?: string; page?: number; page_size?: number }
 ): Promise<TicketDepotListResponse> {
-  const url = new URL(`${getBase()}/v1/reception/tickets`);
+  const url = buildUrl('/v1/reception/tickets');
   if (params?.poste_id) url.searchParams.set('poste_id', params.poste_id);
   if (params?.status) url.searchParams.set('status', params.status);
   if (params?.page != null) url.searchParams.set('page', String(params.page));
@@ -197,7 +199,7 @@ export async function getLignes(
   ticketId: string,
   params?: { page?: number; page_size?: number }
 ): Promise<{ items: LigneDepotItem[]; total: number; page: number; page_size: number }> {
-  const url = new URL(`${getBase()}/v1/reception/lignes`);
+  const url = buildUrl('/v1/reception/lignes');
   url.searchParams.set('ticket_id', ticketId);
   if (params?.page != null) url.searchParams.set('page', String(params.page));
   if (params?.page_size != null) url.searchParams.set('page_size', String(params.page_size));
@@ -383,7 +385,7 @@ export async function exportLignesCsv(
   dateFrom: string,
   dateTo: string
 ): Promise<void> {
-  const url = new URL(`${getBase()}/v1/reception/lignes/export-csv`);
+  const url = buildUrl('/v1/reception/lignes/export-csv');
   url.searchParams.set('date_from', dateFrom);
   url.searchParams.set('date_to', dateTo);
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
@@ -407,7 +409,7 @@ export async function getReceptionStatsLive(
   accessToken: string,
   params?: { exclude_deferred?: boolean }
 ): Promise<ReceptionStatsLive> {
-  const url = new URL(`${getBase()}/v1/reception/stats/live`);
+  const url = buildUrl('/v1/reception/stats/live');
   if (params?.exclude_deferred === true) {
     url.searchParams.set('exclude_deferred', 'true');
   }

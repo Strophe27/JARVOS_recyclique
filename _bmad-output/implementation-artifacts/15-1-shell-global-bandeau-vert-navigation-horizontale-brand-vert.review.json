@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Screenshots DoD livrés et conformes. 15-1-login.png : bandeau vert, logo RecyClique, pas de nav (conforme AC #3), « Session non connectée ». 15-1-caisse.png : bandeau vert, logo, nav horizontale (Tableau de bord, Caisse), dropdown agent_dev. AC 1-5 implémentés, code conforme (tokens verts, AppShell, AppShellNav, dropdown, sidebar supprimée)."
+}

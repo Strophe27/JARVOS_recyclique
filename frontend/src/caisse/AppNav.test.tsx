@@ -1,6 +1,6 @@
 /**
- * Tests AppNav — visibilité entrée « Vie associative » (Story 8.7).
- * Vitest + RTL + MantineProvider.
+ * Tests AppNav — wrapper autour de AppShellNav (Story 15.1).
+ * La nav horizontale affiche Tableau de bord, Caisse, Réception, Administration selon permissions.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -23,33 +23,30 @@ function renderNav() {
   );
 }
 
-describe('AppNav Vie associative (Story 8.7)', () => {
+describe('AppNav', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseCashRegisterLock.mockReturnValue({ isRestricted: false });
   });
 
-  it('shows Vie associative link when user has admin', () => {
+  it('affiche Administration quand l utilisateur a admin', () => {
     mockUseAuth.mockReturnValue({ permissions: ['admin'] });
     renderNav();
-    expect(screen.getByRole('link', { name: /Vie associative/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Administration/i })).toBeInTheDocument();
   });
 
-  it('shows Vie associative link when user has vie_asso.access', () => {
-    mockUseAuth.mockReturnValue({ permissions: ['vie_asso.access'] });
-    renderNav();
-    expect(screen.getByRole('link', { name: /Vie associative/ })).toBeInTheDocument();
-  });
-
-  it('hides Vie associative link when user has neither admin nor vie_asso.access', () => {
+  it('affiche Reception quand l utilisateur a reception.access', () => {
     mockUseAuth.mockReturnValue({ permissions: ['reception.access'] });
     renderNav();
-    expect(screen.queryByRole('link', { name: /Vie associative/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Réception/i })).toBeInTheDocument();
   });
 
-  it('hides Vie associative link when user has no permissions', () => {
+  it('masque Administration et Reception quand pas les permissions', () => {
     mockUseAuth.mockReturnValue({ permissions: [] });
     renderNav();
-    expect(screen.queryByRole('link', { name: /Vie associative/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Tableau de bord/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Caisse/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Réception/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Administration/i })).not.toBeInTheDocument();
   });
 });

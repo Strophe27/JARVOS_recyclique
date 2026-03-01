@@ -3,6 +3,8 @@
  * GET/POST/PUT/DELETE /v1/categories, hierarchy, import/export, hard delete, restore.
  */
 
+import { buildUrl } from './_buildUrl';
+
 const getBase = (): string =>
   (import.meta.env?.VITE_API_BASE_URL as string) ?? '';
 
@@ -80,7 +82,7 @@ export async function getCategories(
   accessToken: string,
   params?: { include_deleted?: boolean; parent_id?: string }
 ): Promise<CategoryResponse[]> {
-  const url = new URL(`${getBase()}/v1/categories`);
+  const url = buildUrl('/v1/categories');
   if (params?.include_deleted) url.searchParams.set('include_deleted', 'true');
   if (params?.parent_id) url.searchParams.set('parent_id', params.parent_id);
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
@@ -96,7 +98,7 @@ export async function getCategoriesHierarchy(
   accessToken: string,
   includeDeleted = false
 ): Promise<CategoryHierarchyNode[]> {
-  const url = new URL(`${getBase()}/v1/categories/hierarchy`);
+  const url = buildUrl('/v1/categories/hierarchy');
   if (includeDeleted) url.searchParams.set('include_deleted', 'true');
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
   if (!res.ok) {
@@ -112,7 +114,7 @@ export async function getCategory(
   categoryId: string,
   includeDeleted = false
 ): Promise<CategoryResponse> {
-  const url = new URL(`${getBase()}/v1/categories/${categoryId}`);
+  const url = buildUrl(`/v1/categories/${categoryId}`);
   if (includeDeleted) url.searchParams.set('include_deleted', 'true');
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
   if (!res.ok) {
@@ -238,7 +240,7 @@ export async function getExportCsv(
   accessToken: string,
   includeDeleted = false
 ): Promise<Blob> {
-  const url = new URL(`${getBase()}/v1/categories/actions/export`);
+  const url = buildUrl('/v1/categories/actions/export');
   if (includeDeleted) url.searchParams.set('include_deleted', 'true');
   const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!res.ok) {

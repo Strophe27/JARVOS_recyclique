@@ -15,7 +15,15 @@ inputDocuments:
   - references/ancien-repo/checklist-import-1.4.4.md
   - references/ou-on-en-est.md
   - references/versioning.md
-lastEdited: '2026-02-28'
+lastEdited: '2026-03-01'
+editHistory:
+  - date: '2026-03-01'
+    changes: >
+      Ajout Epic 15 "Conformite visuelle et fonctionnelle — parite 1.4.4" (6 stories).
+      Contexte : audit complet revele que les epics 11/13 ont declare "done" sans implementation
+      visuelle reelle. La nouvelle app n'a jamais ressemble a la 1.4.4. Epic 15 couvre :
+      fix URL invalides (bloquant), shell global vert + nav horizontale, dashboard caisse,
+      saisie vente caisse, page reception, dashboard admin.
 editHistory:
   - date: '2026-02-28'
     changes: >
@@ -1315,4 +1323,216 @@ afin d'exploiter, diagnostiquer et revenir en arriere en securite.
 **Quand** un incident auth survient ou qu'un rollback est necessaire  
 **Alors** les runbooks permettent une action rapide et reproductible  
 **Et** les criteres de succes/retour a la normale sont explicites.
+
+---
+
+## Epic 15 — Conformite visuelle et fonctionnelle : parite 1.4.4
+
+**Contexte et diagnostic :**
+Audit du 2026-03-01 : les epics 11 et 13 ont declare "done" sans jamais avoir implementé le design
+de la 1.4.4. La nouvelle app possede la logique metier mais aucune correspondance visuelle avec
+la reference. Screenshots de reference disponibles dans
+`_bmad-output/implementation-artifacts/screenshots/11-0/` (captures de la 1.4.4 sur VPS staging).
+
+**Objectif :** Reconstruire proprement le shell global et les pages prioritaires pour obtenir
+une experience identique a la 1.4.4 — navigation, couleurs, composants, fonctionnement.
+
+**Dependances amont :**
+- Epic 1-10 done (logique metier presente, APIs fonctionnelles)
+- Auth legacy local en place (rollback OIDC effectue)
+- `FIRST_ADMIN_*` bootstrap .env fonctionnel
+
+**References visuelles obligatoires pour chaque story :**
+- Screenshots 11-0 dans `_bmad-output/implementation-artifacts/screenshots/11-0/`
+- Code source 1.4.4 dans `references/ancien-repo/` (clone git)
+- Charte : `_bmad-output/implementation-artifacts/11-x-charte-visuelle-operatoire.md`
+
+**Definition of done Epic 15 :**
+- Build OK (`npm run build` + `docker compose up --build`)
+- Chaque page livree = preuve visuelle avant/apres (screenshot)
+- Aucun "Failed to construct URL" ni crash console sur les routes concernees
+- Tests Vitest co-loces passes sur les composants modifies
+
+---
+
+### Story 15.0: Fix critique — URLs API invalides (bloquant)
+
+En tant qu'utilisateur,
+je veux que les pages se chargent sans crash "Failed to construct URL: Invalid URL",
+afin de pouvoir utiliser l'application.
+
+**Contexte technique :**
+`getBase()` retourne `''` quand `VITE_API_BASE_URL` n'est pas defini.
+`new URL('/v1/...')` avec base vide = TypeError en JavaScript.
+14 occurrences dans 7 fichiers API : `adminReports.ts`, `reception.ts`, `admin.ts`,
+`adminHealthAudit.ts`, `caisse.ts`, `adminUsers.ts`, `categories.ts`.
+
+**Criteres d'acceptation :**
+
+**Etant donne** `VITE_API_BASE_URL` non defini (mode dev Vite avec proxy)  
+**Quand** l'utilisateur navigue vers n'importe quelle page (Rapports caisse, Ouverture session, etc.)  
+**Alors** aucun "Failed to construct URL: Invalid URL" n'apparait en console  
+**Et** les appels API aboutissent correctement via le proxy Vite  
+
+**Implementation :**
+- Creer un helper partage `frontend/src/api/_buildUrl.ts` : `buildUrl(path, params?)` qui
+  utilise `new URL(path, getBase() || window.location.origin)` + URLSearchParams
+- Remplacer tous les `new URL(\`\${getBase()}/...\`)` par `buildUrl('/v1/...')`
+- Tester chaque route concernee apres fix
+
+**Fichiers a modifier :**
+`frontend/src/api/adminReports.ts`, `reception.ts`, `admin.ts`, `adminHealthAudit.ts`,
+`caisse.ts`, `adminUsers.ts`, `categories.ts` + nouveau `_buildUrl.ts`
+
+---
+
+### Story 15.1: Shell global — bandeau vert, navigation horizontale, brand correct
+
+En tant qu'utilisateur,
+je veux un header vert avec navigation horizontale identique a la 1.4.4,
+afin de retrouver l'experience visuelle de reference.
+
+**Reference visuelle :** `screenshots/11-0/caisse/caisse-01-dashboard.png`,
+`screenshots/11-0/auth/auth-01-login.png`
+
+**Criteres d'acceptation :**
+
+**Etant donne** n'importe quelle page de l'application  
+**Quand** l'utilisateur la consulte  
+**Alors** un bandeau vert pleine largeur est visible en haut avec :
+  - Logo RecyClique (icone recyclage SVG + texte "RecyClique") a gauche
+  - Navigation horizontale centree : "Tableau de bord" | "Caisse" | "Reception" | "Administration"
+  - Dropdown utilisateur a droite (prenom/nom + chevron, logout au clic)
+  - Couleur brand : vert (extraire le vert exact depuis les screenshots : approx `#2e7d32`)
+**Et** il n'y a plus de sidebar gauche blanche avec liens texte  
+**Et** les pages login/pin (non loguees) affichent le bandeau vert sans la navigation (centree)  
+**Et** les liens "Creer un compte" et "Mot de passe oublie ?" sont supprimes de la page login  
+
+**Implementation :**
+- Réécrire `AppShell.tsx` : header vert + zone contenu (pas de sidebar)
+- Réécrire `AppShellNav.tsx` : nav horizontale avec onglets, icones Mantine
+- Mettre a jour `tokens.ts` : `brandScale` vert (remplacer le bleu)
+- Supprimer sidebar CSS dans `app-shell.css`
+- Supprimer liens signup/forgot dans `LoginPage.tsx`
+- Conserver mode caisse verrouille (menu reduit caisse uniquement)
+
+---
+
+### Story 15.2: Dashboard Caisse — Sélection du Poste de Caisse
+
+En tant qu'operateur caisse,
+je veux retrouver la page de selection du poste identique a la 1.4.4,
+afin de choisir mon poste en un coup d'oeil.
+
+**Reference visuelle :** `screenshots/11-0/caisse/caisse-01-dashboard.png`
+
+**Criteres d'acceptation :**
+
+**Etant donne** un utilisateur connecte arrivant sur `/caisse`  
+**Quand** la page se charge  
+**Alors** les postes de caisse sont affiches en cards horizontales :
+  - Card blanche : nom du poste, site, badge status ("FERMEE" rouge ou "OUVERTE"), bouton "Ouvrir"
+  - Card "Caisse Virtuelle" : badge "SIMULATION", description, bouton "Simuler", bordure pointillee
+  - Card "Saisie differee" : fond orange pale, badge "ADMIN", description, bouton "Acceder"
+**Et** le titre de la page est "Selection du Poste de Caisse"
+
+**Implementation :**
+- Réécrire `CaisseDashboardPage.tsx` avec les 3 types de cards distincts
+- Appliquer les styles specifiques (badge couleur, card orange, bordure pointillee)
+- Garder la logique existante (API calls, setCurrentRegister)
+
+---
+
+### Story 15.3: Saisie Vente Caisse — interface complete
+
+En tant qu'operateur caisse,
+je veux la page de saisie de vente identique a la 1.4.4,
+afin de saisir les ventes efficacement avec les raccourcis clavier et le ticket en temps reel.
+
+**Reference visuelle :** `screenshots/11-0/caisse/caisse-04-saisie-vente.png`
+
+**Criteres d'acceptation :**
+
+**Etant donne** une session caisse ouverte sur `/cash-register/sale`  
+**Quand** l'operateur accede a la saisie  
+**Alors** la page affiche :
+  - Header vert dedie (remplace le bandeau global) : "agent [username] Session #[id]" a gauche,
+    bouton rouge "Fermer la Caisse" a droite
+  - Barre de stats violette/sombre : TICKETS, DERNIER TICKET, CA JOUR, DONS JOUR,
+    POIDS SORTIS, POIDS RENTRES + toggle Live/Session + heure
+  - Zone principale : tabs "Categorie" | "Sous-categorie" | "Poids" | "Prix"
+  - Grille de cards categories : nom + code raccourci clavier (lettre en badge)
+  - Panneau lateral droit "Ticket de Caisse" : liste articles, total, bouton "Entree"
+
+**Implementation :**
+- Réécrire `CashRegisterSalePage.tsx` avec layout specifique (pas de PageContainer standard)
+- Header caisse dedie + stats bar comme composants internes
+- Grille categories en CSS Grid avec cards interactives et raccourcis clavier
+- Panneau ticket droit avec mise en page fixe
+- Garder la logique metier existante (cart, presets, paiements, offline)
+
+---
+
+### Story 15.4: Page Réception — interface complete
+
+En tant qu'operateur reception,
+je veux retrouver la page de reception identique a la 1.4.4,
+afin d'ouvrir un poste et gerer les tickets efficacement.
+
+**Reference visuelle :** `screenshots/11-0/reception/reception-01-accueil-module.png`
+
+**Criteres d'acceptation :**
+
+**Etant donne** un utilisateur sur `/reception`  
+**Quand** la page se charge  
+**Alors** la page affiche :
+  - Titre "Module de Reception" avec icone, + "Bonjour [username]" + bouton "Voir tous les tickets"
+  - Gros bouton vert pleine largeur "+" "Ouvrir un poste de reception"
+  - Bouton secondaire orange "Saisie differee"
+  - Section "Tickets Recents" : liste paginee avec ID court (#xxxxxxxx), date, operateur,
+    nb articles, poids total, badge statut (Ouvert vert / Ferme gris),
+    bouton "Modifier" (si ouvert) ou "Voir les details"
+  - Pagination : "Affichage de X a Y sur Z tickets", selecteur "Par page", Precedent/Suivant
+
+**Implementation :**
+- Réécrire `ReceptionAccueilPage.tsx` avec le nouveau layout
+- Composant ticket card stylise avec statut colore
+- Garder la logique existante (openPoste, createTicket, closeTicket, stats, export)
+
+---
+
+### Story 15.5: Dashboard Admin — stats et navigation
+
+En tant qu'administrateur,
+je veux retrouver le dashboard admin identique a la 1.4.4,
+afin d'avoir une vue d'ensemble et d'acceder aux fonctions admin rapidement.
+
+**Reference visuelle :** `screenshots/11-0/admin-1/admin1-01-dashboard-admin.png`
+
+**Criteres d'acceptation :**
+
+**Etant donne** un admin sur `/admin`  
+**Quand** la page se charge  
+**Alors** la page affiche :
+  - Titre "Tableau de Bord d'Administration"
+  - Barre de resumé : Notifications (N) | CA Mois | Utilisateurs connectes (N)
+  - Section "Statistiques quotidiennes" : 3 cards colorees :
+    * Card verte — "Financier" : montant CA + dons du jour
+    * Card orange — "Poids sorti" : kg sortis aujourd'hui
+    * Card bleue — "Poids recu" : kg recus aujourd'hui
+  - Section "Navigation principale" : 6 blocs en grille 3x2 avec icones et couleurs :
+    * Bleu clair : "Utilisateurs & Profils"
+    * Vert clair : "Groupes & Permissions"
+    * Orange : "Categories & Tarifs"
+    * Gris : "Sessions de Caisse"
+    * Vert pale : "Sessions de Reception"
+    * Rouge pale : "Activite & Logs"
+  - Section "Administration Super-Admin" (si super_admin) : 3 blocs :
+    * "Sante Systeme", "Parametres Avances", "Sites & Caisses"
+
+**Implementation :**
+- Réécrire `AdminDashboardPage.tsx` avec le layout par sections
+- API stats du jour a creer si inexistante (ou adapter ce qui existe)
+- Blocs navigation avec icones Mantine et couleurs de fond specifiques
+- Garder la logique existante (pahekoAccessDecision, etc.)
 

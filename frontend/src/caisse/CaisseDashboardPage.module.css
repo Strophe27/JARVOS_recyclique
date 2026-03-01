@@ -1,0 +1,21 @@
+.cardsRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: var(--mantine-spacing-md);
+  overflow-x: auto;
+}
+
+.cardBase {
+  flex: 0 0 320px;
+  min-width: 260px;
+}
+
+.virtualCard {
+  border-style: dashed;
+}
+
+.deferredCard {
+  background-color: var(--mantine-color-orange-0);
+  border-color: var(--mantine-color-orange-3);
+}

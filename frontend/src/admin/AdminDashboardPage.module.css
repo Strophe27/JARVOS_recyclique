@@ -1,0 +1,140 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--ui-spacing-lg) var(--ui-spacing-md);
+}
+
+.title {
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: var(--ui-spacing-lg);
+}
+
+/* --- Summary bar --- */
+
+.summaryBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  overflow: hidden;
+  margin-bottom: var(--ui-spacing-lg);
+}
+
+.summaryCell {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-spacing-sm);
+  padding: var(--ui-spacing-md) var(--ui-spacing-lg);
+}
+
+.summaryCell + .summaryCell {
+  border-left: 1px solid var(--ui-color-border);
+}
+
+/* --- Stats section --- */
+
+.statsSection {
+  margin-bottom: var(--ui-spacing-lg);
+}
+
+.statCard {
+  padding: var(--ui-spacing-lg);
+  border-radius: var(--ui-radius-md);
+  border: 1px solid var(--ui-color-border);
+  border-left-width: 4px;
+  text-align: center;
+}
+
+.statCardGreen {
+  --stat-accent: #2e7d32;
+  border-left-color: var(--stat-accent);
+}
+
+.statCardOrange {
+  --stat-accent: #e65100;
+  border-left-color: var(--stat-accent);
+}
+
+.statCardBlue {
+  --stat-accent: #1565c0;
+  border-left-color: var(--stat-accent);
+}
+
+.statCardHeader {
+  color: var(--stat-accent);
+}
+
+/* --- Nav section --- */
+
+.navSection {
+  margin-bottom: var(--ui-spacing-lg);
+}
+
+.navBlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-spacing-sm);
+  min-height: 100px;
+  border-radius: var(--ui-radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: opacity 0.15s ease;
+}
+
+.navBlock:hover {
+  opacity: 0.85;
+}
+
+.navBlockBlue {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.navBlockGreen {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.navBlockOrange {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.navBlockGray {
+  background-color: #f5f5f5;
+  color: #424242;
+}
+
+.navBlockRed {
+  background-color: #fce4ec;
+  color: #c62828;
+}
+
+/* --- Super-admin section --- */
+
+.superAdminSection {
+  margin-bottom: var(--ui-spacing-lg);
+}
+
+.superAdminBlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-spacing-sm);
+  min-height: 100px;
+  border-radius: var(--ui-radius-md);
+  border: 1px solid var(--ui-color-border);
+  background-color: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: opacity 0.15s ease;
+}
+
+.superAdminBlock:hover {
+  opacity: 0.85;
+}

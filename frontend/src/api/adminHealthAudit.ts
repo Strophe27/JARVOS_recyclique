@@ -4,6 +4,8 @@
  * GET /v1/admin/audit-log, GET/PUT /v1/admin/settings, GET /v1/admin/email-logs.
  */
 
+import { buildUrl } from './_buildUrl';
+
 const getBase = (): string =>
   (import.meta.env?.VITE_API_BASE_URL as string) ?? '';
 
@@ -120,7 +122,7 @@ export async function getAdminAuditLog(
     user_id?: string;
   }
 ): Promise<AuditLogListResponse> {
-  const url = new URL(`${getBase()}/v1/admin/audit-log`);
+  const url = buildUrl('/v1/admin/audit-log');
   if (params?.page != null) url.searchParams.set('page', String(params.page));
   if (params?.page_size != null) url.searchParams.set('page_size', String(params.page_size));
   if (params?.date_from) url.searchParams.set('date_from', params.date_from);
@@ -217,7 +219,7 @@ export async function getAdminEmailLogs(
   accessToken: string,
   params?: { page?: number; page_size?: number }
 ): Promise<EmailLogsListResponse> {
-  const url = new URL(`${getBase()}/v1/admin/email-logs`);
+  const url = buildUrl('/v1/admin/email-logs');
   if (params?.page != null) url.searchParams.set('page', String(params.page));
   if (params?.page_size != null) url.searchParams.set('page_size', String(params.page_size));
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });

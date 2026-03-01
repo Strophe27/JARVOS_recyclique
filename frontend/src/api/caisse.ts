@@ -3,6 +3,8 @@
  * GET /v1/cash-registers, GET /v1/cash-registers/status, GET /v1/cash-sessions/*.
  */
 
+import { buildUrl } from './_buildUrl';
+
 const getBase = (): string =>
   (import.meta.env?.VITE_API_BASE_URL as string) ?? '';
 
@@ -41,7 +43,7 @@ export async function getCashRegisters(
   accessToken: string,
   params?: { site_id?: string; is_active?: boolean }
 ): Promise<CashRegisterItem[]> {
-  const url = new URL(`${getBase()}/v1/cash-registers`);
+  const url = buildUrl('/v1/cash-registers');
   if (params?.site_id) url.searchParams.set('site_id', params.site_id);
   if (params?.is_active !== undefined) url.searchParams.set('is_active', String(params.is_active));
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
@@ -61,7 +63,7 @@ export async function getCashRegistersStatus(
   accessToken: string,
   siteId?: string
 ): Promise<CashRegisterStatusItem[]> {
-  const url = new URL(`${getBase()}/v1/cash-registers/status`);
+  const url = buildUrl('/v1/cash-registers/status');
   if (siteId) url.searchParams.set('site_id', siteId);
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
   if (!res.ok) {
@@ -152,7 +154,7 @@ export async function getCashSessionsList(
   accessToken: string,
   params?: CashSessionsListParams
 ): Promise<CashSessionItem[]> {
-  const url = new URL(`${getBase()}/v1/cash-sessions`);
+  const url = buildUrl('/v1/cash-sessions');
   if (params?.site_id) url.searchParams.set('site_id', params.site_id);
   if (params?.register_id) url.searchParams.set('register_id', params.register_id);
   if (params?.operator_id) url.searchParams.set('operator_id', params.operator_id);
@@ -188,7 +190,7 @@ export async function getCashSessionDeferredCheck(
   accessToken: string,
   date: string
 ): Promise<CashSessionDeferredCheck> {
-  const url = new URL(`${getBase()}/v1/cash-sessions/deferred/check`);
+  const url = buildUrl('/v1/cash-sessions/deferred/check');
   url.searchParams.set('date', date);
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
   if (!res.ok) {

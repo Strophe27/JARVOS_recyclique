@@ -1,6 +1,6 @@
 /**
- * Tests AdminDashboardPage — Story 8.1, 11.4.
- * Vitest + RTL + MantineProvider. Smoke : rendu, liens, stats optionnels.
+ * Tests AdminDashboardPage — Story 15.5.
+ * Vitest + RTL + MantineProvider.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -18,7 +18,9 @@ vi.mock('../api/adminPahekoCompta', () => ({
   getPahekoAccessDecision: (...args: unknown[]) => mockGetPahekoAccessDecision(...args),
   getPahekoComptaUrl: (...args: unknown[]) => mockGetPaheko(...args),
 }));
-vi.mock('../api/adminDashboard', () => ({ getDashboardStats: (...args: unknown[]) => mockGetDashboardStats(...args) }));
+vi.mock('../api/adminDashboard', () => ({
+  getDashboardStats: (...args: unknown[]) => mockGetDashboardStats(...args),
+}));
 
 function renderWithProviders() {
   return render(
@@ -26,102 +28,154 @@ function renderWithProviders() {
       <MemoryRouter>
         <AdminDashboardPage />
       </MemoryRouter>
-    </MantineProvider>
+    </MantineProvider>,
   );
+}
+
+function adminAuth(role: 'admin' | 'super_admin' = 'admin') {
+  return {
+    accessToken: 'token',
+    permissions: ['admin'],
+    user: { id: `u-${role}`, username: role, role },
+  };
 }
 
 describe('AdminDashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseAuth.mockReturnValue({
-      accessToken: 'token',
-      permissions: ['admin'],
-      user: { id: 'u-admin', username: 'admin', role: 'admin' },
-    });
+    mockUseAuth.mockReturnValue(adminAuth());
     mockGetPahekoAccessDecision.mockResolvedValue({ allowed: true, reason: 'role_allowed:admin' });
     mockGetPaheko.mockResolvedValue({ url: null });
     mockGetDashboardStats.mockResolvedValue(null);
   });
 
-  it('renders page with Admin title', async () => {
+  // --- Title ---
+  it('renders dashboard title', async () => {
     renderWithProviders();
     expect(screen.getByTestId('page-admin')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Admin/ })).toBeInTheDocument();
+    expect(screen.getByTestId('admin-dashboard-title')).toHaveTextContent(
+      "Tableau de Bord d'Administration",
+    );
     await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
   });
 
-  it('shows navigation links when admin', async () => {
+  // --- Summary bar ---
+  it('renders summary bar with 3 cells', async () => {
     renderWithProviders();
-    expect(screen.getByRole('link', { name: /Utilisateurs/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Sites/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Rapports caisse/ })).toBeInTheDocument();
+    expect(screen.getByTestId('admin-summary-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('admin-summary-notifications')).toBeInTheDocument();
+    expect(screen.getByTestId('admin-summary-ca-mois')).toBeInTheDocument();
+    expect(screen.getByTestId('admin-summary-connected-users')).toBeInTheDocument();
     await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
   });
 
-  it('shows stats cards when API returns stats', async () => {
+  // --- Stats cards ---
+  it('renders 3 stat cards with default values (0)', async () => {
+    renderWithProviders();
+    await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
+    const financier = screen.getByTestId('admin-stat-financier');
+    expect(financier).toHaveTextContent('Financier');
+    expect(financier).toHaveTextContent('0.00');
+
+    const poidsSorti = screen.getByTestId('admin-stat-poids-sorti');
+    expect(poidsSorti).toHaveTextContent('Poids sorti');
+    expect(poidsSorti).toHaveTextContent('0.0');
+
+    const poidsRecu = screen.getByTestId('admin-stat-poids-recu');
+    expect(poidsRecu).toHaveTextContent('Poids re');
+    expect(poidsRecu).toHaveTextContent('0.0');
+  });
+
+  it('renders stat values from API', async () => {
     mockGetDashboardStats.mockResolvedValue({
-      users_count: 5,
-      sites_count: 2,
-      cash_registers_count: 3,
+      ca_jour: 15000,
+      dons_jour: 500,
+      poids_sorti_kg: 12.5,
+      poids_recu_kg: 8.3,
+      ca_mois: 120000,
+      notifications_count: 3,
+      connected_users_count: 5,
     });
     renderWithProviders();
-    await screen.findByTestId('dashboard-stat-users');
-    expect(screen.getByTestId('dashboard-stat-users')).toHaveTextContent('5');
-    expect(screen.getByTestId('dashboard-stat-sites')).toHaveTextContent('2');
-    expect(screen.getByTestId('dashboard-stat-registers')).toHaveTextContent('3');
+    await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
+
+    expect(screen.getByTestId('admin-stat-financier')).toHaveTextContent('150.00');
+    expect(screen.getByTestId('admin-stat-poids-sorti')).toHaveTextContent('12.5');
+    expect(screen.getByTestId('admin-stat-poids-recu')).toHaveTextContent('8.3');
+    expect(screen.getByTestId('admin-summary-ca-mois')).toHaveTextContent('1200.00');
+    expect(screen.getByTestId('admin-summary-notifications')).toHaveTextContent('3');
+    expect(screen.getByTestId('admin-summary-connected-users')).toHaveTextContent('5');
   });
 
-  it('does not show stats when getDashboardStats returns null', async () => {
-    mockGetDashboardStats.mockResolvedValue(null);
+  // --- Navigation blocks ---
+  it('renders 6 navigation blocks with correct links', async () => {
     renderWithProviders();
-    await waitFor(() => {
-      expect(mockGetDashboardStats).toHaveBeenCalled();
-      expect(screen.queryByTestId('dashboard-stat-users')).not.toBeInTheDocument();
-    });
+    const users = screen.getByTestId('admin-nav-users');
+    expect(users).toHaveTextContent('Utilisateurs');
+    expect(users).toHaveAttribute('href', '/admin/users');
+
+    const groups = screen.getByTestId('admin-nav-groups');
+    expect(groups).toHaveTextContent('Groupes');
+    expect(groups).toHaveAttribute('href', '/admin/groups');
+
+    const cats = screen.getByTestId('admin-nav-categories');
+    expect(cats).toHaveTextContent('Cat');
+    expect(cats).toHaveAttribute('href', '/admin/categories');
+
+    const sessions = screen.getByTestId('admin-nav-sessions-caisse');
+    expect(sessions).toHaveTextContent('Sessions de Caisse');
+    expect(sessions).toHaveAttribute('href', '/admin/session-manager');
+
+    const reception = screen.getByTestId('admin-nav-sessions-reception');
+    expect(reception).toHaveTextContent('ception');
+    expect(reception).toHaveAttribute('href', '/admin/reception');
+
+    const activity = screen.getByTestId('admin-nav-activity');
+    expect(activity).toHaveTextContent('Activit');
+    expect(activity).toHaveAttribute('href', '/admin/audit-log');
+
+    await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
   });
 
-  it('shows restricted message for benevole without exception', async () => {
-    mockUseAuth.mockReturnValue({
-      accessToken: 'token',
-      permissions: ['admin'],
-      user: { id: 'u-benevole', username: 'benevole', role: 'benevole' },
+  // --- Super-admin section ---
+  it('shows super-admin section for super_admin role', async () => {
+    mockUseAuth.mockReturnValue(adminAuth('super_admin'));
+    mockGetPahekoAccessDecision.mockResolvedValue({
+      allowed: true,
+      reason: 'role_allowed:super_admin',
     });
+    renderWithProviders();
+
+    expect(screen.getByTestId('admin-superadmin-section')).toBeInTheDocument();
+    expect(screen.getByTestId('admin-superadmin-health')).toHaveAttribute('href', '/admin/health');
+    expect(screen.getByTestId('admin-superadmin-settings')).toHaveAttribute(
+      'href',
+      '/admin/settings',
+    );
+    expect(screen.getByTestId('admin-superadmin-sites')).toHaveAttribute('href', '/admin/sites');
+    await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
+  });
+
+  it('hides super-admin section for regular admin', async () => {
+    renderWithProviders();
+    expect(screen.queryByTestId('admin-superadmin-section')).not.toBeInTheDocument();
+    await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
+  });
+
+  // --- Paheko ---
+  it('shows Paheko link when authorized and URL available', async () => {
+    mockGetPaheko.mockResolvedValue({ url: 'https://paheko.example/admin/' });
+    renderWithProviders();
+    const link = await screen.findByRole('link', { name: /Paheko/ });
+    expect(link).toHaveAttribute('href', 'https://paheko.example/admin/');
+  });
+
+  it('shows restricted message when Paheko access denied', async () => {
     mockGetPahekoAccessDecision.mockResolvedValue({
       allowed: false,
-      reason: 'deny_by_default_benevole',
+      reason: 'deny_by_default',
     });
     renderWithProviders();
     expect(await screen.findByTestId('paheko-access-restricted')).toBeInTheDocument();
-  });
-
-  it('loads paheko link when backend authorizes benevole exception', async () => {
-    mockUseAuth.mockReturnValue({
-      accessToken: 'token',
-      permissions: ['admin'],
-      user: { id: 'u-benevole', username: 'benevole', role: 'benevole' },
-    });
-    mockGetPahekoAccessDecision.mockResolvedValue({
-      allowed: true,
-      reason: 'benevole_exception_active',
-    });
-    mockGetPaheko.mockResolvedValue({ url: 'https://paheko.example/admin/' });
-    renderWithProviders();
-    expect(await screen.findByRole('link', { name: /Paheko/ })).toHaveAttribute(
-      'href',
-      'https://paheko.example/admin/'
-    );
-  });
-
-  it('shows dashboard for super_admin even without admin permission flag', async () => {
-    mockUseAuth.mockReturnValue({
-      accessToken: 'token',
-      permissions: [],
-      user: { id: 'u-super-admin', username: 'superadmin', role: 'super_admin' },
-    });
-    mockGetPahekoAccessDecision.mockResolvedValue({ allowed: true, reason: 'role_allowed:super_admin' });
-    renderWithProviders();
-    expect(screen.getByRole('heading', { name: /Admin/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Utilisateurs/ })).toBeInTheDocument();
-    await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
   });
 });

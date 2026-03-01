@@ -1,11 +1,1 @@
-{
-  "epicId": "epic-14",
-  "currentStoryKey": "14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback",
-  "status": "paused",
-  "startedAt": "2026-02-28",
-  "resumedAt": "2026-02-28",
-  "updatedAt": "2026-02-28",
-  "lastStoryCompleted": "14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback",
-  "lastBlockedStory": "14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement",
-  "lastRunSummary": "Story 14-5 approuvee et terminee: runbooks exploitation/onboarding/incident/rollback finalises avec hygiene secrets, branche ops runtime idp_unavailable, rollback hotfix Paheko deterministe et preuves de rehearsal completees."
-}
+{"epicId":"epic-15","currentStoryKey":null,"status":"paused","startedAt":"2026-03-01","lastStoryCompleted":"15-5-dashboard-admin-stats-et-navigation"}

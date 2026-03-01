@@ -3,8 +3,7 @@
  * Route /login : formulaire connexion, POST /v1/auth/login, redirection après succès.
  */
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Anchor } from '@mantine/core';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LoginForm } from './LoginForm';
 import { useAuth } from './AuthContext';
 import { PageContainer } from '../shared/layout';
@@ -40,12 +39,6 @@ export function LoginPage() {
   return (
     <PageContainer title="Connexion" maxWidth={420} gap="lg" topMargin="xl">
       <LoginForm onSubmit={handleSubmit} error={error ?? undefined} loading={loading} />
-      <Anchor component={Link} to="/forgot-password" size="sm">
-        Mot de passe oublié ?
-      </Anchor>
-      <Anchor component={Link} to="/signup" size="sm">
-        Créer un compte
-      </Anchor>
     </PageContainer>
   );
 }

@@ -1,10 +1,9 @@
 /**
- * Page saisie vente (étape sale) — Story 5.2, 5.4, 11.2 (hors ligne + sync).
- * GET /v1/cash-sessions/current, GET /v1/presets/active, GET /v1/categories/sale-tickets.
- * Panier (lignes), paiements multiples, note, option sale_date. POST /v1/sales → vidage panier.
- * Rendu Mantine aligné 1.4.4.
+ * Page saisie vente (etape sale) — Story 15.3 (layout parite 1.4.4).
+ * Layout plein ecran : CaisseHeader + StatsBar + zone principale (tabs + grille + ticket).
+ * Logique metier conservee intacte (Stories 5.2, 5.4, 11.2).
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getCurrentCashSession,
@@ -36,11 +35,12 @@ import {
   Select,
   NumberInput,
   TextInput,
-  Table,
+  Tabs,
   Loader,
-  Card,
 } from '@mantine/core';
-import { PageContainer, PageSection } from '../shared/layout';
+import { CaisseHeader } from './CaisseHeader';
+import { CaisseStatsBar } from './CaisseStatsBar';
+import styles from './CashRegisterSalePage.module.css';
 
 export interface CartLine {
   id: string;
@@ -54,8 +54,25 @@ export interface CartLine {
   weight: number | null;
 }
 
+function getShortcutLetter(name: string, index: number, taken: Set<string>): string {
+  const first = name.charAt(0).toUpperCase();
+  if (first && !taken.has(first)) {
+    taken.add(first);
+    return first;
+  }
+  for (const ch of name.toUpperCase()) {
+    if (/[A-Z]/.test(ch) && !taken.has(ch)) {
+      taken.add(ch);
+      return ch;
+    }
+  }
+  const fallback = String.fromCharCode(65 + (index % 26));
+  taken.add(fallback);
+  return fallback;
+}
+
 export function CashRegisterSalePage() {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const navigate = useNavigate();
   const online = useOnlineStatus();
   const [session, setSession] = useState<CashSessionItem | null>(null);
@@ -76,6 +93,7 @@ export function CashRegisterSalePage() {
   const [catPriceEur, setCatPriceEur] = useState('');
   const [catWeight, setCatWeight] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string | null>('categorie');
 
   const loadData = useCallback(async () => {
     if (!accessToken) return;
@@ -104,7 +122,6 @@ export function CashRegisterSalePage() {
     loadData();
   }, [loadData]);
 
-  // Story 5.4 : au retour en ligne, synchroniser la file offline.
   useEffect(() => {
     if (!online || !accessToken) return;
     let cancelled = false;
@@ -134,6 +151,30 @@ export function CashRegisterSalePage() {
     refreshPendingCount();
   }, [refreshPendingCount]);
 
+  // --- Raccourcis clavier par categorie (AC#4) ---
+  const categoryShortcuts = useMemo(() => {
+    const taken = new Set<string>();
+    return categories.map((c, i) => ({
+      category: c,
+      letter: getShortcutLetter(c.name, i, taken),
+    }));
+  }, [categories]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const tag = (document.activeElement?.tagName ?? '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      const key = e.key.toUpperCase();
+      const match = categoryShortcuts.find((s) => s.letter === key);
+      if (match) {
+        setSelectedCategoryId(match.category.id);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [categoryShortcuts]);
+
+  // --- Panier ---
   const addPresetToCart = useCallback(
     (preset: PresetItem) => {
       setCart((prev) => [
@@ -213,7 +254,7 @@ export function CashRegisterSalePage() {
         return;
       }
       if (paymentsTotal !== cartTotal) {
-        setError('La somme des paiements doit être égale au total du panier');
+        setError('La somme des paiements doit etre egale au total du panier');
         return;
       }
       if (payments.length === 0) {
@@ -280,244 +321,312 @@ export function CashRegisterSalePage() {
     ]
   );
 
+  // --- Etats de chargement / erreur ---
   if (loading) {
     return (
-      <PageContainer title="Saisie vente" maxWidth={980} testId="page-sale">
-        <Loader size="sm" />
-        <Text size="sm">Chargement…</Text>
-      </PageContainer>
+      <div className={styles.pageRoot} data-testid="page-cash-register-sale">
+        <Stack align="center" justify="center" className={styles.fallbackCenter} gap="sm">
+          <Loader size="sm" />
+          <Text size="sm">Chargement...</Text>
+        </Stack>
+      </div>
     );
   }
 
   if (!session) {
     return (
-      <PageContainer title="Saisie vente" maxWidth={980} testId="page-sale">
-        <Text>Aucune session en cours.</Text>
-        <Button variant="light" onClick={() => navigate('/caisse')}>
-          Retour dashboard
-        </Button>
-      </PageContainer>
+      <div className={styles.pageRoot} data-testid="page-cash-register-sale">
+        <Stack align="center" justify="center" className={styles.fallbackCenter} gap="sm">
+          <Text>Aucune session en cours.</Text>
+          <Button variant="light" onClick={() => navigate('/caisse')}>
+            Retour dashboard
+          </Button>
+        </Stack>
+      </div>
     );
   }
 
+  const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+
   return (
-    <PageContainer title="Saisie vente" maxWidth={980} testId="page-sale">
-      {!online && (
-        <Alert color="yellow" role="status" aria-live="polite" data-testid="offline-banner">
-          Hors ligne — Les ventes sont enregistrées localement et seront envoyées au retour en ligne.
-        </Alert>
-      )}
-      {online && (pendingOfflineCount > 0 || syncing) && (
-        <Alert color="blue" role="status" aria-live="polite" data-testid="sync-pending-banner">
-          {syncing
-            ? `Synchronisation en cours… (${pendingOfflineCount} ticket(s) en attente)`
-            : `Synchronisation en attente : ${pendingOfflineCount} ticket(s) à envoyer.`}
-        </Alert>
-      )}
-      <Text size="sm">
-        Session : {session.id.slice(0, 8)}… — Fond de caisse : {(session.initial_amount / 100).toFixed(2)} €
-      </Text>
+    <div className={styles.pageRoot} data-testid="page-cash-register-sale">
+      <CaisseHeader user={user} sessionId={session.id} />
+      <CaisseStatsBar
+        ticketCount={session.total_items ?? 0}
+        lastTicketAmount={null}
+        caJour={session.total_sales ?? 0}
+        donsJour={0}
+        poidsSortis={0}
+        poidsRentres={0}
+      />
 
-      <PageSection>
-        <Stack gap="xs">
-          <Text fw={500}>Boutons rapides</Text>
-          <Group gap="xs">
-            {presets.map((p) => (
-              <Button
-                key={p.id}
-                variant="light"
-                size="sm"
-                data-testid={`preset-${p.id}`}
-                onClick={() => addPresetToCart(p)}
-              >
-                {p.name} ({(p.preset_price / 100).toFixed(2)} €)
-              </Button>
-            ))}
-          </Group>
-        </Stack>
-      </PageSection>
+      {(!online || pendingOfflineCount > 0 || syncing) && (
+        <div className={styles.bannerArea}>
+          {!online && (
+            <Alert color="yellow" role="status" aria-live="polite" data-testid="offline-banner">
+              Hors ligne — Les ventes sont enregistrees localement et seront envoyees au retour en ligne.
+            </Alert>
+          )}
+          {online && (pendingOfflineCount > 0 || syncing) && (
+            <Alert color="blue" role="status" aria-live="polite" data-testid="sync-pending-banner">
+              {syncing
+                ? `Synchronisation en cours... (${pendingOfflineCount} ticket(s) en attente)`
+                : `Synchronisation en attente : ${pendingOfflineCount} ticket(s) a envoyer.`}
+            </Alert>
+          )}
+        </div>
+      )}
 
-      <PageSection>
-        <Stack gap="xs">
-          <Text fw={500}>Panier</Text>
-          {cart.length === 0 ? (
-            <Text size="sm" data-testid="cart-empty">Panier vide</Text>
-          ) : (
-            <Table data-testid="cart-lines">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Désignation</Table.Th>
-                  <Table.Th>Qté</Table.Th>
-                  <Table.Th>Total</Table.Th>
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
+      <div className={styles.mainArea}>
+        {/* Zone contenu : tabs + grille */}
+        <div className={styles.contentArea}>
+          <Tabs value={activeTab} onChange={setActiveTab} variant="pills" data-testid="caisse-sale-tabs">
+            <Tabs.List className={styles.tabsList}>
+              <Tabs.Tab value="categorie" color="green">Categorie</Tabs.Tab>
+              <Tabs.Tab value="sous-categorie" color="green">Sous-categorie</Tabs.Tab>
+              <Tabs.Tab value="poids" color="green">Poids</Tabs.Tab>
+              <Tabs.Tab value="prix" color="green">Prix</Tabs.Tab>
+            </Tabs.List>
+
+            <div className={styles.currentItem} data-testid="caisse-current-item">
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                ARTICLE EN COURS DE SAISIE
+              </Text>
+              <Text size="sm" fw={500}>
+                {selectedCat ? selectedCat.name : '—'} | Qté : {catQuantity}
+              </Text>
+            </div>
+
+            <Tabs.Panel value="categorie">
+              {/* Boutons rapides presets */}
+              {presets.length > 0 && (
+                <Group gap="xs" mb="sm">
+                  {presets.map((p) => (
+                    <Button
+                      key={p.id}
+                      variant="light"
+                      size="xs"
+                      data-testid={`preset-${p.id}`}
+                      onClick={() => addPresetToCart(p)}
+                    >
+                      {p.name} ({(p.preset_price / 100).toFixed(2)} \u20ac)
+                    </Button>
+                  ))}
+                </Group>
+              )}
+
+              <div className={styles.categoryGrid} data-testid="caisse-category-grid">
+                {categoryShortcuts.map(({ category, letter }) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    className={`${styles.categoryCard}${selectedCategoryId === category.id ? ` ${styles.categoryCardSelected}` : ''}`}
+                    data-testid={`category-card-${category.id}`}
+                    onClick={() => setSelectedCategoryId(category.id)}
+                  >
+                    <Text size="sm" fw={500}>{category.name}</Text>
+                    <span className={styles.shortcutBadge}>{letter}</span>
+                  </button>
+                ))}
+              </div>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="sous-categorie">
+              <Stack align="center" justify="center" py="xl">
+                <Text c="dimmed">Sous-categories — a venir</Text>
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="poids">
+              <Stack gap="xs" py="md">
+                <Text fw={500}>Saisie directe du poids</Text>
+                <Group gap="xs" align="flex-end">
+                  <NumberInput
+                    decimalScale={3}
+                    min={0}
+                    value={catWeight}
+                    onChange={(v) => setCatWeight(String(v ?? ''))}
+                    data-testid="cat-weight"
+                    placeholder="Poids kg"
+                    w={120}
+                  />
+                  <Button variant="light" size="sm" onClick={handleAddCategoryLine}>
+                    Ajouter
+                  </Button>
+                </Group>
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="prix">
+              <Stack gap="xs" py="md">
+                <Text fw={500}>Saisie directe du prix</Text>
+                <Group gap="xs" align="flex-end">
+                  <NumberInput
+                    decimalScale={2}
+                    min={0}
+                    value={catPriceEur}
+                    onChange={(v) => setCatPriceEur(String(v ?? ''))}
+                    data-testid="cat-price"
+                    placeholder="Prix EUR"
+                    w={120}
+                  />
+                  <NumberInput
+                    min={1}
+                    value={catQuantity}
+                    onChange={(v) => setCatQuantity(Number(v) || 1)}
+                    data-testid="cat-quantity"
+                    placeholder="Qte"
+                    w={80}
+                  />
+                  <Button variant="light" size="sm" onClick={handleAddCategoryLine}>
+                    Ajouter
+                  </Button>
+                </Group>
+              </Stack>
+            </Tabs.Panel>
+          </Tabs>
+        </div>
+
+        {/* Panneau ticket lateral (AC#5) */}
+        <aside className={styles.ticketPanel} data-testid="caisse-ticket-panel">
+          <div className={styles.ticketHeader}>
+            <Text fw={700} size="md">Ticket de Caisse</Text>
+          </div>
+
+          <div className={styles.ticketBody}>
+            {cart.length === 0 ? (
+              <Text size="sm" c="dimmed" data-testid="cart-empty">
+                Aucun article ajoute
+              </Text>
+            ) : (
+              <Stack gap={0}>
                 {cart.map((l) => (
-                  <Table.Tr key={l.id}>
-                    <Table.Td>{l.preset_name ?? l.category_name}</Table.Td>
-                    <Table.Td>{l.quantity}</Table.Td>
-                    <Table.Td>{(l.total_price / 100).toFixed(2)} €{l.weight != null ? ` — ${l.weight} kg` : ''}</Table.Td>
-                    <Table.Td>
-                      <Button
+                  <div key={l.id} className={styles.ticketLine}>
+                    <div>
+                      <Text size="sm">{l.preset_name ?? l.category_name}</Text>
+                      <Text size="xs" c="dimmed">
+                        x{l.quantity}{l.weight != null ? ` — ${l.weight} kg` : ''}
+                      </Text>
+                    </div>
+                    <Group gap={4} align="center" wrap="nowrap">
+                      <Text size="sm" fw={500}>{(l.total_price / 100).toFixed(2)} \u20ac</Text>
+                      <button
                         type="button"
-                        variant="subtle"
-                        size="xs"
+                        className={styles.ticketLineRemove}
                         data-testid={`remove-line-${l.id}`}
+                        aria-label={`Supprimer ${l.preset_name ?? l.category_name ?? 'l\'article'}`}
                         onClick={() => removeCartLine(l.id)}
                       >
-                        Retirer
-                      </Button>
-                    </Table.Td>
-                  </Table.Tr>
+                        x
+                      </button>
+                    </Group>
+                  </div>
                 ))}
-              </Table.Tbody>
-            </Table>
-          )}
-          <Text fw={500} data-testid="cart-total">
-            Total : {(cartTotal / 100).toFixed(2)} €
-          </Text>
-        </Stack>
-      </PageSection>
+              </Stack>
+            )}
 
-      <PageSection>
-        <Stack gap="xs">
-          <Text fw={500}>Ajouter une ligne (catégorie)</Text>
-          <Group align="flex-end" gap="xs">
-            <Select
-              placeholder="— Choisir catégorie —"
-              data-testid="category-select"
-              value={selectedCategoryId}
-              onChange={(v) => setSelectedCategoryId(v)}
-              data={categories.map((c) => ({ value: c.id, label: c.name }))}
-              clearable
-            />
-            <NumberInput
-              min={1}
-              value={catQuantity}
-              onChange={(v) => setCatQuantity(Number(v) || 1)}
-              data-testid="cat-quantity"
-              placeholder="Qté"
-              w={80}
-            />
-            <NumberInput
-              decimalScale={2}
-              min={0}
-              value={catPriceEur}
-              onChange={(v) => setCatPriceEur(String(v ?? ''))}
-              data-testid="cat-price"
-              placeholder="Prix €"
-              w={100}
-            />
-            <NumberInput
-              decimalScale={3}
-              min={0}
-              value={catWeight}
-              onChange={(v) => setCatWeight(String(v ?? ''))}
-              data-testid="cat-weight"
-              placeholder="Poids kg"
-              w={100}
-            />
-            <Button type="button" variant="light" size="sm" onClick={handleAddCategoryLine}>
-              Ajouter
-            </Button>
-          </Group>
-        </Stack>
-      </PageSection>
-
-      <PageSection>
-        <Stack gap="xs">
-          <Text fw={500}>Paiements</Text>
-          <Group align="flex-end" gap="xs">
-            <Select
-              data-testid="payment-method"
-              value={paymentMethod}
-              onChange={(v) => setPaymentMethod(v ?? 'especes')}
-              data={[
-                { value: 'especes', label: 'Espèces' },
-                { value: 'cheque', label: 'Chèque' },
-                { value: 'cb', label: 'Carte bancaire' },
-              ]}
-              w={140}
-            />
-            <NumberInput
-              decimalScale={2}
-              min={0}
-              value={paymentAmountEur}
-              onChange={(v) => setPaymentAmountEur(String(v ?? ''))}
-              data-testid="payment-amount"
-              placeholder="Montant €"
-              w={120}
-            />
-            <Button type="button" variant="light" size="sm" data-testid="add-payment" onClick={addPayment}>
-              Ajouter
-            </Button>
-          </Group>
-          {payments.length > 0 && (
-            <Table data-testid="payments-list">
-              <Table.Tbody>
-                {payments.map((p, i) => (
-                  <Table.Tr key={i}>
-                    <Table.Td>{p.payment_method}</Table.Td>
-                    <Table.Td>{(p.amount / 100).toFixed(2)} €</Table.Td>
-                    <Table.Td>
-                      <Button
+            {/* Paiements */}
+            <div className={styles.paymentSection}>
+              <Text size="xs" fw={600} tt="uppercase" c="dimmed" mb={4}>
+                Paiements
+              </Text>
+              <Group gap="xs" align="flex-end" wrap="nowrap">
+                <Select
+                  size="xs"
+                  data-testid="payment-method"
+                  value={paymentMethod}
+                  onChange={(v) => setPaymentMethod(v ?? 'especes')}
+                  data={[
+                    { value: 'especes', label: 'Especes' },
+                    { value: 'cheque', label: 'Cheque' },
+                    { value: 'cb', label: 'Carte bancaire' },
+                  ]}
+                  w={100}
+                />
+                <NumberInput
+                  size="xs"
+                  decimalScale={2}
+                  min={0}
+                  value={paymentAmountEur}
+                  onChange={(v) => setPaymentAmountEur(String(v ?? ''))}
+                  data-testid="payment-amount"
+                  placeholder="EUR"
+                  w={70}
+                />
+                <Button size="xs" variant="light" data-testid="add-payment" onClick={addPayment}>
+                  +
+                </Button>
+              </Group>
+              {payments.length > 0 && (
+                <Stack gap={0} mt={4}>
+                  {payments.map((p, i) => (
+                    <Group key={i} justify="space-between" gap={4}>
+                      <Text size="xs">{p.payment_method} : {(p.amount / 100).toFixed(2)} \u20ac</Text>
+                      <button
                         type="button"
-                        variant="subtle"
-                        size="xs"
+                        className={styles.ticketLineRemove}
                         data-testid={`remove-payment-${i}`}
+                        aria-label={`Supprimer le paiement ${p.payment_method}`}
                         onClick={() => removePayment(i)}
                       >
-                        Retirer
-                      </Button>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          )}
-          <Text size="sm">Total paiements : {(paymentsTotal / 100).toFixed(2)} €</Text>
-        </Stack>
-      </PageSection>
+                        x
+                      </button>
+                    </Group>
+                  ))}
+                  <Text size="xs" c="dimmed">
+                    Total paiements : {(paymentsTotal / 100).toFixed(2)} \u20ac
+                  </Text>
+                </Stack>
+              )}
+            </div>
 
-      <Card withBorder padding="md" radius="md">
-        <form onSubmit={handleSubmit}>
-          <Stack gap="sm">
-            <TextInput
-              label="Note ticket"
-              id="sale-note"
-              data-testid="sale-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-            <TextInput
-              label="Date réelle (optionnel, YYYY-MM-DD)"
-              id="sale-date"
-              type="date"
-              data-testid="sale-date"
-              value={saleDate}
-              onChange={(e) => setSaleDate(e.target.value)}
-            />
+            {/* Note + date */}
+            <Stack gap="xs" mt="sm">
+              <TextInput
+                size="xs"
+                label="Note"
+                id="sale-note"
+                data-testid="sale-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+              <TextInput
+                size="xs"
+                label="Date (opt.)"
+                id="sale-date"
+                type="date"
+                data-testid="sale-date"
+                value={saleDate}
+                onChange={(e) => setSaleDate(e.target.value)}
+              />
+            </Stack>
+          </div>
+
+          <form onSubmit={handleSubmit} className={styles.ticketFooter}>
             {error && (
-              <Alert color="red" data-testid="sale-error">
+              <Alert color="red" p="xs" data-testid="sale-error">
                 {error}
               </Alert>
             )}
+            <Group justify="space-between">
+              <Text size="sm">{cart.length} articles</Text>
+              <Text size="md" fw={700} data-testid="cart-total">
+                {(cartTotal / 100).toFixed(2)} \u20ac
+              </Text>
+            </Group>
             <Button
               type="submit"
+              color="green"
+              fullWidth
               loading={submitting}
               disabled={submitting || cart.length === 0 || paymentsTotal !== cartTotal}
-              data-testid="sale-submit"
+              data-testid="caisse-ticket-submit"
             >
-              {submitting ? 'Enregistrement…' : 'Enregistrer le ticket'}
+              {submitting ? 'Enregistrement...' : 'Entree'}
             </Button>
-          </Stack>
-        </form>
-      </Card>
-
-      <Button variant="light" onClick={() => navigate('/cash-register/session/close')}>
-        Fermer la session
-      </Button>
-    </PageContainer>
+          </form>
+        </aside>
+      </div>
+    </div>
   );
 }

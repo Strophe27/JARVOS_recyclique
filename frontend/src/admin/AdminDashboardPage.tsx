@@ -1,46 +1,48 @@
 /**
- * Dashboard admin — Story 8.1, 8.2, 8.6, 11.4.
- * Stats agrégées (GET /v1/admin/dashboard/stats si dispo), liens vers sous-sections.
- * Rendu Mantine aligné 1.4.4 (Card, espacements, typo).
+ * Dashboard admin — Story 15.5.
+ * Stats agregees, barre de resume, navigation coloree, section super-admin.
+ * Rendu Mantine aligne 1.4.4.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Stack, Anchor, Card, Text, SimpleGrid } from '@mantine/core';
+import { Badge, Group, SimpleGrid, Text, Title, Anchor } from '@mantine/core';
+import {
+  IconBell,
+  IconCurrencyEuro,
+  IconUsers,
+  IconShieldCheck,
+  IconTags,
+  IconCash,
+  IconClipboardList,
+  IconActivity,
+  IconActivityHeartbeat,
+  IconSettings,
+  IconBuilding,
+  IconScale,
+} from '@tabler/icons-react';
 import { useAuth } from '../auth/AuthContext';
 import { getPahekoAccessDecision, getPahekoComptaUrl } from '../api/adminPahekoCompta';
 import { getDashboardStats } from '../api/adminDashboard';
-import { PageContainer } from '../shared/layout';
+import type { DashboardStats } from '../api/adminDashboard';
+import styles from './AdminDashboardPage.module.css';
 
-const ADMIN_LINKS = [
-  { to: '/admin/users', label: 'Utilisateurs' },
-  { to: '/admin/sites', label: 'Sites' },
-  { to: '/admin/cash-registers', label: 'Postes de caisse' },
-  { to: '/admin/session-manager', label: 'Gestionnaire de sessions caisse' },
-  { to: '/admin/reports', label: 'Rapports caisse' },
-  { to: '/admin/categories', label: 'Catégories' },
-  { to: '/admin/groups', label: 'Groupes' },
-  { to: '/admin/permissions', label: 'Permissions' },
-  { to: '/admin/reception', label: 'Réception (stats, tickets)' },
-  { to: '/admin/health', label: 'Santé' },
-  { to: '/admin/audit-log', label: 'Audit log' },
-  { to: '/admin/email-logs', label: 'Logs email' },
-  { to: '/admin/settings', label: 'Paramètres' },
-  { to: '/admin/db', label: 'BDD (export, purge, import)' },
-  { to: '/admin/import/legacy', label: 'Import legacy' },
-  { to: '/admin/quick-analysis', label: 'Analyse rapide' },
-] as const;
+function centsToEuros(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
 
 export function AdminDashboardPage() {
   const { permissions, accessToken, user } = useAuth();
   const isAdmin =
     user?.role === 'admin' || user?.role === 'super_admin' || permissions.includes('admin');
+  const isSuperAdmin = user?.role === 'super_admin';
+
   const [pahekoAccessDecision, setPahekoAccessDecision] = useState<{
     allowed: boolean;
     reason: string;
   } | null>(null);
   const canAccessPaheko = pahekoAccessDecision?.allowed === true;
   const [pahekoComptaUrl, setPahekoComptaUrl] = useState<string | null>(null);
-  const [stats, setStats] = useState<{ users_count?: number; sites_count?: number; cash_registers_count?: number; open_sessions_count?: number; pending_users_count?: number } | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
   const loadPahekoAccessDecision = useCallback(async () => {
     if (!accessToken) {
@@ -90,70 +92,194 @@ export function AdminDashboardPage() {
     loadStats();
   }, [loadStats]);
 
+  const notifications = stats?.notifications_count ?? stats?.pending_users_count ?? 0;
+  const caMois = stats?.ca_mois ?? 0;
+  const connectedUsers = stats?.connected_users_count ?? stats?.open_sessions_count ?? 0;
+  const caJour = stats?.ca_jour ?? 0;
+  const donsJour = stats?.dons_jour ?? 0;
+  const poidsSorti = stats?.poids_sorti_kg ?? 0;
+  const poidsRecu = stats?.poids_recu_kg ?? 0;
+
   return (
-    <PageContainer title="Admin" maxWidth={1200} testId="page-admin">
+    <div className={styles.page} data-testid="page-admin">
       {isAdmin && (
         <>
-          {stats != null && (stats.users_count != null || stats.sites_count != null || stats.cash_registers_count != null || stats.open_sessions_count != null || stats.pending_users_count != null) && (
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-              {stats.users_count != null && (
-                <Card withBorder padding="md" radius="md" data-testid="dashboard-stat-users">
-                  <Text size="sm" c="dimmed">Utilisateurs</Text>
-                  <Text fw={600} size="xl">{stats.users_count}</Text>
-                </Card>
-              )}
-              {stats.sites_count != null && (
-                <Card withBorder padding="md" radius="md" data-testid="dashboard-stat-sites">
-                  <Text size="sm" c="dimmed">Sites</Text>
-                  <Text fw={600} size="xl">{stats.sites_count}</Text>
-                </Card>
-              )}
-              {stats.cash_registers_count != null && (
-                <Card withBorder padding="md" radius="md" data-testid="dashboard-stat-registers">
-                  <Text size="sm" c="dimmed">Postes de caisse</Text>
-                  <Text fw={600} size="xl">{stats.cash_registers_count}</Text>
-                </Card>
-              )}
-              {stats.open_sessions_count != null && (
-                <Card withBorder padding="md" radius="md" data-testid="dashboard-stat-sessions">
-                  <Text size="sm" c="dimmed">Sessions ouvertes</Text>
-                  <Text fw={600} size="xl">{stats.open_sessions_count}</Text>
-                </Card>
-              )}
-              {stats.pending_users_count != null && (
-                <Card withBorder padding="md" radius="md" data-testid="dashboard-stat-pending">
-                  <Text size="sm" c="dimmed">Inscriptions en attente</Text>
-                  <Text fw={600} size="xl">{stats.pending_users_count}</Text>
-                </Card>
-              )}
-            </SimpleGrid>
-          )}
-          <Card withBorder padding="md" radius="md">
-            <Text size="sm" fw={500} mb="xs">Navigation</Text>
-            <Stack gap="xs">
-              {ADMIN_LINKS.map(({ to, label }) => (
-                <p key={to}>
-                  <Anchor component={Link} to={to}>
-                    {label}
-                  </Anchor>
-                </p>
-              ))}
-              {pahekoComptaUrl && (
-                <p>
-                  <Anchor href={pahekoComptaUrl} target="_blank" rel="noopener noreferrer">
-                    Comptabilité (Paheko)
-                  </Anchor>
-                </p>
-              )}
-              {pahekoAccessDecision != null && !pahekoAccessDecision.allowed && (
-                <Text size="sm" c="dimmed" data-testid="paheko-access-restricted">
-                  Acces reserve roles autorises (admin/super_admin) ou exception explicite.
+          {/* Title */}
+          <Title order={2} className={styles.title} data-testid="admin-dashboard-title">
+            Tableau de Bord d&apos;Administration
+          </Title>
+
+          {/* Summary bar */}
+          <div className={styles.summaryBar} data-testid="admin-summary-bar">
+            <div className={styles.summaryCell} data-testid="admin-summary-notifications">
+              <IconBell size={20} stroke={1.5} />
+              <Text size="sm">Notifications</Text>
+              <Badge size="sm" color="red" variant="filled">{notifications}</Badge>
+              <Anchor component={Link} to="/admin/users" size="sm">Voir</Anchor>
+            </div>
+            <div className={styles.summaryCell} data-testid="admin-summary-ca-mois">
+              <IconCurrencyEuro size={20} stroke={1.5} />
+              <Text size="sm">CA Mois</Text>
+              <Text fw={600} size="sm">{centsToEuros(caMois)}&nbsp;&euro;</Text>
+            </div>
+            <div className={styles.summaryCell} data-testid="admin-summary-connected-users">
+              <IconUsers size={20} stroke={1.5} />
+              <Text size="sm">Utilisateurs connect&eacute;s</Text>
+              <Badge size="sm" color="blue" variant="filled">{connectedUsers}</Badge>
+              <Anchor component={Link} to="/admin/users" size="sm">Voir</Anchor>
+            </div>
+          </div>
+
+          {/* Daily stats */}
+          <div className={styles.statsSection} data-testid="admin-stats-section">
+            <Text fw={700} size="lg" mb="md">Statistiques quotidiennes</Text>
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+              <div
+                className={`${styles.statCard} ${styles.statCardGreen}`}
+                data-testid="admin-stat-financier"
+              >
+                <Group justify="center" gap="xs" mb="xs" className={styles.statCardHeader}>
+                  <IconCurrencyEuro size={18} stroke={1.5} />
+                  <Text fw={600} c="inherit">Financier</Text>
+                </Group>
+                <Text fw={700} size="xl">{centsToEuros(caJour)}&nbsp;&euro;</Text>
+                <Text size="sm" c="dimmed">
+                  CA: {centsToEuros(caJour)}&euro; &middot; Dons: {centsToEuros(donsJour)}&euro;
                 </Text>
-              )}
-            </Stack>
-          </Card>
+              </div>
+              <div
+                className={`${styles.statCard} ${styles.statCardOrange}`}
+                data-testid="admin-stat-poids-sorti"
+              >
+                <Group justify="center" gap="xs" mb="xs" className={styles.statCardHeader}>
+                  <IconScale size={18} stroke={1.5} />
+                  <Text fw={600} c="inherit">Poids sorti</Text>
+                </Group>
+                <Text fw={700} size="xl">{poidsSorti.toFixed(1)}&nbsp;kg</Text>
+                <Text size="sm" c="dimmed">Sorti aujourd&apos;hui</Text>
+              </div>
+              <div
+                className={`${styles.statCard} ${styles.statCardBlue}`}
+                data-testid="admin-stat-poids-recu"
+              >
+                <Group justify="center" gap="xs" mb="xs" className={styles.statCardHeader}>
+                  <IconScale size={18} stroke={1.5} />
+                  <Text fw={600} c="inherit">Poids re&ccedil;u</Text>
+                </Group>
+                <Text fw={700} size="xl">{poidsRecu.toFixed(1)}&nbsp;kg</Text>
+                <Text size="sm" c="dimmed">Re&ccedil;u aujourd&apos;hui</Text>
+              </div>
+            </SimpleGrid>
+          </div>
+
+          {/* Main navigation */}
+          <div className={styles.navSection} data-testid="admin-nav-section">
+            <Text fw={700} size="lg" mb="md">Navigation principale</Text>
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+              <Link
+                to="/admin/users"
+                className={`${styles.navBlock} ${styles.navBlockBlue}`}
+                data-testid="admin-nav-users"
+                aria-label="Utilisateurs & Profils"
+              >
+                <IconUsers size={22} stroke={1.5} />
+                <span>Utilisateurs &amp; Profils</span>
+              </Link>
+              <Link
+                to="/admin/groups"
+                className={`${styles.navBlock} ${styles.navBlockGreen}`}
+                data-testid="admin-nav-groups"
+                aria-label="Groupes & Permissions"
+              >
+                <IconShieldCheck size={22} stroke={1.5} />
+                <span>Groupes &amp; Permissions</span>
+              </Link>
+              <Link
+                to="/admin/categories"
+                className={`${styles.navBlock} ${styles.navBlockOrange}`}
+                data-testid="admin-nav-categories"
+                aria-label="Categories & Tarifs"
+              >
+                <IconTags size={22} stroke={1.5} />
+                <span>Cat&eacute;gories &amp; Tarifs</span>
+              </Link>
+              <Link
+                to="/admin/session-manager"
+                className={`${styles.navBlock} ${styles.navBlockGray}`}
+                data-testid="admin-nav-sessions-caisse"
+                aria-label="Sessions de Caisse"
+              >
+                <IconCash size={22} stroke={1.5} />
+                <span>Sessions de Caisse</span>
+              </Link>
+              <Link
+                to="/admin/reception"
+                className={`${styles.navBlock} ${styles.navBlockGreen}`}
+                data-testid="admin-nav-sessions-reception"
+                aria-label="Sessions de Reception"
+              >
+                <IconClipboardList size={22} stroke={1.5} />
+                <span>Sessions de R&eacute;ception</span>
+              </Link>
+              <Link
+                to="/admin/audit-log"
+                className={`${styles.navBlock} ${styles.navBlockRed}`}
+                data-testid="admin-nav-activity"
+                aria-label="Activite & Logs"
+              >
+                <IconActivity size={22} stroke={1.5} />
+                <span>Activit&eacute; &amp; Logs</span>
+              </Link>
+            </SimpleGrid>
+            {canAccessPaheko && pahekoComptaUrl && (
+              <Anchor href={pahekoComptaUrl} target="_blank" rel="noopener noreferrer" mt="md" size="sm">
+                Comptabilit&eacute; (Paheko)
+              </Anchor>
+            )}
+            {pahekoAccessDecision != null && !pahekoAccessDecision.allowed && (
+              <Text size="sm" c="dimmed" mt="md" data-testid="paheko-access-restricted">
+                Acces reserve roles autorises (admin/super_admin) ou exception explicite.
+              </Text>
+            )}
+          </div>
+
+          {/* Super-admin section */}
+          {isSuperAdmin && (
+            <div className={styles.superAdminSection} data-testid="admin-superadmin-section">
+              <Text fw={700} size="lg" mb="md">Administration Super-Admin</Text>
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                <Link
+                  to="/admin/health"
+                  className={styles.superAdminBlock}
+                  data-testid="admin-superadmin-health"
+                  aria-label="Sante Systeme"
+                >
+                  <IconActivityHeartbeat size={22} stroke={1.5} />
+                  <span>Sant&eacute; Syst&egrave;me</span>
+                </Link>
+                <Link
+                  to="/admin/settings"
+                  className={styles.superAdminBlock}
+                  data-testid="admin-superadmin-settings"
+                  aria-label="Parametres Avances"
+                >
+                  <IconSettings size={22} stroke={1.5} />
+                  <span>Param&egrave;tres Avanc&eacute;s</span>
+                </Link>
+                <Link
+                  to="/admin/sites"
+                  className={styles.superAdminBlock}
+                  data-testid="admin-superadmin-sites"
+                  aria-label="Sites & Caisses"
+                >
+                  <IconBuilding size={22} stroke={1.5} />
+                  <span>Sites &amp; Caisses</span>
+                </Link>
+              </SimpleGrid>
+            </div>
+          )}
         </>
       )}
-    </PageContainer>
+    </div>
   );
 }

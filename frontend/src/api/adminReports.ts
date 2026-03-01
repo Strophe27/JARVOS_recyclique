@@ -3,6 +3,8 @@
  * GET /v1/admin/reports/cash-sessions, by-session/{id}, POST export-bulk.
  */
 
+import { buildUrl } from './_buildUrl';
+
 const getBase = (): string =>
   (import.meta.env?.VITE_API_BASE_URL as string) ?? '';
 
@@ -27,7 +29,7 @@ export async function getCashSessionReportsList(
   accessToken: string,
   params?: { limit?: number; offset?: number }
 ): Promise<CashSessionReportItem[]> {
-  const url = new URL(`${getBase()}/v1/admin/reports/cash-sessions`);
+  const url = buildUrl('/v1/admin/reports/cash-sessions');
   if (params?.limit != null) url.searchParams.set('limit', String(params.limit));
   if (params?.offset != null) url.searchParams.set('offset', String(params.offset));
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });

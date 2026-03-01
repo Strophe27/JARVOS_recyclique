@@ -4,6 +4,8 @@
  * POST /v1/reception/postes/open.
  */
 
+import { buildUrl } from './_buildUrl';
+
 const getBase = (): string =>
   (import.meta.env?.VITE_API_BASE_URL as string) ?? '';
 
@@ -151,7 +153,7 @@ export async function getCashRegisters(
   accessToken: string,
   siteId?: string
 ): Promise<CashRegister[]> {
-  const url = new URL(`${getBase()}/v1/cash-registers`);
+  const url = buildUrl('/v1/cash-registers');
   if (siteId) url.searchParams.set('site_id', siteId);
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
   if (!res.ok) {

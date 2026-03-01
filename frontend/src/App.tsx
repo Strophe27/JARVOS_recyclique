@@ -41,7 +41,7 @@ import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
 import { ProfilPage } from './auth/ProfilPage';
 import { useAuth } from './auth/AuthContext';
-import { AppShell, AppShellNav } from './shared/layout';
+import { AppShell } from './shared/layout';
 
 function AppRoutes() {
   const { user, isHydrated } = useAuth();
@@ -260,7 +260,7 @@ export function App() {
   return (
     <BrowserRouter>
       <CashRegisterGuard>
-        <AppShell nav={<AppShellNav />}>
+        <AppShell>
           <AppRoutes />
         </AppShell>
       </CashRegisterGuard>

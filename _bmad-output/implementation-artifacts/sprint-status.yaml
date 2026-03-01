@@ -1,5 +1,5 @@
 # generated: 2026-02-28
-# updated: 2026-03-01 (rollback minimal 14.6 lance: keycloak retire, retour auth legacy frontend)
+# updated: 2026-03-01 (ajout Epic 15 backlog - conformite visuelle parite 1.4.4 - 6 stories)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -141,3 +141,12 @@ development_status:
   14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback: done
   14-6-demantelement-oidc-et-retour-auth-simple-recyclique-paheko: in-progress
   epic-14-retrospective: optional
+
+  epic-15: done
+  15-0-fix-urls-api-invalides-new-url-base-vide: done
+  15-1-shell-global-bandeau-vert-navigation-horizontale-brand-vert: done
+  15-2-dashboard-caisse-selection-du-poste: done
+  15-3-saisie-vente-caisse-interface-complete: done
+  15-4-page-reception-interface-complete: done
+  15-5-dashboard-admin-stats-et-navigation: done
+  epic-15-retrospective: optional

@@ -19,6 +19,13 @@ export interface DashboardStats {
   cash_registers_count?: number;
   open_sessions_count?: number;
   pending_users_count?: number;
+  ca_jour?: number;
+  dons_jour?: number;
+  poids_sorti_kg?: number;
+  poids_recu_kg?: number;
+  ca_mois?: number;
+  notifications_count?: number;
+  connected_users_count?: number;
   [key: string]: unknown;
 }
 

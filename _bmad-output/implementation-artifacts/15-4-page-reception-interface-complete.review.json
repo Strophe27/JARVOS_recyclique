@@ -1,0 +1,10 @@
+{
+  "reviewResult": "approved",
+  "summary": "Build OK (tsc + vite). 10/10 tests passent. Les 4 corrections de la review precedente sont toutes appliquees : (1) test closeTicket utilise findByTestId async, (2) couleurs orange extraites en tokens deferred* dans tokens.ts et exposees en CSS variables, (3) useRef au lieu de document.getElementById pour le scroll, (4) mock useAuth conforme. Code propre, pas de regression, pas de secret en dur.",
+  "findings": [
+    {
+      "severity": "info",
+      "description": "Le mock useAuth dans le test inclut first_name: null et last_name: null (absents de UserInToken). Inoffensif — TypeScript ne casse pas sur des props supplementaires dans un mock. Pas de correction requise."
+    }
+  ]
+}

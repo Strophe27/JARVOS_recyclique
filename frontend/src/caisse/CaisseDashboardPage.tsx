@@ -19,8 +19,19 @@ import type {
 } from '../api/caisse';
 import { useAuth } from '../auth/AuthContext';
 import { useCaisse } from './CaisseContext';
-import { Stack, Alert, Loader, Button, Card, Group, Text, Anchor } from '@mantine/core';
+import {
+  Stack,
+  Alert,
+  Loader,
+  Button,
+  Card,
+  Group,
+  Text,
+  Anchor,
+  Badge,
+} from '@mantine/core';
 import { PageContainer } from '../shared/layout';
+import styles from './CaisseDashboardPage.module.css';
 
 type RegisterWithStatus = CashRegisterItem & {
   registerStatus: CashRegisterStatusItem;
@@ -34,11 +45,13 @@ export function CaisseDashboardPage() {
   const [currentSession, setCurrentSession] = useState<{ id: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionStatusWarning, setSessionStatusWarning] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true);
     setError(null);
+    setSessionStatusWarning(false);
     try {
       const [list, statusList] = await Promise.all([
         getCashRegisters(accessToken),
@@ -57,20 +70,25 @@ export function CaisseDashboardPage() {
           started_by_user_id: null,
         },
       }));
+      let sessionStatusFailed = false;
       const withSessionStatus = await Promise.all(
         withStatus.map(async (r) => {
           try {
             const sessionStatus = await getCashSessionStatus(accessToken, r.id);
             return { ...r, sessionStatus };
           } catch {
+            sessionStatusFailed = true;
             return { ...r, sessionStatus: undefined };
           }
         })
       );
+      setSessionStatusWarning(sessionStatusFailed);
       setRegisters(withSessionStatus);
-      const started = withSessionStatus.filter((r) => r.registerStatus.status === 'started');
-      if (started.length === 1 && !currentRegisterId) {
-        setCurrentRegister(started[0].id, true);
+      const startedWithSession = withSessionStatus.filter(
+        (r) => r.registerStatus.status === 'started' && r.sessionStatus?.has_open_session
+      );
+      if (startedWithSession.length === 1 && !currentRegisterId) {
+        setCurrentRegister(startedWithSession[0].id, true);
       }
       const current = await getCurrentCashSession(accessToken);
       setCurrentSession(current ? { id: current.id } : null);
@@ -96,8 +114,69 @@ export function CaisseDashboardPage() {
     [setCurrentRegister]
   );
 
+  const renderRegisterAction = (item: RegisterWithStatus) => {
+    const isStarted = item.registerStatus.status === 'started';
+    const hasOpenSession = item.sessionStatus?.has_open_session ?? false;
+    const isOpen = isStarted && hasOpenSession;
+    const label = isOpen ? 'Accéder' : 'Ouvrir';
+
+    if (!isOpen) {
+      return (
+        <Button
+          component={Link}
+          to={`/cash-register/session/open?register_id=${item.id}`}
+          onClick={() => handleSelectPoste(item)}
+          data-testid={`caisse-open-session-${item.id}`}
+        >
+          {label}
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        component={Link}
+        to="/cash-register/sale"
+        variant="filled"
+        onClick={() => handleSelectPoste(item)}
+        data-testid={`caisse-poste-${item.id}`}
+        aria-pressed={currentRegisterId === item.id && isOpen}
+      >
+        {label}
+      </Button>
+    );
+  };
+
+  const renderRegisterCard = (item: RegisterWithStatus) => {
+    const isStarted = item.registerStatus.status === 'started';
+    const statusLabel = isStarted ? 'OUVERTE' : 'FERMÉE';
+    const statusColor = isStarted ? 'green' : 'red';
+    const siteLabel = item.location ?? item.site_id;
+
+    return (
+      <Card key={item.id} padding="md" radius="md" shadow="sm" className={styles.cardBase}>
+        <Stack gap="sm">
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text fw={600}>{item.name}</Text>
+              <Text size="sm" c="dimmed">
+                {siteLabel}
+              </Text>
+            </div>
+            <Badge color={statusColor} size="sm" variant="filled">
+              {statusLabel}
+            </Badge>
+          </Group>
+          <Group>
+            {renderRegisterAction(item)}
+          </Group>
+        </Stack>
+      </Card>
+    );
+  };
+
   return (
-    <PageContainer title="Dashboard caisses" maxWidth={920} testId="caisse-dashboard-page">
+    <PageContainer title="Sélection du Poste de Caisse" maxWidth={1100} testId="caisse-dashboard-page">
       {currentSession && (
         <Text size="sm" data-testid="caisse-current-session">
           <Anchor component={Link} to="/cash-register/session/close">
@@ -114,40 +193,64 @@ export function CaisseDashboardPage() {
         </Alert>
       )}
       {!loading && !error && (
-        <Stack gap="sm" data-testid="caisse-dashboard-list">
-          {registers.map((item) => (
-            <Card key={item.id} withBorder padding="md" radius="md">
-              <Group justify="space-between">
-                <div>
-                  <Text fw={500}>{item.name}</Text>
-                  <Text size="sm" c="dimmed">
-                    {item.registerStatus.status === 'started' ? 'Occupé' : 'Libre'}
-                    {item.sessionStatus?.has_open_session ? ' (session ouverte)' : ''}
-                  </Text>
-                </div>
-                <Group gap="xs">
-                  <Button
-                    variant={currentRegisterId === item.id && item.registerStatus.status === 'started' ? 'filled' : 'light'}
-                    onClick={() => handleSelectPoste(item)}
-                    data-testid={`caisse-poste-${item.id}`}
-                    aria-pressed={currentRegisterId === item.id && item.registerStatus.status === 'started'}
-                  >
-                    {item.name}
-                  </Button>
-                  {item.registerStatus.status === 'started' && !item.sessionStatus?.has_open_session && (
-                    <Button
-                      component={Link}
-                      to={`/cash-register/session/open?register_id=${item.id}`}
-                      data-testid={`caisse-open-session-${item.id}`}
-                    >
-                      Ouvrir une session
-                    </Button>
-                  )}
-                </Group>
+        <div className={styles.cardsRow} data-testid="caisse-dashboard-list">
+          {registers.map((item) => renderRegisterCard(item))}
+          <Card
+            padding="md"
+            radius="md"
+            shadow="sm"
+            withBorder
+            className={`${styles.cardBase} ${styles.virtualCard}`}
+          >
+            <Stack gap="sm">
+              <Group justify="space-between" align="flex-start">
+                <Text fw={600}>Caisse Virtuelle</Text>
+                <Badge color="blue" size="sm" variant="light">
+                  SIMULATION
+                </Badge>
               </Group>
-            </Card>
-          ))}
-        </Stack>
+              <Text size="sm" c="dimmed">
+                Mode d&apos;entraînement sans impact sur les données réelles
+              </Text>
+              <Text size="xs" c="dimmed" fs="italic">
+                Hérite des options de workflow de la caisse source sélectionnée
+              </Text>
+              <Button variant="outline" component={Link} to="/cash-register/virtual">
+                Simuler
+              </Button>
+            </Stack>
+          </Card>
+          <Card
+            padding="md"
+            radius="md"
+            shadow="sm"
+            withBorder
+            className={`${styles.cardBase} ${styles.deferredCard}`}
+          >
+            <Stack gap="sm">
+              <Group justify="space-between" align="flex-start">
+                <Text fw={600}>Saisie différée</Text>
+                <Badge color="orange" size="sm" variant="light">
+                  ADMIN
+                </Badge>
+              </Group>
+              <Text size="sm" c="dimmed">
+                Saisir des ventes d&apos;anciens cahiers avec leur date réelle de vente
+              </Text>
+              <Text size="xs" c="dimmed" fs="italic">
+                Hérite des options de workflow de la caisse source sélectionnée
+              </Text>
+              <Button variant="outline" color="orange" component={Link} to="/cash-register/deferred">
+                Accéder
+              </Button>
+            </Stack>
+          </Card>
+        </div>
+      )}
+      {!loading && !error && sessionStatusWarning && (
+        <Alert color="yellow" data-testid="caisse-session-status-warning">
+          Statut de session indisponible pour certains postes.
+        </Alert>
       )}
     </PageContainer>
   );

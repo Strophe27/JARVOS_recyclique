@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Story 15-2 approved. Layout horizontal OK, CSS module (pas de styles inline), badges OUVERTE/FERMEE sur registerStatus, bouton Acceder/Ouvrir sur session ouverte, warning session indisponible, tests cibles 4/4 OK, captures avant/apres presentes. Findings LOW restants notes (file list scope, full test suite pre-existant) — non bloquants."
+}
