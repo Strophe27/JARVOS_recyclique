@@ -27,3 +27,6 @@ __pycache__/
 *.pyo
 test_recyclic.db
 recyclic.sqlite
+
+# Identifiants de test / staging (NE JAMAIS COMMITER)
+**/ref_navigation*.md
