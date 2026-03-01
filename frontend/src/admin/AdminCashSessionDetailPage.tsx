@@ -39,11 +39,11 @@ export function AdminCashSessionDetailPage() {
     if (!accessToken || !id) return;
     setError(null);
     try {
-      const blob = await getReportBySession(accessToken, id);
+      const { blob, filename } = await getReportBySession(accessToken, id);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `rapport-session-${id}.txt`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {

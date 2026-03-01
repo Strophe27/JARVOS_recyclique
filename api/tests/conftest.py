@@ -116,6 +116,10 @@ def _db_with_user():
 def client(_db_with_user):
     """Client API authentifié (reception.access) pour tests réception. Function-scoped pour ne pas polluer les tests sans auth."""
     from api.core import deps
+
+    # Réinjecter user/site si un test précédent (ex. auth_client) a reset la BDD
+    _seed_fake_user_for_auth_flows()
+
     original_get_codes = deps.get_user_permission_codes_from_user
 
     def mock_get_codes(db, user):

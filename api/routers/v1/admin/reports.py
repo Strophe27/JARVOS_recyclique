@@ -1,6 +1,8 @@
-# Rapports admin — Story 8.2.
+# Rapports admin — Story 8.2, 17.9.
 # GET /v1/admin/reports/cash-sessions, by-session/{id}, export-bulk.
 
+import io
+import zipfile
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
@@ -12,6 +14,7 @@ from sqlalchemy import select, nulls_last
 from api.core.deps import require_permissions
 from api.db import get_db
 from api.models import CashSession, User
+from api.services.report_service import generate_session_report_csv
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/reports/cash-sessions", tags=["admin-reports"])
@@ -71,19 +74,23 @@ def get_report_by_session(
     db: Session = Depends(get_db),
     current_user: User = _Admin,
 ) -> Response:
-    """GET /v1/admin/reports/cash-sessions/by-session/{session_id} — téléchargement rapport session."""
-    row = (
-        db.execute(select(CashSession).where(CashSession.id == session_id))
-        .scalars()
-        .one_or_none()
-    )
-    if row is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    if row.status != "closed":
+    """GET /v1/admin/reports/cash-sessions/by-session/{session_id} — téléchargement rapport session CSV."""
+    csv_content = generate_session_report_csv(db, session_id)
+    if csv_content is None:
+        row = (
+            db.execute(select(CashSession).where(CashSession.id == session_id))
+            .scalars()
+            .one_or_none()
+        )
+        if row is None:
+            raise HTTPException(status_code=404, detail="Session not found")
         raise HTTPException(status_code=400, detail="Session not closed, no report yet")
-    # v1 minimal : retourner un placeholder texte (pas de génération PDF en scope)
-    content = f"Rapport session caisse {session_id}\nOuverte: {row.opened_at}\nClôturée: {row.closed_at}\n"
-    return Response(content=content, media_type="text/plain")
+    filename = f"rapport-session-{session_id}.csv"
+    return Response(
+        content=csv_content.encode("utf-8"),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/export-bulk")
@@ -91,8 +98,8 @@ def export_bulk(
     body: ExportBulkRequest,
     db: Session = Depends(get_db),
     current_user: User = _Admin,
-) -> dict:
-    """POST /v1/admin/reports/cash-sessions/export-bulk — export bulk (filtres période, etc.)."""
+) -> Response:
+    """POST /v1/admin/reports/cash-sessions/export-bulk — export bulk ZIP (un CSV par session)."""
     q = select(CashSession).where(CashSession.status == "closed")
     if body.site_id is not None:
         q = q.where(CashSession.site_id == body.site_id)
@@ -101,18 +108,36 @@ def export_bulk(
             dt_from = datetime.strptime(body.date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
             q = q.where(CashSession.closed_at >= dt_from)
         except ValueError:
-            pass
+            raise HTTPException(
+                status_code=400, detail="Invalid date format for date_from (expected YYYY-MM-DD)"
+            )
     if body.date_to is not None:
         try:
             dt_to = datetime.strptime(body.date_to, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
             q = q.where(CashSession.closed_at < dt_to)
         except ValueError:
-            pass
+            raise HTTPException(
+                status_code=400, detail="Invalid date format for date_to (expected YYYY-MM-DD)"
+            )
     q = q.order_by(CashSession.closed_at.desc())
     sessions = list(db.execute(q).scalars().all())
-    # v1 minimal : pas de zip réel, on retourne la liste des session_ids concernées
-    return {
-        "message": "Export bulk demandé",
-        "session_ids": [str(s.id) for s in sessions],
-        "count": len(sessions),
-    }
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for s in sessions:
+            csv_content = generate_session_report_csv(db, s.id)
+            if csv_content:
+                zf.writestr(f"rapport-session-{s.id}.csv", csv_content.encode("utf-8"))
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if body.date_from and body.date_to:
+        date_suffix = f"{body.date_from}-{body.date_to}"
+    else:
+        date_suffix = today
+    filename = f"export-bulk-{date_suffix}.zip"
+    buf.seek(0)
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -1,0 +1,14 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique
+plugins: anyio-4.9.0, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+api/tests/routers/test_admin_email_logs.py::TestAdminEmailLogs::test_email_logs_returns_200_and_pagination PASSED [ 25%]
+api/tests/routers/test_admin_email_logs.py::TestAdminEmailLogs::test_email_logs_without_auth_returns_401 PASSED [ 50%]
+api/tests/routers/test_admin_email_logs.py::TestAdminEmailLogs::test_email_logs_with_filters PASSED [ 75%]
+api/tests/routers/test_admin_email_logs.py::TestAdminEmailLogs::test_email_logs_list_non_empty_with_fixture PASSED [100%]
+
+============================== 4 passed in 0.15s ==============================

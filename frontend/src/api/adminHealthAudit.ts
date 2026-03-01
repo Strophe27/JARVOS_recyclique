@@ -245,11 +245,22 @@ export interface EmailLogsListResponse {
 
 export async function getAdminEmailLogs(
   accessToken: string,
-  params?: { page?: number; page_size?: number }
+  params?: {
+    page?: number;
+    page_size?: number;
+    date_from?: string;
+    date_to?: string;
+    recipient?: string;
+    status?: string;
+  }
 ): Promise<EmailLogsListResponse> {
   const url = buildUrl('/v1/admin/email-logs');
   if (params?.page != null) url.searchParams.set('page', String(params.page));
   if (params?.page_size != null) url.searchParams.set('page_size', String(params.page_size));
+  if (params?.date_from) url.searchParams.set('date_from', params.date_from);
+  if (params?.date_to) url.searchParams.set('date_to', params.date_to);
+  if (params?.recipient) url.searchParams.set('recipient', params.recipient);
+  if (params?.status) url.searchParams.set('status', params.status);
   const res = await fetch(url.toString(), { headers: getAuthHeaders(accessToken) });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

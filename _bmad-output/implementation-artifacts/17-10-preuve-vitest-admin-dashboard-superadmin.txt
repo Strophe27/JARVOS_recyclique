@@ -1,0 +1,16 @@
+# Story 17.10 - Preuve Vitest AdminDashboardPage (discoverabilite super-admin phase 2)
+# Generated: 2026-03-01
+
+ RUN  v4.0.18 frontend
+
+ ✓ src/admin/AdminDashboardPage.test.tsx (9 tests) 1587ms
+     ✓ shows Paheko link when authorized and URL available  809ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  23:46:17
+   Duration  8.11s
+
+# Conformite E16-B-007: 3 liens super-admin (db, import/legacy, quick-analysis) testes
+# - presence pour super_admin, absence pour admin
+# - data-testid: admin-superadmin-db, admin-superadmin-import-legacy, admin-superadmin-quick-analysis

@@ -74,11 +74,11 @@ export function AdminReportsPage() {
     if (!accessToken) return;
     setError(null);
     try {
-      const blob = await getReportBySession(accessToken, sessionId);
+      const { blob, filename } = await getReportBySession(accessToken, sessionId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `rapport-session-${sessionId}.txt`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -92,12 +92,18 @@ export function AdminReportsPage() {
     setBulkResult(null);
     setError(null);
     try {
-      const res = await postExportBulk(accessToken, {
+      const { blob, filename } = await postExportBulk(accessToken, {
         date_from: bulkDateFrom || undefined,
         date_to: bulkDateTo || undefined,
         site_id: bulkSiteId || undefined,
       });
-      setBulkResult(`${res.message} — ${res.count} session(s) concernée(s).`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setBulkResult('Export téléchargé.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur export bulk');
     } finally {

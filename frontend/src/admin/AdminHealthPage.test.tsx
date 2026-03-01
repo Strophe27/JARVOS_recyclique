@@ -5,6 +5,7 @@
 import type { ReactElement } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
 import { AdminHealthPage } from './AdminHealthPage';
@@ -115,18 +116,19 @@ describe('AdminHealthPage', () => {
   });
 
   it('test notifications affiche le message reel', async () => {
+    const user = userEvent.setup();
     mockPostAdminHealthTestNotifications.mockResolvedValue({
-      message: 'Configuration email incomplete',
+      message: 'Configuration email incomplète',
       configured: false,
     });
     renderWithProviders(<AdminHealthPage />);
     await waitFor(() => {
       expect(screen.getByTestId('btn-test-notifications')).toBeInTheDocument();
     });
-    screen.getByTestId('btn-test-notifications').click();
+    await user.click(screen.getByTestId('btn-test-notifications'));
     await waitFor(() => {
       expect(mockPostAdminHealthTestNotifications).toHaveBeenCalledWith('token');
-      expect(screen.getByTestId('test-notifications-message')).toHaveTextContent('Configuration email incomplete');
+      expect(screen.getByTestId('test-notifications-message')).toHaveTextContent('Configuration email incomplète');
     });
   });
 });

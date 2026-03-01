@@ -1,0 +1,14 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique
+plugins: anyio-4.9.0, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+api/tests/routers/test_admin_reports.py::TestAdminReportsBySession::test_by_session_returns_csv_with_content_disposition PASSED [ 25%]
+api/tests/routers/test_admin_reports.py::TestAdminReportsBySession::test_by_session_not_found_404 PASSED [ 50%]
+api/tests/routers/test_admin_reports.py::TestAdminReportsExportBulk::test_export_bulk_returns_zip_with_content_disposition PASSED [ 75%]
+api/tests/routers/test_admin_reports.py::TestAdminReportsExportBulk::test_export_bulk_empty_returns_empty_zip PASSED [100%]
+
+============================== 4 passed in 0.22s ==============================

@@ -19,6 +19,9 @@ import {
   IconSettings,
   IconBuilding,
   IconScale,
+  IconDatabase,
+  IconFileImport,
+  IconChartBar,
 } from '@tabler/icons-react';
 import { useAuth } from '../auth/AuthContext';
 import { getPahekoAccessDecision, getPahekoComptaUrl } from '../api/adminPahekoCompta';
@@ -274,6 +277,33 @@ export function AdminDashboardPage() {
                 >
                   <IconBuilding size={22} stroke={1.5} />
                   <span>Sites &amp; Caisses</span>
+                </Link>
+                <Link
+                  to="/admin/db"
+                  className={styles.superAdminBlock}
+                  data-testid="admin-superadmin-db"
+                  aria-label="BDD (export, purge, import)"
+                >
+                  <IconDatabase size={22} stroke={1.5} />
+                  <span>BDD (export, purge, import)</span>
+                </Link>
+                <Link
+                  to="/admin/import/legacy"
+                  className={styles.superAdminBlock}
+                  data-testid="admin-superadmin-import-legacy"
+                  aria-label="Import legacy"
+                >
+                  <IconFileImport size={22} stroke={1.5} />
+                  <span>Import legacy</span>
+                </Link>
+                <Link
+                  to="/admin/quick-analysis"
+                  className={styles.superAdminBlock}
+                  data-testid="admin-superadmin-quick-analysis"
+                  aria-label="Analyse rapide"
+                >
+                  <IconChartBar size={22} stroke={1.5} />
+                  <span>Analyse rapide</span>
                 </Link>
               </SimpleGrid>
             </div>

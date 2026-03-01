@@ -1,6 +1,6 @@
 # Story 17.7: Supervision admin non-stub (anomalies + test notifications)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -141,3 +141,16 @@ bmad-dev (Composer)
 ### Change Log
 
 - 2026-03-01 : Story 17.7 implémentée — anomalies non-stub (collect_anomalies, GET /anomalies), test notifications non-stub (send_test_email, POST test-notifications et settings/email/test), tests API étendus, E16-B-004 fermé.
+- 2026-03-01 : Code review adversarial — approved. Corrections : typos français (incomplète, envoyé) email_test.py ; import send_test_email en tête settings.py.
+
+## Senior Developer Review (AI)
+
+**Date :** 2026-03-01 | **Résultat :** Approved
+
+**Validation AC :** AC 1 — Contrôles réels et flux effectif : implémentés (collect_anomalies agrège database/redis/push_worker/oidc/resilience ; send_test_email utilise smtplib réel ; plus de stub).
+
+**Audit tasks :** Tous les tasks [x] confirmés (1.1–1.4, 2.1–2.4, 3.1–3.5). Preuves pytest et journal notification présents.
+
+**Corrections appliquées :** Typos français (incomplete→incomplète, envoye→envoyé) ; import send_test_email déplacé en tête settings.py.
+
+**Git vs File List :** Cohérent (commit 9a32eb1).

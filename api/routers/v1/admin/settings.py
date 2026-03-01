@@ -8,6 +8,7 @@ from api.core.deps import require_permissions
 from api.db import get_db
 from api.models import User
 from api.services import admin_settings as admin_settings_service
+from api.services.email_test import send_test_email
 
 router = APIRouter(prefix="/settings", tags=["admin-settings"])
 _SuperAdmin = Depends(require_permissions("super_admin"))
@@ -70,6 +71,4 @@ def post_settings_email_test(
     current_user: User = _SuperAdmin,
 ) -> dict:
     """POST /v1/admin/settings/email/test — envoi email de test selon config admin."""
-    from api.services.email_test import send_test_email
-
     return send_test_email(db)

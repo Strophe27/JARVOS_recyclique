@@ -153,12 +153,24 @@ describe('AdminDashboardPage', () => {
       '/admin/settings',
     );
     expect(screen.getByTestId('admin-superadmin-sites')).toHaveAttribute('href', '/admin/sites');
+    expect(screen.getByTestId('admin-superadmin-db')).toHaveAttribute('href', '/admin/db');
+    expect(screen.getByTestId('admin-superadmin-import-legacy')).toHaveAttribute(
+      'href',
+      '/admin/import/legacy',
+    );
+    expect(screen.getByTestId('admin-superadmin-quick-analysis')).toHaveAttribute(
+      'href',
+      '/admin/quick-analysis',
+    );
     await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
   });
 
   it('hides super-admin section for regular admin', async () => {
     renderWithProviders();
     expect(screen.queryByTestId('admin-superadmin-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('admin-superadmin-db')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('admin-superadmin-import-legacy')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('admin-superadmin-quick-analysis')).not.toBeInTheDocument();
     await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
   });
 

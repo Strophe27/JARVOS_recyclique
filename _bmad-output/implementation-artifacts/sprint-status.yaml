@@ -151,7 +151,7 @@ development_status:
   15-5-dashboard-admin-stats-et-navigation: done
   epic-15-retrospective: optional
 
-  epic-17: in-progress
+  epic-17: done
   17-0-stabilisation-qa-harness-critique-clusters-auth-harness-vitest-runtime: done
   17-1-verrouillage-rbac-super-admin-phase-1-front-back: done
   17-2-correction-controle-acces-users-me-etat-deconnecte: done
@@ -159,4 +159,8 @@ development_status:
   17-4-guard-explicite-admin-tests-integration-routeur-global: done
   17-5-completion-pipeline-import-legacy-csv-analyze-preview-validate-execute: done
   17-6-persistance-parametres-admin-couverture-api-v1-admin-settings: done
-  17-7-supervision-admin-non-stub-anomalies-test-notifications: review
+  17-7-supervision-admin-non-stub-anomalies-test-notifications: done
+  17-8-logs-email-admin-exploitables: done
+  17-9-rapports-admin-complets-by-session-export-bulk: done
+  17-10-discoverabilite-super-admin-phase-2-dans-la-navigation: done
+  17-11-renforcement-tests-admin-technique-hors-happy-path-stub: done
