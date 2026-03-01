@@ -1,43 +1,71 @@
 # JARVOS RecyClique
 
-Application RecyClique (caisse, réception, administration) — frontend React (Vite, TypeScript) et API FastAPI. Intégration Paheko (compta, membres).
+Application RecyClique (caisse, reception, administration) avec frontend React (Vite + TypeScript) et API FastAPI, integree a Paheko.
 
-- **Frontend :** [frontend/README.md](frontend/README.md)
-- **Déploiement (Docker Compose) :** [doc/deployment.md](doc/deployment.md)
+- **Frontend detaille :** [frontend/README.md](frontend/README.md)
+- **Deploy Docker complet :** [doc/deployment.md](doc/deployment.md)
+- **Mode dev rapide (recommande) :** [doc/dev-mode.md](doc/dev-mode.md)
 
-## Déploiement Docker Compose
+## Demarrage rapide (recommande)
 
-**Prérequis :** Docker Desktop (ou moteur Docker + Compose). Avant le premier démarrage, effectuer l’**audit Docker local** (lecture seule) et respecter la **stratégie d’isolation** décrites dans [doc/deployment.md](doc/deployment.md).
+Mode le plus stable pour developper: infra Docker + hot reload.
 
-### Démarrer l’instance
+### 1) Lancer l'infra + API backend en reload
 
-À la racine du dépôt :
+Depuis la racine du depot:
 
 ```bash
-# Optionnel : copier .env.example vers .env pour surcharger les variables
-# cp .env.example .env
-
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-- **RecyClique (SPA + API) :** http://localhost:8000  
-- **Health check :** http://localhost:8000/health (status, database, redis)  
-- **Paheko :** http://localhost:8080  
+### 2) Lancer le frontend en local
 
-Le container RecyClique sert le frontend (build inclus dans l’image) et l’API ; il dépend de PostgreSQL et Redis (démarrage dans l’ordre via `depends_on`).
+Dans un autre terminal:
 
-### Versions (checklist v0.1)
+```bash
+cd frontend
+npm run dev
+```
 
-| Composant   | Version        |
-|------------|----------------|
-| Python     | 3.12           |
-| Node (build)| 20 LTS         |
-| PostgreSQL | 16             |
-| Redis      | 7              |
-| Paheko     | image `paheko/paheko` |
+### 3) URLs utiles en dev
 
-Ces versions sont figées dans le Dockerfile et le `docker-compose.yml`, et détaillées dans [doc/deployment.md](doc/deployment.md).
+- **Frontend dev (a utiliser au quotidien)** : `http://localhost:4173`
+- **API + health** : `http://localhost:8000` et `http://localhost:8000/health`
+- **Paheko** : `http://localhost:8080`
 
-### Configuration et secrets
+## Premiere connexion admin
 
-Aucun secret en dur dans le code ni dans les images. Les variables (DATABASE_URL, REDIS_URL, etc.) passent par le fichier `.env` ou les variables d’environnement. Voir [.env.example](.env.example) pour la liste des clés attendues (sans valeurs sensibles).
+Configurer dans `.env` avant le premier lancement:
+
+- `FIRST_ADMIN_USERNAME`
+- `FIRST_ADMIN_EMAIL`
+- `FIRST_ADMIN_PASSWORD`
+
+Le premier admin est cree automatiquement **uniquement si la table `users` est vide**.
+
+## Quand rebuild est necessaire
+
+Pas besoin de rebuild pour une modification normale de code.
+
+Rebuild requis seulement si tu modifies notamment:
+
+- `Dockerfile`
+- `api/requirements.txt`
+
+Commande:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d recyclic
+```
+
+## Arret
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+```
+
+## Notes importantes
+
+- Le flux OIDC/Keycloak a ete retire du run nominal v1.
+- Le mode de connexion courant est le mode legacy RecyClique (login local).
+- Aucune valeur sensible ne doit etre committee. Utiliser `.env` local uniquement.

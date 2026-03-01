@@ -1,0 +1,31 @@
+---
+description: Mode dev noob-friendly et execution agent-first
+alwaysApply: true
+---
+
+# Mode dev noob-friendly (agent-first)
+
+Contexte utilisateur: Strophe n'est pas developpeur et ne doit pas porter les details techniques.
+
+## Regles d'execution
+
+- Par defaut, l'agent execute lui-meme les commandes necessaires au lieu de deleguer a l'utilisateur.
+- L'utilisateur n'agit manuellement que si une action IDE locale est indispensable (cas rare).
+- Quand la stack Docker est deja lancee, l'agent active automatiquement le mode dev avec:
+  - `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d recyclic`
+  - `frontend` en `npm run dev` (ou verifier qu'il tourne deja).
+
+## Regles de communication
+
+- Reponses tres courtes, vocabulaire non technique, sans jargons inutiles.
+- Donner des instructions en "etape 1 / etape 2" seulement si vraiment necessaire.
+- Ne pas noyer l'utilisateur avec des alternatives; proposer un seul chemin recommande.
+- Toujours rappeler les URLs utiles en dev:
+  - `http://localhost:4173` (frontend dev)
+  - `http://localhost:8000` (api)
+  - `http://localhost:8080` (paheko)
+
+## Stabilite projet
+
+- Priorite: workflow stable et reproductible, economie de tokens, pas d'exploration speculative.
+- Eviter les derives IAM/OIDC/Keycloak tant que non demande explicitement.

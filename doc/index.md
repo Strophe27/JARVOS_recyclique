@@ -13,6 +13,7 @@ Tout ce qui sert a la **communication publique** : presentations (partenaires, f
 | Fichier | Usage |
 |---------|--------|
 | [deployment.md](deployment.md) | Déploiement Docker Compose, prérequis, vérification de la stack (health, URLs), dépannage. |
+| [dev-mode.md](dev-mode.md) | Mode développement stable et rapide : backend Docker en hot reload (`--reload`) + frontend Vite local avec proxy API, sans rebuild à chaque changement. |
 | [canal-push.md](canal-push.md) | Canal push RecyClique → Paheko : configuration (endpoint, secret), résilience (tentatives, backoff), comportement en cas d’échec. |
 | [admin-compta-paheko-v1.md](admin-compta-paheko-v1.md) | Accès admin compta via Paheko (v1) : URL (règle de construction), rôle requis, contexte v1. Story 8.6 — FR12. |
 | [declarative-aggregates-v1.md](declarative-aggregates-v1.md) | Agrégats déclaratifs v1 : périmètre (champs, périodes T1–T4, flux caisse/réception), traçabilité (sources, règles de calcul), API read-only. Story 9.1 — FR22. |

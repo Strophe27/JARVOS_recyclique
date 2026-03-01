@@ -3,7 +3,7 @@
  * Structure minimale pour AC1/AC2 : BrowserRouter, CashRegisterGuard, AppNav, Routes.
  * Routes /admin/users protégées par AdminGuard (permission admin).
  */
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { CashRegisterGuard, CaisseDashboardPage, CAISSE_PIN_PATH } from './caisse';
 import { CashRegisterPinPage } from './caisse/CashRegisterPinPage';
 import { CashRegisterSessionOpenPage } from './caisse/CashRegisterSessionOpenPage';
@@ -11,7 +11,6 @@ import { CashRegisterSessionClosePage } from './caisse/CashRegisterSessionCloseP
 import { CashRegisterSalePage } from './caisse/CashRegisterSalePage';
 import { ReceptionAccueilPage } from './reception/ReceptionAccueilPage';
 import { ReceptionTicketDetailPage } from './reception/ReceptionTicketDetailPage';
-import { PlaceholderPage } from './PlaceholderPage';
 import { AdminGuard } from './admin/AdminGuard';
 import { AdminUsersListPage } from './admin/AdminUsersListPage';
 import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
@@ -41,9 +40,15 @@ import { SignupPage } from './auth/SignupPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
 import { ProfilPage } from './auth/ProfilPage';
+import { useAuth } from './auth/AuthContext';
 import { AppShell, AppShellNav } from './shared/layout';
 
 function AppRoutes() {
+  const { user, isHydrated } = useAuth();
+  const rootRedirect = !isHydrated ? null : (
+    <Navigate to={user ? '/caisse' : '/login'} replace />
+  );
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -246,7 +251,7 @@ function AppRoutes() {
           </VieAssociativeGuard>
         }
       />
-      <Route path="/" element={<PlaceholderPage title="Accueil" testId="page-home" />} />
+      <Route path="/" element={rootRedirect} />
     </Routes>
   );
 }

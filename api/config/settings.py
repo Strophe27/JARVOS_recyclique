@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
 
+    # Bootstrap premier admin (onboarding local v1)
+    first_admin_username: str | None = None
+    first_admin_email: str | None = None
+    first_admin_password: SecretStr | None = None
+    first_admin_first_name: str = "Admin"
+    first_admin_last_name: str = "System"
+
     # OIDC / BFF session (Story 12.2)
     oidc_enabled: bool = False
     oidc_issuer: str | None = None

@@ -1,6 +1,7 @@
 # RecyClique API — FastAPI app (socle Epic 1 + sites Story 2.1).
 # Story 4.2 : lifespan pour démarrer le worker push (même process).
 
+import logging
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -8,8 +9,12 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy import or_, select
 
+from api.config import get_settings
 from api.core.modules.loader import load_modules_from_toml
+from api.db import SessionLocal
+from api.models import User
 from api.routers import auth_router, pos_router, reception_router, admin_router
 from api.routers.v1 import v1_auth_router, v1_users_router, v1_reception_router
 from api.routers.v1.admin import router as v1_admin_router
@@ -24,11 +29,63 @@ from api.routers.mapping import router as mapping_router
 from api.routers.declarative import router as declarative_router
 from api.workers.push_consumer import run_push_consumer, set_shutdown_event
 from api.workers.member_sync_worker import run_member_sync_worker, set_member_sync_shutdown_event
+from api.services.auth import AuthService
+
+
+logger = logging.getLogger(__name__)
+
+
+def _bootstrap_first_admin_from_env() -> None:
+    """Crée le premier admin si FIRST_ADMIN_* est renseigné et que la base est vide."""
+    settings = get_settings()
+    username = (settings.first_admin_username or "").strip()
+    email = (settings.first_admin_email or "").strip()
+    password_secret = settings.first_admin_password
+    password = password_secret.get_secret_value().strip() if password_secret else ""
+
+    if not (username and email and password):
+        return
+
+    db = SessionLocal()
+    try:
+        existing_any_user = db.execute(select(User.id).limit(1)).first() is not None
+        if existing_any_user:
+            return
+
+        existing_target = db.execute(
+            select(User).where(or_(User.username == username, User.email == email))
+        ).scalars().first()
+        if existing_target is not None:
+            return
+
+        auth = AuthService(db)
+        admin = User(
+            username=username,
+            email=email,
+            password_hash=auth.hash_password(password),
+            first_name=settings.first_admin_first_name,
+            last_name=settings.first_admin_last_name,
+            role="admin",
+            status="active",
+        )
+        db.add(admin)
+        db.commit()
+        logger.warning(
+            "Bootstrap first admin created from env (username=%s, email=%s).",
+            username,
+            email,
+        )
+    except Exception:
+        # Ne bloque pas le démarrage de l'API si la BDD n'est pas prête.
+        logger.exception("First admin bootstrap skipped due to startup error.")
+    finally:
+        db.close()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Démarre le worker push en arrière-plan ; arrêt propre au shutdown."""
+    _bootstrap_first_admin_from_env()
     shutdown = threading.Event()
     set_shutdown_event(shutdown)
     set_member_sync_shutdown_event(shutdown)

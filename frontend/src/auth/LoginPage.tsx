@@ -17,19 +17,19 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname;
+  const redirectTo = from || '/caisse';
 
   useEffect(() => {
     if (user) {
-      navigate(from || '/', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [user, from, navigate]);
+  }, [user, redirectTo, navigate]);
 
   const handleSubmit = async (username: string, password: string) => {
     setError(null);
     setLoading(true);
     try {
       await login(username, password);
-      navigate(from || '/', { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de connexion');
     } finally {
