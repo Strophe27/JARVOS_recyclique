@@ -1,0 +1,69 @@
+{
+  "reviewResult": "approved",
+  "summary": "Implémentation correcte et complète. Architecture propre (Ticket.tsx + FinalizationScreen.tsx séparés), tous les data-testid requis présents, raccourcis clavier E/C/Q/Escape correctement isolés via showFinalizationRef, 30 tests co-locés présents (7+13+10+). Une incohérence UX notable est documentée en issue critique : la validation requiert paymentsTotal === cartTotal (conforme à la spec AC4), mais l'affichage du rendu monnaie en temps réel laisse croire qu'un paiement espèces > total est accepté — en pratique, l'opérateur doit toujours saisir le montant exact ou utiliser 'Montant exact'. Ce comportement est conforme à la spec mais potentiellement confusant. Aucune régression sur 18-5/18-6/18-7.",
+  "criticalIssues": [
+    {
+      "id": "C1",
+      "file": "FinalizationScreen.tsx + CashRegisterSalePage.tsx",
+      "description": "Incohérence UX rendu monnaie / validation : le rendu monnaie s'affiche si espèces (en cours de saisie OU déjà ajoutées) > cartTotal, mais la validation bloque systématiquement si paymentsTotal !== cartTotal. Si l'opérateur ajoute un paiement espèces de 20€ pour un total de 5€ et clique '+', paymentsTotal = 2000 ≠ cartTotal = 500 → bouton Valider disabled et handleConfirmSale rejette. L'opérateur est bloqué et doit supprimer le paiement. Le rendu affiché après '+' est donc trompeur.",
+      "severity": "ux-critique",
+      "conformeSpec": true,
+      "note": "Conforme à AC4 (paymentsTotal === cartTotal requis) mais incohérent avec AC3 (rendu affiché implique que espèces > total est accepté). Incohérence dans la spec elle-même. Décision de design valide si le workflow attendu est : entrer le montant donné pour voir le rendu informatif → valider avec le montant exact. À clarifier en story 18-9 ou backlog UX.",
+      "blocksApproval": false
+    }
+  ],
+  "minorIssues": [
+    {
+      "id": "M1",
+      "file": "Ticket.tsx ligne 52, FinalizationScreen.tsx lignes 147-148",
+      "description": "Textes sans accents : 'Aucun article ajoute' (manque é), 'Especes' (manque è), 'Cheque' (manque è). Cohérent avec d'autres fichiers du projet mais devrait être corrigé pour la lisibilité opérateur.",
+      "severity": "cosmetic"
+    },
+    {
+      "id": "M2",
+      "file": "CashRegisterSalePage.tsx lignes 355-366 (branche offline)",
+      "description": "setSubmitting(false) appelé deux fois dans le chemin offline : une fois explicitement avant le return, une fois dans le finally. Pas de bug fonctionnel (setState idempotent) mais code redondant.",
+      "severity": "cosmetic"
+    },
+    {
+      "id": "M3",
+      "file": "CashRegisterSalePage.module.css + FinalizationScreen.tsx",
+      "description": "Nom de classe CSS '.rendueMonnaie' (faute d'orthographe : 'rendue' au lieu de 'rendu'). Cohérent entre CSS et usage JSX mais la faute persiste.",
+      "severity": "cosmetic"
+    },
+    {
+      "id": "M4",
+      "file": "Ticket.tsx interface TicketProps",
+      "description": "La spec T1 définissait Props minimales (cart, onRemoveLine) mais l'implémentation ajoute onFinalize, total, note, onNoteChange, saleDate, onSaleDateChange, error. Décision architecturale documentée par l'agent (préserve les raccourcis 18-7 note/saleDate dans le ticket). Acceptable mais allège la séparation des responsabilités prévue.",
+      "severity": "mineur"
+    }
+  ],
+  "approvedAspects": [
+    "Architecture propre : Ticket.tsx (affichage pur) et FinalizationScreen.tsx (overlay finalisation) correctement séparés de CashRegisterSalePage.tsx",
+    "Tous les data-testid requis présents : caisse-ticket-panel, cart-empty, remove-line-{id}, btn-finaliser, finalization-screen, finalization-confirm, finalization-cancel, btn-montant-exact, rendu-monnaie, payments-total, sale-error, sale-success",
+    "isDonLine exporté depuis Ticket.tsx et réutilisé dans FinalizationScreen (DRY, pas de duplication de logique)",
+    "Raccourcis clavier E/C/Q/Escape localisés dans FinalizationScreen via useEffect + cleanup, correctement isolés de AZERTY via showFinalizationRef dans CashRegisterSalePage",
+    "Guard showFinalizationRef.current dans le handler AZERTY global : aucune interférence entre raccourcis caisse et raccourcis finalisation",
+    "Rendu monnaie espèces-only (totalEspeces = especesPaid + currentEspecesAmount) avec affichage temps réel avant ajout du paiement — conforme AC3",
+    "Chèque sans rendu monnaie : especesPaid = 0 → renduCents = 0 → div absent — conforme AC3 B39-P6",
+    "Bouton Valider correctement disabled si paymentsTotal !== cartTotal || submitting — conforme AC4",
+    "Bouton Finaliser disabled si cart.length === 0 — conforme AC5",
+    "handleConfirmSale : validation paymentsTotal === cartTotal avant POST, messages d'erreur corrects, setSubmitting bien géré",
+    "Offline : addTicket IndexedDB appelé, message adapté 'hors ligne', setTimeout 2000ms ferme la finalisation et vide le panier",
+    "KPI locaux (localTicketCount, localCaJour, donsJourLocal, poidsSortisLocal) correctement incrémentés après POST réussi — conforme AC4",
+    "Tests co-locés : 7/7 Ticket.test.tsx, 13/13 FinalizationScreen.test.tsx, 31/31 CashRegisterSalePage.test.tsx (10 nouveaux story 18-8)",
+    "TypeScript correct : interfaces bien typées, pas de any injustifié, CartLine et PaymentPayload réutilisés",
+    "CSS Story 18-8 : ticketLineDon, ticketWeightTotal, rendueMonnaie, finalizationOverlay, finalizationPanel, successBanner tous présents",
+    "Pas de régression sur 18-5 (KPI, header), 18-6 (CategoryGrid, PresetButtonGrid), 18-7 (raccourcis AZERTY, Entree→handleFinalize, Backspace, Echap)"
+  ],
+  "gateChecklist": {
+    "allAcCovered": true,
+    "testsColocated": true,
+    "typescriptClean": true,
+    "noRegressionVisible": true,
+    "renduMonnaieCorrect": "partial — affiché correctement (espèces only, chèque sans rendu), mais validation bloque paiements espèces > total (voir C1)",
+    "pariteWith144": true
+  },
+  "reviewDate": "2026-03-02",
+  "reviewer": "bmad-qa"
+}

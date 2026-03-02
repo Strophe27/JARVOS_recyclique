@@ -15,8 +15,18 @@ inputDocuments:
   - references/ancien-repo/checklist-import-1.4.4.md
   - references/ou-on-en-est.md
   - references/versioning.md
-lastEdited: '2026-03-01'
+lastEdited: '2026-03-02'
 editHistory:
+  - date: '2026-03-02'
+    changes: >
+      Ajout Epic 18 "Operationnalisation terrain" (10 stories : 18.1-18.10).
+      Domaine BDD admin (P0) : 18.1 audit delta, 18.2 refactor backend (pg_dump/pg_restore),
+      18.3 refactor frontend AdminDbPage.
+      Domaine Caisse (P0) : 18.4 audit inventaire exhaustif, 18.5 layout/header/KPI,
+      18.6 grille categories/presets, 18.7 keyboard shortcuts AZERTY, 18.8 ticket/finalisation/
+      paiements, 18.9 ouverture/fermeture session. P1 : 18.10 caisse virtuelle/saisie differee.
+      Toutes les stories referencent les fichiers source 1.4.4 et appliquent la regle brownfield
+      Copy/Consolidate/Security.
   - date: '2026-03-01'
     changes: >
       Ajout Epic 15 "Conformite visuelle et fonctionnelle — parite 1.4.4" (6 stories).
@@ -1975,4 +1985,491 @@ So that la robustesse ne soit plus surestimee par des tests purement structurels
 - ordre strict des vagues: V1 -> V2 -> V3,
 - execution stricte story par story (aucun run massif),
 - fermeture d'un `E16-*` uniquement apres preuve associee validee.
+
+---
+
+## Epic 18: Operationnalisation terrain
+
+Rendre l'application praticable en conditions réelles : (1) page admin BDD fonctionnelle identique à la 1.4.4 (export/import/purge via pg_dump/pg_restore binaire), (2) interface caisse complète avec toutes les fonctionnalités, workflows et raccourcis clavier de la 1.4.4. Les Epics 1–17 ont livré la structure ; cet epic livre le fonctionnel terrain.
+
+**Règle de refactor brownfield** : s'applique à toutes les stories de cet epic.
+Pour chaque story d'implémentation :
+- **Copy** : identifier les fichiers source 1.4.4 concernés (chemins listés dans chaque story).
+- **Consolidate** : réécrire / adapter dans la stack actuelle (FastAPI + Mantine) — pas de copier-coller brut.
+- **Security** : pas de secret en dur, audit rapide, `npm audit` / `pip audit` OK.
+Preuve Copy/Consolidate/Security obligatoire dans les Completion Notes de chaque story.
+
+**Règles d'exécution :**
+- Ordre strict : stories d'audit avant stories d'implémentation dans chaque domaine.
+- Chaque story = un livrable vérifiable (artefact ou preuve fonctionnelle).
+- P0 (bloquant terrain) avant P1 (confort) avant P2 (optionnel).
+- Toute nouvelle story ajoutée précise son niveau P0/P1/P2 et sa dépendance.
+
+---
+
+### Vague P0 — Domaine BDD admin
+
+### Story 18.1: Audit page BDD admin — delta 1.4.4 vs implémentation actuelle
+
+As a equipe dev,
+I want un inventaire précis des écarts entre la page admin BDD 1.4.4 et l'implémentation actuelle,
+So that les stories de refactor suivantes aient une cible claire et exhaustive.
+
+**Contexte :**
+La 1.4.4 utilise `pg_dump` (format binaire `.dump`, Custom `-F c`) pour l'export et `pg_restore` pour l'import — pas d'exécution SQL textuelle. Le backend actuel (`api/services/db_admin.py`) exécute du SQL texte, ce qui est incompatible avec les dumps binaires de production. La purge 1.4.4 a un périmètre de tables différent du périmètre actuel.
+
+**Fichiers source 1.4.4 à auditer (backend) :**
+- `references/ancien-repo/repo/api/src/recyclic_api/api/api_v1/endpoints/db_export.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/api/api_v1/endpoints/db_import.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/api/api_v1/endpoints/db_purge.py`
+
+**Fichiers source 1.4.4 à auditer (frontend) :**
+- `references/ancien-repo/repo/frontend/src/services/adminService.ts` (méthodes exportDatabase, importDatabase, purgeTransactions)
+- Localiser la page ou le composant admin qui expose les 3 actions BDD (chercher dans `references/ancien-repo/repo/frontend/src/pages/Admin/` et `src/components/`)
+
+**Fichiers actuels à comparer :**
+- `api/routers/v1/admin/db.py`
+- `api/services/db_admin.py`
+- `frontend/src/admin/AdminDbPage.tsx`
+- `frontend/src/api/admin.ts` (ou équivalent)
+
+**Acceptance Criteria:**
+
+**Given** la lecture complète des fichiers source 1.4.4 listés ci-dessus  
+**When** l'agent produit l'artefact d'audit  
+**Then** l'artefact liste pour chaque action (export / import / purge) :
+  - format de fichier attendu par la 1.4.4 (extension, format binaire/texte, taille max)
+  - logique backend 1.4.4 (commande système, options, gestion erreurs, audit trail)
+  - logique backend actuelle (différences critiques)
+  - UI 1.4.4 (labels, messages, comportements UX)
+  - UI actuelle (différences)
+**And** l'artefact conclut par une liste ordonnée des écarts à corriger en 18.2 et 18.3
+
+**Livrable :** `_bmad-output/implementation-artifacts/18-1-audit-bdd-admin-delta.md`  
+**Dépendances :** aucune.
+
+---
+
+### Story 18.2: Refactor backend BDD admin — aligner sur la logique 1.4.4
+
+As a administrateur technique,
+I want que l'export, l'import et la purge BDD utilisent exactement la même logique que la 1.4.4,
+So that les dumps produits et consommés soient compatibles avec la base de production.
+
+**Contexte :**
+Basé sur l'artefact `18-1-audit-bdd-admin-delta.md`.
+Points critiques identifiés dans la 1.4.4 à reproduire :
+- **Export** : `pg_dump -F c -Z 9 --clean --if-exists --no-owner --no-privileges` → fichier `.dump` binaire (pas SQL texte).
+- **Import** : validation `pg_restore --list`, sauvegarde de sécurité automatique (`pre_restore_*.dump` dans `/backups`), terminaison des connexions actives, puis `pg_restore --clean --if-exists --no-owner --no-privileges --disable-triggers`.
+- **Import** : discrimination warning vs erreur réelle (pg_restore retourne non-zéro même sur simples warnings).
+- **Import** : audit trail complet (succès, timeout, erreur HTTP, exception inattendue) dans `AuditActionType.DB_IMPORT`.
+- **Purge** : périmètre de tables à valider contre la 1.4.4 (tables `ligne_depot`, `ticket_depot` présentes en 1.4.4, vérifier dans le schéma actuel).
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/api/src/recyclic_api/api/api_v1/endpoints/db_export.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/api/api_v1/endpoints/db_import.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/api/api_v1/endpoints/db_purge.py`
+
+**Fichiers à modifier :**
+- `api/routers/v1/admin/db.py`
+- `api/services/db_admin.py`
+- `api/tests/routers/test_admin_db_import_legacy.py` (mettre à jour les tests pour format `.dump`)
+
+**Acceptance Criteria:**
+
+**Given** un fichier `.dump` produit par `pg_dump -F c` (format binaire Custom PostgreSQL)  
+**When** l'administrateur l'envoie via `POST /v1/admin/db/import`  
+**Then** `pg_restore --list` valide le fichier avant toute action destructive  
+**And** une sauvegarde automatique `pre_restore_*.dump` est créée dans `/backups` avant la restauration  
+**And** les connexions actives sur la BDD sont terminées avant la restauration  
+**And** la restauration s'exécute via `pg_restore --disable-triggers` (gestion contraintes FK)  
+**And** les warnings pg_restore non bloquants ne font pas échouer l'import — seules les erreurs critiques remontent en 500  
+**And** l'audit trail est enregistré dans tous les cas (succès, timeout, erreur HTTP, exception)
+
+**Given** `POST /v1/admin/db/export`  
+**When** appelé par un super-admin  
+**Then** un fichier `.dump` binaire (format Custom pg_dump) est retourné en téléchargement  
+**And** le fichier est compatible avec `pg_restore` (pas un fichier SQL texte)
+
+**Given** `POST /v1/admin/db/purge-transactions`  
+**When** appelé  
+**Then** le périmètre de tables purgées correspond exactement à celui de la 1.4.4 (validé contre l'artefact 18.1)  
+**And** l'ordre de suppression respecte les contraintes FK  
+**And** la transaction est rollbackée intégralement en cas d'erreur
+
+**Preuves obligatoires de fermeture :**
+- Export produit un fichier `.dump` que `pg_restore --list` accepte sans erreur.
+- Import d'un dump production réel : sauvegarde automatique créée, restauration réussie ou erreur gérée proprement.
+- Tests API mis à jour et verts.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Story 18.1 (artefact audit).
+
+---
+
+### Story 18.3: Refactor frontend AdminDbPage — aligner UI/UX sur la 1.4.4
+
+As a administrateur technique,
+I want que la page admin/db reflète exactement les comportements UX de la 1.4.4,
+So that l'interface soit cohérente avec ce que les admins connaissent.
+
+**Contexte :**
+Basé sur l'artefact `18-1-audit-bdd-admin-delta.md` (section UI).
+La page actuelle `AdminDbPage.tsx` gère des fichiers `.sql` — à aligner sur le format `.dump`.
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/services/adminService.ts` (méthodes DB)
+- Page ou composant 1.4.4 exposant les actions BDD (chemin identifié dans l'artefact 18.1)
+
+**Fichiers à modifier :**
+- `frontend/src/admin/AdminDbPage.tsx`
+- `frontend/src/api/admin.ts` (ou équivalent — méthode d'appel import/export)
+
+**Acceptance Criteria:**
+
+**Given** la page `/admin/db`  
+**When** l'admin clique "Exporter la BDD"  
+**Then** le téléchargement d'un fichier `.dump` démarre (pas `.sql`)  
+**And** les messages de succès/erreur correspondent aux réponses de la story 18.2
+
+**Given** le formulaire d'import  
+**When** l'admin tente d'uploader un fichier qui n'est pas `.dump`  
+**Then** une erreur de validation s'affiche côté frontend avant même l'envoi
+
+**Given** l'action de purge  
+**When** l'admin clique "Purger les transactions"  
+**Then** une modale de confirmation explicite s'affiche (action irréversible)  
+**And** le résultat (nombre d'enregistrements supprimés par table) est affiché après confirmation
+
+**Preuves obligatoires de fermeture :**
+- Export : fichier `.dump` téléchargé visible dans le navigateur.
+- Import : test avec un fichier `.dump` valide — message de succès affiché.
+- Import : test avec fichier non-`.dump` — erreur validation frontend avant envoi.
+- Purge : modale de confirmation visible, résultat affiché.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Stories 18.1 (artefact) et 18.2 (backend opérationnel).
+
+---
+
+### Vague P0 — Domaine Caisse
+
+### Story 18.4: Audit caisse 1.4.4 — inventaire fonctionnel exhaustif
+
+As a equipe dev,
+I want un inventaire complet et précis de toutes les fonctionnalités de la caisse 1.4.4,
+So that les stories de refactor 18.5–18.9 aient une cible exhaustive et sans angle mort.
+
+**Contexte :**
+La caisse 1.4.4 est un module très riche (keyboard shortcuts AZERTY, grille catégories, presets, ticket temps réel, multi-paiements, caisse virtuelle, saisie différée). L'implémentation actuelle est visuellement incomplète et fonctionnellement insuffisante pour le terrain.
+
+**Fichiers source 1.4.4 à auditer — Frontend pages :**
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/CashRegisterDashboard.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/Sale.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/OpenCashSession.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/CloseSession.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/VirtualCashRegister.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/Admin/CashSessionDetail.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/Admin/SessionManager.tsx`
+
+**Fichiers source 1.4.4 à auditer — Composants :**
+- `references/ancien-repo/repo/frontend/src/components/SaleWizard.tsx`
+- `references/ancien-repo/repo/frontend/src/components/FinalizationScreen.tsx`
+- `references/ancien-repo/repo/frontend/src/components/CategorySelector.tsx`
+- `references/ancien-repo/repo/frontend/src/components/EnhancedCategorySelector.tsx`
+- `references/ancien-repo/repo/frontend/src/components/CashKPIBanner.tsx`
+- `references/ancien-repo/repo/frontend/src/components/Ticket.tsx`
+- `references/ancien-repo/repo/frontend/src/components/CashRegisterForm.tsx`
+- `references/ancien-repo/repo/frontend/src/components/CashSessionHeader.tsx`
+
+**Fichiers source 1.4.4 à auditer — Stores, services, utils :**
+- `references/ancien-repo/repo/frontend/src/stores/cashSessionStore.ts`
+- `references/ancien-repo/repo/frontend/src/stores/categoryStore.ts`
+- `references/ancien-repo/repo/frontend/src/utils/cashKeyboardShortcuts.ts`
+- `references/ancien-repo/repo/frontend/src/utils/azertyKeyboard.ts`
+- `references/ancien-repo/repo/frontend/src/utils/keyboardShortcuts.ts`
+- `references/ancien-repo/repo/frontend/src/services/cashSessionService.ts`
+- `references/ancien-repo/repo/frontend/src/services/cashSessionsService.ts`
+- `references/ancien-repo/repo/frontend/src/stores/virtualCashSessionStore.ts`
+- `references/ancien-repo/repo/frontend/src/stores/deferredCashSessionStore.ts`
+
+**Acceptance Criteria:**
+
+**Given** la lecture complète de tous les fichiers listés ci-dessus  
+**When** l'agent produit l'artefact d'audit  
+**Then** l'artefact couvre les sections suivantes :
+  1. **Layout et navigation** : structure des pages, routing, états visuels (fond caisse, header dédié, KPI banner)
+  2. **Grille catégories et presets** : chargement, affichage, sous-catégories, filtres par onglet
+  3. **Raccourcis clavier AZERTY** : mapping complet touche → action, comportements spéciaux (quantité, poids, prix libre)
+  4. **Ticket en temps réel** : structure (lignes, total, remises, dons), états (vide, en cours, finalisé)
+  5. **Finalisation et paiements** : modes de paiement, saisie montant, rendu monnaie, validation
+  6. **Ouverture de session** : flux, fond de caisse, sélection poste/site
+  7. **Fermeture de session** : comptage physique, contrôle totaux, écart, sync Paheko
+  8. **Caisse virtuelle** : fonctionnement distinct, états spécifiques
+  9. **Saisie différée** : flux, différences avec session normale
+  10. **State management** : quels stores, quelles actions, quelles dépendances API
+**And** pour chaque section : liste des fichiers 1.4.4 sources + composants équivalents dans la nouvelle app + écarts identifiés
+
+**Livrable :** `_bmad-output/implementation-artifacts/18-4-audit-caisse-inventaire.md`  
+**Dépendances :** aucune (peut démarrer en parallèle de 18.1).
+
+---
+
+### Story 18.5: Caisse — layout, header session et KPI banner
+
+As a operateur caisse,
+I want retrouver le shell visuel complet de la caisse 1.4.4 (header dédié vert, bannière KPI, navigation),
+So that l'interface soit immédiatement reconnaissable et utilisable.
+
+**Contexte :** Basé sur l'artefact `18-4-audit-caisse-inventaire.md` §1 (Layout).
+Les stories 15.1–15.3 ont livré une conformité visuelle partielle. Cette story aligne le layout sur la 1.4.4 de façon complète et fonctionnelle (pas seulement visuelle).
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/CashRegisterDashboard.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/` (dossier — structure routing complète)
+- `references/ancien-repo/repo/frontend/src/components/CashKPIBanner.tsx`
+- `references/ancien-repo/repo/frontend/src/components/CashSessionHeader.tsx`
+
+**Fichiers actuels à réécrire/adapter :**
+- `frontend/src/caisse/CaisseDashboardPage.tsx`
+- `frontend/src/caisse/CashRegisterSalePage.tsx` (header + bannière stats uniquement)
+- Composant équivalent à `CashKPIBanner` dans le nouveau frontend (créer si absent)
+
+**Acceptance Criteria:**
+
+**Given** n'importe quelle page caisse  
+**When** une session est active  
+**Then** le header caisse dédié remplace le header global : fond vert, icone agent + nom + numéro session à gauche, bouton "Fermer la Caisse" rouge à droite  
+**And** la bannière KPI est visible sous le header avec les 6 indicateurs temps réel (TICKETS, DERNIER TICKET, CA JOUR, DONS JOUR, POIDS SORTIS, POIDS RENTRES) + toggle Live/Session + heure
+
+**Given** le dashboard caisse `/caisse`  
+**When** l'opérateur arrive  
+**Then** les postes de caisse sont affichés en cards identiques à la 1.4.4 (statut, site, bouton Ouvrir)  
+**And** les états vides sont gérés (aucun poste : message explicite, pas de crash)
+
+**Preuves obligatoires de fermeture :**
+- Capture avant/après layout.
+- KPI banner affichée et valeurs mises à jour dynamiquement (ou stub cohérent si pas de session active).
+- Zéro erreur JS bloquante sur les pages concernées.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Story 18.4 (artefact audit).
+
+---
+
+### Story 18.6: Caisse — grille catégories, sous-catégories et presets
+
+As a operateur caisse,
+I want retrouver la grille de sélection de catégories et les presets identiques à la 1.4.4,
+So that je puisse saisir une vente rapidement avec les boutons que je connais.
+
+**Contexte :** Basé sur l'artefact `18-4-audit-caisse-inventaire.md` §2 (Grille catégories).
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/components/CategorySelector.tsx`
+- `references/ancien-repo/repo/frontend/src/components/EnhancedCategorySelector.tsx`
+- `references/ancien-repo/repo/frontend/src/components/CategoryDisplayManager.tsx`
+- `references/ancien-repo/repo/frontend/src/stores/categoryStore.ts`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/Sale.tsx` (section grille + onglets)
+
+**Fichiers actuels à réécrire/adapter :**
+- `frontend/src/caisse/CashRegisterSalePage.tsx` (zone grille catégories + onglets)
+- Composant(s) équivalent(s) à `CategorySelector` / `EnhancedCategorySelector` dans le nouveau frontend (identifier dans `frontend/src/caisse/` ou `frontend/src/shared/`)
+
+**Acceptance Criteria:**
+
+**Given** la page de saisie vente  
+**When** les catégories sont chargées  
+**Then** elles s'affichent en grille de cards avec nom, code raccourci clavier (badge lettre), couleur si applicable  
+**And** les onglets de filtrage (Catégorie / Sous-catégorie / Poids / Prix) sont fonctionnels  
+**And** les presets (boutons rapides) sont affichés et cliquables
+
+**Given** un opérateur clique sur une catégorie  
+**When** des sous-catégories existent  
+**Then** la vue passe automatiquement aux sous-catégories de cette catégorie (navigation identique à 1.4.4)
+
+**Given** aucune catégorie disponible  
+**When** la page se charge  
+**Then** un état vide explicite est affiché — pas de crash
+
+**Preuves obligatoires de fermeture :**
+- Capture grille catégories avec données réelles (ou jeu de test).
+- Navigation catégorie → sous-catégorie fonctionnelle.
+- Presets visibles et cliquables.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Story 18.4 (artefact audit). Story 18.5 recommandée (layout en place).
+
+---
+
+### Story 18.7: Caisse — raccourcis clavier AZERTY et saisie rapide
+
+As a operateur caisse,
+I want utiliser les raccourcis clavier AZERTY identiques à la 1.4.4 pour saisir les ventes,
+So that la saisie soit aussi rapide qu'avec l'ancienne app.
+
+**Contexte :** Basé sur l'artefact `18-4-audit-caisse-inventaire.md` §3 (Raccourcis clavier).
+C'est une fonctionnalité critique terrain — les opérateurs travaillent quasi exclusivement au clavier.
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/utils/cashKeyboardShortcuts.ts`
+- `references/ancien-repo/repo/frontend/src/utils/azertyKeyboard.ts`
+- `references/ancien-repo/repo/frontend/src/utils/keyboardShortcuts.ts`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/Sale.tsx` (binding des événements)
+- `references/ancien-repo/repo/frontend/src/components/SaleWizard.tsx` (gestion états clavier)
+- Tests de référence : `references/ancien-repo/repo/frontend/src/utils/azertyKeyboard.test.ts`, `references/ancien-repo/repo/frontend/src/utils/cashKeyboardShortcuts.test.ts`, `references/ancien-repo/repo/frontend/src/components/SaleWizard.keyboard.integration.test.tsx`
+
+**Fichiers actuels à réécrire/adapter :**
+- `frontend/src/caisse/CashRegisterSalePage.tsx` (binding événements clavier)
+- Équivalent de `cashKeyboardShortcuts.ts` dans `frontend/src/caisse/utils/` ou `frontend/src/shared/` (créer si absent)
+
+**Acceptance Criteria:**
+
+**Given** la page de saisie vente active  
+**When** l'opérateur appuie sur une lettre correspondant à un code catégorie  
+**Then** la catégorie est sélectionnée immédiatement (mapping AZERTY identique à la 1.4.4)
+
+**Given** un raccourci de quantité, poids ou prix libre  
+**When** l'opérateur l'utilise  
+**Then** le comportement est identique à la 1.4.4 (saisie numérique, confirmation, annulation)
+
+**Given** les raccourcis système (Entrée, Echap, Backspace, F-keys si applicable)  
+**When** utilisés  
+**Then** ils déclenchent les mêmes actions que dans la 1.4.4
+
+**Preuves obligatoires de fermeture :**
+- Tests unitaires co-locés pour les utils keyboard (sur modèle des tests 1.4.4 listés ci-dessus).
+- Test d'intégration : scénario de saisie complète au clavier (catégorie → quantité → ticket → finalisation).
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Stories 18.4 (artefact), 18.5 (layout), 18.6 (grille catégories).
+
+---
+
+### Story 18.8: Caisse — ticket temps réel, finalisation et paiements multi-moyens
+
+As a operateur caisse,
+I want retrouver le ticket temps réel et le flux de finalisation identiques à la 1.4.4,
+So that la validation des ventes et l'encaissement soient fiables.
+
+**Contexte :** Basé sur l'artefact `18-4-audit-caisse-inventaire.md` §4 et §5 (Ticket + Finalisation).
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/components/FinalizationScreen.tsx`
+- `references/ancien-repo/repo/frontend/src/components/Ticket.tsx`
+- `references/ancien-repo/repo/frontend/src/components/TicketDisplay.tsx`
+- `references/ancien-repo/repo/frontend/src/components/SaleWizard.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/Sale.tsx` (flux finalisation)
+- Tests de référence : `references/ancien-repo/repo/frontend/src/components/FinalizationScreen.test.tsx`, `references/ancien-repo/repo/frontend/src/pages/CashRegister/Sale.finalization.test.tsx`, `references/ancien-repo/repo/frontend/src/pages/CashRegister/Sale.regression.test.tsx`
+
+**Fichiers actuels à réécrire/adapter :**
+- `frontend/src/caisse/CashRegisterSalePage.tsx` (panneau ticket + déclenchement finalisation)
+- Équivalents de `FinalizationScreen` et `Ticket` dans `frontend/src/caisse/` (identifier ou créer)
+
+**Acceptance Criteria:**
+
+**Given** des articles ajoutés au ticket  
+**When** l'opérateur consulte le panneau ticket droit  
+**Then** les lignes, sous-totaux, total, remises et dons s'affichent en temps réel identiquement à la 1.4.4
+
+**Given** l'opérateur appuie sur "Entrée" (ou bouton Finaliser)  
+**When** le ticket est non vide  
+**Then** l'écran de finalisation s'affiche avec les modes de paiement disponibles (identique à 1.4.4)
+
+**Given** un paiement multi-moyens (ex : espèces + carte)  
+**When** l'opérateur saisit les montants  
+**Then** le rendu monnaie est calculé correctement et affiché  
+**And** la validation enregistre la vente en BDD et met à jour le KPI banner
+
+**Given** un ticket vide  
+**When** l'opérateur tente de finaliser  
+**Then** la finalisation est bloquée avec un message identique à la 1.4.4
+
+**Preuves obligatoires de fermeture :**
+- Tests co-locés sur le flux finalisation (sur modèle des tests 1.4.4 listés).
+- Scénario E2E manuel : ajout articles → finalisation multi-paiements → ticket enregistré.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Stories 18.4 (artefact), 18.5, 18.6, 18.7.
+
+---
+
+### Story 18.9: Caisse — ouverture et fermeture de session complètes
+
+As a operateur caisse,
+I want que les flux d'ouverture et de fermeture de session soient identiques à la 1.4.4,
+So that la tenue de caisse soit fiable du début à la fin du service.
+
+**Contexte :** Basé sur l'artefact `18-4-audit-caisse-inventaire.md` §6 et §7 (Open/Close session).
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/OpenCashSession.tsx`
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/CloseSession.tsx`
+- `references/ancien-repo/repo/frontend/src/stores/cashSessionStore.ts`
+- `references/ancien-repo/repo/frontend/src/services/cashSessionService.ts`
+- `references/ancien-repo/repo/frontend/src/services/cashSessionsService.ts`
+- Tests de référence : `references/ancien-repo/repo/frontend/src/pages/CashRegister/__tests__/` (ou équivalent co-locé), `references/ancien-repo/repo/frontend/src/stores/__tests__/cashSessionStore.test.ts` (si présent)
+
+**Fichiers actuels à réécrire/adapter :**
+- `frontend/src/caisse/CaisseOpenSessionPage.tsx` (ou équivalent — identifier dans `frontend/src/caisse/`)
+- `frontend/src/caisse/CaisseCloseSessionPage.tsx` (ou équivalent)
+- Store session dans `frontend/src/caisse/` (identifier via l'artefact 18.4 §10)
+
+**Acceptance Criteria:**
+
+**Given** un poste de caisse disponible  
+**When** l'opérateur ouvre une session  
+**Then** le formulaire demande le fond de caisse (montant, devise si applicable) identiquement à la 1.4.4  
+**And** la session est créée en BDD avec `status = open` et les métadonnées correctes
+
+**Given** une session active avec des ventes  
+**When** l'opérateur lance la fermeture  
+**Then** le flux de comptage physique s'affiche (saisie des montants par moyen de paiement)  
+**And** les totaux RecyClique sont affichés en regard des montants comptés  
+**And** l'écart éventuel est calculé et affiché  
+**And** la session est clôturée et la sync Paheko déclenchée (ou erreur explicite si Paheko indisponible)
+
+**Preuves obligatoires de fermeture :**
+- Test scénario ouverture → ventes → fermeture avec écart : résultat cohérent.
+- Tests co-locés sur le store session (sur modèle des tests 1.4.4 listés).
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Stories 18.4 (artefact), 18.5, 18.8.
+
+---
+
+### Vague P1 — Domaine Caisse (confort)
+
+### Story 18.10: Caisse virtuelle et saisie différée
+
+As a operateur caisse,
+I want utiliser la caisse virtuelle et la saisie différée identiquement à la 1.4.4,
+So that les cas d'usage hors-ligne ou de simulation soient couverts.
+
+**Contexte :** Basé sur l'artefact `18-4-audit-caisse-inventaire.md` §8 et §9 (Caisse virtuelle + Saisie différée).
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/pages/CashRegister/VirtualCashRegister.tsx`
+- `references/ancien-repo/repo/frontend/src/stores/virtualCashSessionStore.ts`
+- `references/ancien-repo/repo/frontend/src/stores/deferredCashSessionStore.ts`
+- Tests de référence : `references/ancien-repo/repo/frontend/src/pages/CashRegister/VirtualCashRegister.test.tsx`, `references/ancien-repo/repo/frontend/src/pages/CashRegister/VirtualSale.workflow.test.tsx`, `references/ancien-repo/repo/frontend/src/test/pages/CashRegister/DeferredCashSession.test.tsx`, `references/ancien-repo/repo/frontend/src/test/stores/deferredCashSessionStore.test.ts`
+- Note : la "Saisie différée" est probablement une modale ou un mode de `Sale.tsx` (pas un composant page dédié) — confirmer via l'artefact 18.4.
+
+**Acceptance Criteria:**
+
+**Given** l'opérateur choisit "Caisse Virtuelle" sur le dashboard  
+**When** la session virtuelle démarre  
+**Then** le flux est identique à la caisse réelle mais sans écriture en BDD principale  
+**And** les données de simulation sont isolées du flux réel
+
+**Given** l'opérateur choisit "Saisie différée"  
+**When** il saisit des ventes  
+**Then** elles sont stockées localement et synchronisables ultérieurement (identique à la logique 1.4.4)
+
+**Preuves obligatoires de fermeture :**
+- Tests co-locés sur les stores virtuels (sur modèle des tests 1.4.4 listés).
+- Scénario caisse virtuelle complet fonctionnel.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** Stories 18.4–18.9 (caisse de base complète).
 

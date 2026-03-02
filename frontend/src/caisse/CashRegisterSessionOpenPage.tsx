@@ -1,18 +1,19 @@
 /**
- * Page ouverture de session de caisse — Story 5.1, 11.2.
- * GET /v1/cash-registers, pour différée GET /v1/cash-sessions/deferred/check,
- * POST /v1/cash-sessions avec initial_amount, register_id, optionnel opened_at.
- * Rendu Mantine aligné 1.4.4.
+ * Page ouverture de session de caisse — Story 5.1, 11.2, 18-9.
+ * Réécrite Story 18-9 : store Zustand, vérification session existante,
+ * format montant français (virgule acceptée), step='sale' après ouverture.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getCashRegisters,
   getCashSessionDeferredCheck,
-  openCashSession,
+  getCashSessionStatus,
+  updateCashSessionStep,
 } from '../api/caisse';
 import type { CashRegisterItem } from '../api/caisse';
 import { useAuth } from '../auth/AuthContext';
+import { useCashSessionStore } from './useCashSessionStore';
 import { Stack, Text, TextInput, Select, Button, Alert } from '@mantine/core';
 import { PageContainer, PageSection } from '../shared/layout';
 
@@ -21,15 +22,20 @@ export function CashRegisterSessionOpenPage() {
   const [searchParams] = useSearchParams();
   const registerIdParam = searchParams.get('register_id');
   const navigate = useNavigate();
+
+  const { openSession, resumeSession, loading, error, clearError } = useCashSessionStore();
+
   const [registers, setRegisters] = useState<CashRegisterItem[]>([]);
   const [registerId, setRegisterId] = useState(registerIdParam ?? '');
   const [initialAmountEur, setInitialAmountEur] = useState('');
   const [sessionType, setSessionType] = useState<'real' | 'virtual' | 'deferred'>('real');
   const [deferredDate, setDeferredDate] = useState('');
   const [deferredCheckMessage, setDeferredCheckMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [registersLoading, setRegistersLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [hasOpenSession, setHasOpenSession] = useState(false);
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (registerIdParam) setRegisterId(registerIdParam);
@@ -37,22 +43,40 @@ export function CashRegisterSessionOpenPage() {
 
   const loadRegisters = useCallback(async () => {
     if (!accessToken) return;
-    setLoading(true);
-    setError(null);
+    setRegistersLoading(true);
     try {
       const list = await getCashRegisters(accessToken);
       setRegisters(list);
-      if (list.length > 0 && !registerId) setRegisterId(list[0].id);
+      // Forme fonctionnelle pour éviter une dépendance sur registerId (évite un double appel API)
+      if (list.length > 0) setRegisterId((prev) => prev || list[0].id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur chargement');
+      setLocalError(e instanceof Error ? e.message : 'Erreur chargement caisses');
     } finally {
-      setLoading(false);
+      setRegistersLoading(false);
     }
-  }, [accessToken, registerId]);
+  }, [accessToken]);
 
   useEffect(() => {
     loadRegisters();
   }, [loadRegisters]);
+
+  // Vérification session existante sur ce poste (mode réel uniquement)
+  useEffect(() => {
+    if (!accessToken || !registerId || sessionType !== 'real') {
+      setHasOpenSession(false);
+      setOpenSessionId(null);
+      return;
+    }
+    getCashSessionStatus(accessToken, registerId)
+      .then((status) => {
+        setHasOpenSession(status.has_open_session);
+        setOpenSessionId(status.session_id);
+      })
+      .catch(() => {
+        setHasOpenSession(false);
+        setOpenSessionId(null);
+      });
+  }, [accessToken, registerId, sessionType]);
 
   const checkDeferred = useCallback(async () => {
     if (sessionType !== 'deferred' || !deferredDate || !accessToken) return;
@@ -69,18 +93,52 @@ export function CashRegisterSessionOpenPage() {
     }
   }, [sessionType, deferredDate, accessToken]);
 
+  // Format français : virgule ou point acceptés, conversion en centimes
+  const parseAmountToCents = (amountStr: string): number => {
+    const normalized = amountStr.replace(',', '.');
+    const val = parseFloat(normalized || '0');
+    if (isNaN(val)) return NaN;
+    return Math.round(val * 100);
+  };
+
+  const handleAmountChange = (value: string) => {
+    // Accepter chiffres, virgule, point — max 2 décimales
+    let sanitized = value.replace(/[^\d.,]/g, '').replace(/\./g, ',');
+    const parts = sanitized.split(',');
+    if (parts.length > 2) sanitized = parts[0] + ',' + parts.slice(1).join('');
+    if (parts.length === 2 && parts[1].length > 2) {
+      sanitized = parts[0] + ',' + parts[1].substring(0, 2);
+    }
+    setInitialAmountEur(sanitized);
+  };
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!accessToken || !registerId) return;
-      const amount = Math.round(parseFloat(initialAmountEur || '0') * 100);
-      if (amount < 0 || Number.isNaN(amount)) {
-        setError('Montant invalide');
-        return;
-      }
+
       setSubmitting(true);
-      setError(null);
+      setLocalError(null);
+      clearError();
+
       try {
+        // Session existante sur le poste → reprendre
+        if (hasOpenSession && openSessionId && sessionType === 'real') {
+          const ok = await resumeSession(accessToken, openSessionId);
+          if (ok) {
+            navigate('/cash-register/sale');
+          } else {
+            setLocalError('Impossible de reprendre la session existante.');
+          }
+          return;
+        }
+
+        const amount = parseAmountToCents(initialAmountEur);
+        if (isNaN(amount) || amount < 0) {
+          setLocalError('Montant invalide');
+          return;
+        }
+
         const body: {
           initial_amount: number;
           register_id: string;
@@ -94,10 +152,21 @@ export function CashRegisterSessionOpenPage() {
         if (sessionType === 'deferred' && deferredDate) {
           body.opened_at = `${deferredDate}T00:00:00.000Z`;
         }
-        await openCashSession(accessToken, body);
-        navigate('/cash-register/sale');
+
+        const session = await openSession(accessToken, body);
+        if (session) {
+          // Mettre à jour le step à 'sale'
+          try {
+            await updateCashSessionStep(accessToken, session.id, 'sale');
+          } catch {
+            // non-bloquant
+          }
+          navigate('/cash-register/sale');
+        } else {
+          setLocalError(error || 'Erreur lors de l\'ouverture de la session.');
+        }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Erreur ouverture session');
+        setLocalError(e instanceof Error ? e.message : 'Erreur ouverture session');
       } finally {
         setSubmitting(false);
       }
@@ -109,10 +178,19 @@ export function CashRegisterSessionOpenPage() {
       sessionType,
       deferredDate,
       navigate,
+      hasOpenSession,
+      openSessionId,
+      openSession,
+      resumeSession,
+      clearError,
+      error,
     ]
   );
 
-  if (loading) {
+  const displayError = localError || error;
+  const isSubmitting = submitting || loading;
+
+  if (registersLoading && registers.length === 0) {
     return (
       <PageContainer title="Ouverture de session" maxWidth={560} testId="page-session-open">
         <Text size="sm">Chargement…</Text>
@@ -123,70 +201,93 @@ export function CashRegisterSessionOpenPage() {
   return (
     <PageContainer title="Ouverture de session" maxWidth={560} testId="page-session-open">
       <PageSection>
+        {hasOpenSession && (
+          <Alert color="blue" mb="sm" data-testid="session-existing-alert">
+            Une session est déjà ouverte sur ce poste.
+          </Alert>
+        )}
         <form onSubmit={handleSubmit}>
           <Stack gap="sm">
-          <Select
-            label="Type"
-            id="session-type"
-            data-testid="session-open-type"
-            value={sessionType}
-            onChange={(v) => setSessionType((v as 'real' | 'virtual' | 'deferred') ?? 'real')}
-            data={[
-              { value: 'real', label: 'Réelle' },
-              { value: 'virtual', label: 'Virtuelle' },
-              { value: 'deferred', label: 'Différée' },
-            ]}
-          />
-          <Select
-            label="Poste"
-            id="register"
-            data-testid="session-open-register"
-            value={registerId}
-            onChange={(v) => setRegisterId(v ?? '')}
-            data={[
-              { value: '', label: '— Choisir —' },
-              ...registers.map((r) => ({ value: r.id, label: r.name })),
-            ]}
-            required
-          />
-          <TextInput
-            label="Fond de caisse (€)"
-            id="initial-amount"
-            type="number"
-            min={0}
-            step={0.01}
-            data-testid="session-open-initial-amount"
-            value={initialAmountEur}
-            onChange={(e) => setInitialAmountEur(e.target.value)}
-            required
-          />
-          {sessionType === 'deferred' && (
-            <>
+            <Select
+              label="Poste"
+              id="register"
+              data-testid="session-open-register"
+              value={registerId}
+              onChange={(v) => setRegisterId(v ?? '')}
+              data={[
+                { value: '', label: '— Choisir —' },
+                ...registers.map((r) => ({ value: r.id, label: r.name })),
+              ]}
+              required
+            />
+            <Select
+              label="Type"
+              id="session-type"
+              data-testid="session-open-type"
+              value={sessionType}
+              onChange={(v) => setSessionType((v as 'real' | 'virtual' | 'deferred') ?? 'real')}
+              data={[
+                { value: 'real', label: 'Réelle' },
+                { value: 'virtual', label: 'Virtuelle' },
+                { value: 'deferred', label: 'Différée' },
+              ]}
+            />
+            {!hasOpenSession && (
               <TextInput
-                label="Date réelle (YYYY-MM-DD)"
-                id="deferred-date"
-                type="date"
-                data-testid="session-open-deferred-date"
-                value={deferredDate}
-                onChange={(e) => setDeferredDate(e.target.value)}
+                label="Fond de caisse (€)"
+                id="initial-amount"
+                type="text"
+                placeholder="0.00"
+                data-testid="session-open-initial-amount"
+                value={initialAmountEur}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                required
               />
-              <Button type="button" variant="light" onClick={checkDeferred} data-testid="session-open-deferred-check">
-                Vérifier doublon
-              </Button>
-              {deferredCheckMessage && (
-                <Alert data-testid="session-open-deferred-message" color={deferredCheckMessage.includes('existe déjà') ? 'red' : 'blue'}>
-                  {deferredCheckMessage}
-                </Alert>
-              )}
-            </>
-          )}
-          {error && (
-            <Alert color="red" data-testid="session-open-error">
-              {error}
-            </Alert>
-          )}
-            <Button type="submit" loading={submitting} disabled={submitting} data-testid="session-open-submit">
-              {submitting ? 'Ouverture…' : 'Ouvrir la session'}
+            )}
+            {sessionType === 'deferred' && (
+              <>
+                <TextInput
+                  label="Date réelle (YYYY-MM-DD)"
+                  id="deferred-date"
+                  type="date"
+                  data-testid="session-open-deferred-date"
+                  value={deferredDate}
+                  onChange={(e) => setDeferredDate(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="light"
+                  onClick={checkDeferred}
+                  data-testid="session-open-deferred-check"
+                >
+                  Vérifier doublon
+                </Button>
+                {deferredCheckMessage && (
+                  <Alert
+                    data-testid="session-open-deferred-message"
+                    color={deferredCheckMessage.includes('existe déjà') ? 'red' : 'blue'}
+                  >
+                    {deferredCheckMessage}
+                  </Alert>
+                )}
+              </>
+            )}
+            {displayError && (
+              <Alert color="red" data-testid="session-open-error">
+                {displayError}
+              </Alert>
+            )}
+            <Button
+              type="submit"
+              loading={isSubmitting}
+              disabled={isSubmitting}
+              data-testid="session-open-submit"
+            >
+              {isSubmitting
+                ? 'Chargement…'
+                : hasOpenSession
+                ? 'Reprendre la session'
+                : 'Ouvrir la session'}
             </Button>
           </Stack>
         </form>

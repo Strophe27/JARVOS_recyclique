@@ -5,6 +5,8 @@
  */
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { CashRegisterGuard, CaisseDashboardPage, CAISSE_PIN_PATH } from './caisse';
+import { VirtualCashRegisterPage } from './caisse/VirtualCashRegisterPage';
+import { DeferredCashRegisterPage } from './caisse/DeferredCashRegisterPage';
 import { CashRegisterPinPage } from './caisse/CashRegisterPinPage';
 import { CashRegisterSessionOpenPage } from './caisse/CashRegisterSessionOpenPage';
 import { CashRegisterSessionClosePage } from './caisse/CashRegisterSessionClosePage';
@@ -61,8 +63,8 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/dashboard" element={<AuthGuard><DashboardPage /></AuthGuard>} />
       <Route path="/caisse" element={<AuthGuard><CaisseDashboardPage /></AuthGuard>} />
-      <Route path="/cash-register/virtual" element={<AuthGuard><CaisseDashboardPage /></AuthGuard>} />
-      <Route path="/cash-register/deferred" element={<AuthGuard><CaisseDashboardPage /></AuthGuard>} />
+      <Route path="/cash-register/virtual" element={<AuthGuard><VirtualCashRegisterPage /></AuthGuard>} />
+      <Route path="/cash-register/deferred" element={<AuthGuard><DeferredCashRegisterPage /></AuthGuard>} />
       <Route path="/cash-register/session/open" element={<AuthGuard><CashRegisterSessionOpenPage /></AuthGuard>} />
       <Route path="/cash-register/sale" element={<AuthGuard><CashRegisterSalePage /></AuthGuard>} />
       <Route path="/cash-register/session/close" element={<AuthGuard><CashRegisterSessionClosePage /></AuthGuard>} />

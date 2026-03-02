@@ -194,6 +194,11 @@ export function CaisseDashboardPage() {
       )}
       {!loading && !error && (
         <div className={styles.cardsRow} data-testid="caisse-dashboard-list">
+          {registers.length === 0 && (
+            <Text c="dimmed" size="sm" data-testid="caisse-dashboard-empty">
+              Aucun poste de caisse disponible. Contactez un administrateur.
+            </Text>
+          )}
           {registers.map((item) => renderRegisterCard(item))}
           <Card
             padding="md"

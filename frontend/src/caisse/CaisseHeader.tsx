@@ -3,6 +3,7 @@
  * Remplace le header global AppShell sur /cash-register/sale.
  * Fond vert brand, user + session a gauche, bouton fermer a droite.
  */
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Group, Text } from '@mantine/core';
 import type { UserInToken } from '../api/auth';
@@ -11,9 +12,10 @@ import styles from './CashRegisterSalePage.module.css';
 export interface CaisseHeaderProps {
   user: UserInToken | null;
   sessionId: string;
+  modeIndicator?: ReactNode;
 }
 
-export function CaisseHeader({ user, sessionId }: CaisseHeaderProps) {
+export function CaisseHeader({ user, sessionId, modeIndicator }: CaisseHeaderProps) {
   const navigate = useNavigate();
   const username = user
     ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.username
@@ -27,6 +29,7 @@ export function CaisseHeader({ user, sessionId }: CaisseHeaderProps) {
         <Text size="sm" c="white" fw={500}>
           agent {username} Session #{shortSessionId}
         </Text>
+        {modeIndicator}
       </Group>
       <Button
         color="red"

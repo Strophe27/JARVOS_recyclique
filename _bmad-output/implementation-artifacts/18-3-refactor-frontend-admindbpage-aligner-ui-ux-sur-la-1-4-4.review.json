@@ -1,0 +1,23 @@
+{
+  "reviewResult": "approved",
+  "summary": "Les 2 fixes post-première review sont correctement appliqués : (1) ligne 124 du test utilise `await screen.findByTestId` (async, résout le problème de timing portal Mantine) ; (2) `adminDb.ts` applique le pattern `appendChild/removeChild` conforme 1.4.4. Tous les AC (AC1 Export, AC2 Import, AC3 Purge 3 étapes, AC4 super_admin, AC6 tests) sont satisfaits. 15 tests Vitest verts. Aucun problème critique introduit.",
+  "findings": [
+    {
+      "severity": "resolved",
+      "file": "frontend/src/admin/AdminDbPage.test.tsx",
+      "line": 124,
+      "description": "Fix async confirmé : `fireEvent.click(await screen.findByTestId('btn-db-export-confirm'))` — timing portal Mantine corrigé."
+    },
+    {
+      "severity": "resolved",
+      "file": "frontend/src/api/adminDb.ts",
+      "lines": "64-66",
+      "description": "Fix pattern DOM confirmé : `document.body.appendChild(a)` → `a.click()` → `document.body.removeChild(a)` — conforme 1.4.4."
+    },
+    {
+      "severity": "info",
+      "file": "frontend/src/api/adminDb.ts",
+      "description": "`postAdminDbPurgeTransactions` sans timeout AbortController — non requis par AC, non bloquant, acceptable."
+    }
+  ]
+}

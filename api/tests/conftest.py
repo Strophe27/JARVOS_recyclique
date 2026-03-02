@@ -124,7 +124,7 @@ def client(_db_with_user):
 
     def mock_get_codes(db, user):
         if user and user.id == FAKE_USER_ID:
-            return {"reception.access", "admin"}
+            return {"reception.access", "admin", "super_admin"}
         return set()
 
     deps.get_user_permission_codes_from_user = mock_get_codes

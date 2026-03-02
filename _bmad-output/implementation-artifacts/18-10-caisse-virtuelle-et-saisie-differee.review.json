@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "32/32 tests passants. Isolation correcte : virtualCashSessionStore in-memory (pas de persist), deferredCashSessionStore persist partiel (currentSession + deferredDate). session_type forcé dans openSession des deux stores, impossible à overrider. Aucune pollution croisée entre les 3 stores. TypeScript propre (pas de any), Mantine utilisé partout, gestion d'erreurs cohérente. useEffect saleDate dans CashRegisterSalePage correct selon spec (re-préremplit après chaque ticket). Routes /cash-register/virtual et /cash-register/deferred enregistrées et protégées par AuthGuard. Tous les ACs (AC1-AC6) couverts. Points mineurs non bloquants : mutation onRehydrateStorage (pattern Zustand recommandé), vérification doublon manuelle (acceptable, backend protège). Approved sans changes-requested."
+}

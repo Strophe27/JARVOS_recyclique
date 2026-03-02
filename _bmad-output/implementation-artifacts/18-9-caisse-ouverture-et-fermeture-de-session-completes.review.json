@@ -1,0 +1,21 @@
+{
+  "reviewResult": "approved",
+  "summary": "Story 18-9 approuvée. Les 4 ACs sont satisfaits : store Zustand avec persist/devtools (AC1), formulaire ouverture complet avec vérification session existante et format centimes (AC2), récapitulatif fermeture avec variance temps réel et session vide (AC3), clôture avec step='exit' et nettoyage store/localStorage (AC4). 27/27 tests verts, build Vite OK, TypeScript propre. Trois issues mineures documentées sans impact bloquant.",
+  "issues": [
+    {
+      "severity": "minor",
+      "file": "frontend/src/caisse/CashRegisterSessionClosePage.tsx",
+      "description": "Race condition potentielle au montage : l'état initial du store (currentSession=null, loading=false) peut déclencher le useEffect de redirection vers /caisse avant que refreshSession définisse loading=true. En production, le middleware persist restaure currentSession depuis localStorage pour les utilisateurs normaux (session en cours), ce qui résout le cas courant. Edge case uniquement : localStorage effacé + navigation directe vers la page sans session active."
+    },
+    {
+      "severity": "minor",
+      "file": "frontend/src/caisse/CashRegisterSessionOpenPage.tsx",
+      "description": "Fermeture stale possible sur `error` dans handleSubmit (ligne 166) : après openSession() retournant null, le message d'erreur du store pourrait ne pas encore être visible via la closure capturée. L'affichage montre le fallback 'Erreur lors de l\'ouverture de la session.' au lieu du message API. Impact UX très faible."
+    },
+    {
+      "severity": "minor",
+      "file": "frontend/src/caisse/CashRegisterSessionClosePage.tsx",
+      "description": "Sync Paheko post-clôture non implémentée (fire-and-forget vers POST /v1/cash-sessions/{id}/sync). Accepté explicitement dans le story AC4 : si l'endpoint n'existe pas côté backend, le point est satisfait par le worker backend. Aucune régression fonctionnelle."
+    }
+  ]
+}

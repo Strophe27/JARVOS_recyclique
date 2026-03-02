@@ -1,0 +1,26 @@
+{
+  "reviewResult": "approved",
+  "summary": "Story 18-5 conforme. Les 5 AC sont implementes et couverts par des tests. Aucun bug critique ni majeur identifie. Observations mineures sans impact fonctionnel.",
+  "findings": [
+    {
+      "severity": "minor",
+      "file": "frontend/src/caisse/CaisseStatsBar.tsx",
+      "description": "La prop `poidsRentres` est declaree dans l'interface CaisseStatsBarProps mais n'est pas destructuree dans la signature de la fonction (intentionnel : toujours affiche '-- kg'). Ce pattern cree une interface trompeuse ou un parametre accepte est silencieusement ignore. Documentee dans la story — acceptable pour cette iteration."
+    },
+    {
+      "severity": "minor",
+      "file": "frontend/src/caisse/CashRegisterSalePage.tsx",
+      "description": "Les KPI locaux (localTicketCount, localCaJour, etc.) ne sont pas incrementes lors des soumissions hors-ligne (chemin offline, lignes 290-303). Conforme a la spec explicite ('apres chaque POST /v1/sales reussi'), mais cree une legere incoherence UX : l'utilisateur voit le ticket ajoute a la queue mais les compteurs KPI restent a 0 jusqu'a reconnexion. A documenter ou adresser en story ulterieure si retour terrain signale."
+    },
+    {
+      "severity": "minor",
+      "file": "frontend/src/caisse/CaisseStatsBar.test.tsx",
+      "description": "AC3 stipule que DONS JOUR et POIDS SORTIS 'conservent leurs valeurs locales dans les deux modes'. Aucun test ne verifie explicitement que ces valeurs restent identiques en mode live ET en mode session. La logique composant est correcte (pas de branchement sur ces props selon le mode), mais la couverture de test de cet invariant est absente. Observation uniquement — comportement correct."
+    },
+    {
+      "severity": "minor",
+      "file": "frontend/src/caisse/CaisseStatsBar.tsx",
+      "description": "L'horloge se rafraichit toutes les 30 secondes (setInterval 30_000ms). L'affichage peut etre decale jusqu'a 30s par rapport a l'heure reelle. Acceptable pour un usage caisse (precision a la minute suffisante), conforme a la 1.4.4."
+    }
+  ]
+}

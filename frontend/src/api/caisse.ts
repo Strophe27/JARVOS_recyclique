@@ -101,6 +101,10 @@ export interface CashSessionItem {
   session_type: string;
   total_sales: number | null;  // centimes, somme ventes (Story 5.3)
   total_items: number | null;  // nombre de lignes (Story 5.3)
+  total_donations?: number | null;  // centimes, total dons (Story 18-9)
+  total_cash?: number | null;     // centimes, paiements espèces
+  total_card?: number | null;     // centimes, paiements CB
+  total_check?: number | null;    // centimes, paiements chèques
   created_at: string;
   updated_at: string;
 }

@@ -2,8 +2,10 @@
  * Page saisie vente (etape sale) — Story 15.3 (layout parite 1.4.4).
  * Layout plein ecran : CaisseHeader + StatsBar + zone principale (tabs + grille + ticket).
  * Logique metier conservee intacte (Stories 5.2, 5.4, 11.2).
+ * Raccourcis clavier AZERTY positionnels — Story 18-7.
+ * Ticket dedié + FinalizationScreen — Story 18-8.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getCurrentCashSession,
@@ -30,16 +32,22 @@ import {
   Stack,
   Text,
   Alert,
+  Badge,
   Button,
-  Group,
-  Select,
   NumberInput,
-  TextInput,
   Tabs,
   Loader,
 } from '@mantine/core';
 import { CaisseHeader } from './CaisseHeader';
 import { CaisseStatsBar } from './CaisseStatsBar';
+import { useVirtualCashSessionStore } from './virtualCashSessionStore';
+import { useDeferredCashSessionStore } from './deferredCashSessionStore';
+import { CategoryGrid } from './CategoryGrid';
+import { PresetButtonGrid } from './PresetButtonGrid';
+import { CashKeyboardShortcutHandler } from './utils/cashKeyboardShortcuts';
+import { mapAZERTYToNumeric } from './utils/azertyKeyboard';
+import { Ticket } from './Ticket';
+import { FinalizationScreen } from './FinalizationScreen';
 import styles from './CashRegisterSalePage.module.css';
 
 export interface CartLine {
@@ -52,23 +60,6 @@ export interface CartLine {
   unit_price: number;
   total_price: number;
   weight: number | null;
-}
-
-function getShortcutLetter(name: string, index: number, taken: Set<string>): string {
-  const first = name.charAt(0).toUpperCase();
-  if (first && !taken.has(first)) {
-    taken.add(first);
-    return first;
-  }
-  for (const ch of name.toUpperCase()) {
-    if (/[A-Z]/.test(ch) && !taken.has(ch)) {
-      taken.add(ch);
-      return ch;
-    }
-  }
-  const fallback = String.fromCharCode(65 + (index % 26));
-  taken.add(fallback);
-  return fallback;
 }
 
 export function CashRegisterSalePage() {
@@ -94,6 +85,47 @@ export function CashRegisterSalePage() {
   const [catWeight, setCatWeight] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>('categorie');
+  const [subCategoryParentId, setSubCategoryParentId] = useState<string | null>(null);
+  const [showFinalization, setShowFinalization] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Accumulateurs KPI locaux (Story 18-5 T3)
+  const [localTicketCount, setLocalTicketCount] = useState<number>(0);
+  const [localCaJour, setLocalCaJour] = useState<number>(0);
+  const [lastTicketTotal, setLastTicketTotal] = useState<number | null>(null);
+  const [donsJourLocal, setDonsJourLocal] = useState<number>(0);
+  const [poidsSortisLocal, setPoidsSortisLocal] = useState<number>(0);
+  const [kpiMode, setKpiMode] = useState<'live' | 'session'>('live');
+
+  // --- Détection du mode virtual/deferred (Story 18-10) ---
+  const virtualSession = useVirtualCashSessionStore((s) => s.currentSession);
+  const deferredSession = useDeferredCashSessionStore((s) => s.currentSession);
+  const deferredDateMode = useDeferredCashSessionStore((s) => s.deferredDate);
+  const sessionMode = virtualSession ? 'virtual' : deferredSession ? 'deferred' : 'real';
+
+  // Pré-remplir saleDate depuis deferredDate en mode différé (y compris après remise à zéro post-vente)
+  useEffect(() => {
+    if (sessionMode === 'deferred' && deferredDateMode && !saleDate) {
+      setSaleDate(deferredDateMode);
+    }
+  }, [sessionMode, deferredDateMode, saleDate]);
+
+  const modeIndicator =
+    sessionMode === 'virtual' ? (
+      <Badge color="blue" variant="filled" size="sm" data-testid="sale-virtual-mode-badge">
+        SIMULATION
+      </Badge>
+    ) : sessionMode === 'deferred' && deferredDateMode ? (
+      <Badge color="orange" variant="filled" size="sm" data-testid="sale-deferred-mode-badge">
+        DIFFÉRÉ — {deferredDateMode.split('-').reverse().join('/')}
+      </Badge>
+    ) : undefined;
+
+  // Refs pour les raccourcis clavier (évite les stale closures dans le useEffect)
+  const shortcutHandlerRef = useRef(new CashKeyboardShortcutHandler());
+  const pendingQuantityRef = useRef('');
+  const cartRef = useRef(cart);
+  const showFinalizationRef = useRef(showFinalization);
+  const handleFinalizeRef = useRef<() => void>(() => {});
 
   const loadData = useCallback(async () => {
     if (!accessToken) return;
@@ -151,28 +183,82 @@ export function CashRegisterSalePage() {
     refreshPendingCount();
   }, [refreshPendingCount]);
 
-  // --- Raccourcis clavier par categorie (AC#4) ---
+  // --- Raccourcis clavier AZERTY positionnels (Story 18-7) ---
+
   const categoryShortcuts = useMemo(() => {
-    const taken = new Set<string>();
-    return categories.map((c, i) => ({
+    const handler = shortcutHandlerRef.current;
+    handler.initialize(categories, () => {});
+    return categories.map((c) => ({
       category: c,
-      letter: getShortcutLetter(c.name, i, taken),
+      letter: handler.getKeyForCategory(c.id) ?? '',
     }));
   }, [categories]);
 
   useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
+
+  useEffect(() => {
+    showFinalizationRef.current = showFinalization;
+  }, [showFinalization]);
+
+  useEffect(() => {
+    function shouldPrevent(target: EventTarget | null): boolean {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      const el = target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return true;
+      if (el.contentEditable === 'true') return true;
+      if (el.getAttribute('role') === 'textbox') return true;
+      if (el.hasAttribute('data-prevent-shortcuts')) return true;
+      return false;
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
-      const tag = (document.activeElement?.tagName ?? '').toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-      const key = e.key.toUpperCase();
-      const match = categoryShortcuts.find((s) => s.letter === key);
-      if (match) {
-        setSelectedCategoryId(match.category.id);
+      // Laisser FinalizationScreen gérer ses propres raccourcis
+      if (showFinalizationRef.current) return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (shouldPrevent(e.target)) return;
+
+      const key = e.key;
+
+      if (!e.shiftKey) {
+        const numeric = mapAZERTYToNumeric(key);
+        if (numeric !== null) {
+          pendingQuantityRef.current += numeric;
+          e.preventDefault();
+          return;
+        }
+      }
+
+      const shortcut = shortcutHandlerRef.current.getShortcut(key);
+      if (shortcut) {
+        e.preventDefault();
+        const qty = parseInt(pendingQuantityRef.current, 10) || 1;
+        setCatQuantity(qty);
+        setSelectedCategoryId(shortcut.categoryId);
+        pendingQuantityRef.current = '';
+        return;
+      }
+
+      if (key === 'Escape') {
+        pendingQuantityRef.current = '';
+        return;
+      }
+
+      if (key === 'Enter') {
+        handleFinalizeRef.current();
+        return;
+      }
+
+      if (key === 'Backspace') {
+        setCart((prev) => prev.slice(0, -1));
+        e.preventDefault();
       }
     }
+
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [categoryShortcuts]);
+  }, []);
 
   // --- Panier ---
   const addPresetToCart = useCallback(
@@ -245,81 +331,115 @@ export function CashRegisterSalePage() {
     }
   }, [categories, selectedCategoryId, catQuantity, catPriceEur, catWeight, addCategoryToCart]);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!session) return;
-      if (cart.length === 0) {
-        setError('Panier vide');
-        return;
-      }
-      if (paymentsTotal !== cartTotal) {
-        setError('La somme des paiements doit etre egale au total du panier');
-        return;
-      }
-      if (payments.length === 0) {
-        setError('Ajoutez au moins un paiement');
-        return;
-      }
-      setSubmitting(true);
-      setError(null);
-      const items: SaleItemPayload[] = cart.map((l) => ({
-        category_id: l.category_id ?? undefined,
-        preset_id: l.preset_id ?? undefined,
-        quantity: l.quantity,
-        unit_price: l.unit_price,
-        total_price: l.total_price,
-        weight: l.weight ?? undefined,
-      }));
-      const payload = {
-        cash_session_id: session.id,
-        items,
-        payments,
-        note: note || undefined,
-        sale_date: saleDate ? `${saleDate}T00:00:00.000Z` : undefined,
-      };
+  const handleFinalize = useCallback(() => {
+    if (cart.length === 0) {
+      setError('Panier vide \u2014 ajoutez au moins un article');
+      return;
+    }
+    setError(null);
+    setShowFinalization(true);
+  }, [cart.length]);
 
-      try {
-        if (!online) {
-          const offlineId = crypto.randomUUID();
-          await addTicket({
-            ...payload,
-            offline_id: offlineId,
-            created_at: new Date().toISOString(),
-          });
+  const handleConfirmSale = useCallback(async () => {
+    if (!session) return;
+    if (cart.length === 0) {
+      setError('Panier vide \u2014 ajoutez au moins un article');
+      return;
+    }
+    if (paymentsTotal !== cartTotal) {
+      setError('La somme des paiements doit etre egale au total du panier');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    const items: SaleItemPayload[] = cart.map((l) => ({
+      category_id: l.category_id ?? undefined,
+      preset_id: l.preset_id ?? undefined,
+      quantity: l.quantity,
+      unit_price: l.unit_price,
+      total_price: l.total_price,
+      weight: l.weight ?? undefined,
+    }));
+    const payload = {
+      cash_session_id: session.id,
+      items,
+      payments,
+      note: note || undefined,
+      sale_date: saleDate ? `${saleDate}T00:00:00.000Z` : undefined,
+    };
+
+    try {
+      if (!online) {
+        const offlineId = crypto.randomUUID();
+        await addTicket({
+          ...payload,
+          offline_id: offlineId,
+          created_at: new Date().toISOString(),
+        });
+        const offlineMsg = 'Ticket enregistre hors ligne \u2014 sera synchronise au retour en ligne';
+        setSuccessMessage(offlineMsg);
+        await refreshPendingCount();
+        setSubmitting(false);
+        setTimeout(() => {
+          setSuccessMessage(null);
+          setShowFinalization(false);
           setCart([]);
           setPayments([]);
           setNote('');
           setSaleDate('');
-          await refreshPendingCount();
-          setSubmitting(false);
-          return;
-        }
-        if (!accessToken) return;
-        await postSale(accessToken, payload);
+        }, 2000);
+        return;
+      }
+      if (!accessToken) return;
+      await postSale(accessToken, payload);
+      const ticketTotalCents = cartTotal;
+      const donsInTicket = cart
+        .filter(
+          (l) =>
+            l.unit_price === 0 ||
+            l.category_name?.toLowerCase().includes('don') ||
+            l.preset_name?.toLowerCase().includes('don')
+        )
+        .reduce((sum, l) => sum + l.total_price, 0);
+      const poidsInTicket = cart
+        .filter((l) => l.weight !== null)
+        .reduce((sum, l) => sum + (l.weight ?? 0), 0);
+      setLocalTicketCount((prev) => prev + 1);
+      setLocalCaJour((prev) => prev + ticketTotalCents);
+      setLastTicketTotal(ticketTotalCents);
+      setDonsJourLocal((prev) => prev + donsInTicket);
+      setPoidsSortisLocal((prev) => prev + poidsInTicket);
+      const successMsg = `Ticket enregistre \u2014 ${items.length} articles, ${(ticketTotalCents / 100).toFixed(2)} EUR`;
+      setSuccessMessage(successMsg);
+      setTimeout(() => {
+        setSuccessMessage(null);
+        setShowFinalization(false);
         setCart([]);
         setPayments([]);
         setNote('');
         setSaleDate('');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erreur enregistrement');
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [
-      session,
-      cart,
-      payments,
-      paymentsTotal,
-      cartTotal,
-      note,
-      saleDate,
-      online,
-      accessToken,
-      refreshPendingCount,
-    ]
-  );
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur enregistrement');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    session,
+    cart,
+    payments,
+    paymentsTotal,
+    cartTotal,
+    note,
+    saleDate,
+    online,
+    accessToken,
+    refreshPendingCount,
+  ]);
+
+  useEffect(() => {
+    handleFinalizeRef.current = handleFinalize;
+  }, [handleFinalize]);
 
   // --- Etats de chargement / erreur ---
   if (loading) {
@@ -350,14 +470,18 @@ export function CashRegisterSalePage() {
 
   return (
     <div className={styles.pageRoot} data-testid="page-cash-register-sale">
-      <CaisseHeader user={user} sessionId={session.id} />
+      <CaisseHeader user={user} sessionId={session.id} modeIndicator={modeIndicator} />
       <CaisseStatsBar
-        ticketCount={session.total_items ?? 0}
-        lastTicketAmount={null}
-        caJour={session.total_sales ?? 0}
-        donsJour={0}
-        poidsSortis={0}
+        ticketCount={localTicketCount}
+        lastTicketAmount={lastTicketTotal}
+        caJour={localCaJour}
+        donsJour={donsJourLocal}
+        poidsSortis={poidsSortisLocal}
         poidsRentres={0}
+        mode={kpiMode}
+        onModeChange={setKpiMode}
+        sessionTicketCount={session.total_items ?? 0}
+        sessionCaJour={session.total_sales ?? 0}
       />
 
       {(!online || pendingOfflineCount > 0 || syncing) && (
@@ -398,49 +522,55 @@ export function CashRegisterSalePage() {
             </div>
 
             <Tabs.Panel value="categorie">
-              {/* Boutons rapides presets */}
-              {presets.length > 0 && (
-                <Group gap="xs" mb="sm">
-                  {presets.map((p) => (
-                    <Button
-                      key={p.id}
-                      variant="light"
-                      size="xs"
-                      data-testid={`preset-${p.id}`}
-                      onClick={() => addPresetToCart(p)}
-                    >
-                      {p.name} ({(p.preset_price / 100).toFixed(2)} \u20ac)
-                    </Button>
-                  ))}
-                </Group>
-              )}
-
-              <div className={styles.categoryGrid} data-testid="caisse-category-grid">
-                {categoryShortcuts.map(({ category, letter }) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    className={`${styles.categoryCard}${selectedCategoryId === category.id ? ` ${styles.categoryCardSelected}` : ''}`}
-                    data-testid={`category-card-${category.id}`}
-                    onClick={() => setSelectedCategoryId(category.id)}
-                  >
-                    <Text size="sm" fw={500}>{category.name}</Text>
-                    <span className={styles.shortcutBadge}>{letter}</span>
-                  </button>
-                ))}
-              </div>
+              <PresetButtonGrid presets={presets} onPresetClick={addPresetToCart} />
+              <CategoryGrid
+                categories={categories}
+                selectedCategoryId={selectedCategoryId}
+                onCategorySelect={setSelectedCategoryId}
+                onParentCategoryClick={(parentId) => {
+                  setSubCategoryParentId(parentId);
+                  setActiveTab('sous-categorie');
+                }}
+                categoryShortcuts={categoryShortcuts}
+              />
             </Tabs.Panel>
 
             <Tabs.Panel value="sous-categorie">
-              <Stack align="center" justify="center" py="xl">
-                <Text c="dimmed">Sous-categories — a venir</Text>
-              </Stack>
+              {subCategoryParentId ? (
+                <Stack gap="sm">
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    leftSection={<span>←</span>}
+                    data-testid="subcategory-back-btn"
+                    onClick={() => {
+                      setSubCategoryParentId(null);
+                      setActiveTab('categorie');
+                    }}
+                  >
+                    Retour aux categories
+                  </Button>
+                  <CategoryGrid
+                    categories={categories}
+                    selectedCategoryId={selectedCategoryId}
+                    onCategorySelect={(id) => {
+                      setSelectedCategoryId(id);
+                    }}
+                    categoryShortcuts={categoryShortcuts}
+                    filterParentId={subCategoryParentId}
+                  />
+                </Stack>
+              ) : (
+                <Stack align="center" justify="center" py="xl">
+                  <Text c="dimmed">Cliquez sur une categorie parente pour voir ses sous-categories</Text>
+                </Stack>
+              )}
             </Tabs.Panel>
 
             <Tabs.Panel value="poids">
               <Stack gap="xs" py="md">
                 <Text fw={500}>Saisie directe du poids</Text>
-                <Group gap="xs" align="flex-end">
+                <Stack gap="xs" align="flex-start">
                   <NumberInput
                     decimalScale={3}
                     min={0}
@@ -453,14 +583,14 @@ export function CashRegisterSalePage() {
                   <Button variant="light" size="sm" onClick={handleAddCategoryLine}>
                     Ajouter
                   </Button>
-                </Group>
+                </Stack>
               </Stack>
             </Tabs.Panel>
 
             <Tabs.Panel value="prix">
               <Stack gap="xs" py="md">
                 <Text fw={500}>Saisie directe du prix</Text>
-                <Group gap="xs" align="flex-end">
+                <Stack gap="xs" align="flex-start">
                   <NumberInput
                     decimalScale={2}
                     min={0}
@@ -481,152 +611,48 @@ export function CashRegisterSalePage() {
                   <Button variant="light" size="sm" onClick={handleAddCategoryLine}>
                     Ajouter
                   </Button>
-                </Group>
+                </Stack>
               </Stack>
             </Tabs.Panel>
           </Tabs>
         </div>
 
-        {/* Panneau ticket lateral (AC#5) */}
-        <aside className={styles.ticketPanel} data-testid="caisse-ticket-panel">
-          <div className={styles.ticketHeader}>
-            <Text fw={700} size="md">Ticket de Caisse</Text>
-          </div>
-
-          <div className={styles.ticketBody}>
-            {cart.length === 0 ? (
-              <Text size="sm" c="dimmed" data-testid="cart-empty">
-                Aucun article ajoute
-              </Text>
-            ) : (
-              <Stack gap={0}>
-                {cart.map((l) => (
-                  <div key={l.id} className={styles.ticketLine}>
-                    <div>
-                      <Text size="sm">{l.preset_name ?? l.category_name}</Text>
-                      <Text size="xs" c="dimmed">
-                        x{l.quantity}{l.weight != null ? ` — ${l.weight} kg` : ''}
-                      </Text>
-                    </div>
-                    <Group gap={4} align="center" wrap="nowrap">
-                      <Text size="sm" fw={500}>{(l.total_price / 100).toFixed(2)} \u20ac</Text>
-                      <button
-                        type="button"
-                        className={styles.ticketLineRemove}
-                        data-testid={`remove-line-${l.id}`}
-                        aria-label={`Supprimer ${l.preset_name ?? l.category_name ?? 'l\'article'}`}
-                        onClick={() => removeCartLine(l.id)}
-                      >
-                        x
-                      </button>
-                    </Group>
-                  </div>
-                ))}
-              </Stack>
-            )}
-
-            {/* Paiements */}
-            <div className={styles.paymentSection}>
-              <Text size="xs" fw={600} tt="uppercase" c="dimmed" mb={4}>
-                Paiements
-              </Text>
-              <Group gap="xs" align="flex-end" wrap="nowrap">
-                <Select
-                  size="xs"
-                  data-testid="payment-method"
-                  value={paymentMethod}
-                  onChange={(v) => setPaymentMethod(v ?? 'especes')}
-                  data={[
-                    { value: 'especes', label: 'Especes' },
-                    { value: 'cheque', label: 'Cheque' },
-                    { value: 'cb', label: 'Carte bancaire' },
-                  ]}
-                  w={100}
-                />
-                <NumberInput
-                  size="xs"
-                  decimalScale={2}
-                  min={0}
-                  value={paymentAmountEur}
-                  onChange={(v) => setPaymentAmountEur(String(v ?? ''))}
-                  data-testid="payment-amount"
-                  placeholder="EUR"
-                  w={70}
-                />
-                <Button size="xs" variant="light" data-testid="add-payment" onClick={addPayment}>
-                  +
-                </Button>
-              </Group>
-              {payments.length > 0 && (
-                <Stack gap={0} mt={4}>
-                  {payments.map((p, i) => (
-                    <Group key={i} justify="space-between" gap={4}>
-                      <Text size="xs">{p.payment_method} : {(p.amount / 100).toFixed(2)} \u20ac</Text>
-                      <button
-                        type="button"
-                        className={styles.ticketLineRemove}
-                        data-testid={`remove-payment-${i}`}
-                        aria-label={`Supprimer le paiement ${p.payment_method}`}
-                        onClick={() => removePayment(i)}
-                      >
-                        x
-                      </button>
-                    </Group>
-                  ))}
-                  <Text size="xs" c="dimmed">
-                    Total paiements : {(paymentsTotal / 100).toFixed(2)} \u20ac
-                  </Text>
-                </Stack>
-              )}
-            </div>
-
-            {/* Note + date */}
-            <Stack gap="xs" mt="sm">
-              <TextInput
-                size="xs"
-                label="Note"
-                id="sale-note"
-                data-testid="sale-note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-              <TextInput
-                size="xs"
-                label="Date (opt.)"
-                id="sale-date"
-                type="date"
-                data-testid="sale-date"
-                value={saleDate}
-                onChange={(e) => setSaleDate(e.target.value)}
-              />
-            </Stack>
-          </div>
-
-          <form onSubmit={handleSubmit} className={styles.ticketFooter}>
-            {error && (
-              <Alert color="red" p="xs" data-testid="sale-error">
-                {error}
-              </Alert>
-            )}
-            <Group justify="space-between">
-              <Text size="sm">{cart.length} articles</Text>
-              <Text size="md" fw={700} data-testid="cart-total">
-                {(cartTotal / 100).toFixed(2)} \u20ac
-              </Text>
-            </Group>
-            <Button
-              type="submit"
-              color="green"
-              fullWidth
-              loading={submitting}
-              disabled={submitting || cart.length === 0 || paymentsTotal !== cartTotal}
-              data-testid="caisse-ticket-submit"
-            >
-              {submitting ? 'Enregistrement...' : 'Entree'}
-            </Button>
-          </form>
-        </aside>
+        {/* Panneau ticket lateral (Story 18-8 T1) */}
+        <Ticket
+          cart={cart}
+          onRemoveLine={removeCartLine}
+          onFinalize={handleFinalize}
+          total={cartTotal}
+          note={note}
+          onNoteChange={setNote}
+          saleDate={saleDate}
+          onSaleDateChange={setSaleDate}
+          error={error}
+        />
       </div>
+
+      {/* Ecran de finalisation (Story 18-8 T2) */}
+      {showFinalization && (
+        <FinalizationScreen
+          cart={cart}
+          cartTotal={cartTotal}
+          payments={payments}
+          paymentMethod={paymentMethod}
+          paymentAmountEur={paymentAmountEur}
+          onPaymentMethodChange={setPaymentMethod}
+          onPaymentAmountChange={setPaymentAmountEur}
+          onAddPayment={addPayment}
+          onRemovePayment={removePayment}
+          onConfirm={handleConfirmSale}
+          onCancel={() => {
+            setShowFinalization(false);
+            setError(null);
+          }}
+          submitting={submitting}
+          error={error}
+          successMessage={successMessage}
+        />
+      )}
     </div>
   );
 }

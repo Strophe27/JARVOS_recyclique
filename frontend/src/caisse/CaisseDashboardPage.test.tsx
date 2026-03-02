@@ -69,13 +69,29 @@ describe('CaisseDashboardPage', () => {
     expect(await screen.findByText(/simulation/i)).toBeInTheDocument();
     const deferredTitle = await screen.findByText(/saisie différée/i);
     expect(deferredTitle).toBeInTheDocument();
-    expect(await screen.findByText(/admin/i)).toBeInTheDocument();
+    expect(await screen.findByText('ADMIN')).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /simuler/i })).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /accéder/i })).toBeInTheDocument();
     const virtualCard = virtualTitle.closest(`.${styles.cardBase}`);
     const deferredCard = deferredTitle.closest(`.${styles.cardBase}`);
     expect(virtualCard).toHaveClass(styles.virtualCard);
     expect(deferredCard).toHaveClass(styles.deferredCard);
+  });
+
+  it('AC4 : affiche un message explicite quand aucun poste retourne', async () => {
+    vi.mocked(caisseApi.getCashRegisters).mockResolvedValue([]);
+    renderWithRouter();
+    expect(
+      await screen.findByText(/aucun poste de caisse disponible/i)
+    ).toBeInTheDocument();
+    expect(await screen.findByTestId('caisse-dashboard-empty')).toBeInTheDocument();
+  });
+
+  it('AC4 : les cards Caisse Virtuelle et Saisie differee restent visibles quand registers est vide', async () => {
+    vi.mocked(caisseApi.getCashRegisters).mockResolvedValue([]);
+    renderWithRouter();
+    expect(await screen.findByText(/caisse virtuelle/i)).toBeInTheDocument();
+    expect(await screen.findByText(/saisie diff/i)).toBeInTheDocument();
   });
 
   it('renders status badges and action buttons for registers', async () => {

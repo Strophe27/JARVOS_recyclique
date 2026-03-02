@@ -1,9 +1,10 @@
 /**
  * Tests Story 15.3 — layout saisie vente parite 1.4.4 + flux offline (5.4, 11.2).
+ * Tests Story 18-7 — raccourcis clavier AZERTY positionnels.
  * Vitest + RTL + MantineProvider.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
 import { CashRegisterSalePage } from './CashRegisterSalePage';
@@ -179,7 +180,7 @@ describe('CashRegisterSalePage — Story 15.3 layout', () => {
     });
     expect(screen.getByText('Ticket de Caisse')).toBeInTheDocument();
     expect(screen.getByTestId('cart-empty')).toHaveTextContent('Aucun article');
-    expect(screen.getByTestId('caisse-ticket-submit')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-finaliser')).toBeInTheDocument();
   });
 });
 
@@ -220,10 +221,21 @@ describe('CashRegisterSalePage — offline & sync (Story 5.4)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
     });
+    // Ajouter un article, ouvrir FinalizationScreen, ajouter le paiement, valider
     fireEvent.click(screen.getByTestId('preset-preset-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-finaliser')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('btn-finaliser'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
     fireEvent.change(screen.getByTestId('payment-amount'), { target: { value: '5' } });
     fireEvent.click(screen.getByTestId('add-payment'));
-    fireEvent.click(screen.getByTestId('caisse-ticket-submit'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-confirm')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('finalization-confirm'));
 
     await waitFor(() => {
       expect(mockPostSale).toHaveBeenCalledWith(
@@ -245,10 +257,21 @@ describe('CashRegisterSalePage — offline & sync (Story 5.4)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
     });
+    // Ajouter un article, ouvrir FinalizationScreen, ajouter le paiement, valider
     fireEvent.click(screen.getByTestId('preset-preset-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-finaliser')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('btn-finaliser'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
     fireEvent.change(screen.getByTestId('payment-amount'), { target: { value: '5' } });
     fireEvent.click(screen.getByTestId('add-payment'));
-    fireEvent.click(screen.getByTestId('caisse-ticket-submit'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-confirm')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('finalization-confirm'));
 
     await waitFor(() => {
       expect(mockAddTicket).toHaveBeenCalledWith(
@@ -262,5 +285,376 @@ describe('CashRegisterSalePage — offline & sync (Story 5.4)', () => {
       );
     });
     expect(mockPostSale).not.toHaveBeenCalled();
+  });
+});
+
+describe('CashRegisterSalePage — raccourcis clavier AZERTY (Story 18-7)', () => {
+  it('touche A selectionne la categorie en position 1 (cat-1)', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    });
+
+    // La categorie en position 1 doit etre selectionnee (classe CSS selected)
+    await waitFor(() => {
+      const card = screen.getByTestId('category-card-cat-1');
+      expect(card.className).toMatch(/selected/i);
+    });
+  });
+
+  it('touche Z selectionne la categorie en position 2 (cat-2)', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-2')).toBeInTheDocument();
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+    });
+
+    await waitFor(() => {
+      const card = screen.getByTestId('category-card-cat-2');
+      expect(card.className).toMatch(/selected/i);
+    });
+  });
+
+  it('le badge de raccourci affiche la touche AZERTY positionnelle (A pour cat-1)', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+
+    // La premiere categorie doit avoir le badge 'A' (position 1 AZERTY)
+    const card1 = screen.getByTestId('category-card-cat-1');
+    expect(card1).toHaveTextContent('A');
+
+    // La deuxieme categorie doit avoir le badge 'Z' (position 2 AZERTY)
+    const card2 = screen.getByTestId('category-card-cat-2');
+    expect(card2).toHaveTextContent('Z');
+  });
+
+  it('chiffre puis lettre pre-remplit la quantite (3 + A = quantite 3)', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true }));
+    });
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    });
+
+    // L'article en cours de saisie doit afficher Qte : 3
+    await waitFor(() => {
+      expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Qté : 3');
+    });
+  });
+
+  it('Echap remet le modificateur de quantite a zero', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '5', bubbles: true }));
+    });
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    });
+
+    // Apres Echap, la quantite doit etre 1 (par defaut) et non 5
+    await waitFor(() => {
+      expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Qté : 1');
+    });
+  });
+
+  it('Entree avec panier non vide ouvre FinalizationScreen (Story 18-8)', async () => {
+    mockPostSale.mockResolvedValue({} as caisseApi.SaleResponseItem);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+
+    // Ajouter un article via le preset
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+
+    // Presser Entree via clavier — ouvre FinalizationScreen (pas de soumission directe)
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
+    // Ajouter le paiement dans FinalizationScreen puis valider
+    fireEvent.change(screen.getByTestId('payment-amount'), { target: { value: '5' } });
+    fireEvent.click(screen.getByTestId('add-payment'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-confirm')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('finalization-confirm'));
+
+    await waitFor(() => {
+      expect(mockPostSale).toHaveBeenCalledWith(
+        'mock-token',
+        expect.objectContaining({
+          cash_session_id: 'session-1',
+          items: expect.any(Array),
+          payments: expect.any(Array),
+        }),
+      );
+    });
+  });
+
+  it('Entree avec panier vide ne declenche pas la finalisation', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('page-cash-register-sale')).toBeInTheDocument();
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+
+    // postSale ne doit pas etre appele
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockPostSale).not.toHaveBeenCalled();
+  });
+
+  it('Backspace hors champ supprime la derniere ligne du panier', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+
+    // Ajouter un article
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('cart-empty')).not.toBeInTheDocument();
+    });
+
+    // Backspace doit supprimer l'article
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-empty')).toBeInTheDocument();
+    });
+  });
+
+  it('raccourcis desactives quand focus sur input', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+
+    // Focus sur un champ de saisie
+    const noteInput = screen.getByTestId('sale-note');
+    fireEvent.focus(noteInput);
+
+    // Simuler la touche A depuis le champ input (bubbles = true)
+    noteInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+
+    // La categorie ne doit pas etre selectionnee
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const card = screen.getByTestId('category-card-cat-1');
+    expect(card.className).not.toMatch(/selected/i);
+  });
+});
+
+describe('CashRegisterSalePage \u2014 Story 18-8 flux finalisation', () => {
+  // S'assurer que vi.useFakeTimers() ne fuite pas entre les tests
+  afterEach(() => { vi.useRealTimers(); });
+  it('bouton Finaliser desactive quand panier vide', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-finaliser')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('btn-finaliser')).toBeDisabled();
+  });
+
+  it('bouton Finaliser active quand panier non vide', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-finaliser')).not.toBeDisabled();
+    });
+  });
+
+  it('click Finaliser avec panier non vide ouvre FinalizationScreen', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-finaliser')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('btn-finaliser'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
+  });
+
+  it('click Finaliser avec panier vide affiche erreur "Panier vide" sans ouvrir FinalizationScreen', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-finaliser')).toBeInTheDocument();
+    });
+    // Le bouton est disabled quand panier vide, on teste via click direct
+    // On simule Entree a la place pour tester le message d'erreur
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('sale-error')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('finalization-screen')).not.toBeInTheDocument();
+  });
+
+  it('Entree avec panier non vide ouvre FinalizationScreen', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
+  });
+
+  it('Entree avec panier vide affiche erreur "Panier vide" sans ouvrir FinalizationScreen', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('page-cash-register-sale')).toBeInTheDocument();
+    });
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('sale-error')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('finalization-screen')).not.toBeInTheDocument();
+    expect(mockPostSale).not.toHaveBeenCalled();
+  });
+
+  it('validation depuis FinalizationScreen appelle POST /v1/sales et affiche sale-success', async () => {
+    mockPostSale.mockResolvedValue({} as caisseApi.SaleResponseItem);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    fireEvent.click(screen.getByTestId('btn-finaliser'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByTestId('payment-amount'), { target: { value: '5' } });
+    fireEvent.click(screen.getByTestId('add-payment'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-confirm')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('finalization-confirm'));
+    await waitFor(() => {
+      expect(mockPostSale).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('sale-success')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('sale-success')).toHaveTextContent('Ticket enregistre');
+  });
+
+  it('apres validation reussie le panier est vide et FinalizationScreen est ferme', async () => {
+    mockPostSale.mockResolvedValue({} as caisseApi.SaleResponseItem);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    fireEvent.click(screen.getByTestId('btn-finaliser'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByTestId('payment-amount'), { target: { value: '5' } });
+    fireEvent.click(screen.getByTestId('add-payment'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-confirm')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('finalization-confirm'));
+    // Attendre le message de succes (immediat apres postSale)
+    await waitFor(() => expect(screen.getByTestId('sale-success')).toBeInTheDocument());
+    // Attendre le timer de fermeture automatique (2000ms + marge)
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await waitFor(() => {
+      expect(screen.queryByTestId('finalization-screen')).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId('cart-empty')).toBeInTheDocument();
+  }, 10000);
+
+  it('apres validation reussie les KPI locaux sont incrementes', async () => {
+    mockPostSale.mockResolvedValue({} as caisseApi.SaleResponseItem);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    // Verifier ticket count avant (0)
+    expect(screen.getByTestId('caisse-stats-bar')).toHaveTextContent('0');
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    fireEvent.click(screen.getByTestId('btn-finaliser'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByTestId('payment-amount'), { target: { value: '5' } });
+    fireEvent.click(screen.getByTestId('add-payment'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-confirm')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('finalization-confirm'));
+    await waitFor(() => {
+      expect(mockPostSale).toHaveBeenCalled();
+    });
+    // Le KPI ticket count doit etre incremente (1 ticket)
+    await waitFor(() => {
+      expect(screen.getByTestId('caisse-stats-bar')).toHaveTextContent('1');
+    });
+  });
+
+  it('rendu monnaie correct : especes 20 EUR pour total 5 EUR = rendu 15.00 EUR', async () => {
+    // Preset price = 500 cents = 5.00 EUR, paiement especes 20 EUR -> rendu = 15.00 EUR
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    // Ajouter preset (500 cents)
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    fireEvent.click(screen.getByTestId('btn-finaliser'));
+    await waitFor(() => {
+      expect(screen.getByTestId('finalization-screen')).toBeInTheDocument();
+    });
+    // Saisir 20 EUR especes (> 5 EUR total) -> rendu = 15 EUR
+    fireEvent.change(screen.getByTestId('payment-amount'), { target: { value: '20' } });
+    // Rendu monnaie doit etre affiche en temps reel (avec le montant en cours de saisie)
+    // cartTotal = 500 cents, especes pending = 2000 cents -> rendu = 1500 cents = 15 EUR
+    await waitFor(() => {
+      expect(screen.getByTestId('rendu-monnaie')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('rendu-monnaie')).toHaveTextContent('15.00');
   });
 });

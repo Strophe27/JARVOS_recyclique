@@ -125,6 +125,12 @@
   box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.25);
 }
 
+/* Distinction visuelle categories avec official_name (AC1 18-6) */
+.categoryCardOfficial {
+  background: #f0f9f0;
+  border-color: #a5d6a7;
+}
+
 .shortcutBadge {
   position: absolute;
   bottom: 4px;
@@ -202,4 +208,59 @@
 .paymentSection {
   padding: 8px 0;
   border-top: 1px solid var(--ui-color-border, #dee2e6);
+}
+
+/* Distinction ligne don (Story 18-8 AC1) */
+.ticketLineDon {
+  background: #e8f5e9;
+  border-left: 3px solid #a5d6a7;
+}
+
+/* Poids total ticket (Story 18-8 AC1) */
+.ticketWeightTotal {
+  font-size: 11px;
+  color: #868e96;
+  margin-top: 4px;
+}
+
+/* Rendu monnaie (Story 18-8 AC3) */
+.rendueMonnaie {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2e7d32;
+  padding: 8px 0;
+  text-align: center;
+}
+
+/* Ecran de finalisation : overlay */
+.finalizationOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finalizationPanel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  min-width: 420px;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 100%;
+}
+
+/* Message succes (Story 18-8 AC4) */
+.successBanner {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #2e7d32;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-weight: 600;
 }

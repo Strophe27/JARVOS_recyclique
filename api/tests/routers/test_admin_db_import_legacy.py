@@ -1,24 +1,18 @@
-# Story 8.5 / 17.3 / 17.5 / 17.11 — Tests POST /v1/admin/db/* et GET/POST /v1/admin/import/legacy/*.
-# 17.11 : tests 401/403, 400/422, renforcement assertions effet metier.
+# Story 8.5 / 17.3 / 17.5 / 17.11 / 18.2 — Tests POST /v1/admin/db/* et GET/POST /v1/admin/import/legacy/*.
+# 18.2 : refactor export/import/purge vers logique 1.4.4 (pg_dump -F c, pg_restore, super_admin seul).
 
 from collections.abc import Generator
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 
 from api.core import deps
 from api.db import get_db
 from api.main import app
-from api.models import (
-    CashSession,
-    PaymentTransaction,
-    Sale,
-    SaleItem,
-)
 from api.services.csv_categories import CSV_HEADERS
-from api.tests.conftest import FAKE_SITE_ID, FAKE_USER_ID, override_get_db, TestingSessionLocal
+from api.tests.conftest import FAKE_SITE_ID, override_get_db
 
 # CSV format categories (Story 17.5)
 _CSV_VALID_ONE_ROW = (
@@ -74,175 +68,157 @@ def role_client() -> Generator[callable, None, None]:
         deps.get_user_permission_codes_from_user = original_get_codes
 
 
-def _create_transaction_data_via_import(client: TestClient, auth_headers: dict) -> None:
-    """Cree des donnees transactionnelles via POST /v1/admin/db/import (meme DB que purge)."""
-    cat_id = str(uuid4())
-    preset_id = str(uuid4())
-    reg_id = str(uuid4())
-    cs_id = str(uuid4())
-    sale_id = str(uuid4())
-    item_id = str(uuid4())
-    pt_id = str(uuid4())
-    user_id = str(FAKE_USER_ID)
-    site_id = str(FAKE_SITE_ID)
-    now = "datetime('now')"
-    sql = f"""
-    INSERT INTO categories (id, name, is_visible_sale, is_visible_reception, display_order, display_order_entry, created_at, updated_at) VALUES ('{cat_id}', 'X', 1, 1, 0, 0, {now}, {now});
-    INSERT INTO preset_buttons (id, name, category_id, preset_price, button_type, sort_order, is_active, created_at, updated_at) VALUES ('{preset_id}', 'X', '{cat_id}', 100, 'test', 0, 1, {now}, {now});
-    INSERT INTO cash_registers (id, site_id, name, is_active, enable_virtual, enable_deferred, created_at, updated_at) VALUES ('{reg_id}', '{site_id}', 'X', 1, 0, 0, {now}, {now});
-    INSERT INTO cash_sessions (id, operator_id, register_id, site_id, initial_amount, current_amount, status, opened_at, current_step, session_type, created_at, updated_at) VALUES ('{cs_id}', '{user_id}', '{reg_id}', '{site_id}', 0, 0, 'open', {now}, 'entry', 'real', {now}, {now});
-    INSERT INTO sales (id, cash_session_id, operator_id, total_amount, created_at, updated_at) VALUES ('{sale_id}', '{cs_id}', '{user_id}', 100, {now}, {now});
-    INSERT INTO sale_items (id, sale_id, preset_id, quantity, unit_price, total_price, created_at, updated_at) VALUES ('{item_id}', '{sale_id}', '{preset_id}', 1, 100, 100, {now}, {now});
-    INSERT INTO payment_transactions (id, sale_id, payment_method, amount, created_at) VALUES ('{pt_id}', '{sale_id}', 'especes', 100, {now});
-    """
-    r = client.post("/v1/admin/db/import", headers=auth_headers, files={"file": ("data.sql", sql.encode("utf-8"), "application/sql")})
-    assert r.status_code == 200 and r.json().get("ok"), r.json()
-
 
 class TestAdminDb:
-    """POST /v1/admin/db/export, purge-transactions, import (admin ou super_admin)."""
+    """POST /v1/admin/db/export, purge-transactions, import (super_admin uniquement — Story 18.2)."""
 
-    def test_db_export_returns_200_and_sql_content(
+    @patch("api.routers.v1.admin.db.export_dump")
+    def test_db_export_returns_200_octet_stream(
         self,
+        mock_export,
         client: TestClient,
         auth_headers: dict,
     ) -> None:
-        """POST /v1/admin/db/export : 200, contenu significatif (schema), pas de stub."""
+        """POST /v1/admin/db/export : 200, application/octet-stream, Content-Disposition .dump."""
+        fake_bytes = b"\x50\x47\x44\x4d\x50fake_binary_dump"
+        mock_export.return_value = (fake_bytes, "recyclic_db_export_20260302_120000.dump")
+
         r = client.post("/v1/admin/db/export", headers=auth_headers)
         assert r.status_code == 200
-        assert "recyclique" in r.headers.get("content-disposition", "").lower() or "sql" in r.headers.get("content-type", "").lower()
-        content = r.content.decode("utf-8", errors="replace")
-        assert "stub" not in content.lower()
-        assert "CREATE TABLE" in content or "create table" in content or "RecyClique" in content
-        # 17.11 : assertion effet metier — dump contient des tables attendues (schema coherent)
-        assert "categories" in content or "sites" in content, f"Dump doit contenir tables metier: {content[:400]}"
+        assert "application/octet-stream" in r.headers.get("content-type", "")
+        assert r.content == fake_bytes
+        cd = r.headers.get("content-disposition", "")
+        assert "recyclic_db_export" in cd
+        assert ".dump" in cd
+
+    @patch("api.routers.v1.admin.db.export_dump")
+    def test_db_export_timeout_returns_504(
+        self,
+        mock_export,
+        client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """POST /v1/admin/db/export : timeout → 504."""
+        mock_export.side_effect = RuntimeError("timeout")
+        r = client.post("/v1/admin/db/export", headers=auth_headers)
+        assert r.status_code == 504
 
     def test_db_purge_transactions_returns_200(
         self,
         client: TestClient,
         auth_headers: dict,
     ) -> None:
-        """POST /v1/admin/db/purge-transactions : 200 et message, deleted_count (peut etre 0)."""
+        """POST /v1/admin/db/purge-transactions : 200, deleted_records dict, timestamp."""
         r = client.post("/v1/admin/db/purge-transactions", headers=auth_headers, json={})
         assert r.status_code == 200
         data = r.json()
         assert "message" in data
-        assert "deleted_count" in data
-        assert isinstance(data["deleted_count"], int)
+        assert "deleted_records" in data
+        assert "timestamp" in data
+        assert isinstance(data["deleted_records"], dict)
+        expected_tables = {"sale_items", "sales", "ligne_depot", "ticket_depot", "cash_sessions"}
+        assert expected_tables == set(data["deleted_records"].keys())
+        assert "payment_transactions" not in data["deleted_records"]
 
-    def test_db_purge_transactions_deletes_data(
+    def test_db_purge_transactions_idempotent(
         self,
         client: TestClient,
         auth_headers: dict,
     ) -> None:
-        """POST /v1/admin/db/purge-transactions : tables videes apres purge."""
-        _create_transaction_data_via_import(client, auth_headers)
-        r = client.post("/v1/admin/db/purge-transactions", headers=auth_headers, json={})
-        assert r.status_code == 200
-        data = r.json()
-        assert "deleted_count" in data
-        # Verifier que les tables transactionnelles sont videes (effet reel)
-        db = TestingSessionLocal()
-        try:
-            for model, name in [
-                (PaymentTransaction, "payment_transactions"),
-                (SaleItem, "sale_items"),
-                (Sale, "sales"),
-                (CashSession, "cash_sessions"),
-            ]:
-                rows = db.scalars(select(model)).all()
-                assert len(rows) == 0, f"{name} devrait etre vide apres purge"
-            # 17.11 : purge cible uniquement payment_transactions, sale_items, sales, cash_sessions
-            # (db_admin.purge_transactions). Ne touche pas categories, sites, preset_buttons, etc.
-        finally:
-            db.close()
-
-    def test_db_import_returns_200_with_file(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-    ) -> None:
-        """POST /v1/admin/db/import avec fichier SQL : 200 et ok/message."""
-        files = {"file": ("backup.sql", b"-- RecyClique import test\nSELECT 1;", "application/sql")}
-        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
-        assert r.status_code == 200
-        data = r.json()
-        assert data.get("ok") is True
-        assert "filename" in data or "message" in data
-
-    def test_db_import_executes_sql(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-    ) -> None:
-        """
-        POST /v1/admin/db/import : fichier SQL valide (CREATE TABLE + INSERT).
-        Verifie ok=true et effet via export (table presente dans le dump).
-        """
-        sql = """
-        CREATE TABLE IF NOT EXISTS _test_import_stub (id INTEGER PRIMARY KEY, name TEXT);
-        INSERT INTO _test_import_stub (id, name) VALUES (1, 'test');
-        """
-        files = {"file": ("import.sql", sql.encode("utf-8"), "application/sql")}
-        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
-        assert r.status_code == 200
-        data = r.json()
-        assert data.get("ok") is True
-        # Verification effet : export doit contenir la table creee
-        r2 = client.post("/v1/admin/db/export", headers=auth_headers)
+        """POST /v1/admin/db/purge-transactions deux fois : second appel retourne 0 pour toutes les tables."""
+        client.post("/v1/admin/db/purge-transactions", headers=auth_headers, json={})
+        r2 = client.post("/v1/admin/db/purge-transactions", headers=auth_headers, json={})
         assert r2.status_code == 200
-        export_content = r2.content.decode("utf-8", errors="replace")
-        assert "_test_import_stub" in export_content
+        data = r2.json()
+        assert "deleted_records" in data
+        assert all(v == 0 for v in data["deleted_records"].values()), (
+            f"Deuxieme purge devrait trouver 0 lignes partout: {data['deleted_records']}"
+        )
+        assert "payment_transactions" not in data["deleted_records"]
 
-    def test_db_import_invalid_sql_returns_422_with_exploitable_detail(
+    @patch("api.routers.v1.admin.db.import_dump")
+    def test_db_import_valid_dump_returns_200(
+        self,
+        mock_import,
+        client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """POST /v1/admin/db/import avec .dump valide : 200, backup_created, imported_file, timestamp."""
+        mock_import.return_value = {
+            "backup_created": "pre_restore_20260302_120000.dump",
+            "backup_path": "/backups/pre_restore_20260302_120000.dump",
+            "warnings": [],
+        }
+        dump_bytes = b"\x50\x47\x44\x4d\x50fake_binary_dump_content"
+        files = {"file": ("backup.dump", dump_bytes, "application/octet-stream")}
+        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["backup_created"] == "pre_restore_20260302_120000.dump"
+        assert data["imported_file"] == "backup.dump"
+        assert "timestamp" in data
+        assert "message" in data
+
+    def test_db_import_sql_extension_returns_400(
         self,
         client: TestClient,
         auth_headers: dict,
     ) -> None:
-        """
-        POST /v1/admin/db/import avec SQL invalide : 422 et detail exploitable (AC4/5).
-        Verifie que l'erreur de syntaxe SQL est renvoyee avec un message comprehensible.
-        """
-        invalid_sql = "SELECT FROM non_existent_table;"
-        files = {"file": ("invalid.sql", invalid_sql.encode("utf-8"), "application/sql")}
+        """POST /v1/admin/db/import avec .sql : 400 (.dump requis)."""
+        files = {"file": ("backup.sql", b"SELECT 1;", "application/sql")}
         r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
-        assert r.status_code == 422, r.json()
-        data = r.json()
-        assert "detail" in data
-        detail = data["detail"]
-        assert detail, "detail ne doit pas etre vide"
-        # Message exploitable : doit contenir une indication d'erreur (syntaxe, sql, etc.)
-        detail_lower = str(detail).lower()
-        assert any(
-            k in detail_lower for k in ("syntax", "error", "sql", "invalid", "near", "syntax error")
-        ), f"detail doit etre exploitable, recu: {detail}"
+        assert r.status_code == 400
+        detail = r.json().get("detail", "")
+        assert ".dump" in detail.lower() or "format" in detail.lower()
 
-    def test_db_import_sql_with_semicolon_newline_in_string_literal(
+    def test_db_import_invalid_extension_returns_400(
         self,
         client: TestClient,
         auth_headers: dict,
     ) -> None:
-        """
-        POST /v1/admin/db/import : SQL avec ;\\n dans une chaine litterale.
-        Verifie que _split_sql_statements ne coupe pas a l'interieur des guillemets.
-        """
-        sql = """
-        CREATE TABLE IF NOT EXISTS _test_semicolon_in_str (id INTEGER PRIMARY KEY, val TEXT);
-        INSERT INTO _test_semicolon_in_str (id, val) VALUES (1, 'hello;
-        world');
-        """
-        files = {"file": ("semicolon.sql", sql.encode("utf-8"), "application/sql")}
+        """POST /v1/admin/db/import extension .txt : 400 (.dump attendu)."""
+        files = {"file": ("data.txt", b"SELECT 1;", "text/plain")}
         r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
-        assert r.status_code == 200, r.json()
-        data = r.json()
-        assert data.get("ok") is True
-        # Verification : export doit contenir la valeur inseree
-        r2 = client.post("/v1/admin/db/export", headers=auth_headers)
-        assert r2.status_code == 200
-        export_content = r2.content.decode("utf-8", errors="replace")
-        assert "_test_semicolon_in_str" in export_content
+        assert r.status_code == 400
+        detail = r.json().get("detail", "")
+        assert ".dump" in detail.lower() or "format" in detail.lower()
 
-    # --- 17.11 : tests 400/422 db import ---
+    def test_db_import_empty_file_returns_400(
+        self,
+        client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """POST /v1/admin/db/import fichier .dump vide : 400."""
+        files = {"file": ("empty.dump", b"", "application/octet-stream")}
+        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
+        assert r.status_code == 400
+        assert "vide" in r.json().get("detail", "").lower() or "empty" in str(r.json()).lower()
+
+    @patch("api.routers.v1.admin.db._MAX_IMPORT_BYTES", 10)
+    def test_db_import_oversized_returns_413(
+        self,
+        client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """POST /v1/admin/db/import fichier > MAX : 413."""
+        files = {"file": ("big.dump", b"X" * 11, "application/octet-stream")}
+        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
+        assert r.status_code == 413
+
+    @patch("api.routers.v1.admin.db.import_dump")
+    def test_db_import_corrupted_dump_returns_400(
+        self,
+        mock_import,
+        client: TestClient,
+        auth_headers: dict,
+    ) -> None:
+        """POST /v1/admin/db/import dump corrompu (pg_restore --list echoue) : 400."""
+        mock_import.side_effect = RuntimeError("validation_failed:Fichier corrompu ou format invalide")
+        files = {"file": ("corrupt.dump", b"this is not a real dump", "application/octet-stream")}
+        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
+        assert r.status_code == 400
+        assert "invalide" in r.json().get("detail", "").lower() or "corrompu" in r.json().get("detail", "").lower()
+
     def test_db_import_no_file_returns_422(
         self,
         client: TestClient,
@@ -251,28 +227,6 @@ class TestAdminDb:
         """POST /v1/admin/db/import sans fichier : FastAPI 422 (param manquant)."""
         r = client.post("/v1/admin/db/import", headers=auth_headers)
         assert r.status_code == 422
-
-    def test_db_import_empty_file_returns_400(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-    ) -> None:
-        """POST /v1/admin/db/import fichier vide : 400."""
-        files = {"file": ("empty.sql", b"", "application/sql")}
-        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
-        assert r.status_code == 400
-        assert "vide" in r.json().get("detail", "").lower() or "empty" in str(r.json()).lower()
-
-    def test_db_import_invalid_extension_returns_400(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-    ) -> None:
-        """POST /v1/admin/db/import extension .txt : 400 (.sql ou .dump attendu)."""
-        files = {"file": ("data.txt", b"SELECT 1;", "text/plain")}
-        r = client.post("/v1/admin/db/import", headers=auth_headers, files=files)
-        assert r.status_code == 400
-        assert ".sql" in r.json().get("detail", "").lower() or "format" in r.json().get("detail", "").lower()
 
 
 class TestAdminDbImportLegacy401:
@@ -303,7 +257,7 @@ class TestAdminDbImportLegacy401:
 
     def test_db_import_unauthenticated_401(self, auth_client: TestClient) -> None:
         """401 si non authentifie sur POST db/import."""
-        files = {"file": ("x.sql", b"SELECT 1;", "application/sql")}
+        files = {"file": ("x.dump", b"fake", "application/octet-stream")}
         r = auth_client.post("/v1/admin/db/import", files=files)
         assert r.status_code == 401
 
@@ -319,7 +273,7 @@ class TestAdminDbImportLegacy401:
 
 
 class TestAdminDbImportLegacy403:
-    """17.11 : tests 403 (role operator/reception sans admin)."""
+    """17.11 / 18.2 : tests 403 (role operator/admin sans super_admin)."""
 
     DB_403_ENDPOINTS = [
         ("POST", "/v1/admin/db/export"),
@@ -348,7 +302,25 @@ class TestAdminDbImportLegacy403:
     def test_db_import_operator_forbidden_403(self, role_client) -> None:
         """403 si role operator sur POST db/import."""
         with role_client(permission_codes={"reception.access"}) as client:
-            files = {"file": ("x.sql", b"SELECT 1;", "application/sql")}
+            files = {"file": ("x.dump", b"fake", "application/octet-stream")}
+            r = client.post("/v1/admin/db/import", files=files)
+        assert r.status_code == 403
+
+    @pytest.mark.parametrize("method,url", DB_403_ENDPOINTS[:2])
+    def test_db_admin_role_forbidden_403(self, role_client, method: str, url: str) -> None:
+        """18.2 : 403 si role admin (sans super_admin) sur routes db."""
+        with role_client(permission_codes={"admin"}) as client:
+            if method == "POST":
+                r = client.post(url, json={})
+            else:
+                r = client.get(url)
+        assert r.status_code == 403
+        assert r.json().get("detail") == "Insufficient permissions"
+
+    def test_db_import_admin_role_forbidden_403(self, role_client) -> None:
+        """18.2 : 403 si role admin (sans super_admin) sur POST db/import."""
+        with role_client(permission_codes={"admin"}) as client:
+            files = {"file": ("x.dump", b"fake", "application/octet-stream")}
             r = client.post("/v1/admin/db/import", files=files)
         assert r.status_code == 403
 
@@ -472,7 +444,6 @@ class TestAdminImportLegacy:
         r = client.post("/v1/admin/import/legacy/validate", headers=auth_headers, files=files)
         assert r.status_code == 200
         data = r.json()
-        # parent_id invalide -> parse error, valid peut etre False ou errors non vides
         assert not data.get("valid", True) or len(data.get("errors", [])) > 0
 
     def test_legacy_execute_valid_csv(
@@ -490,7 +461,6 @@ class TestAdminImportLegacy:
         assert "message" in data
         assert "stub" not in str(data).lower()
 
-        # Verification effet reel : GET categories doit retourner la categorie importee
         r2 = client.get("/v1/categories", headers=auth_headers)
         assert r2.status_code == 200
         categories = r2.json()
