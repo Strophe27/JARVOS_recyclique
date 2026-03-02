@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from './AuthContext';
 
 vi.mock('../api/auth', () => ({
   getSession: vi.fn(),
-  getSsoStartUrl: vi.fn(() => '/v1/auth/sso/start?next=%2F'),
   postLogin: vi.fn(),
   postLogout: vi.fn(),
 }));

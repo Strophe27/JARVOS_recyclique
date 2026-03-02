@@ -5,7 +5,7 @@
  */
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { UserInToken } from '../api/auth';
-import { getSession, getSsoStartUrl, postLogin, postLogout } from '../api/auth';
+import { getSession, postLogin, postLogout } from '../api/auth';
 
 export interface AuthState {
   user: UserInToken | null;
@@ -66,22 +66,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const login = useCallback(async (username?: string, password?: string) => {
-    const mode = (import.meta.env?.VITE_AUTH_MODE as string | undefined) ?? 'legacy';
-    if (mode === 'legacy') {
-      if (!username || !password) {
-        throw new Error('Identifiant/mot de passe requis');
-      }
-      const data = await postLogin(username, password);
-      setState({
-        user: data.user,
-        accessToken: data.access_token,
-        permissions: data.permissions ?? [],
-        isHydrated: true,
-      });
-      return;
+    if (!username || !password) {
+      throw new Error('Identifiant/mot de passe requis');
     }
-    const currentPath = window.location.pathname || '/';
-    window.location.assign(getSsoStartUrl(currentPath));
+    const data = await postLogin(username, password);
+    setState({
+      user: data.user,
+      accessToken: data.access_token,
+      permissions: data.permissions ?? [],
+      isHydrated: true,
+    });
   }, []);
 
   const logout = useCallback(async () => {

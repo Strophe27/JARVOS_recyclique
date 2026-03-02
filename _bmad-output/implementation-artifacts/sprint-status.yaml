@@ -1,5 +1,5 @@
 # generated: 2026-02-28
-# updated: 2026-03-01 (story 17.3 creee, passage ready-for-dev)
+# updated: 2026-03-02 (epic-17 + hotfix terrain clôturés — 18/18 E16 fermés — retro produite — aucun Epic 18 requis)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -132,14 +132,14 @@ development_status:
   13-3-2-qa-visuelle-continue-enforcement-et-non-regression: done
   epic-13-retrospective: optional
 
-  epic-14: in-progress
+  epic-14: done
   14-0-gate-de-faisabilite-oidc-cible-paheko-image-version-environnement: backlog
   14-1-provisionner-idp-commun-dev-prod-et-clients-oidc: done
   14-2-configurer-paheko-oidc-et-strategie-de-mapping-utilisateur: done
   14-3-finaliser-integration-recyclique-oidc-runtime-env-secrets-checks: done
   14-4-e2e-auth-cross-plateforme-et-non-regression-fail-closed: done
   14-5-runbooks-d-exploitation-onboarding-incident-auth-rollback: done
-  14-6-demantelement-oidc-et-retour-auth-simple-recyclique-paheko: in-progress
+  14-6-demantelement-oidc-et-retour-auth-simple-recyclique-paheko: done
   epic-14-retrospective: optional
 
   epic-15: done
@@ -168,3 +168,4 @@ development_status:
   17-HF-2-cookie-session-login-legacy: done
   17-HF-3-redirection-post-login-dashboard: done
   17-HF-4-bootstrap-super-admin: done
+  epic-17-retrospective: done

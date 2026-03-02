@@ -48,12 +48,6 @@ export async function postLogin(username: string, password: string): Promise<Log
   return res.json() as Promise<LoginResponse>;
 }
 
-export function getSsoStartUrl(nextPath = '/'): string {
-  const base = getBase();
-  const qs = new URLSearchParams({ next: nextPath });
-  return `${base}/v1/auth/sso/start?${qs.toString()}`;
-}
-
 export async function getSession(): Promise<SessionResponse> {
   const base = getBase();
   const res = await fetch(`${base}/v1/auth/session`, {

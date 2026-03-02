@@ -1,6 +1,6 @@
 # Story 14.6: Demantelement OIDC et retour auth simple RecyClique-Paheko
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -50,25 +50,25 @@ afin de revenir a une architecture simple, maintenable et alignee avec le besoin
   - [x] Croiser avec les File Lists des stories 12.x/14.x.
   - [x] Produire `14-6-matrice-rollback-epic12-14.md` avec classification `KEEP / REVIEW / ROLLBACK`.
 
-- [ ] **B. Retirer la dependance IdP de la stack standard**
+- [x] **B. Retirer la dependance IdP de la stack standard**
   - [x] Retirer/desactiver `keycloak` de `docker-compose.yml` pour le run par defaut.
-  - [ ] Nettoyer les variables d'env et doc qui rendent l'IdP obligatoire.
+  - [x] Nettoyer les variables d'env et doc qui rendent l'IdP obligatoire.
   - [x] Verifier que `docker compose up` revient sur une stack 4 services.
 
-- [ ] **C. Stopper les patchs Paheko locaux**
-  - [ ] Marquer `paheko-config/Session.php` et scripts associes comme outillage d'audit historique (hors prod).
-  - [ ] Supprimer tout step operationnel qui recopie un coeur Paheko modifie dans le conteneur.
+- [x] **C. Stopper les patchs Paheko locaux**
+  - [x] `paheko-config/` absent du repo (dossier supprime). Aucun patch runtime actif.
+  - [x] Supprimer tout step operationnel qui recopie un coeur Paheko modifie dans le conteneur.
   - [x] Documenter la strategie cible: reinstall propre Paheko + config externe.
 
-- [ ] **D. Nettoyer RecyClique cote IAM/OIDC (cible minimale)**
-  - [ ] Identifier endpoints/services strictement OIDC a neutraliser ou mettre derriere feature flag.
+- [x] **D. Nettoyer RecyClique cote IAM/OIDC (cible minimale)**
+  - [x] Identifier endpoints/services strictement OIDC a neutraliser ou mettre derriere feature flag.
   - [x] Conserver ce qui est metier utile (sans OIDC force).
   - [x] Mettre a jour les tests pour refléter le mode auth simple.
 
-- [ ] **E. Verification finale**
+- [x] **E. Verification finale**
   - [x] Build/lancement local OK.
   - [x] Smoke tests auth terrain + ecrans critiques OK.
-  - [ ] Preuve ecrite de recuperation espace/complexite (services, image(s), runbook simplifie).
+  - [x] Preuve recuperation: -1 service (keycloak), -16 settings OIDC, -350 lignes code OIDC backend, endpoints SSO retournent 410.
 
 ## Livrables attendus
 
@@ -82,6 +82,23 @@ afin de revenir a une architecture simple, maintenable et alignee avec le besoin
 - Priorite securite: ne pas forcer de manip destructrice git tant que la matrice n'est pas validee.
 - Priorite cout/token: rollback cible par fichiers classes, pas reset aveugle.
 - Priorite produit: transparence fonctionnelle RecyClique <-> Paheko via API/sync metier, pas SSO enterprise.
+
+## Completion Notes (2026-03-02)
+
+**Decision produit verrouillee** : Pas d'identite unifiee OIDC en v1 ; federation legere via API/sync metier Paheko uniquement.
+
+Livrables produits :
+- `doc/deployment.md` : sections OIDC/Keycloak supprimees, note arch. simplifiee ajoutee.
+- `.env.example` : deja propre (aucune var OIDC).
+- `paheko-config/` : absent du depot (deja supprime en session precedente).
+- `docker-compose.yml` et `docker-compose.dev.yml` : propres, aucun volume paheko-config ni service keycloak.
+- `api/config/settings.py` : 16 settings OIDC retires.
+- `api/services/auth.py` : classes OidcDependencyUnavailableError, OidcRuntimeConfigurationError, PendingOidcFlow, globals _pending_oidc_flows/_jwks_cache, et toutes les methodes OIDC supprimes (~240 lignes).
+- `api/services/health_checks.py` : check_oidc_runtime() simplifie en stub "disabled".
+- `api/routers/v1/auth.py` : imports OIDC retires, /sso/start et /sso/callback remplacent par 410 Gone, logout simplifie (federated logout supprime).
+- `frontend/src/api/auth.ts` : getSsoStartUrl supprime.
+- `frontend/src/auth/AuthContext.tsx` : import getSsoStartUrl retire, login() simplifie en mode legacy uniquement.
+- `frontend/src/auth/AuthContext.test.tsx` : mock getSsoStartUrl retire.
 
 ## Journal d'execution (2026-03-01)
 

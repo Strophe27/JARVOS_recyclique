@@ -31,23 +31,6 @@ class Settings(BaseSettings):
     first_admin_first_name: str = "Admin"
     first_admin_last_name: str = "System"
 
-    # OIDC / BFF session (Story 12.2)
-    oidc_enabled: bool = False
-    oidc_issuer: str | None = None
-    oidc_client_id: str | None = None
-    oidc_client_secret: SecretStr | None = None
-    oidc_redirect_uri: str | None = None
-    oidc_audience: str | None = None
-    oidc_scope: str = "openid profile email"
-    oidc_authorization_endpoint: str | None = None
-    oidc_token_endpoint: str | None = None
-    oidc_jwks_uri: str | None = None
-    oidc_end_session_endpoint: str | None = None
-    oidc_allowed_algs_csv: str = "RS256"
-    oidc_allowed_tenants_csv: str | None = None
-    oidc_http_timeout_seconds: float = 10.0
-    oidc_fail_closed_strict: bool = True
-
     # Cookie de session applicative BFF
     auth_session_cookie_name: str = "recyclique_session"
     auth_session_cookie_secure: bool = False
