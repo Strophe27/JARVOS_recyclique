@@ -164,3 +164,7 @@ development_status:
   17-9-rapports-admin-complets-by-session-export-bulk: done
   17-10-discoverabilite-super-admin-phase-2-dans-la-navigation: done
   17-11-renforcement-tests-admin-technique-hors-happy-path-stub: done
+  17-HF-1-authguard-routes-protegees: done
+  17-HF-2-cookie-session-login-legacy: done
+  17-HF-3-redirection-post-login-dashboard: done
+  17-HF-4-bootstrap-super-admin: done

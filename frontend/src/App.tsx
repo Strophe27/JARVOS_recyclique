@@ -11,6 +11,7 @@ import { CashRegisterSessionClosePage } from './caisse/CashRegisterSessionCloseP
 import { CashRegisterSalePage } from './caisse/CashRegisterSalePage';
 import { ReceptionAccueilPage } from './reception/ReceptionAccueilPage';
 import { ReceptionTicketDetailPage } from './reception/ReceptionTicketDetailPage';
+import { AuthGuard } from './auth/AuthGuard';
 import { AdminGuard } from './admin/AdminGuard';
 import { AdminUsersListPage } from './admin/AdminUsersListPage';
 import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
@@ -58,14 +59,14 @@ function AppRoutes() {
       <Route path="/inscription" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/caisse" element={<CaisseDashboardPage />} />
-      <Route path="/cash-register/virtual" element={<CaisseDashboardPage />} />
-      <Route path="/cash-register/deferred" element={<CaisseDashboardPage />} />
-      <Route path="/cash-register/session/open" element={<CashRegisterSessionOpenPage />} />
-      <Route path="/cash-register/sale" element={<CashRegisterSalePage />} />
-      <Route path="/cash-register/session/close" element={<CashRegisterSessionClosePage />} />
-      <Route path={CAISSE_PIN_PATH} element={<CashRegisterPinPage />} />
+      <Route path="/dashboard" element={<AuthGuard><DashboardPage /></AuthGuard>} />
+      <Route path="/caisse" element={<AuthGuard><CaisseDashboardPage /></AuthGuard>} />
+      <Route path="/cash-register/virtual" element={<AuthGuard><CaisseDashboardPage /></AuthGuard>} />
+      <Route path="/cash-register/deferred" element={<AuthGuard><CaisseDashboardPage /></AuthGuard>} />
+      <Route path="/cash-register/session/open" element={<AuthGuard><CashRegisterSessionOpenPage /></AuthGuard>} />
+      <Route path="/cash-register/sale" element={<AuthGuard><CashRegisterSalePage /></AuthGuard>} />
+      <Route path="/cash-register/session/close" element={<AuthGuard><CashRegisterSessionClosePage /></AuthGuard>} />
+      <Route path={CAISSE_PIN_PATH} element={<AuthGuard><CashRegisterPinPage /></AuthGuard>} />
       <Route path="/admin" element={<AdminGuard><AdminDashboardPage /></AdminGuard>} />
       <Route
         path="/admin/sites"
@@ -147,9 +148,9 @@ function AppRoutes() {
           </AdminGuard>
         }
       />
-      <Route path="/reception" element={<ReceptionAccueilPage />} />
-      <Route path="/reception/tickets/:ticketId" element={<ReceptionTicketDetailPage />} />
-      <Route path="/profil" element={<ProfilPage />} />
+      <Route path="/reception" element={<AuthGuard><ReceptionAccueilPage /></AuthGuard>} />
+      <Route path="/reception/tickets/:ticketId" element={<AuthGuard><ReceptionTicketDetailPage /></AuthGuard>} />
+      <Route path="/profil" element={<AuthGuard><ProfilPage /></AuthGuard>} />
       <Route
         path="/admin/categories"
         element={

@@ -5,7 +5,7 @@
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from jose import JWTError
 from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import Session
@@ -114,13 +114,13 @@ def _make_login_response(
     )
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=None)
 def login(
     body: LoginRequest,
     request: Request,
     db: Session = Depends(get_db),
-) -> LoginResponse:
-    """POST /v1/auth/login — identifiants → JWT access + refresh."""
+):
+    """POST /v1/auth/login — identifiants → JWT access + refresh + cookie BFF."""
     auth = AuthService(db)
     request_id = _request_id_from_request(request)
     user = auth.get_user_by_username(body.username)
@@ -166,13 +166,26 @@ def login(
     access_token = auth.create_access_token(user.id)
     refresh_token = auth.create_refresh_token()
     auth.create_session(user.id, refresh_token)
+    _, session_token = auth.create_bff_session(user.id)
     auth.log_security_event(
         event="LOGIN_SUCCESS",
         request_id=request_id,
         success=True,
         details={"user_id": str(user.id)},
     )
-    return _make_login_response(auth, user, access_token, refresh_token, db)
+    login_response = _make_login_response(auth, user, access_token, refresh_token, db)
+    response = JSONResponse(content=login_response.model_dump(mode="json"))
+    response.set_cookie(
+        key=auth.settings.auth_session_cookie_name,
+        value=session_token,
+        httponly=True,
+        secure=auth.settings.auth_session_cookie_secure,
+        samesite=auth.settings.auth_session_cookie_samesite,
+        max_age=auth.settings.auth_session_cookie_max_age_seconds,
+        expires=auth.settings.auth_session_cookie_max_age_seconds,
+        path="/",
+    )
+    return response
 
 
 @router.get("/sso/start")

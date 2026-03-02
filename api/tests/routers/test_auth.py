@@ -112,6 +112,30 @@ def test_login_success(client: TestClient, active_user):
     assert data["user"]["status"] == "active"
 
 
+def test_login_success_sets_bff_cookie(client: TestClient, active_user):
+    """POST /v1/auth/login reussi pose un cookie recyclique_session httponly (17-HF-2, AT-004)."""
+    resp = client.post(
+        "/v1/auth/login",
+        json={"username": "testoperator", "password": "secret123"},
+    )
+    assert resp.status_code == 200
+    set_cookie = resp.headers.get("set-cookie", "").lower()
+    assert "recyclique_session=" in set_cookie
+    assert "httponly" in set_cookie
+
+
+def test_login_then_get_session_authenticated(client: TestClient, active_user):
+    """POST /v1/auth/login puis GET /v1/auth/session (meme client) → authenticated=true via cookie (17-HF-2)."""
+    login_resp = client.post(
+        "/v1/auth/login",
+        json={"username": "testoperator", "password": "secret123"},
+    )
+    assert login_resp.status_code == 200
+    session_resp = client.get("/v1/auth/session")
+    assert session_resp.status_code == 200
+    assert session_resp.json()["authenticated"] is True
+
+
 def test_login_invalid_password(client: TestClient, active_user):
     """POST /v1/auth/login avec mauvais mot de passe retourne 401."""
     resp = client.post(

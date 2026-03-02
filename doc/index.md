@@ -18,6 +18,7 @@ Tout ce qui sert a la **communication publique** : presentations (partenaires, f
 | [admin-compta-paheko-v1.md](admin-compta-paheko-v1.md) | Accès admin compta via Paheko (v1) : URL (règle de construction), rôle requis, contexte v1. Story 8.6 — FR12. |
 | [declarative-aggregates-v1.md](declarative-aggregates-v1.md) | Agrégats déclaratifs v1 : périmètre (champs, périodes T1–T4, flux caisse/réception), traçabilité (sources, règles de calcul), API read-only. Story 9.1 — FR22. |
 | [fonds-documentaire-recyclique.md](fonds-documentaire-recyclique.md) | Fonds documentaire RecyClique (post-MVP) : périmètre vs Paheko, stockage (volume dédié / K-Drive), API cible dépôt/consultation, matrice qui dépose quoi où. Story 10.2 — FR27. |
+| [operations/bootstrap-super-admin.md](operations/bootstrap-super-admin.md) | Bootstrap super_admin : commande Docker, cas d'usage (création, promotion, idempotence), changement de mot de passe. Story 17-HF-4 — AT-005. |
 | *(a deposer si besoin)* | Versions **epurees** pretes a envoyer (presentations, modes d'emploi). Matiere premiere → **references/vision-projet/** (ex. `matiere_presentation-plateforme-recyclic.md`). |
 
 ---

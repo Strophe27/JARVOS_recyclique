@@ -110,7 +110,8 @@ export function AdminUserCreatePage() {
             onChange={(v) => v && setRole(v)}
             data={[
               { value: 'operator', label: 'Opérateur' },
-              { value: 'admin', label: 'Admin' },
+                { value: 'admin', label: 'Admin' },
+                { value: 'super_admin', label: 'Super Admin' },
             ]}
           />
           <Select

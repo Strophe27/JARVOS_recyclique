@@ -232,6 +232,7 @@ export function AdminUserDetailPage() {
               data={[
                 { value: 'operator', label: 'Opérateur' },
                 { value: 'admin', label: 'Admin' },
+                { value: 'super_admin', label: 'Super Admin' },
               ]}
               onChange={(v) => v && handleRoleChange(v)}
               size="sm"

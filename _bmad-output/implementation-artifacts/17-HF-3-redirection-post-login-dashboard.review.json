@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "AC1 et AC2 implémentés. LoginPage.tsx:19 redirectTo = from || '/dashboard'. Tests Vitest couvrent redirection défaut (/dashboard) et préservation du from (/admin/users). File List aligné avec git. 3/3 tests passent. Amélioration mineure: en-tête commenté mentionne 17-HF-3."
+}

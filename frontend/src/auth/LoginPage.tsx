@@ -1,5 +1,5 @@
 /**
- * Page Login — Story 11.1.
+ * Page Login — Story 11.1, 17-HF-3.
  * Route /login : formulaire connexion, POST /v1/auth/login, redirection après succès.
  */
 import { useEffect, useState } from 'react';
@@ -16,7 +16,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname;
-  const redirectTo = from || '/caisse';
+  const redirectTo = from || '/dashboard';
 
   useEffect(() => {
     if (user) {

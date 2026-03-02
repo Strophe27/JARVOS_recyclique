@@ -150,6 +150,7 @@ export function AdminUsersListPage() {
               data={[
                 { value: 'operator', label: 'Opérateur' },
                 { value: 'admin', label: 'Admin' },
+                { value: 'super_admin', label: 'Super Admin' },
               ]}
               value={roleFilter}
               onChange={setRoleFilter}

@@ -65,7 +65,7 @@ def _bootstrap_first_admin_from_env() -> None:
             password_hash=auth.hash_password(password),
             first_name=settings.first_admin_first_name,
             last_name=settings.first_admin_last_name,
-            role="admin",
+            role="super_admin",
             status="active",
         )
         db.add(admin)
