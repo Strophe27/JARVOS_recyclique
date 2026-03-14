@@ -22,6 +22,9 @@ Refonte complete de Recyclique 1.4.4. Nouveau backend. Solo dev : Strophe. BMAD 
 - **`idees-kanban/`** — Kanban d'idees (un fichier par idee, stades a-conceptualiser, a-rechercher, a-creuser, a-faire, archive). Vue globale : **idees-kanban/index.md**. Gestion : skill **idees-kanban** (`.cursor/skills/idees-kanban/`).
   _(Charger si : Strophe donne une idee a noter, ajout de note / transition / archivage, ou session d'ideation / priorisation.)_
 
+- **`besoins-terrains.md`** — Liste des besoins remontes du terrain (v1.4.4, Discord / ressourcerie). Dynamique, pour priorisation et brainstorm brownfield.
+  _(Charger si : priorisation, brainstorm brownfield, ou ajout de remontees terrain.)_
+
 ---
 
 ## Conventions et regles
