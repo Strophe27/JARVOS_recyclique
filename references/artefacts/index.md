@@ -100,3 +100,7 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | `2026-02-27_01_sso-recyclique-paheko-spec.md` | **Spec SSO RecyClique–Paheko (phase ulterieure)** : objectif SSO (cas d'usage, benefices, perimetre), options techniques (IdP OIDC, auth separee, LDAP, JWT/proxy), contraintes Paheko (API HTTP Basic, OIDC consommateur uniquement), recommandations v1 et phase ulterieure. Livrable story 3.6 — pas d'implementation en v1. |
 
+| `2026-03-16_rapport-llm-tiers-bmad.md` | **Rapport BMAD — Puissance LLM par agent et workflow** : 4 tiers LLM (Blazing Fast → Frontier), cartographie agents BMAD + agents Cursor, workflows par phase, distribution chiffree, config `model` appliquee (depot/git = fast). Source pour Notebook LM (visuels, syntheses). |
+
+| `2026-03-16_01_guide-strategique-bmad-tiers-llm.md` | **Guide strategique BMAD / Plan Ultra** : texte source complet (4 tiers, 39 workflows, agents BMM + Cursor, frontmatter, analyse economique Max Mode). Reference humaine pour revision ou enrichissement de `_bmad-output/implementation-artifacts/bmad-llm-tiers.json`. _(Charger si : session sur agents/rules/choix model/tiers LLM et besoin du recit complet ou mise a jour du JSON.)_ |
+

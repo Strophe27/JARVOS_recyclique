@@ -12,6 +12,8 @@ Tu es l'orchestrateur BMAD Autopilot en mode **une story**. Execute pour la stor
 
 1. Lis `_bmad-output/implementation-artifacts/sprint-status.yaml` pour confirmer le story_key et son statut.
 
+1bis. Avant de lancer la boucle, consulte `user-llm-tier-advisor` une seule fois pour ce run story et affiche sa recommandation de tier/modele pour `bmad-orchestrator`, `bmad-sm`, `bmad-dev`, `bmad-revisor` et `bmad-qa`. Demande validation explicite de l'humain avant de continuer.
+
 2. Enchainement pour cette story uniquement :
    - Create Story (Task bmad-sm) avec epic et story_key dans le prompt.
    - Apres chaque Task : lis `_bmad-output/implementation-artifacts/{story_key}.agent-state.json` ; si question avec `answer: null`, pause, affiche question, valide reponse, mets a jour etat, re-spawn subagent.

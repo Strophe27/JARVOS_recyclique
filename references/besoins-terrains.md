@@ -22,7 +22,7 @@ Liste dynamique des besoins remontés par les utilisatrices terrain (ressourceri
 
 ## 2. Caisse — gestion des sessions
 
-- [ ] **Modification date / contenu / détails d'une vente** — Bouton visible uniquement pour les utilisateurs ayant le rôle super-admin, permettant de corriger la date de saisie (et si besoin le contenu, les détails) d'un ticket/vente après coup. Cas type : erreur de date (ex. 8.11 au lieu du 8.10).
+- [ ] **Modification date / contenu / détails d'une vente** — Bouton visible uniquement pour les utilisateurs ayant le rôle super-admin, permettant de corriger la date de saisie (et si besoin le contenu, les détails) d'un ticket/vente après coup. Cas type : erreur de date (ex. 8.11 au lieu du 8.10), ou erreur de saisie (exemple un don rentré à la fois dans somme donnée, et prix de vente, donc pouvoir changer aussi le contenu de l'écran de finalisation de vente).
 
   **Licéité (recherche) :** La norme NF525 (inaltérabilité des données de caisse) ne s'applique qu'aux assujettis TVA. Les associations non assujetties (cas standard des ressourceries) sont hors champ. Modifier dates, champs saisis par erreur, ou supprimer/fusionner des doublons est donc possible.
 

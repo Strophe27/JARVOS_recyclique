@@ -9,3 +9,4 @@ export type { AppShellProps } from './AppShell';
 export { AppShellNav } from './AppShellNav';
 export type { ShellNavItem } from './AppShellNav';
 export { PageContainer, PageSection } from './PageLayout';
+export { ErrorBoundary } from './ErrorBoundary';

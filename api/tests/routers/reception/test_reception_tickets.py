@@ -87,6 +87,38 @@ def test_get_ticket_detail_authenticated(client):
     assert r.json()["status"] == "opened"
 
 
+def test_list_tickets_contains_benevole_user_name(client):
+    """GET /v1/reception/tickets — la reponse contient benevole_user_name resolu (Story 19.4)."""
+    client.post("/v1/reception/postes/open", json={})
+    client.post("/v1/reception/tickets", json={})
+
+    r = client.get("/v1/reception/tickets")
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data["items"]) >= 1
+    item = data["items"][0]
+    assert "benevole_user_name" in item
+    assert item["benevole_user_name"] is not None
+    assert isinstance(item["benevole_user_name"], str)
+    assert len(item["benevole_user_name"]) > 0
+
+
+def test_get_ticket_contains_benevole_user_name(client):
+    """GET /v1/reception/tickets/{id} — la reponse contient benevole_user_name resolu (Story 19.4)."""
+    client.post("/v1/reception/postes/open", json={})
+    create_r = client.post("/v1/reception/tickets", json={})
+    assert create_r.status_code == 201
+    ticket_id = create_r.json()["id"]
+
+    r = client.get(f"/v1/reception/tickets/{ticket_id}")
+    assert r.status_code == 200
+    data = r.json()
+    assert "benevole_user_name" in data
+    assert data["benevole_user_name"] is not None
+    assert isinstance(data["benevole_user_name"], str)
+    assert len(data["benevole_user_name"]) > 0
+
+
 def test_close_ticket_authenticated(client):
     """POST /v1/reception/tickets/{id}/close avec auth — 200 et status closed."""
     client.post("/v1/reception/postes/open", json={})

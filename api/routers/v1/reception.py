@@ -33,6 +33,14 @@ from api.schemas.ticket_depot import (
 
 router = APIRouter(prefix="/reception", tags=["reception"])
 
+
+def _resolve_user_name(ticket: TicketDepot) -> str | None:
+    u = ticket.benevole_user
+    if u is None:
+        return None
+    name = f"{u.first_name or ''} {u.last_name or ''}".strip()
+    return name or u.username
+
 _ReceptionAccess = Depends(require_permissions("reception.access"))
 
 # Store pour tokens de téléchargement (export CSV ticket). Token -> (ticket_id, expires_at).
@@ -254,9 +262,13 @@ def list_tickets(
         q_base.order_by(TicketDepot.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
+        .options(joinedload(TicketDepot.benevole_user))
     )
-    rows = db.execute(q_items).scalars().all()
+    rows = db.execute(q_items).unique().scalars().all()
     items = [r[0] if isinstance(r, tuple) else r for r in rows]
+
+    for t in items:
+        t.benevole_user_name = _resolve_user_name(t)
 
     return TicketDepotListResponse(
         items=[TicketDepotResponse.model_validate(t) for t in items],
@@ -277,7 +289,7 @@ def get_ticket(
         db.execute(
             select(TicketDepot)
             .where(TicketDepot.id == ticket_id)
-            .options(joinedload(TicketDepot.lignes))
+            .options(joinedload(TicketDepot.lignes), joinedload(TicketDepot.benevole_user))
         )
         .unique()
         .scalars()
@@ -288,6 +300,7 @@ def get_ticket(
     poste = db.get(PosteReception, row.poste_id) if row.poste_id else None
     if poste and poste.opened_by_user_id != current_user.id and row.benevole_user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    row.benevole_user_name = _resolve_user_name(row)
     return TicketDepotResponse.model_validate(row)
 
 

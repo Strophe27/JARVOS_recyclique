@@ -24,6 +24,8 @@ export interface CategoryResponse {
   is_visible_reception: boolean;
   display_order: number;
   display_order_entry: number;
+  price: number | null;
+  max_price: number | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -47,6 +49,8 @@ export interface CategoryImportAnalyzeRow {
   is_visible_reception: boolean;
   display_order: number;
   display_order_entry: number;
+  price: number | null;
+  max_price: number | null;
   valid: boolean;
   error: string | null;
 }
@@ -66,6 +70,8 @@ export interface CategoryCreateBody {
   is_visible_reception?: boolean;
   display_order?: number;
   display_order_entry?: number;
+  price?: number | null;
+  max_price?: number | null;
 }
 
 export interface CategoryUpdateBody {
@@ -76,6 +82,8 @@ export interface CategoryUpdateBody {
   is_visible_reception?: boolean;
   display_order?: number;
   display_order_entry?: number;
+  price?: number | null;
+  max_price?: number | null;
 }
 
 export async function getCategories(

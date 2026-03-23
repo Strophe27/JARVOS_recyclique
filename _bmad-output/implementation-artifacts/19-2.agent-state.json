@@ -1,0 +1,12 @@
+{
+  "storyKey": "19-2",
+  "phase": "dev",
+  "lastCompletedStep": "implementation",
+  "blockedAt": null,
+  "blockReason": null,
+  "questions": [],
+  "artifactsProduced": [
+    "frontend/src/admin/AdminCategoriesPage.tsx",
+    "frontend/src/admin/AdminCategoriesPage.test.tsx"
+  ]
+}

@@ -23,18 +23,39 @@ function makePreset(overrides: Partial<PresetItem> = {}): PresetItem {
   };
 }
 
-function renderGrid(presets: PresetItem[], onPresetClick = vi.fn()) {
+const emptyCategories: import('../api/caisse').CategoryItem[] = [];
+
+function renderGrid(
+  presets: PresetItem[],
+  onPresetClick = vi.fn(),
+  options?: {
+    categories?: import('../api/caisse').CategoryItem[];
+    loadError?: string | null;
+  }
+) {
   return render(
     <MantineProvider>
-      <PresetButtonGrid presets={presets} onPresetClick={onPresetClick} />
+      <PresetButtonGrid
+        presets={presets}
+        categories={options?.categories ?? emptyCategories}
+        loadError={options?.loadError}
+        onPresetClick={onPresetClick}
+      />
     </MantineProvider>
   );
 }
 
 describe('PresetButtonGrid — rendu', () => {
-  it('ne rend rien quand presets est vide', () => {
+  it('affiche un message quand presets est vide (Story 19.7)', () => {
     renderGrid([]);
+    expect(screen.getByTestId('preset-empty-message')).toBeInTheDocument();
+    expect(screen.getByTestId('preset-empty-message')).toHaveTextContent(/Aucun preset configuré/i);
     expect(screen.queryByTestId('preset-grid')).not.toBeInTheDocument();
+  });
+
+  it('affiche erreur chargement presets (Story 19.7)', () => {
+    renderGrid([], vi.fn(), { loadError: 'network down' });
+    expect(screen.getByTestId('presets-load-error')).toHaveTextContent(/network down/);
   });
 
   it('affiche le conteneur data-testid="preset-grid" avec des presets', () => {
@@ -57,6 +78,38 @@ describe('PresetButtonGrid — rendu', () => {
   it('affiche le prix formatte correctement', () => {
     renderGrid([makePreset({ preset_price: 150 })]);
     expect(screen.getByText(/1\.50/)).toBeInTheDocument();
+  });
+
+  it('affiche le prix catégorie fixe sur le bouton si différent du preset_price', () => {
+    const categories = [
+      {
+        id: 'cat-lampe',
+        name: 'Lampe',
+        parent_id: null,
+        official_name: null,
+        is_visible_sale: true,
+        is_visible_reception: false,
+        display_order: 0,
+        display_order_entry: 0,
+        price: 3,
+        max_price: 3,
+        deleted_at: null,
+        created_at: '',
+        updated_at: '',
+      },
+    ];
+    renderGrid(
+      [
+        makePreset({
+          id: 'p-lampe',
+          category_id: 'cat-lampe',
+          preset_price: 999,
+        }),
+      ],
+      vi.fn(),
+      { categories }
+    );
+    expect(screen.getByTestId('preset-p-lampe')).toHaveTextContent(/3\.00/);
   });
 
   it('affiche le nom du preset', () => {

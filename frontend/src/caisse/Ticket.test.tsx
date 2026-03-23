@@ -26,6 +26,7 @@ function makeCart(overrides: Partial<CartLine>[] = []): CartLine[] {
 
 function renderTicket(cart: CartLine[], extra?: Partial<Parameters<typeof Ticket>[0]>) {
   const onRemoveLine = vi.fn();
+  const onUpdateLine = vi.fn();
   const onFinalize = vi.fn();
   return render(
     <MantineProvider>
@@ -33,6 +34,7 @@ function renderTicket(cart: CartLine[], extra?: Partial<Parameters<typeof Ticket
         <Ticket
           cart={cart}
           onRemoveLine={onRemoveLine}
+          onUpdateLine={onUpdateLine}
           onFinalize={onFinalize}
           total={cart.reduce((s, l) => s + l.total_price, 0)}
           note=""
@@ -125,6 +127,7 @@ describe('Ticket \u2014 Story 18-8 AC1', () => {
           <Ticket
             cart={cart}
             onRemoveLine={onRemoveLine}
+            onUpdateLine={vi.fn()}
             onFinalize={vi.fn()}
             total={500}
             note=""
@@ -139,5 +142,73 @@ describe('Ticket \u2014 Story 18-8 AC1', () => {
 
     fireEvent.click(screen.getByTestId('remove-line-line-abc'));
     expect(onRemoveLine).toHaveBeenCalledWith('line-abc');
+  });
+
+  it('bouton Modif. ouvre le modal et Enregistrer appelle onUpdateLine', async () => {
+    const cart = makeCart([
+      { id: 'line-edit', category_name: 'Livre', quantity: 1, unit_price: 200, total_price: 200 },
+    ]);
+    const onUpdateLine = vi.fn();
+    render(
+      <MantineProvider>
+        <MemoryRouter>
+          <Ticket
+            cart={cart}
+            onRemoveLine={vi.fn()}
+            onUpdateLine={onUpdateLine}
+            onFinalize={vi.fn()}
+            total={200}
+            note=""
+            onNoteChange={vi.fn()}
+            saleDate=""
+            onSaleDateChange={vi.fn()}
+            error={null}
+          />
+        </MemoryRouter>
+      </MantineProvider>
+    );
+
+    fireEvent.click(screen.getByTestId('edit-line-line-edit'));
+    expect(await screen.findByTestId('ticket-edit-modal')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('ticket-edit-save'));
+    expect(onUpdateLine).toHaveBeenCalledWith('line-edit', 1, 200);
+  });
+
+  it('Story 19.9 : prix fixe categorie — prix unitaire non modifiable et conserve les centimes imposes', async () => {
+    const cart = makeCart([
+      {
+        id: 'line-fix',
+        category_id: 'cat-lampe',
+        category_name: 'Lampe',
+        unit_price: 300,
+        total_price: 300,
+      },
+    ]);
+    const onUpdateLine = vi.fn();
+    render(
+      <MantineProvider>
+        <MemoryRouter>
+          <Ticket
+            cart={cart}
+            onRemoveLine={vi.fn()}
+            onUpdateLine={onUpdateLine}
+            onFinalize={vi.fn()}
+            total={300}
+            note=""
+            onNoteChange={vi.fn()}
+            saleDate=""
+            onSaleDateChange={vi.fn()}
+            error={null}
+            resolveCategoryFixedUnitPriceCents={() => 300}
+          />
+        </MemoryRouter>
+      </MantineProvider>
+    );
+
+    fireEvent.click(screen.getByTestId('edit-line-line-fix'));
+    expect(await screen.findByTestId('ticket-edit-fixed-hint')).toBeInTheDocument();
+    expect(screen.getByTestId('ticket-edit-price')).toBeDisabled();
+    fireEvent.click(screen.getByTestId('ticket-edit-save'));
+    expect(onUpdateLine).toHaveBeenCalledWith('line-fix', 1, 300);
   });
 });

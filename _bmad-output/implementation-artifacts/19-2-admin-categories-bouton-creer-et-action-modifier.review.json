@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Round 2 — 4/4 corrections MEDIUM vérifiées: loadHierarchy(true) silent sur toutes les mutations, disabled sur contrôles archivées, commentaire catch handleHardDelete, 3 tests API ajoutés (17/17 passent). Aucun nouveau problème. Tous les AC implémentés. 3 issues LOW non bloquantes restantes (recherche name-only, window.confirm, breadcrumb href). Story approuvée."
+}

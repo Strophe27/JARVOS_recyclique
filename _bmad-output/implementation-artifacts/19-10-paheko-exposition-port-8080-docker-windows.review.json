@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Healthcheck paheko correctement configure (CMD-SHELL, curl --silent --fail, timings raisonnables). Port mapping 8080:80 deja present, le healthcheck force la recreation du conteneur. Aucune regression sur les autres services. Compatible Docker Desktop Windows. Tous les ACs satisfaits (localhost:8080 accessible, mode dev identique). Nit mineur: Task 4 checkbox corrigee."
+}

@@ -1,4 +1,9 @@
 # generated: 2026-02-28
+# updated: 2026-03-23 (19-9 done — code review approved, Vitest 63/63 caisse)
+# updated: 2026-03-23 (19-9 review — disposition caisse 1.4.4, flux poids→prix, KPI, prix fixe ticket)
+# updated: 2026-03-23 (19-8 done — raccourcis AZERTY caisse 1.4.4, code review approved)
+# updated: 2026-03-23 (19-7 done — presets caisse 1.4.4)
+# updated: 2026-03-23 (19-6 livrable audit structure + gate terrain Strophe)
 # updated: 2026-03-02 (epic-17 + hotfix terrain clôturés — 18/18 E16 fermés — retro produite — aucun Epic 18 requis)
 # project: JARVOS_recyclique
 # project_key: NOKEY
@@ -182,3 +187,18 @@ development_status:
   18-9-caisse-ouverture-et-fermeture-de-session-completes: done
   18-10-caisse-virtuelle-et-saisie-differee: done
   epic-18-retrospective: done
+
+  epic-19: in-progress
+  19-1-import-categories-correction-parent-id-sous-categories: done
+  19-2-admin-categories-bouton-creer-et-action-modifier: done  # approved round 2 2026-03-16
+  19-3-reception-redirection-page-saisie-apres-creation-ticket: done
+  19-4-reception-affichage-nom-utilisateur-au-lieu-du-code-hex: done
+  19-5-reception-page-non-blanche-apres-import-categories: done
+  19-6-caisse-audit-conformite-1-4-4-post-categories: done
+  19-7-caisse-presets-don-recyclage-decheterie-conformes-1-4-4: done
+  19-8-caisse-raccourcis-clavier-azerty-conformes-1-4-4: done
+  19-9-caisse-disposition-conformite-visuelle-1-4-4: done
+  19-10-paheko-exposition-port-8080-docker-windows: done
+  19-11-dashboard-admin-notifications-tickets-reception: backlog
+  19-12-dashboard-admin-compteur-utilisateurs-connectes: backlog
+  19-13-sessions-caisse-filtres-site-poste-operateur-export: backlog

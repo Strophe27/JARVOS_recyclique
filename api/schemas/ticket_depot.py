@@ -20,6 +20,7 @@ class TicketDepotResponse(BaseModel):
     id: UUID
     poste_id: UUID
     benevole_user_id: UUID | None
+    benevole_user_name: str | None = None
     created_at: datetime
     closed_at: datetime | None = None
     status: str

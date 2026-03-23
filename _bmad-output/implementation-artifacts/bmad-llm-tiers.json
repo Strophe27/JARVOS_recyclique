@@ -1,0 +1,65 @@
+{
+  "strategy_metadata": {
+    "title": "COMMANDEMENT STRATÉGIQUE & OPTIMISATION ULTRA",
+    "owner": "John (Persona: pm)",
+    "authority": "Tier 3",
+    "project": "JARVOS_recyclique",
+    "framework": "BMAD_Autopilot",
+    "last_update": "2026-03-16",
+    "run_authorization_mode": "human_approval_required"
+  },
+  "llm_tiers_definition": {
+    "tier_1_blazing_fast": {
+      "usage": "Routage, Git, Indexation",
+      "cursor_config": "model: fast",
+      "metrics": "TTFT < 700ms, SWE-bench ~73%"
+    },
+    "tier_2_smart_fast": {
+      "usage": "Code, Stories, Specs, Documentation",
+      "cursor_config": "model: inherit",
+      "volume_share": "56% of workflows",
+      "metrics": "SWE-bench 78-80%"
+    },
+    "tier_3_deep_reasoning": {
+      "usage": "Architecture, PRD complexes, Code Review",
+      "cursor_config": "Max Mode recommended",
+      "metrics": "SWE-bench 80%+"
+    },
+    "tier_4_frontier_hardcore": {
+      "usage": "Validation critique via LLM croisé",
+      "recommendation": "Utiliser un LLM différent du producteur (ex: GPT-5.2 pour valider du Claude)"
+    }
+  },
+  "agent_mapping": {
+    "high_priority_tier_3": ["bmad-orchestrator", "bmad-qa", "architect (Winston)", "pm (John)"],
+    "production_tier_2": ["bmad-dev", "bmad-sm", "dev (Amelia)", "analyst (Mary)"],
+    "procedural_tier_1": ["depot-specialist", "git-specialist", "tech-writer (Paige)"]
+  },
+  "economic_guardrails": {
+    "plan_ultra_value": "400 USD API Credits / 200 USD Paid",
+    "max_mode_policy": {
+      "context_expansion": "750 lines/file vs 250 standard",
+      "cost_multiplier": "3x to 10x",
+      "activation_rule": "Reserved for Tier 3 and 4 only"
+    },
+    "model_cost_efficiency_max_mode": {
+      "claude_opus_4_6": "8-20 USD/req (20-50 req/month)",
+      "claude_sonnet_4_6": "4-10 USD/req (40-100 req/month)",
+      "gemini_3_flash": "1-4 USD/req (100-400 req/month)"
+    }
+  },
+  "run_gating_policy": {
+    "pre_run_model_recommendation_required": true,
+    "pause_after_recommendation": true,
+    "launch_requires_explicit_human_approval": true,
+    "gating_scope": "single_entry_gate_per_run",
+    "agent_expected_output": "Recommended tier/model + short justification + pause"
+  },
+  "operational_instructions": [
+    "Verify workflow tier before execution (Analysis=T2, Planning=T3, Implementation=T2).",
+    "Before any run, get one recommendation at run entry, then pause until explicit approval.",
+    "Force 'model: fast' for all Tier 1 procedural tasks to save Ultra credits.",
+    "Use Cloud Agent for async complex features to offload local resources.",
+    "Escalate to John (PM) for any Tier 4 validation or Max Mode over-usage."
+  ]
+}

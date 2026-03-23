@@ -25,6 +25,7 @@ from api.schemas.auth import (
 )
 from api.services.auth import AuthService
 from api.services.permissions import get_user_permission_codes_from_user
+from api.core.deps import _permission_codes_with_role_implicits
 from api.services.resilience import (
     DEPENDENCY_IDP,
     record_dependency_result,
@@ -57,7 +58,8 @@ def _user_to_in_token(user: User) -> UserInToken:
 def _make_login_response(
     auth: AuthService, user: User, access_token: str, refresh_token: str, db: Session
 ) -> LoginResponse:
-    codes = get_user_permission_codes_from_user(db, user)
+    raw_codes = get_user_permission_codes_from_user(db, user)
+    codes = _permission_codes_with_role_implicits(raw_codes, user.role)
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -293,10 +295,12 @@ def get_session(
         expires=auth.settings.auth_session_cookie_max_age_seconds,
         path="/",
     )
+    raw_codes = get_user_permission_codes_from_user(db, user)
+    codes = _permission_codes_with_role_implicits(raw_codes, user.role)
     return SessionResponse(
         authenticated=True,
         user=_user_to_in_token(user),
-        permissions=list(get_user_permission_codes_from_user(db, user)),
+        permissions=list(codes),
     )
 
 

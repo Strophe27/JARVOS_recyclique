@@ -1,9 +1,7 @@
 /**
- * Page saisie vente (etape sale) — Story 15.3 (layout parite 1.4.4).
- * Layout plein ecran : CaisseHeader + StatsBar + zone principale (tabs + grille + ticket).
- * Logique metier conservee intacte (Stories 5.2, 5.4, 11.2).
- * Raccourcis clavier AZERTY positionnels — Story 18-7.
- * Ticket dedié + FinalizationScreen — Story 18-8.
+ * Page saisie vente — parité flux / UI Recyclique 1.4.4 (Sale.tsx + SaleWizard).
+ * Grille 3 colonnes : pavé numérique | assistant | ticket ; étapes Poids → Quantité → Prix.
+ * Raccourcis AZERTY sur catégories (sans préfixe quantité sur l’onglet Catégorie, comme la V1).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -44,11 +42,18 @@ import { useVirtualCashSessionStore } from './virtualCashSessionStore';
 import { useDeferredCashSessionStore } from './deferredCashSessionStore';
 import { CategoryGrid } from './CategoryGrid';
 import { PresetButtonGrid } from './PresetButtonGrid';
+import {
+  getCategoryFixedUnitPriceCents,
+  resolvePresetUnitPriceCents,
+} from './categorySalePrice';
 import { CashKeyboardShortcutHandler } from './utils/cashKeyboardShortcuts';
-import { mapAZERTYToNumeric } from './utils/azertyKeyboard';
+import { handleAZERTYInput, mapAZERTYToNumeric } from './utils/azertyKeyboard';
+import { CaisseNumpad } from './CaisseNumpad';
 import { Ticket } from './Ticket';
 import { FinalizationScreen } from './FinalizationScreen';
 import styles from './CashRegisterSalePage.module.css';
+
+type NumpadMode = 'idle' | 'quantity' | 'price' | 'weight';
 
 export interface CartLine {
   id: string;
@@ -69,6 +74,7 @@ export function CashRegisterSalePage() {
   const [session, setSession] = useState<CashSessionItem | null>(null);
   const [presets, setPresets] = useState<PresetItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [presetsLoadError, setPresetsLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -80,7 +86,13 @@ export function CashRegisterSalePage() {
   const [submitting, setSubmitting] = useState(false);
   const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [catQuantity, setCatQuantity] = useState(1);
+  /** Quantité étape dédiée (1.4.4) — chaîne pour pavé numérique, défaut "1" remplaçable au 1er chiffre */
+  const [quantityStr, setQuantityStr] = useState('1');
+  const [quantityIsDefault, setQuantityIsDefault] = useState(true);
+  const [pricePrefilled, setPricePrefilled] = useState(false);
+  const [weightError, setWeightError] = useState('');
+  const [quantityError, setQuantityError] = useState('');
+  const [priceError, setPriceError] = useState('');
   const [catPriceEur, setCatPriceEur] = useState('');
   const [catWeight, setCatWeight] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -95,6 +107,31 @@ export function CashRegisterSalePage() {
   const [donsJourLocal, setDonsJourLocal] = useState<number>(0);
   const [poidsSortisLocal, setPoidsSortisLocal] = useState<number>(0);
   const [kpiMode, setKpiMode] = useState<'live' | 'session'>('live');
+
+  const catQuantity = useMemo(
+    () => Math.max(1, parseInt(quantityStr, 10) || 1),
+    [quantityStr],
+  );
+
+  const numpadMode: NumpadMode = useMemo(() => {
+    if (activeTab === 'poids') return 'weight';
+    if (activeTab === 'quantite') return 'quantity';
+    if (activeTab === 'prix') return 'price';
+    return 'idle';
+  }, [activeTab]);
+
+  const weightNumOk = useMemo(() => {
+    const w = parseFloat(catWeight);
+    return !Number.isNaN(w) && w > 0;
+  }, [catWeight]);
+
+  const canOpenQuantiteTab = Boolean(selectedCategoryId && weightNumOk);
+  const canOpenPrixTab = Boolean(canOpenQuantiteTab && catQuantity >= 1);
+
+  const categoriesRef = useRef(categories);
+  categoriesRef.current = categories;
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
 
   // --- Détection du mode virtual/deferred (Story 18-10) ---
   const virtualSession = useVirtualCashSessionStore((s) => s.currentSession);
@@ -122,7 +159,6 @@ export function CashRegisterSalePage() {
 
   // Refs pour les raccourcis clavier (évite les stale closures dans le useEffect)
   const shortcutHandlerRef = useRef(new CashKeyboardShortcutHandler());
-  const pendingQuantityRef = useRef('');
   const cartRef = useRef(cart);
   const showFinalizationRef = useRef(showFinalization);
   const handleFinalizeRef = useRef<() => void>(() => {});
@@ -131,18 +167,22 @@ export function CashRegisterSalePage() {
     if (!accessToken) return;
     setLoading(true);
     setError(null);
+    setPresetsLoadError(null);
     try {
-      const [current, presetsList, categoriesList] = await Promise.all([
-        getCurrentCashSession(accessToken),
-        getPresetsActive(accessToken),
-        getCategoriesSaleTickets(accessToken),
-      ]);
+      const current = await getCurrentCashSession(accessToken);
       setSession(current);
-      setPresets(presetsList);
-      setCategories(categoriesList);
       if (current && current.current_step !== 'sale') {
         await updateCashSessionStep(accessToken, current.id, 'sale');
       }
+      let presetsList: PresetItem[] = [];
+      try {
+        presetsList = await getPresetsActive(accessToken);
+      } catch (pe) {
+        setPresetsLoadError(pe instanceof Error ? pe.message : 'Erreur reseau');
+      }
+      setPresets(presetsList);
+      const categoriesList = await getCategoriesSaleTickets(accessToken);
+      setCategories(categoriesList);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur chargement');
     } finally {
@@ -183,16 +223,26 @@ export function CashRegisterSalePage() {
     refreshPendingCount();
   }, [refreshPendingCount]);
 
-  // --- Raccourcis clavier AZERTY positionnels (Story 18-7) ---
+  // --- Raccourcis clavier AZERTY : liste = catégories du niveau affiché (racine / sous-cat) — Story 19-8 ---
+
+  const visibleCategoriesForShortcuts = useMemo(() => {
+    if (activeTab === 'categorie') {
+      return categories.filter((c) => c.parent_id === null);
+    }
+    if (activeTab === 'sous-categorie' && subCategoryParentId != null) {
+      return categories.filter((c) => c.parent_id === subCategoryParentId);
+    }
+    return [];
+  }, [categories, activeTab, subCategoryParentId]);
 
   const categoryShortcuts = useMemo(() => {
     const handler = shortcutHandlerRef.current;
-    handler.initialize(categories, () => {});
+    handler.initialize(visibleCategoriesForShortcuts, () => {});
     return categories.map((c) => ({
       category: c,
       letter: handler.getKeyForCategory(c.id) ?? '',
     }));
-  }, [categories]);
+  }, [categories, visibleCategoriesForShortcuts]);
 
   useEffect(() => {
     cartRef.current = cart;
@@ -202,7 +252,122 @@ export function CashRegisterSalePage() {
     showFinalizationRef.current = showFinalization;
   }, [showFinalization]);
 
+  const handleNumpadDigit = useCallback(
+    (digit: string) => {
+      if (numpadMode === 'quantity') {
+        let newValue: string;
+        const shouldReplace = quantityIsDefault && quantityStr === '1';
+        if (shouldReplace) newValue = digit;
+        else newValue = quantityStr + digit;
+        setQuantityIsDefault(false);
+        if (/^\d*$/.test(newValue)) {
+          const numValue = parseInt(newValue || '0', 10);
+          if (numValue >= 1 && numValue <= 9999) {
+            setQuantityStr(newValue);
+            setQuantityError('');
+          }
+        }
+        return;
+      }
+      if (numpadMode === 'price') {
+        const newValue = pricePrefilled ? digit : catPriceEur + digit;
+        if (/^\d*\.?\d{0,2}$/.test(newValue) && parseFloat(newValue || '0') <= 9999.99) {
+          setCatPriceEur(newValue);
+          setPriceError('');
+          setPricePrefilled(false);
+        }
+        return;
+      }
+      if (numpadMode === 'weight') {
+        const newValue = catWeight + digit;
+        if (/^\d*\.?\d{0,2}$/.test(newValue) && parseFloat(newValue || '0') <= 9999.99) {
+          setCatWeight(newValue);
+          setWeightError('');
+        }
+      }
+    },
+    [numpadMode, quantityIsDefault, quantityStr, pricePrefilled, catPriceEur, catWeight],
+  );
+
+  const handleNumpadClear = useCallback(() => {
+    if (numpadMode === 'quantity') {
+      setQuantityStr('1');
+      setQuantityIsDefault(true);
+      setQuantityError('');
+    } else if (numpadMode === 'price') {
+      setCatPriceEur('');
+      setPricePrefilled(false);
+      setPriceError('');
+    } else if (numpadMode === 'weight') {
+      setCatWeight('');
+      setWeightError('');
+    }
+  }, [numpadMode]);
+
+  const handleNumpadBackspace = useCallback(() => {
+    if (numpadMode === 'price' && pricePrefilled) {
+      setCatPriceEur('');
+      setPricePrefilled(false);
+      return;
+    }
+    if (numpadMode === 'quantity') {
+      const newValue = quantityStr.slice(0, -1);
+      if (newValue === '' || newValue === '0') {
+        setQuantityStr('1');
+        setQuantityIsDefault(true);
+      } else {
+        setQuantityStr(newValue);
+        setQuantityIsDefault(false);
+      }
+      setQuantityError('');
+      return;
+    }
+    if (numpadMode === 'price') {
+      setCatPriceEur(catPriceEur.slice(0, -1));
+      setPriceError('');
+      return;
+    }
+    if (numpadMode === 'weight') {
+      setCatWeight(catWeight.slice(0, -1));
+      setWeightError('');
+    }
+  }, [numpadMode, pricePrefilled, quantityStr, catPriceEur, catWeight]);
+
+  const handleNumpadDecimal = useCallback(() => {
+    if (numpadMode !== 'price' && numpadMode !== 'weight') return;
+    const current = numpadMode === 'price' ? catPriceEur : catWeight;
+    if (current.includes('.')) return;
+    if (numpadMode === 'price' && pricePrefilled) {
+      setCatPriceEur('0.');
+      setPricePrefilled(false);
+      return;
+    }
+    const next = `${current}.`;
+    if (numpadMode === 'price') setCatPriceEur(next);
+    else setCatWeight(next);
+  }, [numpadMode, catPriceEur, catWeight, pricePrefilled]);
+
+  const gateQuantiteRef = useRef(canOpenQuantiteTab);
+  gateQuantiteRef.current = canOpenQuantiteTab;
+  const gatePrixRef = useRef(canOpenPrixTab);
+  gatePrixRef.current = canOpenPrixTab;
+  const numpadModeRef = useRef(numpadMode);
+  numpadModeRef.current = numpadMode;
+
   useEffect(() => {
+    const AZERTY_NUMERIC_MAP: Record<string, string> = {
+      '&': '1',
+      é: '2',
+      '"': '3',
+      "'": '4',
+      '(': '5',
+      '-': '6',
+      è: '7',
+      _: '8',
+      ç: '9',
+      à: '0',
+    };
+
     function shouldPrevent(target: EventTarget | null): boolean {
       if (!target || !(target instanceof HTMLElement)) return false;
       const el = target as HTMLElement;
@@ -213,56 +378,121 @@ export function CashRegisterSalePage() {
       return false;
     }
 
+    function keyEventToDigit(e: KeyboardEvent): string | null {
+      if (e.key >= '0' && e.key <= '9') return e.key;
+      const numpadMatch = e.code.match(/^Numpad(\d)$/);
+      if (numpadMatch) return numpadMatch[1];
+      const digitMatch = e.code.match(/^Digit(\d)$/);
+      if (digitMatch) return digitMatch[1];
+      const m = AZERTY_NUMERIC_MAP[e.key];
+      return m ?? null;
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
-      // Laisser FinalizationScreen gérer ses propres raccourcis
       if (showFinalizationRef.current) return;
-      if (e.ctrlKey || e.altKey || e.metaKey) return;
       if (shouldPrevent(e.target)) return;
 
-      const key = e.key;
-
-      if (!e.shiftKey) {
-        const numeric = mapAZERTYToNumeric(key);
-        if (numeric !== null) {
-          pendingQuantityRef.current += numeric;
+      if (e.ctrlKey && !e.altKey && !e.metaKey) {
+        const tabByCode: Record<string, string> = {
+          Digit1: 'categorie',
+          Digit2: 'sous-categorie',
+          Digit3: 'poids',
+          Digit4: 'quantite',
+          Digit5: 'prix',
+          Numpad1: 'categorie',
+          Numpad2: 'sous-categorie',
+          Numpad3: 'poids',
+          Numpad4: 'quantite',
+          Numpad5: 'prix',
+        };
+        const nextTab = tabByCode[e.code];
+        if (nextTab) {
           e.preventDefault();
+          if (nextTab === 'quantite' && !gateQuantiteRef.current) return;
+          if (nextTab === 'prix' && !gatePrixRef.current) return;
+          setActiveTab(nextTab);
           return;
         }
       }
 
-      const shortcut = shortcutHandlerRef.current.getShortcut(key);
-      if (shortcut) {
-        e.preventDefault();
-        const qty = parseInt(pendingQuantityRef.current, 10) || 1;
-        setCatQuantity(qty);
-        setSelectedCategoryId(shortcut.categoryId);
-        pendingQuantityRef.current = '';
-        return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+      const mode = numpadModeRef.current;
+      if (mode === 'quantity' || mode === 'price' || mode === 'weight') {
+        const digit = keyEventToDigit(e);
+        if (digit) {
+          e.preventDefault();
+          handleNumpadDigit(digit);
+          return;
+        }
+        if (e.key === '.' || e.key === ',') {
+          e.preventDefault();
+          handleNumpadDecimal();
+          return;
+        }
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          handleNumpadBackspace();
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          handleNumpadClear();
+          return;
+        }
       }
 
-      if (key === 'Escape') {
-        pendingQuantityRef.current = '';
-        return;
+      const key = e.key;
+      const hasCategoryShortcuts = shortcutHandlerRef.current.getAvailableKeys().length > 0;
+
+      if (hasCategoryShortcuts && (activeTabRef.current === 'categorie' || activeTabRef.current === 'sous-categorie')) {
+        const shortcut = shortcutHandlerRef.current.getShortcut(key);
+        if (shortcut) {
+          e.preventDefault();
+          const cats = categoriesRef.current;
+          const id = shortcut.categoryId;
+          const hasChildren = cats.some((c) => c.parent_id === id);
+          if (hasChildren) {
+            setSubCategoryParentId(id);
+            setSelectedCategoryId(null);
+            setQuantityStr('1');
+            setQuantityIsDefault(true);
+            setActiveTab('sous-categorie');
+          } else {
+            setSelectedCategoryId(id);
+            setQuantityStr('1');
+            setQuantityIsDefault(true);
+            setActiveTab('poids');
+            const cat = cats.find((c) => c.id === id);
+            const fixed = cat ? getCategoryFixedUnitPriceCents(cat) : null;
+            setCatPriceEur(fixed != null ? (fixed / 100).toFixed(2) : '');
+          }
+          return;
+        }
       }
 
       if (key === 'Enter') {
-        handleFinalizeRef.current();
-        return;
-      }
-
-      if (key === 'Backspace') {
-        setCart((prev) => prev.slice(0, -1));
-        e.preventDefault();
+        const idle =
+          activeTabRef.current === 'categorie' || activeTabRef.current === 'sous-categorie';
+        if (idle && cartRef.current.length > 0) {
+          e.preventDefault();
+          handleFinalizeRef.current();
+        }
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleNumpadDigit, handleNumpadBackspace, handleNumpadClear, handleNumpadDecimal]);
 
   // --- Panier ---
   const addPresetToCart = useCallback(
     (preset: PresetItem) => {
+      const unitCents = resolvePresetUnitPriceCents(preset, categories);
+      const linked =
+        preset.category_id != null
+          ? categories.find((c) => c.id === preset.category_id)
+          : undefined;
       setCart((prev) => [
         ...prev,
         {
@@ -270,15 +500,15 @@ export function CashRegisterSalePage() {
           category_id: preset.category_id,
           preset_id: preset.id,
           preset_name: preset.name,
-          category_name: undefined,
+          category_name: linked?.name,
           quantity: 1,
-          unit_price: preset.preset_price,
-          total_price: preset.preset_price,
+          unit_price: unitCents,
+          total_price: unitCents,
           weight: null,
         },
       ]);
     },
-    []
+    [categories]
   );
 
   const addCategoryToCart = useCallback(
@@ -302,9 +532,37 @@ export function CashRegisterSalePage() {
     []
   );
 
+  /** Feuille choisie : enchaînement 1.4.4 vers onglet Poids (puis Quantité → Prix). */
+  const onLeafCategorySelected = useCallback(
+    (categoryId: string) => {
+      setSelectedCategoryId(categoryId);
+      setQuantityStr('1');
+      setQuantityIsDefault(true);
+      setActiveTab('poids');
+      const cat = categories.find((c) => c.id === categoryId);
+      const fixed = cat ? getCategoryFixedUnitPriceCents(cat) : null;
+      setCatPriceEur(fixed != null ? (fixed / 100).toFixed(2) : '');
+      setPricePrefilled(fixed != null);
+    },
+    [categories]
+  );
+
   const removeCartLine = useCallback((id: string) => {
     setCart((prev) => prev.filter((l) => l.id !== id));
   }, []);
+
+  const updateCartLine = useCallback(
+    (id: string, quantity: number, unitPriceCents: number) => {
+      const q = Math.max(1, Math.floor(quantity));
+      const unit = Math.max(0, Math.round(unitPriceCents));
+      setCart((prev) =>
+        prev.map((l) =>
+          l.id === id ? { ...l, quantity: q, unit_price: unit, total_price: q * unit } : l
+        )
+      );
+    },
+    []
+  );
 
   const cartTotal = cart.reduce((s, l) => s + l.total_price, 0);
   const paymentsTotal = payments.reduce((s, p) => s + p.amount, 0);
@@ -321,15 +579,42 @@ export function CashRegisterSalePage() {
   }, []);
 
   const handleAddCategoryLine = useCallback(() => {
+    // Ligne catégorie uniquement depuis l'onglet Prix après parcours poids → prix (19.9, audit §8).
+    if (activeTabRef.current !== 'prix') return;
     if (!selectedCategoryId) return;
     const cat = categories.find((c) => c.id === selectedCategoryId);
     if (cat) {
-      const priceCents = Math.round(parseFloat(catPriceEur || '0') * 100);
+      const fixedCents = getCategoryFixedUnitPriceCents(cat);
+      const priceCents =
+        fixedCents != null
+          ? fixedCents
+          : Math.round(parseFloat(catPriceEur || '0') * 100);
       const weightVal = catWeight ? parseFloat(catWeight) : null;
       addCategoryToCart(cat, catQuantity, priceCents, weightVal);
       setSelectedCategoryId(null);
+      setCatWeight('');
+      setCatPriceEur('');
+      setQuantityStr('1');
+      setQuantityIsDefault(true);
+      setPricePrefilled(false);
+      setSubCategoryParentId(null);
+      setActiveTab('categorie');
     }
   }, [categories, selectedCategoryId, catQuantity, catPriceEur, catWeight, addCategoryToCart]);
+
+  /** Prix fixe : affichage onglet Prix (1.4.4 — premier chiffre remplace le préremplissage). */
+  useEffect(() => {
+    if (activeTab !== 'prix' || !selectedCategoryId) return;
+    const cat = categories.find((c) => c.id === selectedCategoryId);
+    if (!cat) return;
+    const fixed = getCategoryFixedUnitPriceCents(cat);
+    if (fixed != null) {
+      setCatPriceEur((fixed / 100).toFixed(2));
+      setPricePrefilled(true);
+    } else {
+      setPricePrefilled(false);
+    }
+  }, [activeTab, selectedCategoryId, categories]);
 
   const handleFinalize = useCallback(() => {
     if (cart.length === 0) {
@@ -441,6 +726,11 @@ export function CashRegisterSalePage() {
     handleFinalizeRef.current = handleFinalize;
   }, [handleFinalize]);
 
+  const subcategoriesExist = useMemo(
+    () => categories.some((c) => c.parent_id != null),
+    [categories],
+  );
+
   // --- Etats de chargement / erreur ---
   if (loading) {
     return (
@@ -467,6 +757,19 @@ export function CashRegisterSalePage() {
   }
 
   const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+  const selectedCategoryFixedCents =
+    selectedCat != null ? getCategoryFixedUnitPriceCents(selectedCat) : null;
+
+  const numpadDisplayValue =
+    numpadMode === 'weight' ? catWeight : numpadMode === 'quantity' ? quantityStr : catPriceEur;
+  const numpadDisplayError =
+    numpadMode === 'weight'
+      ? weightError
+      : numpadMode === 'quantity'
+        ? quantityError
+        : numpadMode === 'price'
+          ? priceError
+          : undefined;
 
   return (
     <div className={styles.pageRoot} data-testid="page-cash-register-sale">
@@ -501,15 +804,62 @@ export function CashRegisterSalePage() {
         </div>
       )}
 
-      <div className={styles.mainArea}>
-        {/* Zone contenu : tabs + grille */}
-        <div className={styles.contentArea}>
-          <Tabs value={activeTab} onChange={setActiveTab} variant="pills" data-testid="caisse-sale-tabs">
-            <Tabs.List className={styles.tabsList}>
-              <Tabs.Tab value="categorie" color="green">Categorie</Tabs.Tab>
-              <Tabs.Tab value="sous-categorie" color="green">Sous-categorie</Tabs.Tab>
-              <Tabs.Tab value="poids" color="green">Poids</Tabs.Tab>
-              <Tabs.Tab value="prix" color="green">Prix</Tabs.Tab>
+      <div
+        className={styles.saleKioskMain}
+        data-numpad-mode={numpadMode}
+        data-testid="sale-kiosk-layout"
+      >
+        <aside className={styles.leftNumpad}>
+          {numpadMode !== 'idle' ? (
+            <CaisseNumpad
+              value={numpadDisplayValue}
+              error={numpadDisplayError}
+              onDigit={handleNumpadDigit}
+              onClear={handleNumpadClear}
+              onBackspace={handleNumpadBackspace}
+              onDecimal={
+                numpadMode === 'price' || numpadMode === 'weight'
+                  ? handleNumpadDecimal
+                  : undefined
+              }
+              unit={numpadMode === 'price' ? '\u20AC' : numpadMode === 'weight' ? 'kg' : ''}
+              showDecimal={numpadMode === 'price' || numpadMode === 'weight'}
+            />
+          ) : (
+            <div className={styles.numpadPlaceholder}>
+              <Text size="sm" c="dimmed" ta="center">
+                Etape numerique : onglets Poids, Quantite ou Prix (comme la caisse 1.4.4).
+              </Text>
+            </div>
+          )}
+        </aside>
+
+        <div className={styles.centerWizard}>
+          <div className={styles.contentArea}>
+          <Tabs
+            value={activeTab}
+            onChange={setActiveTab}
+            variant="pills"
+            data-testid="caisse-sale-tabs"
+            activateTabWithKeyboard
+            keepMounted={false}
+          >
+            <Tabs.List className={styles.tabsList} aria-label="Etapes de saisie vente">
+              <Tabs.Tab value="categorie" color="green">
+                Categorie
+              </Tabs.Tab>
+              <Tabs.Tab value="sous-categorie" color="green" disabled={!subcategoriesExist}>
+                Sous-categorie
+              </Tabs.Tab>
+              <Tabs.Tab value="poids" color="green" disabled={!selectedCategoryId}>
+                Poids
+              </Tabs.Tab>
+              <Tabs.Tab value="quantite" color="green" disabled={!canOpenQuantiteTab}>
+                Quantite
+              </Tabs.Tab>
+              <Tabs.Tab value="prix" color="green" disabled={!canOpenPrixTab}>
+                Prix
+              </Tabs.Tab>
             </Tabs.List>
 
             <div className={styles.currentItem} data-testid="caisse-current-item">
@@ -517,18 +867,26 @@ export function CashRegisterSalePage() {
                 ARTICLE EN COURS DE SAISIE
               </Text>
               <Text size="sm" fw={500}>
-                {selectedCat ? selectedCat.name : '—'} | Qté : {catQuantity}
+                {selectedCat ? selectedCat.name : '—'} | Qté : {quantityStr}
               </Text>
             </div>
 
             <Tabs.Panel value="categorie">
-              <PresetButtonGrid presets={presets} onPresetClick={addPresetToCart} />
+              <PresetButtonGrid
+                presets={presets}
+                categories={categories}
+                loadError={presetsLoadError}
+                onPresetClick={addPresetToCart}
+              />
               <CategoryGrid
                 categories={categories}
                 selectedCategoryId={selectedCategoryId}
-                onCategorySelect={setSelectedCategoryId}
+                onCategorySelect={onLeafCategorySelected}
                 onParentCategoryClick={(parentId) => {
                   setSubCategoryParentId(parentId);
+                  setSelectedCategoryId(null);
+                  setQuantityStr('1');
+                  setQuantityIsDefault(true);
                   setActiveTab('sous-categorie');
                 }}
                 categoryShortcuts={categoryShortcuts}
@@ -553,8 +911,10 @@ export function CashRegisterSalePage() {
                   <CategoryGrid
                     categories={categories}
                     selectedCategoryId={selectedCategoryId}
-                    onCategorySelect={(id) => {
-                      setSelectedCategoryId(id);
+                    onCategorySelect={onLeafCategorySelected}
+                    onParentCategoryClick={(parentId) => {
+                      setSubCategoryParentId(parentId);
+                      setSelectedCategoryId(null);
                     }}
                     categoryShortcuts={categoryShortcuts}
                     filterParentId={subCategoryParentId}
@@ -569,44 +929,105 @@ export function CashRegisterSalePage() {
 
             <Tabs.Panel value="poids">
               <Stack gap="xs" py="md">
-                <Text fw={500}>Saisie directe du poids</Text>
+                <Text fw={500}>Poids (kg)</Text>
+                <Text size="sm" c="dimmed">
+                  Pavé à gauche ou champ ci-dessous. Ensuite : Quantite puis Prix avant d&apos;ajouter au
+                  ticket (flux 1.4.4).
+                </Text>
                 <Stack gap="xs" align="flex-start">
                   <NumberInput
                     decimalScale={3}
                     min={0}
                     value={catWeight}
-                    onChange={(v) => setCatWeight(String(v ?? ''))}
+                    onChange={(v) => {
+                      setCatWeight(String(v ?? ''));
+                      setWeightError('');
+                    }}
+                    onKeyDown={(ke) => {
+                      if (ke.ctrlKey || ke.altKey || ke.metaKey) return;
+                      const next = handleAZERTYInput(catWeight, ke.key, ke.nativeEvent, 16, true);
+                      if (next !== catWeight) {
+                        ke.preventDefault();
+                        setCatWeight(next);
+                      }
+                    }}
                     data-testid="cat-weight"
                     placeholder="Poids kg"
                     w={120}
                   />
-                  <Button variant="light" size="sm" onClick={handleAddCategoryLine}>
-                    Ajouter
+                  <Button
+                    variant="filled"
+                    color="green"
+                    size="sm"
+                    data-testid="goto-quantite-from-poids"
+                    onClick={() => {
+                      const w = parseFloat(catWeight);
+                      if (Number.isNaN(w) || w <= 0) {
+                        setWeightError('Poids requis (superieur a 0)');
+                        return;
+                      }
+                      setWeightError('');
+                      setActiveTab('quantite');
+                    }}
+                  >
+                    Continuer vers Quantite
                   </Button>
                 </Stack>
               </Stack>
             </Tabs.Panel>
 
+            <Tabs.Panel value="quantite">
+              <Stack gap="xs" py="md">
+                <Text fw={500}>Quantite</Text>
+                <Text size="sm" c="dimmed">
+                  Utilisez le pavé numérique à gauche ou les chiffres du clavier (mode 1.4.4).
+                </Text>
+                <Button
+                  variant="filled"
+                  color="green"
+                  size="sm"
+                  data-testid="goto-prix-from-quantite"
+                  onClick={() => {
+                    const q = parseInt(quantityStr, 10);
+                    if (Number.isNaN(q) || q < 1) {
+                      setQuantityError('Quantite minimale : 1');
+                      return;
+                    }
+                    setQuantityError('');
+                    setActiveTab('prix');
+                  }}
+                >
+                  Continuer vers Prix
+                </Button>
+              </Stack>
+            </Tabs.Panel>
+
             <Tabs.Panel value="prix">
               <Stack gap="xs" py="md">
-                <Text fw={500}>Saisie directe du prix</Text>
+                <Text fw={500}>Prix unitaire</Text>
                 <Stack gap="xs" align="flex-start">
                   <NumberInput
                     decimalScale={2}
                     min={0}
                     value={catPriceEur}
-                    onChange={(v) => setCatPriceEur(String(v ?? ''))}
+                    onChange={(v) => {
+                      setCatPriceEur(String(v ?? ''));
+                      setPricePrefilled(false);
+                      setPriceError('');
+                    }}
+                    onKeyDown={(ke) => {
+                      if (ke.ctrlKey || ke.altKey || ke.metaKey) return;
+                      const next = handleAZERTYInput(catPriceEur, ke.key, ke.nativeEvent, 16, true);
+                      if (next !== catPriceEur) {
+                        ke.preventDefault();
+                        setCatPriceEur(next);
+                        setPricePrefilled(false);
+                      }
+                    }}
                     data-testid="cat-price"
                     placeholder="Prix EUR"
                     w={120}
-                  />
-                  <NumberInput
-                    min={1}
-                    value={catQuantity}
-                    onChange={(v) => setCatQuantity(Number(v) || 1)}
-                    data-testid="cat-quantity"
-                    placeholder="Qte"
-                    w={80}
+                    readOnly={selectedCategoryFixedCents != null}
                   />
                   <Button variant="light" size="sm" onClick={handleAddCategoryLine}>
                     Ajouter
@@ -615,12 +1036,14 @@ export function CashRegisterSalePage() {
               </Stack>
             </Tabs.Panel>
           </Tabs>
+          </div>
         </div>
 
-        {/* Panneau ticket lateral (Story 18-8 T1) */}
+        {/* Panneau ticket (colonne droite — comme Sale.tsx 1.4.4) */}
         <Ticket
           cart={cart}
           onRemoveLine={removeCartLine}
+          onUpdateLine={updateCartLine}
           onFinalize={handleFinalize}
           total={cartTotal}
           note={note}
@@ -628,6 +1051,10 @@ export function CashRegisterSalePage() {
           saleDate={saleDate}
           onSaleDateChange={setSaleDate}
           error={error}
+          resolveCategoryFixedUnitPriceCents={(categoryId) => {
+            const c = categories.find((x) => x.id === categoryId);
+            return c ? getCategoryFixedUnitPriceCents(c) : null;
+          }}
         />
       </div>
 

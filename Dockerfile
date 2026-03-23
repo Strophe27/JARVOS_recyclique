@@ -25,8 +25,8 @@ RUN npm run build
 # ------------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
-# Utilisateur non-root (bonnes pratiques) ; curl pour le healthcheck Docker
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# Utilisateur non-root (bonnes pratiques) ; curl pour le healthcheck ; postgresql-client pour export/import BDD (pg_dump, pg_restore, psql)
+RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 1000 app && useradd --uid 1000 --gid app --shell /bin/bash --create-home app
 
@@ -42,8 +42,9 @@ COPY api/ ./api/
 # Build frontend (depuis le stage 1)
 COPY --from=frontend-builder /build/dist ./frontend/dist
 
-# Répertoire frontend/dist doit être lisible par l'utilisateur app
-RUN chown -R app:app /app
+# Répertoire frontend/dist + /backups (sauvegardes pré-import admin BDD) lisibles par app
+RUN chown -R app:app /app \
+    && mkdir -p /backups && chown app:app /backups
 
 USER app
 

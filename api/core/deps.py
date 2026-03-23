@@ -33,6 +33,13 @@ def _request_id_from_request(request: Request) -> str:
     )
 
 
+_SUPER_ADMIN_IMPLICIT_CODES = frozenset({
+    "super_admin", "admin",
+    "caisse.access", "caisse.virtual.access", "caisse.deferred.access",
+    "reception.access", "vie_asso.access",
+})
+
+
 def _permission_codes_with_role_implicits(
     base_codes: set[str],
     role: str | None,
@@ -40,7 +47,7 @@ def _permission_codes_with_role_implicits(
     role_norm = (role or "").strip()
     enriched = set(base_codes)
     if role_norm == "super_admin":
-        enriched.update({"super_admin", "admin"})
+        enriched.update(_SUPER_ADMIN_IMPLICIT_CODES)
     elif role_norm == "admin":
         enriched.add("admin")
     return enriched

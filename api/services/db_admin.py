@@ -162,32 +162,46 @@ def terminate_active_connections(db_url_parts: dict, timeout: int = 30) -> None:
         logger.warning("terminate_active_connections failed: %s", exc)
 
 
-def _has_real_errors(stderr_text: str) -> bool:
-    for line in stderr_text.splitlines():
-        stripped = line.strip().lower()
-        if not stripped:
-            continue
-        if (
-            "error:" in stripped
-            and not stripped.startswith("pg_restore: warning")
-            and "errors ignored on restore" not in stripped
-            and not stripped.startswith("pg_restore: [archiver]")
-        ):
-            return True
-    return False
+def reset_public_schema(db_url_parts: dict, timeout: int = 30) -> tuple[bool, str]:
+    """Vide le schéma public (DROP CASCADE + recreate) pour un restore propre sans conflits FK."""
+    user = db_url_parts["user"]
+    sql = (
+        "DROP SCHEMA public CASCADE; "
+        "CREATE SCHEMA public; "
+        f"GRANT ALL ON SCHEMA public TO {user}; "
+        "GRANT ALL ON SCHEMA public TO public;"
+    )
+    cmd = [
+        "psql",
+        "-h", db_url_parts["host"],
+        "-p", db_url_parts["port"],
+        "-U", user,
+        "-d", db_url_parts["dbname"],
+        "-c", sql,
+    ]
+    env = {**os.environ, "PGPASSWORD": db_url_parts["password"]}
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=timeout, env=env)
+        if result.returncode != 0:
+            stderr = result.stderr.decode("utf-8", errors="replace")
+            return False, f"Schema reset failed: {stderr}"
+        return True, ""
+    except subprocess.TimeoutExpired:
+        return False, "Schema reset timeout"
+    except FileNotFoundError:
+        return False, "psql non disponible"
 
 
 def restore_dump(
     dump_path: str, db_url_parts: dict, timeout: int = 1200
 ) -> tuple[bool, bool, list[str], list[str]]:
+    # Pas de --clean : le schéma a déjà été réinitialisé par reset_public_schema.
+    # --disable-triggers évite les violations FK transitoires pendant le chargement des données.
     cmd = [
         "pg_restore",
-        "--clean",
-        "--if-exists",
         "--no-owner",
         "--no-privileges",
         "--disable-triggers",
-        "--verbose",
         "--jobs=1",
         "-h", db_url_parts["host"],
         "-p", db_url_parts["port"],
@@ -208,21 +222,28 @@ def restore_dump(
     warnings: list[str] = []
     errors: list[str] = []
 
+    # Classifier les lignes stderr : seules les lignes "pg_restore: error:" sont de vraies erreurs.
+    # Les lignes "Command was:" sont attachées à l'erreur précédente pour le contexte.
+    # Tout le reste (verbose informationnel) est ignoré pour ne pas polluer le message d'erreur.
+    last_was_error = False
     for line in stderr_text.splitlines():
         stripped = line.strip()
         if not stripped:
+            last_was_error = False
             continue
         lower = stripped.lower()
-        if (
-            "warning" in lower
-            or "errors ignored on restore" in lower
-            or lower.startswith("pg_restore: [archiver]")
-        ):
+        if "warning" in lower or "errors ignored on restore" in lower:
             warnings.append(stripped)
-        else:
+            last_was_error = False
+        elif lower.startswith("pg_restore: error:"):
             errors.append(stripped)
+            last_was_error = True
+        elif lower.startswith("command was:") and last_was_error:
+            errors.append(stripped)
+        else:
+            last_was_error = False
 
-    if result.returncode != 0 and _has_real_errors(stderr_text):
+    if result.returncode != 0 and errors:
         return False, False, warnings, errors
 
     return True, False, warnings, []
@@ -250,7 +271,15 @@ def import_dump(
         if not backup_ok:
             raise RuntimeError(f"backup_failed:{backup_err}")
 
+        # Couper toutes les connexions à la BDD cible avant de la réinitialiser.
         terminate_active_connections(db_url_parts)
+
+        # Vider le schéma public pour un restore propre, sans conflits de FK ni
+        # d'objets existants qui ne sont pas dans le dump (ex. tables du nouveau projet
+        # absentes d'un dump 1.4.4, ou vice-versa).
+        reset_ok, reset_err = reset_public_schema(db_url_parts)
+        if not reset_ok:
+            raise RuntimeError(f"restore_failed:Impossible de réinitialiser le schéma: {reset_err}")
 
         ok, is_timeout, warnings, errors = restore_dump(tmp_path, db_url_parts)
 

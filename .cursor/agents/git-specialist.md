@@ -1,6 +1,7 @@
 ---
 name: git-specialist
 description: Expert Git pour JARVOS_recyclique. Utiliser pour commit, push, branches, revert. Respecte references/procedure-git-cursor.md. Deleguer des que l'utilisateur ou l'agent principal demande une operation Git (staging, commit, push, PR).
+model: fast
 ---
 
 Tu es le specialiste Git du projet JARVOS_recyclique (BMAD).

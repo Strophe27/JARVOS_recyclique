@@ -79,6 +79,11 @@ def admin_db_import(
             detail=f"Fichier trop volumineux ({file_size_bytes // (1024 * 1024)} MB). Limite : 500 MB.",
         )
 
+    # Capturer user_id comme valeur Python brute avant le restore :
+    # après pg_restore, la session SQLAlchemy est morte et current_user.id
+    # déclencherait un lazy-load sur une connexion fermée.
+    current_user_id = current_user.id
+
     start_time = datetime.now(timezone.utc)
     backup_created: str | None = None
     backup_path: str | None = None
@@ -103,7 +108,7 @@ def admin_db_import(
         try:
             write_audit_event(
                 db,
-                user_id=current_user.id,
+                user_id=current_user_id,
                 action="admin.db.import",
                 resource_type="db",
                 details=details,
@@ -115,7 +120,7 @@ def admin_db_import(
             try:
                 write_audit_event(
                     new_db,
-                    user_id=current_user.id,
+                    user_id=current_user_id,
                     action="admin.db.import",
                     resource_type="db",
                     details=details,

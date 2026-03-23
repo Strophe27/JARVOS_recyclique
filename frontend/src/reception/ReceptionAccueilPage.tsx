@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Button,
   Modal,
@@ -29,6 +29,7 @@ import styles from './ReceptionAccueilPage.module.css';
 
 export function ReceptionAccueilPage() {
   const { accessToken, user } = useAuth();
+  const navigate = useNavigate();
 
   const [poste, setPoste] = useState<PosteReceptionItem | null | undefined>(undefined);
   const [tickets, setTickets] = useState<TicketDepotItem[]>([]);
@@ -165,20 +166,13 @@ export function ReceptionAccueilPage() {
     setLoading(true);
     try {
       const t = await createTicket(accessToken);
-      if (poste?.id) {
-        setTickets((prev) => [t, ...prev]);
-        setTotalTickets((n) => n + 1);
-      } else {
-        setPoste({ id: t.poste_id } as PosteReceptionItem);
-        setTickets([t]);
-        setTotalTickets(1);
-      }
+      navigate(`/reception/tickets/${t.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur creation ticket');
     } finally {
       setLoading(false);
     }
-  }, [accessToken, poste?.id]);
+  }, [accessToken, navigate]);
 
   const handleCloseTicket = useCallback(
     async (t: TicketDepotItem) => {
@@ -226,8 +220,10 @@ export function ReceptionAccueilPage() {
   const getArticleCount = (t: TicketDepotItem) =>
     t.lignes ? t.lignes.length : null;
 
-  const getTotalWeight = (t: TicketDepotItem) =>
-    t.lignes ? t.lignes.reduce((sum, l) => sum + l.poids_kg, 0) : null;
+  const getTotalWeight = (t: TicketDepotItem): number | null =>
+    t.lignes
+      ? t.lignes.reduce((sum, l) => sum + Number(l.poids_kg ?? 0), 0)
+      : null;
 
   return (
     <div className={styles.page} data-testid="reception-accueil-page">
@@ -324,7 +320,7 @@ export function ReceptionAccueilPage() {
             <strong>Tickets aujourd&apos;hui :</strong> {stats.tickets_today}
           </Text>
           <Text size="sm">
-            <strong>Poids total (kg) :</strong> {stats.total_weight_kg}
+            <strong>Poids total (kg) :</strong> {Number(stats.total_weight_kg ?? 0).toFixed(1)}
           </Text>
           <Text size="sm">
             <strong>Lignes :</strong> {stats.lines_count}
@@ -367,7 +363,7 @@ export function ReceptionAccueilPage() {
                 </span>
                 <span className={styles.ticketMeta}>
                   <UserIcon />
-                  {t.benevole_user_id?.slice(0, 8) ?? '—'}
+                  {t.benevole_user_name ?? t.benevole_user_id?.slice(0, 8) ?? '—'}
                 </span>
                 <span className={styles.ticketMeta}>
                   <ArticlesIcon />
@@ -375,7 +371,7 @@ export function ReceptionAccueilPage() {
                 </span>
                 <span className={styles.ticketMeta}>
                   <WeightIcon />
-                  {totalWeight != null ? `${totalWeight.toFixed(2)} kg` : '—'}
+                  {totalWeight != null ? `${Number(totalWeight).toFixed(2)} kg` : '—'}
                 </span>
                 <Badge
                   color={isOpen ? 'green' : 'gray'}

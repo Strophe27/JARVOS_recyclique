@@ -276,6 +276,7 @@ export interface PresetItem {
   id: string;
   name: string;
   category_id: string | null;
+  /** Centimes (aligné `api/schemas/preset.py`). */
   preset_price: number;
   button_type: string;
   sort_order: number;
@@ -306,6 +307,9 @@ export interface CategoryItem {
   is_visible_reception: boolean;
   display_order: number;
   display_order_entry: number;
+  /** Euros, prix fixe vente (1.4.4 / Story 19.7) — voir CategoryResponse. */
+  price?: number | null;
+  max_price?: number | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

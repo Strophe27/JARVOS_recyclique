@@ -14,6 +14,8 @@ class CategoryBase(BaseModel):
     is_visible_reception: bool = True
     display_order: int = 0
     display_order_entry: int = 0
+    price: float | None = None
+    max_price: float | None = None
 
 
 class CategoryCreate(CategoryBase):
@@ -28,6 +30,8 @@ class CategoryUpdate(BaseModel):
     is_visible_reception: bool | None = None
     display_order: int | None = None
     display_order_entry: int | None = None
+    price: float | None = None
+    max_price: float | None = None
 
 
 class CategoryResponse(CategoryBase):
@@ -50,6 +54,8 @@ class CategoryHierarchyNode(BaseModel):
     is_visible_reception: bool
     display_order: int
     display_order_entry: int
+    price: float | None = None
+    max_price: float | None = None
     deleted_at: datetime | None
     children: list["CategoryHierarchyNode"] = Field(default_factory=list)
 
@@ -88,11 +94,14 @@ class CategoryImportAnalyzeRow(BaseModel):
     row_index: int
     name: str | None = None
     parent_id: UUID | None = None
+    parent_ref: str | None = None  # référence parent non-UUID (nom textuel ou entier, CSV 1.4.4)
     official_name: str | None = None
     is_visible_sale: bool = True
     is_visible_reception: bool = True
     display_order: int = 0
     display_order_entry: int = 0
+    price: float | None = None
+    max_price: float | None = None
     valid: bool = True
     error: str | None = None
 

@@ -41,6 +41,7 @@ export interface TicketDepotItem {
   id: string;
   poste_id: string;
   benevole_user_id: string | null;
+  benevole_user_name?: string | null;
   created_at: string;
   closed_at: string | null;
   status: string;

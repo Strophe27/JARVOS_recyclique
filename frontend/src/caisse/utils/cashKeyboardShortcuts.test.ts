@@ -78,6 +78,18 @@ describe('CashKeyboardShortcutHandler', () => {
       const shortcuts = handler.getShortcuts();
       expect(shortcuts).toHaveLength(3);
     });
+
+    it('should map only the categories passed (niveau affiche), not a longer API list — Story 19-8', () => {
+      const visibleRoots = [
+        { id: 'root-b', name: 'B' },
+        { id: 'root-a', name: 'A' },
+      ];
+      handler.initialize(visibleRoots, mockOnShortcut);
+
+      expect(handler.getKeyForCategory('root-b')).toBe('A');
+      expect(handler.getKeyForCategory('root-a')).toBe('Z');
+      expect(handler.getKeyForCategory('other')).toBeUndefined();
+    });
   });
 
   describe('shortcut activation / deactivation', () => {

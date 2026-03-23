@@ -86,6 +86,8 @@ def _get_fake_user():
         role="operator",
         status="active",
         site_id=FAKE_SITE_ID,
+        first_name="Test",
+        last_name="Reception",
     )
     return u
 

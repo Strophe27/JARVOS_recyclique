@@ -310,3 +310,119 @@ def test_error_format_has_detail(client: TestClient, auth_headers: dict):
     data = resp.json()
     assert "detail" in data
     assert isinstance(data["detail"], str)
+
+
+# ——— Tests import CSV (Story 19.1) ———
+
+def _csv_bytes(rows: list[list[str]]) -> bytes:
+    """Construit un CSV UTF-8 à partir d'une liste de lignes (list[str])."""
+    import csv, io
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["name", "parent_id", "official_name", "is_visible_sale", "is_visible_reception", "display_order", "display_order_entry"])
+    for row in rows:
+        w.writerow(row)
+    return buf.getvalue().encode("utf-8")
+
+
+def _analyze(client: TestClient, auth_headers: dict, csv_bytes: bytes) -> list[dict]:
+    """POST /import/analyze et retourne les rows."""
+    resp = client.post(
+        "/v1/categories/import/analyze",
+        headers=auth_headers,
+        files={"file": ("categories.csv", csv_bytes, "text/csv")},
+    )
+    assert resp.status_code == 200, resp.json()
+    return resp.json()["rows"]
+
+
+def test_import_execute_racines_et_sous_categories(client: TestClient, auth_headers: dict):
+    """T5.1 — Import 3 racines + 5 sous-catégories (parent_ref non-UUID) → 8 créées, 0 erreur."""
+    csv_data = _csv_bytes([
+        ["Electronique", "", "", "true", "true", "1", "1"],
+        ["Vetements", "", "", "true", "true", "2", "2"],
+        ["Mobilier", "", "", "true", "true", "3", "3"],
+        ["Telephone", "Electronique", "", "true", "true", "1", "1"],
+        ["Ordinateur", "Electronique", "", "true", "true", "2", "2"],
+        ["T-shirt", "Vetements", "", "true", "true", "1", "1"],
+        ["Pantalon", "Vetements", "", "true", "true", "2", "2"],
+        ["Chaise", "Mobilier", "", "true", "true", "1", "1"],
+    ])
+    rows = _analyze(client, auth_headers, csv_data)
+    assert len(rows) == 8
+    assert all(r["valid"] for r in rows), f"Lignes invalides : {[r for r in rows if not r['valid']]}"
+
+    resp = client.post(
+        "/v1/categories/import/execute",
+        json={"rows": rows},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.json()
+    data = resp.json()
+    assert data["created"] == 8
+    assert data["errors"] == []
+
+    # Vérification BDD : catégories et sous-catégories présentes
+    list_resp = client.get("/v1/categories", headers=auth_headers)
+    names = [c["name"] for c in list_resp.json()]
+    for expected in ["Electronique", "Vetements", "Mobilier", "Telephone", "Ordinateur", "T-shirt", "Pantalon", "Chaise"]:
+        assert expected in names, f"Catégorie manquante : {expected}"
+
+
+def test_import_execute_non_regression_racines_seules(client: TestClient, auth_headers: dict):
+    """T5.2 — Import CSV sans sous-catégories : comportement inchangé."""
+    csv_data = _csv_bytes([
+        ["CatA", "", "Officiel A", "true", "true", "1", "0"],
+        ["CatB", "", "", "false", "true", "2", "0"],
+        ["CatC", "", "", "true", "false", "3", "0"],
+    ])
+    rows = _analyze(client, auth_headers, csv_data)
+    assert len(rows) == 3
+    assert all(r["valid"] for r in rows)
+
+    resp = client.post(
+        "/v1/categories/import/execute",
+        json={"rows": rows},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["created"] == 3
+    assert data["errors"] == []
+
+    list_resp = client.get("/v1/categories", headers=auth_headers)
+    names = [c["name"] for c in list_resp.json()]
+    assert "CatA" in names
+    assert "CatB" in names
+    assert "CatC" in names
+
+
+def test_import_execute_parent_orphelin_dans_errors(client: TestClient, auth_headers: dict):
+    """T5.3 — Sous-catégorie avec parent introuvable → dans errors, autres lignes importées."""
+    csv_data = _csv_bytes([
+        ["RacineOK", "", "", "true", "true", "1", "0"],
+        ["EnfantOK", "RacineOK", "", "true", "true", "1", "0"],
+        ["EnfantOrphelin", "ParentInexistant", "", "true", "true", "2", "0"],
+    ])
+    rows = _analyze(client, auth_headers, csv_data)
+    assert len(rows) == 3
+    # Toutes les lignes sont valides après analyze (le parent n'est pas vérifié à l'analyze)
+    assert all(r["valid"] for r in rows)
+
+    resp = client.post(
+        "/v1/categories/import/execute",
+        json={"rows": rows},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    # RacineOK + EnfantOK insérés ; EnfantOrphelin en erreur
+    assert data["created"] == 2
+    assert len(data["errors"]) == 1
+    assert "ParentInexistant" in data["errors"][0] or "introuvable" in data["errors"][0]
+
+    list_resp = client.get("/v1/categories", headers=auth_headers)
+    names = [c["name"] for c in list_resp.json()]
+    assert "RacineOK" in names
+    assert "EnfantOK" in names
+    assert "EnfantOrphelin" not in names

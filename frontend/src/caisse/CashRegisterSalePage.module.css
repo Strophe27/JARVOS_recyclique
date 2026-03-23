@@ -19,12 +19,13 @@
   flex-shrink: 0;
 }
 
-/* Barre de stats (AC#2) */
+/* Barre de stats (AC#2) — Story 19.9 : grille équilibrée type 1.4.4 (audit §7 KPI) */
 .statsBar {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 16px;
+  padding: 8px 16px;
   background: var(--ui-color-stats-bar-bg, #2d2b55);
   color: #fff;
   flex-shrink: 0;
@@ -32,11 +33,21 @@
   overflow-x: auto;
 }
 
+.statsBarGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  flex: 1;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
 .statItem {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  align-items: center;
+  text-align: center;
 }
 
 .statLabel {
@@ -46,7 +57,80 @@
   white-space: nowrap;
 }
 
-/* Zone principale : tabs + grille + ticket (AC#3, AC#5) */
+/* Grille 3 colonnes — parité Sale.tsx 1.4.4 (numpad | assistant | ticket) */
+.saleKioskMain {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(280px, 2fr) minmax(260px, 1fr);
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  background: #f5f5f5;
+}
+
+.saleKioskMain[data-numpad-mode='idle'] .leftNumpad {
+  display: none;
+}
+
+.saleKioskMain[data-numpad-mode='idle'] .centerWizard {
+  grid-column: span 2;
+}
+
+.leftNumpad {
+  background: #fff;
+  border-right: 1px solid var(--ui-color-border, #dee2e6);
+  padding: 0.75rem;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.centerWizard {
+  background: #fff;
+  border-right: 1px solid var(--ui-color-border, #dee2e6);
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.numpadPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+}
+
+.saleKioskMain .ticketPanel {
+  width: auto;
+  max-width: none;
+  border-left: none;
+}
+
+@media (max-width: 1200px) {
+  .saleKioskMain {
+    grid-template-columns: minmax(180px, 1fr) minmax(240px, 2fr);
+  }
+
+  .saleKioskMain .ticketPanel {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .saleKioskMain {
+    grid-template-columns: 1fr;
+  }
+
+  .saleKioskMain[data-numpad-mode='idle'] .centerWizard {
+    grid-column: span 1;
+  }
+
+  .saleKioskMain .ticketPanel {
+    display: flex;
+  }
+}
+
+/* Zone principale legacy (flex) — conservée si réutilisée ailleurs */
 .mainArea {
   display: flex;
   flex: 1;
@@ -195,6 +279,18 @@
   padding: 2px 6px;
 }
 
+/* Modifier ligne panier — Story 19.7 */
+.ticketLineEdit {
+  border: none;
+  background: none;
+  color: var(--ui-color-brand-header, #2e7d32);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 /* Banners offline/sync */
 .bannerArea {
   padding: 0 16px;
@@ -247,11 +343,12 @@
   background: #fff;
   border-radius: 10px;
   padding: 24px;
-  min-width: 420px;
+  min-width: min(420px, 100%);
   max-width: 620px;
   max-height: 90vh;
   overflow-y: auto;
   width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 /* Message succes (Story 18-8 AC4) */

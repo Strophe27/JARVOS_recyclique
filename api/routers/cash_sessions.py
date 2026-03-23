@@ -53,7 +53,9 @@ def _ensure_session_totals(db: Session, row: CashSession) -> CashSession:
 def _check_session_permission(current_user: User, db: Session, session_type: str) -> None:
     """Raise 403 if user lacks permission for this session type."""
     from api.services.permissions import get_user_permission_codes_from_user
-    codes = get_user_permission_codes_from_user(db, current_user)
+    from api.core.deps import _permission_codes_with_role_implicits
+    raw = get_user_permission_codes_from_user(db, current_user)
+    codes = _permission_codes_with_role_implicits(raw, current_user.role)
     if "admin" in codes:
         return
     if session_type == "virtual" and "caisse.virtual.access" not in codes:

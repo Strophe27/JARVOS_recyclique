@@ -18,6 +18,7 @@ import {
   IconActivityHeartbeat,
   IconSettings,
   IconBuilding,
+  IconDeviceDesktop,
   IconScale,
   IconDatabase,
   IconFileImport,
@@ -30,7 +31,7 @@ import type { DashboardStats } from '../api/adminDashboard';
 import styles from './AdminDashboardPage.module.css';
 
 function centsToEuros(cents: number): string {
-  return (cents / 100).toFixed(2);
+  return (Number(cents) / 100).toFixed(2);
 }
 
 export function AdminDashboardPage() {
@@ -158,7 +159,7 @@ export function AdminDashboardPage() {
                   <IconScale size={18} stroke={1.5} />
                   <Text fw={600} c="inherit">Poids sorti</Text>
                 </Group>
-                <Text fw={700} size="xl">{poidsSorti.toFixed(1)}&nbsp;kg</Text>
+                <Text fw={700} size="xl">{Number(poidsSorti || 0).toFixed(1)}&nbsp;kg</Text>
                 <Text size="sm" c="dimmed">Sorti aujourd&apos;hui</Text>
               </div>
               <div
@@ -169,7 +170,7 @@ export function AdminDashboardPage() {
                   <IconScale size={18} stroke={1.5} />
                   <Text fw={600} c="inherit">Poids re&ccedil;u</Text>
                 </Group>
-                <Text fw={700} size="xl">{poidsRecu.toFixed(1)}&nbsp;kg</Text>
+                <Text fw={700} size="xl">{Number(poidsRecu || 0).toFixed(1)}&nbsp;kg</Text>
                 <Text size="sm" c="dimmed">Re&ccedil;u aujourd&apos;hui</Text>
               </div>
             </SimpleGrid>
@@ -273,10 +274,19 @@ export function AdminDashboardPage() {
                   to="/admin/sites"
                   className={styles.superAdminBlock}
                   data-testid="admin-superadmin-sites"
-                  aria-label="Sites & Caisses"
+                  aria-label="Sites"
                 >
                   <IconBuilding size={22} stroke={1.5} />
-                  <span>Sites &amp; Caisses</span>
+                  <span>Sites</span>
+                </Link>
+                <Link
+                  to="/admin/cash-registers"
+                  className={styles.superAdminBlock}
+                  data-testid="admin-superadmin-cash-registers"
+                  aria-label="Postes de caisse"
+                >
+                  <IconDeviceDesktop size={22} stroke={1.5} />
+                  <span>Postes de caisse</span>
                 </Link>
                 <Link
                   to="/admin/db"

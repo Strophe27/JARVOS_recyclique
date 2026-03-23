@@ -5,7 +5,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -27,6 +27,8 @@ class Category(Base):
     is_visible_reception = Column(Boolean, nullable=False, default=True)
     display_order = Column(Integer, nullable=False, default=0)
     display_order_entry = Column(Integer, nullable=False, default=0)
+    price = Column(Numeric(10, 2), nullable=True)
+    max_price = Column(Numeric(10, 2), nullable=True)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)

@@ -178,6 +178,14 @@
 4. **Pas de mode paiement au clavier** : en 1.4.4, des raccourcis permettaient de sélectionner le mode de paiement directement.
 5. **Algorithme d'assignation des lettres non-AZERTY** : l'algorithme actuel prend la première lettre disponible du nom ; il ne considère pas les positions AZERTY ni la fréquence d'usage.
 
+### Note ultérieure (story 19-8, 2026-03-23)
+
+Les listes et écarts ci-dessus reflètent **l’état au 2026-03-02** (audit). Après la story **19-8** (sur la base de 18-7) :
+
+- **Fichiers** : `frontend/src/caisse/utils/cashKeyboardShortcuts.ts`, `azertyKeyboard.ts` ; orchestration clavier au niveau document dans `CashRegisterSalePage.tsx`.
+- **Couvert** : grille **positionnelle** A–Z (26 positions) ; raccourcis alignés sur les catégories du **niveau affiché** (racine ou sous-catégories du parent courant) ; **préfixe quantité** (chiffres directs + rangée AZERTY `& é " ' (` …) puis lettre ; **Poids / Prix** : saisie AZERTY dans les `NumberInput` ; **Enter** (finalisation si panier non vide), **Escape** (vider le préfixe quantité), **Backspace** hors champ (dernière ligne panier) ; suspension si focus input / finalisation.
+- **Toujours hors scope ou non couvert par 19-8** : raccourcis **preset** type F1–F12, **mode de paiement** au clavier, utilitaire générique `keyboardShortcuts.ts` dédié, flux « **raccourci global** poids/prix » distinct de la saisie dans les champs (cf. épic / stories ticket & navigation 19.9).
+
 ---
 
 ## §4 — Ticket en temps réel

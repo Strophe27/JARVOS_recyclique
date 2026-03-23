@@ -46,7 +46,7 @@ import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
 import { ProfilPage } from './auth/ProfilPage';
 import { useAuth } from './auth/AuthContext';
-import { AppShell } from './shared/layout';
+import { AppShell, ErrorBoundary } from './shared/layout';
 
 function AppRoutes() {
   const { user, isHydrated } = useAuth();
@@ -150,8 +150,8 @@ function AppRoutes() {
           </AdminGuard>
         }
       />
-      <Route path="/reception" element={<AuthGuard><ReceptionAccueilPage /></AuthGuard>} />
-      <Route path="/reception/tickets/:ticketId" element={<AuthGuard><ReceptionTicketDetailPage /></AuthGuard>} />
+      <Route path="/reception" element={<AuthGuard><ErrorBoundary fallbackTitle="Erreur — Reception"><ReceptionAccueilPage /></ErrorBoundary></AuthGuard>} />
+      <Route path="/reception/tickets/:ticketId" element={<AuthGuard><ErrorBoundary fallbackTitle="Erreur — Detail ticket"><ReceptionTicketDetailPage /></ErrorBoundary></AuthGuard>} />
       <Route path="/profil" element={<AuthGuard><ProfilPage /></AuthGuard>} />
       <Route
         path="/admin/categories"
@@ -267,7 +267,9 @@ export function App() {
     <BrowserRouter>
       <CashRegisterGuard>
         <AppShell>
-          <AppRoutes />
+          <ErrorBoundary fallbackTitle="Erreur inattendue">
+            <AppRoutes />
+          </ErrorBoundary>
         </AppShell>
       </CashRegisterGuard>
     </BrowserRouter>

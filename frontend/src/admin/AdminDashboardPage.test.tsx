@@ -153,6 +153,10 @@ describe('AdminDashboardPage', () => {
       '/admin/settings',
     );
     expect(screen.getByTestId('admin-superadmin-sites')).toHaveAttribute('href', '/admin/sites');
+    expect(screen.getByTestId('admin-superadmin-cash-registers')).toHaveAttribute(
+      'href',
+      '/admin/cash-registers',
+    );
     expect(screen.getByTestId('admin-superadmin-db')).toHaveAttribute('href', '/admin/db');
     expect(screen.getByTestId('admin-superadmin-import-legacy')).toHaveAttribute(
       'href',

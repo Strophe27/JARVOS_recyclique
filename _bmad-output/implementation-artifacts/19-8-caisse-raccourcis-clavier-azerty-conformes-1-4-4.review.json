@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Revu adversarial 19-8 vs AC et audits 18-4 §3 / 19-6 : visibleCategoriesForShortcuts + handler enregistre uniquement le niveau actif ; préfixe quantité via mapAZERTYToNumeric (dont touches & AZERTY) ; Poids/Prix branchés sur handleAZERTYInput ; Enter/Escape/Backspace et garde finalisation documentés en Completion Notes. Vitest : CashRegisterSalePage.test.tsx + cashKeyboardShortcuts.test.ts — 73/73 OK. Constats non bloquants : File List sans azertyKeyboard.ts malgré usage ; pas de test RTL miroir onglet Prix pour AC3 (symétrie code) ; pas de test explicite AC5 raccourcis sous finalization-screen ouvert ; useMemo avec initialize() = effet de bord ; avertissements act() Mantine préexistants sur scénarios 18-8."
+}

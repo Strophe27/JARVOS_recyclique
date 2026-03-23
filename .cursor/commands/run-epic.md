@@ -14,6 +14,8 @@ Tu es l'orchestrateur BMAD Autopilot. Execute la boucle suivante :
 
 2. Lis `_bmad-output/implementation-artifacts/sprint-status.yaml`. Determine l'epic cible : si `$ARGUMENTS` est fourni (ex. epic-1), filtre sur cet epic ; sinon prend le premier epic avec au moins une story en `backlog`. Identifie la prochaine story a traiter (premiere story en backlog pour cet epic, en lisant development_status dans l'ordre).
 
+2bis. Avant de lancer la cascade, consulte `user-llm-tier-advisor` une seule fois pour ce run complet et affiche sa recommandation de tier/modele pour `bmad-orchestrator`, `bmad-sm`, `bmad-dev`, `bmad-revisor` et `bmad-qa`. Demande validation explicite de l'humain avant de continuer.
+
 3. Pour chaque story de l'epic (dans l'ordre), enchainement :
    - Create Story (Task bmad-sm) → apres chaque Task, lis `_bmad-output/implementation-artifacts/{story_key}.agent-state.json` : si existe et une question a `answer: null`, **pause** la cascade, affiche cette question a l'humain, valide la reponse (regles fixes : non vide, option valide si proposee), mets a jour l'etat, re-spawn le subagent concerne ; sinon continue.
    - Validate (Task bmad-sm) → meme controle agent-state.

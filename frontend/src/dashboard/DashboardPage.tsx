@@ -109,8 +109,8 @@ export function DashboardPage() {
 
       setSalesStats(cash);
       setReceptionStats(reception);
-      setReceptionByCategory(recByCat);
-      setSalesByCat(salesByCat);
+      setReceptionByCategory(Array.isArray(recByCat) ? recByCat : []);
+      setSalesByCat(Array.isArray(salesByCat) ? salesByCat : []);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur inconnue';
       setError(`Impossible de charger les statistiques: ${msg}`);
@@ -312,13 +312,13 @@ export function DashboardPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={120}
-                      label
+                      label={(entry: { value?: unknown }) => Number(entry?.value ?? 0).toFixed(0)}
                     >
                       {receptionByCategory.map((_entry, idx) => (
                         <Cell key={`rec-${idx}`} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(v: unknown) => [Number(v ?? 0).toFixed(0), 'Articles']} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -366,13 +366,13 @@ export function DashboardPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={120}
-                      label
+                      label={(entry: { value?: unknown }) => Number(entry?.value ?? 0).toFixed(0)}
                     >
                       {salesByCategory.map((_entry, idx) => (
                         <Cell key={`sales-${idx}`} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(v: unknown) => [Number(v ?? 0).toFixed(0), 'Articles']} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

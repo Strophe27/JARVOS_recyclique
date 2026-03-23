@@ -93,9 +93,16 @@ export function FinalizationScreen({
 
   return (
     <div className={styles.finalizationOverlay} data-testid="finalization-screen">
-      <div className={styles.finalizationPanel}>
+      <div
+        className={styles.finalizationPanel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="finalization-title"
+      >
         <Stack gap="md">
-          <Text fw={700} size="lg">Finalisation de la vente</Text>
+          <Text id="finalization-title" fw={700} size="lg">
+            Finalisation de la vente
+          </Text>
 
           {successMessage && (
             <div className={styles.successBanner} data-testid="sale-success">

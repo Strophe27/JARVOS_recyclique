@@ -1,0 +1,4 @@
+{
+  "reviewResult": "approved",
+  "summary": "Revu adversariale BMAD : AC1–7 vérifiables en code — layout/KPI (statsBarGrid, CaisseStatsBar), onglets Mantine + activateTabWithKeyboard + Ctrl+1–4, handleAddCategoryLine bloqué si activeTabRef !== prix, enchaînement feuille → onglet Poids, prix fixe via getCategoryFixedUnitPriceCents + useEffect onglet Prix + Ticket (resolveCategoryFixedUnitPriceCents, modal désactivée si fixe), FinalizationScreen role=dialog/aria-modal. Vitest ciblé CashRegisterSalePage + Ticket + CaisseStatsBar : 63/63 OK. Moyen résolu : File List enrichi (CaisseStatsBar.test.tsx). Faible : warnings act() Mantine sur un test finalisation. Preuves visuelles / gate Epic 11 : recette manuelle (déjà notée en story)."
+}

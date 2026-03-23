@@ -6,6 +6,12 @@ import { MantineProvider } from '@mantine/core';
 import { ReceptionAccueilPage } from './ReceptionAccueilPage';
 import * as receptionApi from '../api/reception';
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({
     accessToken: 'fake-token',
@@ -47,6 +53,7 @@ const MOCK_TICKET_OPENED = {
   id: 'ticket-aabbccdd-1111',
   poste_id: 'poste-1',
   benevole_user_id: 'user-1',
+  benevole_user_name: 'Alice Dupont',
   created_at: '2026-02-27T12:00:00Z',
   closed_at: null,
   status: 'opened',
@@ -61,6 +68,7 @@ const MOCK_TICKET_CLOSED = {
   id: 'ticket-eeffgghh-2222',
   poste_id: 'poste-1',
   benevole_user_id: 'user-2',
+  benevole_user_name: 'Bob Martin',
   created_at: '2026-02-27T13:00:00Z',
   closed_at: '2026-02-27T14:00:00Z',
   status: 'closed',
@@ -168,6 +176,42 @@ describe('ReceptionAccueilPage', () => {
     expect(actionClosed).toHaveTextContent('Voir les details');
   });
 
+  it('affiche le nom utilisateur au lieu du code hex (Story 19.4)', async () => {
+    (receptionApi.getCurrentPoste as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_POSTE);
+    (receptionApi.getTickets as ReturnType<typeof vi.fn>).mockResolvedValue({
+      items: [MOCK_TICKET_OPENED, MOCK_TICKET_CLOSED],
+      total: 2,
+      page: 1,
+      page_size: 5,
+    });
+    (receptionApi.getReceptionStatsLive as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_STATS);
+    renderPage();
+
+    const cardOpen = await screen.findByTestId(`reception-ticket-card-${MOCK_TICKET_OPENED.id}`);
+    expect(cardOpen).toHaveTextContent('Alice Dupont');
+    expect(cardOpen).not.toHaveTextContent('user-1');
+
+    const cardClosed = screen.getByTestId(`reception-ticket-card-${MOCK_TICKET_CLOSED.id}`);
+    expect(cardClosed).toHaveTextContent('Bob Martin');
+    expect(cardClosed).not.toHaveTextContent('user-2');
+  });
+
+  it('fallback sur le code hex si benevole_user_name est null', async () => {
+    const ticketSansNom = { ...MOCK_TICKET_OPENED, benevole_user_name: null };
+    (receptionApi.getCurrentPoste as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_POSTE);
+    (receptionApi.getTickets as ReturnType<typeof vi.fn>).mockResolvedValue({
+      items: [ticketSansNom],
+      total: 1,
+      page: 1,
+      page_size: 5,
+    });
+    (receptionApi.getReceptionStatsLive as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_STATS);
+    renderPage();
+
+    const card = await screen.findByTestId(`reception-ticket-card-${ticketSansNom.id}`);
+    expect(card).toHaveTextContent('user-1');
+  });
+
   it('affiche la pagination quand il y a des tickets', async () => {
     (receptionApi.getCurrentPoste as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_POSTE);
     (receptionApi.getTickets as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -205,6 +249,32 @@ describe('ReceptionAccueilPage', () => {
     await u.click(closeBtn);
     await waitFor(() => {
       expect(receptionApi.closeTicket).toHaveBeenCalledWith('fake-token', MOCK_TICKET_OPENED.id);
+    });
+  });
+
+  it('redirige vers /reception/tickets/{id} apres creation de ticket', async () => {
+    const NEW_TICKET = {
+      id: 'new-ticket-99',
+      poste_id: 'poste-1',
+      benevole_user_id: 'user-1',
+      created_at: '2026-03-16T10:00:00Z',
+      closed_at: null,
+      status: 'opened',
+      updated_at: '2026-03-16T10:00:00Z',
+      lignes: [],
+    };
+    (receptionApi.getCurrentPoste as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_POSTE);
+    (receptionApi.getTickets as ReturnType<typeof vi.fn>).mockResolvedValue({
+      items: [], total: 0, page: 1, page_size: 5,
+    });
+    (receptionApi.getReceptionStatsLive as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_STATS);
+    vi.spyOn(receptionApi, 'createTicket').mockResolvedValue(NEW_TICKET as receptionApi.TicketDepotItem);
+    const u = userEvent.setup();
+    renderPage();
+    await screen.findByTestId('reception-create-ticket-btn');
+    await u.click(screen.getByTestId('reception-create-ticket-btn'));
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/reception/tickets/new-ticket-99');
     });
   });
 

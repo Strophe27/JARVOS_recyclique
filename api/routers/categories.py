@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from api.services.csv_categories import CSV_HEADERS, parse_csv_row as _parse_csv_row
+from api.services.csv_categories import CSV_HEADERS, detect_csv_format, parse_csv_row as _parse_csv_row, parse_csv_row_legacy as _parse_csv_row_legacy
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -212,11 +212,15 @@ async def post_import_analyze(
     header = next(reader, None)
     if not header:
         return CategoryImportAnalyzeResponse(total_rows=0, valid_rows=0, error_rows=0, rows=[])
+
+    # Lire toutes les lignes pour la détection de format
+    all_raw_rows = [row for row in reader if any(c.strip() for c in row)]
+    csv_format = detect_csv_format(header, all_raw_rows)
+    parser = _parse_csv_row_legacy if csv_format == "legacy" else _parse_csv_row
+
     rows: list[CategoryImportAnalyzeRow] = []
-    for i, row in enumerate(reader):
-        if not any(c.strip() for c in row):
-            continue
-        parsed = _parse_csv_row(row, i + 2)
+    for i, row in enumerate(all_raw_rows):
+        parsed = parser(row, i + 2)
         rows.append(parsed)
     valid = sum(1 for r in rows if r.valid)
     return CategoryImportAnalyzeResponse(
@@ -233,20 +237,24 @@ def post_import_execute(
     db: Session = Depends(get_db),
     current_user: User = _Admin,
 ) -> dict:
-    """POST /v1/categories/import/execute — execute l'import (lignes valides uniquement)."""
+    """POST /v1/categories/import/execute — import multi-niveaux (Story 19.1).
+
+    Stratégie en 2 temps pour gérer les hiérarchies à profondeur arbitraire :
+    1. Insérer TOUTES les lignes valides sans parent (parent_id=NULL) → flush → mapping nom→uuid.
+    2. Mettre à jour parent_id de chaque ligne qui a un parent_ref ou parent_id source.
+    Évite toute contrainte FK pendant les INSERTs ; aucun multi-pass nécessaire.
+    """
     created = 0
     errors: list[str] = []
-    for r in body.rows:
-        if not r.valid or not r.name:
-            continue
-        if r.parent_id is not None:
-            parent = _get_category_or_404(db, r.parent_id)
-            if parent is None:
-                errors.append(f"Ligne {r.row_index}: parent_id {r.parent_id} introuvable")
-                continue
+
+    valid_rows = [r for r in body.rows if r.valid and r.name]
+
+    # Étape 1 : insérer toutes les lignes valides sans parent
+    new_cats: list[tuple[CategoryImportAnalyzeRow, Category]] = []
+    for r in valid_rows:
         cat = Category(
             name=r.name,
-            parent_id=r.parent_id,
+            parent_id=None,  # parent résolu à l'étape 2
             official_name=r.official_name,
             is_visible_sale=r.is_visible_sale,
             is_visible_reception=r.is_visible_reception,
@@ -254,7 +262,32 @@ def post_import_execute(
             display_order_entry=r.display_order_entry,
         )
         db.add(cat)
+        new_cats.append((r, cat))
         created += 1
+
+    # Flush : génère les UUIDs côté SQLAlchemy, INSERTs envoyés à PostgreSQL
+    db.flush()
+
+    # Mapping nom → uuid à partir des catégories qu'on vient d'insérer
+    name_to_uuid: dict[str, UUID] = {cat.name: cat.id for _, cat in new_cats}
+
+    # Étape 2 : résoudre et appliquer les parents
+    for r, cat in new_cats:
+        if r.parent_ref is not None:
+            parent_uuid = name_to_uuid.get(r.parent_ref)
+            if parent_uuid is None:
+                errors.append(f"Ligne {r.row_index}: parent '{r.parent_ref}' introuvable")
+                created -= 1
+            else:
+                cat.parent_id = parent_uuid
+        elif r.parent_id is not None:
+            parent = db.get(Category, r.parent_id)
+            if parent is None:
+                errors.append(f"Ligne {r.row_index}: parent_id {r.parent_id} introuvable")
+                created -= 1
+            else:
+                cat.parent_id = r.parent_id
+
     db.commit()
     return {"created": created, "errors": errors}
 

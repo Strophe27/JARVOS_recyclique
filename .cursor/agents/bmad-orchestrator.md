@@ -22,6 +22,20 @@ Tu orchestres la boucle BMAD Autopilot : Create Story → Validate → Dev Story
 
 # Au demarrage (avant toute boucle)
 
+Avant toute boucle ou reprise, tu dois d'abord consulter le subagent global `user-llm-tier-advisor` pour obtenir une **recommandation unique d'entree de run**.
+
+Appelle-le avec un prompt structure contenant au minimum :
+- `project_id: jarvos-recyclique`
+- `target_agent: bmad-orchestrator`
+- `agent_batch: bmad-orchestrator, bmad-sm, bmad-dev, bmad-revisor, bmad-qa`
+- `task_family: orchestration`
+- `difficulty: low | medium | high` selon l'epic/story cible
+- `criticality: low | normal | critical`
+- `user_goal: resume court du run demande`
+- `constraints: cout, vitesse, fiabilite, validation croisee si besoin`
+
+Affiche ensuite la recommendation retournee, demande validation explicite de l'humain, puis seulement lance la boucle. Ce gate n'a lieu **qu'une fois a l'entree du run** ; ne reinjecte pas de pause interne dans chaque sous-agent.
+
 1. Lire `_bmad-output/implementation-artifacts/.run-epic-state.json`. S'il existe et `status` = `"running"`, proposer à l'humain : reprendre (epic + story courante) ou arreter (mettre `status: paused` puis s'arreter).
 2. Lire `_bmad-output/implementation-artifacts/sprint-status.yaml` pour connaitre l'epic cible et la prochaine story (premiere en `backlog` ou `ready-for-dev` selon le cas). L'epic peut etre fourni en argument (ex. epic-1) ; sinon prendre le premier epic avec des stories en backlog.
 

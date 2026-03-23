@@ -1,1 +1,7 @@
-{"epicId":"epic-18","currentStoryKey":null,"status":"paused","startedAt":"2026-03-02","lastStoryCompleted":"18-10-caisse-virtuelle-et-saisie-differee"}
+{
+  "epicId": "epic-19",
+  "currentStoryKey": null,
+  "startedAt": "2026-03-23",
+  "status": "paused",
+  "lastStoryCompleted": "19-9-caisse-disposition-conformite-visuelle-1-4-4"
+}

@@ -4,7 +4,8 @@
  * Vitest + RTL + MantineProvider.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
 import { CashRegisterSalePage } from './CashRegisterSalePage';
@@ -153,6 +154,7 @@ describe('CashRegisterSalePage — Story 15.3 layout', () => {
     expect(screen.getByText('Categorie')).toBeInTheDocument();
     expect(screen.getByText('Sous-categorie')).toBeInTheDocument();
     expect(screen.getByText('Poids')).toBeInTheDocument();
+    expect(screen.getByText('Quantite')).toBeInTheDocument();
     expect(screen.getByText('Prix')).toBeInTheDocument();
   });
 
@@ -299,10 +301,10 @@ describe('CashRegisterSalePage — raccourcis clavier AZERTY (Story 18-7)', () =
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
     });
 
-    // La categorie en position 1 doit etre selectionnee (classe CSS selected)
+    // Feuille : onglet Poids + article en cours (grille démontée avec keepMounted=false — 19.9)
     await waitFor(() => {
-      const card = screen.getByTestId('category-card-cat-1');
-      expect(card.className).toMatch(/selected/i);
+      expect(screen.getByRole('tab', { name: /Poids/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Cat 1');
     });
   });
 
@@ -317,8 +319,8 @@ describe('CashRegisterSalePage — raccourcis clavier AZERTY (Story 18-7)', () =
     });
 
     await waitFor(() => {
-      const card = screen.getByTestId('category-card-cat-2');
-      expect(card.className).toMatch(/selected/i);
+      expect(screen.getByRole('tab', { name: /Poids/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Bijoux');
     });
   });
 
@@ -337,7 +339,7 @@ describe('CashRegisterSalePage — raccourcis clavier AZERTY (Story 18-7)', () =
     expect(card2).toHaveTextContent('Z');
   });
 
-  it('chiffre puis lettre pre-remplit la quantite (3 + A = quantite 3)', async () => {
+  it('1.4.4 : sur onglet Categorie, chiffre puis lettre ne pre-remplit pas la quantite (A seul → Qté 1)', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
@@ -350,9 +352,9 @@ describe('CashRegisterSalePage — raccourcis clavier AZERTY (Story 18-7)', () =
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
     });
 
-    // L'article en cours de saisie doit afficher Qte : 3
     await waitFor(() => {
-      expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Qté : 3');
+      expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Qté : 1');
+      expect(screen.getByRole('tab', { name: /Poids/i })).toHaveAttribute('aria-selected', 'true');
     });
   });
 
@@ -431,26 +433,23 @@ describe('CashRegisterSalePage — raccourcis clavier AZERTY (Story 18-7)', () =
     expect(mockPostSale).not.toHaveBeenCalled();
   });
 
-  it('Backspace hors champ supprime la derniere ligne du panier', async () => {
+  it('1.4.4 : Backspace sur ecran categorie ne supprime pas une ligne du panier', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
     });
 
-    // Ajouter un article
     fireEvent.click(screen.getByTestId('preset-preset-1'));
     await waitFor(() => {
       expect(screen.queryByTestId('cart-empty')).not.toBeInTheDocument();
     });
 
-    // Backspace doit supprimer l'article
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('cart-empty')).toBeInTheDocument();
-    });
+    await new Promise((r) => setTimeout(r, 80));
+    expect(screen.queryByTestId('cart-empty')).not.toBeInTheDocument();
   });
 
   it('raccourcis desactives quand focus sur input', async () => {
@@ -470,6 +469,134 @@ describe('CashRegisterSalePage — raccourcis clavier AZERTY (Story 18-7)', () =
     await new Promise((resolve) => setTimeout(resolve, 50));
     const card = screen.getByTestId('category-card-cat-1');
     expect(card.className).not.toMatch(/selected/i);
+  });
+
+  it('Story 19-8 : racines visibles gardent A/Z meme si une sous-categorie precede dans la reponse API', async () => {
+    mockGetCategoriesSaleTickets.mockResolvedValue([
+      {
+        id: 'sub-under-1',
+        name: 'Sous',
+        parent_id: 'cat-1',
+        official_name: null,
+        is_visible_sale: true,
+        is_visible_reception: false,
+        display_order: 0,
+        display_order_entry: 0,
+        deleted_at: null,
+        created_at: '',
+        updated_at: '',
+      },
+      ...fakeCategories,
+    ] as caisseApi.CategoryItem[]);
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+
+    const card1 = screen.getByTestId('category-card-cat-1');
+    const card2 = screen.getByTestId('category-card-cat-2');
+    expect(card1).toHaveTextContent('A');
+    expect(card2).toHaveTextContent('Z');
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    });
+    // cat-1 a un enfant : navigation sous-categories, pas selection feuille (19.9)
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Sous-categorie/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('subcategory-grid')).toBeInTheDocument();
+    });
+  });
+
+  it('1.4.4 : onglet Quantite — touches & (AZERTY) saisissent 11 sur le pavé logique', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('category-card-cat-1'));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Poids/i })).toHaveAttribute('aria-selected', 'true');
+    });
+    await user.type(screen.getByTestId('cat-weight'), '1');
+    await user.click(screen.getByTestId('goto-quantite-from-poids'));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Quantite/i })).toHaveAttribute('aria-selected', 'true');
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '&', bubbles: true }));
+    });
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '&', bubbles: true }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('numpad-display')).toHaveTextContent('11');
+    });
+  });
+
+  it('Story 19-8 : onglet Poids — saisie & insere le chiffre 1 (AZERTY)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('category-card-cat-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('cat-weight')).toBeInTheDocument();
+    });
+    const weightInput = screen.getByTestId('cat-weight');
+    await user.click(weightInput);
+    fireEvent.keyDown(weightInput, { key: '&', bubbles: true });
+    await waitFor(() => {
+      expect(weightInput).toHaveValue('1');
+    });
+  });
+
+  it('Story 19-8 : onglet Prix — saisie & insere le chiffre 1 (AZERTY)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('category-card-cat-1'));
+    await user.type(screen.getByTestId('cat-weight'), '1');
+    await user.click(screen.getByTestId('goto-quantite-from-poids'));
+    await user.click(screen.getByTestId('goto-prix-from-quantite'));
+    await waitFor(() => {
+      expect(screen.getByTestId('cat-price')).toBeInTheDocument();
+    });
+    const priceInput = screen.getByTestId('cat-price');
+    await user.click(priceInput);
+    fireEvent.keyDown(priceInput, { key: '&', bubbles: true });
+    await waitFor(() => {
+      expect(priceInput).toHaveValue('1');
+    });
+  });
+
+  it('Story 19-8 : sur onglet Poids, un chiffre alimente le poids, pas la quantite affichee', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('category-card-cat-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('cat-weight')).toBeInTheDocument();
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true }));
+    });
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    });
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Qté : 1');
+    expect(screen.getByTestId('cat-weight')).toHaveValue('3');
   });
 });
 
@@ -510,20 +637,17 @@ describe('CashRegisterSalePage \u2014 Story 18-8 flux finalisation', () => {
     });
   });
 
-  it('click Finaliser avec panier vide affiche erreur "Panier vide" sans ouvrir FinalizationScreen', async () => {
+  it('1.4.4 : panier vide + Entree sur categorie ne finalise pas (pas d overlay)', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('btn-finaliser')).toBeInTheDocument();
     });
-    // Le bouton est disabled quand panier vide, on teste via click direct
-    // On simule Entree a la place pour tester le message d'erreur
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     });
-    await waitFor(() => {
-      expect(screen.getByTestId('sale-error')).toBeInTheDocument();
-    });
+    await new Promise((r) => setTimeout(r, 80));
     expect(screen.queryByTestId('finalization-screen')).not.toBeInTheDocument();
+    expect(screen.getByTestId('btn-finaliser')).toBeDisabled();
   });
 
   it('Entree avec panier non vide ouvre FinalizationScreen', async () => {
@@ -540,7 +664,7 @@ describe('CashRegisterSalePage \u2014 Story 18-8 flux finalisation', () => {
     });
   });
 
-  it('Entree avec panier vide affiche erreur "Panier vide" sans ouvrir FinalizationScreen', async () => {
+  it('1.4.4 : Entree avec panier vide sur categorie ne declenche pas finalisation', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('page-cash-register-sale')).toBeInTheDocument();
@@ -548,9 +672,7 @@ describe('CashRegisterSalePage \u2014 Story 18-8 flux finalisation', () => {
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     });
-    await waitFor(() => {
-      expect(screen.getByTestId('sale-error')).toBeInTheDocument();
-    });
+    await new Promise((r) => setTimeout(r, 80));
     expect(screen.queryByTestId('finalization-screen')).not.toBeInTheDocument();
     expect(mockPostSale).not.toHaveBeenCalled();
   });
@@ -656,5 +778,248 @@ describe('CashRegisterSalePage \u2014 Story 18-8 flux finalisation', () => {
       expect(screen.getByTestId('rendu-monnaie')).toBeInTheDocument();
     });
     expect(screen.getByTestId('rendu-monnaie')).toHaveTextContent('15.00');
+  });
+});
+
+describe('CashRegisterSalePage — Story 19.7 presets / prix fixe', () => {
+  it('affiche message aucun preset quand API presets vide', async () => {
+    mockGetPresetsActive.mockResolvedValue([]);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-empty-message')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('preset-empty-message')).toHaveTextContent(/Aucun preset configuré/i);
+  });
+
+  it('erreur chargement presets : bandeau sans bloquer grille categories', async () => {
+    mockGetPresetsActive.mockRejectedValue(new Error('Network fail'));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('page-cash-register-sale')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('presets-load-error')).toHaveTextContent(/Network fail/);
+    expect(screen.getByTestId('caisse-category-grid')).toBeInTheDocument();
+  });
+
+  it('clic preset applique prix fixe categorie (3 EUR) malgré preset_price aberrant', async () => {
+    mockGetPresetsActive.mockResolvedValue([
+      {
+        id: 'preset-lampe',
+        name: 'Lampe preset',
+        category_id: 'cat-lampe',
+        preset_price: 99999,
+        button_type: 'sale',
+        sort_order: 0,
+        is_active: true,
+        created_at: '',
+        updated_at: '',
+      },
+    ] as caisseApi.PresetItem[]);
+    mockGetCategoriesSaleTickets.mockResolvedValue([
+      ...fakeCategories,
+      {
+        id: 'cat-lampe',
+        name: 'Lampe',
+        parent_id: null,
+        official_name: null,
+        is_visible_sale: true,
+        is_visible_reception: false,
+        display_order: 2,
+        display_order_entry: 2,
+        price: 3,
+        max_price: 3,
+        deleted_at: null,
+        created_at: '',
+        updated_at: '',
+      },
+    ] as caisseApi.CategoryItem[]);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-lampe')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('preset-preset-lampe'));
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('3.00');
+    });
+  });
+
+  it('ajout categorie prix fixe : flux Poids→Quantite→Prix, Prix lecture seule, ligne 3 EUR', async () => {
+    const lampe = {
+      id: 'cat-lampe',
+      name: 'Lampe',
+      parent_id: null,
+      official_name: null,
+      is_visible_sale: true,
+      is_visible_reception: false,
+      display_order: 2,
+      display_order_entry: 2,
+      price: 3,
+      max_price: 3,
+      deleted_at: null,
+      created_at: '',
+      updated_at: '',
+    };
+    mockGetCategoriesSaleTickets.mockResolvedValue([...fakeCategories, lampe] as caisseApi.CategoryItem[]);
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-lampe')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('category-card-cat-lampe'));
+    await user.type(screen.getByTestId('cat-weight'), '1');
+    await user.click(screen.getByTestId('goto-quantite-from-poids'));
+    await user.click(screen.getByTestId('goto-prix-from-quantite'));
+    const priceRoot = screen.getByTestId('cat-price');
+    const priceInput =
+      priceRoot instanceof HTMLInputElement
+        ? priceRoot
+        : within(priceRoot).queryByRole('spinbutton') ?? priceRoot.querySelector('input');
+    expect(priceInput).toBeTruthy();
+    expect(priceInput).toHaveAttribute('readonly');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('3.00');
+    });
+  });
+
+  it('edition ligne ticket met a jour le total', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('preset-preset-1')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('preset-preset-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('5.00');
+    });
+    const editBtn = document.querySelector('[data-testid^="edit-line-"]');
+    expect(editBtn).toBeTruthy();
+    fireEvent.click(editBtn!);
+    const qtyInput = await screen.findByTestId('ticket-edit-qty', {}, { timeout: 5000 });
+    expect(screen.getByTestId('ticket-edit-modal')).toBeInTheDocument();
+    await user.clear(qtyInput);
+    await user.type(qtyInput, '2');
+    fireEvent.click(screen.getByTestId('ticket-edit-save'));
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('10.00');
+    });
+  });
+});
+
+describe('CashRegisterSalePage — Story 19.9 disposition & flux 1.4.4', () => {
+  it('Ctrl+5 active l’onglet Prix (apres ouverture des etapes)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('category-card-cat-1'));
+    await user.type(screen.getByTestId('cat-weight'), '1');
+    await user.click(screen.getByTestId('goto-quantite-from-poids'));
+    await user.click(screen.getByTestId('goto-prix-from-quantite'));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Prix/i })).toHaveAttribute('aria-selected', 'true');
+    });
+    await user.click(screen.getByRole('tab', { name: 'Categorie', exact: true }));
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: '5', code: 'Digit5', ctrlKey: true, bubbles: true })
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Prix/i })).toHaveAttribute('aria-selected', 'true');
+    });
+  });
+
+  it('Ctrl+Numpad5 active l’onglet Prix (meme flux)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('category-card-cat-1'));
+    await user.type(screen.getByTestId('cat-weight'), '1');
+    await user.click(screen.getByTestId('goto-quantite-from-poids'));
+    await user.click(screen.getByTestId('goto-prix-from-quantite'));
+    await user.click(screen.getByRole('tab', { name: 'Categorie', exact: true }));
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: '5', code: 'Numpad5', ctrlKey: true, bubbles: true })
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Prix/i })).toHaveAttribute('aria-selected', 'true');
+    });
+  });
+
+  it('apres feuille sous-categorie : onglet Poids puis Continuer vers Prix et prix fixe au ticket', async () => {
+    const parent = {
+      id: 'cat-parent',
+      name: 'Parent',
+      parent_id: null,
+      official_name: null,
+      is_visible_sale: true,
+      is_visible_reception: false,
+      display_order: 0,
+      display_order_entry: 0,
+      deleted_at: null,
+      created_at: '',
+      updated_at: '',
+    };
+    const leaf = {
+      id: 'cat-lampe',
+      name: 'Lampe',
+      parent_id: 'cat-parent',
+      official_name: null,
+      is_visible_sale: true,
+      is_visible_reception: false,
+      display_order: 1,
+      display_order_entry: 1,
+      price: 3,
+      max_price: 3,
+      deleted_at: null,
+      created_at: '',
+      updated_at: '',
+    };
+    mockGetCategoriesSaleTickets.mockResolvedValue([parent, leaf] as caisseApi.CategoryItem[]);
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-parent')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('category-card-cat-parent'));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Sous-categorie/i })).toHaveAttribute('aria-selected', 'true');
+    });
+    await user.click(screen.getByTestId('category-card-cat-lampe'));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Poids/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('caisse-current-item')).toHaveTextContent('Lampe');
+    });
+    await user.type(screen.getByTestId('cat-weight'), '1');
+    await user.click(screen.getByTestId('goto-quantite-from-poids'));
+    await user.click(screen.getByTestId('goto-prix-from-quantite'));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Prix/i })).toHaveAttribute('aria-selected', 'true');
+    });
+    const priceInput = screen.getByTestId('cat-price');
+    expect(priceInput).toHaveValue('3.00');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('3.00');
+    });
+  });
+
+  it('onglet Poids : bouton Continuer vers Quantite, pas d’Ajouter au panier', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card-cat-1')).toBeInTheDocument();
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('category-card-cat-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('goto-quantite-from-poids')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Ajouter' })).not.toBeInTheDocument();
   });
 });

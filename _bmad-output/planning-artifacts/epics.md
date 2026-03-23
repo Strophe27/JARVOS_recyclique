@@ -15,8 +15,18 @@ inputDocuments:
   - references/ancien-repo/checklist-import-1.4.4.md
   - references/ou-on-en-est.md
   - references/versioning.md
-lastEdited: '2026-03-02'
+lastEdited: '2026-03-16'
 editHistory:
+  - date: '2026-03-16'
+    changes: >
+      Correct Course approuve (audit terrain 2026-03-16). Ajout Epic 19 "Correction de cap
+      post-audit terrain 2026-03-16" (13 stories : 19.1-19.13). P0 : 19.1 import categories
+      (parent_id). P1 : 19.2 admin categories Creer/Modifier, 19.3 reception redirection,
+      19.4 affichage nom user, 19.5 page non blanche, 19.6 audit caisse post-categories,
+      19.7 presets, 19.8 raccourcis AZERTY, 19.9 disposition 1.4.4. P2 : 19.10 Paheko port 8080,
+      19.11 dashboard notifications, 19.12 compteur connectes, 19.13 sessions filtres/export.
+      Backlog P3 documente dans la section. Discordance Epic 18/terrain documentee.
+      Source : sprint-change-proposal-2026-03-16.md.
   - date: '2026-03-02'
     changes: >
       Ajout Epic 18 "Operationnalisation terrain" (10 stories : 18.1-18.10).
@@ -2472,4 +2482,457 @@ So that les cas d'usage hors-ligne ou de simulation soient couverts.
 - Trace Copy/Consolidate/Security dans les Completion Notes.
 
 **Dépendances :** Stories 18.4–18.9 (caisse de base complète).
+
+---
+
+## Epic 19: Correction de cap post-audit terrain 2026-03-16
+
+Corriger les écarts bloquants et critiques identifiés lors de l'audit fonctionnel terrain du 2026-03-16, sans remettre en cause les epics 1–18. Objectif : rendre le cœur métier (caisse, réception) utilisable en conditions réelles.
+
+**Source :** `references/artefacts/2026-03-16_audit-fonctionnel-terrain.md`
+**Sprint Change Proposal :** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-03-16.md`
+
+**Note sur la discordance Epic 18 / terrain :** Les stories 18.5–18.7 ont été marquées done/approved lors de la rétro 2026-03-02, mais l'audit terrain du 2026-03-16 constate que ces fonctionnalités restent absentes ou non conformes. Les stories 19.7–19.9 sont des **corrections ciblées**, pas des régressions sur du nouveau code.
+
+**Règles d'exécution :**
+- **Pas d'enchaînement automatique** des stories : Strophe valide manuellement après chaque story livrée avant de lancer la suivante.
+- Priorité stricte : **P0 → P1 → P2**. Les items P3 restent en backlog (voir Sprint Change Proposal §4.3).
+- Chaque story inclut au moins un **critère de validation terrain** vérifiable par Strophe.
+- Ne pas créer de stories pour les corrections déjà faites (auth SuperAdmin après F5, lien Réception dans le menu).
+
+**Ordre de livraison recommandé :**
+```
+19.1 (P0) → validation Strophe
+  → 19.2, 19.3, 19.4 (P1 indépendants, dans l'ordre)
+  → 19.5 (P1, dépend 19.1 — vérifier si auto-résolu)
+  → 19.6 (audit caisse terrain, dépend 19.1)
+  → 19.7, 19.8, 19.9 (P1 caisse, dépendent 19.6)
+  → 19.10, 19.11, 19.12, 19.13 (P2, indépendants, dans l'ordre)
+```
+
+**Références :** PRD (parité 1.4.4), `ux-design-specification.md`, `references/ancien-repo/checklist-import-1.4.4.md`, artefact 2026-02-26_10 (traçabilité écran → API).
+
+---
+
+### Vague P0 — Import catégories
+
+### Story 19.1: Import catégories — correction parent_id / sous-catégories
+
+As a administrateur,
+I want importer le CSV 1.4.4 complet (catégories racines + sous-catégories) sans erreur,
+So that la caisse affiche les catégories et que la réception puisse saisir des lignes.
+
+**Contexte :**
+L'import CSV actuel n'insère que les 20 catégories racines ; les 57 sous-catégories échouent avec l'erreur « parent_id invalide ». Conséquence : caisse affiche « aucune catégorie », liste vide dans la saisie de lignes de réception — tout le flux vente/réception est bloqué.
+
+**Acceptance Criteria:**
+
+**Given** un CSV 1.4.4 contenant des catégories racines et des sous-catégories référençant un parent_id
+**When** l'admin lance l'import depuis Admin > Catégories > Importer CSV
+**Then** toutes les lignes valides (racines + sous-catégories) sont importées sans erreur « parent_id invalide »
+**And** l'ordre d'insertion ou la gestion des contraintes FK garantit que les parents existent avant les enfants
+**And** les catégories et sous-catégories apparaissent dans la grille caisse
+**And** les catégories et sous-catégories apparaissent dans la liste déroulante de saisie des lignes de réception
+
+**Critère de validation terrain :**
+« Strophe importe le CSV 1.4.4 complet (77 lignes) ; aucune erreur ; les catégories et sous-catégories apparaissent en caisse et dans la réception. »
+
+**Livrable :** Import fonctionnel ; trace Copy/Consolidate/Security si code 1.4.4 adapté.
+**Dépendances :** Aucune.
+
+---
+
+### Vague P1 — Admin catégories
+
+### Story 19.2: Admin catégories — refonte complète page 1.4.4 (CRUD + UX)
+
+As a administrateur,
+I want retrouver l'interface complète de gestion des catégories identique à la 1.4.4,
+So que je puisse créer, modifier, archiver, réorganiser et configurer les catégories sans passer par un import CSV.
+
+**Contexte :**
+La page actuelle `/admin/categories` ne propose que l'import/export CSV et la suppression. La 1.4.4 avait une interface riche (story B48-P4, livrée et validée) : CRUD complet, arborescence hiérarchique, toggle Vue Caisse / Vue Réception, visibilité par contexte, ordre d'affichage éditable, soft delete / restauration, recherche.
+
+**Note de cadrage :** Cette story est volontairement large — la page catégories 1.4.4 représentait un epic entier (B48-P1 + B48-P4 + B48-P5). L'objectif est la **parité fonctionnelle** avec la 1.4.4, pas le dépassement. S'appuyer obligatoirement sur les sources 1.4.4 listées ci-dessous (Copy/Consolidate/Security).
+
+**Fichiers source 1.4.4 à utiliser comme référence :**
+
+*Frontend — Pages et composants :*
+- `references/ancien-repo/repo/frontend/src/pages/Admin/Categories.tsx`
+- `references/ancien-repo/repo/frontend/src/components/categories/EnhancedCategorySelector.tsx`
+- `references/ancien-repo/repo/frontend/src/components/categories/CategoryDisplayManager.tsx`
+- `references/ancien-repo/repo/frontend/src/components/business/CategoryForm.tsx`
+- `references/ancien-repo/repo/frontend/src/hooks/useCategoryDragDrop.ts`
+
+*Frontend — Stores et services :*
+- `references/ancien-repo/repo/frontend/src/stores/categoryStore.ts`
+- `references/ancien-repo/repo/frontend/src/services/categoriesService.ts`
+- `references/ancien-repo/repo/frontend/src/services/categoryService.ts`
+
+*Frontend — Tests de référence :*
+- `references/ancien-repo/repo/frontend/src/test/pages/Categories.test.tsx`
+- `references/ancien-repo/repo/frontend/src/test/stores/categoryStore.test.ts`
+
+*Backend — API, services, modèles :*
+- `references/ancien-repo/repo/api/src/recyclic_api/api/api_v1/endpoints/categories.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/services/category_management.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/services/category_service.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/models/category.py`
+- `references/ancien-repo/repo/api/src/recyclic_api/schemas/category.py`
+
+*Documentation de référence :*
+- `references/ancien-repo/repo/docs/stories/story-b48-p4-refonte-ux-page-categories.md` (spécification UX complète + AC + wireframes)
+- `references/ancien-repo/repo/docs/audits/full-site-ux-20251024/admin/categories.md`
+
+**Périmètre fonctionnel (parité 1.4.4) :**
+
+| Fonctionnalité | Priorité dans cette story |
+|----------------|--------------------------|
+| Bouton « Nouvelle catégorie » + formulaire (nom, parent, nom officiel) | Indispensable |
+| Action « Modifier » sur chaque ligne | Indispensable |
+| Soft delete (archiver) + restauration | Indispensable |
+| Arborescence hiérarchique avec indentation (catégories racines + sous-catégories) | Indispensable |
+| Toggle Vue Caisse / Vue Réception | Indispensable |
+| Visibilité par catégorie (checkbox inline — Vue Réception) | Indispensable |
+| Ordre d'affichage `display_order` (Caisse) et `display_order_entry` (Réception) — input inline | Indispensable |
+| Expand/Collapse des catégories parentes | Indispensable |
+| Toggle « Afficher les éléments archivés » | Indispensable |
+| Barre de recherche temps réel (filtrage récursif) | Recommandé |
+| Drag-and-drop réorganisation (même niveau uniquement) | Optionnel (boutons ↑↓ acceptables en fallback) |
+
+**Acceptance Criteria:**
+
+**Given** l'admin est sur `/admin/categories`
+**Then** un bouton « Nouvelle catégorie » est visible et ouvre un formulaire (nom court, parent optionnel, nom officiel optionnel)
+**And** la catégorie créée apparaît dans l'arborescence sans rechargement complet
+
+**Given** une catégorie dans la liste
+**When** l'admin clique « Modifier »
+**Then** le formulaire s'ouvre pré-rempli et permet d'éditer nom, parent, nom officiel
+**And** les modifications sont reflétées immédiatement dans la liste
+
+**Given** une catégorie active
+**When** l'admin choisit « Archiver »
+**Then** la catégorie passe en état archivé (soft delete), elle est grisée / marquée « Archivée »
+**And** l'action « Restaurer » remplace « Archiver »
+
+**Given** le toggle « Vue Caisse » / « Vue Réception »
+**When** l'admin bascule entre les deux vues
+**Then** la liste affiche l'ordre d'affichage correspondant (`display_order` ou `display_order_entry`)
+**And** en Vue Réception, les checkboxes de visibilité sont bien proéminentes sur chaque ligne
+
+**Given** l'admin modifie un ordre d'affichage inline
+**Then** la valeur est sauvegardée automatiquement (mise à jour optimiste)
+
+**Critère de validation terrain :**
+« Strophe : (1) crée une sous-catégorie dans une catégorie existante, (2) la modifie, (3) l'archive puis la restaure, (4) la retrouve dans la caisse et dans la liste de réception. La page reste stable tout au long. »
+
+**Preuves obligatoires de fermeture :**
+- Formulaire création + modification fonctionnel (capture écran).
+- Soft delete + restauration démontrés.
+- Arborescence hiérarchique visible et cohérente.
+- Toggle Caisse / Réception opérationnel.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** 19.1 validé par Strophe (liste peuplée pour tester).
+
+---
+
+### Vague P1 — Réception
+
+### Story 19.3: Réception — redirection vers page de saisie après création de ticket
+
+As a operateur réception,
+I want être redirigé vers la page de saisie du ticket dès sa création,
+So que je puisse saisir les lignes immédiatement sans navigation manuelle supplémentaire.
+
+**Contexte :**
+Actuellement, après la création d'un ticket de dépôt, l'utilisateur reste sur la liste des tickets. Il doit manuellement retrouver le ticket et cliquer « Modifier » pour accéder à la saisie des lignes — friction inutile et source d'erreur.
+
+**Acceptance Criteria:**
+
+**Given** un opérateur sur la page Réception qui clique « Créer un ticket »
+**When** le ticket est créé avec succès
+**Then** l'utilisateur est redirigé vers la page de saisie du ticket (ex. `/reception/ticket/{id}`)
+**And** il peut saisir les lignes immédiatement sans étape de navigation supplémentaire
+
+**Critère de validation terrain :**
+« Strophe crée un ticket de dépôt et arrive directement sur la page de saisie des lignes. »
+
+**Dépendances :** 19.1 (catégories disponibles pour saisir des lignes).
+
+---
+
+### Story 19.4: Réception — affichage du nom utilisateur au lieu du code hex
+
+As a operateur réception,
+I want voir le nom lisible de l'utilisateur sur les tickets de réception,
+So que je sache qui a créé ou pris en charge chaque ticket sans avoir à chercher dans un autre écran.
+
+**Contexte :**
+Les tickets de réception affichent l'identifiant technique de l'utilisateur (code hexadécimal, ex. 58841A7F) au lieu du prénom/nom. Ce bug rend la liste des tickets illisible pour un opérateur.
+
+**Acceptance Criteria:**
+
+**Given** un ticket de réception affiché dans la liste ou dans le détail
+**When** la colonne ou le champ « utilisateur » est rendu
+**Then** le nom lisible de l'utilisateur (prénom + nom ou login) est affiché
+**And** aucun code hex ou UUID brut n'est visible à la place du nom
+
+**Critère de validation terrain :**
+« Strophe voit le nom de l'utilisateur sur le ticket de réception, pas un code hex. »
+
+**Dépendances :** Aucune (bug indépendant des catégories).
+
+---
+
+### Story 19.5: Réception — page non blanche après import catégories
+
+As a operateur réception,
+I want que la page Réception reste fonctionnelle après un import de catégories,
+So que je puisse travailler immédiatement sans avoir à recharger ou naviguer.
+
+**Contexte :**
+Après un import CSV de catégories depuis l'admin, la page `/reception` devient une page blanche (probable crash JS dû à l'état incohérent causé par l'import partiel). La page `/reception/ticket/{id}` reste partiellement accessible. Ce problème peut être auto-résolu par la correction de 19.1 (import complet) — à vérifier avant d'implémenter un correctif dédié.
+
+**Acceptance Criteria:**
+
+**Given** l'admin a effectué un import de catégories réussi (19.1 validé)
+**When** l'utilisateur navigue vers la page Réception
+**Then** la page s'affiche correctement (pas de page blanche, pas de crash JS)
+**And** les catégories sont disponibles dans la liste déroulante de saisie des lignes de ticket
+
+**Critère de validation terrain :**
+« Strophe importe les catégories, ouvre la Réception : page OK, catégories disponibles dans la saisie. »
+
+**Dépendances :** 19.1 (import catégories fonctionnel). Peut être auto-résolu par 19.1 — vérifier avant d'implémenter.
+
+---
+
+### Vague P1 — Caisse (évaluation terrain + corrections)
+
+### Story 19.6: Caisse — audit de conformité 1.4.4 post-catégories (terrain)
+
+As a equipe dev,
+I want un audit terrain ciblé de la caisse avec catégories fonctionnelles,
+So que les stories de correction 19.7–19.9 aient une cible précise et vérifiée.
+
+**Contexte :**
+Les stories 18.5–18.7 ont été marquées done/approved mais la caisse reste non conforme à la 1.4.4 (pas de presets visibles, raccourcis AZERTY absents, disposition différente). L'audit était impossible sans catégories fonctionnelles. Cette story est un **parcours terrain manuel** réalisé par Strophe après validation de 19.1 — elle produit un artefact qui conditionne les stories suivantes.
+
+**Acceptance Criteria:**
+
+**Given** la caisse ouverte avec des catégories disponibles (19.1 validé par Strophe)
+**When** Strophe parcourt la caisse (sélection catégorie, ajout article, raccourcis clavier, layout)
+**Then** un artefact liste pour chaque point : statut (OK / KO / Partiel), comportement attendu (1.4.4), comportement observé, écart résiduel à corriger
+
+**Critère de validation terrain :**
+« Strophe a complété le parcours caisse avec catégories et produit l'artefact d'audit. »
+
+**Livrable :** `_bmad-output/implementation-artifacts/19-6-audit-caisse-post-categories.md`
+**Dépendances :** 19.1 validé par Strophe.
+
+---
+
+### Story 19.7: Caisse — presets (Don, Recyclage, Déchèterie) conformes 1.4.4
+
+As a operateur caisse,
+I want retrouver les boutons presets (Don, Recyclage, Déchèterie) identiques à la 1.4.4,
+So que je puisse saisir rapidement les types de ventes les plus courants.
+
+**Contexte :**
+Basé sur l'artefact `19-6-audit-caisse-post-categories.md`. La caisse actuelle n'affiche pas les presets 1.4.4. Les stories 18.6 avaient livré une grille de catégories mais les presets (boutons rapides configurables) restent absents ou non fonctionnels en terrain.
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/components/CategorySelector.tsx`
+- `references/ancien-repo/repo/frontend/src/components/EnhancedCategorySelector.tsx`
+- `references/ancien-repo/repo/frontend/src/stores/categoryStore.ts`
+
+**Acceptance Criteria:**
+
+**Given** la caisse ouverte avec catégories disponibles
+**Then** les boutons presets 1.4.4 (Don, Recyclage, Déchèterie, etc.) sont visibles dans l'interface caisse
+**And** le clic sur un preset configure et ajoute la ligne de vente conformément au comportement 1.4.4
+
+**Critère de validation terrain :**
+« Strophe ouvre la caisse, clique sur Don / Recyclage / Déchèterie : une ligne est ajoutée correctement. »
+
+**Preuves obligatoires de fermeture :**
+- Capture écran : presets visibles.
+- Scénario : clic preset → ligne ajoutée avec les bonnes valeurs.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** 19.6 (artefact audit caisse).
+
+---
+
+### Story 19.8: Caisse — raccourcis clavier AZERTY conformes 1.4.4
+
+As a operateur caisse,
+I want utiliser les raccourcis clavier AZERTY de la 1.4.4,
+So que je puisse saisir et naviguer sans souris comme dans l'ancienne version.
+
+**Contexte :**
+Basé sur l'artefact `19-6-audit-caisse-post-categories.md`. Les raccourcis AZERTY sont absents malgré la story 18.7 marquée done. Référence mapping complet : `18-4-audit-caisse-inventaire.md`.
+
+**Fichiers source 1.4.4 de référence :**
+- `references/ancien-repo/repo/frontend/src/utils/cashKeyboardShortcuts.ts`
+- `references/ancien-repo/repo/frontend/src/utils/azertyKeyboard.ts`
+- `references/ancien-repo/repo/frontend/src/utils/keyboardShortcuts.ts`
+
+**Acceptance Criteria:**
+
+**Given** la page de saisie vente caisse est ouverte
+**When** l'opérateur utilise le clavier
+**Then** les raccourcis AZERTY identifiés dans l'artefact 19-6 sont opérationnels (navigation entre champs, raccourcis métier : quantité, poids, confirmation)
+**And** aucun raccourci ne provoque de comportement inattendu
+
+**Critère de validation terrain :**
+« Strophe utilise la caisse entièrement au clavier (navigation + au moins un raccourci métier AZERTY) sans souris. »
+
+**Preuves obligatoires de fermeture :**
+- Mapping raccourcis documenté dans les Completion Notes.
+- Tests co-locés couvrant les raccourcis clés.
+- Trace Copy/Consolidate/Security.
+
+**Dépendances :** 19.6 (audit caisse post-catégories).
+
+---
+
+### Story 19.9: Caisse — disposition et conformité visuelle 1.4.4
+
+As a operateur caisse,
+I want retrouver la disposition de l'écran caisse identique à la 1.4.4,
+So que l'interface soit immédiatement utilisable sans réapprentissage.
+
+**Contexte :**
+Basé sur l'artefact `19-6-audit-caisse-post-categories.md`. La disposition actuelle diffère de la 1.4.4 (zones de saisie, grille, placement des contrôles). Corriger les écarts résiduels identifiés après l'audit post-catégories.
+
+**Acceptance Criteria:**
+
+**Given** la page de saisie vente caisse
+**When** l'opérateur l'ouvre
+**Then** le layout (grille catégories, zones de saisie, placement des contrôles) correspond à la référence 1.4.4 telle que décrite dans l'artefact 19-6
+
+**Critère de validation terrain :**
+« Strophe compare l'écran caisse à la 1.4.4 ; la disposition est conforme aux écarts identifiés en 19.6. »
+
+**Preuves obligatoires de fermeture :**
+- Capture avant/après layout.
+- Trace Copy/Consolidate/Security dans les Completion Notes.
+
+**Dépendances :** 19.6 (audit caisse post-catégories).
+
+---
+
+### Vague P2 — Paheko et admin
+
+### Story 19.10: Paheko — exposition du port 8080 sous Docker Windows
+
+As a administrateur technique,
+I want accéder à Paheko sur http://localhost:8080 depuis la machine hôte Windows,
+So que les tests d'intégration RecyClique → Paheko soient possibles.
+
+**Contexte :**
+Sous Docker Desktop Windows, le port 8080 de Paheko n'est pas exposé vers l'hôte. Le problème est connu (connexion inter-ports bloquée, d'où RecyClique sur 90xx). Soit corriger la config Docker Compose, soit documenter une procédure alternative.
+
+**Acceptance Criteria:**
+
+**Given** l'environnement Docker Desktop Windows avec les services lancés
+**When** Strophe ouvre http://localhost:8080 dans un navigateur
+**Then** l'interface Paheko s'affiche correctement
+**Or** une procédure alternative documentée (proxy, port différent) permet d'y accéder sans modifier l'architecture
+
+**Critère de validation terrain :**
+« Strophe ouvre http://localhost:8080 et accède à l'interface Paheko. »
+
+**Dépendances :** Aucune.
+
+---
+
+### Story 19.11: Dashboard admin — notifications et tickets réception ouverts
+
+As a administrateur,
+I want que les notifications du dashboard pointent vers les bonnes informations et que les tickets réception ouverts soient signalés,
+So que le dashboard admin soit un vrai tableau de bord opérationnel.
+
+**Contexte :**
+Actuellement, le clic sur « Notifications » redirige vers /users au lieu d'afficher un panel de notifications. Les tickets de réception ouverts (visibles dans Admin > Réception) ne remontent pas en notification sur le dashboard.
+
+**Acceptance Criteria:**
+
+**Given** l'admin est sur le dashboard
+**When** il clique sur « Notifications »
+**Then** un panel ou liste de notifications s'affiche (comportement cohérent 1.4.4), sans redirection systématique vers /users
+**And** les tickets de réception ouverts sont visibles dans les notifications ou dans un bloc dédié du dashboard
+
+**Critère de validation terrain :**
+« Strophe ouvre le dashboard admin ; les tickets réception ouverts sont signalés ; le clic Notifications affiche les notifs. »
+
+**Dépendances :** Aucune.
+
+---
+
+### Story 19.12: Dashboard admin — compteur « Utilisateurs connectés »
+
+As a administrateur,
+I want que le compteur d'utilisateurs connectés affiche une valeur réelle ou un libellé explicite,
+So que le dashboard ne soit pas trompeur (affichage « 0 » alors qu'un utilisateur est connecté).
+
+**Contexte :**
+Le compteur affiche « 0 » alors qu'au moins un utilisateur est connecté. Soit implémenter un comptage réel des sessions actives, soit remplacer par un libellé explicite (« Fonctionnalité à venir » ou masquer le widget en v1).
+
+**Acceptance Criteria:**
+
+**Given** au moins un utilisateur est connecté
+**When** l'admin consulte le dashboard
+**Then** le compteur « Utilisateurs connectés » affiche une valeur réelle ou un libellé non trompeur (ex. « Non disponible en v1 »)
+**And** le bouton « Voir » ne redirige plus vers /admin/users si le widget n'est pas implémenté (ou redirige vers un écran pertinent)
+
+**Critère de validation terrain :**
+« Strophe voit un compteur cohérent ou un libellé clair pour les utilisateurs connectés. »
+
+**Dépendances :** Aucune.
+
+---
+
+### Story 19.13: Sessions caisse — filtres Site / Poste / Opérateur et export global
+
+As a administrateur,
+I want filtrer les sessions caisse par Site, Poste et Opérateur et exporter les données,
+So que l'analyse des sessions soit possible comme dans la 1.4.4.
+
+**Contexte :**
+Dans le gestionnaire de sessions caisse, les listes déroulantes Site / Poste / Opérateur sont grisées (non cliquables). L'export global type Excel multi-onglets (détail par catégories/sous-catégories) de la 1.4.4 est absent ; seul un export par session individuelle (CSV) est disponible.
+
+**Acceptance Criteria:**
+
+**Given** l'admin est sur le gestionnaire de sessions caisse
+**When** il interagit avec les filtres
+**Then** les listes déroulantes Site, Poste, Opérateur sont utilisables (non grisées) et filtrent effectivement la liste
+**And** un export global (CSV a minima, Excel multi-onglets si scope 1.4.4 confirmé par l'artefact 18-4) est disponible ou documenté comme évolution backlog
+
+**Critère de validation terrain :**
+« Strophe peut filtrer les sessions par Site / Poste / Opérateur et télécharger un export des données. »
+
+**Dépendances :** Aucune.
+
+---
+
+### Backlog P3 — Hors Epic 19
+
+Les items suivants sont documentés ici pour traçabilité. Aucune story n'est créée dans cet epic. Ils seront priorisés dans un epic futur.
+
+| Item | Détail |
+|------|--------|
+| Admin paramètres | Tout en stub (session, email, alertes). |
+| Permissions / ACL | Pas de vraie gestion (modifier = nom + description). |
+| Audit log | Format technique IAM illisible pour un opérateur. |
+| Logs email | Pas d'écran dédié, config email incomplète. |
+| Quick analysis | Aucune statistique disponible. |
+| Mot de passe oublié | Absent de la page login. |
+| Logo | Poubelle au lieu des trois flèches de recyclage (parité visuelle 1.4.4). |
+| Caisse — ID poste | Affichage UUID complexe sous le nom du poste — à simplifier. |
+| BDD — import dump 1.4.4 | Import d'un dump prod 1.4.4 dans la nouvelle base échoue (schéma divergent). Nécessite un adaptateur/traducteur de tables. Critique avant déploiement v1.0.0. |
+| Vie associative | Placeholder prévu (Brief, PRD FR21). Pas un bug — à dérouler dans un epic dédié post-MVP. |
 

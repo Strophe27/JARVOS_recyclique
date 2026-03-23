@@ -8,11 +8,11 @@ export default defineConfig({
     port: 4173,
     strictPort: false,
     proxy: {
-      '/api': 'http://localhost:8000',
-      '/v1': 'http://localhost:8000',
-      '/health': 'http://localhost:8000',
-      '/docs': 'http://localhost:8000',
-      '/openapi.json': 'http://localhost:8000',
+      '/api': 'http://localhost:9010',
+      '/v1': 'http://localhost:9010',
+      '/health': 'http://localhost:9010',
+      '/docs': 'http://localhost:9010',
+      '/openapi.json': 'http://localhost:9010',
     },
   },
   test: {

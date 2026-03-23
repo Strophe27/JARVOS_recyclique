@@ -26,11 +26,11 @@ export interface CaisseStatsBarProps {
 }
 
 function formatEur(cents: number): string {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' \u20ac';
+  return (Number(cents) / 100).toFixed(2).replace('.', ',') + ' \u20ac';
 }
 
 function formatKg(kg: number): string {
-  return kg.toFixed(1) + ' kg';
+  return Number(kg || 0).toFixed(1) + ' kg';
 }
 
 export function CaisseStatsBar({
@@ -80,7 +80,7 @@ export function CaisseStatsBar({
 
   return (
     <div className={styles.statsBar} data-testid="caisse-stats-bar">
-      <Group gap="lg" wrap="nowrap" style={{ flex: 1 }}>
+      <div className={styles.statsBarGrid}>
         {stats.map((s) => (
           <div key={s.label} className={styles.statItem}>
             <Text size="xs" tt="uppercase" c="dimmed" fw={600} className={styles.statLabel}>
@@ -91,7 +91,7 @@ export function CaisseStatsBar({
             </Text>
           </div>
         ))}
-      </Group>
+      </div>
       <Group gap="sm" wrap="nowrap" align="center">
         <SegmentedControl
           size="xs"

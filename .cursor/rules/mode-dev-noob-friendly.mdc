@@ -22,7 +22,7 @@ Contexte utilisateur: Strophe n'est pas developpeur et ne doit pas porter les de
 - Ne pas noyer l'utilisateur avec des alternatives; proposer un seul chemin recommande.
 - Toujours rappeler les URLs utiles en dev:
   - `http://localhost:4173` (frontend dev)
-  - `http://localhost:8000` (api)
+  - `http://localhost:9010` (api, conteneur Docker)
   - `http://localhost:8080` (paheko)
 
 ## Stabilite projet
