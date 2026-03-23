@@ -17,3 +17,32 @@ dev-tampon/
 # Sorties normalisation typographique (skill normalize-typographic-chars)
 normalize_typographic_backup_*/
 normalize_typographic_chars_*.log
+
+# Config locale (secrets)
+.env
+
+# Node (dependances locales — ne jamais versionner)
+node_modules/
+**/node_modules/
+
+# Builds / caches frontend
+frontend/dist/
+**/.vite/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Bases SQLite locales de dev
+test_recyclic.db
+recyclic.sqlite
+
+# Identifiants de test / staging (NE JAMAIS COMMITER)
+**/ref_navigation*.md
