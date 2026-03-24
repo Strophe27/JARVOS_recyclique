@@ -2,6 +2,7 @@
 Custom exceptions for the Recyclic API
 """
 
+
 class RecyclicException(Exception):
     """Base exception for Recyclic API"""
     pass
@@ -30,6 +31,9 @@ class DatabaseError(RecyclicException):
 class ConflictError(RecyclicException):
     """Raised when current state blocks the operation (dependencies, business rules)."""
 
-    def __init__(self, detail: str) -> None:
+    def __init__(self, detail: str | dict) -> None:
         self.detail = detail
-        super().__init__(detail)
+        if isinstance(detail, str):
+            super().__init__(detail)
+        else:
+            super().__init__(detail.get("detail", str(detail)))

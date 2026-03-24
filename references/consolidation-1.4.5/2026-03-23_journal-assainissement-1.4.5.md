@@ -2037,13 +2037,57 @@
 
 ---
 
+## Lot 2AB — Pilote ARCH-03 sur `CategoryService.soft_delete_category`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir le soft delete des categories hors HTTP tout en preservant strictement le `422` avec detail structure
+
+### Actions
+- Extension minimale de `ConflictError` pour accepter un `detail` de type `str` ou `dict`, sans casser les usages existants.
+- Refactor de `CategoryService.soft_delete_category()` pour remplacer le `HTTPException` sur enfants actifs par `ConflictError(detail_struct)`.
+- Refactor de `DELETE /categories/{category_id}` dans `categories.py` pour traduire `ConflictError` -> `422` avec `detail=exc.detail`.
+- Ajout du fichier cible `test_category_soft_delete_arch03.py` pour verrouiller :
+  - levee service `ConflictError` avec detail structure
+  - mapping route `422` avec payload structure conserve
+  - succes nominal
+- Adaptation de `tests/test_category_soft_delete_b48_p1.py` et de `tests/api/test_categories_endpoint.py` pour coller au contrat HTTP reel et au passage par `ConflictError`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/core/exceptions.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/category_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/categories.py`
+- `recyclique-1.4.4/api/tests/test_category_soft_delete_arch03.py`
+- `recyclique-1.4.4/api/tests/test_category_soft_delete_b48_p1.py`
+- `recyclique-1.4.4/api/tests/api/test_categories_endpoint.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_category_soft_delete_arch03.py`
+  - `tests/test_category_hard_delete_arch03.py`
+  - `tests/test_category_management_arch03.py`
+- Resultat local :
+  - **26 tests passes**
+- Validation Docker/PostgreSQL :
+  - non conclusif dans cet environnement sur `test_categories_endpoint.py` a cause d'une incompatibilite fixture `AsyncClient(app=...)` / version `httpx`, preexistante au lot
+- QA finale seule : **OK**
+
+### Resultat
+- `CategoryService.soft_delete_category()` ne leve plus d'erreur HTTP directe.
+- Le contrat HTTP de `DELETE /categories/{category_id}` conserve le `422` avec `detail` structure (`detail`, `category_id`, `active_children_count`).
+- Reserves acceptees :
+  - ambiguite metier residuelle entre "enfants actifs" et "enfants non archives" dans le filtre actuel
+  - la couverture d'integration async du fichier `test_categories_endpoint.py` reste limitee par l'environnement local
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete` et `ARCH-03/category_restore` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore` et `ARCH-03/category_soft_delete` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2051,8 +2095,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService` avec un lot borne create/update ou soft delete, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService` avec un lot borne `create/update`, Telegram etant explicitement reporte
 
 ---
 

@@ -253,9 +253,11 @@ async def delete_category(
     service = CategoryService(db)
     try:
         category = await service.soft_delete_category(category_id)
-    except HTTPException as e:
-        # Re-raise HTTP exceptions (e.g., validation hiérarchie)
-        raise e
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.detail,
+        ) from exc
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")

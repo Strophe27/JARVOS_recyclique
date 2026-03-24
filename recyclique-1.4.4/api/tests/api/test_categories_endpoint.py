@@ -719,8 +719,9 @@ async def test_delete_category_with_active_children_fails(async_client: AsyncCli
     response = await async_client.delete(f"/api/v1/categories/{parent.id}", headers=headers)
     assert response.status_code == 422
     data = response.json()
-    assert "active_children_count" in data
-    assert data["active_children_count"] == 1
+    payload = data["detail"]
+    assert isinstance(payload, dict)
+    assert payload["active_children_count"] == 1
 
 
 @pytest.mark.asyncio

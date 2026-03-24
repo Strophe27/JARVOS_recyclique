@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
-from recyclic_api.core.exceptions import ValidationError
+from recyclic_api.core.exceptions import ConflictError, ValidationError
 from recyclic_api.models.category import Category
 from recyclic_api.services.category_service import CategoryService
 from recyclic_api.services.category_management import CategoryManagementService
@@ -22,7 +22,8 @@ from recyclic_api.services.category_management import CategoryManagementService
 class TestCategorySoftDelete:
     """Tests unitaires pour le Soft Delete avec deleted_at"""
 
-    def test_soft_delete_sets_deleted_at(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_soft_delete_sets_deleted_at(self, db_session: Session):
         """Test que soft_delete_category() définit deleted_at au lieu de is_active=False"""
         service = CategoryService(db_session)
         
@@ -36,7 +37,7 @@ class TestCategorySoftDelete:
         db_session.commit()
         
         # Soft delete
-        result = service.soft_delete_category(str(category.id))
+        result = await service.soft_delete_category(str(category.id))
         
         # Vérifier que deleted_at est défini
         assert result is not None
@@ -48,7 +49,8 @@ class TestCategorySoftDelete:
         assert category.deleted_at is not None
         assert category.is_active is True  # is_active reste True
 
-    def test_soft_delete_with_active_children_fails(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_soft_delete_with_active_children_fails(self, db_session: Session):
         """Test que soft_delete_category() échoue si la catégorie a des enfants actifs"""
         service = CategoryService(db_session)
         
@@ -73,17 +75,16 @@ class TestCategorySoftDelete:
         db_session.commit()
         
         # Tentative de soft delete du parent (doit échouer)
-        with pytest.raises(Exception) as exc_info:
-            service.soft_delete_category(str(parent.id))
+        with pytest.raises(ConflictError) as exc_info:
+            await service.soft_delete_category(str(parent.id))
         
-        # Vérifier le message d'erreur
-        assert exc_info.value.status_code == 422
         error_detail = exc_info.value.detail
         assert isinstance(error_detail, dict)
         assert "active_children_count" in error_detail
         assert error_detail["active_children_count"] == 1
 
-    def test_soft_delete_with_archived_children_succeeds(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_soft_delete_with_archived_children_succeeds(self, db_session: Session):
         """Test que soft_delete_category() réussit si tous les enfants sont archivés"""
         service = CategoryService(db_session)
         
@@ -108,7 +109,7 @@ class TestCategorySoftDelete:
         db_session.commit()
         
         # Soft delete du parent (doit réussir)
-        result = service.soft_delete_category(str(parent.id))
+        result = await service.soft_delete_category(str(parent.id))
         
         assert result is not None
         assert result.deleted_at is not None

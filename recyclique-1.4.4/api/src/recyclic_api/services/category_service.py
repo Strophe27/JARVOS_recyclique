@@ -384,12 +384,11 @@ class CategoryService:
         ).count()
 
         if active_children_count > 0:
-            raise HTTPException(
-                status_code=422,
-                detail={
+            raise ConflictError(
+                {
                     "detail": "Impossible de désactiver cette catégorie car elle contient des sous-catégories actives. Veuillez d'abord désactiver ou transférer les sous-catégories.",
                     "category_id": str(category_id),
-                    "active_children_count": active_children_count
+                    "active_children_count": active_children_count,
                 }
             )
 
