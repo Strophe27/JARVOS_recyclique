@@ -13,7 +13,7 @@ from recyclic_api.models.sale import Sale, PaymentMethod
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.ligne_depot import LigneDepot
 from recyclic_api.models.ticket_depot import TicketDepot
-from recyclic_api.schemas.cash_session import CashSessionFilters
+from recyclic_api.schemas.cash_session import CashSessionFilters, CashSessionStep as ApiCashSessionStep
 from recyclic_api.core.logging import log_transaction_event
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 
@@ -187,6 +187,24 @@ class CashSessionService:
             raise ValidationError("session_id invalide") from exc
         if session is None:
             raise NotFoundError("Session de caisse non trouvée")
+        return session
+
+    def apply_step_update_to_open_session(
+        self,
+        session: CashSession,
+        step: ApiCashSessionStep,
+    ) -> CashSession:
+        """Persiste une nouvelle étape de workflow sur une session déjà chargée.
+
+        Raises:
+            ConflictError: session déjà fermée.
+        """
+        if session.status != CashSessionStatus.OPEN:
+            raise ConflictError("Impossible de changer l'étape d'une session fermée")
+        model_step = CashSessionStep[step.name]
+        session.set_current_step(model_step)
+        self.db.commit()
+        self.db.refresh(session)
         return session
 
     def get_session_weight_aggregations(self, session: CashSession) -> Tuple[float, Dict[str, float]]:

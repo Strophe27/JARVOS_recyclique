@@ -1771,13 +1771,60 @@
 
 ---
 
+## Lot 1V — Pilote ARCH-03 sur `cash_sessions/step update`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la mise a jour d'etape de session de caisse du bord HTTP et homogeniser le contrat d'erreur de la route `PUT /cash-sessions/{session_id}/step`
+
+### Actions
+- Introduction de `apply_step_update_to_open_session()` dans `CashSessionService` pour :
+  - refuser une session non `OPEN` via `ConflictError`
+  - convertir l'etape API vers l'enum modele
+  - persister le changement d'etape (`commit` / `refresh`) cote service
+- Refactor de `PUT /cash-sessions/{session_id}/step` pour :
+  - charger la session via `get_session_by_id_or_raise()`
+  - traduire explicitement `NotFoundError` -> `404`
+  - traduire explicitement `ValidationError` -> `400`
+  - conserver le `403` d'autorisation si un `USER` tente de modifier la session d'un autre operateur
+  - traduire `ConflictError` -> `400`
+  - supprimer la logique metier/commit ad hoc du endpoint
+- Ajout du fichier cible `test_cash_session_step_update_arch03.py` avec couverture stable :
+  - tests unitaires service sur session fermee / chemin nominal
+  - tests HTTP sur `404`, `400` lookup, `400` conflit, `403` autorisation et `200` nominal
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_session_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_step_update_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_session_step_update_arch03.py`
+- Resultat local :
+  - **7 tests passes**
+- Validation Docker/PostgreSQL :
+  - non necessaire pour ce lot, la couverture est mockee / no_db et ne depend pas du schema reel
+- QA finale seule : **OK**
+
+### Resultat
+- La route `PUT /cash-sessions/{session_id}/step` suit maintenant le patron ARCH-03 :
+  - service = regles metier de transition / persistance
+  - endpoint = auth / orchestration / traduction HTTP
+- Le contrat HTTP utile est verrouille explicitement sur `200`, `400`, `403`, `404`.
+- Reserves acceptees :
+  - la couverture `200` et `403` reste route-level avec service mocke, pas integration DB complete
+  - `GET /cash-sessions/{session_id}/step` n'est pas traite dans ce lot et reste asymetrique vis-a-vis du `PUT`
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail` et `ARCH-03/cash_sessions/current` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current` et `ARCH-03/cash_sessions/step update` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1785,8 +1832,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** prolonger `ARCH-03` sur `cash_sessions/step update`, puis reevaluer une petite passe de reduction de repetition sur les traductions HTTP des verticales deja migrees
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** fermer les services simples restants sous `ARCH-03`, en commencant par `stats_service`, avant de reevaluer la petite passe DRY
 
 ---
 

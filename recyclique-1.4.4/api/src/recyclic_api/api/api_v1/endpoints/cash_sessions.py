@@ -15,7 +15,7 @@ from recyclic_api.core.audit import (
     log_cash_session_access
 )
 from recyclic_api.models.user import User, UserRole
-from recyclic_api.models.cash_session import CashSession, CashSessionStatus, CashSessionStep
+from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import Sale
 from recyclic_api.core.config import settings
 from recyclic_api.core.email_service import EmailAttachment, get_email_service
@@ -1188,39 +1188,43 @@ async def update_session_step(
     """Met à jour l'étape actuelle d'une session et retourne les nouvelles métriques."""
     service = CashSessionService(db)
 
-    session = service.get_session_by_id(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
+    try:
+        session = service.get_session_by_id_or_raise(session_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Vérifier que l'utilisateur peut modifier cette session
     if (current_user.role == UserRole.USER and
         str(session.operator_id) != str(current_user.id)):
         raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
 
-    # Vérifier que la session est ouverte
-    if session.status != CashSessionStatus.OPEN:
-        raise HTTPException(status_code=400, detail="Impossible de changer l'étape d'une session fermée")
-
     try:
-        # Mettre à jour l'étape
-        model_step = CashSessionStep(step_update.step.value.upper())
-        session.set_current_step(model_step)
-
-        # Sauvegarder les changements
-        db.commit()
-
-        # Log de l'activité (optionnel - peut être ajouté aux logs d'audit existants)
-        logger.info(f"Session {session_id}: étape changée vers {step_update.step.value} par {current_user.username or current_user.id}")
-
-        # Retourner les nouvelles métriques
+        session = service.apply_step_update_to_open_session(session, step_update.step)
+        logger.info(
+            "Session %s: étape changée vers %s par %s",
+            session_id,
+            step_update.step.value,
+            current_user.username or current_user.id,
+        )
         step_metrics = session.get_step_metrics()
         return CashSessionStepResponse(
             session_id=session_id,
             **step_metrics
         )
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Étape invalide: {str(e)}")
-    except Exception as e:
-        logger.error(f"Erreur lors de la mise à jour de l'étape pour la session {session_id}: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour de l'étape")
+    except ConflictError as e:
+        raise HTTPException(status_code=400, detail=e.detail)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Erreur inattendue lors de la mise à jour de l'étape pour la session %s",
+            session_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la mise à jour de l'étape",
+        )
