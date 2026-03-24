@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum, Boolean, Text
+from sqlalchemy import Column, String, DateTime, Enum, Boolean, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -42,7 +42,7 @@ class User(Base):
     role = Column(Enum(UserRole, values_callable=get_enum_values), default=UserRole.USER, nullable=False)
     status = Column(Enum(UserStatus, values_callable=get_enum_values), default=UserStatus.PENDING, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    site_id = Column(UUID(as_uuid=True), nullable=True)  # Foreign key to sites
+    site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

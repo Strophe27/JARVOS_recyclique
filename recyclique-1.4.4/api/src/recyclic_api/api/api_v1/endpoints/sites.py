@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from recyclic_api.core.database import get_db
+from recyclic_api.core.exceptions import ConflictError
 from recyclic_api.core.auth import require_role_strict
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.site import (
@@ -80,5 +81,11 @@ async def delete_site(
     site = service.get(site_id=site_id)
     if not site:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Site introuvable")
-    service.delete(site=site)
+    try:
+        service.delete(site=site)
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.detail,
+        ) from exc
     return None

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { UserRole } from '../../generated/types';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
-  requiredRole?: 'user' | 'admin' | 'super-admin' | 'manager';
-  requiredRoles?: Array<'user' | 'admin' | 'super-admin' | 'manager'>;
+  requiredRole?: UserRole;
+  requiredRoles?: UserRole[];
   requiredPermission?: string; // ex: 'caisse.access'
   requiredPermissions?: string[]; // B50-P4: Array of permissions (OR logic - at least one required)
   adminOnly?: boolean;
@@ -24,6 +25,27 @@ export default function ProtectedRoute({
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const currentUser = useAuthStore((s) => s.currentUser);
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const loading = useAuthStore((s) => s.loading);
+  const token = useAuthStore((s) => s.token);
+
+  // Pendant initializeAuth : évite flash /login ou contenu protégé avec état persisté partiel
+  if (loading && token) {
+    return (
+      <div
+        data-testid="auth-session-loading"
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '120px',
+          fontSize: '16px',
+          color: '#666'
+        }}
+      >
+        Chargement...
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -32,7 +54,8 @@ export default function ProtectedRoute({
   // Vérification de rôle pour les routes admin génériques
   if (adminOnly) {
     const role = currentUser?.role;
-    const isAdmin = role === 'admin' || role === 'super-admin';
+    const isAdmin =
+      role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
     if (!isAdmin) return <Navigate to={adminPathFallback} replace />;
   }
 
@@ -47,7 +70,7 @@ export default function ProtectedRoute({
   // Vérification de rôles multiples (l'un des rôles est suffisant) — comme requiredPermissions : ignoré si liste vide
   if (requiredRoles && requiredRoles.length > 0) {
     const userRole = currentUser?.role;
-    if (!requiredRoles.includes(userRole as any)) {
+    if (!userRole || !requiredRoles.includes(userRole)) {
       return <Navigate to={adminPathFallback} replace />;
     }
   }

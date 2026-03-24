@@ -1,7 +1,15 @@
 """
 Configuration des tests pour l'API Recyclic
+
+Lot C pilote (TEST-01) : isolation DB pour un sous-ensemble de modules (voir
+``_PILOT_DB_ISOLATION_BASENAMES`` et ``_cleanup_pilot_db_tables``). Le
+nettoyage s'exécute dans le ``finally`` de ``_db_autouse`` après fermeture
+session + connexion du test (évite les verrous SQLite avec un hook teardown).
+Un échec de cleanup (inspect schéma ou ``DELETE``) est journalisé et fait
+échouer le teardown du test pilote (plus de best-effort silencieux).
 """
 
+import logging
 import os
 import sys
 from pathlib import Path
@@ -174,14 +182,97 @@ from recyclic_api.models.user_session import UserSession  # noqa: F401 — table
 from recyclic_api.models.setting import Setting  # noqa: F401 — refresh_token_max_hours (RefreshTokenService)
 from recyclic_api.core.security import create_access_token, hash_password
 
+logger = logging.getLogger(__name__)
+
+# Modules du pilote isolation DB (Lot C / TEST-01) : nettoyage post-test ciblé.
+_PILOT_DB_ISOLATION_BASENAMES = frozenset(
+    {
+        "test_infrastructure.py",
+        "test_auth_login_endpoint.py",
+        "test_auth_logging.py",
+        "test_auth_inactive_user_middleware.py",
+    }
+)
+
+# Ordre : enfants (FK vers users) puis users. Ignoré si la table n'existe pas (SQLite minimal).
+_PILOT_CLEANUP_TABLES_ORDER = (
+    "audit_logs",
+    "user_sessions",
+    "login_history",
+    "users",
+)
+
 SQLALCHEMY_DATABASE_URL = os.environ["TEST_DATABASE_URL"]
 
 engine_kwargs = {}
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
+    # timeout : file-lock SQLite quand le pilote enchaîne connexion test + nettoyage
+    engine_kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def _cleanup_pilot_db_tables() -> None:
+    """
+    Supprime les lignes des tables les plus touchées par auth/login dans le pilote.
+
+    Objectif : annuler les effets des ``commit()`` applicatifs entre tests du pilote,
+    sans refactorer toute la suite. Limite : exécution mixte avec d'autres tests
+    dans le même processus pytest peut voir ces tables vidées après un test pilote
+    (voir doc équipe / résumé Lot C).
+
+    Chaque ``DELETE`` s'exécute dans sa propre transaction : un échec n'empêche pas
+    de tenter les tables suivantes, et n'abort pas silencieusement une transaction
+    globale (comportement critique sous PostgreSQL). Tout échec est loggé ; au
+    moins une erreur lève ``RuntimeError`` pour que le teardown pilote soit visible.
+    """
+    from sqlalchemy import inspect
+
+    try:
+        insp = inspect(engine)
+        existing = set(insp.get_table_names())
+    except Exception as e:
+        logger.error(
+            "Pilote Lot C (cleanup): impossible d'inspecter le schéma: %s",
+            e,
+            exc_info=True,
+        )
+        raise RuntimeError(
+            "Pilote Lot C (cleanup): échec inspect(engine) — isolation non garantie."
+        ) from e
+
+    delete_errors: list[tuple[str, Exception]] = []
+    for table in _PILOT_CLEANUP_TABLES_ORDER:
+        if table not in existing:
+            continue
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f"DELETE FROM {table}"))
+        except Exception as e:
+            logger.error(
+                "Pilote Lot C (cleanup): DELETE FROM %s a échoué: %s",
+                table,
+                e,
+                exc_info=True,
+            )
+            delete_errors.append((table, e))
+
+    if delete_errors:
+        summary = "; ".join(f"{name}: {err}" for name, err in delete_errors)
+        raise RuntimeError(
+            f"Pilote Lot C (cleanup): {len(delete_errors)} DELETE en échec — {summary}"
+        ) from delete_errors[0][1]
+
+
+def _request_is_pilot_db_isolation(request) -> bool:
+    try:
+        path = getattr(request.node, "path", None) or getattr(request.node, "fspath", None)
+        name = path.name if path is not None else ""
+    except Exception:
+        return False
+    return name in _PILOT_DB_ISOLATION_BASENAMES
+
 
 # Fonction pour créer les tables
 def create_tables_if_not_exist():
@@ -259,13 +350,14 @@ def _db_autouse(db_engine, request):
     - L'override FastAPI ``get_db`` injecte cette ``Session`` pour ``TestClient`` / les endpoints.
 
     **Ce qu'elle ne garantit pas**
-    - **Pas d'isolation « rollback entre tests »** : tout ``commit()`` effectué par le code
-      applicatif ou le test laisse les données persistées dans la base partagée ; les tests
-      suivants voient ces lignes tant qu'on n'utilise pas une autre stratégie (base jetable,
-      TRUNCATE, nested transactions / savepoints, etc.).
-    - La fermeture ``connection.close()`` sans rollback explicite sur la transaction ouverte
-      ne doit pas être interprétée comme « annulation garantie du travail du test » : seuls les
-      états réellement non commités et le comportement du pilote s'appliquent.
+    - **Pas d'isolation « rollback entre tests »** via cette fixture seule : tout ``commit()``
+      laisse les données visibles sur la connexion / le moteur tant que la connexion vit.
+    - **Pilote Lot C (TEST-01)** : pour les modules listés dans
+      ``_PILOT_DB_ISOLATION_BASENAMES``, après fermeture de la connexion du test, un
+      ``DELETE`` ciblé sur ``audit_logs``, ``user_sessions``, ``login_history``, ``users``
+      (tables présentes uniquement). Cela compense les commits du login / audit pour ce
+      sous-ensemble seulement ; ce n'est pas un rollback transactionnel et d'autres tables
+      peuvent encore conserver des lignes si un test pilote les remplit.
 
     Tests marqués ``@pytest.mark.no_db`` : pas de setup DB, la fixture produit ``None``.
     """
@@ -295,6 +387,9 @@ def _db_autouse(db_engine, request):
         # Pas de transaction.rollback() / commit() ici : stratégie transactionnelle inchangée
         # (voir docstring). Fermeture connexion uniquement.
         connection.close()
+        # Pilote TEST-01 : nettoyage après libération de la connexion du test (ordre critique SQLite).
+        if _request_is_pilot_db_isolation(request):
+            _cleanup_pilot_db_tables()
 
 @pytest.fixture(scope="function")
 def db_session(_db_autouse):

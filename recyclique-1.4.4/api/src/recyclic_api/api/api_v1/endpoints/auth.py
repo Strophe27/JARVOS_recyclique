@@ -20,7 +20,7 @@ from recyclic_api.schemas.pin import PinAuthRequest, PinAuthResponse
 from recyclic_api.utils.auth_metrics import auth_metrics
 from recyclic_api.core.uuid_validation import validate_and_convert_uuid
 from recyclic_api.utils.password_reset_email import send_password_reset_email_safe
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import get_effective_frontend_url
 from recyclic_api.services.activity_service import ActivityService
 from recyclic_api.services.refresh_token_service import RefreshTokenService
 from recyclic_api.core.security import get_token_expiration_minutes
@@ -409,41 +409,42 @@ async def forgot_password(request: Request, payload: ForgotPasswordRequest, db: 
     response_message = "Si un compte est associé à cet email, un lien de réinitialisation a été envoyé."
 
     if user and user.is_active:
-        # Générer le token de réinitialisation
-        reset_token = create_password_reset_token(str(user.id))
-
-        # Construire le lien de réinitialisation
-        # Utiliser FRONTEND_URL depuis les settings pour la production
-        base_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:4444')
-        reset_link = f"{base_url}/reset-password?token={reset_token}"
-
-        # Envoyer l'email de réinitialisation
-        try:
-            email_sent = send_password_reset_email_safe(
-                to_email=user.email,
-                reset_link=reset_link,
-                user_name=user.first_name or user.username
+        base_url = get_effective_frontend_url()
+        if not base_url:
+            logger.error(
+                "Mot de passe oublié : FRONTEND_URL non configurée en environnement non-dev ; "
+                "email de réinitialisation non envoyé (utilisateur %s).",
+                user.email,
             )
-            
-            if email_sent:
-                logger.info(f"Password reset email sent successfully to {user.email}")
-                
-                # Log audit for password reset request
-                log_audit(
-                    action_type=AuditActionType.PASSWORD_RESET,
-                    actor=user,
-                    details={"email": user.email, "reset_link_generated": True},
-                    description=f"Demande de réinitialisation de mot de passe pour {user.email}",
-                    ip_address=getattr(request.client, 'host', 'unknown') if request.client else 'unknown',
-                    user_agent=request.headers.get("user-agent"),
-                    db=db
+        else:
+            reset_token = create_password_reset_token(str(user.id))
+            reset_link = f"{base_url}/reset-password?token={reset_token}"
+
+            try:
+                email_sent = send_password_reset_email_safe(
+                    to_email=user.email,
+                    reset_link=reset_link,
+                    user_name=user.first_name or user.username
                 )
-            else:
-                logger.error(f"Failed to send password reset email to {user.email}")
-                
-        except Exception as e:
-            logger.error(f"Error sending password reset email to {user.email}: {e}")
-            # Ne pas exposer l'erreur à l'utilisateur pour des raisons de sécurité
+
+                if email_sent:
+                    logger.info(f"Password reset email sent successfully to {user.email}")
+
+                    log_audit(
+                        action_type=AuditActionType.PASSWORD_RESET,
+                        actor=user,
+                        details={"email": user.email, "reset_link_generated": True},
+                        description=f"Demande de réinitialisation de mot de passe pour {user.email}",
+                        ip_address=getattr(request.client, 'host', 'unknown') if request.client else 'unknown',
+                        user_agent=request.headers.get("user-agent"),
+                        db=db
+                    )
+                else:
+                    logger.error(f"Failed to send password reset email to {user.email}")
+
+            except Exception as e:
+                logger.error(f"Error sending password reset email to {user.email}: {e}")
+                # Ne pas exposer l'erreur à l'utilisateur pour des raisons de sécurité
 
     return ForgotPasswordResponse(message=response_message)
 

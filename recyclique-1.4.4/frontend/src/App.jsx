@@ -3,8 +3,10 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from './components/Header.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import RegisterRouterNavigate from './components/auth/RegisterRouterNavigate';
 import { ReceptionProvider } from './contexts/ReceptionContext';
 import { useAuthStore } from './stores/authStore';
+import { UserRole } from './generated/types';
 import { useSessionHeartbeat } from './hooks/useSessionHeartbeat';
 import { SessionStatusBanner } from './components/ui/SessionStatusBanner';
 
@@ -133,6 +135,7 @@ function App() {
 
   return (
     <ReceptionProvider>
+      <RegisterRouterNavigate />
       <AppContainer>
         {/* B42-P3: Session status banner for offline/expiring warnings */}
         {isAuthenticated && <SessionStatusBanner />}
@@ -173,7 +176,7 @@ function App() {
             <Route path="/profil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/depots" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
             <Route path="/rapports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/rapports/caisse" element={<ProtectedRoute requiredRoles={['admin', 'super-admin']}><CashJournal /></ProtectedRoute>} />
+            <Route path="/rapports/caisse" element={<ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}><CashJournal /></ProtectedRoute>} />
             <Route path="/inscription" element={<Registration />} />
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
               <Route index element={<DashboardHomePage />} />
@@ -190,14 +193,14 @@ function App() {
               <Route path="quick-analysis" element={<QuickAnalysis />} />
               <Route path="cash-registers" element={<AdminCashRegisters />} />
               <Route path="sites" element={<AdminSites />} />
-              <Route path="categories" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminCategories /></ProtectedRoute>} />
-              <Route path="groups" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminGroups /></ProtectedRoute>} />
-              <Route path="audit-log" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AuditLog /></ProtectedRoute>} />
-              <Route path="email-logs" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><EmailLogs /></ProtectedRoute>} />
+              <Route path="categories" element={<ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}><AdminCategories /></ProtectedRoute>} />
+              <Route path="groups" element={<ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}><AdminGroups /></ProtectedRoute>} />
+              <Route path="audit-log" element={<ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}><AuditLog /></ProtectedRoute>} />
+              <Route path="email-logs" element={<ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}><EmailLogs /></ProtectedRoute>} />
               <Route path="health" element={<HealthDashboard />} />
-              <Route path="settings" element={<ProtectedRoute requiredRoles={['super-admin']}><AdminSettings /></ProtectedRoute>} />
-              <Route path="sites-and-registers" element={<ProtectedRoute requiredRoles={['super-admin']}><SitesAndRegistersPage /></ProtectedRoute>} />
-              <Route path="import/legacy" element={<ProtectedRoute requiredRoles={['admin', 'super-admin']}><LegacyImport /></ProtectedRoute>} />
+              <Route path="settings" element={<ProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN]}><AdminSettings /></ProtectedRoute>} />
+              <Route path="sites-and-registers" element={<ProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN]}><SitesAndRegistersPage /></ProtectedRoute>} />
+              <Route path="import/legacy" element={<ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}><LegacyImport /></ProtectedRoute>} />
             </Route>
             </Routes>
           </Suspense>

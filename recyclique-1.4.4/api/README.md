@@ -7,6 +7,15 @@ Backend FastAPI du livrable **1.4.4** (package défini dans `pyproject.toml` à 
 - API HTTP (schémas Pydantic, services, endpoints).
 - Migrations SQL gérées par **Alembic** (`migrations/`, `alembic.ini`).
 
+## Runtime Python : Docker vs local
+
+- **Image Docker** (`Dockerfile`) : **Python 3.11** (`FROM python:3.11-slim`). C’est la référence d’exécution en compose / prod.
+- **Local hors conteneur** : le projet déclare `requires-python = ">=3.11"` dans `pyproject.toml`. Pour coller au comportement de l’image, utilisez de préférence **CPython 3.11.x**. Une version plus récente (ex. 3.13) peut fonctionner mais n’est pas garantie identique (wheels, dépendances natives, comportements subtils).
+
+## CORS et URL frontend
+
+L’API lit **`BACKEND_CORS_ORIGINS`** ou **`CORS_ALLOW_ORIGINS`** (liste d’URLs séparées par des virgules) et **`FRONTEND_URL`** depuis l’environnement / `.env` via **Settings** (`core/config.py`). Si la liste CORS est vide et que `ENVIRONMENT` est `development`, `dev`, `local` ou `test`, un repli local minimal s’applique (localhost / conteneur frontend). En **production** (ou tout autre environnement non listé), une liste vide déclenche un avertissement côté logs ; en l’absence de `BACKEND_CORS_ORIGINS`, une seule origine dérivée de **`FRONTEND_URL`** est utilisée si elle est renseignée.
+
 ## Développement local (résumé)
 
 Les versions runtime sont alignées sur `requirements.txt`. Pour un setup typique :

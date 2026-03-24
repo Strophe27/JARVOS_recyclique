@@ -3,6 +3,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 // OPTIMIZATION: Import auth store to read cached token from memory instead of localStorage
 import { useAuthStore } from '../stores/authStore';
+import { navigateToLoginReplace } from './authNavigation';
 
 // B42-P3: Flag to prevent infinite refresh loops
 let isRefreshing = false;
@@ -98,7 +99,7 @@ axiosClient.interceptors.response.use(
             // Ne pas enchaîner un refresh sur login/refresh (boucles) ; laisser logout() finir sur /auth/logout
             if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh')) {
                 await useAuthStore.getState().logout();
-                window.location.href = '/login';
+                navigateToLoginReplace();
                 return Promise.reject(error);
             }
             if (originalRequest.url?.includes('/auth/logout')) {
@@ -144,14 +145,14 @@ axiosClient.interceptors.response.use(
                     processQueue(error);
                     isRefreshing = false;
                     await useAuthStore.getState().logout();
-                    window.location.href = '/login';
+                    navigateToLoginReplace();
                     return Promise.reject(error);
                 }
             } catch (refreshError) {
                 processQueue(refreshError);
                 isRefreshing = false;
                 await useAuthStore.getState().logout();
-                window.location.href = '/login';
+                navigateToLoginReplace();
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

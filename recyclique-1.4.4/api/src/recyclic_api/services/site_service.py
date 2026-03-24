@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.exceptions import ConflictError
 from recyclic_api.models.site import Site
 from recyclic_api.schemas.site import (
     SiteCreate,
@@ -70,7 +71,6 @@ class SiteService:
 
     def _check_dependencies(self, site: Site) -> None:
         """Vérifier les dépendances avant suppression d'un site."""
-        from fastapi import HTTPException, status as http_status
         from recyclic_api.models.cash_register import CashRegister
         from recyclic_api.models.user import User
 
@@ -80,10 +80,9 @@ class SiteService:
         ).count()
 
         if cash_registers_count > 0:
-            raise HTTPException(
-                status_code=http_status.HTTP_409_CONFLICT,
-                detail=f"Impossible de supprimer le site '{site.name}'. "
-                       f"{cash_registers_count} poste(s) de caisse y sont associés."
+            raise ConflictError(
+                f"Impossible de supprimer le site '{site.name}'. "
+                f"{cash_registers_count} poste(s) de caisse y sont associés."
             )
 
         # Check for users assigned to this site
@@ -92,8 +91,7 @@ class SiteService:
         ).count()
 
         if users_count > 0:
-            raise HTTPException(
-                status_code=http_status.HTTP_409_CONFLICT,
-                detail=f"Impossible de supprimer le site '{site.name}'. "
-                       f"{users_count} utilisateur(s) l'utilisent comme site principal."
+            raise ConflictError(
+                f"Impossible de supprimer le site '{site.name}'. "
+                f"{users_count} utilisateur(s) l'utilisent comme site principal."
             )

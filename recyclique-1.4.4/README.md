@@ -11,6 +11,10 @@ Digitaliser les processus des ressourceries pour réduire le temps administratif
 2. **Interface caisse** : Vente simplifiée avec catégories EEE obligatoires  
 3. **Exports automatisés** : Synchronisation vers Ecologic et partenaires
 
+## Runtime Python (API)
+
+L’image Docker de l’API utilise **Python 3.11**. En développement local sans Docker, préférez **3.11.x** pour rester aligné avec le conteneur ; voir `api/README.md` et `requires-python` dans `api/pyproject.toml`.
+
 ## 🚀 Démarrage (Dev)
 
 À lancer depuis le dossier `recyclique-1.4.4/` (là où se trouve `docker-compose.yml`).
@@ -18,7 +22,7 @@ Digitaliser les processus des ressourceries pour réduire le temps administratif
 1. Créer un fichier `.env` à la racine de ce dossier avec au minimum :
    - `POSTGRES_PASSWORD`
    - `SECRET_KEY`  
-   Optionnel : `POSTGRES_DB` (défaut **`recyclic`**, doit rester aligné entre Postgres, `DATABASE_URL` et Alembic), `APP_VERSION` (défaut **1.4.4**), `API_PORT` (défaut **8000** sur l’hôte).
+   Optionnel : `POSTGRES_DB` (défaut **`recyclic`**, doit rester aligné entre Postgres, `DATABASE_URL` et Alembic), `APP_VERSION` (défaut **1.4.4** ; sous Git Bash / Linux, alignement sur le frontend : `export APP_VERSION="$(./scripts/get-version.sh)"` avant un build — le script nécessite Node.js), `API_PORT` (défaut **8000** sur l’hôte).
 
 2. Construire et démarrer les services :
 

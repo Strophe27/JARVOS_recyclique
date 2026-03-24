@@ -6,6 +6,7 @@ Handles JWT authentication, role checks, and permission checks.
 from dataclasses import dataclass
 from datetime import datetime
 import json
+import logging
 import os
 import uuid
 from typing import List, Optional, Union
@@ -17,13 +18,15 @@ from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from .config import settings
+from .config import get_effective_frontend_url, settings
 from .database import get_db
 from .email_service import get_email_service
 from .redis import get_redis
 from .security import create_access_token, create_password_reset_token, verify_token
 from ..models.permission import Group, Permission
 from ..models.user import User, UserRole, UserStatus
+
+logger = logging.getLogger(__name__)
 
 # Security scheme (don't auto-raise 403 so we can return 401)
 security = HTTPBearer(auto_error=False)
@@ -425,8 +428,15 @@ async def send_reset_password_email(email: str, db: Session) -> None:
         # Ne pas révéler si l'utilisateur existe ou non
         return
 
+    base = get_effective_frontend_url()
+    if not base:
+        logger.error(
+            "FRONTEND_URL absente ou vide en environnement non-dev : envoi du mail de reset annulé."
+        )
+        return
+
     reset_token = create_password_reset_token(email)
-    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+    reset_url = f"{base}/reset-password?token={reset_token}"
 
     email_service = get_email_service()
     email_service.send_email(

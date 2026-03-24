@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { AuthApi } from '../generated/api';
-import { LoginRequest, LoginResponse, AuthUser } from '../generated/types';
+import { LoginRequest, LoginResponse, UserRole } from '../generated/types';
 import axiosClient from '../api/axiosClient';
 import { getTokenExpiration } from '../utils/jwt';
 
@@ -14,7 +14,7 @@ export interface User {
   email?: string;
   phone_number?: string;
   address?: string;
-  role: 'user' | 'admin' | 'super-admin';
+  role: UserRole;
   status: 'pending' | 'approved' | 'rejected';
   is_active: boolean;
   site_id?: string;
@@ -308,20 +308,33 @@ export const useAuthStore = create<AuthState>()(
         // Computed
         isAdmin: () => {
           const { currentUser } = get();
-          return currentUser?.role === 'admin' || currentUser?.role === 'super-admin';
+          return (
+            currentUser?.role === UserRole.ADMIN ||
+            currentUser?.role === UserRole.SUPER_ADMIN
+          );
         },
 
         hasPermission: (permission: string) => {
           const { permissions, currentUser } = get();
           // Admins and Super-admins have all permissions
-          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
+          if (
+            currentUser?.role === UserRole.ADMIN ||
+            currentUser?.role === UserRole.SUPER_ADMIN
+          ) {
+            return true;
+          }
           return permissions.includes(permission);
         },
 
         hasCashAccess: () => {
           const { permissions, currentUser } = get();
           // Admins and Super-admins always have access
-          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
+          if (
+            currentUser?.role === UserRole.ADMIN ||
+            currentUser?.role === UserRole.SUPER_ADMIN
+          ) {
+            return true;
+          }
           // Volunteers need at least one of the cash permissions
           return permissions.includes('caisse.access') || 
                  permissions.includes('caisse.virtual.access') || 
@@ -331,7 +344,12 @@ export const useAuthStore = create<AuthState>()(
         hasVirtualCashAccess: () => {
           const { permissions, currentUser } = get();
           // Admins and Super-admins always have access
-          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
+          if (
+            currentUser?.role === UserRole.ADMIN ||
+            currentUser?.role === UserRole.SUPER_ADMIN
+          ) {
+            return true;
+          }
           // Volunteers need the permission
           return permissions.includes('caisse.virtual.access');
         },
@@ -339,7 +357,12 @@ export const useAuthStore = create<AuthState>()(
         hasDeferredCashAccess: () => {
           const { permissions, currentUser } = get();
           // Admins and Super-admins always have access
-          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
+          if (
+            currentUser?.role === UserRole.ADMIN ||
+            currentUser?.role === UserRole.SUPER_ADMIN
+          ) {
+            return true;
+          }
           // Volunteers need the permission
           return permissions.includes('caisse.deferred.access');
         },
@@ -347,7 +370,12 @@ export const useAuthStore = create<AuthState>()(
         hasReceptionAccess: () => {
           const { permissions, currentUser } = get();
           // Admins and Super-admins always have access
-          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
+          if (
+            currentUser?.role === UserRole.ADMIN ||
+            currentUser?.role === UserRole.SUPER_ADMIN
+          ) {
+            return true;
+          }
           // Volunteers need the permission
           return permissions.includes('reception.access');
         },
@@ -447,6 +475,15 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
+const KNOWN_USER_ROLES = new Set<string>(Object.values(UserRole));
+
+function parseApiUserRole(raw: unknown): UserRole {
+  if (typeof raw === 'string' && KNOWN_USER_ROLES.has(raw)) {
+    return raw as UserRole;
+  }
+  return UserRole.USER;
+}
+
 /** Réponse API user (login ou `GET /v1/users/me`) → modèle du store. */
 function mapApiUserToUser(raw: Record<string, unknown>): User {
   const telegramRaw = raw.telegram_id;
@@ -465,7 +502,7 @@ function mapApiUserToUser(raw: Record<string, unknown>): User {
     email: (raw.email as string | undefined) ?? undefined,
     phone_number: (raw.phone_number as string | undefined) ?? undefined,
     address: (raw.address as string | undefined) ?? undefined,
-    role: raw.role as User['role'],
+    role: parseApiUserRole(raw.role),
     status: raw.status as User['status'],
     is_active: Boolean(raw.is_active),
     created_at: (raw.created_at as string) || new Date().toISOString(),

@@ -15,7 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
 
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import settings, get_cors_allow_origins
 from recyclic_api.api.api_v1.api import api_router
 from recyclic_api.services.sync_service import schedule_periodic_kdrive_sync
 from recyclic_api.services.scheduler_service import get_scheduler_service
@@ -125,10 +125,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 app.add_middleware(SlowAPIMiddleware)
 
-# Add CORS middleware
+# Add CORS middleware (BACKEND_CORS_ORIGINS / CORS_ALLOW_ORIGINS / repli dev via Settings)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://frontend:3000", "http://localhost:4444"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

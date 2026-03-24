@@ -42,7 +42,7 @@ const customRender = (
 
 // Utilitaire pour tester avec des routes spécifiques
 export const renderWithRouter = (ui: React.ReactElement, route = '/') =>
-  render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>)
+  rtlRender(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>)
 
 // Mock data factories
 export const mockUser = {

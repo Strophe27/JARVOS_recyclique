@@ -15,12 +15,15 @@ import ForgotPassword from '../../pages/ForgotPassword.tsx'
 import ResetPassword from '../../pages/ResetPassword.tsx'
 import AdminDashboard from '../../pages/Admin/Dashboard.tsx'
 import ProtectedRoute from '../../components/auth/ProtectedRoute'
+import { UserRole } from '../../generated/types'
 
 // Mock authStore to simulate unauthenticated state
 const mockAuthStore: any = {
   isAuthenticated: false,
   currentUser: null,
   loading: false,
+  token: null,
+  hasPermission: vi.fn(() => false),
   error: null,
   login: vi.fn(async () => ({ success: true })),
   logout: vi.fn(async () => ({ success: true })),
@@ -42,7 +45,7 @@ const TestRoutes = (
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/telegram-auth" element={<TelegramAuth />} />
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/caisse" element={<ProtectedRoute requiredRole="user"><CashRegister /></ProtectedRoute>} />
+    <Route path="/caisse" element={<ProtectedRoute requiredRole={UserRole.USER}><CashRegister /></ProtectedRoute>} />
     <Route path="/inscription" element={<Registration />} />
     <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
   </Routes>

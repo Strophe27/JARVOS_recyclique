@@ -41,7 +41,9 @@ services:
     build:
       context: ./api
       args:
-        APP_VERSION: ${APP_VERSION:-$(./scripts/get-version.sh)}
+        # Compose ne substitue pas de commande shell ici : utiliser un défaut semver ou
+        # exporter APP_VERSION avant le build (ex. APP_VERSION="$(./scripts/get-version.sh)").
+        APP_VERSION: ${APP_VERSION:-1.4.4}
         COMMIT_SHA: ${COMMIT_SHA:-unknown}
         BRANCH: ${BRANCH:-unknown}
         COMMIT_DATE: ${COMMIT_DATE:-unknown}

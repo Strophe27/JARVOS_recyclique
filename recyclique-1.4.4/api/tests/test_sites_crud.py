@@ -1,7 +1,9 @@
 import pytest
+from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.security import hash_password
 from recyclic_api.main import app
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole
@@ -101,6 +103,30 @@ def test_delete_site_success(admin_client, db_session):
     # Verify site is deleted
     deleted_site = db_session.query(Site).filter(Site.id == site.id).first()
     assert deleted_site is None
+
+
+def test_delete_site_fails_409_when_users_attached(admin_client, db_session):
+    """Suppression refusée (409 Conflict) si au moins un utilisateur a ce site comme principal."""
+    site = Site(name="Site avec rattachement", address="1 rue Test", is_active=True)
+    db_session.add(site)
+    db_session.commit()
+    db_session.refresh(site)
+
+    attached = User(
+        username=f"rattache_{uuid4().hex}@test.com",
+        hashed_password=hash_password("secret"),
+        role=UserRole.USER,
+        site_id=site.id,
+    )
+    db_session.add(attached)
+    db_session.commit()
+
+    response = admin_client.delete(f"/api/v1/sites/{site.id}")
+
+    assert response.status_code == 409
+    body = response.json()
+    assert "detail" in body
+    assert "utilisateur" in body["detail"].lower()
 
 
 def test_create_site_requires_admin(client):

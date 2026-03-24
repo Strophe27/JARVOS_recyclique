@@ -69,6 +69,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-recyclic}
+      # Bootstrap premier super-admin (lu depuis .env au démarrage ; sans ça le login admin échoue en Docker)
+      FIRST_SUPER_ADMIN_USERNAME: ${FIRST_SUPER_ADMIN_USERNAME:-}
+      FIRST_SUPER_ADMIN_PASSWORD: ${FIRST_SUPER_ADMIN_PASSWORD:-}
       # Configuration pour les tests
       TEST_DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
       # TESTING: "true"  # Désactivé - ne doit être activé que lors des tests

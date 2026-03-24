@@ -536,6 +536,244 @@
 
 ---
 
+## Lot 1D — Ops residuel de reprise
+
+**Statut:** ferme  
+**Theme:** fermer les ecarts restants de configuration et d'outillage avant les lots schema et tests
+
+### Actions
+- Centralisation de `FRONTEND_URL` et des origines CORS dans `Settings`.
+- Ajout d'un calcul explicite de repli frontend reserve aux environnements de type dev.
+- Realignement du middleware CORS sur cette source de verite de config.
+- Suppression du risque de liens email vers `localhost` hors dev quand `FRONTEND_URL` est absent.
+- Fiabilisation de la chaine de version :
+  - correction de l'usage compose de `APP_VERSION`
+  - durcissement de `scripts/get-version.sh` pour fonctionner depuis son propre dossier
+- Clarification du runtime Python :
+  - Docker = Python 3.11
+  - local = `>=3.11`, avec preference 3.11.x
+- Realignement des scripts `start.sh` et `start.bat` pour preferer `docker compose` avec repli `docker-compose`.
+- Ajout d'un test cible pour la logique `FRONTEND_URL` / CORS.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/core/config.py`
+- `recyclique-1.4.4/api/src/recyclic_api/core/auth.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/auth.py`
+- `recyclique-1.4.4/api/src/recyclic_api/main.py`
+- `recyclique-1.4.4/docker-compose.prod.yml`
+- `recyclique-1.4.4/docker-compose.staging.yml`
+- `recyclique-1.4.4/scripts/get-version.sh`
+- `recyclique-1.4.4/api/README.md`
+- `recyclique-1.4.4/README.md`
+- `recyclique-1.4.4/start.sh`
+- `recyclique-1.4.4/start.bat`
+- `recyclique-1.4.4/api/tests/test_config_cors_frontend_url.py`
+
+### Validation
+- `python -m compileall` sur les fichiers Python modifies.
+- `pytest tests/test_infrastructure.py`.
+- `pytest tests/test_config_cors_frontend_url.py`.
+- QA en deux temps :
+  - premiere QA : **fermable avec reserves**
+  - correctifs cibles
+  - QA de cloture seule : **fermable**
+
+### Resultat
+- Lot ferme.
+- Le repli `FRONTEND_URL` n'est plus implicite vers `localhost` hors environnements dev-like.
+- La configuration CORS est plus coherente avec `Settings`.
+- Les scripts de demarrage sont plus robustes face a Compose v1/v2.
+- Reserve faible acceptee :
+  - quelques docs hors perimetre lot A peuvent encore mentionner `4433`
+  - des validations ops reelles restent utiles sur les environnements de deploiement non dev
+
+---
+
+## Lot 1E — Integrite `User.site_id`
+
+**Statut:** ferme  
+**Theme:** ajouter la contrainte de referentialite manquante sur `users.site_id`
+
+### Actions
+- Ajout de `ForeignKey("sites.id")` sur `User.site_id` dans le modele ORM.
+- Creation d'une migration Alembic dediee pour ajouter la contrainte `fk_users_site_id_sites`.
+- Assainissement prudent des donnees avant ajout de la FK :
+  - mise a `NULL` des `site_id` orphelins
+  - traçabilite legere du nombre de lignes nettoyees dans la migration
+- Realignement de `api/create_schema.py` sur cette FK pour supprimer un chemin parallele de schema contradictoire.
+- Ajout d'une logique defensive dans `create_schema.py` pour:
+  - creer `sites` avant `users`
+  - ajouter la contrainte si une ancienne table `users` existait deja sans FK
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/models/user.py`
+- `recyclique-1.4.4/api/migrations/versions/d4e5f6a7b8c1_add_fk_users_site_id.py`
+- `recyclique-1.4.4/api/create_schema.py`
+
+### Validation
+- `python -m compileall` sur le modele et la migration.
+- Verification de la chaine Alembic :
+  - `alembic heads`
+  - `alembic show head`
+- Verification du chemin SQLite minimal autour de `User` / `sites`.
+- QA en deux temps :
+  - premiere QA : **fermable avec reserves**
+  - correction du chemin parallele `create_schema.py` et de la traçabilite
+  - QA de cloture seule : **fermable**
+
+### Resultat
+- Lot ferme.
+- `users.site_id` est maintenant aligne sur `sites.id` au niveau modele et migration.
+- Le chemin bootstrap `create_schema.py` n'est plus en contradiction frontale avec la FK ajoutee.
+- Reserves faibles acceptees :
+  - le script `create_schema.py` reste un bootstrap historique et non une source de verite complete du schema
+  - des validations PostgreSQL reelles restent utiles sur une base jetable ou de preprod
+
+---
+
+## Lot 1F — Pilote isolation tests auth + infra
+
+**Statut:** ferme  
+**Theme:** ouvrir un premier palier credible d'isolation DB pour le sous-ensemble backend deja stabilise
+
+### Actions
+- Mise en place d'un cleanup deterministe apres chaque test du pilote dans `_db_autouse`.
+- Limitation explicite du pilote a un petit sous-ensemble :
+  - `test_infrastructure.py`
+  - `test_auth_login_endpoint.py`
+  - `test_auth_logging.py`
+  - `test_auth_inactive_user_middleware.py`
+- Nettoyage cible des tables les plus directement touchees par ce sous-ensemble :
+  - `audit_logs`
+  - `user_sessions`
+  - `login_history`
+  - `users`
+- Realignement du timing du cleanup pour eviter les verrous SQLite.
+- Ajout d'un `timeout` SQLite pour reduire la fragilite locale.
+- Suppression du caractere silencieux du cleanup :
+  - logs d'erreur explicites
+  - levee de `RuntimeError` si inspection ou `DELETE` echoue
+
+### Fichiers touches
+- `recyclique-1.4.4/api/tests/conftest.py`
+
+### Validation
+- Relances ciblees du sous-ensemble pilote :
+  - `tests/test_infrastructure.py`
+  - `tests/test_auth_login_endpoint.py`
+  - `tests/test_auth_logging.py`
+  - `tests/test_auth_inactive_user_middleware.py`
+- Premiere QA : **fermable avec reserves**
+- Correctif sur l'observabilite du cleanup
+- QA de cloture seule : **fermable avec reserves**
+- Validation PostgreSQL reelle sous Docker :
+  - `tests/test_infrastructure.py`
+  - `tests/test_auth_login_endpoint.py`
+  - `tests/test_auth_logging.py`
+  - `tests/test_auth_inactive_user_middleware.py`
+  - verdict : `28/28 passed`
+- QA finale de levee de reserve : reserve PostgreSQL levee pour le sous-ensemble pilote
+
+### Resultat
+- Le pilote ne repose plus sur un cleanup silencieux.
+- Les erreurs de cleanup remontent maintenant explicitement au teardown.
+- Le sous-ensemble auth + infra dispose d'un premier mecanisme d'isolation apres `commit()`.
+- Limites de perimetre acceptees :
+  - le pilote ne couvre pas encore toute la suite backend
+  - l'execution mixte avec des tests hors pilote reste un sujet d'extension futur, pas un blocage du pilote courant
+
+---
+
+## Lot 1G — Frontend auth / UX cible
+
+**Statut:** ferme  
+**Theme:** fermer les dettes auth frontend restantes sans refonte globale du router
+
+### Actions
+- Remplacement de la redirection 401 pleine page par une navigation compatible router quand le `navigate` React est disponible.
+- Ajout d'un petit registre de navigation auth pour relier l'intercepteur HTTP au router sans refonte structurelle.
+- Conservation d'un repli `window.location.assign` si un 401 survient avant l'enregistrement du `navigate`.
+- Realignement du role `manager` sur l'enum `UserRole` generee.
+- Typage `ProtectedRoute` sur `UserRole` au lieu de chaines libres pour `requiredRole` / `requiredRoles`.
+- Ajout d'un gate `loading` dans `ProtectedRoute` quand un token existe mais que la rehydratation auth est encore en cours.
+- Mise a jour des tests cibles frontend autour de `ProtectedRoute`, `authNavigation` et des routes publiques de test.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/api/authNavigation.ts`
+- `recyclique-1.4.4/frontend/src/components/auth/RegisterRouterNavigate.tsx`
+- `recyclique-1.4.4/frontend/src/api/__tests__/authNavigation.test.ts`
+- `recyclique-1.4.4/frontend/src/api/axiosClient.ts`
+- `recyclique-1.4.4/frontend/src/App.jsx`
+- `recyclique-1.4.4/frontend/src/stores/authStore.ts`
+- `recyclique-1.4.4/frontend/src/components/auth/ProtectedRoute.tsx`
+- `recyclique-1.4.4/frontend/src/components/auth/__tests__/ProtectedRoute.test.tsx`
+- `recyclique-1.4.4/frontend/src/test/integration/public-routes.test.tsx`
+- `recyclique-1.4.4/frontend/src/test/test-utils.tsx`
+
+### Validation
+- Vitest cible sur :
+  - `ProtectedRoute.test.tsx`
+  - `authNavigation.test.ts`
+  - `authStore.test.ts`
+  - `public-routes.test.tsx`
+- Build frontend Vite reussi.
+- QA de cloture seule : **fermable**
+
+### Resultat
+- Lot ferme.
+- Le flux 401 passe maintenant prioritairement par le router au lieu d'une redirection pleine page.
+- L'ecart `manager` / type `User` est traite sur le perimetre auth.
+- `ProtectedRoute` gere mieux la phase de rehydratation auth avec token.
+- Reserve faible acceptee :
+  - le repli `window.location.assign` reste volontairement present avant enregistrement du `navigate`
+  - les tests d'integration de routes publiques restent un proxy partiel du vrai routeur applicatif
+
+---
+
+## Lot 1H — Pilote architecture backend `delete_site`
+
+**Statut:** ferme  
+**Theme:** valider un premier pattern de service sans `HTTPException`, traduit au bord HTTP
+
+### Actions
+- Introduction d'une exception metier `ConflictError` dans `core/exceptions.py`.
+- Retrait de `HTTPException` de `SiteService` sur le flux pilote `delete_site`.
+- Remplacement des levées HTTP par `ConflictError` dans `_check_dependencies`.
+- Traduction explicite `ConflictError` -> `HTTP 409` dans l'endpoint `sites.py`.
+- Ajout d'un test dedie a la branche « utilisateurs rattaches -> 409 ».
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/core/exceptions.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/site_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/sites.py`
+- `recyclique-1.4.4/api/tests/test_sites_crud.py`
+
+### Validation
+- Compilation syntaxique des fichiers backend touches.
+- Verification des diagnostics IDE sur les fichiers modifies.
+- QA en deux temps :
+  - premiere QA : **fermable avec reserves**
+  - ajout d'un test de couverture sur la branche utilisateurs
+  - QA de cloture seule : **fermable avec reserves**
+- Validation PostgreSQL reelle sous Docker :
+  - `tests/test_sites_crud.py::test_delete_site_fails_409_when_users_attached`
+  - `tests/test_cash_registers_endpoint.py::TestCashRegistersEndpoint::test_delete_site_with_cash_registers_fails_409`
+  - avec `API_V1_STR=/api/v1`
+  - verdict : `2/2 passed`
+- QA finale de levee de reserve : reserve liee au schema de test SQLite minimale levee pour le flux pilote `delete_site`
+
+### Resultat
+- Le flux pilote `delete_site` n'expose plus de `HTTPException` depuis la couche service.
+- Le contrat API reste conserve au niveau route :
+  - `404` si site absent
+  - `409` si dependances metier
+  - `204` si suppression reussie
+- Limites de perimetre acceptees :
+  - la validation complete du module `sites` sur PostgreSQL reste un renforcement possible mais n'est pas necessaire pour ce pilote
+  - le pattern n'est valide que sur une petite surface pilote, pas encore generalise
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -562,11 +800,13 @@
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
-- **Vague 3:** terminee en micro-lots executes jusqu'ici
+- **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
+- **Vague 5:** pilote architecture backend ouvert et ferme avec reserve sur `delete_site`
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `2A`, `2B`, `2C`, `2D`, `3A`, `3B`, `3C`, `3D`, `3E`, `4A`, `4B`, `4C`, `4D`
-- **Prochaine etape logique:** voir `2026-03-23_prochaine-passe-assainissement-1.4.5.md` pour la passe suivante en contexte vierge
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1G`, `2A`, `2B`, `2C`, `2D`, `3A`, `3B`, `3C`, `3D`, `3E`, `4A`, `4B`, `4C`, `4D`
+- **Lots fermes avec reserve:** aucun a ce stade pour cette passe
+- **Prochaine etape logique:** decider s'il faut ouvrir une phase de coherence frontend plus large, et/ou etendre prudemment le pilote tests backend et le pattern `ARCH-03`
 
 ---
 

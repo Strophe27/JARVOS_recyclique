@@ -25,3 +25,11 @@ class AuthorizationError(RecyclicException):
 class DatabaseError(RecyclicException):
     """Raised when database operations fail"""
     pass
+
+
+class ConflictError(RecyclicException):
+    """Raised when current state blocks the operation (dependencies, business rules)."""
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__(detail)

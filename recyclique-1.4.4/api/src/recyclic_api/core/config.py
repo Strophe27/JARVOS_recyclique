@@ -1,8 +1,7 @@
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field, AliasChoices
 import os
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +31,15 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
     ECOLOGIC_EXPORT_DIR: str = "/app/exports"
+
+    # Origines CORS (comma-separated). Les deux noms d'env sont acceptés pour alignement compose / .env.
+    BACKEND_CORS_ORIGINS: str = Field(
+        default="",
+        validation_alias=AliasChoices("BACKEND_CORS_ORIGINS", "CORS_ALLOW_ORIGINS"),
+    )
+    # Base URL du frontend (liens e-mail, reset mot de passe, etc.).
+    # Pas de défaut localhost ici : en prod/staging, une valeur explicite est requise (voir get_effective_frontend_url).
+    FRONTEND_URL: str = ""
 
     # kDrive Sync
     KDRIVE_WEBDAV_URL: str | None = None
@@ -76,6 +84,54 @@ class Settings(BaseSettings):
     model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()
+
+# Repli CORS uniquement pour dev / test local quand aucune liste n'est fournie via l'environnement.
+_DEV_CORS_FALLBACK_ORIGINS: tuple[str, ...] = (
+    "http://localhost:3000",
+    "http://frontend:3000",
+    "http://localhost:4444",
+)
+
+# Repli FRONTEND_URL uniquement pour dev / test local (évite les liens localhost implicites en prod).
+_DEV_FRONTEND_URL_FALLBACK: str = "http://localhost:4444"
+
+
+def _is_dev_like_environment() -> bool:
+    env_lower = (settings.ENVIRONMENT or "").lower()
+    return env_lower in ("development", "dev", "local", "test")
+
+
+def get_effective_frontend_url() -> str:
+    """Base URL frontend sans slash final.
+
+    Si FRONTEND_URL est vide : repli localhost uniquement pour development/dev/local/test.
+    En production, staging, etc. : chaîne vide (pas de localhost silencieux).
+    """
+    raw = (settings.FRONTEND_URL or "").strip().rstrip("/")
+    if raw:
+        return raw
+    if _is_dev_like_environment():
+        return _DEV_FRONTEND_URL_FALLBACK.rstrip("/")
+    return ""
+
+
+def get_cors_allow_origins() -> list[str]:
+    """Liste des origines CORS effectives (Settings + repli dev/test si chaîne vide)."""
+    raw = (settings.BACKEND_CORS_ORIGINS or "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    if _is_dev_like_environment():
+        return list(_DEV_CORS_FALLBACK_ORIGINS)
+    base = get_effective_frontend_url()
+    if base:
+        return [base]
+    logger.warning(
+        "BACKEND_CORS_ORIGINS / CORS_ALLOW_ORIGINS vide en environnement %r : "
+        "aucune origine CORS (configurez ces variables ou FRONTEND_URL).",
+        settings.ENVIRONMENT,
+    )
+    return []
+
 
 # Test-mode overrides to satisfy tests expectations
 # IMPORTANT: Ne pas activer TESTING en production - cela force l'utilisation de la base de test

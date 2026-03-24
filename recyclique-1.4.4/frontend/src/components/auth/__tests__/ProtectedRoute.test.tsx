@@ -3,12 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../ProtectedRoute';
+import { UserRole } from '../../../generated/types';
 
 /** État minimal consommé par ProtectedRoute (pas de duplication de la logique du store). */
 const authSlice = vi.hoisted(() => ({
   isAuthenticated: false,
   currentUser: null as { role: string } | null,
   hasPermission: vi.fn((_perm: string) => false),
+  loading: false,
+  token: null as string | null,
 }));
 
 vi.mock('../../../stores/authStore', () => ({
@@ -41,6 +44,8 @@ describe('ProtectedRoute', () => {
   beforeEach(() => {
     authSlice.isAuthenticated = false;
     authSlice.currentUser = null;
+    authSlice.loading = false;
+    authSlice.token = null;
     authSlice.hasPermission.mockReset();
     authSlice.hasPermission.mockImplementation(() => false);
   });
@@ -137,9 +142,9 @@ describe('ProtectedRoute', () => {
 
   it('avec requiredRoles, redirige si le rôle utilisateur n’est pas dans la liste', () => {
     authSlice.isAuthenticated = true;
-    authSlice.currentUser = { role: 'user' };
+    authSlice.currentUser = { role: UserRole.USER };
     renderProtectedRoute({
-      requiredRoles: ['admin', 'manager'],
+      requiredRoles: [UserRole.ADMIN, UserRole.MANAGER],
       adminPathFallback: '/custom-fallback',
       children: <div data-testid="secret">Secret</div>,
     });
@@ -148,9 +153,9 @@ describe('ProtectedRoute', () => {
 
   it('avec requiredRoles, autorise si le rôle est l’un des rôles requis', () => {
     authSlice.isAuthenticated = true;
-    authSlice.currentUser = { role: 'manager' };
+    authSlice.currentUser = { role: UserRole.MANAGER };
     renderProtectedRoute({
-      requiredRoles: ['admin', 'manager'],
+      requiredRoles: [UserRole.ADMIN, UserRole.MANAGER],
       children: <div data-testid="secret">Secret</div>,
     });
     expect(screen.getByTestId('secret')).toBeInTheDocument();
@@ -158,9 +163,9 @@ describe('ProtectedRoute', () => {
 
   it('avec requiredRole, redirige si le rôle utilisateur ne correspond pas', () => {
     authSlice.isAuthenticated = true;
-    authSlice.currentUser = { role: 'user' };
+    authSlice.currentUser = { role: UserRole.USER };
     renderProtectedRoute({
-      requiredRole: 'admin',
+      requiredRole: UserRole.ADMIN,
       adminPathFallback: '/custom-fallback',
       children: <div data-testid="secret">Secret</div>,
     });
@@ -170,9 +175,9 @@ describe('ProtectedRoute', () => {
 
   it('avec requiredRole, affiche les enfants si le rôle correspond', () => {
     authSlice.isAuthenticated = true;
-    authSlice.currentUser = { role: 'admin' };
+    authSlice.currentUser = { role: UserRole.ADMIN };
     renderProtectedRoute({
-      requiredRole: 'admin',
+      requiredRole: UserRole.ADMIN,
       children: <div data-testid="secret">Secret</div>,
     });
     expect(screen.getByTestId('secret')).toBeInTheDocument();
@@ -190,12 +195,24 @@ describe('ProtectedRoute', () => {
 
   it('ne bloque pas si requiredPermissions est un tableau vide', () => {
     authSlice.isAuthenticated = true;
-    authSlice.currentUser = { role: 'user' };
+    authSlice.currentUser = { role: UserRole.USER };
     renderProtectedRoute({
       requiredPermissions: [],
       children: <div data-testid="secret">Secret</div>,
     });
     expect(authSlice.hasPermission).not.toHaveBeenCalled();
     expect(screen.getByTestId('secret')).toBeInTheDocument();
+  });
+
+  it('pendant initializeAuth (loading + token), affiche le chargement sans /login ni enfants', () => {
+    authSlice.isAuthenticated = false;
+    authSlice.loading = true;
+    authSlice.token = 'jwt';
+    renderProtectedRoute({
+      children: <div data-testid="secret">Secret</div>,
+    });
+    expect(screen.getByTestId('auth-session-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('secret')).not.toBeInTheDocument();
   });
 });
