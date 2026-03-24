@@ -8,6 +8,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func, desc, and_, String
 from fastapi import HTTPException, status
+from recyclic_api.core.exceptions import ConflictError, NotFoundError
 
 from recyclic_api.models import (
     PosteReception,
@@ -85,12 +86,12 @@ class ReceptionService:
     def close_poste(self, poste_id: UUID) -> PosteReception:
         poste: Optional[PosteReception] = self.poste_repo.get(poste_id)
         if not poste:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Poste introuvable")
+            raise NotFoundError("Poste introuvable")
 
         # Contrainte métier: pas de tickets ouverts
         open_tickets = self.poste_repo.count_open_tickets(poste.id)
         if open_tickets > 0:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Des tickets ouverts empêchent la fermeture du poste")
+            raise ConflictError("Des tickets ouverts empêchent la fermeture du poste")
 
         poste.status = PosteReceptionStatus.CLOSED.value
         from sqlalchemy.sql import func
@@ -140,7 +141,7 @@ class ReceptionService:
     def close_ticket(self, ticket_id: UUID) -> TicketDepot:
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ticket_id)
         if not ticket:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket introuvable")
+            raise NotFoundError("Ticket introuvable")
         if ticket.status == TicketDepotStatus.CLOSED.value:
             return ticket
 

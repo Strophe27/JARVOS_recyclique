@@ -1225,6 +1225,59 @@
 
 ---
 
+## Lot 1L — Pilote ARCH-03 sur fermeture `reception`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir un premier flux `reception` de la logique `HTTPException` cote service sans melanger toute la verticale
+
+### Actions
+- Retrait de `HTTPException` dans `ReceptionService.close_poste()` au profit de :
+  - `NotFoundError` pour `Poste introuvable`
+  - `ConflictError` pour la fermeture bloquee par des tickets ouverts
+- Retrait de `HTTPException` dans `ReceptionService.close_ticket()` au profit de `NotFoundError` tout en conservant l'idempotence du ticket deja ferme.
+- Translation explicite de ces exceptions metier au bord HTTP dans `endpoints/reception.py` pour :
+  - `POST /reception/postes/{poste_id}/close`
+  - `POST /reception/tickets/{ticket_id}/close`
+- Realignement des tests `reception` cibles sur `settings.API_V1_STR` afin d'arreter de valider ce flux avec des chemins historiques `/api/v1/...`.
+- Ajout d'un test unitaire dedie `test_reception_arch03_domain_errors.py` pour figer le contrat metier minimal du pilote.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/reception_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_endpoints.py`
+- `recyclique-1.4.4/api/tests/test_reception_user_access.py`
+- `recyclique-1.4.4/api/tests/test_reception_arch03_domain_errors.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale unitaire :
+  - `tests/test_reception_arch03_domain_errors.py`
+- Resultat local :
+  - **4 tests passes**
+- Validation locale SQLite des tests HTTP cibles :
+  - `tests/test_reception_endpoints.py`
+  - `tests/test_reception_user_access.py`
+- Resultat SQLite :
+  - **echec connu hors lot** sur schema minimal (`poste_reception` absent), sans signaler de regression specifique `ARCH-03`
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_endpoints.py`
+  - `tests/test_reception_user_access.py`
+- Resultat Docker :
+  - **7 tests passes**
+- QA de cloture seule : **OK**
+
+### Resultat
+- Le service `reception` a maintenant un premier ilot `ARCH-03` coherent :
+  - service = exceptions metier
+  - endpoint = traduction HTTP
+- Le contrat existant des routes de fermeture `reception` est conserve en `404` / `409` / `200`.
+- Reserves acceptees :
+  - les routes convertissent encore `UUID(...)` sans garde explicite sur les identifiants invalides
+  - le reste de `ReceptionService` demeure heterogene et continue de lever des `HTTPException`
+  - `close_poste()` n'est pas encore traite comme operation idempotente
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1253,7 +1306,7 @@
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site` et trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et un premier pilote `ARCH-03/reception` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1261,8 +1314,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** ouvrir un premier pilote `ARCH-03` sur une verticale deja assainie, idealement `reception` avant de toucher a `cash_sessions`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** etendre `ARCH-03` sur le reste de `reception` par un micro-lot distinct (`open_poste` / `create_ticket` puis lignes), avec vigilance sur `legacy_import_service.py`
 
 ---
 

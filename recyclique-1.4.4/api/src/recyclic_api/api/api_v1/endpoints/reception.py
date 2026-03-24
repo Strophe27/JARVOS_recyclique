@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Response, Body, Request
+from fastapi import APIRouter, Depends, Query, Response, Body, Request, HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional, List
@@ -10,6 +10,7 @@ import io
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_role_strict
+from recyclic_api.core.exceptions import ConflictError, NotFoundError
 from recyclic_api.models.user import UserRole, User
 from recyclic_api.utils.report_tokens import generate_download_token, verify_download_token
 from recyclic_api.schemas.reception import (
@@ -75,7 +76,12 @@ def close_poste(
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     service = ReceptionService(db)
-    poste = service.close_poste(poste_id=UUID(poste_id))
+    try:
+        poste = service.close_poste(poste_id=UUID(poste_id))
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
     return {"status": poste.status}
 
 
@@ -97,7 +103,10 @@ def close_ticket(
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     service = ReceptionService(db)
-    ticket = service.close_ticket(ticket_id=UUID(ticket_id))
+    try:
+        ticket = service.close_ticket(ticket_id=UUID(ticket_id))
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return {"status": ticket.status}
 
 
