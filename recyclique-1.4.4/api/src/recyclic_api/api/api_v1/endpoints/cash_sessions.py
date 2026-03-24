@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user, require_role, require_role_strict
 from recyclic_api.core.audit import (
-    log_cash_session_closing,
     log_cash_sale,
     log_cash_session_access
 )
@@ -32,6 +31,7 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStepResponse,
     CashSessionStep
 )
+from recyclic_api.application.cash_session_closing import run_close_cash_session
 from recyclic_api.application.cash_session_opening import open_cash_session
 from recyclic_api.services.cash_session_response_enrichment import enrich_session_response
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
@@ -642,189 +642,88 @@ async def close_cash_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
+    """ARCH-04 : orchestration fermeture dans ``application.cash_session_closing`` ; rapport/email ici."""
     service = CashSessionService(db)
-    
-    try:
-        session = service.get_session_by_id_or_raise(session_id)
-        
-        # Vérifier que l'utilisateur peut fermer cette session
-        if (current_user.role == UserRole.USER and 
-            str(session.operator_id) != str(current_user.id)):
-            log_cash_session_closing(
-                user_id=str(current_user.id),
-                username=current_user.username or "Unknown",
-                session_id=session_id,
-                closing_amount=session.current_amount,
-                success=False,
-                db=db
-            )
-            raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
 
-        closing_preview = service.validate_session_close(
-            session,
-            close_data.actual_amount,
-            close_data.variance_comment,
+    outcome = run_close_cash_session(
+        db=db,
+        service=service,
+        current_user=current_user,
+        session_id=session_id,
+        close_data=close_data,
+    )
+
+    if outcome.closed_session is None:
+        return JSONResponse(
+            status_code=200,
+            content={
+                "message": "Session vide non enregistrée",
+                "session_id": outcome.session_id,
+                "deleted": True,
+            },
         )
-        theoretical_amount = closing_preview["theoretical_amount"]
-        variance = closing_preview["variance"]
 
-        logger.info(
-            f"[close_cash_session] Calcul de variance - "
-            f"session_id={session_id}, "
-            f"initial_amount={session.initial_amount}, "
-            f"total_sales={session.total_sales}, "
-            f"total_donations={closing_preview['total_donations']}, "
-            f"theoretical_amount={theoretical_amount}, "
-            f"actual_amount={close_data.actual_amount}, "
-            f"variance={variance}, "
-            f"abs_variance={abs(variance)}, "
-            f"has_comment={bool(close_data.variance_comment)}"
-        )
-        
-        # B44-P3: Fermer la session avec contrôle des montants
-        # Si la session est vide, elle sera supprimée au lieu d'être fermée
-        closed_session = service.close_session_with_amounts(
-            session_id, 
-            close_data.actual_amount, 
-            close_data.variance_comment,
-            preview=closing_preview,
-        )
-        
-        # B44-P3: Si la session était vide, elle a été supprimée
-        if closed_session is None:
-            # Session vide supprimée : retourner un message informatif
-            log_cash_session_closing(
-                user_id=str(current_user.id),
-                username=current_user.username or "Unknown",
-                session_id=session_id,
-                closing_amount=0,
-                success=True,
-                db=db
-            )
-            # Retourner une réponse JSON personnalisée (pas CashSessionResponse)
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "message": "Session vide non enregistrée",
-                    "session_id": session_id,
-                    "deleted": True
-                }
-            )
-        
-        # Log de la fermeture de session normale
-        log_cash_session_closing(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id=session_id,
-            closing_amount=closed_session.current_amount,
-            success=True,
-            db=db
-        )
-        
+    closed_session = outcome.closed_session
 
-        report_path = generate_cash_session_report(db, closed_session)
-        download_token = generate_download_token(report_path.name)
-        report_download_url = f"{settings.API_V1_STR}/admin/reports/cash-sessions/{report_path.name}?token={download_token}"
-        email_sent = False
+    report_path = generate_cash_session_report(db, closed_session)
+    download_token = generate_download_token(report_path.name)
+    report_download_url = f"{settings.API_V1_STR}/admin/reports/cash-sessions/{report_path.name}?token={download_token}"
+    email_sent = False
 
-        recipient = settings.CASH_SESSION_REPORT_RECIPIENT
-        if not recipient:
-            logger.warning("CASH_SESSION_REPORT_RECIPIENT is not configured; skipping report email dispatch")
-        else:
-            try:
-                email_service = get_email_service()
-                with report_path.open('rb') as report_file:
-                    attachment = EmailAttachment(
-                        filename=report_path.name,
-                        content=report_file.read(),
-                        mime_type='text/csv',
-                    )
-
-                if closed_session.operator:
-                    operator_label = (
-                        closed_session.operator.username
-                        or getattr(closed_session.operator, 'telegram_id', None)
-                        or str(closed_session.operator_id)
-                    )
-                else:
-                    operator_label = str(closed_session.operator_id)
-
-                if closed_session.actual_amount is not None:
-                    final_amount = closed_session.actual_amount
-                elif closed_session.closing_amount is not None:
-                    final_amount = closed_session.closing_amount
-                else:
-                    final_amount = closed_session.initial_amount or 0.0
-
-                html_rows = [
-                    '<p>Bonjour,</p>',
-                    f'<p>Veuillez trouver en pièce jointe le rapport CSV de la session de caisse {closed_session.id}.</p>',
-                    f'<p>Opérateur : {operator_label}</p>',
-                    f"<p>Montant final déclaré : {final_amount:.2f} €</p>",
-                    f'<p>Vous pouvez également le télécharger via {report_download_url} (valide pendant {settings.CASH_SESSION_REPORT_TOKEN_TTL_SECONDS // 60} minutes).</p>',
-                    '<p>- Recyclic</p>',
-                ]
-
-                email_sent = email_service.send_email(
-                    to_email=recipient,
-                    subject=f"Rapport de session de caisse {closed_session.id}",
-                    html_content=''.join(html_rows),
-                    db_session=db,
-                    attachments=[attachment],
+    recipient = settings.CASH_SESSION_REPORT_RECIPIENT
+    if not recipient:
+        logger.warning("CASH_SESSION_REPORT_RECIPIENT is not configured; skipping report email dispatch")
+    else:
+        try:
+            email_service = get_email_service()
+            with report_path.open('rb') as report_file:
+                attachment = EmailAttachment(
+                    filename=report_path.name,
+                    content=report_file.read(),
+                    mime_type='text/csv',
                 )
-            except Exception as exc:  # noqa: BLE001 - keep closing flow resilient
-                logger.error("Failed to send cash session report email: %s", exc)
 
-        # Story B49-P1: Enrichir avec les options du register
-        response_model = enrich_session_response(closed_session, service)
-        response_model = response_model.model_copy(update={
-            'report_download_url': report_download_url,
-            'report_email_sent': email_sent,
-        })
-        return response_model
+            if closed_session.operator:
+                operator_label = (
+                    closed_session.operator.username
+                    or getattr(closed_session.operator, 'telegram_id', None)
+                    or str(closed_session.operator_id)
+                )
+            else:
+                operator_label = str(closed_session.operator_id)
 
-    except NotFoundError as e:
-        log_cash_session_closing(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id=session_id,
-            closing_amount=0,
-            success=False,
-            db=db
-        )
-        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
-    except ConflictError as e:
-        log_cash_session_closing(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id=session_id,
-            closing_amount=close_data.actual_amount,
-            success=False,
-            db=db
-        )
-        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
-    except ValidationError as e:
-        log_cash_session_closing(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id=session_id,
-            closing_amount=close_data.actual_amount,
-            success=False,
-            db=db
-        )
-        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
-    except HTTPException:
-        raise
-    except Exception as e:
-        log_cash_session_closing(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id=session_id,
-            closing_amount=0,
-            success=False,
-            db=db
-        )
-        raise
+            if closed_session.actual_amount is not None:
+                final_amount = closed_session.actual_amount
+            elif closed_session.closing_amount is not None:
+                final_amount = closed_session.closing_amount
+            else:
+                final_amount = closed_session.initial_amount or 0.0
+
+            html_rows = [
+                '<p>Bonjour,</p>',
+                f'<p>Veuillez trouver en pièce jointe le rapport CSV de la session de caisse {closed_session.id}.</p>',
+                f'<p>Opérateur : {operator_label}</p>',
+                f"<p>Montant final déclaré : {final_amount:.2f} €</p>",
+                f'<p>Vous pouvez également le télécharger via {report_download_url} (valide pendant {settings.CASH_SESSION_REPORT_TOKEN_TTL_SECONDS // 60} minutes).</p>',
+                '<p>- Recyclic</p>',
+            ]
+
+            email_sent = email_service.send_email(
+                to_email=recipient,
+                subject=f"Rapport de session de caisse {closed_session.id}",
+                html_content=''.join(html_rows),
+                db_session=db,
+                attachments=[attachment],
+            )
+        except Exception as exc:  # noqa: BLE001 - keep closing flow resilient
+            logger.error("Failed to send cash session report email: %s", exc)
+
+    response_model = enrich_session_response(closed_session, service)
+    response_model = response_model.model_copy(update={
+        'report_download_url': report_download_url,
+        'report_email_sent': email_sent,
+    })
+    return response_model
 
 
 @router.get("/stats/summary", response_model=CashSessionStats)
