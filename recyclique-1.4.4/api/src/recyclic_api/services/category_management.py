@@ -4,8 +4,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from uuid import UUID
-from fastapi import HTTPException
 
+from ..core.exceptions import ConflictError, NotFoundError, ValidationError
 from ..models.category import Category
 from ..schemas.category import CategoryRead
 from .category_service import CategoryService
@@ -74,17 +74,19 @@ class CategoryManagementService:
             Updated category
         
         Raises:
-            HTTPException: If category not found or constraint violation
+            ValidationError: ID de catégorie invalide.
+            NotFoundError: Catégorie introuvable.
+            ConflictError: Impossible de masquer la dernière catégorie visible (mappé en 422 par la route).
         """
         try:
             cat_uuid = UUID(category_id)
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid category ID format: '{category_id}'")
+            raise ValidationError(f"Invalid category ID format: '{category_id}'")
         
         category = self.db.query(Category).filter(Category.id == cat_uuid).first()
         
         if not category:
-            raise HTTPException(status_code=404, detail=f"Category with ID '{category_id}' not found")
+            raise NotFoundError(f"Category with ID '{category_id}' not found")
         
         # Validation: At least one category must remain visible
         if not is_visible:
@@ -97,9 +99,8 @@ class CategoryManagementService:
             ).count()
             
             if visible_count == 0:
-                raise HTTPException(
-                    status_code=422,
-                    detail="Cannot hide category: at least one category must remain visible"
+                raise ConflictError(
+                    "Cannot hide category: at least one category must remain visible"
                 )
         
         # Update visibility
@@ -125,17 +126,18 @@ class CategoryManagementService:
             Updated category
         
         Raises:
-            HTTPException: If category not found
+            ValidationError: ID de catégorie invalide.
+            NotFoundError: Catégorie introuvable.
         """
         try:
             cat_uuid = UUID(category_id)
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid category ID format: '{category_id}'")
+            raise ValidationError(f"Invalid category ID format: '{category_id}'")
         
         category = self.db.query(Category).filter(Category.id == cat_uuid).first()
         
         if not category:
-            raise HTTPException(status_code=404, detail=f"Category with ID '{category_id}' not found")
+            raise NotFoundError(f"Category with ID '{category_id}' not found")
         
         # Update display order
         category.display_order = display_order
@@ -160,17 +162,18 @@ class CategoryManagementService:
             Updated category
 
         Raises:
-            HTTPException: If category not found
+            ValidationError: ID de catégorie invalide.
+            NotFoundError: Catégorie introuvable.
         """
         try:
             cat_uuid = UUID(category_id)
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid category ID format: '{category_id}'")
+            raise ValidationError(f"Invalid category ID format: '{category_id}'")
 
         category = self.db.query(Category).filter(Category.id == cat_uuid).first()
 
         if not category:
-            raise HTTPException(status_code=404, detail=f"Category with ID '{category_id}' not found")
+            raise NotFoundError(f"Category with ID '{category_id}' not found")
 
         # Story B48-P4: Update display order for ENTRY/DEPOT tickets
         category.display_order_entry = display_order_entry

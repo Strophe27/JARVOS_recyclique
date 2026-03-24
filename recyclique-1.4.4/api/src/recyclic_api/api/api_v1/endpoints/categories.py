@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.responses import StreamingResponse, Response
 import io
 from sqlalchemy.orm import Session
@@ -7,6 +7,7 @@ from datetime import datetime
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user, require_role_strict
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.category import (
     CategoryCreate,
@@ -391,7 +392,21 @@ async def update_category_visibility(
 ):
     """Update category visibility (for ENTRY tickets only)"""
     service = CategoryManagementService(db)
-    return await service.update_category_visibility(category_id, visibility_data.is_visible)
+    try:
+        return await service.update_category_visibility(category_id, visibility_data.is_visible)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+    except ConflictError as exc:
+        # Contrat historique : règle « au moins une visible » → 422 (pas 409).
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.detail
+        ) from exc
 
 
 @router.put(
@@ -408,7 +423,16 @@ async def update_category_display_order(
 ):
     """Update category display order"""
     service = CategoryManagementService(db)
-    return await service.update_display_order(category_id, order_data.display_order)
+    try:
+        return await service.update_display_order(category_id, order_data.display_order)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
 
 @router.put(
@@ -425,7 +449,18 @@ async def update_category_display_order_entry(
 ):
     """Story B48-P4: Update category display order for ENTRY/DEPOT tickets"""
     service = CategoryManagementService(db)
-    return await service.update_display_order_entry(category_id, order_data.display_order_entry)
+    try:
+        return await service.update_display_order_entry(
+            category_id, order_data.display_order_entry
+        )
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
 
 @router.get(
