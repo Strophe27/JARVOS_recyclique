@@ -1,4 +1,4 @@
-import api from './api';
+import axiosClient from '../api/axiosClient';
 
 export interface Category {
   id: string;
@@ -53,7 +53,7 @@ class CategoryService {
     const params: any = {};
     if (isActive !== undefined) params.is_active = isActive;
     if (includeArchived !== undefined) params.include_archived = includeArchived;
-    const response = await api.get('/v1/categories/', { params });
+    const response = await axiosClient.get('/v1/categories/', { params });
     return response.data;
   }
 
@@ -61,7 +61,7 @@ class CategoryService {
    * Get a single category by ID
    */
   async getCategoryById(id: string): Promise<Category> {
-    const response = await api.get(`/v1/categories/${id}`);
+    const response = await axiosClient.get(`/v1/categories/${id}`);
     return response.data;
   }
 
@@ -69,7 +69,7 @@ class CategoryService {
    * Create a new category
    */
   async createCategory(data: CategoryCreate): Promise<Category> {
-    const response = await api.post('/v1/categories/', data);
+    const response = await axiosClient.post('/v1/categories/', data);
     return response.data;
   }
 
@@ -77,7 +77,7 @@ class CategoryService {
    * Update an existing category
    */
   async updateCategory(id: string, data: CategoryUpdate): Promise<Category> {
-    const response = await api.put(`/v1/categories/${id}`, data);
+    const response = await axiosClient.put(`/v1/categories/${id}`, data);
     return response.data;
   }
 
@@ -85,7 +85,7 @@ class CategoryService {
    * Soft delete a category (sets is_active to false)
    */
   async deleteCategory(id: string): Promise<Category> {
-    const response = await api.delete(`/v1/categories/${id}`);
+    const response = await axiosClient.delete(`/v1/categories/${id}`);
     return response.data;
   }
 
@@ -93,7 +93,7 @@ class CategoryService {
    * Hard delete category (permanent, only if no children)
    */
   async hardDeleteCategory(id: string): Promise<void> {
-    await api.delete(`/v1/categories/${id}/hard`);
+    await axiosClient.delete(`/v1/categories/${id}/hard`);
   }
 
   /**
@@ -107,7 +107,7 @@ class CategoryService {
    * Story B48-P1: Restore a soft-deleted category (sets deleted_at to null)
    */
   async restoreCategory(id: string): Promise<Category> {
-    const response = await api.post(`/v1/categories/${id}/restore`);
+    const response = await axiosClient.post(`/v1/categories/${id}/restore`);
     return response.data;
   }
 
@@ -115,7 +115,7 @@ class CategoryService {
    * Get direct children of a category
    */
   async getCategoryChildren(id: string): Promise<Category[]> {
-    const response = await api.get(`/v1/categories/${id}/children`);
+    const response = await axiosClient.get(`/v1/categories/${id}/children`);
     return response.data;
   }
 
@@ -124,7 +124,7 @@ class CategoryService {
    * Returns true if category can be safely hard-deleted (no usage)
    */
   async checkCategoryUsage(id: string): Promise<{ has_usage: boolean; can_hard_delete: boolean }> {
-    const response = await api.get(`/v1/categories/${id}/has-usage`);
+    const response = await axiosClient.get(`/v1/categories/${id}/has-usage`);
     return response.data;
   }
 
@@ -133,7 +133,7 @@ class CategoryService {
    * Downloads a PDF file with all categories
    */
   async exportToPdf(): Promise<void> {
-    const response = await api.get('/v1/categories/actions/export', {
+    const response = await axiosClient.get('/v1/categories/actions/export', {
       params: { format: 'pdf' },
       responseType: 'blob'
     });
@@ -153,7 +153,7 @@ class CategoryService {
    * Downloads an Excel file with all categories
    */
   async exportToExcel(): Promise<void> {
-    const response = await api.get('/v1/categories/actions/export', {
+    const response = await axiosClient.get('/v1/categories/actions/export', {
       params: { format: 'xls' },
       responseType: 'blob'
     });
@@ -172,7 +172,7 @@ class CategoryService {
    * Export categories to CSV format (re-importable)
    */
   async exportToCsv(): Promise<void> {
-    const response = await api.get('/v1/categories/actions/export', {
+    const response = await axiosClient.get('/v1/categories/actions/export', {
       params: { format: 'csv' },
       responseType: 'blob'
     });
@@ -191,7 +191,7 @@ class CategoryService {
    * Download CSV template for categories import
    */
   async downloadImportTemplate(): Promise<void> {
-    const response = await api.get('/v1/categories/import/template', { responseType: 'blob' });
+    const response = await axiosClient.get('/v1/categories/import/template', { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -208,7 +208,7 @@ class CategoryService {
   async importAnalyze(file: File): Promise<{ session_id: string | null; summary: any; sample: any[]; errors: string[]; }> {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post('/v1/categories/import/analyze', formData, {
+    const response = await axiosClient.post('/v1/categories/import/analyze', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
@@ -218,7 +218,7 @@ class CategoryService {
    * Execute categories import from analyzed session
    */
   async importExecute(sessionId: string, deleteExisting: boolean = false): Promise<{ imported: number; updated: number; errors: string[]; }> {
-    const response = await api.post('/v1/categories/import/execute', { 
+    const response = await axiosClient.post('/v1/categories/import/execute', { 
       session_id: sessionId,
       delete_existing: deleteExisting
     });
@@ -229,7 +229,7 @@ class CategoryService {
    * Update category visibility for ENTRY tickets
    */
   async updateCategoryVisibility(id: string, isVisible: boolean): Promise<Category> {
-    const response = await api.put(`/v1/categories/${id}/visibility`, { is_visible: isVisible });
+    const response = await axiosClient.put(`/v1/categories/${id}/visibility`, { is_visible: isVisible });
     return response.data;
   }
 
@@ -237,7 +237,7 @@ class CategoryService {
    * Update category display order
    */
   async updateDisplayOrder(id: string, displayOrder: number): Promise<Category> {
-    const response = await api.put(`/v1/categories/${id}/display-order`, { display_order: displayOrder });
+    const response = await axiosClient.put(`/v1/categories/${id}/display-order`, { display_order: displayOrder });
     return response.data;
   }
 
@@ -245,7 +245,7 @@ class CategoryService {
    * Story B48-P4: Update category display order for ENTRY/DEPOT
    */
   async updateDisplayOrderEntry(id: string, displayOrderEntry: number): Promise<Category> {
-    const response = await api.put(`/v1/categories/${id}/display-order-entry`, { display_order_entry: displayOrderEntry });
+    const response = await axiosClient.put(`/v1/categories/${id}/display-order-entry`, { display_order_entry: displayOrderEntry });
     return response.data;
   }
 
@@ -254,7 +254,7 @@ class CategoryService {
    */
   async getCategoriesForEntryTickets(isActive?: boolean): Promise<Category[]> {
     const params = isActive !== undefined ? { is_active: isActive } : {};
-    const response = await api.get('/v1/categories/entry-tickets', { params });
+    const response = await axiosClient.get('/v1/categories/entry-tickets', { params });
     return response.data;
   }
 
@@ -263,7 +263,7 @@ class CategoryService {
    */
   async getCategoriesForSaleTickets(isActive?: boolean): Promise<Category[]> {
     const params = isActive !== undefined ? { is_active: isActive } : {};
-    const response = await api.get('/v1/categories/sale-tickets', { params });
+    const response = await axiosClient.get('/v1/categories/sale-tickets', { params });
     return response.data;
   }
 }

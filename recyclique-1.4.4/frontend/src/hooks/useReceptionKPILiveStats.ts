@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getUnifiedLiveStats } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { LIVE_NETWORK_POLL_INTERVAL_MIN_MS, mapLiveNetworkStatsError } from './liveNetworkPolling';
 
 export interface ReceptionKPILiveStats {
   tickets_open: number;
@@ -35,12 +36,13 @@ export interface UseReceptionKPILiveStatsReturn {
 }
 
 /**
- * Hook pour récupérer les statistiques KPI de réception en temps réel
- * Utilise l'endpoint /v1/reception/stats/live et retourne les données sans transformation
- * Gère le polling automatique, les erreurs, et le mode offline
+ * Hook pour récupérer les statistiques KPI de réception en temps réel.
+ * Appelle `getUnifiedLiveStats` (endpoint unifié `/v1/stats/live`, Story B48-P7) et mappe
+ * la réponse vers le shape KPI réception (turnover/dons depuis `ca` / `donations`).
+ * Le polling n'est actif que pour les admins; le hook gère aussi les erreurs et l'état offline.
  */
 export function useReceptionKPILiveStats({
-  intervalMs = 10000, // 10 secondes par défaut
+  intervalMs = LIVE_NETWORK_POLL_INTERVAL_MIN_MS,
   enabled = true
 }: UseReceptionKPILiveStatsOptions = {}): UseReceptionKPILiveStatsReturn {
   // État des données
@@ -96,30 +98,7 @@ export function useReceptionKPILiveStats({
       setLastUpdate(new Date());
     } catch (err: unknown) {
       console.error('Erreur lors de la récupération des stats KPI réception:', err);
-
-      // Message d'erreur user-friendly basé sur le type d'erreur
-      let errorMessage = 'Erreur réseau, stats live suspendues';
-
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as any;
-        switch (axiosError.response?.status) {
-          case 404:
-            errorMessage = 'Endpoint live stats non disponible';
-            break;
-          case 403:
-            errorMessage = 'Accès non autorisé aux stats live';
-            break;
-          case 500:
-          case 502:
-          case 503:
-            errorMessage = 'Erreur serveur, stats live indisponibles';
-            break;
-          default:
-            errorMessage = 'Erreur réseau, stats live suspendues';
-        }
-      }
-
-      setError(errorMessage);
+      setError(mapLiveNetworkStatsError(err));
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
@@ -136,7 +115,10 @@ export function useReceptionKPILiveStats({
     setIsPolling(true);
     fetchLiveStats(); // Fetch immédiat
 
-    intervalRef.current = setInterval(fetchLiveStats, Math.max(intervalMs, 10000));
+    intervalRef.current = setInterval(
+      fetchLiveStats,
+      Math.max(intervalMs, LIVE_NETWORK_POLL_INTERVAL_MIN_MS)
+    );
   }, [userEnabled, isOnline, isAdmin, intervalMs, fetchLiveStats]);
 
   /**

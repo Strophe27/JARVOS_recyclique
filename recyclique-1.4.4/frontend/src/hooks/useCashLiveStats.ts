@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getUnifiedLiveStats } from '../services/api';
-import { useAuthStore } from '../stores/authStore';
+import { LIVE_NETWORK_POLL_INTERVAL_MIN_MS, mapLiveNetworkStatsError } from './liveNetworkPolling';
 
 export interface CashLiveStats {
   ticketsCount: number; // Nombre de tickets du jour
@@ -38,7 +38,7 @@ export interface UseCashLiveStatsReturn {
  * Gère le polling automatique, les erreurs, et le mode offline
  */
 export function useCashLiveStats({
-  intervalMs = 10000, // 10 secondes par défaut
+  intervalMs = LIVE_NETWORK_POLL_INTERVAL_MIN_MS,
   enabled = true
 }: UseCashLiveStatsOptions = {}): UseCashLiveStatsReturn {
   // État des données
@@ -53,12 +53,6 @@ export function useCashLiveStats({
 
   // Contrôles utilisateur
   const [userEnabled, setUserEnabled] = useState(true);
-
-  // Vérifier les permissions de l'utilisateur
-  const isAdmin = useAuthStore((state) => {
-    const currentUser = state.currentUser;
-    return currentUser?.role === 'admin' || currentUser?.role === 'super-admin';
-  });
 
   // Références pour le polling
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,36 +87,13 @@ export function useCashLiveStats({
       setLastUpdate(new Date());
     } catch (err: unknown) {
       console.error('Erreur lors de la récupération des stats live:', err);
-
-      // Message d'erreur user-friendly basé sur le type d'erreur
-      let errorMessage = 'Erreur réseau, stats live suspendues';
-
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as any;
-        switch (axiosError.response?.status) {
-          case 404:
-            errorMessage = 'Endpoint live stats non disponible';
-            break;
-          case 403:
-            errorMessage = 'Accès non autorisé aux stats live';
-            break;
-          case 500:
-          case 502:
-          case 503:
-            errorMessage = 'Erreur serveur, stats live indisponibles';
-            break;
-          default:
-            errorMessage = 'Erreur réseau, stats live suspendues';
-        }
-      }
-
-      setError(errorMessage);
+      setError(mapLiveNetworkStatsError(err));
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
       }
     }
-  }, [userEnabled, isAdmin]);
+  }, [userEnabled]);
 
   /**
    * Démarre le polling
@@ -133,7 +104,10 @@ export function useCashLiveStats({
     setIsPolling(true);
     fetchLiveStats(); // Fetch immédiat
 
-    intervalRef.current = setInterval(fetchLiveStats, Math.max(intervalMs, 10000));
+    intervalRef.current = setInterval(
+      fetchLiveStats,
+      Math.max(intervalMs, LIVE_NETWORK_POLL_INTERVAL_MIN_MS)
+    );
   }, [userEnabled, isOnline, intervalMs, fetchLiveStats]);
 
   /**

@@ -774,6 +774,176 @@
 
 ---
 
+## Lot 2F — Fondations frontend : React Query et outillage minimal
+
+**Statut:** ferme  
+**Theme:** retirer une couche de data fetching inactive et nettoyer l'outillage frontal minimal pour aligner le projet sur sa stack reelle
+
+### Actions
+- Retrait de `react-query` du point d'entree frontend et des dependances.
+- Suppression de `QueryClientProvider` et de la configuration associee dans `src/index.tsx`.
+- Realignement du test `TicketForm.keyboard.integration.test.tsx` pour ne plus importer `@tanstack/react-query`.
+- Deplacement de `@playwright/test` en `devDependencies`.
+- Suppression des reliquats CRA les plus evidents dans `package.json` :
+  - script `eject`
+  - bloc `eslintConfig` `react-app`
+- Durcissement du mock global `styled-components` pour supporter `.withConfig(...)`.
+- Ajustements cibles du test clavier `TicketForm` pour retrouver une preuve de fonctionnement reelle.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/index.tsx`
+- `recyclique-1.4.4/frontend/package.json`
+- `recyclique-1.4.4/frontend/package-lock.json`
+- `recyclique-1.4.4/frontend/src/test/setup.ts`
+- `recyclique-1.4.4/frontend/src/pages/Reception/TicketForm.keyboard.integration.test.tsx`
+
+### Validation
+- `npm install`
+- `npm run build`
+- `eslint` cible sur les fichiers modifies
+- `npx vitest run src/pages/Reception/TicketForm.keyboard.integration.test.tsx`
+- Premiere QA : **fermable avec reserves**
+- Correctif cible sur les mocks frontend
+- QA de cloture seule : **fermable**
+
+### Resultat
+- Le frontend n'embarque plus React Query sans usage reel.
+- L'outillage frontal raconte une histoire plus cohérente avec Vite / Vitest.
+- Le test clavier `TicketForm` repasse et le mock global `styled-components` est moins fragile sur `.withConfig`.
+- Reserve faible acceptee :
+  - quelques details de housekeeping restent possibles dans `setup.ts` ou `package.json`
+  - ce lot ne pretend pas nettoyer tout l'outillage frontend en une fois
+
+---
+
+## Lot 2G — Routes admin pending et tests de routing reels
+
+**Statut:** ferme  
+**Theme:** supprimer un lien admin casse et rapprocher les tests d'integration du routeur reel
+
+### Actions
+- Ajout de la route admin reelle `/admin/pending` dans `App.jsx`.
+- Branchement du composant `PendingUsers` sous le parent admin deja protege par `ProtectedRoute adminOnly`.
+- Realignement de `public-routes.test.tsx` pour monter `App` plutot qu'un graphe de routes factice.
+- Ajout d'un test d'integration admin dedie pour verifier l'acces a `/admin/pending`.
+- Nettoyage des declarations `lazy` mortes `AdminDashboard` et `TicketDetail` dans `App.jsx`.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/App.jsx`
+- `recyclique-1.4.4/frontend/src/test/integration/public-routes.test.tsx`
+- `recyclique-1.4.4/frontend/src/test/integration/admin-pending-route.test.tsx`
+
+### Validation
+- `npx vitest run src/test/integration/public-routes.test.tsx`
+- `npx vitest run src/test/integration/admin-pending-route.test.tsx`
+- `npx vitest run src/test/integration/public-routes.test.tsx src/test/integration/admin-pending-route.test.tsx`
+- `npx eslint src/App.jsx src/test/integration/admin-pending-route.test.tsx`
+- Premiere QA : **fermable avec reserves**
+- Correctifs cibles sur les imports morts et la couverture admin
+- QA de cloture seule : **fermable**
+
+### Resultat
+- Le lien `/admin/pending` n'est plus casse.
+- Les tests de routes publiques reposent maintenant sur `App` et non sur un faux graphe parallele.
+- Une couverture minimale de navigation admin vers `/admin/pending` existe desormais.
+- Reserve faible acceptee :
+  - des scenarios supplementaires de roles (user non admin, super-admin) peuvent etre ajoutes plus tard sans bloquer ce lot
+
+---
+
+## Lot 2H — Convention HTTP et facade categories
+
+**Statut:** ferme  
+**Theme:** clarifier la source de verite du client HTTP et supprimer le doublon categories le plus net
+
+### Actions
+- Formalisation de `axiosClient` comme client HTTP unique explicite pour les services frontend cibles.
+- Realignement de `cashSessionService.ts` sur `axiosClient` au lieu de `ApiClient.client`.
+- Realignement de `categoryService.ts` sur `axiosClient`.
+- Transformation de `categoriesService.ts` en facade de compatibilite au-dessus de `categoryService`.
+- Ajustement des tests cibles `cashSessionService` pour coller au contrat reel de `closeSessionWithAmounts`.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/services/cashSessionService.ts`
+- `recyclique-1.4.4/frontend/src/services/categoryService.ts`
+- `recyclique-1.4.4/frontend/src/services/categoriesService.ts`
+- `recyclique-1.4.4/frontend/src/test/services/cashSessionService.test.ts`
+
+### Validation
+- Vitest cible :
+  - `src/test/services/cashSessionService.test.ts`
+  - `src/test/stores/categoryStore.test.ts`
+  - `src/stores/__tests__/categoryStore.test.ts`
+- Lint cible sur les fichiers modifies.
+- QA de cloture seule : **fermable**
+
+### Resultat
+- La convention HTTP est plus lisible sur les services touches.
+- Le doublon categories est centralise sur `categoryService` avec une facade `categoriesService`.
+- Le lot ne force pas une fusion artificielle des services caisse admin / operationnels.
+- Reserve faible acceptee :
+  - d'autres services manuels ou usages ponctuels pourront etre realignes plus tard par vagues
+  - ce lot ne traite pas toute la dette de couverture tests sur les services
+
+---
+
+## Lot 2I — UX transverse frontend : notifications, polling et doc legere
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** terminer la coherence frontend transverse sans ouvrir une refonte complete des hooks ou de la documentation
+
+### Actions
+- `FE-12` :
+  - retrait de `react-hot-toast`
+  - conservation de Mantine Notifications comme pile unique
+- `FE-14` :
+  - extraction de `liveNetworkPolling.ts`
+  - centralisation du mapping d'erreurs live et du plancher d'intervalle reseau
+  - realignement des hooks `useLiveReceptionStats`, `useCashLiveStats`, `useReceptionKPILiveStats`
+  - ajout de tests cibles pour le helper et `useCashLiveStats`
+- `FE-13` leger :
+  - realignement de `frontend/README.md` sur la stack reelle
+  - clarification du JSDoc de `useReceptionKPILiveStats`
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/index.tsx`
+- `recyclique-1.4.4/frontend/package.json`
+- `recyclique-1.4.4/frontend/package-lock.json`
+- `recyclique-1.4.4/frontend/src/hooks/liveNetworkPolling.ts`
+- `recyclique-1.4.4/frontend/src/hooks/useLiveReceptionStats.ts`
+- `recyclique-1.4.4/frontend/src/hooks/useCashLiveStats.ts`
+- `recyclique-1.4.4/frontend/src/hooks/useReceptionKPILiveStats.ts`
+- `recyclique-1.4.4/frontend/src/hooks/__tests__/liveNetworkPolling.test.ts`
+- `recyclique-1.4.4/frontend/src/hooks/__tests__/useLiveReceptionStats.test.ts`
+- `recyclique-1.4.4/frontend/src/test/hooks/useReceptionKPILiveStats.test.ts`
+- `recyclique-1.4.4/frontend/src/test/hooks/useCashLiveStats.test.ts`
+- `recyclique-1.4.4/frontend/README.md`
+
+### Validation
+- `npm install` dans `frontend`
+- `npm run build`
+- suites Vitest cibles :
+  - `src/hooks/__tests__/liveNetworkPolling.test.ts`
+  - `src/hooks/__tests__/useLiveReceptionStats.test.ts`
+  - `src/test/hooks/useReceptionKPILiveStats.test.ts`
+  - `src/test/hooks/useCashLiveStats.test.ts`
+- eslint cible sur les fichiers modifies
+- QA intermediaire FE-12 : **fermable**
+- QA intermediaire FE-14 : **fermable avec reserves**
+- correctif cible FE-14
+- QA de cloture vague frontend restante : **fermable avec reserves**
+
+### Resultat
+- Le frontend n'embarque plus de double pile de notifications.
+- Les hooks live reseau partagent des bases communes utiles sans abstraction prematuree.
+- La documentation de proximite frontend raconte mieux la stack reelle apres cette vague.
+- Reserves acceptees :
+  - la couverture hooks live reste volontairement partielle hors des cas les plus critiques
+  - la duplication structurelle complete des hooks live n'est pas encore reduite a un hook generique
+  - quelques commentaires/tests historiques restent a harmoniser dans une passe documentation/tests plus large
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -803,10 +973,14 @@
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
 - **Vague 5:** pilote architecture backend ouvert et ferme avec reserve sur `delete_site`
+- **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
+- **Vague 6:** sous-lot routes/tests ferme
+- **Vague 6:** sous-lot convention HTTP / services ferme
+- **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1G`, `2A`, `2B`, `2C`, `2D`, `3A`, `3B`, `3C`, `3D`, `3E`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** aucun a ce stade pour cette passe
-- **Prochaine etape logique:** decider s'il faut ouvrir une phase de coherence frontend plus large, et/ou etendre prudemment le pilote tests backend et le pattern `ARCH-03`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `4A`, `4B`, `4C`, `4D`
+- **Lots fermes avec reserve:** `2I`
+- **Prochaine etape logique:** reapprécier sobrement s'il faut ouvrir un lot plus ambitieux sur les gros composants frontend (`FE-09`) ou revenir sur les chantiers backend structurels restants
 
 ---
 

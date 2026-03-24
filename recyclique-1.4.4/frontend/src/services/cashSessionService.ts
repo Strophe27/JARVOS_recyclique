@@ -1,4 +1,4 @@
-import ApiClient from '../generated/api';
+import axiosClient from '../api/axiosClient';
 
 export interface CashSession {
   id: string;
@@ -50,7 +50,7 @@ export const cashSessionService = {
       // Debug: afficher les données envoyées
       console.log('Données envoyées à l\'API:', data);
 
-      const response = await ApiClient.client.post('/v1/cash-sessions/', data);
+      const response = await axiosClient.post('/v1/cash-sessions/', data);
 
       // L'API retourne directement l'objet session, pas un wrapper
       if (response.data && response.data.id) {
@@ -99,7 +99,7 @@ export const cashSessionService = {
    */
   async getSession(sessionId: string): Promise<CashSession | null> {
     try {
-      const response = await ApiClient.client.get(`/v1/cash-sessions/${sessionId}`);
+      const response = await axiosClient.get(`/v1/cash-sessions/${sessionId}`);
       // L'API retourne soit un wrapper {success,data}, soit l'objet direct
       if (response.data && response.data.id) {
         return response.data as CashSession;
@@ -119,7 +119,7 @@ export const cashSessionService = {
    */
   async getSessions(): Promise<CashSession[]> {
     try {
-      const response = await ApiClient.client.get('/v1/cash-sessions/');
+      const response = await axiosClient.get('/v1/cash-sessions/');
       
       if (response.data.success && response.data.data) {
         return response.data.data;
@@ -137,7 +137,7 @@ export const cashSessionService = {
    */
   async updateSession(sessionId: string, data: CashSessionUpdate): Promise<CashSession | null> {
     try {
-      const response = await ApiClient.client.put(`/v1/cash-sessions/${sessionId}`, data);
+      const response = await axiosClient.put(`/v1/cash-sessions/${sessionId}`, data);
       
       if (response.data.success && response.data.data) {
         return response.data.data;
@@ -164,7 +164,7 @@ export const cashSessionService = {
    */
   async closeSession(sessionId: string): Promise<boolean> {
     try {
-      const response = await ApiClient.client.put(`/v1/cash-sessions/${sessionId}`, {
+      const response = await axiosClient.put(`/v1/cash-sessions/${sessionId}`, {
         status: 'closed'
       });
       
@@ -206,7 +206,7 @@ export const cashSessionService = {
    */
   async closeSessionWithAmounts(sessionId: string, actualAmount: number, varianceComment?: string): Promise<CashSession | null> {
     try {
-      const response = await ApiClient.client.post(`/v1/cash-sessions/${sessionId}/close`, {
+      const response = await axiosClient.post(`/v1/cash-sessions/${sessionId}/close`, {
         actual_amount: actualAmount,
         variance_comment: varianceComment
       });
@@ -243,7 +243,7 @@ export const cashSessionService = {
    */
   async getCurrentSession(): Promise<CashSession | null> {
     try {
-      const response = await ApiClient.client.get('/v1/cash-sessions/current');
+      const response = await axiosClient.get('/v1/cash-sessions/current');
 
       // L'API retourne directement l'objet session ou null
       if (response.data && response.data.id) {
@@ -262,7 +262,7 @@ export const cashSessionService = {
    */
   async getRegisterSessionStatus(registerId: string): Promise<{ is_active: boolean; session_id: string | null }> {
     try {
-      const response = await ApiClient.client.get(`/v1/cash-sessions/status/${registerId}`);
+      const response = await axiosClient.get(`/v1/cash-sessions/status/${registerId}`);
       const data = response.data;
       return {
         is_active: Boolean(data?.is_active),
@@ -281,7 +281,7 @@ export const cashSessionService = {
    */
   async checkDeferredSessionByDate(date: string): Promise<{ exists: boolean; session_id: string | null; opened_at?: string; initial_amount?: number; total_sales?: number; total_items?: number } | null> {
     try {
-      const response = await ApiClient.client.get(`/v1/cash-sessions/deferred/check?date=${date}`);
+      const response = await axiosClient.get(`/v1/cash-sessions/deferred/check?date=${date}`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la vérification de session différée:', error);
@@ -293,7 +293,7 @@ export const cashSessionService = {
 export const cashRegisterDashboardService = {
   async getRegistersStatus(): Promise<{ id: string; name: string; is_open: boolean; enable_virtual?: boolean; enable_deferred?: boolean; location?: string | null }[]> {
     try {
-      const response = await ApiClient.client.get('/v1/cash-registers/status');
+      const response = await axiosClient.get('/v1/cash-registers/status');
       const data = response.data;
       if (Array.isArray(data?.data)) return data.data;
       return [];

@@ -26,8 +26,6 @@ describe('useLiveReceptionStats', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-    // Mock navigator.onLine
     Object.defineProperty(navigator, 'onLine', {
       writable: true,
       value: true,
@@ -71,7 +69,6 @@ describe('useLiveReceptionStats', () => {
       expect(result.current.featureEnabled).toBe(true);
       expect(result.current.isPolling).toBe(true);
 
-      // Attend que le premier fetch soit fait
       await waitFor(() => {
         expect(mockGetReceptionLiveStats).toHaveBeenCalledTimes(1);
       });
@@ -85,34 +82,31 @@ describe('useLiveReceptionStats', () => {
     });
 
     it('respecte l\'interval minimum de 10 secondes', () => {
+      vi.useFakeTimers();
       const { result } = renderHook(() => useLiveReceptionStats({ intervalMs: 5000 }));
 
       expect(result.current.isPolling).toBe(true);
 
-      // Avance de 10 secondes
       act(() => {
         vi.advanceTimersByTime(10000);
       });
 
-      expect(mockGetReceptionLiveStats).toHaveBeenCalledTimes(2); // 1 initial + 1 après 10s
+      expect(mockGetReceptionLiveStats).toHaveBeenCalledTimes(2);
     });
 
     it('permet le contrôle manuel du polling', async () => {
       const { result } = renderHook(() => useLiveReceptionStats());
 
-      // Attend le démarrage initial
       await waitFor(() => {
         expect(result.current.isPolling).toBe(true);
       });
 
-      // Désactive le polling
       act(() => {
         result.current.togglePolling();
       });
 
       expect(result.current.isPolling).toBe(false);
 
-      // Réactive le polling
       act(() => {
         result.current.togglePolling();
       });
@@ -123,12 +117,10 @@ describe('useLiveReceptionStats', () => {
     it('suspend le polling quand hors ligne', async () => {
       const { result } = renderHook(() => useLiveReceptionStats());
 
-      // Attend le démarrage
       await waitFor(() => {
         expect(result.current.isPolling).toBe(true);
       });
 
-      // Simule offline
       act(() => {
         Object.defineProperty(navigator, 'onLine', { value: false });
         window.dispatchEvent(new Event('offline'));
@@ -144,7 +136,6 @@ describe('useLiveReceptionStats', () => {
     it('reprendre le polling quand reconnecté', async () => {
       const { result } = renderHook(() => useLiveReceptionStats());
 
-      // Simule offline puis online
       act(() => {
         Object.defineProperty(navigator, 'onLine', { value: false });
         window.dispatchEvent(new Event('offline'));
@@ -187,7 +178,6 @@ describe('useLiveReceptionStats', () => {
         expect(mockGetReceptionLiveStats).toHaveBeenCalledTimes(1);
       });
 
-      // Refresh manuel
       await act(async () => {
         await result.current.refresh();
       });
@@ -196,18 +186,17 @@ describe('useLiveReceptionStats', () => {
     });
 
     it('nettoie les timers au démontage', () => {
-      const { unmount } = renderHook(() => useLiveReceptionStats());
+      vi.useFakeTimers();
+      const { unmount, result } = renderHook(() => useLiveReceptionStats());
 
       expect(result.current.isPolling).toBe(true);
 
       unmount();
 
-      // Le timer devrait être nettoyé
       act(() => {
         vi.advanceTimersByTime(10000);
       });
 
-      // Pas d'appel supplémentaire après démontage
       expect(mockGetReceptionLiveStats).toHaveBeenCalledTimes(1);
     });
   });
@@ -215,6 +204,7 @@ describe('useLiveReceptionStats', () => {
   describe('Options du hook', () => {
     beforeEach(() => {
       mockUseFeatureFlag.mockReturnValue(true);
+      mockGetReceptionLiveStats.mockResolvedValue(mockStatsResponse);
     });
 
     it('respecte l\'option enabled = false', () => {
@@ -225,6 +215,7 @@ describe('useLiveReceptionStats', () => {
     });
 
     it('accepte un interval personnalisé (minimum 10s)', () => {
+      vi.useFakeTimers();
       const { result } = renderHook(() => useLiveReceptionStats({ intervalMs: 15000 }));
 
       expect(result.current.isPolling).toBe(true);
@@ -237,18 +228,3 @@ describe('useLiveReceptionStats', () => {
     });
   });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

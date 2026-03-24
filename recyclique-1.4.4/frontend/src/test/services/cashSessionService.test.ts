@@ -12,49 +12,42 @@ describe('cashSessionService', () => {
 
   describe('closeSessionWithAmounts', () => {
     it('should call API with correct parameters', async () => {
-      const mockResponse = {
-        data: {
-          success: true,
-          data: {
-            id: 'session-123',
-            status: 'closed',
-            actual_amount: 75.0,
-            variance: 0.0,
-            variance_comment: null
-          }
-        }
+      const sessionPayload = {
+        id: 'session-123',
+        status: 'closed' as const,
+        actual_amount: 75.0,
+        variance: 0.0,
+        variance_comment: null as string | null
       }
-      
+      const mockResponse = { data: sessionPayload }
+
       mockAxiosInstance.post.mockResolvedValue(mockResponse)
-      
+
       const result = await cashSessionService.closeSessionWithAmounts('session-123', 75.0, 'Test comment')
-      
+
       expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/cash-sessions/session-123/close', {
         actual_amount: 75.0,
         variance_comment: 'Test comment'
       })
-      
-      expect(result).toEqual(mockResponse.data.data)
+
+      expect(result).toEqual(sessionPayload)
     })
 
     it('should call API without comment when not provided', async () => {
       const mockResponse = {
         data: {
-          success: true,
-          data: {
-            id: 'session-123',
-            status: 'closed',
-            actual_amount: 75.0,
-            variance: 0.0,
-            variance_comment: null
-          }
+          id: 'session-123',
+          status: 'closed' as const,
+          actual_amount: 75.0,
+          variance: 0.0,
+          variance_comment: null
         }
       }
-      
+
       mockAxiosInstance.post.mockResolvedValue(mockResponse)
-      
+
       await cashSessionService.closeSessionWithAmounts('session-123', 75.0)
-      
+
       expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/cash-sessions/session-123/close', {
         actual_amount: 75.0,
         variance_comment: undefined
@@ -76,18 +69,18 @@ describe('cashSessionService', () => {
         .rejects.toThrow('Session not found')
     })
 
-    it('should throw error when API returns success: false', async () => {
+    it('should throw when API returns a body without session id (ex. erreur métier non structurée)', async () => {
       const mockResponse = {
         data: {
           success: false,
           message: 'Session already closed'
         }
       }
-      
+
       mockAxiosInstance.post.mockResolvedValue(mockResponse)
-      
+
       await expect(cashSessionService.closeSessionWithAmounts('session-123', 75.0))
-        .rejects.toThrow('Session already closed')
+        .rejects.toThrow('Réponse invalide de l\'API lors de la fermeture')
     })
 
     it('should throw generic error for network issues', async () => {

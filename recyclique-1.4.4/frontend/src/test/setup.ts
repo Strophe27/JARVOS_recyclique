@@ -105,6 +105,14 @@ vi.mock('lucide-react', () => ({
     ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
     'data-icon-name': 'List'
   }, 'List'),
+  Activity: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Activity'
+  }, 'Activity'),
+  WifiOff: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'WifiOff'
+  }, 'WifiOff'),
 }))
 
 // Mock pour styled-components - approche avec styles simulés
@@ -188,9 +196,16 @@ vi.mock('styled-components', () => {
         return React.createElement(tag, { ...filteredProps, style }, children)
       };
 
-  const styled: any = (tag: string) => h(tag);
+  // Même API que styled-components pour les balises : .withConfig(...) puis tagged template
+  const withStyledChain = (factory: ReturnType<typeof h>) => {
+    const f = factory as typeof factory & { withConfig?: (opts: unknown) => typeof factory }
+    f.withConfig = () => f
+    return f
+  }
+
+  const styled: any = (tag: string) => withStyledChain(h(tag));
   ['div','button','input','label','span','h1','h2','h3','h4','nav','header','form','select','textarea','p','a','table','thead','tbody','tr','th','td','main','ul','li']
-    .forEach(t => { styled[t] = h(t); });
+    .forEach(t => { styled[t] = withStyledChain(h(t)); });
 
   styled.css = () => '';
   styled.keyframes = () => '';

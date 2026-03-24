@@ -1,10 +1,20 @@
 # Frontend RecyClique
 
-Interface web React pour la plateforme RecyClique - Plateforme de gestion pour ressourceries.
+Interface web React/Vite pour la plateforme RecyClique.
 
-## 🚀 Démarrage Rapide
+## Stack actuelle
 
-### Prérequis
+- `React 18` + `react-router-dom`
+- `Vite` pour le dev/build
+- `Zustand` pour l'etat applicatif
+- `axiosClient` comme client HTTP manuel unique
+- `src/generated/` pour le client/type OpenAPI genere
+- `@mantine/notifications` comme pile de notifications unique
+- hooks live avec helper partage `src/hooks/liveNetworkPolling.ts`
+
+## Demarrage rapide
+
+### Prerequis
 - Node.js 18+
 - npm ou yarn
 
@@ -13,39 +23,47 @@ Interface web React pour la plateforme RecyClique - Plateforme de gestion pour r
 npm install
 ```
 
-### Développement
+### Developpement
 ```bash
 npm run dev
 ```
 
-L'application sera accessible sur http://localhost:3000
+L'application sera accessible sur `http://localhost:5173`.
 
-### Build de Production
+### Build de production
 ```bash
 npm run build
 ```
 
-## 🔧 Génération de Code API
+## Conventions frontend
 
-### Workflow de Génération Automatique
+- Ne pas modifier manuellement `src/generated/`.
+- Pour les services frontend manuels, importer `axiosClient` depuis `src/api/axiosClient`.
+- Garder `services/api.ts` comme facade legacy tant qu'un ecran existant en depend.
+- Utiliser Mantine Notifications pour les feedbacks utilisateur; `react-hot-toast` n'est plus dans la stack.
+- Pour le polling reseau live, reutiliser les helpers de `src/hooks/liveNetworkPolling.ts` avant d'ajouter une nouvelle variante.
+
+## Generation de code API
+
+### Workflow de generation automatique
 
 Ce projet utilise un système de génération automatique de code TypeScript à partir de la spécification OpenAPI du backend. Cela garantit la cohérence des types entre le frontend et le backend.
 
-#### Commandes Disponibles
+#### Commandes disponibles
 
 ```bash
 # Générer les types et l'API TypeScript
 npm run codegen
 ```
 
-#### Workflow de Développement
+#### Workflow de developpement
 
-1. **Modification de l'API Backend** : Quand l'API backend est modifiée
-2. **Génération du fichier OpenAPI** : Le backend génère automatiquement `../api/openapi.json`
-3. **Génération du code Frontend** : Exécuter `npm run codegen`
-4. **Utilisation des nouveaux types** : Les types et l'API sont automatiquement mis à jour
+1. **Modification de l'API backend** : quand l'API backend est modifiee
+2. **Generation du fichier OpenAPI** : le backend genere automatiquement `../api/openapi.json`
+3. **Generation du code frontend** : executer `npm run codegen`
+4. **Utilisation des nouveaux types** : les types et l'API sont automatiquement mis a jour
 
-#### Structure des Fichiers Générés
+#### Structure des fichiers generes
 
 ```
 src/generated/
@@ -54,7 +72,7 @@ src/generated/
 └── index.ts      # Point d'entrée pour les exports
 ```
 
-#### Utilisation des Types Générés
+#### Utilisation des types generes
 
 ```typescript
 // Import des types
@@ -70,12 +88,12 @@ const user = await UsersApi.getUserById('123');
 
 #### Avantages
 
-- ✅ **Cohérence des types** : Les types frontend sont toujours synchronisés avec l'API
-- ✅ **Réduction des erreurs** : Plus de duplication manuelle de code
-- ✅ **Maintenance simplifiée** : Un seul endroit pour définir les contrats d'API
+- ✅ **Coherence des types** : les types frontend restent synchronises avec l'API
+- ✅ **Reduction des erreurs** : moins de duplication manuelle de contrats
+- ✅ **Maintenance simplifiee** : un seul endroit pour definir les contrats d'API
 - ✅ **IntelliSense complet** : Autocomplétion et validation TypeScript
 
-## 🧪 Tests
+## Tests
 
 ```bash
 # Lancer tous les tests
@@ -91,7 +109,7 @@ npm run test:coverage
 npx playwright test
 ```
 
-## 📁 Structure du Projet
+## Structure du projet
 
 ```
 src/
@@ -99,20 +117,20 @@ src/
 │   ├── business/        # Composants métier
 │   └── ui/             # Composants UI de base
 ├── pages/              # Pages de l'application
-├── services/           # Services API et logique métier
+├── services/           # Services API et logique metier
 ├── stores/             # Stores Zustand pour la gestion d'état
 ├── hooks/              # Hooks React personnalisés
 ├── generated/          # Code généré automatiquement (ne pas modifier)
 └── utils/              # Utilitaires et helpers
 ```
 
-## 🔧 Configuration
+## Configuration
 
-### Variables d'Environnement
+### Variables d'environnement
 
-#### VITE_API_URL - Configuration de l'API Backend
+#### `VITE_API_URL` - configuration de l'API backend
 
-La variable `VITE_API_URL` définit l'URL de base pour les appels API. **IMPORTANT** : Utilisez toujours un chemin relatif `/api` pour garantir la compatibilité entre les environnements.
+La variable `VITE_API_URL` definit l'URL de base pour les appels API. Utiliser un chemin relatif `/api` garantit la compatibilite entre les environnements.
 
 **Configuration recommandée :**
 
@@ -124,10 +142,10 @@ VITE_API_URL=/api
 VITE_API_URL=/api
 ```
 
-**⚠️ Important :**
-- **Ne jamais utiliser** d'URL absolue comme `http://api:8000` dans le frontend
-- Le proxy Vite (développement) et Traefik (production) redirigent automatiquement `/api` vers le backend
-- Les changements de variables d'environnement nécessitent un rebuild :
+Important :
+- Ne jamais utiliser d'URL absolue comme `http://api:8000` dans le frontend
+- Le proxy Vite (developpement) et Traefik (production) redirigent automatiquement `/api` vers le backend
+- Les changements de variables d'environnement necessitent un rebuild :
 
 ```bash
 # Avec Docker Compose
@@ -138,7 +156,7 @@ docker compose up -d --build
 npm run dev
 ```
 
-#### Configuration du Proxy Vite
+#### Configuration du proxy Vite
 
 Le fichier `vite.config.js` configure automatiquement le proxy pour rediriger `/api` vers le backend :
 
@@ -155,16 +173,16 @@ server: {
 
 Cette configuration permet au frontend d'appeler `/api/v1/sites` qui sera automatiquement redirigé vers `http://api:8000/v1/sites` en développement.
 
-### Scripts Disponibles
+### Scripts disponibles
 
 - `npm run dev` - Serveur de développement
 - `npm run build` - Build de production
 - `npm run test` - Tests unitaires
 - `npm run lint` - Linting ESLint
-- `npm run codegen` - Génération de code API
+- `npm run codegen` - Generation du client API
 - `npm run test:coverage` - Tests avec couverture
 
-## 🚀 Déploiement
+## Deploiement
 
 ### Docker
 
@@ -180,13 +198,13 @@ docker run -p 3000:3000 recyclique-frontend
 
 Le frontend est inclus dans le `docker-compose.yml` principal du projet.
 
-## 📚 Documentation Technique
+## Documentation technique
 
 - [Architecture du Projet](../../docs/architecture.md)
 - [Standards de Code](../../docs/coding-standards.md)
 - [Guide de Tests](../../docs/testing-strategy.md)
 
-## 🤝 Contribution
+## Contribution
 
 1. Modifier l'API backend si nécessaire
 2. Exécuter `npm run codegen` pour synchroniser les types
@@ -194,9 +212,9 @@ Le frontend est inclus dans le `docker-compose.yml` principal du projet.
 4. Tester avec `npm test`
 5. Créer une pull request
 
-## 📝 Notes Importantes
+## Notes importantes
 
-- **Ne jamais modifier manuellement** les fichiers dans `src/generated/`
-- **Toujours exécuter** `npm run codegen` après les modifications de l'API
-- **Vérifier la compilation** avec `npm run build` avant de commiter
-- **Maintenir la cohérence** entre les types générés et l'utilisation dans le code
+- Ne jamais modifier manuellement les fichiers dans `src/generated/`
+- Toujours executer `npm run codegen` apres les modifications de l'API
+- Verifier la compilation avec `npm run build` avant de commiter
+- Maintenir la coherence entre les types generes et leur utilisation dans le code

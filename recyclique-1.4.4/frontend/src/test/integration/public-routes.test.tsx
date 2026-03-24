@@ -1,58 +1,49 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '../test-utils'
-import { renderWithRouter } from '../test-utils'
-import { Routes, Route } from 'react-router-dom'
-import { mockSites } from '../test-utils'
-
-// Import individual components instead of App
-import Dashboard from '../../pages/Dashboard.jsx'
-import CashRegister from '../../pages/CashRegister.jsx'
-import Registration from '../../pages/Registration.jsx'
-import TelegramAuth from '../../pages/TelegramAuth.jsx'
-import Login from '../../pages/Login.tsx'
-import Signup from '../../pages/Signup.tsx'
-import ForgotPassword from '../../pages/ForgotPassword.tsx'
-import ResetPassword from '../../pages/ResetPassword.tsx'
-import AdminDashboard from '../../pages/Admin/Dashboard.tsx'
-import ProtectedRoute from '../../components/auth/ProtectedRoute'
-import { UserRole } from '../../generated/types'
+import { render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { MantineProvider } from '@mantine/core'
+import App from '../../App.jsx'
 
 // Mock authStore to simulate unauthenticated state
-const mockAuthStore: any = {
+const mockAuthStore: Record<string, unknown> = {
   isAuthenticated: false,
   currentUser: null,
   loading: false,
   token: null,
   hasPermission: vi.fn(() => false),
+  isAdmin: vi.fn(() => false),
+  hasCashAccess: vi.fn(() => false),
+  hasReceptionAccess: vi.fn(() => false),
   error: null,
   login: vi.fn(async () => ({ success: true })),
   logout: vi.fn(async () => ({ success: true })),
   signup: vi.fn(async () => ({ success: true })),
   forgotPassword: vi.fn(async () => ({ success: true })),
   resetPassword: vi.fn(async () => ({ success: true })),
-  setUser: vi.fn()
+  setUser: vi.fn(),
+  initializeAuth: vi.fn(),
 }
 
 vi.mock('../../stores/authStore', () => ({
-  useAuthStore: (selector?: any) => (typeof selector === 'function' ? selector(mockAuthStore) : mockAuthStore)
+  useAuthStore: (selector?: (s: typeof mockAuthStore) => unknown) =>
+    typeof selector === 'function' ? selector(mockAuthStore) : mockAuthStore,
 }))
 
-const TestRoutes = (
-  <Routes>
-    <Route path="/login" element={<Login />} />
-    <Route path="/signup" element={<Signup />} />
-    <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/telegram-auth" element={<TelegramAuth />} />
-    <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/caisse" element={<ProtectedRoute requiredRole={UserRole.USER}><CashRegister /></ProtectedRoute>} />
-    <Route path="/inscription" element={<Registration />} />
-    <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-  </Routes>
-)
-
 const renderAppWithRoute = (route: string) => {
-  return renderWithRouter(TestRoutes, route)
+  let container = document.getElementById('root') as HTMLElement | null
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 'root'
+    document.body.appendChild(container)
+  }
+  return render(
+    <MantineProvider>
+      <MemoryRouter initialEntries={[route]}>
+        <App />
+      </MemoryRouter>
+    </MantineProvider>,
+    { container, legacyRoot: true }
+  )
 }
 
 describe('Public Routes Integration Tests', () => {
@@ -68,12 +59,10 @@ describe('Public Routes Integration Tests', () => {
     it('should render registration page when accessing /inscription without authentication', async () => {
       renderAppWithRoute('/inscription')
 
-      // Wait for the registration page to load
       await waitFor(() => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      // Verify registration form elements are present
       expect(screen.getByLabelText(/id telegram/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/prénom/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/nom de famille/i)).toBeInTheDocument()
@@ -87,7 +76,6 @@ describe('Public Routes Integration Tests', () => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      // Verify the telegram_id is populated from URL params
       const telegramInput = screen.getByLabelText(/id telegram/i) as HTMLInputElement
       expect(telegramInput.value).toBe('123456789')
       expect(telegramInput).toBeDisabled()
@@ -100,7 +88,6 @@ describe('Public Routes Integration Tests', () => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      // Verify we're not on the login page
       expect(screen.queryByText(/connexion/i)).not.toBeInTheDocument()
       expect(screen.queryByText(/mot de passe/i)).not.toBeInTheDocument()
     })
@@ -134,7 +121,6 @@ describe('Public Routes Integration Tests', () => {
         expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
       })
 
-      // Verify we're not on the login page
       expect(screen.queryByText(/connexion/i)).not.toBeInTheDocument()
     })
   })
@@ -178,7 +164,6 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/')
 
       await waitFor(() => {
-        // Should redirect to login page
         expect(screen.getByText(/connexion/i)).toBeInTheDocument()
       })
     })
@@ -187,7 +172,6 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/admin/dashboard')
 
       await waitFor(() => {
-        // Should redirect to login page
         expect(screen.getByText(/connexion/i)).toBeInTheDocument()
       })
     })
@@ -196,7 +180,6 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/caisse')
 
       await waitFor(() => {
-        // Should redirect to login page
         expect(screen.getByText(/connexion/i)).toBeInTheDocument()
       })
     })
@@ -207,11 +190,9 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/inscription')
 
       await waitFor(() => {
-        // Page should still render even if sites fail to load
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      // Form should still be functional
       expect(screen.getByLabelText(/id telegram/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /envoyer la demande/i })).toBeInTheDocument()
     })
@@ -223,7 +204,6 @@ describe('Public Routes Integration Tests', () => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      // Verify telegram_id parameter is still accessible
       const telegramInput = screen.getByLabelText(/id telegram/i) as HTMLInputElement
       expect(telegramInput.value).toBe('987654321')
     })

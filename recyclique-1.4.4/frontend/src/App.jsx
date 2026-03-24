@@ -25,7 +25,7 @@ const Registration = lazy(() => import('./pages/Registration.jsx'));
 const AdminLayout = lazy(() => import('./components/AdminLayout.jsx'));
 const DashboardHomePage = lazy(() => import('./pages/Admin/DashboardHomePage.jsx'));
 const AdminUsers = lazy(() => import('./pages/Admin/Users.tsx'));
-const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard.tsx'));
+const PendingUsers = lazy(() => import('./pages/Admin/PendingUsers.tsx'));
 const AdminReports = lazy(() => import('./pages/Admin/Reports.tsx'));
 const ReportsHub = lazy(() => import('./pages/Admin/ReportsHub.tsx'));
 const HealthDashboard = lazy(() => import('./pages/Admin/HealthDashboard.tsx'));
@@ -53,7 +53,6 @@ const TelegramAuth = lazy(() => import('./pages/TelegramAuth.jsx'));
 const Reception = lazy(() => import('./pages/Reception.tsx'));
 const ReceptionDashboard = lazy(() => import('./pages/ReceptionDashboard.tsx'));
 const TicketForm = lazy(() => import('./pages/Reception/TicketForm.tsx'));
-const TicketDetail = lazy(() => import('./pages/Reception/TicketDetail.tsx'));
 const TicketView = lazy(() => import('./pages/Reception/TicketView.tsx'));
 const ProfilePage = lazy(() => import('./pages/Profile.tsx'));
 
@@ -189,6 +188,7 @@ function App() {
               <Route path="reports" element={<ReportsHub />} />
               <Route path="reports/cash-sessions" element={<AdminReports />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="pending" element={<PendingUsers />} />
               <Route path="session-manager" element={<SessionManager />} />
               <Route path="quick-analysis" element={<QuickAnalysis />} />
               <Route path="cash-registers" element={<AdminCashRegisters />} />
