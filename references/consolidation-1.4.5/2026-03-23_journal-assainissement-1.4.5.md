@@ -2512,6 +2512,54 @@
 
 ---
 
+## Lot 2AL — Pilote ARCH-04 sur la presentation des listes JSON `reception`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire hors du routeur `reception.py` le mapping de presentation des listes `GET /reception/tickets` et `GET /reception/lignes`
+
+### Actions
+- Creation de `recyclic_api/application/reception_lists_presentation.py` pour porter :
+  - calcul de pagination
+  - mapping `TicketDepot -> TicketSummaryResponse`
+  - assemblage `TicketListResponse`
+  - mapping `LigneDepot -> LigneDepotReportResponse`
+  - assemblage `LigneDepotListResponse`
+- Amincissement de `GET /reception/tickets` et `GET /reception/lignes` dans `endpoints/reception.py`.
+- Conservation dans le routeur de :
+  - l'auth et les query params
+  - la validation UUID des filtres
+  - les appels `ReceptionService.get_tickets_list(...)` et `get_lignes_depot_filtered(...)`
+- Ajout du fichier cible `tests/test_reception_lists_presentation_arch04.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/application/reception_lists_presentation.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_lists_presentation_arch04.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_reception_lists_presentation_arch04.py`
+- Resultat local :
+  - **5 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_reports.py`
+  - `tests/test_reception_tickets_history.py`
+- Resultat Docker/PostgreSQL :
+  - **35 tests passes**
+- Diagnostic complementaire hors perimetre :
+  - `tests/test_reception_tickets_status_filter.py` et `tests/test_reception_tickets_advanced_filters.py` montrent une dette de tests preexistante / designee a traiter dans un lot separe
+- QA finale seule : **OK**
+
+### Resultat
+- Les listes JSON `reception` ne sont plus assemblees inline dans le routeur.
+- Les contrats verifies sur les suites historiques `reports` + `tickets_history` restent stables.
+- Reserves acceptees :
+  - la couche presentation continue d'appeler `ReceptionService._calculate_ticket_totals`
+  - les suites `status_filter` / `advanced_filters` restent a realigner sur le contrat reel dans un lot suivant
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2525,6 +2573,7 @@
 - **Vague 8:** quatrieme pilote `ARCH-04` sur la presentation post-fermeture `close_cash_session` ferme avec reserves acceptees
 - **Vague 8:** cinquieme pilote `ARCH-04` sur l'export ticket `reception` ferme avec reserves acceptees
 - **Vague 8:** sixieme pilote `ARCH-04` sur l'export CSV des lignes `reception` ferme avec reserves acceptees
+- **Vague 8:** septieme pilote `ARCH-04` sur la presentation des listes JSON `reception` ferme avec reserves acceptees
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2532,8 +2581,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-04` sur la presentation des listes JSON `reception`, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** traiter les tests `reception` encore desalignes (`status_filter`, `advanced_filters`) avant de sortir de cette zone, Telegram etant explicitement reporte
 
 ---
 

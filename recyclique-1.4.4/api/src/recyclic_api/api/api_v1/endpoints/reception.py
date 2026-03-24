@@ -21,6 +21,10 @@ from recyclic_api.application.reception_ticket_export_presentation import (
     reception_ticket_csv_filename,
     render_reception_ticket_csv_bytes,
 )
+from recyclic_api.application.reception_lists_presentation import (
+    build_ligne_depot_list_response,
+    build_ticket_list_response,
+)
 from recyclic_api.schemas.reception import (
     OpenPosteRequest,
     OpenPosteResponse,
@@ -31,10 +35,8 @@ from recyclic_api.schemas.reception import (
     UpdateLigneRequest,
     LigneResponse,
     LigneWeightUpdate,
-    TicketSummaryResponse,
     TicketDetailResponse,
     TicketListResponse,
-    LigneDepotReportResponse,
     LigneDepotListResponse,
 )
 from recyclic_api.schemas.stats import ReceptionLiveStatsResponse
@@ -400,8 +402,6 @@ def get_tickets(
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     """Récupérer la liste des tickets de réception avec pagination."""
-    from uuid import UUID
-    
     service = ReceptionService(db)
     benevole_uuid = None
     if benevole_id:
@@ -436,34 +436,7 @@ def get_tickets(
         lignes_min=lignes_min,
         lignes_max=lignes_max,
     )
-    
-    # Calculer les totaux pour chaque ticket
-    ticket_summaries = []
-    for ticket in tickets:
-        total_lignes, total_poids, poids_entree, poids_direct, poids_sortie = service._calculate_ticket_totals(ticket)
-        ticket_summaries.append(TicketSummaryResponse(
-            id=str(ticket.id),
-            poste_id=str(ticket.poste_id),
-            benevole_username=ticket.benevole.username or "Utilisateur inconnu",
-            created_at=ticket.created_at,
-            closed_at=ticket.closed_at,
-            status=ticket.status,
-            total_lignes=total_lignes,
-            total_poids=total_poids,
-            poids_entree=poids_entree,
-            poids_direct=poids_direct,
-            poids_sortie=poids_sortie
-        ))
-    
-    total_pages = (total + per_page - 1) // per_page
-    
-    return TicketListResponse(
-        tickets=ticket_summaries,
-        total=total,
-        page=page,
-        per_page=per_page,
-        total_pages=total_pages
-    )
+    return build_ticket_list_response(service, tickets, total, page, per_page)
 
 
 @router.get("/tickets/{ticket_id}", response_model=TicketDetailResponse)
@@ -624,31 +597,7 @@ def get_lignes_depot(
         page=page,
         per_page=per_page
     )
-    
-    # Construire la liste des réponses
-    ligne_responses = []
-    for ligne in lignes:
-        ligne_responses.append(LigneDepotReportResponse(
-            id=str(ligne.id),
-            ticket_id=str(ligne.ticket_id),
-            poste_id=str(ligne.ticket.poste_id),
-            benevole_username=ligne.ticket.benevole.username or "Utilisateur inconnu",
-            category_label=ligne.category.name if ligne.category else "Catégorie inconnue",  # Story B48-P5: Nom court/rapide
-            poids_kg=ligne.poids_kg,
-            destination=ligne.destination,
-            notes=ligne.notes,
-            created_at=ligne.ticket.created_at
-        ))
-    
-    total_pages = (total + per_page - 1) // per_page
-    
-    return LigneDepotListResponse(
-        lignes=ligne_responses,
-        total=total,
-        page=page,
-        per_page=per_page,
-        total_pages=total_pages
-    )
+    return build_ligne_depot_list_response(lignes, total, page, per_page)
 
 
 @router.get("/lignes/export-csv")
