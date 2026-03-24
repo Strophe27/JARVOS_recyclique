@@ -156,3 +156,116 @@ def test_create_ligne_raises_validation_for_invalid_exit_destination():
             notes=None,
             is_exit=True,
         )
+
+
+def test_update_ligne_raises_not_found_when_ligne_is_missing():
+    service = ReceptionService(SimpleNamespace())
+    service.ligne_repo.get = lambda _ligne_id: None
+
+    with pytest.raises(NotFoundError, match="Ligne introuvable"):
+        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0)
+
+
+def test_update_ligne_raises_conflict_when_ticket_is_closed():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4(), destination="MAGASIN")
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.CLOSED.value)
+
+    with pytest.raises(ConflictError, match="Ticket fermé"):
+        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0)
+
+
+def test_update_ligne_raises_not_found_when_parent_ticket_is_missing():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4(), destination="MAGASIN")
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: None
+
+    with pytest.raises(NotFoundError, match="Ticket introuvable"):
+        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0)
+
+
+def test_update_ligne_raises_not_found_when_category_is_missing():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4(), destination="MAGASIN")
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.OPENED.value)
+    service.category_repo.exists = lambda _category_id: False
+
+    with pytest.raises(NotFoundError, match="Catégorie introuvable"):
+        service.update_ligne(ligne_id=uuid4(), category_id=uuid4())
+
+
+def test_update_ligne_raises_validation_for_non_positive_weight():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4(), destination="MAGASIN")
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.OPENED.value)
+
+    with pytest.raises(ValidationError, match="poids_kg"):
+        service.update_ligne(ligne_id=uuid4(), poids_kg=0)
+
+
+def test_update_ligne_raises_validation_for_invalid_exit_destination():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4(), destination="MAGASIN", is_exit=False)
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.OPENED.value)
+
+    with pytest.raises(ValidationError, match="sortie de stock"):
+        service.update_ligne(ligne_id=uuid4(), is_exit=True)
+
+
+def test_update_ligne_raises_validation_when_existing_exit_gets_invalid_destination():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4(), destination="RECYCLAGE", is_exit=True)
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.OPENED.value)
+
+    with pytest.raises(ValidationError, match="sortie de stock"):
+        service.update_ligne(ligne_id=uuid4(), destination="MAGASIN")
+
+
+def test_update_ligne_weight_admin_raises_not_found_for_missing_line():
+    service = ReceptionService(SimpleNamespace())
+    service.ligne_repo.get = lambda _ligne_id: None
+
+    with pytest.raises(NotFoundError, match="Ligne introuvable"):
+        service.update_ligne_weight_admin(ligne_id=uuid4(), poids_kg=1.0)
+
+
+def test_update_ligne_weight_admin_raises_validation_for_non_positive_weight():
+    service = ReceptionService(SimpleNamespace())
+    service.ligne_repo.get = lambda _ligne_id: SimpleNamespace()
+
+    with pytest.raises(ValidationError, match="poids_kg"):
+        service.update_ligne_weight_admin(ligne_id=uuid4(), poids_kg=0)
+
+
+def test_delete_ligne_raises_not_found_for_missing_line():
+    service = ReceptionService(SimpleNamespace())
+    service.ligne_repo.get = lambda _ligne_id: None
+
+    with pytest.raises(NotFoundError, match="Ligne introuvable"):
+        service.delete_ligne(ligne_id=uuid4())
+
+
+def test_delete_ligne_raises_not_found_for_missing_parent_ticket():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4())
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: None
+
+    with pytest.raises(NotFoundError, match="Ticket introuvable"):
+        service.delete_ligne(ligne_id=uuid4())
+
+
+def test_delete_ligne_raises_conflict_for_closed_ticket():
+    service = ReceptionService(SimpleNamespace())
+    ligne = SimpleNamespace(ticket_id=uuid4())
+    service.ligne_repo.get = lambda _ligne_id: ligne
+    service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.CLOSED.value)
+
+    with pytest.raises(ConflictError, match="Ticket fermé"):
+        service.delete_ligne(ligne_id=uuid4())

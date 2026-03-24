@@ -189,14 +189,21 @@ def update_ligne(
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     service = ReceptionService(db)
-    ligne = service.update_ligne(
-        ligne_id=UUID(ligne_id),
-        category_id=UUID(payload.category_id) if payload.category_id else None,
-        poids_kg=float(payload.poids_kg) if payload.poids_kg is not None else None,
-        destination=payload.destination,
-        notes=payload.notes,
-        is_exit=payload.is_exit,
-    )
+    try:
+        ligne = service.update_ligne(
+            ligne_id=UUID(ligne_id),
+            category_id=UUID(payload.category_id) if payload.category_id else None,
+            poids_kg=float(payload.poids_kg) if payload.poids_kg is not None else None,
+            destination=payload.destination,
+            notes=payload.notes,
+            is_exit=payload.is_exit,
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     
     # Récupérer le nom de la catégorie
     from recyclic_api.services.category_service import CategoryService
@@ -223,7 +230,17 @@ def delete_ligne(
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     service = ReceptionService(db)
-    service.delete_ligne(ligne_id=UUID(ligne_id))
+    try:
+        ligne_uuid = UUID(ligne_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ID format") from exc
+
+    try:
+        service.delete_ligne(ligne_id=ligne_uuid)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
     return {"status": "deleted"}
 
 
@@ -270,10 +287,15 @@ def update_ligne_weight(
     new_weight = float(weight_update.poids_kg)
     
     # Mettre à jour le poids (méthode admin qui ignore le statut du ticket)
-    ligne = service.update_ligne_weight_admin(
-        ligne_id=ligne_uuid,
-        poids_kg=new_weight
-    )
+    try:
+        ligne = service.update_ligne_weight_admin(
+            ligne_id=ligne_uuid,
+            poids_kg=new_weight
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     
     # Recalculer les statistiques affectées
     recalculation_result = None

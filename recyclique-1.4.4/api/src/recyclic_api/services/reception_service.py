@@ -7,7 +7,6 @@ from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func, desc, and_, String
-from fastapi import HTTPException, status
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 
 from recyclic_api.models import (
@@ -208,42 +207,47 @@ class ReceptionService:
     ) -> LigneDepot:
         ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
         if not ligne:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ligne introuvable")
+            raise NotFoundError("Ligne introuvable")
 
         # On ne peut modifier que si le ticket est ouvert
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ligne.ticket_id)
-        assert ticket is not None
+        if not ticket:
+            raise NotFoundError("Ticket introuvable")
         if ticket.status != TicketDepotStatus.OPENED.value:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket fermé")
+            raise ConflictError("Ticket fermé")
 
         if category_id is not None:
             if not self.category_repo.exists(category_id):
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Catégorie introuvable")
+                raise NotFoundError("Catégorie introuvable")
             ligne.category_id = category_id
 
         if poids_kg is not None:
             if poids_kg <= 0:
-                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="poids_kg doit être > 0")
+                raise ValidationError("poids_kg doit être > 0")
             ligne.poids_kg = poids_kg
 
+        parsed_destination = None
         if destination is not None:
-            ligne.destination = DBLigneDestination(destination)
+            try:
+                parsed_destination = DBLigneDestination(destination)
+            except ValueError as exc:
+                raise ValidationError("Destination invalide") from exc
+            ligne.destination = parsed_destination
 
         if notes is not None:
             ligne.notes = notes
 
         # Story B48-P3: Mise à jour is_exit avec validation
+        final_is_exit = ligne.is_exit if is_exit is None else is_exit
+        final_destination = ligne.destination if parsed_destination is None else parsed_destination
+
+        if final_is_exit is True:
+            if final_destination not in [DBLigneDestination.RECYCLAGE, DBLigneDestination.DECHETERIE]:
+                raise ValidationError(
+                    "Une sortie de stock (is_exit=true) ne peut avoir comme destination que RECYCLAGE ou DECHETERIE"
+                )
+
         if is_exit is not None:
-            # Si on passe is_exit à True, vérifier que la destination est valide
-            final_is_exit = is_exit
-            final_destination = ligne.destination if destination is None else DBLigneDestination(destination)
-            
-            if final_is_exit is True:
-                if final_destination not in [DBLigneDestination.RECYCLAGE, DBLigneDestination.DECHETERIE]:
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                        detail="Une sortie de stock (is_exit=true) ne peut avoir comme destination que RECYCLAGE ou DECHETERIE"
-                    )
             ligne.is_exit = final_is_exit
 
         self.ligne_repo.update(ligne)
@@ -269,15 +273,16 @@ class ReceptionService:
             LigneDepot: La ligne modifiée
             
         Raises:
-            HTTPException: Si la ligne n'existe pas ou si le poids est invalide
+            NotFoundError: Si la ligne n'existe pas
+            ValidationError: Si le poids est invalide
         """
         ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
         if not ligne:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ligne introuvable")
+            raise NotFoundError("Ligne introuvable")
         
         # Validation du poids
         if poids_kg <= 0:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="poids_kg doit être > 0")
+            raise ValidationError("poids_kg doit être > 0")
         
         # Note: On ne vérifie PAS le statut du ticket ici car c'est une opération admin
         # qui doit pouvoir corriger les erreurs même après fermeture
@@ -289,11 +294,12 @@ class ReceptionService:
     def delete_ligne(self, *, ligne_id: UUID) -> None:
         ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
         if not ligne:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ligne introuvable")
+            raise NotFoundError("Ligne introuvable")
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ligne.ticket_id)
-        assert ticket is not None
+        if not ticket:
+            raise NotFoundError("Ticket introuvable")
         if ticket.status != TicketDepotStatus.OPENED.value:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket fermé")
+            raise ConflictError("Ticket fermé")
         self.ligne_repo.delete(ligne)
         self._commit()
 

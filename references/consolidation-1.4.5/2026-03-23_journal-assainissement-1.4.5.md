@@ -1418,6 +1418,112 @@
 
 ---
 
+## Lot 1P — Pilote ARCH-03 sur mise a jour `reception/ligne`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** etendre le decouplage ARCH-03 a la modification de ligne, y compris sur les mises a jour partielles
+
+### Actions
+- Remplacement des `HTTPException` de `ReceptionService.update_ligne()` par :
+  - `NotFoundError` pour `Ligne introuvable`, `Ticket introuvable`, `Categorie introuvable`
+  - `ConflictError` pour `Ticket ferme`
+  - `ValidationError` pour `poids_kg`, destination invalide et regles `is_exit`
+- Translation explicite de ces erreurs dans `PUT /reception/lignes/{ligne_id}`.
+- Ajout de tests unitaires `ARCH-03` pour les branches metier de `update_ligne`.
+- Ajout d'un test d'integration cible `test_reception_line_update_arch03.py` pour verrouiller :
+  - ligne inconnue -> `404`
+  - ticket ferme -> `409`
+  - categorie inconnue -> `404`
+  - `is_exit=true` invalide -> `422`
+- Correction apres QA d'un trou metier sur la mise a jour partielle :
+  - une ligne deja `is_exit=true` ne peut plus devenir incoherente si seule la destination passe a `MAGASIN`
+  - remplacement du `assert ticket is not None` par une erreur metier explicite
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/reception_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_arch03_domain_errors.py`
+- `recyclique-1.4.4/api/tests/test_reception_line_update_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale unitaire :
+  - `tests/test_reception_arch03_domain_errors.py`
+- Resultat local :
+  - **20 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_line_update_arch03.py`
+- Resultat Docker :
+  - **5 tests passes**
+- QA de cloture seule : **OK**
+
+### Resultat
+- `update_ligne` suit maintenant le meme patron ARCH-03 que `create_ligne`.
+- Les mises a jour partielles respectent a nouveau les invariants metier `is_exit` / destination.
+- Reserves acceptees :
+  - `delete_ligne` et `update_ligne_weight_admin` restaient hors lot a ce stade
+  - quelques gardes UUID restent encore a harmoniser au niveau endpoint
+
+---
+
+## Lot 1Q — Cloture ARCH-03 sur les derniers flux `reception`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** fermer l'axe `ARCH-03/reception` en migrant la suppression de ligne et la correction admin de poids
+
+### Actions
+- Remplacement des `HTTPException` de `ReceptionService.delete_ligne()` par :
+  - `NotFoundError` pour `Ligne introuvable` et `Ticket introuvable`
+  - `ConflictError` pour `Ticket ferme`
+- Remplacement des `HTTPException` de `ReceptionService.update_ligne_weight_admin()` par :
+  - `NotFoundError` pour `Ligne introuvable`
+  - `ValidationError` pour `poids_kg`
+- Translation explicite de ces erreurs dans :
+  - `DELETE /reception/lignes/{ligne_id}`
+  - `PATCH /reception/tickets/{ticket_id}/lignes/{ligne_id}/weight`
+- Ajout d'une garde `UUID` sur `delete_ligne` pour eviter un `ValueError` non mappe sur identifiant de chemin invalide.
+- Mise a jour de la docstring `update_ligne_weight_admin` et suppression d'un import FastAPI mort dans le service.
+- Ajout de tests unitaires `ARCH-03` pour les branches metier de `delete_ligne` et `update_ligne_weight_admin`.
+- Ajout d'un test d'integration cible `test_reception_line_tail_arch03.py` pour verrouiller :
+  - suppression ligne inconnue -> `404`
+  - suppression sur ticket ferme -> `409`
+  - incoherence ticket/ligne sur patch poids -> `400`
+  - correction admin du poids maintenue sur ticket ferme -> `200`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/reception_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_arch03_domain_errors.py`
+- `recyclique-1.4.4/api/tests/test_reception_line_tail_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale unitaire :
+  - `tests/test_reception_arch03_domain_errors.py`
+- Resultat local :
+  - **25 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_line_create_arch03.py`
+  - `tests/test_reception_line_update_arch03.py`
+  - `tests/test_reception_line_tail_arch03.py`
+- Resultat Docker :
+  - **13 tests passes**
+- QA finale seule sur l'axe `ARCH-03/reception` : **OK**
+
+### Resultat
+- `ReceptionService` ne leve plus de `HTTPException` sur le perimetre `reception` couvert par ARCH-03 :
+  - postes
+  - tickets
+  - lignes
+  - correction admin de poids
+- La traduction HTTP est maintenant concentree dans `endpoints/reception.py` pour ce perimetre.
+- L'axe `ARCH-03/reception` peut etre considere comme **ferme** fonctionnellement.
+- Reserves acceptees :
+  - quelques verifications de coherence ticket/ligne et UUID restent encore cote endpoint, pas dans le service
+  - les erreurs DB / integrite restent hors modelisation metier et peuvent encore remonter en `500`
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1446,7 +1552,7 @@
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et quatre premiers lots `ARCH-03/reception` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et l'axe `ARCH-03/reception` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1454,8 +1560,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** etendre `ARCH-03` a `update_ligne`, puis `delete_ligne`, avant de traiter `update_ligne_weight_admin`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** ouvrir `ARCH-03` sur une autre verticale backend deja assainie transactionnellement, idealement `cash_sessions`, ou lancer une petite passe `ARCH-04` pour reduire la repetition des traductions HTTP cote endpoints
 
 ---
 
