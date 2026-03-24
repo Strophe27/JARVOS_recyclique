@@ -176,6 +176,19 @@ class CashSessionService:
             .first()
         )
 
+    def get_session_with_details_or_raise(self, session_id: str) -> CashSession:
+        """Récupère une session avec relations ou lève une erreur métier (UUID invalide / absente).
+
+        Aligné sur ``get_session_by_id_or_raise`` pour ARCH-03 (lookup par ``session_id``).
+        """
+        try:
+            session = self.get_session_with_details(session_id)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("session_id invalide") from exc
+        if session is None:
+            raise NotFoundError("Session de caisse non trouvée")
+        return session
+
     def get_session_weight_aggregations(self, session: CashSession) -> Tuple[float, Dict[str, float]]:
         """B52-P6: Calcule les agrégations de poids pour une session de caisse.
 

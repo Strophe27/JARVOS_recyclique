@@ -1661,13 +1661,69 @@
 
 ---
 
+## Lot 1T — Pilote ARCH-03 sur detail `cash_sessions`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** aligner le detail de session de caisse sur la frontiere ARCH-03 en supprimant les `500` evitables sur le lookup par `session_id`
+
+### Actions
+- Introduction de `get_session_with_details_or_raise()` dans `CashSessionService` pour centraliser :
+  - `ValidationError` sur `session_id` mal forme
+  - `NotFoundError` sur session detail absente
+- Refactor de `GET /cash-sessions/{session_id}` pour :
+  - utiliser le lookup metier `*_or_raise`
+  - traduire explicitement `ValidationError` -> `400` et `NotFoundError` -> `404`
+  - conserver l'autorisation ADMIN/SUPER_ADMIN cote endpoint
+  - conserver l'audit d'acces, en succes comme en echec
+- Ajout d'un logging explicite sur le chemin `500` inattendu du detail pour ameliorer le diagnostic.
+- Extension du fichier unitaire `test_cash_session_close_arch03_domain_errors.py` pour couvrir aussi le lookup detail :
+  - `session_id` detail invalide
+  - session detail absente
+- Realignement de `test_cash_session_detail.py` sur `settings.API_V1_STR` et explicitation PostgreSQL-only.
+- Correction des fixtures/tests detail existants pour coller au contrat reel :
+  - `sale_date` renseigne dans les ventes de test pour satisfaire `SaleDetail`
+  - acces non authentifie constate a `403` sur cette route
+  - verification de l'audit par lecture de `audit_logs` au lieu de `caplog`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_session_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_close_arch03_domain_errors.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_detail.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_session_close_arch03_domain_errors.py`
+  - `tests/test_cash_session_detail.py`
+- Resultat local :
+  - **7 tests passes** + **8 skips PostgreSQL-only**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_close_arch03_domain_errors.py`
+  - `tests/test_cash_session_detail.py`
+- Resultat Docker :
+  - **15 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Le detail `cash_sessions` suit maintenant le meme patron ARCH-03 que `create` et `close` :
+  - service = erreurs metier de lookup
+  - endpoint = auth / audit / traduction HTTP
+- Le cas `session_id` invalide ne tombe plus en erreur serveur sur la route de detail.
+- Le contrat HTTP detail est verrouille explicitement sur `200`, `400`, `403`, `404`.
+- Reserves acceptees :
+  - `test_cash_session_detail.py` reste un fichier d'integration PostgreSQL-only
+  - d'autres routes du meme module (`current`, `update`, `step`) restent encore a aligner sur la meme frontiere ARCH-03
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create` et `ARCH-03/cash_sessions/close` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close` et `ARCH-03/cash_sessions/detail` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1675,8 +1731,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** prolonger `ARCH-03` sur les helpers et endpoints adjacents de `cash_sessions` (`current`, detail, step update) ou ouvrir une petite passe de reduction de repetition sur les traductions HTTP des verticales deja migrees
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** prolonger `ARCH-03` sur `cash_sessions/current`, puis sur `step update`, avant une petite passe de reduction de repetition sur les traductions HTTP des verticales deja migrees
 
 ---
 

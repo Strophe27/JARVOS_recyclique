@@ -27,6 +27,21 @@ def test_get_session_by_id_or_raise_raises_validation_error_for_invalid_uuid():
         service.get_session_by_id_or_raise("not-a-uuid")
 
 
+def test_get_session_with_details_or_raise_raises_validation_error_for_invalid_uuid():
+    service = CashSessionService(MagicMock())
+
+    with pytest.raises(ValidationError, match="session_id invalide"):
+        service.get_session_with_details_or_raise("not-a-uuid")
+
+
+def test_get_session_with_details_or_raise_raises_not_found_when_absent():
+    service = CashSessionService(MagicMock())
+    service.get_session_with_details = MagicMock(return_value=None)
+
+    with pytest.raises(NotFoundError, match="Session de caisse non trouvée"):
+        service.get_session_with_details_or_raise(str(uuid4()))
+
+
 def test_validate_session_close_raises_conflict_for_closed_session():
     service = CashSessionService(MagicMock())
     session = SimpleNamespace(status=CashSessionStatus.CLOSED)

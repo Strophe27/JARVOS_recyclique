@@ -600,6 +600,16 @@ async def get_current_cash_session(
                 }
             }
         },
+        400: {
+            "description": "Identifiant de session invalide",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "session_id invalide"
+                    }
+                }
+            }
+        },
         403: {
             "description": "Accès non autorisé",
             "content": {
@@ -622,13 +632,8 @@ async def get_cash_session_detail(
     service = CashSessionService(db)
     
     try:
-        # Récupérer la session avec ses relations
-        session = service.get_session_with_details(session_id)
-        if not session:
-            raise HTTPException(
-                status_code=404,
-                detail="Session de caisse non trouvée"
-            )
+        # Récupérer la session avec ses relations (erreurs métier : ValidationError / NotFoundError)
+        session = service.get_session_with_details_or_raise(session_id)
         
         # Log de l'accès aux détails
         log_cash_session_access(
@@ -663,11 +668,29 @@ async def get_cash_session_detail(
         })
         
         return CashSessionDetailResponse(**response_data)
-        
+
+    except NotFoundError as e:
+        log_cash_session_access(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            success=False,
+            db=db
+        )
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValidationError as e:
+        log_cash_session_access(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            success=False,
+            db=db
+        )
+        raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        # Log de l'erreur d'accès
+        logger.exception("Erreur inattendue lors de la récupération du détail session %s", session_id)
         log_cash_session_access(
             user_id=str(current_user.id),
             username=current_user.username or "Unknown",

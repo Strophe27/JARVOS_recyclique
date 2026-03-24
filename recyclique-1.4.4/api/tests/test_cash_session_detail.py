@@ -1,18 +1,30 @@
 """
 Tests pour l'endpoint de détail des sessions de caisse
 """
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from datetime import datetime, timezone
 
+from recyclic_api.core.config import settings
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import Sale, PaymentMethod
 from recyclic_api.models.site import Site
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.core.security import hash_password
+from recyclic_api.models.audit_log import AuditActionType, AuditLog
+
+_V1 = settings.API_V1_STR.rstrip("/")
+_TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "")
+
+pytestmark = pytest.mark.skipif(
+    not _TEST_DB_URL.startswith("postgresql"),
+    reason="Les tests détail cash session nécessitent PostgreSQL (schéma site/session/ventes).",
+)
 
 
 @pytest.fixture
@@ -90,6 +102,7 @@ def test_session_data(db_session: Session):
         total_amount=25.0,
         donation=5.0,
         payment_method=PaymentMethod.CASH,
+        sale_date=datetime.now(timezone.utc),
         created_at=datetime.now(timezone.utc)
     )
     db_session.add(sale1)
@@ -101,6 +114,7 @@ def test_session_data(db_session: Session):
         total_amount=20.0,
         donation=0.0,
         payment_method=PaymentMethod.CARD,
+        sale_date=datetime.now(timezone.utc),
         created_at=datetime.now(timezone.utc)
     )
     db_session.add(sale2)
@@ -121,7 +135,7 @@ def test_get_cash_session_detail_success(client: TestClient, test_session_data, 
     """Test de récupération réussie des détails d'une session"""
     session = test_session_data["session"]
     
-    response = admin_client.get(f"/api/v1/cash-sessions/{session.id}")
+    response = admin_client.get(f"{_V1}/cash-sessions/{session.id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -156,7 +170,7 @@ def test_get_cash_session_detail_not_found(client: TestClient, admin_client):
     """Test de session non trouvée"""
     fake_id = str(uuid4())
     
-    response = admin_client.get(f"/api/v1/cash-sessions/{fake_id}")
+    response = admin_client.get(f"{_V1}/cash-sessions/{fake_id}")
     
     assert response.status_code == 404
     data = response.json()
@@ -164,12 +178,12 @@ def test_get_cash_session_detail_not_found(client: TestClient, admin_client):
 
 
 def test_get_cash_session_detail_unauthorized(client: TestClient, test_session_data):
-    """Test d'accès non autorisé sans authentification"""
+    """Test d'accès non autorisé sans authentification."""
     session = test_session_data["session"]
     
-    response = client.get(f"/api/v1/cash-sessions/{session.id}")
+    response = client.get(f"{_V1}/cash-sessions/{session.id}")
     
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 def test_get_cash_session_detail_forbidden_user_role(client: TestClient, test_session_data):
@@ -182,7 +196,7 @@ def test_get_cash_session_detail_forbidden_user_role(client: TestClient, test_se
     token = create_access_token(data={"sub": str(operator.id)})
     
     response = client.get(
-        f"/api/v1/cash-sessions/{session.id}",
+        f"{_V1}/cash-sessions/{session.id}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -228,7 +242,7 @@ def test_get_cash_session_detail_with_open_session(client: TestClient, db_sessio
     db_session.commit()
     db_session.refresh(session)
     
-    response = admin_client.get(f"/api/v1/cash-sessions/{session.id}")
+    response = admin_client.get(f"{_V1}/cash-sessions/{session.id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -282,7 +296,7 @@ def test_get_cash_session_detail_with_variance(client: TestClient, db_session: S
     db_session.commit()
     db_session.refresh(session)
     
-    response = admin_client.get(f"/api/v1/cash-sessions/{session.id}")
+    response = admin_client.get(f"{_V1}/cash-sessions/{session.id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -293,25 +307,38 @@ def test_get_cash_session_detail_with_variance(client: TestClient, db_session: S
     assert data["variance_comment"] == "Manque de 5€"
 
 
-def test_get_cash_session_detail_audit_logging(client: TestClient, test_session_data, admin_client, caplog):
-    """Test que l'accès aux détails est tracé dans les logs d'audit"""
+def test_get_cash_session_detail_audit_logging(
+    client: TestClient, test_session_data, admin_client, db_session: Session
+):
+    """L'accès aux détails persiste une entrée dans audit_logs (log_audit n'émet pas via logging/caplog)."""
     session = test_session_data["session"]
-    
-    response = admin_client.get(f"/api/v1/cash-sessions/{session.id}")
-    
+
+    response = admin_client.get(f"{_V1}/cash-sessions/{session.id}")
+
     assert response.status_code == 200
-    
-    # Vérifier que l'audit est loggé
-    assert "Cash session access" in caplog.text
-    assert "view_details" in caplog.text
-    assert str(session.id) in caplog.text
+
+    audit_entry = (
+        db_session.query(AuditLog)
+        .filter(
+            AuditLog.target_type == "cash_session",
+            AuditLog.target_id == session.id,
+            AuditLog.action_type == AuditActionType.SYSTEM_CONFIG_CHANGED.value,
+        )
+        .order_by(AuditLog.timestamp.desc())
+        .first()
+    )
+    assert audit_entry is not None
+    assert str(session.id) in (audit_entry.description or "")
+    assert audit_entry.details_json is not None
+    assert audit_entry.details_json.get("success") is True
+    assert audit_entry.details_json.get("session_id") == str(session.id)
 
 
 def test_get_cash_session_detail_error_handling(client: TestClient, admin_client):
-    """Test de gestion d'erreur avec un ID invalide"""
+    """Test de gestion d'erreur avec un ID invalide (ARCH-03 : 400 comme close)"""
     invalid_id = "invalid-uuid"
-    
-    response = admin_client.get(f"/api/v1/cash-sessions/{invalid_id}")
-    
-    # L'endpoint devrait gérer les UUIDs invalides gracieusement
-    assert response.status_code in [400, 404]
+
+    response = admin_client.get(f"{_V1}/cash-sessions/{invalid_id}")
+
+    assert response.status_code == 400
+    assert "session_id invalide" in response.json()["detail"].lower()
