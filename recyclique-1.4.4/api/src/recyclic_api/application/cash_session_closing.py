@@ -2,7 +2,8 @@
 ARCH-04 : fermeture de session caisse (POST /cash-sessions/{id}/close).
 
 Orchestration métier : droits opérateur, validation fermeture, fermeture / session vide,
-audit — sans génération de rapport, email ni enrichissement HTTP (reste au routeur).
+audit — sans rapport CSV, email ni enrichissement HTTP (voir
+``application.cash_session_close_presentation``).
 """
 
 from __future__ import annotations

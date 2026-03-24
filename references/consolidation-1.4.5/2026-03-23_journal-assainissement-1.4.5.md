@@ -2375,6 +2375,55 @@
 
 ---
 
+## Lot 2AI — Pilote ARCH-04 sur la presentation post-fermeture `close_cash_session`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire hors du routeur le bloc de presentation post-fermeture (rapport, URL, email, enrichissement) pour parachever le pilote `close_cash_session`
+
+### Actions
+- Creation de `recyclic_api/application/cash_session_close_presentation.py` pour porter :
+  - generation du rapport CSV
+  - token / URL de telechargement
+  - tentative d'envoi d'email
+  - enrichissement de la reponse finale
+  - reponse JSON 200 du cas session vide
+- Amincissement complementaire de `POST /cash-sessions/{session_id}/close` dans `endpoints/cash_sessions.py` au profit de `present_close_cash_session_outcome(...)`.
+- Reexport de `generate_cash_session_report` et `get_email_service` dans `cash_sessions.py` pour conserver la compatibilite des monkeypatchs de tests existants.
+- Ajout du fichier cible `tests/test_cash_session_close_presentation_arch04.py` pour verrouiller la presentation post-close.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/application/cash_session_close_presentation.py`
+- `recyclique-1.4.4/api/src/recyclic_api/application/cash_session_closing.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_close_presentation_arch04.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_close_arch04.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_session_close_presentation_arch04.py`
+  - `tests/test_cash_session_close_arch04.py`
+- Resultat local :
+  - **5 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_close_presentation_arch04.py`
+  - `tests/test_cash_session_close_arch04.py`
+  - `tests/test_cash_session_close_arch03_domain_errors.py`
+  - `tests/test_cash_session_close.py`
+  - `tests/test_cash_session_empty.py`
+- Resultat Docker/PostgreSQL :
+  - **34 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Le routeur `close_cash_session` ne conserve plus que le strict bord HTTP et la delegation vers les deux couches applicatives.
+- Le contrat HTTP du flux fermeture reste stable, y compris le cas session vide et le flux rapport/email.
+- Reserves acceptees :
+  - import local depuis `cash_sessions.py` pour garder la compatibilite de monkeypatch des tests
+  - `response_model=CashSessionResponse` ne reflete toujours pas la reponse JSON speciale du cas session vide
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2385,6 +2434,7 @@
 - **Vague 8:** premier pilote `ARCH-04` sur `create_sale` ferme avec reserves acceptees
 - **Vague 8:** second pilote `ARCH-04` sur `create_cash_session` ferme avec reserves acceptees
 - **Vague 8:** troisieme pilote `ARCH-04` sur `close_cash_session` ferme avec reserves acceptees
+- **Vague 8:** quatrieme pilote `ARCH-04` sur la presentation post-fermeture `close_cash_session` ferme avec reserves acceptees
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2392,8 +2442,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-04` avec un quatrieme pilote borne (exports CSV reception ou enrichissement `cash_sessions`), Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-04` sur les exports CSV reception, Telegram etant explicitement reporte
 
 ---
 

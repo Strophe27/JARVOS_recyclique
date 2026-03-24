@@ -1,7 +1,9 @@
 """
-ARCH-04 — POST /cash-sessions/{id}/close : orchestration dans application.cash_session_closing.
+ARCH-04 — POST /cash-sessions/{id}/close.
 
-Tests unitaires ciblés (mocks) pour droits opérateur et résultat fermeté / session vide.
+- Métier : ``application.cash_session_closing`` (tests ci-dessous).
+- Présentation : ``application.cash_session_close_presentation`` (voir
+  ``test_cash_session_close_presentation_arch04.py``).
 """
 
 from __future__ import annotations
