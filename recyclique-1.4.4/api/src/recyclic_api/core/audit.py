@@ -256,7 +256,7 @@ def log_role_change(
 def log_cash_session_opening(
     user_id: str,
     username: str,
-    session_id: str,
+    session_id: Optional[str],
     opening_amount: float,
     success: bool = True,
     is_deferred: bool = False,
@@ -289,7 +289,7 @@ def log_cash_session_opening(
     details = {
         "user_id": user_id,
         "username": username,
-        "session_id": session_id,
+        "session_id": session_id or None,
         "opening_amount": opening_amount,
         "success": success,
         "is_deferred": is_deferred
@@ -304,7 +304,7 @@ def log_cash_session_opening(
     return log_audit(
         action_type=action_type,
         actor=None,
-        target_id=session_id,
+        target_id=session_id or None,
         target_type="cash_session",
         details=details,
         description=description,

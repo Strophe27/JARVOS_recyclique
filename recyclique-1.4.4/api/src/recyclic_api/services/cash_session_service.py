@@ -15,6 +15,7 @@ from recyclic_api.models.ligne_depot import LigneDepot
 from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.schemas.cash_session import CashSessionFilters
 from recyclic_api.core.logging import log_transaction_event
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 
 CLOSE_VARIANCE_TOLERANCE = 0.05
 
@@ -36,7 +37,9 @@ class CashSessionService:
             opened_at: Date d'ouverture personnalisée (optionnel, pour saisie différée)
         
         Raises:
-            ValueError: Si opened_at est dans le futur ou si une session est déjà ouverte
+            ValidationError: Si opened_at est dans le futur
+            NotFoundError: Si l'opérateur n'existe pas
+            ConflictError: Si une session est déjà ouverte pour le registre
         """
         try:
             # Validation de opened_at si fourni
@@ -47,21 +50,30 @@ class CashSessionService:
                     opened_at = opened_at.replace(tzinfo=timezone.utc)
                 # Vérifier que la date n'est pas dans le futur
                 if opened_at > now:
-                    raise ValueError("La date d'ouverture ne peut pas être dans le futur")
+                    raise ValidationError("La date d'ouverture ne peut pas être dans le futur")
             
             # Vérifier que l'opérateur existe
             # Ensure UUID types for DB comparisons
-            operator_uuid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
-            site_uuid = UUID(str(site_id)) if not isinstance(site_id, UUID) else site_id
+            try:
+                operator_uuid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
+            except (TypeError, ValueError) as exc:
+                raise ValidationError("operator_id invalide") from exc
+            try:
+                site_uuid = UUID(str(site_id)) if not isinstance(site_id, UUID) else site_id
+            except (TypeError, ValueError) as exc:
+                raise ValidationError("site_id invalide") from exc
             register_uuid: Optional[UUID]
             if register_id is not None:
-                register_uuid = UUID(str(register_id)) if not isinstance(register_id, UUID) else register_id
+                try:
+                    register_uuid = UUID(str(register_id)) if not isinstance(register_id, UUID) else register_id
+                except (TypeError, ValueError) as exc:
+                    raise ValidationError("register_id invalide") from exc
             else:
                 register_uuid = None
 
             operator = self.db.query(User).filter(User.id == operator_uuid).first()
             if not operator:
-                raise ValueError("Opérateur non trouvé")
+                raise NotFoundError("Opérateur non trouvé")
 
             # Déterminer le registre à utiliser si non fourni (compatibilité tests existants)
             if register_uuid is None:
@@ -89,7 +101,7 @@ class CashSessionService:
                     CashSession.status == CashSessionStatus.OPEN
                 ).first()
                 if existing_register_open:
-                    raise ValueError("Une session est déjà ouverte pour ce poste de caisse")
+                    raise ConflictError("Une session est déjà ouverte pour ce poste de caisse")
             # Pour les sessions différées, on permet la création même si le registre a une session normale ouverte
 
             # Créer la session avec opened_at personnalisé si fourni
@@ -121,6 +133,8 @@ class CashSessionService:
             })
 
             return cash_session
+        except (ValidationError, NotFoundError, ConflictError):
+            raise
         except Exception as e:
             # Log any unexpected error in service layer
             import logging
@@ -245,7 +259,10 @@ class CashSessionService:
         On utilise un seuil de 90 jours uniquement pour exclure les sessions différées
         qui ont été créées avec opened_at explicitement défini dans le passé lointain.
         """
-        oid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
+        try:
+            oid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("operator_id invalide") from exc
         now = datetime.now(timezone.utc)
         # Seuil de 90 jours : exclure uniquement les sessions différées créées avec
         # opened_at explicitement défini dans le passé lointain. Les sessions normales

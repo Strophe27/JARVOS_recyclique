@@ -1546,13 +1546,68 @@
 
 ---
 
+## Lot 1R — Pilote ARCH-03 sur creation `cash_sessions`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** decoupler la creation de session de caisse entre service metier et bord HTTP, sans casser le contrat existant de creation
+
+### Actions
+- Remplacement des `ValueError` metier de `CashSessionService.create_session()` par :
+  - `ValidationError` pour `opened_at` futur et UUID mal formes (`operator_id`, `site_id`, `register_id`)
+  - `NotFoundError` pour `Operateur non trouve`
+  - `ConflictError` pour registre deja occupe
+- Alignement de `get_open_session_by_operator()` sur la meme frontiere metier pour eviter un `500` en cas de `operator_id` invalide lors du pre-check endpoint.
+- Translation explicite dans `POST /cash-sessions/` :
+  - `NotFoundError` -> `404`
+  - `ValidationError` -> `400`
+  - `ConflictError` -> `400` (contrat historique de creation preserve)
+- Sortie du controle `opened_at` futur hors schema `CashSessionCreate` pour laisser la regle vivre dans le service et eviter la casse du handler global de validation.
+- Durcissement de l'audit d'echec d'ouverture : `session_id` vide ne part plus comme faux UUID dans `audit_logs`.
+- Ajout d'un fichier de tests cible `test_cash_session_create_arch03.py` couvrant :
+  - erreurs metier unitaires (`future date`, `operator_id` invalide, operateur inconnu, registre deja ouvert)
+  - contrat HTTP cible (`400` ID invalide, `404` operateur inconnu)
+- Realignement partiel de `test_cash_session_deferred.py` sur `settings.API_V1_STR` pour la creation de session et les scenarii de creation cibles.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_session_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/cash_session.py`
+- `recyclique-1.4.4/api/src/recyclic_api/core/audit.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_create_arch03.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_deferred.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_session_create_arch03.py`
+- Resultat local :
+  - **5 tests passes** + **1 skip PostgreSQL-only**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_create_arch03.py::test_create_cash_session_returns_404_for_unknown_operator`
+  - `tests/test_cash_session_deferred.py::TestDeferredCashSessionCreation::*`
+- Resultat Docker :
+  - **8 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- La creation `cash_sessions` suit maintenant une frontiere `ARCH-03` explicite :
+  - service = validation / exceptions metier
+  - endpoint = traduction HTTP / permissions
+- Les UUID mal formes n'aboutissent plus a des `500` sur le flux create.
+- Le contrat HTTP utile de create est verrouille explicitement sur `400`, `403`, `404` et `201`.
+- Reserves acceptees :
+  - le test HTTP `404 operateur introuvable` reste execute uniquement sous PostgreSQL
+  - les scenarii de creation de vente depuis session differee relèvent d'un axe metier voisin et ne font pas partie de la cloture de ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et l'axe `ARCH-03/reception` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et le pilote `ARCH-03/cash_sessions/create` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1560,8 +1615,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** ouvrir `ARCH-03` sur une autre verticale backend deja assainie transactionnellement, idealement `cash_sessions`, ou lancer une petite passe `ARCH-04` pour reduire la repetition des traductions HTTP cote endpoints
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** prolonger `ARCH-03` sur `cash_sessions`, idealement par la fermeture de session et les helpers adjacents avant une eventuelle passe de reduction de repetition cote endpoints
 
 ---
 

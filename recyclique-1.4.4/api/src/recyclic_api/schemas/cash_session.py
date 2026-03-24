@@ -47,20 +47,6 @@ class CashSessionBase(BaseModel):
 class CashSessionCreate(CashSessionBase):
     """Schéma pour la création d'une session de caisse."""
     opened_at: Optional[datetime] = Field(None, description="Date d'ouverture personnalisée (pour saisie différée, ADMIN/SUPER_ADMIN uniquement)")
-    
-    @field_validator('opened_at')
-    @classmethod
-    def validate_opened_at(cls, v):
-        """Valide que opened_at n'est pas dans le futur."""
-        if v is not None:
-            from datetime import timezone
-            now = datetime.now(timezone.utc)
-            # S'assurer que v est timezone-aware
-            if v.tzinfo is None:
-                v = v.replace(tzinfo=timezone.utc)
-            if v > now:
-                raise ValueError("La date d'ouverture ne peut pas être dans le futur")
-        return v
 
 
 class CashSessionUpdate(BaseModel):

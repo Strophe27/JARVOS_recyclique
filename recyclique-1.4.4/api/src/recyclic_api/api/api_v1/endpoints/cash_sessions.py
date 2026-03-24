@@ -36,6 +36,7 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStep
 )
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from uuid import UUID
 
 router = APIRouter()
@@ -134,6 +135,16 @@ def enrich_session_response(
                 "application/json": {
                     "example": {
                         "detail": "Une session de caisse est déjà ouverte pour cet opérateur"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Opérateur introuvable",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Opérateur non trouvé"
                     }
                 }
             }
@@ -249,7 +260,7 @@ async def create_cash_session(
                 variance=cash_session.variance,
                 variance_comment=cash_session.variance_comment
             )
-    except ValueError as e:
+    except NotFoundError as e:
         log_cash_session_opening(
             user_id=str(current_user.id),
             username=current_user.username or "Unknown",
@@ -258,8 +269,29 @@ async def create_cash_session(
             success=False,
             db=db
         )
-        # Important: renvoyer un JSON cohérent
+        raise HTTPException(status_code=404, detail=str(e))
+    except ConflictError as e:
+        log_cash_session_opening(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id="",
+            opening_amount=session_data.initial_amount,
+            success=False,
+            db=db
+        )
+        raise HTTPException(status_code=400, detail=e.detail)
+    except ValidationError as e:
+        log_cash_session_opening(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id="",
+            opening_amount=session_data.initial_amount,
+            success=False,
+            db=db
+        )
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         # Log any unexpected error before re-raising
         logger.error(f"Unexpected error in create_cash_session: {e}", exc_info=True)

@@ -22,6 +22,9 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.sale import Sale
 from recyclic_api.core.security import hash_password
 from recyclic_api.core.auth import create_access_token
+from recyclic_api.core.config import settings
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 @pytest.fixture
@@ -141,7 +144,7 @@ class TestDeferredCashSessionCreation:
         past_date = datetime.now(timezone.utc) - timedelta(days=7)
         
         response = admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_admin.id),
                 "site_id": str(test_site.id),
@@ -163,7 +166,7 @@ class TestDeferredCashSessionCreation:
         past_date = datetime.now(timezone.utc) - timedelta(days=180)
         
         response = super_admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_super_admin.id),
                 "site_id": str(test_site.id),
@@ -183,7 +186,7 @@ class TestDeferredCashSessionCreation:
         future_date = datetime.now(timezone.utc) + timedelta(days=1)
         
         response = admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_admin.id),
                 "site_id": str(test_site.id),
@@ -201,7 +204,7 @@ class TestDeferredCashSessionCreation:
         past_date = datetime.now(timezone.utc) - timedelta(days=7)
         
         response = user_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_user.id),
                 "site_id": str(test_site.id),
@@ -212,12 +215,12 @@ class TestDeferredCashSessionCreation:
         )
         
         assert response.status_code == 403
-        assert "administrateur" in response.json()["detail"].lower() or "admin" in response.json()["detail"].lower()
+        assert "permission requise" in response.json()["detail"].lower() or "deferred.access" in response.json()["detail"].lower()
 
     def test_create_normal_session_without_opened_at(self, user_client: TestClient, test_user: User, test_site: Site, test_register: CashRegister):
         """Test création session normale sans opened_at (comportement actuel)."""
         response = user_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_user.id),
                 "site_id": str(test_site.id),
@@ -240,7 +243,7 @@ class TestDeferredCashSessionCreation:
         old_date = datetime.now(timezone.utc) - timedelta(days=730)
         
         response = admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_admin.id),
                 "site_id": str(test_site.id),
@@ -260,7 +263,7 @@ class TestDeferredCashSessionCreation:
         today = datetime.now(timezone.utc)
         
         response = admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_admin.id),
                 "site_id": str(test_site.id),
@@ -284,7 +287,7 @@ class TestDeferredSaleCreation:
         past_date = datetime.now(timezone.utc) - timedelta(days=7)
         
         session_response = admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_admin.id),
                 "site_id": str(test_site.id),
@@ -302,7 +305,7 @@ class TestDeferredSaleCreation:
         
         # Créer une vente
         sale_response = admin_client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json={
                 "cash_session_id": session_id,
                 "items": [
@@ -334,7 +337,7 @@ class TestDeferredSaleCreation:
         """Test création vente dans session normale : created_at = now()."""
         # Créer session normale (sans opened_at)
         session_response = user_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_user.id),
                 "site_id": str(test_site.id),
@@ -350,7 +353,7 @@ class TestDeferredSaleCreation:
         
         # Créer une vente
         sale_response = user_client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json={
                 "cash_session_id": session_id,
                 "items": [
@@ -386,7 +389,7 @@ class TestDeferredSaleCreation:
         old_date = datetime.now(timezone.utc) - timedelta(days=180)
         
         session_response = admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_admin.id),
                 "site_id": str(test_site.id),
@@ -400,7 +403,7 @@ class TestDeferredSaleCreation:
         
         # Créer une vente
         sale_response = admin_client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json={
                 "cash_session_id": session_id,
                 "items": [
