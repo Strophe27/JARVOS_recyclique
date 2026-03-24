@@ -10,6 +10,9 @@ Les rapports datés **2026-03-23** décrivent un audit brownfield de la base act
 
 ## Audit brownfield
 
+- **`2026-03-23_prochaine-passe-assainissement-1.4.5.md`** — Note de relance pour un futur contexte vierge, avec l'ordre recommande de la prochaine passe et les lots a ouvrir ensuite.
+  _(Charger si : tu reprends le projet apres les vagues 1 a 4 et que tu veux savoir par quoi continuer sans relire tout l'historique.)_
+
 - **`2026-03-23_journal-assainissement-1.4.5.md`** — Journal chronologique des audits, lots executes, validations et decisions de cloture.
   _(Charger si : tu veux savoir rapidement ce qui a deja ete fait, dans quel ordre, et quels lots sont fermes.)_
 

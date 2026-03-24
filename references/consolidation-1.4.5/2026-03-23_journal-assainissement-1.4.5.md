@@ -566,7 +566,7 @@
 - **Vague 4:** terminee pour cette passe
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `2A`, `2B`, `2C`, `2D`, `3A`, `3B`, `3C`, `3D`, `3E`, `4A`, `4B`, `4C`, `4D`
-- **Prochaine etape logique:** commit / revue du diff massif `recyclique-1.4.4/`, puis poursuite assainissement ou dettes backlog
+- **Prochaine etape logique:** voir `2026-03-23_prochaine-passe-assainissement-1.4.5.md` pour la passe suivante en contexte vierge
 
 ---
 
