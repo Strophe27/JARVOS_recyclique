@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.exceptions import ConflictError, NotFoundError
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.schemas.cash_register import (
     CashRegisterCreate,
@@ -38,6 +39,13 @@ class CashRegisterService:
 
     def get(self, *, register_id: str) -> Optional[CashRegister]:
         return self._db.query(CashRegister).filter(CashRegister.id == register_id).first()
+
+    def get_required(self, *, register_id: str) -> CashRegister:
+        """Retourne le poste ou lève NotFoundError (couche métier, sans HTTP)."""
+        register = self.get(register_id=register_id)
+        if not register:
+            raise NotFoundError("Poste de caisse introuvable")
+        return register
 
     # Create
     def create(self, *, data: CashRegisterCreate) -> CashRegister:
@@ -86,7 +94,6 @@ class CashRegisterService:
 
     def _check_dependencies(self, register: CashRegister) -> None:
         """Vérifier les dépendances avant suppression d'un poste de caisse."""
-        from fastapi import HTTPException, status as http_status
         from recyclic_api.models.cash_session import CashSession
 
         # Check for cash sessions - FIXED: use register_id not cash_register_id
@@ -95,10 +102,9 @@ class CashRegisterService:
         ).count()
 
         if sessions_count > 0:
-            raise HTTPException(
-                status_code=http_status.HTTP_409_CONFLICT,
-                detail=f"Impossible de supprimer le poste de caisse '{register.name}'. "
-                       f"{sessions_count} session(s) de caisse y sont associées."
+            raise ConflictError(
+                f"Impossible de supprimer le poste de caisse '{register.name}'. "
+                f"{sessions_count} session(s) de caisse y sont associées."
             )
 
 

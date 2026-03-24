@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from recyclic_api.core.database import get_db
+from recyclic_api.core.exceptions import ConflictError, NotFoundError
 from recyclic_api.core.auth import require_role_strict
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.models.cash_register import CashRegister
@@ -64,10 +65,13 @@ async def get_cash_register(
     current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashRegisterService(db)
-    register = service.get(register_id=register_id)
-    if not register:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Poste de caisse introuvable")
-    return register
+    try:
+        return service.get_required(register_id=register_id)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/", response_model=CashRegisterResponse, status_code=status.HTTP_201_CREATED, summary="Créer un poste de caisse")
@@ -88,10 +92,14 @@ async def update_cash_register(
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashRegisterService(db)
-    register = service.get(register_id=register_id)
-    if not register:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Poste de caisse introuvable")
-    return service.update(register=register, data=payload)
+    try:
+        register = service.get_required(register_id=register_id)
+        return service.update(register=register, data=payload)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
 
 
 @router.delete("/{register_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Supprimer un poste de caisse")
@@ -101,10 +109,19 @@ async def delete_cash_register(
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashRegisterService(db)
-    register = service.get(register_id=register_id)
-    if not register:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Poste de caisse introuvable")
-    service.delete(register=register)
+    try:
+        register = service.get_required(register_id=register_id)
+        service.delete(register=register)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.detail,
+        ) from exc
     return None
 
 

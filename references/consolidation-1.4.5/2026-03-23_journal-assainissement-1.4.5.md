@@ -1867,13 +1867,54 @@
 
 ---
 
+## Lot 1X — Pilote ARCH-03 sur `cash_register_service`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir le lookup obligatoire et le blocage de suppression des postes de caisse hors HTTP pour homogeniser les routes `cash_registers`
+
+### Actions
+- Introduction de `get_required()` dans `CashRegisterService` pour lever `NotFoundError("Poste de caisse introuvable")` quand la ressource est obligatoire.
+- Conversion du blocage de suppression `_check_dependencies()` vers `ConflictError` avec conservation du message metier existant.
+- Refactor des routes `cash_registers` suivantes :
+  - `GET /cash-registers/{register_id}` -> `NotFoundError` traduit en `404`
+  - `PATCH /cash-registers/{register_id}` -> `NotFoundError` traduit en `404`
+  - `DELETE /cash-registers/{register_id}` -> `NotFoundError` traduit en `404`, `ConflictError` traduit en `409`
+- Ajout du fichier cible `test_cash_register_arch03.py` pour verrouiller :
+  - service `get_required()` sur ressource absente
+  - service `delete()` sur conflit / succes
+  - routes HTTP `GET -> 404`, `PATCH -> 404`, `DELETE -> 409`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_register_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_registers.py`
+- `recyclique-1.4.4/api/tests/test_cash_register_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_register_arch03.py`
+- Resultat local :
+  - **6 tests passes**
+- Validation Docker/PostgreSQL :
+  - non necessaire pour ce lot, la couverture ajoutee est mockee / unitaire
+- QA finale seule : **OK**
+
+### Resultat
+- `cash_register_service` ne leve plus d'erreur HTTP directe sur les chemins metier traites.
+- Les routes `cash_registers` ciblees suivent maintenant un patron ARCH-03 explicite pour `404` et `409`.
+- Reserves acceptees :
+  - la couverture HTTP reste route-level avec service mocke
+  - `GET /cash-registers/status` reste hors perimetre de ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update` et `ARCH-03/stats_service` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service` et `ARCH-03/cash_register_service` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1881,8 +1922,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** fermer les services simples restants sous `ARCH-03`, en commencant par `cash_register_service`, puis `telegram_link_service`, avant de reevaluer la petite passe DRY
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** fermer les services simples restants sous `ARCH-03`, en commencant par `telegram_link_service`, avant de reevaluer la petite passe DRY
 
 ---
 
