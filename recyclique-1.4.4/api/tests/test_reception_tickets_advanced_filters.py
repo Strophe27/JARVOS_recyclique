@@ -9,6 +9,9 @@ from recyclic_api.models import PosteReception, PosteReceptionStatus, TicketDepo
 from recyclic_api.models.ligne_depot import Destination
 from recyclic_api.models.category import Category
 from recyclic_api.core.security import hash_password
+from recyclic_api.core.config import settings
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 @pytest.fixture
@@ -88,25 +91,25 @@ def test_filter_by_poids_min_max(admin_client, db_session, test_benevole, test_p
     
     # Test: filtre par poids min
     params = {"poids_min": 20.0}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     # Vérifier que tous les tickets ont un poids >= 20.0
     ticket_ids = [t["id"] for t in payload["tickets"]]
-    assert any(str(tickets[2].id) in ticket_ids)  # 20.0
-    assert any(str(tickets[3].id) in ticket_ids)  # 30.0
-    assert any(str(tickets[4].id) in ticket_ids)  # 50.0
+    assert str(tickets[2].id) in ticket_ids  # 20.0
+    assert str(tickets[3].id) in ticket_ids  # 30.0
+    assert str(tickets[4].id) in ticket_ids  # 50.0
     
     # Test: filtre par poids max
     params = {"poids_max": 20.0}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     # Vérifier que tous les tickets ont un poids <= 20.0
     ticket_ids = [t["id"] for t in payload["tickets"]]
-    assert any(str(tickets[0].id) in ticket_ids)  # 5.0
-    assert any(str(tickets[1].id) in ticket_ids)  # 10.0
-    assert any(str(tickets[2].id) in ticket_ids)  # 20.0
+    assert str(tickets[0].id) in ticket_ids  # 5.0
+    assert str(tickets[1].id) in ticket_ids  # 10.0
+    assert str(tickets[2].id) in ticket_ids  # 20.0
 
 
 def test_filter_by_categories(admin_client, db_session, test_benevole, test_poste, test_categories):
@@ -139,20 +142,20 @@ def test_filter_by_categories(admin_client, db_session, test_benevole, test_post
     
     # Test: filtre par une catégorie
     params = {"categories": [str(test_categories[0].id)]}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     ticket_ids = [t["id"] for t in payload["tickets"]]
-    assert any(str(tickets[0].id) in ticket_ids)
+    assert str(tickets[0].id) in ticket_ids
     
     # Test: filtre par plusieurs catégories
     params = {"categories": [str(test_categories[0].id), str(test_categories[1].id)]}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     ticket_ids = [t["id"] for t in payload["tickets"]]
-    assert any(str(tickets[0].id) in ticket_ids)
-    assert any(str(tickets[1].id) in ticket_ids)
+    assert str(tickets[0].id) in ticket_ids
+    assert str(tickets[1].id) in ticket_ids
 
 
 def test_filter_by_destinations(admin_client, db_session, test_benevole, test_poste, test_categories):
@@ -187,20 +190,20 @@ def test_filter_by_destinations(admin_client, db_session, test_benevole, test_po
     
     # Test: filtre par une destination
     params = {"destinations": ["MAGASIN"]}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     ticket_ids = [t["id"] for t in payload["tickets"]]
-    assert any(str(tickets[0].id) in ticket_ids)
+    assert str(tickets[0].id) in ticket_ids
     
     # Test: filtre par plusieurs destinations
     params = {"destinations": ["MAGASIN", "RECYCLAGE"]}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     ticket_ids = [t["id"] for t in payload["tickets"]]
-    assert any(str(tickets[0].id) in ticket_ids)
-    assert any(str(tickets[1].id) in ticket_ids)
+    assert str(tickets[0].id) in ticket_ids
+    assert str(tickets[1].id) in ticket_ids
 
 
 def test_filter_by_lignes_min_max(admin_client, db_session, test_benevole, test_poste, test_categories):
@@ -236,25 +239,25 @@ def test_filter_by_lignes_min_max(admin_client, db_session, test_benevole, test_
     
     # Test: filtre par nombre de lignes min
     params = {"lignes_min": 3}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     ticket_ids = [t["id"] for t in payload["tickets"]]
     # Les tickets avec 3, 5, 10 lignes doivent être présents
-    assert any(str(tickets[2].id) in ticket_ids)  # 3 lignes
-    assert any(str(tickets[3].id) in ticket_ids)  # 5 lignes
-    assert any(str(tickets[4].id) in ticket_ids)  # 10 lignes
+    assert str(tickets[2].id) in ticket_ids  # 3 lignes
+    assert str(tickets[3].id) in ticket_ids  # 5 lignes
+    assert str(tickets[4].id) in ticket_ids  # 10 lignes
     
     # Test: filtre par nombre de lignes max
     params = {"lignes_max": 3}
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     ticket_ids = [t["id"] for t in payload["tickets"]]
     # Les tickets avec 1, 2, 3 lignes doivent être présents
-    assert any(str(tickets[0].id) in ticket_ids)  # 1 ligne
-    assert any(str(tickets[1].id) in ticket_ids)  # 2 lignes
-    assert any(str(tickets[2].id) in ticket_ids)  # 3 lignes
+    assert str(tickets[0].id) in ticket_ids  # 1 ligne
+    assert str(tickets[1].id) in ticket_ids  # 2 lignes
+    assert str(tickets[2].id) in ticket_ids  # 3 lignes
 
 
 def test_combined_advanced_filters(admin_client, db_session, test_benevole, test_poste, test_categories):
@@ -292,7 +295,7 @@ def test_combined_advanced_filters(admin_client, db_session, test_benevole, test
         "lignes_min": 2,
         "lignes_max": 5,
     }
-    r = admin_client.get("/v1/reception/tickets", params=params)
+    r = admin_client.get(f"{_V1}/reception/tickets", params=params)
     assert r.status_code == 200
     payload = r.json()
     # Le ticket doit être présent

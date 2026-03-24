@@ -1,5 +1,5 @@
 """
-Tests pour l'endpoint GET /v1/reception/tickets avec filtre de statut
+Tests pour l'endpoint GET {API_V1_STR}/reception/tickets avec filtre de statut.
 """
 import pytest
 from fastapi.testclient import TestClient
@@ -10,10 +10,13 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.core.security import hash_password
+from recyclic_api.core.config import settings
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 class TestReceptionTicketsStatusFilter:
-    """Tests pour le filtre de statut sur l'endpoint GET /v1/reception/tickets"""
+    """Tests pour le filtre de statut sur GET reception/tickets (préfixe API_V1_STR)."""
 
     def test_get_tickets_without_status_filter(self, client: TestClient, db_session: Session):
         """Test que l'endpoint retourne tous les tickets quand aucun filtre de statut n'est fourni."""
@@ -55,7 +58,7 @@ class TestReceptionTicketsStatusFilter:
         db_session.commit()
 
         # Authentifier l'utilisateur
-        login_response = client.post("/api/v1/auth/login", json={
+        login_response = client.post(f"{_V1}/auth/login", json={
             "username": "test@example.com",
             "password": "testpassword"
         })
@@ -63,8 +66,11 @@ class TestReceptionTicketsStatusFilter:
         token = login_response.json()["access_token"]
         client.headers["Authorization"] = f"Bearer {token}"
 
-        # Appeler l'endpoint sans filtre
-        response = client.get("/api/v1/reception/tickets")
+        # Appeler l'endpoint sans filtre (tickets sans lignes : include_empty=true)
+        response = client.get(
+            f"{_V1}/reception/tickets",
+            params={"include_empty": True},
+        )
 
         # Vérifications
         assert response.status_code == 200
@@ -119,7 +125,7 @@ class TestReceptionTicketsStatusFilter:
         db_session.commit()
 
         # Authentifier l'utilisateur
-        login_response = client.post("/api/v1/auth/login", json={
+        login_response = client.post(f"{_V1}/auth/login", json={
             "username": "test@example.com",
             "password": "testpassword"
         })
@@ -127,8 +133,10 @@ class TestReceptionTicketsStatusFilter:
         token = login_response.json()["access_token"]
         client.headers["Authorization"] = f"Bearer {token}"
 
-        # Appeler l'endpoint avec filtre status=opened
-        response = client.get("/api/v1/reception/tickets?status=opened")
+        response = client.get(
+            f"{_V1}/reception/tickets",
+            params={"status": "opened", "include_empty": True},
+        )
 
         # Vérifications
         assert response.status_code == 200
@@ -183,7 +191,7 @@ class TestReceptionTicketsStatusFilter:
         db_session.commit()
 
         # Authentifier l'utilisateur
-        login_response = client.post("/api/v1/auth/login", json={
+        login_response = client.post(f"{_V1}/auth/login", json={
             "username": "test@example.com",
             "password": "testpassword"
         })
@@ -191,8 +199,10 @@ class TestReceptionTicketsStatusFilter:
         token = login_response.json()["access_token"]
         client.headers["Authorization"] = f"Bearer {token}"
 
-        # Appeler l'endpoint avec filtre status=closed
-        response = client.get("/api/v1/reception/tickets?status=closed")
+        response = client.get(
+            f"{_V1}/reception/tickets",
+            params={"status": "closed", "include_empty": True},
+        )
 
         # Vérifications
         assert response.status_code == 200
@@ -240,7 +250,7 @@ class TestReceptionTicketsStatusFilter:
         db_session.commit()
 
         # Authentifier l'utilisateur
-        login_response = client.post("/api/v1/auth/login", json={
+        login_response = client.post(f"{_V1}/auth/login", json={
             "username": "test@example.com",
             "password": "testpassword"
         })
@@ -248,8 +258,10 @@ class TestReceptionTicketsStatusFilter:
         token = login_response.json()["access_token"]
         client.headers["Authorization"] = f"Bearer {token}"
 
-        # Appeler l'endpoint avec un statut invalide
-        response = client.get("/api/v1/reception/tickets?status=invalid_status")
+        response = client.get(
+            f"{_V1}/reception/tickets",
+            params={"status": "invalid_status", "include_empty": True},
+        )
 
         # Vérifications
         assert response.status_code == 200
@@ -261,8 +273,8 @@ class TestReceptionTicketsStatusFilter:
 
     def test_get_tickets_requires_authentication(self, client: TestClient):
         """Test que l'endpoint nécessite une authentification."""
-        response = client.get("/api/v1/reception/tickets")
-        assert response.status_code == 401
+        response = client.get(f"{_V1}/reception/tickets")
+        assert response.status_code == 403  # comme les autres tests reception (pas de token)
 
     def test_get_tickets_with_pagination_and_status_filter(self, client: TestClient, db_session: Session):
         """Test que la pagination fonctionne correctement avec le filtre de statut."""
@@ -298,7 +310,7 @@ class TestReceptionTicketsStatusFilter:
         db_session.commit()
 
         # Authentifier l'utilisateur
-        login_response = client.post("/api/v1/auth/login", json={
+        login_response = client.post(f"{_V1}/auth/login", json={
             "username": "test@example.com",
             "password": "testpassword"
         })
@@ -306,8 +318,15 @@ class TestReceptionTicketsStatusFilter:
         token = login_response.json()["access_token"]
         client.headers["Authorization"] = f"Bearer {token}"
 
-        # Appeler l'endpoint avec pagination et filtre
-        response = client.get("/api/v1/reception/tickets?status=opened&page=1&per_page=3")
+        response = client.get(
+            f"{_V1}/reception/tickets",
+            params={
+                "status": "opened",
+                "page": 1,
+                "per_page": 3,
+                "include_empty": True,
+            },
+        )
 
         # Vérifications
         assert response.status_code == 200

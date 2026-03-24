@@ -2560,6 +2560,47 @@
 
 ---
 
+## Lot 2AM — Realignement des tests `reception` sur le contrat reel
+
+**Statut:** ferme  
+**Theme:** remettre en coherence les suites `status_filter` et `advanced_filters` avec le prefixe d'API, l'auth stricte et le comportement `include_empty` de `GET /reception/tickets`
+
+### Actions
+- Alignement de `tests/test_reception_tickets_advanced_filters.py` sur `settings.API_V1_STR` au lieu d'un chemin fixe `/v1`.
+- Alignement de `tests/test_reception_tickets_status_filter.py` sur `settings.API_V1_STR`.
+- Ajout de `include_empty=true` dans les scenarios qui creent des tickets sans lignes mais attendent leur presence dans la liste.
+- Alignement du test sans token sur le contrat reel de la zone `reception` : `403` au lieu de `401`.
+- Correction d'assertions erronees de type `any(bool)` dans `tests/test_reception_tickets_advanced_filters.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/tests/test_reception_tickets_status_filter.py`
+- `recyclique-1.4.4/api/tests/test_reception_tickets_advanced_filters.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_tickets_status_filter.py`
+  - `tests/test_reception_tickets_advanced_filters.py`
+- Resultat Docker/PostgreSQL :
+  - **11 tests passes**
+- Validation Docker/PostgreSQL consolidee de la zone `reception` :
+  - `tests/test_reception_lists_presentation_arch04.py`
+  - `tests/test_reception_lignes_export_presentation_arch04.py`
+  - `tests/test_reception_ticket_export_presentation_arch04.py`
+  - `tests/test_reception_reports.py`
+  - `tests/test_reception_tickets_history.py`
+  - `tests/test_reception_tickets_status_filter.py`
+  - `tests/test_reception_tickets_advanced_filters.py`
+- Resultat Docker/PostgreSQL consolide :
+  - **59 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- La zone `reception` est maintenant alignee sur une campagne PostgreSQL consolidee.
+- Les dettes de tests immediates sur `status_filter` et `advanced_filters` sont resolues.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2574,6 +2615,7 @@
 - **Vague 8:** cinquieme pilote `ARCH-04` sur l'export ticket `reception` ferme avec reserves acceptees
 - **Vague 8:** sixieme pilote `ARCH-04` sur l'export CSV des lignes `reception` ferme avec reserves acceptees
 - **Vague 8:** septieme pilote `ARCH-04` sur la presentation des listes JSON `reception` ferme avec reserves acceptees
+- **Vague 8:** nettoyage des tests `reception` aligne et valide en PostgreSQL
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2582,7 +2624,8 @@
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** traiter les tests `reception` encore desalignes (`status_filter`, `advanced_filters`) avant de sortir de cette zone, Telegram etant explicitement reporte
+- **Lots fermes:** ajout du lot `2AM` (realignement des tests `reception`)
+- **Prochaine etape logique:** sortir de la zone `reception` et reprendre le prochain axe backend restant hors Telegram
 
 ---
 
