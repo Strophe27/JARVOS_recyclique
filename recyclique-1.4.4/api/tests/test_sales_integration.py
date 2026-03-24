@@ -1109,8 +1109,8 @@ class TestSalesIntegration:
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
 
-        # Doit retourner une erreur de validation
-        assert response.status_code == 422
+        # Erreur métier (somme des paiements < total) → 400, pas 422 validation schéma
+        assert response.status_code == 400
         assert "paiements" in response.json()["detail"].lower() or "payments" in response.json()["detail"].lower()
 
     def test_create_sale_backward_compatibility_single_payment(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):

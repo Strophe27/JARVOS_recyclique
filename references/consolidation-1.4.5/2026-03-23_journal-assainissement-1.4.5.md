@@ -2218,6 +2218,57 @@
 
 ---
 
+## Lot 2AF — Pilote ARCH-04 sur `create_sale`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire la creation de vente hors du routeur `sales.py` vers un service applicatif dedie, sans changer le contrat HTTP de `POST /sales/`
+
+### Actions
+- Creation de `recyclic_api/services/sale_service.py` avec `SaleService.create_sale()` pour porter :
+  - validation metier du flux vente
+  - creation `Sale`, `SaleItem`, `PaymentTransaction`
+  - mise a jour des agregats de session caisse
+  - rechargement ORM de la vente pour la reponse
+- Amincissement de `endpoints/sales.py` :
+  - auth Bearer / orchestration legere seulement
+  - delegation de la logique metier a `SaleService`
+- Nettoyage de `endpoints/transactions.py` pour ne plus reutiliser directement le handler FastAPI `create_sale`.
+- Ajustement du schema `SaleResponse` pour accepter `sale_date: null` quand la donnee SQL est effectivement nullable.
+- Fix des horodatages `created_at` / `updated_at` a la creation cote service pour eviter les timestamps identiques sous transaction PostgreSQL.
+- Ajout du fichier cible `tests/test_sale_service.py` et adaptation de `tests/test_sales_integration.py` a un contrat coherent sur les paiements insuffisants.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/sales.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/transactions.py`
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/sale.py`
+- `recyclique-1.4.4/api/tests/test_sale_service.py`
+- `recyclique-1.4.4/api/tests/test_sales_integration.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_sale_service.py`
+  - `tests/test_sales_integration.py`
+- Resultat local SQLite :
+  - non conclusif (schema incomplet pour les tests ventes)
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_sale_service.py`
+  - `tests/test_sales_integration.py`
+- Resultat Docker/PostgreSQL :
+  - **23 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- La logique lourde de creation de vente n'est plus inline dans `sales.py`.
+- Le contrat HTTP de `POST /sales/` est preserve sur le flux principal valide par PostgreSQL.
+- Reserves acceptees :
+  - `SaleService` leve encore des `HTTPException` (pilote `ARCH-04`, pas encore `ARCH-03`)
+  - `POST /transactions/` reste un endpoint heritage qui retourne explicitement `401` sans flux metier utile
+  - la transaction reste en deux temps (vente puis agregats session), comme avant
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2225,6 +2276,7 @@
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
 - **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore`, `ARCH-03/category_soft_delete`, `ARCH-03/category_create`, `ARCH-03/category_update` et la passe DRY HTTP sont fermes
+- **Vague 8:** premier pilote `ARCH-04` sur `create_sale` ferme avec reserves acceptees
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2232,8 +2284,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** ouvrir un pilote `ARCH-04` cible sur une route lourde backend, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-04` avec un second pilote borne (exports CSV reception ou enrichissement `cash_sessions`), Telegram etant explicitement reporte
 
 ---
 

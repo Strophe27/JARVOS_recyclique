@@ -7,12 +7,7 @@ from recyclic_api.core.auth import get_current_user
 from recyclic_api.models.user import User
 from recyclic_api.services.preset_management import PresetManagementService
 from recyclic_api.schemas.sale import SaleCreate, SaleResponse
-from recyclic_api.services.cash_session_service import CashSessionService
 from recyclic_api.core.logging import log_transaction_event
-
-# Import the sale creation function (assuming it exists)
-# This would need to be adapted based on the actual sale creation logic
-from .sales import create_sale
 
 router = APIRouter()
 
@@ -50,9 +45,12 @@ async def create_transaction(
                 detail=f"Preset button with ID '{transaction_data.preset_id}' not found or inactive"
             )
 
-    # For now, delegate to the existing sale creation logic
-    # Story 1.1.2: preset_id et notes sont maintenant sur sale_items (par item individuel)
-    return create_sale(transaction_data, db, None)
+    # Pas de Bearer sur cet endpoint : même contrat qu'avant (create_sale recevait credentials=None → 401).
+    raise HTTPException(
+        status_code=401,
+        detail="Unauthorized",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 @router.post("/log")

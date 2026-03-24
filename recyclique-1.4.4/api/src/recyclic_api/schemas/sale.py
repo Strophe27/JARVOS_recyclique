@@ -98,7 +98,8 @@ class SaleItemWeightUpdate(BaseModel):
 
 class SaleResponse(SaleBase):
     id: str
-    sale_date: datetime  # Story B52-P3: Date réelle du ticket (date du cahier)
+    # Aligné sur sales.sale_date (nullable) : ventes historiques ou créées hors API peuvent être NULL.
+    sale_date: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     items: List[SaleItemResponse] = []
