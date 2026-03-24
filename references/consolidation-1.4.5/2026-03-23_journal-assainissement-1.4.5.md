@@ -1601,13 +1601,73 @@
 
 ---
 
+## Lot 1S — Pilote ARCH-03 sur fermeture `cash_sessions`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir les regles metier de fermeture de session de caisse du bord HTTP, en preservant le contrat existant de fermeture
+
+### Actions
+- Introduction de `get_session_by_id_or_raise()` dans `CashSessionService` pour centraliser :
+  - `NotFoundError` sur session absente
+  - `ValidationError` sur `session_id` mal forme
+- Introduction de `validate_session_close()` pour porter cote service :
+  - `ConflictError` si la session est deja fermee
+  - `ValidationError` si un commentaire manque alors qu'un ecart depasse la tolerance
+  - normalisation des commentaires vides / espaces
+- Refactor de `close_session_with_amounts()` pour reutiliser la validation metier et accepter un `preview` deja calcule afin d'eviter la double validation.
+- Simplification de `POST /cash-sessions/{session_id}/close` :
+  - l'autorisation reste cote endpoint
+  - la validation metier et les messages de fermeture sont desormais delegates au service
+  - traduction explicite de `NotFoundError` -> `404`, `ConflictError` -> `400`, `ValidationError` -> `400`
+- Ajout d'un fichier de tests unitaire cible `test_cash_session_close_arch03_domain_errors.py` pour figer :
+  - session introuvable
+  - `session_id` invalide
+  - session deja fermee
+  - commentaire manquant / vide en cas d'ecart
+- Realignement de `test_cash_session_close.py` sur `settings.API_V1_STR` et explicitation PostgreSQL-only.
+- Extension des tests d'integration de fermeture avec :
+  - `403` sur fermeture par un autre operateur `USER`
+  - `400` sur `session_id` invalide
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_session_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_close_arch03_domain_errors.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_close.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_session_close_arch03_domain_errors.py`
+  - `tests/test_cash_session_close.py`
+- Resultat local :
+  - **5 tests passes** + **10 skips PostgreSQL-only**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_close_arch03_domain_errors.py`
+  - `tests/test_cash_session_close.py`
+- Resultat Docker :
+  - **15 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- La fermeture `cash_sessions` suit maintenant une frontiere `ARCH-03` explicite :
+  - service = validation / erreurs metier de fermeture
+  - endpoint = autorisation / traduction HTTP / orchestration
+- Le contrat HTTP utile de fermeture est verrouille explicitement sur `200`, `400`, `403`, `404`.
+- Le cas `session_id` invalide ne tombe plus en erreur serveur sur le flux close.
+- Reserves acceptees :
+  - `test_cash_session_close.py` reste un fichier d'integration PostgreSQL-only
+  - le flux lit encore la session deux fois (endpoint puis service), ce qui laisse une fenetre de course theorique mais non bloquante a ce stade
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et le pilote `ARCH-03/cash_sessions/create` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create` et `ARCH-03/cash_sessions/close` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1615,8 +1675,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** prolonger `ARCH-03` sur `cash_sessions`, idealement par la fermeture de session et les helpers adjacents avant une eventuelle passe de reduction de repetition cote endpoints
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** prolonger `ARCH-03` sur les helpers et endpoints adjacents de `cash_sessions` (`current`, detail, step update) ou ouvrir une petite passe de reduction de repetition sur les traductions HTTP des verticales deja migrees
 
 ---
 

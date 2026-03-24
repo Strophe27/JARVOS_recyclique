@@ -795,17 +795,7 @@ async def close_cash_session(
     service = CashSessionService(db)
     
     try:
-        session = service.get_session_by_id(session_id)
-        if not session:
-            log_cash_session_closing(
-                user_id=str(current_user.id),
-                username=current_user.username or "Unknown",
-                session_id=session_id,
-                closing_amount=0,
-                success=False,
-                db=db
-            )
-            raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
+        session = service.get_session_by_id_or_raise(session_id)
         
         # Vérifier que l'utilisateur peut fermer cette session
         if (current_user.role == UserRole.USER and 
@@ -819,25 +809,15 @@ async def close_cash_session(
                 db=db
             )
             raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
-        
-        if session.status == CashSessionStatus.CLOSED:
-            log_cash_session_closing(
-                user_id=str(current_user.id),
-                username=current_user.username or "Unknown",
-                session_id=session_id,
-                closing_amount=session.current_amount,
-                success=False,
-                db=db
-            )
-            raise HTTPException(status_code=400, detail="La session est déjà fermée")
-        
-        # Valider que le commentaire est fourni si il y a un écart.
-        # La formule de clôture reste centralisée dans le service.
-        closing_preview = service.get_closing_preview(session, close_data.actual_amount)
+
+        closing_preview = service.validate_session_close(
+            session,
+            close_data.actual_amount,
+            close_data.variance_comment,
+        )
         theoretical_amount = closing_preview["theoretical_amount"]
         variance = closing_preview["variance"]
-        
-        # B50-P10: Logs de debug pour diagnostiquer les problèmes de variance
+
         logger.info(
             f"[close_cash_session] Calcul de variance - "
             f"session_id={session_id}, "
@@ -851,34 +831,13 @@ async def close_cash_session(
             f"has_comment={bool(close_data.variance_comment)}"
         )
         
-        # B50-P10: Tolérance augmentée à 5 centimes pour gérer les problèmes d'arrondi
-        # et de précision, surtout pour les bénévoles qui utilisent le localStorage
-        if abs(variance) > CLOSE_VARIANCE_TOLERANCE and not close_data.variance_comment:
-            log_cash_session_closing(
-                user_id=str(current_user.id),
-                username=current_user.username or "Unknown",
-                session_id=session_id,
-                closing_amount=close_data.actual_amount,
-                success=False,
-                db=db
-            )
-            # B50-P10: Message d'erreur amélioré avec les valeurs calculées
-            error_detail = (
-                f"Un commentaire est obligatoire en cas d'écart entre le montant théorique "
-                f"({theoretical_amount:.2f}€) et le montant physique ({close_data.actual_amount:.2f}€). "
-                f"Écart: {variance:+.2f}€"
-            )
-            raise HTTPException(
-                status_code=400, 
-                detail=error_detail
-            )
-        
         # B44-P3: Fermer la session avec contrôle des montants
         # Si la session est vide, elle sera supprimée au lieu d'être fermée
         closed_session = service.close_session_with_amounts(
             session_id, 
             close_data.actual_amount, 
-            close_data.variance_comment
+            close_data.variance_comment,
+            preview=closing_preview,
         )
         
         # B44-P3: Si la session était vide, elle a été supprimée
@@ -974,6 +933,36 @@ async def close_cash_session(
         })
         return response_model
 
+    except NotFoundError as e:
+        log_cash_session_closing(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            closing_amount=0,
+            success=False,
+            db=db
+        )
+        raise HTTPException(status_code=404, detail=str(e))
+    except ConflictError as e:
+        log_cash_session_closing(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            closing_amount=close_data.actual_amount,
+            success=False,
+            db=db
+        )
+        raise HTTPException(status_code=400, detail=e.detail)
+    except ValidationError as e:
+        log_cash_session_closing(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            closing_amount=close_data.actual_amount,
+            success=False,
+            db=db
+        )
+        raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:

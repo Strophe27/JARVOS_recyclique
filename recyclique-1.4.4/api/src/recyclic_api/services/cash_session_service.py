@@ -147,6 +147,16 @@ class CashSessionService:
         """Récupère une session par son ID."""
         sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
         return self.db.query(CashSession).filter(CashSession.id == sid).first()
+
+    def get_session_by_id_or_raise(self, session_id: str) -> CashSession:
+        """Récupère une session ou lève une erreur métier si elle est absente."""
+        try:
+            session = self.get_session_by_id(session_id)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("session_id invalide") from exc
+        if session is None:
+            raise NotFoundError("Session de caisse non trouvée")
+        return session
     
     def get_session_with_details(self, session_id: str) -> Optional[CashSession]:
         """Récupère une session avec toutes ses relations (opérateur, site, ventes)."""
@@ -707,7 +717,31 @@ class CashSessionService:
             "variance": variance,
         }
 
-    def close_session_with_amounts(self, session_id: str, actual_amount: float, variance_comment: str = None) -> Optional[CashSession]:
+    def validate_session_close(self, session: CashSession, actual_amount: float, variance_comment: str = None) -> Dict[str, float]:
+        """Valide la fermeture métier d'une session et retourne le preview calculé."""
+        if session.status == CashSessionStatus.CLOSED:
+            raise ConflictError("La session est déjà fermée")
+
+        preview = self.get_closing_preview(session, actual_amount)
+        variance = preview["variance"]
+        normalized_comment = variance_comment.strip() if variance_comment else ""
+        if abs(variance) > CLOSE_VARIANCE_TOLERANCE and not normalized_comment:
+            theoretical_amount = preview["theoretical_amount"]
+            raise ValidationError(
+                f"Un commentaire est obligatoire en cas d'écart entre le montant théorique "
+                f"({theoretical_amount:.2f}€) et le montant physique ({actual_amount:.2f}€). "
+                f"Écart: {variance:+.2f}€"
+            )
+
+        return preview
+
+    def close_session_with_amounts(
+        self,
+        session_id: str,
+        actual_amount: float,
+        variance_comment: str = None,
+        preview: Optional[Dict[str, float]] = None,
+    ) -> Optional[CashSession]:
         """B44-P3: Ferme une session de caisse avec contrôle des montants.
         
         Si la session est vide (aucune transaction), elle est supprimée au lieu d'être fermée.
@@ -720,12 +754,7 @@ class CashSessionService:
         Returns:
             La session fermée, ou None si la session était vide et a été supprimée
         """
-        session = self.get_session_by_id(session_id)
-        if not session:
-            return None
-        
-        if session.status == CashSessionStatus.CLOSED:
-            return session
+        session = self.get_session_by_id_or_raise(session_id)
         
         # B44-P3: Vérifier si la session est vide avant de la fermer
         if self.is_session_empty(session):
@@ -734,10 +763,11 @@ class CashSessionService:
             return None
         
         # Session avec transactions : fermer normalement
-        preview = self.get_closing_preview(session, actual_amount)
+        normalized_comment = variance_comment.strip() if variance_comment else None
+        preview = preview or self.validate_session_close(session, actual_amount, normalized_comment)
         
         # Utiliser la nouvelle méthode du modèle avec le montant théorique calculé
-        session.close_with_amounts(actual_amount, variance_comment, preview["theoretical_amount"])
+        session.close_with_amounts(actual_amount, normalized_comment, preview["theoretical_amount"])
         
         self.db.commit()
         self.db.refresh(session)

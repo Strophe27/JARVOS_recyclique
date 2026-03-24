@@ -1,4 +1,5 @@
 import pytest
+import os
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from pathlib import Path
@@ -12,6 +13,14 @@ from recyclic_api.models.site import Site
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.config import settings
 from recyclic_api.utils.report_tokens import verify_download_token
+
+_V1 = settings.API_V1_STR.rstrip("/")
+_TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "")
+
+pytestmark = pytest.mark.skipif(
+    not _TEST_DB_URL.startswith("postgresql"),
+    reason="Les tests de fermeture de cash session nécessitent PostgreSQL (site/session/report réels).",
+)
 
 @pytest.fixture
 def test_user(client, db_session: Session):
@@ -117,7 +126,7 @@ class TestCashSessionClose:
         
         # Appel de l'endpoint
         response = client.post(
-            f"/api/v1/cash-sessions/{test_cash_session.id}/close",
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
             json=close_data,
             headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
         )
@@ -154,7 +163,7 @@ class TestCashSessionClose:
         
         # Appel de l'endpoint
         response = client.post(
-            f"/api/v1/cash-sessions/{test_cash_session.id}/close",
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
             json=close_data,
             headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
         )
@@ -191,7 +200,7 @@ class TestCashSessionClose:
         
         # Appel de l'endpoint
         response = client.post(
-            f"/api/v1/cash-sessions/{test_cash_session.id}/close",
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
             json=close_data,
             headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
         )
@@ -211,7 +220,7 @@ class TestCashSessionClose:
         
         # Appel de l'endpoint
         response = client.post(
-            f"/api/v1/cash-sessions/{test_cash_session.id}/close",
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
             json=close_data,
             headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
         )
@@ -233,7 +242,7 @@ class TestCashSessionClose:
         
         # Appel de l'endpoint
         response = client.post(
-            f"/api/v1/cash-sessions/{test_cash_session.id}/close",
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
             json=close_data,
             headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
         )
@@ -254,7 +263,7 @@ class TestCashSessionClose:
         # Appel de l'endpoint avec un ID inexistant
         fake_id = "00000000-0000-0000-0000-000000000000"
         response = client.post(
-            f"/api/v1/cash-sessions/{fake_id}/close",
+            f"{_V1}/cash-sessions/{fake_id}/close",
             json=close_data,
             headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
         )
@@ -272,12 +281,51 @@ class TestCashSessionClose:
         
         # Appel de l'endpoint sans token
         response = client.post(
-            f"/api/v1/cash-sessions/{test_cash_session.id}/close",
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
             json=close_data
         )
         
         # Vérifications - doit échouer
         assert response.status_code == 401
+
+    def test_close_session_other_operator_forbidden(self, client: TestClient, db_session: Session, test_cash_session: CashSession):
+        """Test qu'un autre USER ne peut pas fermer la session d'un collègue."""
+        from recyclic_api.core.security import hash_password
+
+        other_user = User(
+            telegram_id="test_user_other_close",
+            username="test_cashier_other",
+            email="other-close@example.com",
+            hashed_password=hash_password("testpassword123"),
+            first_name="Other",
+            last_name="Cashier",
+            role=UserRole.USER,
+            status=UserStatus.APPROVED,
+            is_active=True,
+        )
+        db_session.add(other_user)
+        db_session.commit()
+        db_session.refresh(other_user)
+
+        response = client.post(
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
+            json={"actual_amount": 75.0, "variance_comment": None},
+            headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(other_user.id)})}"},
+        )
+
+        assert response.status_code == 403
+        assert "accès non autorisé" in response.json()["detail"].lower()
+
+    def test_close_session_invalid_uuid_fails(self, client: TestClient, test_user: User):
+        """Test de fermeture avec un UUID invalide."""
+        response = client.post(
+            f"{_V1}/cash-sessions/not-a-uuid/close",
+            json={"actual_amount": 75.0, "variance_comment": None},
+            headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"},
+        )
+
+        assert response.status_code == 400
+        assert "session_id invalide" in response.json()["detail"].lower()
 
     def test_close_session_tolerance_for_small_variance(self, client: TestClient, db_session: Session, test_cash_session: CashSession, test_user: User, report_environment):
         """Test de fermeture avec un petit écart (tolérance de 1 centime)."""
@@ -289,7 +337,7 @@ class TestCashSessionClose:
         
         # Appel de l'endpoint
         response = client.post(
-            f"/api/v1/cash-sessions/{test_cash_session.id}/close",
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
             json=close_data,
             headers={"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
         )
