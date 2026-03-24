@@ -3,7 +3,8 @@ Tests pour Story B52-P3: Correction bug date des tickets (sale_date)
 
 Vérifie que :
 1. Pour sessions normales : sale_date = created_at (même valeur)
-2. Pour sessions différées : sale_date = opened_at (date du cahier), created_at = NOW() (date de saisie)
+2. Pour sessions différées : sale_date = opened_at et created_at alignés sur opened_at
+   (cahier différé B44-P1 ; horodatage de saisie = date du cahier)
 3. Les données existantes sont correctement migrées (sale_date = created_at)
 """
 
@@ -11,6 +12,7 @@ import pytest
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from recyclic_api.main import app
@@ -233,7 +235,7 @@ class TestSaleDateNormalSession:
 
 
 class TestSaleDateDeferredSession:
-    """Tests pour les sessions différées : sale_date = opened_at, created_at = NOW()"""
+    """Tests pour les sessions différées : sale_date et created_at alignés sur opened_at."""
 
     def test_create_sale_in_deferred_session_sale_date_equals_opened_at(
         self, 
@@ -243,7 +245,7 @@ class TestSaleDateDeferredSession:
         test_site: Site, 
         test_register: CashRegister
     ):
-        """Test création vente dans session différée : sale_date = opened_at, created_at = NOW()."""
+        """Session différée : sale_date et created_at = opened_at (date du cahier)."""
         # Créer session différée (7 jours avant)
         past_date = datetime.now(timezone.utc) - timedelta(days=7)
         
@@ -259,13 +261,6 @@ class TestSaleDateDeferredSession:
         )
         assert session_response.status_code == 201
         session_id = session_response.json()["id"]
-        
-        # Attendre un peu pour s'assurer que created_at sera différent
-        import time
-        time.sleep(0.1)
-        
-        # Noter le moment avant création de la vente
-        before_sale = datetime.now(timezone.utc)
         
         # Créer une vente
         sale_response = admin_client.post(
@@ -287,8 +282,6 @@ class TestSaleDateDeferredSession:
             }
         )
         
-        after_sale = datetime.now(timezone.utc)
-        
         assert sale_response.status_code == 200
         sale_data = sale_response.json()
         
@@ -298,16 +291,14 @@ class TestSaleDateDeferredSession:
         
         sale_date = datetime.fromisoformat(sale_data["sale_date"].replace("Z", "+00:00"))
         created_at = datetime.fromisoformat(sale_data["created_at"].replace("Z", "+00:00"))
-        session_opened_at = datetime.fromisoformat(past_date.isoformat().replace("Z", "+00:00"))
+        session_opened_at = datetime.fromisoformat(
+            session_response.json()["opened_at"].replace("Z", "+00:00")
+        )
         
-        # Pour session différée : sale_date = opened_at (date du cahier)
+        # Session différée : sale_date et created_at alignés sur opened_at
         assert abs((sale_date - session_opened_at).total_seconds()) < 1
-        
-        # created_at doit être NOW() (date de saisie)
-        assert before_sale <= created_at <= after_sale
-        
-        # sale_date et created_at doivent être différents (plus de 2 minutes d'écart)
-        assert abs((sale_date - created_at).total_seconds()) > 120
+        assert abs((created_at - session_opened_at).total_seconds()) < 1
+        assert abs((sale_date - created_at).total_seconds()) < 1
 
 
 class TestSaleDateMigration:
@@ -347,7 +338,7 @@ class TestSaleDateMigration:
         
         # Simuler la migration : sale_date = created_at pour les ventes existantes
         db_session.execute(
-            "UPDATE sales SET sale_date = created_at WHERE sale_date IS NULL"
+            text("UPDATE sales SET sale_date = created_at WHERE sale_date IS NULL")
         )
         db_session.commit()
         

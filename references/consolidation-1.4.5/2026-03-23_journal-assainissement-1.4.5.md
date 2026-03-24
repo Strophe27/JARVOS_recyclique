@@ -2269,6 +2269,63 @@
 
 ---
 
+## Lot 2AG — Pilote ARCH-04 sur `create_cash_session`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire l'orchestration d'ouverture de session caisse hors de `cash_sessions.py`, avec validation conjointe du flux de ventes differees qui en depend
+
+### Actions
+- Creation de `recyclic_api/application/cash_session_opening.py` pour porter :
+  - permissions de saisie differée
+  - garde "session deja ouverte" sur le flux non differe
+  - appel a `CashSessionService.create_session`
+  - audits `log_cash_session_opening`
+  - traduction des erreurs domaine vers HTTP
+  - fallback de serialisation de reponse
+- Extraction de `enrich_session_response` vers `recyclic_api/services/cash_session_response_enrichment.py` pour reutilisation sans import circulaire.
+- Amincissement de `POST /cash-sessions/` dans `endpoints/cash_sessions.py` au profit du use case `open_cash_session`.
+- Ajustement transverse de `SaleService.create_sale()` et du schema `SaleResponse` pour conserver le contrat des ventes differees :
+  - `sale_date`, `created_at`, `updated_at` alignes sur `opened_at` si la session est consideree comme differee
+  - `sale_date` nullable cote schema quand la donnee historique l'est reellement
+- Ajout du fichier cible `tests/test_cash_session_create_arch04.py` et adaptation de `tests/test_b52_p3_sale_date.py` pour verrouiller l'alignement temporel des ventes differees.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/application/__init__.py`
+- `recyclique-1.4.4/api/src/recyclic_api/application/cash_session_opening.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_session_response_enrichment.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/sale.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_create_arch04.py`
+- `recyclique-1.4.4/api/tests/test_b52_p3_sale_date.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_session_create_arch04.py`
+  - `tests/test_cash_session_create_arch03.py`
+- Resultat local :
+  - **8 tests passes** + **1 skip**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_create_arch04.py`
+  - `tests/test_cash_session_create_arch03.py`
+  - `tests/test_cash_session_deferred.py`
+  - `tests/test_sale_service.py`
+  - `tests/test_b52_p3_sale_date.py`
+  - `tests/test_sales_integration.py`
+- Resultat Docker/PostgreSQL :
+  - **46 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- L'ouverture de session caisse n'est plus inline dans le routeur.
+- Le flux des ventes differees reste coherent avec `opened_at` apres extraction.
+- Reserves acceptees :
+  - la notion de session differee reste fondee sur un seuil de 24 h, pas sur le seul fait de fournir `opened_at`
+  - `_CASH_DOMAIN_HTTP` reste duplique entre le routeur et le use case pour eviter un refactor plus large dans ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2277,6 +2334,7 @@
 - **Vague 4:** terminee pour cette passe
 - **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore`, `ARCH-03/category_soft_delete`, `ARCH-03/category_create`, `ARCH-03/category_update` et la passe DRY HTTP sont fermes
 - **Vague 8:** premier pilote `ARCH-04` sur `create_sale` ferme avec reserves acceptees
+- **Vague 8:** second pilote `ARCH-04` sur `create_cash_session` ferme avec reserves acceptees
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2284,8 +2342,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-04` avec un second pilote borne (exports CSV reception ou enrichissement `cash_sessions`), Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-04` avec un troisieme pilote borne (exports CSV reception ou enrichissement `cash_sessions`), Telegram etant explicitement reporte
 
 ---
 

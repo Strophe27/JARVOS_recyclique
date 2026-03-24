@@ -2,21 +2,18 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timezone
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user, require_role, require_role_strict
 from recyclic_api.core.audit import (
-    log_cash_session_opening,
     log_cash_session_closing,
     log_cash_sale,
     log_cash_session_access
 )
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
-from recyclic_api.models.sale import Sale
 from recyclic_api.core.config import settings
 from recyclic_api.core.email_service import EmailAttachment, get_email_service
 from recyclic_api.services.export_service import generate_cash_session_report
@@ -35,6 +32,8 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStepResponse,
     CashSessionStep
 )
+from recyclic_api.application.cash_session_opening import open_cash_session
+from recyclic_api.services.cash_session_response_enrichment import enrich_session_response
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
@@ -51,46 +50,6 @@ _CASH_DOMAIN_HTTP = {
 
 logger = logging.getLogger(__name__)
 
-
-def enrich_session_response(
-    session: CashSession,
-    service: CashSessionService,
-    total_weight_out: Optional[float] = None,
-) -> CashSessionResponse:
-    """Story B49-P1: Enrichit une réponse de session avec les options du register.
-    
-    Args:
-        session: La session de caisse à enrichir
-        service: Le service de session pour récupérer les options
-        
-    Returns:
-        CashSessionResponse enrichi avec register_options et total_donations
-    """
-    # Récupérer les options du register via la méthode publique qui valide avec Pydantic
-    register_options = service.get_register_options(session)
-
-    # B50-P10: Calculer total_donations depuis les ventes de la session
-    from recyclic_api.models.sale import Sale
-
-    total_donations = (
-        service.db.query(func.coalesce(func.sum(Sale.donation), 0))
-        .filter(Sale.cash_session_id == session.id)
-        .scalar()
-        or 0.0
-    )
-    total_donations = float(total_donations)
-
-    # B52-P6: Calculer le poids total sorti si non fourni
-    if total_weight_out is None:
-        total_weight_out, _ = service.get_session_weight_aggregations(session)
-
-    # Construire la réponse avec tous les champs
-    response_data = CashSessionResponse.model_validate(session).model_dump()
-    response_data["register_options"] = register_options
-    response_data["total_donations"] = total_donations  # B50-P10: Ajouter les dons calculés
-    response_data["total_weight_out"] = total_weight_out  # B52-P6: Poids total sorti sur la session
-
-    return CashSessionResponse(**response_data)
 
 @router.post(
     "/", 
@@ -174,147 +133,8 @@ async def create_cash_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
-    service = CashSessionService(db)
-    try:
-        # B50-P4: Vérifier les permissions si opened_at est fourni (saisie différée)
-        # Les admins/super-admins ont toujours accès, mais les USER avec permission caisse.deferred.access aussi
-        if session_data.opened_at is not None:
-            from recyclic_api.core.auth import user_has_permission
-            has_deferred_permission = user_has_permission(current_user, 'caisse.deferred.access', db)
-            is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
-            
-            if not (is_admin or has_deferred_permission):
-                log_cash_session_opening(
-                    user_id=str(current_user.id),
-                    username=current_user.username or "Unknown",
-                    session_id="",
-                    opening_amount=session_data.initial_amount,
-                    success=False,
-                    db=db
-                )
-                raise HTTPException(
-                    status_code=403,
-                    detail="Permission requise: caisse.deferred.access pour créer des sessions avec une date personnalisée (saisie différée)"
-                )
-        
-        # B44-P1: Vérifier qu'il n'y a pas déjà une session ouverte pour cet opérateur
-        # Exception: les sessions différées peuvent être créées même si l'opérateur a une session normale ouverte
-        if session_data.opened_at is None:
-            # Pour les sessions normales, vérifier qu'il n'y a pas déjà une session ouverte
-            existing_session = service.get_open_session_by_operator(session_data.operator_id)
-            if existing_session:
-                log_cash_session_opening(
-                    user_id=str(current_user.id),
-                    username=current_user.username or "Unknown",
-                    session_id="",
-                    opening_amount=session_data.initial_amount,
-                    success=False,
-                    db=db
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="Une session de caisse est déjà ouverte pour cet opérateur"
-                )
-        # Pour les sessions différées, on permet la création même si l'opérateur a une session normale ouverte
-
-        # Créer la nouvelle session avec opened_at si fourni
-        cash_session = service.create_session(
-            operator_id=session_data.operator_id,
-            site_id=session_data.site_id,
-            initial_amount=session_data.initial_amount,
-            register_id=session_data.register_id,
-            opened_at=session_data.opened_at,
-        )
-
-        # Log de l'ouverture de session (avec flag is_deferred si opened_at fourni)
-        is_deferred = session_data.opened_at is not None
-        log_cash_session_opening(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id=str(cash_session.id),
-            opening_amount=session_data.initial_amount,
-            success=True,
-            is_deferred=is_deferred,
-            opened_at=session_data.opened_at,
-            created_at=datetime.now(timezone.utc) if is_deferred else None,
-            db=db
-        )
-
-        # Sérialiser la réponse - utiliser from_orm pour éviter les problèmes de lazy loading
-        try:
-            # Rafraîchir l'objet depuis la DB pour s'assurer que tous les champs sont chargés
-            db.refresh(cash_session)
-            # Story B49-P1: Enrichir avec les options du register
-            response = enrich_session_response(cash_session, service)
-            return response
-        except Exception as serialization_error:
-            logger.error(f"Erreur lors de la sérialisation de la session {cash_session.id}: {serialization_error}", exc_info=True)
-            # Fallback: construire manuellement la réponse
-            return CashSessionResponse(
-                id=str(cash_session.id),
-                operator_id=str(cash_session.operator_id),
-                site_id=str(cash_session.site_id),
-                register_id=str(cash_session.register_id) if cash_session.register_id else None,
-                initial_amount=cash_session.initial_amount,
-                current_amount=cash_session.current_amount,
-                status=cash_session.status,
-                opened_at=cash_session.opened_at,
-                closed_at=cash_session.closed_at,
-                total_sales=cash_session.total_sales,
-                total_items=cash_session.total_items,
-                closing_amount=cash_session.closing_amount,
-                actual_amount=cash_session.actual_amount,
-                variance=cash_session.variance,
-                variance_comment=cash_session.variance_comment
-            )
-    except NotFoundError as e:
-        log_cash_session_opening(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id="",
-            opening_amount=session_data.initial_amount,
-            success=False,
-            db=db
-        )
-        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
-    except ConflictError as e:
-        log_cash_session_opening(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id="",
-            opening_amount=session_data.initial_amount,
-            success=False,
-            db=db
-        )
-        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
-    except ValidationError as e:
-        log_cash_session_opening(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id="",
-            opening_amount=session_data.initial_amount,
-            success=False,
-            db=db
-        )
-        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Log any unexpected error before re-raising
-        logger.error(f"Unexpected error in create_cash_session: {e}", exc_info=True)
-        log_cash_session_opening(
-            user_id=str(current_user.id),
-            username=current_user.username or "Unknown",
-            session_id="",
-            opening_amount=session_data.initial_amount,
-            success=False,
-            db=db
-        )
-        # Ensure proper error response format
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erreur lors de la création de la session de caisse: {str(e)}"
-        )
+    """ARCH-04 : orchestration déléguée à ``application.cash_session_opening``."""
+    return open_cash_session(db=db, current_user=current_user, session_data=session_data)
 
 @router.get(
     "/status/{register_id}",

@@ -56,18 +56,23 @@ class SaleService:
         payments_to_create = self._resolve_payments(sale_data)
 
         now = datetime.now(timezone.utc)
-        sale_date = now
+        session_opened_at = None
+        is_deferred_session = False
         if cash_session.opened_at:
             session_opened_at = cash_session.opened_at
             if session_opened_at.tzinfo is None:
                 session_opened_at = session_opened_at.replace(tzinfo=timezone.utc)
             time_diff_hours = (now - session_opened_at).total_seconds() / 3600
             if time_diff_hours > 24:
-                sale_date = session_opened_at
+                is_deferred_session = True
+
+        sale_date = session_opened_at if is_deferred_session else now
 
         # created_at / updated_at explicites : sous PostgreSQL, server_default now() suit
         # transaction_timestamp() et reste identique pour tous les INSERT d'un même test
-        # (conftest : transaction racine). Ici chaque vente a un horodatage mural distinct.
+        # (conftest : transaction racine). Session normale : horodatage mural distinct (now).
+        # Session différée (cahier) : aligner sur opened_at comme sale_date (B44 / tests PG).
+        timestamps = session_opened_at if is_deferred_session else now
         db_sale = Sale(
             cash_session_id=sale_data.cash_session_id,
             operator_id=operator_id,
@@ -76,8 +81,8 @@ class SaleService:
             payment_method=sale_data.payment_method,
             note=sale_data.note,
             sale_date=sale_date,
-            created_at=now,
-            updated_at=now,
+            created_at=timestamps,
+            updated_at=timestamps,
         )
         db.add(db_sale)
         db.flush()
