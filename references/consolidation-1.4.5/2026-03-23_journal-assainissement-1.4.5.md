@@ -1176,6 +1176,55 @@
 
 ---
 
+## Lot 1K — Pilote ARCH-02 sur fermeture `cash_sessions`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** supprimer la duplication de calcul metier entre endpoint et service sur la cloture de session
+
+### Actions
+- Introduction dans `CashSessionService` de deux helpers cibles :
+  - `get_total_donations_for_session()`
+  - `get_closing_preview()`
+- Realignement de `close_session_with_amounts()` sur `get_closing_preview()` pour reutiliser une seule formule de :
+  - dons
+  - montant theorique
+  - variance
+- Realignement de l'endpoint `close_cash_session` sur cette meme source de verite pour la prevalidation HTTP (commentaire obligatoire et tolerance).
+- Extraction de la tolerance dans `CLOSE_VARIANCE_TOLERANCE`.
+- Ajout d'un test dedie `test_cash_session_close_policy.py` pour figer :
+  - la formule de cloture cote service
+  - la reutilisation de cette formule par `close_session_with_amounts()`
+- Ajout d'un test endpoint cible `test_cash_session_close_arch02.py` aligne sur `settings.API_V1_STR`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_session_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_close_policy.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_close_arch02.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale :
+  - `tests/test_cash_session_close_policy.py`
+- Resultat local :
+  - **2 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_close_policy.py`
+  - `tests/test_cash_session_close_arch02.py`
+  - `tests/test_cash_session_empty.py::TestEmptySessionDeletion::test_close_non_empty_session_closes_normally`
+- Resultat Docker :
+  - **5 tests passes**
+- QA de cloture seule : **fermable avec reserves**
+
+### Resultat
+- Le flux de fermeture `cash_sessions` utilise maintenant une formule unique pour les dons, le montant theorique et la variance.
+- Le service redevient la source de verite du calcul metier de cloture, l'endpoint ne gardant que la prevalidation HTTP et l'orchestration.
+- Reserves acceptees :
+  - le preview de cloture est encore calcule deux fois dans la requete HTTP (endpoint puis service)
+  - la couverture HTTP ciblee ne verrouille pas encore un cas avec dons reellement agreges en base
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1204,7 +1253,7 @@
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site` et deux premiers lots `ARCH-02` (`reception`, `cash_sessions/create`) fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site` et trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1212,8 +1261,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-02` sur la fermeture `cash_sessions` ou ouvrir la bascule pilote `ARCH-03` sur un flux deja assaini
+- **Lots fermes avec reserve:** `1J`, `1K`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** ouvrir un premier pilote `ARCH-03` sur une verticale deja assainie, idealement `reception` avant de toucher a `cash_sessions`
 
 ---
 

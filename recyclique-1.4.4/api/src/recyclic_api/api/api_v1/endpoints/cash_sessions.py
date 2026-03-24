@@ -35,7 +35,7 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStepResponse,
     CashSessionStep
 )
-from recyclic_api.services.cash_session_service import CashSessionService
+from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
 from uuid import UUID
 
 router = APIRouter()
@@ -799,16 +799,11 @@ async def close_cash_session(
             )
             raise HTTPException(status_code=400, detail="La session est déjà fermée")
         
-        # Valider que le commentaire est fourni si il y a un écart
-        # B50-P10: Calculer le montant théorique en incluant les dons
-        # Le montant théorique = fond initial + ventes + dons
-        total_donations = db.query(func.coalesce(func.sum(Sale.donation), 0)).filter(
-            Sale.cash_session_id == session_id
-        ).scalar() or 0.0
-        total_donations = float(total_donations)
-        
-        theoretical_amount = session.initial_amount + (session.total_sales or 0) + total_donations
-        variance = close_data.actual_amount - theoretical_amount
+        # Valider que le commentaire est fourni si il y a un écart.
+        # La formule de clôture reste centralisée dans le service.
+        closing_preview = service.get_closing_preview(session, close_data.actual_amount)
+        theoretical_amount = closing_preview["theoretical_amount"]
+        variance = closing_preview["variance"]
         
         # B50-P10: Logs de debug pour diagnostiquer les problèmes de variance
         logger.info(
@@ -816,7 +811,7 @@ async def close_cash_session(
             f"session_id={session_id}, "
             f"initial_amount={session.initial_amount}, "
             f"total_sales={session.total_sales}, "
-            f"total_donations={total_donations}, "
+            f"total_donations={closing_preview['total_donations']}, "
             f"theoretical_amount={theoretical_amount}, "
             f"actual_amount={close_data.actual_amount}, "
             f"variance={variance}, "
@@ -826,7 +821,7 @@ async def close_cash_session(
         
         # B50-P10: Tolérance augmentée à 5 centimes pour gérer les problèmes d'arrondi
         # et de précision, surtout pour les bénévoles qui utilisent le localStorage
-        if abs(variance) > 0.05 and not close_data.variance_comment:  # Tolérance de 5 centimes
+        if abs(variance) > CLOSE_VARIANCE_TOLERANCE and not close_data.variance_comment:
             log_cash_session_closing(
                 user_id=str(current_user.id),
                 username=current_user.username or "Unknown",

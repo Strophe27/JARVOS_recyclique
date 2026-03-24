@@ -16,6 +16,8 @@ from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.schemas.cash_session import CashSessionFilters
 from recyclic_api.core.logging import log_transaction_event
 
+CLOSE_VARIANCE_TOLERANCE = 0.05
+
 
 class CashSessionService:
     """Service pour la gestion des sessions de caisse."""
@@ -672,6 +674,22 @@ class CashSessionService:
         
         return True
 
+    def get_total_donations_for_session(self, session_id: str) -> float:
+        total_donations = self.db.query(func.coalesce(func.sum(Sale.donation), 0)).filter(
+            Sale.cash_session_id == session_id
+        ).scalar() or 0.0
+        return float(total_donations)
+
+    def get_closing_preview(self, session: CashSession, actual_amount: float) -> Dict[str, float]:
+        total_donations = self.get_total_donations_for_session(str(session.id))
+        theoretical_amount = session.initial_amount + (session.total_sales or 0) + total_donations
+        variance = actual_amount - theoretical_amount
+        return {
+            "total_donations": total_donations,
+            "theoretical_amount": theoretical_amount,
+            "variance": variance,
+        }
+
     def close_session_with_amounts(self, session_id: str, actual_amount: float, variance_comment: str = None) -> Optional[CashSession]:
         """B44-P3: Ferme une session de caisse avec contrôle des montants.
         
@@ -699,17 +717,10 @@ class CashSessionService:
             return None
         
         # Session avec transactions : fermer normalement
-        # B50-P10: Calculer le montant théorique en incluant les dons
-        total_donations = self.db.query(func.coalesce(func.sum(Sale.donation), 0)).filter(
-            Sale.cash_session_id == session_id
-        ).scalar() or 0.0
-        total_donations = float(total_donations)
-        
-        # Calculer le montant théorique (fond initial + ventes + dons)
-        theoretical_amount = session.initial_amount + (session.total_sales or 0) + total_donations
+        preview = self.get_closing_preview(session, actual_amount)
         
         # Utiliser la nouvelle méthode du modèle avec le montant théorique calculé
-        session.close_with_amounts(actual_amount, variance_comment, theoretical_amount)
+        session.close_with_amounts(actual_amount, variance_comment, preview["theoretical_amount"])
         
         self.db.commit()
         self.db.refresh(session)
