@@ -24,6 +24,7 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-03-24_01_exploration-references-synthese/` | Exploration multi-agents de `references/` (idees, **TODO** Paheko/Recyclique, decisions) ; rapports par zone dans sous-dossiers `00-` … `04-`, synthese dans `99-synthese-orchestrateur/`. |
 | `2026-03-23_01_recyclique-1.4.4-nested-git-backup/` | **Local uniquement** (ignore Git) : copie du `.git` de l'ancien clone imbrique avant detachement ; voir journal `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`. |
 | `2026-02-24_06_brainstorm-migration-paheko.md` | Brainstorm migration Paheko : contexte, themes, analyse critique, 10 idees Kanban, 7 todos, decisions posees. Point d'entree pour sessions suivantes. |
 | `2026-02-24_07_design-systeme-modules.md` | Design systeme de modules : decisions arbitrees, contrat ModuleBase, module.toml, loader, slots React, zones d'ombre residuelles. |

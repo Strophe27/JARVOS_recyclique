@@ -50,3 +50,6 @@ recyclic.sqlite
 
 # Identifiants de test / staging (NE JAMAIS COMMITER)
 **/ref_navigation*.md
+
+# Journaux hook Cursor (réponses agent — peut contenir du confidentiel)
+log/cursor-agent/
