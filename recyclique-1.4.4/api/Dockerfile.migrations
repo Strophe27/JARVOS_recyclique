@@ -1,0 +1,17 @@
+# Image minimale : uniquement Alembic + dépendances nécessaires à migrations/env.py (voir requirements-migrations.txt).
+# L’URL de base de données est résolue par migrations/env.py via DATABASE_URL / POSTGRES_* (docker-compose) ;
+# sqlalchemy.url dans alembic.ini sert de repli hors conteneur (localhost).
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements-migrations.txt .
+RUN pip install --no-cache-dir -r requirements-migrations.txt
+
+COPY alembic.ini .
+COPY migrations ./migrations
+COPY src ./src
+
+ENV PYTHONPATH=/app/src
+
+CMD ["alembic", "upgrade", "head"]

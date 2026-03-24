@@ -1,0 +1,59 @@
+schema: 1
+story: "B47.P5"
+story_title: "Fallback LLM pour le mapping de catégories Legacy"
+gate: PASS
+status_reason: "Implémentation complète et bien testée. Fallback LLM optionnel intégré de manière best-effort avec client OpenRouter dédié, cache persistant et configuration claire. Aucun appel LLM en phase d'exécution finale (execute), ce qui préserve le contrôle manuel et la sécurité des imports."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-04T18:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 1, low: 2 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - action: "Suivre en production le taux de faux positifs/faux négatifs des mappings LLM vs corrections manuelles admin"
+        refs: ["api/src/recyclic_api/services/legacy_import_service.py", "api/tests/test_legacy_import_service.py"]
+
+quality_score: 90
+
+evidence:
+  tests_reviewed: 4
+  risks_identified: 4
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Le client LLM n'envoie que des noms de catégories (CSV + DB), sans IDs internes ni données personnelles. Le fallback est limité à l'analyse; aucune décision automatique en phase d'exécution."
+  performance:
+    status: PASS
+    notes: "Batching configurable (par défaut 20) et cache persistant réduisent fortement le nombre d'appels LLM. Fallback best-effort qui n'impacte pas la latence en cas de défaillance du provider."
+  reliability:
+    status: PASS
+    notes: "En cas d'erreur réseau/HTTP/JSON, le client retourne un dict vide et l'analyse continue avec les catégories en unmapped. Le cache est non bloquant; les erreurs DB n'interrompent pas l'analyse."
+  maintainability:
+    status: PASS
+    notes: "Interface LLMCategoryMappingClient claire, implémentation OpenRouter isolée, schémas Pydantic enrichis pour les stats. Tests unitaires dédiés au client et à l'intégration dans LegacyImportService."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Instrumenter des métriques (taux de résolution fuzzy vs LLM, distribution des scores de confiance) et les suivre dans les runbooks de monitoring"
+      refs: ["api/src/recyclic_api/services/legacy_import_service.py", "docs/epics/epic-b47-import-legacy-csv-template-offline.md"]
+    - action: "Évaluer à terme d'autres providers (Gemini, Groq) via la même abstraction client pour comparer coûts et qualité"
+      refs: ["api/src/recyclic_api/services/llm_category_mapping_client.py"]
+
+
+
+
+
+
+
+
+

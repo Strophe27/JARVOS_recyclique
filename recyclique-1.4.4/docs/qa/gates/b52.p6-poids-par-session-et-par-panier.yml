@@ -1,0 +1,71 @@
+schema: 1
+story: 'b52.p6'
+story_title: 'Story B52-P6: Poids par session de caisse et par panier'
+gate: PASS
+status_reason: >
+  Poids total sorti par session et poids total par panier calculés côté backend
+  avec agrégations SQL dédiées, exposés dans l’API et consommés par l’UI avec
+  tests de régression ciblés.
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-01-06T00:00:00Z'
+
+top_issues:
+  - id: tests-e2e-session-weight
+    title: Tests E2E à renforcer sur les scénarios de sessions volumineuses
+    severity: low
+    description: >
+      Les tests actuels couvrent bien le cas nominal (quelques ventes), mais il
+      reste pertinent d’ajouter au moins un scénario E2E sur une session avec
+      beaucoup de paniers/poids pour détecter d’éventuelles régressions de perf
+      ou d’affichage.
+    suggested_owner: dev
+
+waiver:
+  active: false
+
+quality_score: 95
+expires: '2026-01-20T00:00:00Z'
+
+evidence:
+  tests_reviewed: 3
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: >
+      Lecture de données agrégées sans modification de droits ni de surface
+      d’attaque supplémentaire.
+  performance:
+    status: PASS
+    notes: >
+      Agrégations de poids faites en une seule requête SQL par session et
+      réutilisées pour remplir total_weight_out + total_weight par vente ;
+      impact maîtrisé même avec plusieurs ventes.
+  reliability:
+    status: PASS
+    notes: >
+      Tests backend vérifient la cohérence entre total_weight_out et la somme
+      des total_weight par vente ; tests frontend valident l’affichage des
+      cartes et de la colonne Poids.
+  maintainability:
+    status: PASS
+    notes: >
+      Logique encapsulée dans CashSessionService.get_session_weight_aggregations
+      et schémas de réponse enrichis (CashSessionDetailResponse, SaleDetail),
+      facilitant les évolutions futures.
+
+recommendations:
+  immediate: []
+  future:
+    - action: Ajouter un test d’intégration ou E2E couvrant une session avec forte volumétrie (nombre élevé de ventes/items)
+      refs:
+        - 'api/tests/'
+        - 'frontend/src/test/pages/Admin/CashSessionDetail.test.tsx'
+
+
+
+

@@ -1,0 +1,65 @@
+schema: 1
+story: "b52.p1"
+story_title: "Paiements multiples à l'encaissement"
+gate: CONCERNS
+status_reason: "Implémentation complète et solide, mais absence de tests pour une fonctionnalité critique (paiements). Tests requis avant production."
+reviewer: "Quinn (Test Architect)"
+updated: "2026-01-05T14:01:20Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: high
+    finding: "Aucun test écrit pour les paiements multiples (critère d'acceptation #5 non satisfait)"
+    suggested_action: "Créer tests unitaires, intégration et E2E pour valider les paiements multiples avant production"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 0, low: 0 }
+  recommendations:
+    must_fix:
+      - "Ajouter tests unitaires pour validation des paiements multiples"
+      - "Ajouter tests d'intégration pour création vente avec paiements multiples"
+      - "Ajouter tests E2E pour workflow complet paiements multiples"
+    monitor: []
+
+quality_score: 70
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: [5]
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Validation backend correcte (somme >= total). Pas de risque d'injection identifié."
+  performance:
+    status: PASS
+    notes: "Eager loading des paiements (selectinload) pour éviter N+1 queries. Index sur sale_id."
+  reliability:
+    status: CONCERNS
+    notes: "Absence de tests empêche la validation de la fiabilité. Risque de régression non détectée."
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré, commenté avec références aux stories. Migration réversible."
+
+recommendations:
+  immediate:
+    - action: "Créer tests unitaires pour validation paiements multiples"
+      refs: ["api/tests/test_b52_p1_payments.py (à créer)"]
+    - action: "Créer tests d'intégration pour création vente avec paiements multiples"
+      refs: ["api/tests/test_sales_integration.py (à étendre)"]
+    - action: "Créer tests E2E pour workflow complet paiements multiples"
+      refs: ["frontend/src/test/integration/cash-register-workflow.test.tsx (à étendre)"]
+  future:
+    - action: "Considérer tests de performance pour paiements multiples avec grand nombre de transactions"
+      refs: []
+    - action: "Documenter les cas limites (paiements partiels, reste dû, etc.)"
+      refs: ["docs/testing-strategy.md"]
+
+
+

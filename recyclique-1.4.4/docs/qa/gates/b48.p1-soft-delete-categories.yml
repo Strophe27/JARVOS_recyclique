@@ -1,0 +1,49 @@
+schema: 1
+story: "b48.p1"
+story_title: "Soft Delete des Catégories"
+gate: "PASS"
+status_reason: "Implémentation complète et conforme aux critères d'acceptation. Tous les ACs sont satisfaits, tests unitaires et d'intégration présents, aucun problème bloquant."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-09T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 95
+
+expires: "2025-12-23T00:00:00Z"
+
+evidence:
+  tests_reviewed: 12
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Endpoints protégés par rôles admin, validation hiérarchie robuste, hard delete uniquement si pas d'usage"
+  performance:
+    status: PASS
+    notes: "Index sur deleted_at créé, filtrage au niveau DB, pas d'impact sur stats"
+  reliability:
+    status: PASS
+    notes: "Validation hiérarchie empêche suppressions accidentelles, restauration fonctionnelle, données historiques préservées"
+  maintainability:
+    status: PASS
+    notes: "Code propre, bien structuré, docstrings présents, tests maintenables"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter test E2E frontend pour workflow archivage/restauration complet"
+      refs: ["frontend/src/pages/Admin/Categories.tsx"]
+    - action: "Ajouter test explicite pour AC #8 (historique affiche catégories archivées)"
+      refs: ["api/tests/test_category_soft_delete_b48_p1.py"]
+    - action: "Ajouter commentaire dans StatsService expliquant pourquoi on ne filtre pas deleted_at"
+      refs: ["api/src/recyclic_api/services/stats_service.py"]
+
+
+

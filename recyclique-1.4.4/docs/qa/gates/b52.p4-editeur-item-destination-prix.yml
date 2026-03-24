@@ -1,0 +1,65 @@
+schema: 1
+story: 'b52.p4'
+story_title: 'Story B52-P4: Amélioration éditeur d''item (destination et prix)'
+gate: PASS
+status_reason: >
+  Éditeur d'item mis à jour avec gestion complète du preset (sélection + retrait),
+  restrictions correctes sur l’édition du prix (admin uniquement) et couverture
+  de tests satisfaisante côté backend.
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-01-06T00:00:00Z'
+
+top_issues:
+  - id: docs-permissions-pricing
+    title: Documentation à maintenir sur les règles de permissions prix
+    severity: low
+    description: >
+      S’assurer que les guides utilisateur/admin restent à jour sur qui peut
+      modifier le prix et dans quelles conditions.
+    suggested_owner: dev
+
+waiver:
+  active: false
+
+quality_score: 95
+expires: '2026-01-20T00:00:00Z'
+
+evidence:
+  tests_reviewed: 7
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: >
+      Permissions admin appliquées au niveau endpoint pour le prix, avec tests
+      négatifs (403) et validation du format/borne (prix >= 0).
+  performance:
+    status: PASS
+    notes: >
+      Impact limité au patch d’un item individuel ; pas de recalcul massif
+      côté backend, pas de risque de blocage notable sur ce périmètre.
+  reliability:
+    status: PASS
+    notes: >
+      Endpoint PATCH couvre les cas happy path, erreurs de validation, 401/403
+      et 404, avec réponses explicites.
+  maintainability:
+    status: PASS
+    notes: >
+      Schéma dédié `SaleItemUpdate`, logique d’update centralisée et tests
+      qui documentent les cas d’usage principaux.
+
+recommendations:
+  immediate: []
+  future:
+    - action: Garder la documentation fonctionnelle/UX alignée sur le comportement de l’éditeur d’item
+      refs:
+        - 'docs/'
+
+
+
+

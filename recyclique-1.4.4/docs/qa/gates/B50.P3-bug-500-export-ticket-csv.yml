@@ -1,0 +1,44 @@
+schema: 1
+story: "B50.P3"
+story_title: "Correction Bug 500 - Export CSV Ticket Individuel"
+gate: PASS
+status_reason: "Bug critique corrigé avec investigation approfondie. Même problème que B50-P2 (déballage incorrect de _calculate_ticket_totals) corrigé. Vérifications None-safe ajoutées. Tests de reproduction et régression complets. Recommandation future implémentée : standardisation de la gestion d'erreurs dans tous les endpoints d'export."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T14:30:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 100
+
+evidence:
+  tests_reviewed: 5
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun problème de sécurité. Validation du token correcte."
+  performance:
+    status: PASS
+    notes: "Aucun impact sur les performances. Correction de bugs uniquement."
+  reliability:
+    status: PASS
+    notes: "Bug critique corrigé : déballage incorrect de _calculate_ticket_totals et vérifications None-safe. Tests de régression complets."
+  maintainability:
+    status: PASS
+    notes: "Code bien documenté avec commentaires explicatifs. Logging amélioré avec stack traces. Gestion d'erreurs standardisée via utilitaire dédié (export_error_handler.py). Élimination de la duplication de code. Quality Score: 100%."
+
+recommendations:
+  immediate: []
+  future: []
+  
+# Note: Recommandation future implémentée (2025-01-27)
+# - Standardisation de la gestion d'erreurs dans tous les endpoints d'export
+# - Utilitaire créé: api/src/recyclic_api/utils/export_error_handler.py
+# - Endpoints refactorisés: export_ticket_csv, export_bulk_cash_sessions, export_bulk_reception_tickets
+

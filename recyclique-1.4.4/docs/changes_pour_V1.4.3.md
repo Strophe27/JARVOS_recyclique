@@ -1,0 +1,25 @@
+## A FAIRE :
+
+Dans la session de caisse, il y a des cartes au début de chacune des sessions de caisse avec l'opérateur, ouverture, fermeture, montant initial, fonds de caisse, total des ventes, total des dons, nombre de paniers et poids reçu en don entrée, ça on supprime. Puis il y a le poids vendu ou donné sorti, la dernière carte, qui est toujours à 0€ alors qu'en fait il faut que ce soit la somme de tous les poids sortis qu'il y a dans ce ticket là. 
+
+Et pareil, en dessous il y a donc le journal des ventes avec toutes les ventes faites et dans les colonnes, il manque une colonne, il manque la colonne poids.
+
+
+
+
+
+
+
+
+
+## FAIT :
+
+J'ai une petite liste de changements pour la V.1.4.3 à venir. Il faudra vraiment que tu notes chacun de ces points là et nous allons probablement devoir discuter de certains de ces points avant de créer les pics et les stories associés à tout ça. 
+
+Alors au moment de l'encaissement sur la caisse, on m'a demandé la possibilité de pouvoir ajouter plusieurs moyens de paiement. Par exemple, elle s'est retrouvée à la caisse avec quelqu'un, énormément d'objets. Elle ajoute, elle ajoute, elle ajoute, elle fait blablabla. Et à la fin, voilà, encaissement. Elle calcule, elle négocie le prix, les dons, voilà. Au moment de payer, la personne lui dit « Voilà, tant en espèces et tant en chèques. » Et là, elle s'est retrouvé le bec dans l'eau puisqu'elle n'a pas pu faire deux encaissements différents. Alors à partir de là, il faut trouver sur cet écran de paiement comment pouvoir ajouter au dernier moment un paiement supplémentaire et pouvoir le valider. Je ne sais pas comment ça se passe sur les caisses normales de supermarché, etc. Sur les POS classiques. Donc peut-être faire une petite recherche déjà sur les POS classiques pour savoir comment il faut faire. 
+
+Ensuite, dans les sessions de vente et les sessions de réception, il faut qu'on ait la possibilité de changer le poids après validation de tout. Parce que là, par exemple, il y a eu une erreur de virgule sur un ticket de caisse et elle s'en est rendue compte plus tard dans la journée quand elle a vu le poids global qui était passé. En fait, au lieu de rentrer je crois 960 grammes, elle a rentré 960 kg. Du coup, ça fausse entièrement les statistiques du mois, etc. Et c'est la même chose pour, on me l'a demandé aussi pour la réception. Il est possible qu'après, finalement il y a un objet d'un lot qu'on enlève et à ce moment-là il faut pouvoir changer le poids et éditer le poids à postérieur. Et bien entendu il faudra faire attention à ce que ça mette bien à jour toutes les statistiques live et toutes les statistiques qui sont notées. Donc il faut peut-être faire le tour de toutes les variables qui existent qui sont les poids totaux sorties, vendues, je sais pas si c'est calculé en live tout ça. Je ne sais pas si c'est une variable ou une route API qui donne ces chiffres-là, mais il faudra faire attention que si on modifie a posteriori un chiffre de poids, bien que les répercussions se fassent partout. 
+
+Ah oui ça on était censé l'avoir réglé mais en fait c'est revenu mais ça ne marche toujours pas. Quand on est dans une session de caisse et qu'on regarde les sessions de caisse précédentes, et bien tous les tickets ont exactement l'eurodatage de l'ouverture de la session de caisse, ce qui ne va pas du tout. Les tickets doivent avoir l'eurodatage de l'instant où ils sont enregistrés en fait. Donc là on a un gros problème à résoudre, qui doit être très simple. Normalement il avait été résolu, mais je ne sais pas pourquoi c'est revenu. 
+
+Dans un ticket en cours, il y a un petit bouton pour pouvoir éditer un item, pour pouvoir éditer un enregistrement. Dans ce petit éditeur du ticket en cours, il manque l'édition de la destination par exemple. Si ça doit être recyclé, si ça doit ceci, cela. Et peut-être s'il manque d'autre chose. Audit ce petit éditeur pour voir ce qu'il manque avant de décider quoi ajouter. Normalement tout doit pouvoir être édité, évidemment sauf le prix. Et ça il faut pour l'édition du prix, parce que peut-être des fois il va y avoir des erreurs aussi, il va falloir pouvoir éditer le prix. Mais je pense que ça c'est régi par la loi. Je ne sais pas comment on peut faire pour changer un prix qui a été mal rentré. Peut-être qu'il faut la confirmation de quelqu'un d'autre, un administrateur ou je ne sais pas. Je vois dans le supermarché qu'à chaque fois qu'une caissière doit changer un prix parce qu'il y a eu un problème et que ça change la caisse, elle fait un appel à une responsable ou un responsable qui vient avec un badge spécial pour déverrouiller et pouvoir changer le prix. Je ne sais pas si, en ce qui nous concerne, c'est quelque chose qui est obligatoire ou pas. Tu peux chercher par exemple aussi sur Paheco qui sera notre solution de back-end pour la caisse etc. Qu'est-ce qu'ils ont prévu ? Tu peux regarder dans la documentation de Paheco que tu vas trouver sur internet par exemple.  Car pour mémoire, nous ne sommes pas assujettis à la TVA et nous n'avons pas besoin d'avoir un truc qui soit ultra validé, ultra verrouillé, mais quand même un minimum. 

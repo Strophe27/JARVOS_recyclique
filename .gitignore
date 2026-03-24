@@ -7,6 +7,9 @@ references/dumps/
 references/_depot/*
 !references/_depot/.gitkeep
 
+# Sauvegarde locale du depot Git imbrique (copie de .git, volumineuse — ne pas versionner)
+references/artefacts/*-nested-git-backup/
+
 # Clone local du repo Recyclique 1.4.4 (volumineux, local uniquement)
 references/ancien-repo/repo/
 

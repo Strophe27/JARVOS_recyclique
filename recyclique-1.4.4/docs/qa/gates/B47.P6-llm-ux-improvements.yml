@@ -1,0 +1,53 @@
+schema: 1
+story: "B47.P6"
+story_title: "Amélioration UX LLM - Sélecteur de modèles et feedback utilisateur"
+gate: PASS
+status_reason: "Implémentation complète et bien testée. Endpoints backend pour découverte de modèles et relance ciblée LLM, enrichissement des statistiques LLM avec détails d'erreurs, sélecteur de modèles en frontend avec filtrage gratuit, affichage visuel des stats/erreurs avec badges colorés, bouton Relancer LLM avec fusion intelligente, workflow itératif avec barre de progression. Tests d'intégration complets pour les nouveaux endpoints. Code de qualité conforme aux standards."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T16:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 1, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - action: "Valider en production l'utilisation du workflow itératif et la fréquence des relances LLM (coûts/temps)"
+        refs: ["frontend/src/pages/Admin/LegacyImport.tsx", "api/src/recyclic_api/api/api_v1/endpoints/legacy_import.py"]
+
+quality_score: 92
+
+evidence:
+  tests_reviewed: 6
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Endpoints protégés par require_role_strict([ADMIN, SUPER_ADMIN]). Le cache des modèles OpenRouter est en mémoire (pas de données sensibles persistées). L'override du modèle reste limité à l'analyse, pas d'impact sur execute."
+  performance:
+    status: PASS
+    notes: "Cache en mémoire (TTL 1h) pour la liste des modèles OpenRouter évite les appels répétés. L'endpoint llm-only permet de relancer uniquement les catégories restantes, réduisant la charge LLM. Workflow itératif optimisé pour éviter les re-analyses complètes inutiles."
+  reliability:
+    status: PASS
+    notes: "Gestion d'erreurs robuste : si OpenRouter est indisponible pour la liste des modèles, retour d'une liste vide avec message explicite. Les erreurs LLM sont capturées et exposées dans les stats sans casser l'analyse. Fusion des mappings préservant les corrections manuelles."
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré avec séparation endpoints/service/frontend. Tests d'intégration dédiés pour les nouveaux endpoints. Schémas Pydantic enrichis de manière rétrocompatible. Frontend avec composants réutilisables (Select, Badge, Alert, Progress)."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter des tests E2E complets pour le workflow itératif (sélection modèle → analyse → relance LLM → fusion → export)"
+      refs: ["frontend/src/pages/Admin/LegacyImport.tsx", "api/tests/test_legacy_import_llm_only_endpoint.py"]
+    - action: "Instrumenter des métriques de performance (temps de réponse llm-models, taux de succès des relances llm-only) pour le monitoring"
+      refs: ["api/src/recyclic_api/api/api_v1/endpoints/legacy_import.py"]
+
+
+

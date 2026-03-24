@@ -1,0 +1,78 @@
+schema: 1
+story: "b47.p7"
+story_title: "Validation de Conformité CSV et Nettoyage Automatique"
+gate: CONCERNS
+status_reason: "Implémentation complète et fonctionnelle, mais tests manquants pour LegacyCSVCleanerService, endpoints d'intégration, frontend et E2E. Code de qualité, architecture solide."
+reviewer: "Quinn (Test Architect)"
+updated: "2026-01-07T19:10:38Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "Tests unitaires manquants pour LegacyCSVCleanerService"
+    suggested_action: "Créer api/tests/test_legacy_csv_cleaner_service.py avec tests pour clean_csv, _normalize_dates, _round_weight, _clean_data"
+    suggested_owner: "dev"
+  - id: "TEST-002"
+    severity: medium
+    finding: "Tests d'intégration manquants pour les endpoints /clean et /validate"
+    suggested_action: "Créer api/tests/test_legacy_import_clean_validate_endpoints.py avec tests pour les scénarios complets (CSV conforme, non conforme, legacy, erreurs)"
+    suggested_owner: "dev"
+  - id: "TEST-003"
+    severity: low
+    finding: "Tests frontend manquants pour la validation et le nettoyage"
+    suggested_action: "Créer frontend/src/pages/Admin/__tests__/LegacyImport.validation.test.tsx avec tests pour le flux validation → nettoyage → re-validation"
+    suggested_owner: "dev"
+  - id: "TEST-004"
+    severity: low
+    finding: "Tests E2E manquants pour le flux complet (upload → validation → nettoyage → analyse)"
+    suggested_action: "Créer tests E2E couvrant le workflow complet utilisateur"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 2
+    low: 2
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Compléter les tests manquants avant production"
+
+evidence:
+  tests_reviewed: 1
+  risks_identified: 4
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: [5]  # Tests partiels seulement
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Endpoints protégés par rôle (ADMIN, SUPER_ADMIN), validation des entrées via Pydantic, gestion d'erreurs appropriée"
+  performance:
+    status: PASS
+    notes: "Validation et nettoyage effectués en mémoire, pas de problèmes de performance identifiés"
+  reliability:
+    status: PASS
+    notes: "Gestion d'erreurs robuste avec messages clairs, support de multiples encodages, fallback approprié"
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré, services séparés, documentation claire, réutilisation du code existant"
+
+recommendations:
+  immediate:
+    - action: "Créer les tests unitaires pour LegacyCSVCleanerService"
+      refs: ["api/src/recyclic_api/services/legacy_csv_cleaner_service.py"]
+    - action: "Créer les tests d'intégration pour les endpoints /clean et /validate"
+      refs: ["api/src/recyclic_api/api/api_v1/endpoints/legacy_import.py:497-610"]
+  future:
+    - action: "Ajouter tests frontend pour le flux validation/nettoyage"
+      refs: ["frontend/src/pages/Admin/LegacyImport.tsx:610-786"]
+    - action: "Ajouter tests E2E pour le workflow complet"
+      refs: ["frontend/src/pages/Admin/LegacyImport.tsx"]
+
+quality_score: 70
+

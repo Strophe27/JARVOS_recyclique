@@ -1,0 +1,7 @@
+# Dépendances minimales pour l’image Dockerfile.migrations (Alembic + chargement de recyclic_api dans env.py).
+# Plus léger que requirements.txt ; ne pas dupliquer la stack API complète sans besoin.
+alembic==1.12.1
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+pydantic==2.5.0
+pydantic-settings==2.1.0

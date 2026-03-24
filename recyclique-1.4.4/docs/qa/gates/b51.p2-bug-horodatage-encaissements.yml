@@ -1,0 +1,44 @@
+schema: 1
+story: "b51.p2"
+story_title: "Bug horodatage encaissements - même date/heure"
+gate: PASS
+status_reason: "Double fix critique: frontend formatDate avec secondes, backend correction logique opened_at pour sessions normales (> 2 min = différée). Test backend ajouté pour timestamps distincts."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-17T00:56:17Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 95
+expires: "2025-12-31T00:00:00Z"
+
+evidence:
+  tests_reviewed: 1
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun changement de sécurité. Horodatage amélioré."
+  performance:
+    status: PASS
+    notes: "Aucun impact performance - logique de formatage optimisée."
+  reliability:
+    status: PASS
+    notes: "Fix backend critique corrige la génération de timestamps distincts pour sessions normales."
+  maintainability:
+    status: PASS
+    notes: "Code bien documenté avec commentaires B51-P2, logique claire pour seuil 2 minutes."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer tests frontend pour formatDate avec différents formats de dates"
+      refs: ["frontend/src/pages/Admin/CashSessionDetail.tsx:384-394"]
+
+
+

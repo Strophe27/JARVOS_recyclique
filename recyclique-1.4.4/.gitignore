@@ -1,0 +1,141 @@
+# Environments
+.env
+.env.*
+!.env.example
+!frontend/.env.development
+
+# Dependencies
+node_modules/
+/api/venv
+/api/env
+/bot/venv
+/bot/env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+build_vps/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+# Base SQLite par défaut des tests API (conftest)
+api/pytest_recyclic.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+.build-meta.env
+
+# Database backups and dumps (B46-P2, B46-P4)
+backups/
+*.dump
+
+# Database files (test databases)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Temporary export files
+*.csv
+!docs/**/*.csv
+
+# Gemini CLI generated
+frontend/coverage/
+login_data.json
+*command-message*.txt
+.claude/
+.cursor/
+test_reception_api.js
+
+# other datas
+/docs/photos_imports/*
+
+# Meetings - Tout le dossier est ignoré
+meetings/
+meeting_export/
+Temp_Audio/

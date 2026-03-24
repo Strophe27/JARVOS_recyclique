@@ -1,0 +1,31 @@
+# Source de vérité des versions runtime pour Docker (Dockerfile) et environnements type prod.
+# pyproject.toml [project.dependencies] est aligné sur ce fichier ; en cas d'écart, corriger les deux.
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+sqlalchemy==2.0.23
+alembic==1.12.1
+psycopg2-binary==2.9.9
+redis==5.0.1
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+slowapi==0.1.9
+httpx==0.25.2
+jsonschema==4.19.2
+# LangChain for AI classification
+# langchain==0.1.0
+# langchain-core>=0.1.7,<0.2
+# langchain-google-genai==1.0.1
+# Google AI for speech and text processing
+# google-generativeai>=0.4.1,<0.5.0
+sib-api-v3-sdk==7.6.0
+email-validator==2.3.0
+webdavclient3==3.14.6
+reportlab==4.0.9
+openpyxl==3.1.2
+PyPDF2==3.0.1
+python-multipart==0.0.9
+prometheus-client==0.19.0
+python-Levenshtein==0.23.0

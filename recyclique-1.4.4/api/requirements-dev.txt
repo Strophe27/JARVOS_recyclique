@@ -1,0 +1,9 @@
+# Dépendances de développement / tests uniquement (pas nécessaires au démarrage de l'API en prod).
+# Dockerfile : avec INSTALL_DEV=1, pip installe requirements.txt puis ce fichier. Ce n'est pas le même jeu que
+# [project.optional-dependencies].dev (pyproject.toml) : black, isort, flake8 restent pour pip install -e ".[dev]" / CI.
+# httpx est déjà dans requirements.txt ; répété ici pour les installs « -r requirements-dev.txt » seuls hors image.
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+pytest-cov
+pytest-mock

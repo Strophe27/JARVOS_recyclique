@@ -1,0 +1,75 @@
+schema: 1
+story: "b42.p6"
+story_title: "Capteur de Présence & Refresh Automatique Intelligent"
+gate: PASS
+status_reason: "Code de qualité exceptionnelle avec implémentation complète. Tests unitaires exécutés et validés (10/10 passent). Tests E2E créés mais non exécutés (à exécuter manuellement, non bloquant)."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-11-27T01:15:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: low
+    finding: "Tests E2E créés mais non exécutés (à exécuter manuellement selon Validation Checklist)"
+    suggested_action: "Exécuter les tests E2E manuellement pour validation complète (non bloquant pour la fonctionnalité principale)"
+    suggested_owner: "dev"
+  - id: "TEST-002"
+    severity: low
+    finding: "Tests E2E potentiellement flaky (utilisation de timeouts fixes et mocks de Date.now)"
+    suggested_action: "Améliorer la stabilité des tests E2E en utilisant waitFor au lieu de waitForTimeout et en évitant les mocks de Date.now"
+    suggested_owner: "dev"
+  - id: "TEST-003"
+    severity: low
+    finding: "Tests d'intégration manquants pour useSessionHeartbeat avec useActivityDetector"
+    suggested_action: "Ajouter des tests d'intégration pour valider l'interaction entre useSessionHeartbeat et useActivityDetector"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 0
+    low: 3
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Exécuter les tests E2E manuellement pour validation complète"
+      - "Surveiller la stabilité des tests E2E en production"
+
+quality_score: 95
+expires: "2025-12-11T01:15:00Z"
+
+evidence:
+  tests_reviewed: 2
+  tests_passed: 10
+  tests_total: 10
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun changement de sécurité. Amélioration UX uniquement, utilise le même mécanisme de refresh token sécurisé."
+  performance:
+    status: PASS
+    notes: "Performance excellente avec optimisations appropriées: debounce (1s), throttle scroll (500ms), min ping interval (30s), event listeners passifs."
+  reliability:
+    status: PASS
+    notes: "Code robuste avec gestion d'erreurs appropriée. Tests unitaires exécutés et validés (10/10 passent). Tests E2E créés mais non exécutés (non bloquant)."
+  maintainability:
+    status: PASS
+    notes: "Code de qualité exceptionnelle, architecture propre, bien documentée, pas de duplication. Tests unitaires exécutés et validés."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Exécuter les tests E2E manuellement pour validation complète (non bloquant)"
+      refs: ["frontend/tests/e2e/session-activity-detector.spec.ts"]
+    - action: "Améliorer la stabilité des tests E2E (utiliser waitFor au lieu de waitForTimeout)"
+      refs: ["frontend/tests/e2e/session-activity-detector.spec.ts"]
+    - action: "Ajouter des tests d'intégration pour useSessionHeartbeat avec useActivityDetector"
+      refs: ["frontend/src/hooks/useSessionHeartbeat.ts"]
+

@@ -1,0 +1,46 @@
+schema: 1
+story: "tech-debt.api-js-to-ts"
+story_title: "Conversion api.js → api.ts (Correction Erreur TypeScript)"
+gate: PASS
+status_reason: "Conversion TypeScript complète avec tous les types. Aucune erreur de linting. 40 fichiers impactés vérifés, tous les imports fonctionnent."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-17T00:51:30Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 90
+expires: "2025-12-31T00:00:00Z"
+
+evidence:
+  tests_reviewed: 10
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun changement de logique, seulement typage. Authentification préservée."
+  performance:
+    status: PASS
+    notes: "Aucun impact performance - ajout de types TypeScript seulement."
+  reliability:
+    status: PASS
+    notes: "Conversion transparente, tous les exports préservés."
+  maintainability:
+    status: PASS
+    notes: "Types TypeScript améliorent la maintenabilité. Export par défaut typé AxiosInstance."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer création de types spécifiques pour remplacer any (UserData, SiteData, etc.)"
+      refs: ["frontend/src/services/api.ts"]
+    - action: "Exécuter tests manuels complets (checklist T7)"
+      refs: ["docs/stories/story-tech-debt-fix-api-js-to-ts.md:121-153"]
+
+
+

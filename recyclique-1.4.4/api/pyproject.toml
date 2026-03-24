@@ -1,0 +1,72 @@
+# Runtime : mêmes versions que requirements.txt (source de vérité pip / image Docker).
+# Développement local typique : pip install -r requirements.txt -r requirements-dev.txt && pip install -e ".[dev]"
+# Écart Docker : quand INSTALL_DEV=1, le Dockerfile n'installe que requirements-dev.txt (pytest, etc.), pas les
+# outils de formatage / lint listés uniquement dans [project.optional-dependencies].dev (black, isort, flake8).
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recyclic-api"
+version = "1.4.4"
+description = "Recyclic API - Plateforme de recyclage intelligente"
+authors = [{name = "Recyclic Team"}]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "sqlalchemy==2.0.23",
+    "alembic==1.12.1",
+    "psycopg2-binary==2.9.9",
+    "redis==5.0.1",
+    "pydantic==2.5.0",
+    "pydantic-settings==2.1.0",
+    "python-jose[cryptography]==3.3.0",
+    "passlib[bcrypt]==1.7.4",
+    "bcrypt==4.0.1",
+    "slowapi==0.1.9",
+    "httpx==0.25.2",
+    "jsonschema==4.19.2",
+    "sib-api-v3-sdk==7.6.0",
+    "email-validator==2.3.0",
+    "webdavclient3==3.14.6",
+    "reportlab==4.0.9",
+    "openpyxl==3.1.2",
+    "PyPDF2==3.0.1",
+    "python-multipart==0.0.9",
+    "prometheus-client==0.19.0",
+    "python-Levenshtein==0.23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.3",
+    "pytest-asyncio==0.21.1",
+    "pytest-cov",
+    "pytest-mock",
+    "black",
+    "isort",
+    "flake8",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+# Configuration pytest : source de vérité unique (remplace un éventuel pytest.ini).
+# Le sous-ensemble minimal (auth + infra) est listé explicitement dans run_tests.sh et tests/README.md.
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "-v",
+    "--tb=short",
+]
+markers = [
+    "no_db: pas de session DB ni d'autouse liée à la base (voir tests/conftest.py).",
+]

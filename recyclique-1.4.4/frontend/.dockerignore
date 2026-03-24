@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Test outputs
+test-results/
+playwright-report/
+
+# Archives
+*.zip
+*.tar.gz
+frontend_build_local.zip
+frontend-dist.tar.gz
+
+# Git
+.git/
+.gitignore
+
+# Environment files (keep .env.* for build)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+README.md
+docs/
