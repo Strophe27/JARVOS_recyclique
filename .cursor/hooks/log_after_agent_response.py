@@ -8,25 +8,31 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+_hooks_dir = Path(__file__).resolve().parent
+if str(_hooks_dir) not in sys.path:
+    sys.path.insert(0, str(_hooks_dir))
+
+from hook_common import infer_hook_event_name, read_stdin_json
+
 LOG_DIR = Path("log/cursor-agent")
 DIAG_FILE = LOG_DIR / "diagnostic.log"
 JSONL_FILE = LOG_DIR / "responses.jsonl"
 
 
 def main() -> int:
-    raw = sys.stdin.read()
-    try:
-        payload = json.loads(raw) if raw.strip() else {}
-    except json.JSONDecodeError as e:
-        print(f"log_after_agent_response: JSON stdin invalide: {e}", file=sys.stderr)
-        print("{}", flush=True)
-        return 0
+    payload, _raw_text, stdin_err = read_stdin_json()
+    if stdin_err and stdin_err != "stdin_vide":
+        print(f"log_after_agent_response: stdin: {stdin_err}", file=sys.stderr)
 
-    hook = payload.get("hook_event_name", "?")
+    hook = infer_hook_event_name(payload) or payload.get("hook_event_name") or "?"
+    keys = ",".join(sorted(payload.keys())[:24])
+    if len(payload.keys()) > 24:
+        keys += ",..."
     diag_line = (
         f"{datetime.now().astimezone().isoformat(timespec='seconds')}\t"
         f"hook={hook}\tmodel={payload.get('model')}\t"
-        f"conv={payload.get('conversation_id')}\tgen={payload.get('generation_id')}\n"
+        f"conv={payload.get('conversation_id')}\tgen={payload.get('generation_id')}\t"
+        f"stdin_err={stdin_err or 'ok'}\tkeys={keys}\n"
     )
     record = {
         "logged_at_local": datetime.now().astimezone().isoformat(timespec="milliseconds"),

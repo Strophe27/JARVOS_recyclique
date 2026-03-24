@@ -3,17 +3,17 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": "python .cursor/hooks/cursor_hooks_diagnostic.py"
+        "command": "cmd /c python .cursor/hooks/cursor_hooks_diagnostic.py"
       }
     ],
     "beforeSubmitPrompt": [
       {
-        "command": "python .cursor/hooks/cursor_hooks_diagnostic.py"
+        "command": "cmd /c python .cursor/hooks/cursor_hooks_diagnostic.py"
       }
     ],
     "afterAgentResponse": [
       {
-        "command": "python .cursor/hooks/log_after_agent_response.py"
+        "command": "cmd /c python .cursor/hooks/log_after_agent_response.py"
       }
     ]
   }

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from typing import List
 from recyclic_api.core.database import get_db
@@ -15,6 +15,7 @@ from recyclic_api.schemas.user import (
 )
 from recyclic_api.schemas.pin import PinSetRequest
 from recyclic_api.core.auth import require_role_strict, get_current_user, get_user_permissions
+from recyclic_api.core.exceptions import AuthenticationError, ConflictError
 from recyclic_api.core.security import hash_password
 from recyclic_api.services.telegram_link_service import TelegramLinkService
 from recyclic_api.utils.rate_limit import conditional_rate_limit
@@ -263,16 +264,24 @@ async def link_telegram_account(link_request: LinkTelegramRequest, request: Requ
     Limite de taux : 5 requêtes par minute pour éviter les attaques par force brute.
     """
     service = TelegramLinkService(db)
-    success, message = service.link_telegram_account(
-        username=link_request.username,
-        password=link_request.password,
-        telegram_id=link_request.telegram_id
-    )
+    try:
+        _, message = service.link_telegram_account(
+            username=link_request.username,
+            password=link_request.password,
+            telegram_id=link_request.telegram_id,
+        )
+    except AuthenticationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.detail,
+        ) from exc
 
-    if success:
-        return {"message": message}
-    else:
-        raise HTTPException(status_code=400, detail=message)
+    return {"message": message}
 
 
 

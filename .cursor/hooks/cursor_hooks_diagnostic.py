@@ -10,22 +10,27 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+_hooks_dir = Path(__file__).resolve().parent
+if str(_hooks_dir) not in sys.path:
+    sys.path.insert(0, str(_hooks_dir))
+
+from hook_common import infer_hook_event_name, read_stdin_json
+
 LOG_DIR = Path("log/cursor-agent")
 DIAG_FILE = LOG_DIR / "diagnostic.log"
 
 
 def main() -> int:
-    raw = sys.stdin.read()
-    try:
-        p = json.loads(raw) if raw.strip() else {}
-    except json.JSONDecodeError:
-        p = {}
-
-    hook = p.get("hook_event_name", "?")
+    p, _raw_text, stdin_err = read_stdin_json()
+    hook = infer_hook_event_name(p) or p.get("hook_event_name") or "?"
+    keys = ",".join(sorted(p.keys())[:24])
+    if len(p.keys()) > 24:
+        keys += ",..."
     line = (
         f"{datetime.now().astimezone().isoformat(timespec='seconds')}\t"
         f"hook={hook}\tmodel={p.get('model')}\t"
-        f"conv={p.get('conversation_id')}\tgen={p.get('generation_id')}\n"
+        f"conv={p.get('conversation_id')}\tgen={p.get('generation_id')}\t"
+        f"stdin_err={stdin_err or 'ok'}\tkeys={keys}\n"
     )
     try:
         LOG_DIR.mkdir(parents=True, exist_ok=True)

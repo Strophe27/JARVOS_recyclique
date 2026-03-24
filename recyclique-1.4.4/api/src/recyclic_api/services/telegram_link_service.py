@@ -1,10 +1,9 @@
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-from fastapi import HTTPException, status
 
-from ..models.user import User
-from ..core.security import verify_password
+from recyclic_api.core.exceptions import AuthenticationError, ConflictError
+from recyclic_api.core.security import verify_password
+from recyclic_api.models.user import User
 
 class TelegramLinkService:
     """Service pour gérer la liaison des comptes Telegram aux comptes web."""
@@ -49,16 +48,12 @@ class TelegramLinkService:
         # Étape 1: Authentification
         user = self.authenticate_user(username, password)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Identifiants invalides"
-            )
+            raise AuthenticationError("Identifiants invalides")
 
         # Étape 2: Vérifier le conflit de telegram_id
         if self.check_telegram_id_conflict(telegram_id, exclude_user_id=str(user.id)):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Ce Telegram ID est déjà lié à un autre compte"
+            raise ConflictError(
+                "Ce Telegram ID est déjà lié à un autre compte"
             )
 
         # Étape 3: Mettre à jour le telegram_id de l'utilisateur
