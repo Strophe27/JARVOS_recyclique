@@ -5,8 +5,6 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional, List
 from datetime import date, datetime
-import csv
-import io
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_role_strict
@@ -14,6 +12,10 @@ from recyclic_api.core.exceptions import ConflictError, NotFoundError, Validatio
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from recyclic_api.models.user import UserRole, User
 from recyclic_api.utils.report_tokens import verify_download_token
+from recyclic_api.application.reception_lignes_export_presentation import (
+    build_lignes_depot_export_filename,
+    render_lignes_depot_export_csv,
+)
 from recyclic_api.application.reception_ticket_export_presentation import (
     build_reception_ticket_download_json,
     reception_ticket_csv_filename,
@@ -674,64 +676,27 @@ def export_lignes_depot_csv(
         end_date=end_date,
         category_id=category_uuid
     )
-    
-    # Créer le contenu CSV
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # En-têtes
-    writer.writerow([
-        "ID Ligne",
-        "ID Ticket", 
-        "ID Poste",
-        "Bénévole",
-        "Catégorie",
-        "Poids (kg)",
-        "Destination",
-        "Notes",
-        "Date de création"
-    ])
-    
-    # Données
-    for ligne in lignes:
-        writer.writerow([
-            str(ligne.id),
-            str(ligne.ticket_id),
-            str(ligne.ticket.poste_id),
-            ligne.ticket.benevole.username or "Utilisateur inconnu",
-            ligne.category.name if ligne.category else "Catégorie inconnue",  # Story B48-P5: Nom court/rapide
-            str(ligne.poids_kg),
-            ligne.destination.value if ligne.destination else "",
-            ligne.notes or "",
-            ligne.ticket.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        ])
-    
-    # Préparer la réponse
-    csv_content = output.getvalue()
-    output.close()
-    
-    # Générer le nom de fichier
-    # Format de timestamp lisible et triable: YYYYMMDD_HHMM (UTC)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M")
-    filename_parts = ["rapport_reception", timestamp]
-    if start_date:
-        filename_parts.append(f"depuis_{start_date}")
-    if end_date:
-        filename_parts.append(f"jusqu_{end_date}")
+
+    csv_content = render_lignes_depot_export_csv(lignes)
+
+    category_filename_token: Optional[str] = None
     if category_id:
-        # tenter de récupérer le nom pour un nom plus parlant
         try:
-            from recyclic_api.models.category import Category as _Category
-            cat = db.query(_Category).get(category_uuid)
+            cat = db.query(Category).get(category_uuid)
             if cat and getattr(cat, "name", None):
-                safe_name = cat.name.lower().replace(" ", "-")
-                filename_parts.append(f"categorie_{safe_name}")
+                category_filename_token = cat.name.lower().replace(" ", "-")
             else:
-                filename_parts.append(f"categorie_{category_id}")
+                category_filename_token = category_id
         except Exception:
-            filename_parts.append(f"categorie_{category_id}")
-    filename = "_".join(filename_parts) + ".csv"
-    
+            category_filename_token = category_id
+
+    filename = build_lignes_depot_export_filename(
+        utc_now=datetime.utcnow(),
+        start_date=start_date,
+        end_date=end_date,
+        category_filename_token=category_filename_token,
+    )
+
     return Response(
         content=csv_content,
         media_type="text/csv",

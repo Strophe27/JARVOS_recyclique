@@ -2468,6 +2468,50 @@
 
 ---
 
+## Lot 2AK — Pilote ARCH-04 sur l'export CSV des lignes `reception`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire hors du routeur `reception.py` la presentation CSV de `GET /reception/lignes/export-csv` tout en conservant les filtres et le contrat actuel
+
+### Actions
+- Creation de `recyclic_api/application/reception_lignes_export_presentation.py` pour porter :
+  - rendu CSV des lignes de depot
+  - construction du nom de fichier export avec horodatage UTC et suffixes de filtres
+- Amincissement de `GET /reception/lignes/export-csv` dans `endpoints/reception.py`.
+- Conservation dans le routeur de :
+  - l'auth admin
+  - la validation UUID de `category_id`
+  - l'appel `ReceptionService.get_lignes_depot_for_export(...)`
+  - la resolution optionnelle du nom de categorie pour le filename
+- Ajout du fichier cible `tests/test_reception_lignes_export_presentation_arch04.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/application/reception_lignes_export_presentation.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_lignes_export_presentation_arch04.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_reception_lignes_export_presentation_arch04.py`
+- Resultat local :
+  - **4 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_lignes_export_presentation_arch04.py`
+  - `tests/test_reception_reports.py`
+- Resultat Docker/PostgreSQL :
+  - **17 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- L'export CSV des lignes n'est plus assemble inline dans le routeur.
+- Le contrat de filtres, colonnes et nom de fichier reste stable sur les scenarios verifies.
+- Reserves acceptees :
+  - `Content-Disposition` reste sans guillemets autour du `filename`, comme avant
+  - la resolution du nom de categorie pour le filename repose encore sur `db.query(Category).get(...)`
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2480,6 +2524,7 @@
 - **Vague 8:** troisieme pilote `ARCH-04` sur `close_cash_session` ferme avec reserves acceptees
 - **Vague 8:** quatrieme pilote `ARCH-04` sur la presentation post-fermeture `close_cash_session` ferme avec reserves acceptees
 - **Vague 8:** cinquieme pilote `ARCH-04` sur l'export ticket `reception` ferme avec reserves acceptees
+- **Vague 8:** sixieme pilote `ARCH-04` sur l'export CSV des lignes `reception` ferme avec reserves acceptees
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2487,8 +2532,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-04` sur `reception` avec l'export CSV des lignes de depot ou la presentation des listes, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-04` sur la presentation des listes JSON `reception`, Telegram etant explicitement reporte
 
 ---
 
