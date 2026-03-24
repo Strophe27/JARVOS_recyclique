@@ -2169,13 +2169,62 @@
 
 ---
 
+## Lot 2AE — Passe DRY sur les traductions HTTP domaine -> route
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** reduire la duplication des mappings `NotFoundError` / `ConflictError` / `ValidationError` vers `HTTPException` dans `reception.py` et `cash_sessions.py` sans modifier les contrats HTTP existants
+
+### Actions
+- Ajout d'un helper dedie `recyclic_api/utils/domain_exception_http.py` pour centraliser le mapping :
+  - `NotFoundError` -> `detail=str(exc)`
+  - `ConflictError` -> `detail=exc.detail`
+  - `ValidationError` -> `detail=str(exc)`
+- Adoption du helper dans `reception.py` avec conservation explicite des statuts propres a chaque route :
+  - `ConflictError` -> `409`
+  - `ValidationError` -> `400` ou `422` selon le endpoint
+  - `NotFoundError` -> `404`
+- Adoption du helper dans `cash_sessions.py` avec conservation explicite des statuts existants :
+  - `ConflictError` -> `400`
+  - `ValidationError` -> `400`
+  - `NotFoundError` -> `404`
+- Aucun refactor des blocs d'audit / logs de `cash_sessions`, volontairement laisses en place.
+- Ajout du fichier cible `test_domain_exception_http.py` pour verrouiller le helper (detail chaine, detail structure, chainage d'exception).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/utils/domain_exception_http.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_domain_exception_http.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_domain_exception_http.py`
+  - `tests/test_reception_arch03_domain_errors.py`
+  - `tests/test_cash_session_close_arch03_domain_errors.py`
+  - `tests/test_cash_session_step_update_arch03.py`
+- Resultat local :
+  - **42 tests passes**
+- Validation Docker/PostgreSQL :
+  - non necessaire pour ce lot, le helper est couvert en unitaire et la non-regression des mappings est couverte par les tests cibles locaux
+- QA finale seule : **OK**
+
+### Resultat
+- La duplication des mappings domaine -> HTTP est reduite sans modifier les codes retour des routes deja migrees.
+- Les verticales `reception` et `cash_sessions` gardent leurs specificites de statuts (`409` vs `400`, `400` vs `422` sur `ValidationError`) sans helper "magique" qui uniformiserait de travers.
+- Reserves acceptees :
+  - quelques appels au helper passent un `validation_status` inerte si le `except` ne capture pas `ValidationError`
+  - les blocs d'audit/logs restent volontairement dupliques pour eviter un sur-refactor risqué
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore`, `ARCH-03/category_soft_delete`, `ARCH-03/category_create` et `ARCH-03/category_update` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore`, `ARCH-03/category_soft_delete`, `ARCH-03/category_create`, `ARCH-03/category_update` et la passe DRY HTTP sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2183,8 +2232,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** reevaluer maintenant la petite passe DRY des traductions HTTP sur les verticales deja migrees, puis ouvrir un pilote `ARCH-04`, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** ouvrir un pilote `ARCH-04` cible sur une route lourde backend, Telegram etant explicitement reporte
 
 ---
 

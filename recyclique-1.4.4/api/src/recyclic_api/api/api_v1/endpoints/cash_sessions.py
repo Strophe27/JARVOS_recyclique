@@ -37,10 +37,17 @@ from recyclic_api.schemas.cash_session import (
 )
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from uuid import UUID
 
 router = APIRouter()
 
+# Erreurs métier caisse : statuts inchangés (Conflict → 400, Validation → 400, NotFound → 404).
+_CASH_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 400,
+    "validation_status": 400,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -269,7 +276,7 @@ async def create_cash_session(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=404, detail=str(e))
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except ConflictError as e:
         log_cash_session_opening(
             user_id=str(current_user.id),
@@ -279,7 +286,7 @@ async def create_cash_session(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=400, detail=e.detail)
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except ValidationError as e:
         log_cash_session_opening(
             user_id=str(current_user.id),
@@ -289,7 +296,7 @@ async def create_cash_session(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except HTTPException:
         raise
     except Exception as e:
@@ -520,7 +527,7 @@ async def get_current_cash_session(
             return None
         return enrich_session_response(session, service)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except HTTPException:
         raise
     except Exception:
@@ -677,7 +684,7 @@ async def get_cash_session_detail(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=404, detail=str(e))
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except ValidationError as e:
         log_cash_session_access(
             user_id=str(current_user.id),
@@ -686,7 +693,7 @@ async def get_cash_session_detail(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except HTTPException:
         raise
     except Exception as e:
@@ -965,7 +972,7 @@ async def close_cash_session(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=404, detail=str(e))
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except ConflictError as e:
         log_cash_session_closing(
             user_id=str(current_user.id),
@@ -975,7 +982,7 @@ async def close_cash_session(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=400, detail=e.detail)
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except ValidationError as e:
         log_cash_session_closing(
             user_id=str(current_user.id),
@@ -985,7 +992,7 @@ async def close_cash_session(
             success=False,
             db=db
         )
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except HTTPException:
         raise
     except Exception as e:
@@ -1190,10 +1197,8 @@ async def update_session_step(
 
     try:
         session = service.get_session_by_id_or_raise(session_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
 
     # Vérifier que l'utilisateur peut modifier cette session
     if (current_user.role == UserRole.USER and
@@ -1213,10 +1218,8 @@ async def update_session_step(
             session_id=session_id,
             **step_metrics
         )
-    except ConflictError as e:
-        raise HTTPException(status_code=400, detail=e.detail)
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (ConflictError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
     except HTTPException:
         raise
     except Exception:

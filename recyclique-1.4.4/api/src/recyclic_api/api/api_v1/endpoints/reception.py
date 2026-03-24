@@ -11,6 +11,7 @@ import io
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_role_strict
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from recyclic_api.models.user import UserRole, User
 from recyclic_api.utils.report_tokens import generate_download_token, verify_download_token
 from recyclic_api.schemas.reception import (
@@ -41,6 +42,12 @@ from recyclic_api.core.config import settings
 
 router = APIRouter()
 
+# Statuts HTTP pour erreurs métier (réception) — ValidationError varie selon la route (400 vs 422).
+_RECEPTION_DOMAIN_HTTP = {
+    "not_found_status": status.HTTP_404_NOT_FOUND,
+    "conflict_status": status.HTTP_409_CONFLICT,
+}
+
 
 @router.post("/postes/open", response_model=OpenPosteResponse)
 def open_poste(
@@ -67,7 +74,11 @@ def open_poste(
     try:
         poste = service.open_poste(opened_by_user_id=current_user.id, opened_at=opened_at)
     except ValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_400_BAD_REQUEST,
+        )
     return {"id": str(poste.id), "status": poste.status}
 
 
@@ -80,10 +91,12 @@ def close_poste(
     service = ReceptionService(db)
     try:
         poste = service.close_poste(poste_id=UUID(poste_id))
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
+    except (NotFoundError, ConflictError) as exc:
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_400_BAD_REQUEST,
+        )
     return {"status": poste.status}
 
 
@@ -96,10 +109,12 @@ def create_ticket(
     service = ReceptionService(db)
     try:
         ticket = service.create_ticket(poste_id=UUID(payload.poste_id), benevole_user_id=current_user.id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
+    except (NotFoundError, ConflictError) as exc:
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_400_BAD_REQUEST,
+        )
     return {"id": str(ticket.id)}
 
 
@@ -113,7 +128,11 @@ def close_ticket(
     try:
         ticket = service.close_ticket(ticket_id=UUID(ticket_id))
     except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_400_BAD_REQUEST,
+        )
     return {"status": ticket.status}
 
 
@@ -135,12 +154,12 @@ def add_ligne(
             notes=payload.notes,
             is_exit=payload.is_exit if payload.is_exit is not None else False,
         )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
-    except ValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except (NotFoundError, ConflictError, ValidationError) as exc:
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
     
     # Récupérer le nom de la catégorie
     from recyclic_api.services.category_service import CategoryService
@@ -198,12 +217,12 @@ def update_ligne(
             notes=payload.notes,
             is_exit=payload.is_exit,
         )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
-    except ValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except (NotFoundError, ConflictError, ValidationError) as exc:
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
     
     # Récupérer le nom de la catégorie
     from recyclic_api.services.category_service import CategoryService
@@ -237,10 +256,12 @@ def delete_ligne(
 
     try:
         service.delete_ligne(ligne_id=ligne_uuid)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
+    except (NotFoundError, ConflictError) as exc:
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_400_BAD_REQUEST,
+        )
     return {"status": "deleted"}
 
 
@@ -292,10 +313,12 @@ def update_ligne_weight(
             ligne_id=ligne_uuid,
             poids_kg=new_weight
         )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except (NotFoundError, ValidationError) as exc:
+        raise_domain_exception_as_http(
+            exc,
+            **_RECEPTION_DOMAIN_HTTP,
+            validation_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
     
     # Recalculer les statistiques affectées
     recalculation_result = None
