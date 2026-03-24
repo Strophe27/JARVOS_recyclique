@@ -448,10 +448,7 @@ class CategoryService:
 
         # Check if category is already active (not deleted)
         if category.deleted_at is None:
-            raise HTTPException(
-                status_code=400,
-                detail="Category is already active (not deleted)"
-            )
+            raise ValidationError("Category is already active (not deleted)")
 
         # Restore by setting deleted_at to NULL
         category.deleted_at = None

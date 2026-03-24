@@ -278,9 +278,10 @@ async def restore_category(
     service = CategoryService(db)
     try:
         category = await service.restore_category(category_id)
-    except HTTPException as e:
-        # Re-raise HTTP exceptions (e.g., already active)
-        raise e
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")

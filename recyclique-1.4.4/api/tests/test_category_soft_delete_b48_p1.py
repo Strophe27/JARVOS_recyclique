@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
+from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.category import Category
 from recyclic_api.services.category_service import CategoryService
 from recyclic_api.services.category_management import CategoryManagementService
@@ -116,7 +117,8 @@ class TestCategorySoftDelete:
 class TestCategoryRestore:
     """Tests pour la restauration de catégories archivées"""
 
-    def test_restore_category_sets_deleted_at_to_none(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_restore_category_sets_deleted_at_to_none(self, db_session: Session):
         """Test que restore_category() remet deleted_at à NULL"""
         service = CategoryService(db_session)
         
@@ -131,7 +133,7 @@ class TestCategoryRestore:
         db_session.commit()
         
         # Restaurer
-        result = service.restore_category(str(category.id))
+        result = await service.restore_category(str(category.id))
         
         # Vérifier que deleted_at est NULL
         assert result is not None
@@ -141,7 +143,8 @@ class TestCategoryRestore:
         db_session.refresh(category)
         assert category.deleted_at is None
 
-    def test_restore_already_active_category_fails(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_restore_already_active_category_fails(self, db_session: Session):
         """Test que restore_category() échoue si la catégorie n'est pas archivée"""
         service = CategoryService(db_session)
         
@@ -156,11 +159,10 @@ class TestCategoryRestore:
         db_session.commit()
         
         # Tentative de restauration (doit échouer)
-        with pytest.raises(Exception) as exc_info:
-            service.restore_category(str(category.id))
+        with pytest.raises(ValidationError) as exc_info:
+            await service.restore_category(str(category.id))
         
-        assert exc_info.value.status_code == 400
-        assert "already active" in str(exc_info.value.detail).lower()
+        assert "already active" in str(exc_info.value).lower()
 
 
 class TestCategoryFiltering:

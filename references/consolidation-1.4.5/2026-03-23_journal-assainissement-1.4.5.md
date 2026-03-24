@@ -1996,13 +1996,54 @@
 
 ---
 
+## Lot 2AA — Pilote ARCH-03 sur `CategoryService.restore_category`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la restauration de categorie hors HTTP en preservant le contrat historique `200/404/400`
+
+### Actions
+- Refactor de `CategoryService.restore_category()` pour remplacer le `HTTPException` du cas "deja active" par `ValidationError`, avec conservation du message existant.
+- Conservation volontaire du comportement `None` sur categorie absente ou identifiant invalide afin de preserver le `404` historique de la route.
+- Refactor de `POST /categories/{category_id}/restore` dans `categories.py` pour traduire `ValidationError` -> `400`, tout en gardant `404` si le service retourne `None`.
+- Ajout du fichier cible `test_category_restore_arch03.py` pour verrouiller :
+  - mapping route `400` sur `ValidationError`
+  - mapping route `404` sur `None`
+  - succes nominal sur le contrat HTTP
+- Adaptation de `tests/test_category_soft_delete_b48_p1.py` sur le sous-ensemble `TestCategoryRestore` pour utiliser `await` et verifier `ValidationError` au niveau service.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/category_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/categories.py`
+- `recyclique-1.4.4/api/tests/test_category_restore_arch03.py`
+- `recyclique-1.4.4/api/tests/test_category_soft_delete_b48_p1.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_category_restore_arch03.py`
+  - `tests/test_category_hard_delete_arch03.py`
+- Resultat local :
+  - **12 tests passes**
+- Validation Docker/PostgreSQL :
+  - non necessaire pour ce lot, la couverture ajoutee est route-level / unitaire
+- QA finale seule : **OK**
+
+### Resultat
+- `CategoryService.restore_category()` ne leve plus d'erreur HTTP directe.
+- Le contrat HTTP de `POST .../restore` est preserve sur `200`, `404`, `400`.
+- Reserves acceptees :
+  - la couverture HTTP reste surtout route-level avec service mocke
+  - les autres tests async du fichier B48 restent une dette voisine hors du perimetre strict de ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management` et `ARCH-03/category_hard_delete` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete` et `ARCH-03/category_restore` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2010,8 +2051,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService` avec `restore_category` ou un lot create/update borne, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService` avec un lot borne create/update ou soft delete, Telegram etant explicitement reporte
 
 ---
 
