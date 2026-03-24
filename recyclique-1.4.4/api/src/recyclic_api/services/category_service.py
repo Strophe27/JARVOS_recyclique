@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from datetime import datetime, timezone
 
+from ..core.exceptions import ConflictError, NotFoundError, ValidationError
 from ..models.category import Category
 from ..schemas.category import CategoryCreate, CategoryUpdate, CategoryRead, CategoryWithChildren
 
@@ -403,20 +404,27 @@ class CategoryService:
         """Hard delete a category from the database.
 
         Guard: refuse deletion if the category has active or inactive children.
+
+        Raises:
+            ValidationError: Invalid category id format.
+            NotFoundError: Category does not exist.
+            ConflictError: Category has subcategories.
         """
         try:
             cat_uuid = UUID(category_id)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid category id")
+            raise ValidationError("Invalid category id")
 
         category = self.db.query(Category).filter(Category.id == cat_uuid).first()
         if not category:
-            raise HTTPException(status_code=404, detail="Category not found")
+            raise NotFoundError("Category not found")
 
         # Guard: any children (active or not)
         has_children = self.db.query(Category).filter(Category.parent_id == cat_uuid).first() is not None
         if has_children:
-            raise HTTPException(status_code=422, detail="Impossible de supprimer: la catégorie possède des sous-catégories")
+            raise ConflictError(
+                "Impossible de supprimer: la catégorie possède des sous-catégories"
+            )
 
         self.db.delete(category)
         self.db.commit()

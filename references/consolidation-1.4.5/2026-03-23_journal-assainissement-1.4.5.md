@@ -1954,13 +1954,55 @@
 
 ---
 
+## Lot 1Z — Pilote ARCH-03 sur `CategoryService.hard_delete_category`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir le hard delete des categories hors HTTP, sans melanger le soft delete ni le reste du CRUD categories
+
+### Actions
+- Refactor de `CategoryService.hard_delete_category()` pour remplacer les `HTTPException` par :
+  - `ValidationError` sur identifiant invalide
+  - `NotFoundError` sur categorie absente
+  - `ConflictError` si la categorie possede encore des sous-categories
+- Refactor de `DELETE /categories/{category_id}/hard` dans `categories.py` pour traduire explicitement :
+  - `ValidationError` -> `400`
+  - `NotFoundError` -> `404`
+  - `ConflictError` -> `422`
+- Ajout du fichier cible `test_category_hard_delete_arch03.py` pour verrouiller :
+  - service `hard_delete_category()` sur UUID invalide / categorie absente / categorie avec enfants / suppression reussie
+  - route HTTP `DELETE .../hard` sur `400`, `404`, `422` et succes `204`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/category_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/categories.py`
+- `recyclique-1.4.4/api/tests/test_category_hard_delete_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_category_hard_delete_arch03.py`
+- Resultat local :
+  - **8 tests passes**
+- Validation Docker/PostgreSQL :
+  - non necessaire pour ce lot, la couverture ajoutee est mockee / unitaire
+- QA finale seule : **OK**
+
+### Resultat
+- `CategoryService.hard_delete_category()` ne leve plus d'erreur HTTP directe.
+- Le contrat HTTP de `DELETE .../hard` est preserve sur `400`, `404`, `422`, `204`.
+- Reserves acceptees :
+  - la couverture reste route-level avec service mocke
+  - un `IntegrityError` SQL sur d'autres dependances DB potentielles resterait traite hors de ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service` et `ARCH-03/category_management` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management` et `ARCH-03/category_hard_delete` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1968,8 +2010,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService` par un premier micro-lot borne (create/update ou delete/restore), Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService` avec `restore_category` ou un lot create/update borne, Telegram etant explicitement reporte
 
 ---
 
