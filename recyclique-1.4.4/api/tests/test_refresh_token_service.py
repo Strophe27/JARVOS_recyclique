@@ -2,6 +2,8 @@
 Tests unitaires pour RefreshTokenService
 Story B42-P2: Backend – Refresh token & réémission glissante
 """
+from unittest.mock import patch
+
 import pytest
 import time
 from datetime import datetime, timedelta, timezone
@@ -15,6 +17,11 @@ from recyclic_api.models.user_session import UserSession
 from recyclic_api.models.setting import Setting
 from recyclic_api.core.security import hash_password
 from recyclic_api.services.activity_service import ActivityService
+
+
+def _unique_user_email(prefix: str) -> str:
+    """Évite les collisions UNIQUE(username) si le nettoyage pilote est partiel ou en parallèle."""
+    return f"{prefix}_{uuid4().hex[:12]}@test.local"
 
 
 class TestRefreshTokenService:
@@ -39,7 +46,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_refresh_user",
+            username=_unique_user_email("test_refresh"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -70,7 +77,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_rotate_user",
+            username=_unique_user_email("test_rotate"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -92,10 +99,13 @@ class TestRefreshTokenService:
         activity_service = ActivityService(db_session)
         activity_service.record_user_activity(str(user.id))
 
-        # Valider et faire la rotation
-        new_session, new_refresh_token = service.validate_and_rotate(
-            refresh_token=refresh_token,
-        )
+        # Sans Redis local, record_user_activity ne persiste rien ; on simule une activité récente.
+        with patch.object(
+            ActivityService, "get_minutes_since_activity", return_value=0.0
+        ):
+            new_session, new_refresh_token = service.validate_and_rotate(
+                refresh_token=refresh_token,
+            )
 
         assert new_session is not None
         assert new_session.user_id == user.id
@@ -118,7 +128,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_revoked_user",
+            username=_unique_user_email("test_revoked"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -149,7 +159,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_expired_user",
+            username=_unique_user_email("test_expired"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -178,7 +188,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_inactive_user",
+            username=_unique_user_email("test_rt_inactive"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -208,7 +218,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_revoke_user",
+            username=_unique_user_email("test_revoke"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -237,7 +247,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_revoke_all_user",
+            username=_unique_user_email("test_revoke_all"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -272,7 +282,7 @@ class TestRefreshTokenService:
         # Créer un utilisateur de test
         user = User(
             id=uuid4(),
-            username="test_active_sessions_user",
+            username=_unique_user_email("test_active_sessions"),
             hashed_password=hash_password("testpass"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,

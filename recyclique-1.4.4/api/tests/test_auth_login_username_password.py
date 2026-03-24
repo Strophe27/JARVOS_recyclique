@@ -3,14 +3,19 @@ Tests for the updated username/password authentication endpoint
 Story auth.B - Backend CLI adaptation
 """
 
+import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from jsonschema import validate, ValidationError
 
+from recyclic_api.core.config import settings
 from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 def validate_with_resolver(instance, schema, openapi_schema):
     """Valide une instance contre un schéma OpenAPI avec résolution des références."""
@@ -47,11 +52,11 @@ class TestAuthLoginUsernamePassword:
 
     def test_login_success_valid_credentials(self, client: TestClient, db_session: Session, openapi_schema):
         """Test successful login with valid username and password"""
-        # Create a fresh client for this test to avoid rate limiting conflicts        
+        username = f"login_ok_{uuid.uuid4().hex[:12]}"
         # Create test user with hashed password
         hashed_password = hash_password("testpassword123")
         test_user = User(
-            username="testuser1",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
@@ -63,9 +68,9 @@ class TestAuthLoginUsernamePassword:
 
         # Test login
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "testuser1",
+                "username": username,
                 "password": "testpassword123"
             }
         )
@@ -74,7 +79,7 @@ class TestAuthLoginUsernamePassword:
         data = response.json()
         
         # Validation du schéma OpenAPI de la réponse
-        login_schema = openapi_schema["paths"]["/api/v1/auth/login"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
+        login_schema = openapi_schema["paths"][f"{_V1}/auth/login"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
         try:
             validate_with_resolver(data, login_schema, openapi_schema)
         except ValidationError as e:
@@ -84,16 +89,17 @@ class TestAuthLoginUsernamePassword:
         assert "token_type" in data
         assert data["token_type"] == "bearer"
         assert "user" in data
-        assert data["user"]["username"] == "testuser1"
+        assert data["user"]["username"] == username
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
 
     def test_login_failure_invalid_username(self, client: TestClient, db_session: Session):
-        """Test login failure with non-existent username"""        
+        """Test login failure with non-existent username"""
+        missing = f"no_such_user_{uuid.uuid4().hex[:12]}"
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "nonexistent",
+                "username": missing,
                 "password": "password123"
             }
         )
@@ -104,11 +110,11 @@ class TestAuthLoginUsernamePassword:
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
     def test_login_failure_invalid_password(self, client: TestClient, db_session: Session):
-        """Test login failure with invalid password"""        
-        # Create test user
+        """Test login failure with invalid password"""
+        username = f"login_bad_pwd_{uuid.uuid4().hex[:12]}"
         hashed_password = hash_password("correctpassword")
         test_user = User(
-            username="testuser2",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
@@ -117,11 +123,10 @@ class TestAuthLoginUsernamePassword:
         db_session.add(test_user)
         db_session.commit()
 
-        # Test with wrong password
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "testuser2",
+                "username": username,
                 "password": "wrongpassword"
             }
         )
@@ -132,11 +137,11 @@ class TestAuthLoginUsernamePassword:
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
     def test_login_failure_inactive_user(self, client: TestClient, db_session: Session):
-        """Test login failure with inactive user"""        
-        # Create inactive user
+        """Test login failure with inactive user"""
+        username = f"login_inactive_{uuid.uuid4().hex[:12]}"
         hashed_password = hash_password("testpassword123")
         test_user = User(
-            username="inactiveuser",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
@@ -146,9 +151,9 @@ class TestAuthLoginUsernamePassword:
         db_session.commit()
 
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "inactiveuser",
+                "username": username,
                 "password": "testpassword123"
             }
         )
@@ -159,9 +164,9 @@ class TestAuthLoginUsernamePassword:
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
     def test_login_validation_error_missing_username(self, client: TestClient):
-        """Test validation error with missing username"""        
+        """Test validation error with missing username"""
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={"password": "password123"}
         )
 
@@ -170,10 +175,10 @@ class TestAuthLoginUsernamePassword:
         assert "detail" in data
 
     def test_login_validation_error_missing_password(self, client: TestClient):
-        """Test validation error with missing password"""        
+        """Test validation error with missing password"""
         response = client.post(
-            "/api/v1/auth/login",
-            json={"username": "testuser"}
+            f"{_V1}/auth/login",
+            json={"username": f"login_no_pwd_{uuid.uuid4().hex[:12]}"}
         )
 
         assert response.status_code == 422
@@ -181,9 +186,9 @@ class TestAuthLoginUsernamePassword:
         assert "detail" in data
 
     def test_login_validation_error_empty_credentials(self, client: TestClient):
-        """Test validation error with empty credentials"""        
+        """Test validation error with empty credentials"""
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={}
         )
 
@@ -192,10 +197,11 @@ class TestAuthLoginUsernamePassword:
         assert "detail" in data
 
     def test_login_success_admin_user(self, client: TestClient, db_session: Session):
-        """Test successful login with admin user"""        
+        """Test successful login with admin user"""
+        username = f"login_admin_{uuid.uuid4().hex[:12]}"
         hashed_password = hash_password("adminpass123")
         admin_user = User(
-            username="adminuser1",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.ADMIN,
             status=UserStatus.APPROVED,
@@ -206,9 +212,9 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(admin_user)
 
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "adminuser1",
+                "username": username,
                 "password": "adminpass123"
             }
         )
@@ -219,10 +225,11 @@ class TestAuthLoginUsernamePassword:
         assert "access_token" in data
 
     def test_login_success_super_admin_user(self, client: TestClient, db_session: Session):
-        """Test successful login with super-admin user"""        
+        """Test successful login with super-admin user"""
+        username = f"login_superadmin_{uuid.uuid4().hex[:12]}"
         hashed_password = hash_password("superadminpass123")
         super_admin = User(
-            username="superadmin1",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.SUPER_ADMIN,
             status=UserStatus.APPROVED,
@@ -233,9 +240,9 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(super_admin)
 
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "superadmin1",
+                "username": username,
                 "password": "superadminpass123"
             }
         )
@@ -246,10 +253,11 @@ class TestAuthLoginUsernamePassword:
         assert "access_token" in data
 
     def test_jwt_token_structure(self, client: TestClient, db_session: Session):
-        """Test JWT token structure"""        
+        """Test JWT token structure"""
+        username = f"login_jwt_{uuid.uuid4().hex[:12]}"
         hashed_password = hash_password("tokentest123")
         test_user = User(
-            username="jwtuser1",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
@@ -260,9 +268,9 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(test_user)
 
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "jwtuser1",
+                "username": username,
                 "password": "tokentest123"
             }
         )
@@ -279,10 +287,11 @@ class TestAuthLoginUsernamePassword:
         assert data["access_token"].count(".") == 2
 
     def test_password_case_sensitivity(self, client: TestClient, db_session: Session):
-        """Test that password authentication is case-sensitive"""        
+        """Test that password authentication is case-sensitive"""
+        username = f"login_case_{uuid.uuid4().hex[:12]}"
         hashed_password = hash_password("CaseSensitive123")
         test_user = User(
-            username="caseuser1",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
@@ -291,21 +300,19 @@ class TestAuthLoginUsernamePassword:
         db_session.add(test_user)
         db_session.commit()
 
-        # Test with correct case
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "caseuser1",
+                "username": username,
                 "password": "CaseSensitive123"
             }
         )
         assert response.status_code == 200
 
-        # Test with wrong case
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "caseuser1",
+                "username": username,
                 "password": "casesensitive123"
             }
         )
@@ -317,9 +324,10 @@ class TestAuthLoginUsernamePassword:
         Vérifie que la sérialisation de LoginResponse fonctionne correctement
         même avec refresh_token None ou avec tous les champs remplis.
         """
+        username = f"login_serial_{uuid.uuid4().hex[:12]}"
         hashed_password = hash_password("serialtest123")
         test_user = User(
-            username="serialuser1",
+            username=username,
             hashed_password=hashed_password,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
@@ -331,11 +339,10 @@ class TestAuthLoginUsernamePassword:
         db_session.commit()
         db_session.refresh(test_user)
 
-        # Test login - doit réussir même si refresh_token est None
         response = client.post(
-            "/api/v1/auth/login",
+            f"{_V1}/auth/login",
             json={
-                "username": "serialuser1",
+                "username": username,
                 "password": "serialtest123"
             }
         )
@@ -343,8 +350,7 @@ class TestAuthLoginUsernamePassword:
         assert response.status_code == 200, f"Login failed with status {response.status_code}: {response.text}"
         data = response.json()
         
-        # Validation du schéma OpenAPI de la réponse
-        login_schema = openapi_schema["paths"]["/api/v1/auth/login"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
+        login_schema = openapi_schema["paths"][f"{_V1}/auth/login"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
         try:
             validate_with_resolver(data, login_schema, openapi_schema)
         except ValidationError as e:
@@ -355,7 +361,7 @@ class TestAuthLoginUsernamePassword:
         assert "token_type" in data
         assert data["token_type"] == "bearer"
         assert "user" in data
-        assert data["user"]["username"] == "serialuser1"
+        assert data["user"]["username"] == username
         assert data["user"]["first_name"] == "Test"
         assert data["user"]["last_name"] == "User"
         assert "refresh_token" in data  # Peut être None ou string

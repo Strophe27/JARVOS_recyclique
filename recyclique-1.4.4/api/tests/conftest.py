@@ -1,7 +1,8 @@
 """
 Configuration des tests pour l'API Recyclic
 
-Lot C pilote (TEST-01) : isolation DB pour un sous-ensemble de modules (voir
+Lot C pilote (TEST-01 + extension) : isolation DB pour un sous-ensemble de
+modules auth/infra, admin utilisateur, et ``test_refresh_token_service`` (voir
 ``_PILOT_DB_ISOLATION_BASENAMES`` et ``_cleanup_pilot_db_tables``). Le
 nettoyage s'exécute dans le ``finally`` de ``_db_autouse`` après fermeture
 session + connexion du test (évite les verrous SQLite avec un hook teardown).
@@ -184,21 +185,49 @@ from recyclic_api.core.security import create_access_token, hash_password
 
 logger = logging.getLogger(__name__)
 
-# Modules du pilote isolation DB (Lot C / TEST-01) : nettoyage post-test ciblé.
+# SQLite ne conserve pas le tz des colonnes DateTime(timezone=True) : l'ORM peut
+# renvoyer des datetimes naïfs, ce qui casse les comparaisons avec ``datetime.now(timezone.utc)``.
+_USER_SESSION_UTC_ATTRS = (
+    "expires_at",
+    "issued_at",
+    "last_used_at",
+    "revoked_at",
+    "created_at",
+    "updated_at",
+)
+
+
+def _coerce_user_session_datetimes_utc(target: UserSession) -> None:
+    from datetime import timezone as _tz
+
+    for attr in _USER_SESSION_UTC_ATTRS:
+        val = getattr(target, attr, None)
+        if val is not None and getattr(val, "tzinfo", None) is None:
+            setattr(target, attr, val.replace(tzinfo=_tz.utc))
+
+# Modules du pilote isolation DB (Lot C / TEST-01 + TEST-02 admin) : nettoyage post-test ciblé.
 _PILOT_DB_ISOLATION_BASENAMES = frozenset(
     {
         "test_infrastructure.py",
         "test_auth_login_endpoint.py",
         "test_auth_logging.py",
         "test_auth_inactive_user_middleware.py",
+        "test_auth_login_username_password.py",
+        "test_admin_user_status_endpoint.py",
+        "test_admin_user_management.py",
+        "test_refresh_token_service.py",
     }
 )
 
 # Ordre : enfants (FK vers users) puis users. Ignoré si la table n'existe pas (SQLite minimal).
+# ``settings`` : clés globales (ex. refresh_token_max_hours) — évite qu'un test pilote
+# impose la valeur au suivant après commit + DELETE users/sessions.
 _PILOT_CLEANUP_TABLES_ORDER = (
     "audit_logs",
     "user_sessions",
     "login_history",
+    "user_status_history",
+    "settings",
     "users",
 )
 
@@ -211,6 +240,17 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy import event
+
+    @event.listens_for(UserSession, "load")
+    def _sqlite_user_session_load_utc(target, context):  # noqa: ARG001
+        _coerce_user_session_datetimes_utc(target)
+
+    @event.listens_for(UserSession, "refresh")
+    def _sqlite_user_session_refresh_utc(target, context, attrs):  # noqa: ARG001
+        _coerce_user_session_datetimes_utc(target)
 
 
 def _cleanup_pilot_db_tables() -> None:
@@ -264,6 +304,26 @@ def _cleanup_pilot_db_tables() -> None:
             f"Pilote Lot C (cleanup): {len(delete_errors)} DELETE en échec — {summary}"
         ) from delete_errors[0][1]
 
+    # Cache classe ActivityService (seuil lu depuis ``settings``) : sans reset, une valeur
+    # mise en cache peut survivre au DELETE ``settings`` jusqu'à expiration TTL (60 s).
+    try:
+        from recyclic_api.services.activity_service import (
+            ActivityService,
+            DEFAULT_ACTIVITY_THRESHOLD_MINUTES,
+        )
+
+        ActivityService._cached_threshold_minutes = DEFAULT_ACTIVITY_THRESHOLD_MINUTES
+        ActivityService._cache_expiration_timestamp = 0.0
+    except Exception as e:
+        logger.error(
+            "Pilote Lot C (cleanup): impossible de réinitialiser le cache ActivityService: %s",
+            e,
+            exc_info=True,
+        )
+        raise RuntimeError(
+            "Pilote Lot C (cleanup): reset du cache ActivityService en échec — isolation non garantie."
+        ) from e
+
 
 def _request_is_pilot_db_isolation(request) -> bool:
     try:
@@ -299,6 +359,7 @@ def create_tables_if_not_exist():
                 bind=engine,
                 tables=[
                     User.__table__,
+                    UserStatusHistory.__table__,
                     LoginHistory.__table__,
                     UserSession.__table__,
                     Setting.__table__,
@@ -321,9 +382,9 @@ def db_engine():
 @pytest.fixture(autouse=True)
 def _sqlite_skip_audit_log_commit(request):
     """
-    Sous SQLite, audit_logs (JSONB) n'est pas créé ; log_audit() fait un commit()
-    global qui casse la session si l'insert audit échoue. On neutralise log_audit
-    côté endpoint auth pour ce schéma minimal.
+    Sous SQLite, audit_logs (JSONB) n'est pas créé ; log_audit() et dérivés
+    (log_role_change, etc.) font un commit() ou échouent sur insert. On neutralise
+    log_audit dans core.audit (imports dynamiques ex. users), auth et admin.
     """
     if not SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
         yield
@@ -332,9 +393,18 @@ def _sqlite_skip_audit_log_commit(request):
         yield
         return
     from unittest.mock import patch
+
+    from recyclic_api.core import audit as audit_core
+    from recyclic_api.api.api_v1.endpoints import admin as admin_endpoints
     from recyclic_api.api.api_v1.endpoints import auth as auth_endpoints
 
-    with patch.object(auth_endpoints, "log_audit", lambda *args, **kwargs: None):
+    _noop = lambda *args, **kwargs: None
+
+    with (
+        patch.object(audit_core, "log_audit", _noop),
+        patch.object(auth_endpoints, "log_audit", _noop),
+        patch.object(admin_endpoints, "log_audit", _noop),
+    ):
         yield
 
 @pytest.fixture(scope="function", autouse=True)
@@ -354,7 +424,8 @@ def _db_autouse(db_engine, request):
       laisse les données visibles sur la connexion / le moteur tant que la connexion vit.
     - **Pilote Lot C (TEST-01)** : pour les modules listés dans
       ``_PILOT_DB_ISOLATION_BASENAMES``, après fermeture de la connexion du test, un
-      ``DELETE`` ciblé sur ``audit_logs``, ``user_sessions``, ``login_history``, ``users``
+      ``DELETE`` ciblé sur ``audit_logs``, ``user_sessions``, ``login_history``,
+      ``user_status_history``, ``settings``, ``users``
       (tables présentes uniquement). Cela compense les commits du login / audit pour ce
       sous-ensemble seulement ; ce n'est pas un rollback transactionnel et d'autres tables
       peuvent encore conserver des lignes si un test pilote les remplit.

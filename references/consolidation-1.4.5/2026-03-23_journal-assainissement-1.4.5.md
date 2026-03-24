@@ -944,6 +944,82 @@
 
 ---
 
+## Lot 3F — Tests backend auth/admin : collisions et extension pilote
+
+**Statut:** ferme  
+**Theme:** reduire la pollution de donnees la plus visible et etendre le pilote d'isolation a un sous-ensemble auth/admin rentable
+
+### Actions
+- Unicification des identifiants de test (`username`, `telegram_id`) dans :
+  - `api/tests/test_auth_login_username_password.py`
+  - `api/tests/test_admin_user_status_endpoint.py`
+  - `api/tests/api/test_admin_user_management.py`
+- Realignement de ces tests sur `settings.API_V1_STR` au lieu de chemins API figes quand pertinent.
+- Extension de `_PILOT_DB_ISOLATION_BASENAMES` dans `api/tests/conftest.py` a ces modules.
+- Extension du cleanup pilote a `user_status_history`.
+- Neutralisation SQLite de `log_audit` sur les surfaces auth/admin necessaires pour garder les tests cibles stables en schema minimal.
+- Realignement de `api/run_tests.sh` sur le sous-ensemble pilote effectivement supporte.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_auth_login_username_password.py`
+- `recyclique-1.4.4/api/tests/test_admin_user_status_endpoint.py`
+- `recyclique-1.4.4/api/tests/api/test_admin_user_management.py`
+- `recyclique-1.4.4/api/run_tests.sh`
+
+### Validation
+- `pytest` cible sur :
+  - `tests/test_infrastructure.py`
+  - `tests/test_auth_login_endpoint.py`
+  - `tests/test_auth_logging.py`
+  - `tests/test_auth_inactive_user_middleware.py`
+  - `tests/test_auth_login_username_password.py`
+  - `tests/test_admin_user_status_endpoint.py`
+  - `tests/api/test_admin_user_management.py`
+- Resultat : **57 tests passes**
+- QA de cloture seule : **fermable**
+
+### Resultat
+- Les collisions de donnees les plus evidentes du lot auth/admin sont reduites.
+- Le pilote d'isolation couvre un sous-ensemble auth/admin plus representatif qu'avant.
+- `run_tests.sh` raconte mieux le sous-ensemble pilote reel.
+
+---
+
+## Lot 3G — Tests backend refresh : service + settings
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** etendre prudemment le pilote auth aux tests du `RefreshTokenService`
+
+### Actions
+- Ajout de `api/tests/test_refresh_token_service.py` au pilote d'isolation.
+- Extension du cleanup pilote a `settings` pour eviter les fuites d'etat sur `refresh_token_max_hours`.
+- Reset explicite du cache `ActivityService` pendant le teardown pilote.
+- Correctif SQLite cible pour les datetimes `UserSession` rechargees depuis la base de test.
+- Unicification des usernames dans `test_refresh_token_service.py`.
+- Ajustement du test de rotation reussie pour stabiliser la partie "activite recente" sans dependre du comportement reel Redis local.
+- Extension de `api/run_tests.sh` a `tests/test_refresh_token_service.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_refresh_token_service.py`
+- `recyclique-1.4.4/api/run_tests.sh`
+
+### Validation
+- `pytest tests/test_refresh_token_service.py`
+- `pytest` cible sur le sous-ensemble pilote auth/admin + refresh
+- Resultat final revalide : **69 tests passes**
+- QA de cloture seule : **fermable avec reserves**
+
+### Resultat
+- Le pilote auth couvre maintenant aussi le service refresh et son usage de `settings`.
+- Les fuites d'etat les plus probables autour de `refresh_token_max_hours` sont neutralisees.
+- Reserves acceptees :
+  - le pilote reste une isolation par cleanup cible, pas un rollback transactionnel global
+  - la validation Docker/PostgreSQL du script `run_tests.sh` reste utile comme passe complementaire
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -977,10 +1053,11 @@
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
+- **Vague 7:** extension backend tests auth/admin/refresh fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `2I`
-- **Prochaine etape logique:** reapprécier sobrement s'il faut ouvrir un lot plus ambitieux sur les gros composants frontend (`FE-09`) ou revenir sur les chantiers backend structurels restants
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `4A`, `4B`, `4C`, `4D`
+- **Lots fermes avec reserve:** `2I`, `3G`
+- **Prochaine etape logique:** poursuivre la fiabilisation backend soit par l'extension auth/logout/refresh endpoint, soit par un lot plus large sur la politique transactionnelle et l'isolation tests
 
 ---
 

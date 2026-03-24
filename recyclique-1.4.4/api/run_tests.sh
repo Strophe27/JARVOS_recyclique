@@ -24,9 +24,14 @@ docker-compose run --rm -e TESTING=true -e ENVIRONMENT=test api bash -lc "\
   cd /app && python -m pytest \
     tests/test_infrastructure.py \
     tests/test_auth_login_endpoint.py \
-    tests/test_auth_logging.py"
+    tests/test_auth_logging.py \
+    tests/test_auth_inactive_user_middleware.py \
+    tests/test_auth_login_username_password.py \
+    tests/test_admin_user_status_endpoint.py \
+    tests/api/test_admin_user_management.py \
+    tests/test_refresh_token_service.py"
 
-echo "✅ Tests terminés (lot minimal auth + infra)."
+echo "✅ Tests terminés (lot pilote TEST-01 + TEST-02 admin, aligné conftest)."
 echo ""
 echo "📌 Le service docker compose api-tests est commenté dans docker-compose.yml ;"
 echo "   ce script utilise l image api avec TESTING=true et le sous-ensemble ci-dessus."

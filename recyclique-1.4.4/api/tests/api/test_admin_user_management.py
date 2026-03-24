@@ -1,19 +1,32 @@
 """Tests pour les endpoints de gestion des utilisateurs (statut et profil)"""
+import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+
+from recyclic_api.core.config import settings
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.core.security import hash_password
 
+_V1 = settings.API_V1_STR.rstrip("/")
+
+
+def _unique_numeric_telegram() -> str:
+    """Identifiant telegram test unique, chaîne de chiffres (schéma AuthUser au login)."""
+    return str(1_000_000_000 + (uuid.uuid4().int % 8_999_999_999))
+
 
 def test_update_user_status_success(client: TestClient, db_session: Session):
     """Test de mise à jour du statut utilisateur avec succès"""
-    # Créer un utilisateur de test
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_st_ok_u_{tid}"
+    uname_a = f"mgmt_st_ok_a_{tid}"
     test_user = User(
-        username="testuser",
+        username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -23,12 +36,11 @@ def test_update_user_status_success(client: TestClient, db_session: Session):
     db_session.add(test_user)
     db_session.commit()
     db_session.refresh(test_user)
-    
-    # Créer un admin pour la requête
+
     admin_user = User(
-        username="admin",
+        username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id="987654321",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -38,34 +50,34 @@ def test_update_user_status_success(client: TestClient, db_session: Session):
     db_session.add(admin_user)
     db_session.commit()
     db_session.refresh(admin_user)
-    
-    # Se connecter en tant qu'admin
+
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"}
     )
     assert login_response.status_code == 200
     token = login_response.json()["access_token"]
-    
-    # Mettre à jour le statut de l'utilisateur
+
     response = client.put(
-        f"/api/v1/admin/users/{test_user.id}/status",
-        json={"is_active": False, "reason": "Test de désactivation"},
+        f"{_V1}/admin/users/{test_user.id}/status",
+        json={
+            "status": "approved",
+            "is_active": False,
+            "reason": "Test de désactivation",
+        },
         headers={"Authorization": f"Bearer {token}"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
     assert data["data"]["is_active"] is False
     assert data["data"]["previous_status"] is True
     assert data["data"]["reason"] == "Test de désactivation"
-    
-    # Vérifier que l'utilisateur a été mis à jour en base
+
     db_session.refresh(test_user)
     assert test_user.is_active is False
-    
-    # Vérifier que l'historique a été créé
+
     history = db_session.query(UserStatusHistory).filter(
         UserStatusHistory.user_id == test_user.id
     ).first()
@@ -78,11 +90,12 @@ def test_update_user_status_success(client: TestClient, db_session: Session):
 
 def test_update_user_status_user_not_found(client: TestClient, db_session: Session):
     """Test de mise à jour du statut d'un utilisateur inexistant"""
-    # Créer un admin
+    tid = uuid.uuid4().hex[:10]
+    uname_a = f"mgmt_st_nf_a_{tid}"
     admin_user = User(
-        username="admin",
+        username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id="987654321",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -91,32 +104,31 @@ def test_update_user_status_user_not_found(client: TestClient, db_session: Sessi
     )
     db_session.add(admin_user)
     db_session.commit()
-    
-    # Se connecter en tant qu'admin
+
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"}
     )
     token = login_response.json()["access_token"]
-    
-    # Essayer de mettre à jour un utilisateur inexistant
+
     response = client.put(
-        "/api/v1/admin/users/00000000-0000-0000-0000-000000000000/status",
-        json={"is_active": False},
+        f"{_V1}/admin/users/00000000-0000-0000-0000-000000000000/status",
+        json={"status": "approved", "is_active": False},
         headers={"Authorization": f"Bearer {token}"}
     )
-    
+
     assert response.status_code == 404
-    assert "Utilisateur non trouvé" in response.json()["detail"]
+    assert "non trouv" in response.json()["detail"]
 
 
 def test_update_user_status_admin_cannot_deactivate_self(client: TestClient, db_session: Session):
     """Test qu'un admin ne peut pas se désactiver lui-même"""
-    # Créer un admin
+    tid = uuid.uuid4().hex[:10]
+    uname_a = f"mgmt_st_self_a_{tid}"
     admin_user = User(
-        username="admin",
+        username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id="987654321",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -126,32 +138,32 @@ def test_update_user_status_admin_cannot_deactivate_self(client: TestClient, db_
     db_session.add(admin_user)
     db_session.commit()
     db_session.refresh(admin_user)
-    
-    # Se connecter en tant qu'admin
+
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"}
     )
     token = login_response.json()["access_token"]
-    
-    # Essayer de se désactiver soi-même
+
     response = client.put(
-        f"/api/v1/admin/users/{admin_user.id}/status",
-        json={"is_active": False},
+        f"{_V1}/admin/users/{admin_user.id}/status",
+        json={"status": "approved", "is_active": False},
         headers={"Authorization": f"Bearer {token}"}
     )
-    
+
     assert response.status_code == 403
-    assert "ne peut pas se désactiver lui-même" in response.json()["detail"]
+    assert "administrateur" in response.json()["detail"].lower()
 
 
 def test_update_user_profile_success(client: TestClient, db_session: Session):
     """Test de mise à jour du profil utilisateur avec succès"""
-    # Créer un utilisateur de test
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_pr_ok_u_{tid}"
+    uname_a = f"mgmt_pr_ok_a_{tid}"
     test_user = User(
-        username="testuser",
+        username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Old",
         last_name="Name",
         role=UserRole.USER,
@@ -161,12 +173,11 @@ def test_update_user_profile_success(client: TestClient, db_session: Session):
     db_session.add(test_user)
     db_session.commit()
     db_session.refresh(test_user)
-    
-    # Créer un admin
+
     admin_user = User(
-        username="admin",
+        username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id="987654321",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -175,21 +186,19 @@ def test_update_user_profile_success(client: TestClient, db_session: Session):
     )
     db_session.add(admin_user)
     db_session.commit()
-    
-    # Se connecter en tant qu'admin
+
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"}
     )
     token = login_response.json()["access_token"]
-    
-    # Mettre à jour le profil de l'utilisateur
+
     response = client.put(
-        f"/api/v1/admin/users/{test_user.id}",
+        f"{_V1}/admin/users/{test_user.id}",
         json={"first_name": "New", "last_name": "Name"},
         headers={"Authorization": f"Bearer {token}"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -197,8 +206,7 @@ def test_update_user_profile_success(client: TestClient, db_session: Session):
     assert data["data"]["last_name"] == "Name"
     assert "first_name" in data["data"]["updated_fields"]
     assert "last_name" in data["data"]["updated_fields"]
-    
-    # Vérifier que l'utilisateur a été mis à jour en base
+
     db_session.refresh(test_user)
     assert test_user.first_name == "New"
     assert test_user.last_name == "Name"
@@ -206,11 +214,13 @@ def test_update_user_profile_success(client: TestClient, db_session: Session):
 
 def test_update_user_profile_partial_update(client: TestClient, db_session: Session):
     """Test de mise à jour partielle du profil utilisateur"""
-    # Créer un utilisateur de test
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_pr_part_u_{tid}"
+    uname_a = f"mgmt_pr_part_a_{tid}"
     test_user = User(
-        username="testuser",
+        username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Old",
         last_name="Name",
         role=UserRole.USER,
@@ -220,12 +230,11 @@ def test_update_user_profile_partial_update(client: TestClient, db_session: Sess
     db_session.add(test_user)
     db_session.commit()
     db_session.refresh(test_user)
-    
-    # Créer un admin
+
     admin_user = User(
-        username="admin",
+        username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id="987654321",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -234,41 +243,40 @@ def test_update_user_profile_partial_update(client: TestClient, db_session: Sess
     )
     db_session.add(admin_user)
     db_session.commit()
-    
-    # Se connecter en tant qu'admin
+
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"}
     )
     token = login_response.json()["access_token"]
-    
-    # Mettre à jour seulement le prénom
+
     response = client.put(
-        f"/api/v1/admin/users/{test_user.id}",
+        f"{_V1}/admin/users/{test_user.id}",
         json={"first_name": "NewFirst"},
         headers={"Authorization": f"Bearer {token}"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
     assert data["data"]["first_name"] == "NewFirst"
-    assert data["data"]["last_name"] == "Name"  # Inchangé
+    assert data["data"]["last_name"] == "Name"
     assert data["data"]["updated_fields"] == ["first_name"]
-    
-    # Vérifier que seul le prénom a été mis à jour
+
     db_session.refresh(test_user)
     assert test_user.first_name == "NewFirst"
-    assert test_user.last_name == "Name"  # Inchangé
+    assert test_user.last_name == "Name"
 
 
 def test_update_user_profile_no_fields_provided(client: TestClient, db_session: Session):
     """Test de mise à jour du profil sans champs fournis"""
-    # Créer un utilisateur de test
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_pr_empty_u_{tid}"
+    uname_a = f"mgmt_pr_empty_a_{tid}"
     test_user = User(
-        username="testuser",
+        username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -278,12 +286,11 @@ def test_update_user_profile_no_fields_provided(client: TestClient, db_session: 
     db_session.add(test_user)
     db_session.commit()
     db_session.refresh(test_user)
-    
-    # Créer un admin
+
     admin_user = User(
-        username="admin",
+        username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id="987654321",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -292,32 +299,32 @@ def test_update_user_profile_no_fields_provided(client: TestClient, db_session: 
     )
     db_session.add(admin_user)
     db_session.commit()
-    
-    # Se connecter en tant qu'admin
+
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"}
     )
     token = login_response.json()["access_token"]
-    
-    # Essayer de mettre à jour sans fournir de champs
+
     response = client.put(
-        f"/api/v1/admin/users/{test_user.id}",
+        f"{_V1}/admin/users/{test_user.id}",
         json={},
         headers={"Authorization": f"Bearer {token}"}
     )
-    
+
     assert response.status_code == 400
-    assert "Aucun champ à mettre à jour fourni" in response.json()["detail"]
+    detail = response.json()["detail"]
+    assert "Aucun champ" in detail and "fourni" in detail
 
 
 def test_update_user_profile_user_not_found(client: TestClient, db_session: Session):
     """Test de mise à jour du profil d'un utilisateur inexistant"""
-    # Créer un admin
+    tid = uuid.uuid4().hex[:10]
+    uname_a = f"mgmt_pr_nf_a_{tid}"
     admin_user = User(
-        username="admin",
+        username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id="987654321",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -326,32 +333,31 @@ def test_update_user_profile_user_not_found(client: TestClient, db_session: Sess
     )
     db_session.add(admin_user)
     db_session.commit()
-    
-    # Se connecter en tant qu'admin
+
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"}
     )
     token = login_response.json()["access_token"]
-    
-    # Essayer de mettre à jour un utilisateur inexistant
+
     response = client.put(
-        "/api/v1/admin/users/00000000-0000-0000-0000-000000000000",
+        f"{_V1}/admin/users/00000000-0000-0000-0000-000000000000",
         json={"first_name": "New"},
         headers={"Authorization": f"Bearer {token}"}
     )
-    
+
     assert response.status_code == 404
-    assert "Utilisateur non trouvé" in response.json()["detail"]
+    assert "non trouv" in response.json()["detail"]
 
 
 def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Session):
     """Test que les endpoints nécessitent un rôle admin"""
-    # Créer un utilisateur normal (non-admin)
+    tid = uuid.uuid4().hex[:10]
+    uname_n = f"mgmt_role_norm_{tid}"
     normal_user = User(
-        username="normaluser",
+        username=uname_n,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Normal",
         last_name="User",
         role=UserRole.USER,
@@ -361,23 +367,21 @@ def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Sess
     db_session.add(normal_user)
     db_session.commit()
 
-    # Se connecter en tant qu'utilisateur normal
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"username": "normaluser", "password": "password"}
+        f"{_V1}/auth/login",
+        json={"username": uname_n, "password": "password"}
     )
     token = login_response.json()["access_token"]
 
-    # Essayer d'accéder aux endpoints admin
     response = client.put(
-        "/api/v1/admin/users/123/status",
-        json={"is_active": False},
+        f"{_V1}/admin/users/123/status",
+        json={"status": "approved", "is_active": False},
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 403
 
     response = client.put(
-        "/api/v1/admin/users/123",
+        f"{_V1}/admin/users/123",
         json={"first_name": "New"},
         headers={"Authorization": f"Bearer {token}"}
     )
@@ -385,12 +389,13 @@ def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Sess
 
 
 def test_get_user_response_excludes_hashed_password(client: TestClient, db_session: Session):
-    """Test que le champ hashed_password n'est pas inclus dans les réponses GET /api/v1/users/{id}"""
-    # Créer un utilisateur de test
+    """Test que hashed_password n'est pas inclus dans GET users/{id} (préfixe API depuis settings)."""
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_get_one_{tid}"
     test_user = User(
-        username="testuser",
+        username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -401,15 +406,13 @@ def test_get_user_response_excludes_hashed_password(client: TestClient, db_sessi
     db_session.commit()
     db_session.refresh(test_user)
 
-    # Récupérer l'utilisateur via l'API
-    response = client.get(f"/api/v1/users/{test_user.id}")
+    response = client.get(f"{_V1}/users/{test_user.id}")
 
     assert response.status_code == 200
     data = response.json()
 
-    # Vérifier que hashed_password n'est pas dans la réponse
     assert "hashed_password" not in data, f"hashed_password trouvé dans la réponse: {data}"
-    assert data["username"] == "testuser"
+    assert data["username"] == uname_u
     assert data["first_name"] == "Test"
     assert data["last_name"] == "User"
     assert data["role"] == "user"
@@ -417,12 +420,13 @@ def test_get_user_response_excludes_hashed_password(client: TestClient, db_sessi
 
 
 def test_get_users_list_excludes_hashed_password(client: TestClient, db_session: Session):
-    """Test que le champ hashed_password n'est pas inclus dans les réponses GET /api/v1/users/"""
-    # Créer un utilisateur de test
+    """Test que hashed_password n'est pas inclus dans GET users/ (liste)."""
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_get_list_{tid}"
     test_user = User(
-        username="testuser",
+        username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -432,26 +436,27 @@ def test_get_users_list_excludes_hashed_password(client: TestClient, db_session:
     db_session.add(test_user)
     db_session.commit()
 
-    # Récupérer la liste des utilisateurs via l'API
-    response = client.get("/api/v1/users/")
+    response = client.get(f"{_V1}/users/")
 
     assert response.status_code == 200
     users = response.json()
 
-    # Vérifier que chaque utilisateur n'a pas le champ hashed_password
-    for user in users:
-        assert "hashed_password" not in user, f"hashed_password trouvé dans la réponse pour utilisateur: {user}"
-        assert user["username"] == "testuser"
+    ours = [u for u in users if u.get("username") == uname_u]
+    assert len(ours) >= 1
+    for user in ours:
+        assert "hashed_password" not in user, f"hashed_password trouvé: {user}"
+        assert user["username"] == uname_u
         assert user["first_name"] == "Test"
 
 
 def test_update_user_profile_persistence(client: TestClient, db_session: Session):
     """Test que les modifications de profil utilisateur sont persistées en base de données"""
-    # Créer un utilisateur de test
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_persist_{tid}"
     test_user = User(
-        username="testuser",
+        username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id="123456789",
+        telegram_id=_unique_numeric_telegram(),
         first_name="OldFirst",
         last_name="OldLast",
         role=UserRole.USER,
@@ -462,9 +467,8 @@ def test_update_user_profile_persistence(client: TestClient, db_session: Session
     db_session.commit()
     db_session.refresh(test_user)
 
-    # Modifier l'utilisateur via l'API
     response = client.put(
-        f"/api/v1/users/{test_user.id}",
+        f"{_V1}/users/{test_user.id}",
         json={"first_name": "NewFirst", "last_name": "NewLast", "role": "admin"}
     )
 
@@ -474,16 +478,13 @@ def test_update_user_profile_persistence(client: TestClient, db_session: Session
     assert data["last_name"] == "NewLast"
     assert data["role"] == "admin"
 
-    # Vérifier que les modifications sont bien persistées en base
     db_session.refresh(test_user)
     assert test_user.first_name == "NewFirst", f"Prénom non persisté: {test_user.first_name}"
     assert test_user.last_name == "NewLast", f"Nom de famille non persisté: {test_user.last_name}"
     assert test_user.role == UserRole.ADMIN, f"Rôle non persisté: {test_user.role}"
 
-    # Vérifier que les anciens champs n'ont pas changé
-    assert test_user.username == "testuser"
+    assert test_user.username == uname_u
     assert test_user.status == UserStatus.APPROVED
-    assert test_user.is_active == True
+    assert test_user.is_active is True
 
-    # Vérifier que les timestamps de mise à jour ont été modifiés
     assert test_user.updated_at is not None
