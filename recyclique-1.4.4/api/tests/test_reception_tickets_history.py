@@ -2,19 +2,13 @@
 Tests pour l'historique des tickets de réception.
 """
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from uuid import uuid4
 from decimal import Decimal
+from urllib.parse import parse_qs, urlparse
 
-from recyclic_api.main import app
+from recyclic_api.core.config import settings
 from recyclic_api.models import TicketDepot, PosteReception, LigneDepot, Category, User, UserRole, UserStatus
 from recyclic_api.models.ligne_depot import Destination
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 @pytest.fixture
@@ -500,73 +494,92 @@ def test_get_tickets_list_include_empty_tickets(client, test_user, test_poste, d
     assert str(empty_ticket.id) in ticket_ids
 
 
-# B44-P4: Tests pour l'export CSV
+# B44-P4 / ARCH-04: export CSV = POST download-token (admin) puis GET export-csv?token=...
 def test_export_ticket_csv_success(client, test_tickets, test_admin):
     """Test d'export CSV d'un ticket avec succès."""
     from recyclic_api.core.security import create_access_token
-    token = create_access_token(data={"sub": str(test_admin.id)})
-    
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_admin.id)})
     ticket_id = str(test_tickets[0].id)
-    response = client.get(
-        f"/api/v1/reception/tickets/{ticket_id}/export-csv",
-        headers={"Authorization": f"Bearer {token}"}
+
+    tok_resp = client.post(
+        f"{_rx}/tickets/{ticket_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
     )
-    
+    assert tok_resp.status_code == 200
+    download_url = tok_resp.json()["download_url"]
+    dl_token = parse_qs(urlparse(download_url).query)["token"][0]
+
+    response = client.get(
+        f"{_rx}/tickets/{ticket_id}/export-csv",
+        params={"token": dl_token},
+    )
+
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
-    assert "attachment" in response.headers["content-disposition"]
-    assert ticket_id in response.headers["content-disposition"]
-    
-    # Vérifier le contenu CSV
+    assert "attachment" in response.headers["content-disposition"].lower()
+
     content = response.text
-    assert "Résumé du Ticket de Réception" in content
-    assert "Détails des Lignes de Dépôt" in content
+    assert "=== RÉSUMÉ DU TICKET DE RÉCEPTION ===" in content
+    assert "=== DÉTAILS DES LIGNES DE DÉPÔT ===" in content
     assert "ID Ticket" in content
     assert "Bénévole" in content
     assert "Catégorie" in content
     assert "Poids (kg)" in content
+    assert ticket_id in content
 
 
 def test_export_ticket_csv_not_found(client, test_admin):
-    """Test d'export CSV d'un ticket inexistant."""
+    """Ticket inexistant : la génération de token échoue avant l'export (404)."""
     from recyclic_api.core.security import create_access_token
-    token = create_access_token(data={"sub": str(test_admin.id)})
-    
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_admin.id)})
     fake_id = str(uuid4())
-    response = client.get(
-        f"/api/v1/reception/tickets/{fake_id}/export-csv",
-        headers={"Authorization": f"Bearer {token}"}
+    response = client.post(
+        f"{_rx}/tickets/{fake_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
     )
-    
+
     assert response.status_code == 404
     assert "Ticket introuvable" in response.json()["detail"]
 
 
 def test_export_ticket_csv_unauthorized(client, test_tickets, test_user):
-    """Test d'accès non autorisé à l'export CSV (USER ne peut pas exporter)."""
+    """USER ne peut pas obtenir de token de téléchargement (export réservé admin)."""
     from recyclic_api.core.security import create_access_token
-    token = create_access_token(data={"sub": str(test_user.id)})
-    
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_user.id)})
     ticket_id = str(test_tickets[0].id)
-    response = client.get(
-        f"/api/v1/reception/tickets/{ticket_id}/export-csv",
-        headers={"Authorization": f"Bearer {token}"}
+    response = client.post(
+        f"{_rx}/tickets/{ticket_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
     )
-    
-    # L'endpoint nécessite ADMIN ou SUPER_ADMIN
+
     assert response.status_code == 403
 
 
 def test_export_ticket_csv_admin_access(client, test_tickets, test_admin):
-    """Test d'accès administrateur à l'export CSV."""
+    """Test d'accès administrateur à l'export CSV (flux token)."""
     from recyclic_api.core.security import create_access_token
-    token = create_access_token(data={"sub": str(test_admin.id)})
-    
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_admin.id)})
     ticket_id = str(test_tickets[0].id)
-    response = client.get(
-        f"/api/v1/reception/tickets/{ticket_id}/export-csv",
-        headers={"Authorization": f"Bearer {token}"}
+
+    tok_resp = client.post(
+        f"{_rx}/tickets/{ticket_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
     )
-    
+    assert tok_resp.status_code == 200
+    dl_token = parse_qs(urlparse(tok_resp.json()["download_url"]).query)["token"][0]
+
+    response = client.get(
+        f"{_rx}/tickets/{ticket_id}/export-csv",
+        params={"token": dl_token},
+    )
+
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"

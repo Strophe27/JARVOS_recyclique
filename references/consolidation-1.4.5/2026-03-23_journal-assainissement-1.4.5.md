@@ -2424,6 +2424,50 @@
 
 ---
 
+## Lot 2AJ — Pilote ARCH-04 sur l'export ticket `reception`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire hors du routeur `reception.py` la presentation du flux `download-token` + `export-csv` d'un ticket pour garantir un nom de fichier unique entre token, JSON et telechargement
+
+### Actions
+- Creation de `recyclic_api/application/reception_ticket_export_presentation.py` pour porter :
+  - calcul unique du nom de fichier export ticket
+  - construction du payload JSON de telechargement (`token`, `download_url`, `filename`, `expires_in_seconds`)
+  - rendu CSV UTF-8 BOM du ticket
+- Amincissement de `POST /reception/tickets/{ticket_id}/download-token` et `GET /reception/tickets/{ticket_id}/export-csv` dans `endpoints/reception.py`.
+- Alignement du `download_url` genere sur `settings.API_V1_STR` au lieu d'un prefixe fige.
+- Ajout du fichier cible `tests/test_reception_ticket_export_presentation_arch04.py`.
+- Adaptation des tests d'historique pour valider le flux nominal `download-token` puis `export-csv?token=...`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/application/reception_ticket_export_presentation.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_ticket_export_presentation_arch04.py`
+- `recyclique-1.4.4/api/tests/test_reception_tickets_history.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_reception_ticket_export_presentation_arch04.py`
+- Resultat local :
+  - **4 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_ticket_export_presentation_arch04.py`
+  - `tests/test_reception_ticket_export_csv.py`
+  - `tests/test_reception_tickets_history.py`
+- Resultat Docker/PostgreSQL :
+  - **31 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Le flux `download-token` -> `export-csv?token=...` n'est plus assemble inline dans le routeur.
+- Le nom de fichier export ticket est maintenant unique et partage entre token, payload JSON et reponse telechargee.
+- Reserves acceptees :
+  - `render_reception_ticket_csv_bytes(...)` depend encore de `ReceptionService._calculate_ticket_totals`
+  - certains tests integration n'assertent pas encore explicitement l'egalite `filename` JSON vs `Content-Disposition`
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2435,6 +2479,7 @@
 - **Vague 8:** second pilote `ARCH-04` sur `create_cash_session` ferme avec reserves acceptees
 - **Vague 8:** troisieme pilote `ARCH-04` sur `close_cash_session` ferme avec reserves acceptees
 - **Vague 8:** quatrieme pilote `ARCH-04` sur la presentation post-fermeture `close_cash_session` ferme avec reserves acceptees
+- **Vague 8:** cinquieme pilote `ARCH-04` sur l'export ticket `reception` ferme avec reserves acceptees
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2442,8 +2487,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-04` sur les exports CSV reception, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-04` sur `reception` avec l'export CSV des lignes de depot ou la presentation des listes, Telegram etant explicitement reporte
 
 ---
 
