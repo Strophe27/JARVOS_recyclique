@@ -1818,13 +1818,62 @@
 
 ---
 
+## Lot 1W — Pilote ARCH-03 sur `stats_service`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la validation de plage de dates du service stats hors HTTP et homogeniser la traduction `400` sur les routes statistiques associees
+
+### Actions
+- Refactor de `StatsService` pour remplacer le `HTTPException` metier de validation de plage par `ValidationError`.
+- Introduction d'un helper `_run_stats_service()` dans `endpoints/stats.py` pour traduire `ValidationError` -> `400` sur les trois routes ciblees :
+  - `GET /stats/reception/summary`
+  - `GET /stats/reception/by-category`
+  - `GET /stats/sales/by-category`
+- Ajustement des filtres de bornes `end_date` dans `stats_service.py` pour rendre les requetes `YYYY-MM-DD` coherentes avec un comportement de jour calendaire inclusif.
+- Realignement des tests stats sur le contrat reel :
+  - `settings.API_V1_STR` au lieu de chemins codes en dur
+  - utilisateurs authentifies non admin autorises sur les endpoints reception stats concernes
+  - `SaleItem.category` renseigne avec des UUID de categories dans les tests PostgreSQL
+  - `CashSession.site_id` relie a un vrai `Site` dans les fixtures PostgreSQL
+- Ajout / adaptation des tests cibles pour verrouiller le `400` sur plage invalide et stabiliser la campagne PostgreSQL.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/stats_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/stats.py`
+- `recyclique-1.4.4/api/tests/test_sales_stats_by_category.py`
+- `recyclique-1.4.4/api/tests/api/test_stats_endpoints.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_sales_stats_by_category.py`
+  - `tests/api/test_stats_endpoints.py`
+- Resultat local :
+  - non conclusif sur SQLite minimal (schema incomplet pour ces tests)
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_sales_stats_by_category.py`
+  - `tests/api/test_stats_endpoints.py`
+- Resultat Docker :
+  - **25 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `StatsService` ne leve plus d'erreur HTTP directe pour les plages de dates invalides.
+- Les trois endpoints stats concernes traduisent maintenant uniformement les erreurs metier de validation en `400`.
+- Le comportement des filtres `date-only` est aligne sur une lecture inclusive de la journee calendaire.
+- Reserves acceptees :
+  - le lot reste borne a la validation de plage de dates et aux routes stats associees
+  - `/stats/live` et les autres services statistiques ne sont pas touches ici
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current` et `ARCH-03/cash_sessions/step update` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update` et `ARCH-03/stats_service` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1832,8 +1881,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** fermer les services simples restants sous `ARCH-03`, en commencant par `stats_service`, avant de reevaluer la petite passe DRY
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** fermer les services simples restants sous `ARCH-03`, en commencant par `cash_register_service`, puis `telegram_link_service`, avant de reevaluer la petite passe DRY
 
 ---
 

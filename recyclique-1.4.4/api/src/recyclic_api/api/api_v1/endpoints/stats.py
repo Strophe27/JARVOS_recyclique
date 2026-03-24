@@ -1,9 +1,9 @@
 """
 Statistics and analytics endpoints.
 """
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
-from typing import Optional, List, Literal
+from typing import Callable, Literal, List, Optional, TypeVar
 from datetime import date, datetime
 import logging
 from slowapi import Limiter
@@ -11,6 +11,7 @@ from slowapi.util import get_remote_address
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user, require_admin_role, require_role_strict
+from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.services.stats_service import StatsService
 from recyclic_api.services.reception_stats_service import ReceptionLiveStatsService
@@ -22,6 +23,19 @@ from recyclic_api.schemas.stats import (
 
 router = APIRouter(tags=["stats"])
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
+
+
+def _run_stats_service(operation: Callable[[], _T]) -> _T:
+    """Exécute un appel StatsService et traduit ValidationError en réponse HTTP 400."""
+    try:
+        return operation()
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 # Rate limiting configuration
 limiter = Limiter(key_func=get_remote_address)
@@ -64,9 +78,11 @@ def get_reception_summary(
     )
 
     stats_service = StatsService(db)
-    return stats_service.get_reception_summary(
-        start_date=start_date,
-        end_date=end_date
+    return _run_stats_service(
+        lambda: stats_service.get_reception_summary(
+            start_date=start_date,
+            end_date=end_date,
+        )
     )
 
 
@@ -109,9 +125,11 @@ def get_reception_by_category(
     )
 
     stats_service = StatsService(db)
-    return stats_service.get_reception_by_category(
-        start_date=start_date,
-        end_date=end_date
+    return _run_stats_service(
+        lambda: stats_service.get_reception_by_category(
+            start_date=start_date,
+            end_date=end_date,
+        )
     )
 
 
@@ -154,9 +172,11 @@ def get_sales_by_category(
     )
 
     stats_service = StatsService(db)
-    return stats_service.get_sales_by_category(
-        start_date=start_date,
-        end_date=end_date
+    return _run_stats_service(
+        lambda: stats_service.get_sales_by_category(
+            start_date=start_date,
+            end_date=end_date,
+        )
     )
 
 

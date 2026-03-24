@@ -19,8 +19,10 @@ from recyclic_api.models.category import Category
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.site import Site
 from recyclic_api.services.stats_service import StatsService
 from recyclic_api.core.security import hash_password
+from recyclic_api.core.exceptions import ValidationError
 
 
 @pytest.fixture
@@ -75,12 +77,26 @@ def test_categories(db_session: Session):
 
 
 @pytest.fixture
-def test_cash_session(db_session: Session, test_user: User):
+def test_site(db_session: Session) -> Site:
+    """Site réel pour respecter la FK PostgreSQL cash_sessions.site_id -> sites.id."""
+    site = Site(
+        id=uuid.uuid4(),
+        name="Site test stats",
+        is_active=True,
+    )
+    db_session.add(site)
+    db_session.commit()
+    db_session.refresh(site)
+    return site
+
+
+@pytest.fixture
+def test_cash_session(db_session: Session, test_user: User, test_site: Site):
     """Create a test cash session."""
     session = CashSession(
         id=uuid.uuid4(),
         operator_id=test_user.id,
-        site_id=uuid.uuid4(),
+        site_id=test_site.id,
         initial_amount=50.0,
         current_amount=50.0,
         status=CashSessionStatus.CLOSED,
@@ -116,11 +132,11 @@ class TestSalesStatsByCategoryService:
             created_at=datetime.now(timezone.utc) - timedelta(hours=2)
         )
         
-        # SaleItem with main category
+        # SaleItem with main category (UUID string : cast PostgreSQL dans stats_service)
         item1 = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale1.id,
-            category="EEE-1",  # Main category
+            category=str(test_categories["main_cat1"].id),
             quantity=1,
             weight=10.0,
             unit_price=100.0,
@@ -131,7 +147,7 @@ class TestSalesStatsByCategoryService:
         item2 = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale2.id,
-            category="EEE-1-SUB",  # Subcategory
+            category=str(test_categories["sub_cat1"].id),
             quantity=1,
             weight=5.0,
             unit_price=50.0,
@@ -186,7 +202,7 @@ class TestSalesStatsByCategoryService:
         item1 = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale1.id,
-            category="EEE-1",
+            category=str(test_categories["main_cat1"].id),
             quantity=1,
             weight=10.0,
             unit_price=100.0,
@@ -196,7 +212,7 @@ class TestSalesStatsByCategoryService:
         item2 = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale2.id,
-            category="EEE-2",
+            category=str(test_categories["main_cat2"].id),
             quantity=1,
             weight=5.0,
             unit_price=50.0,
@@ -230,13 +246,13 @@ class TestSalesStatsByCategoryService:
         assert len(results) == 0
 
     def test_get_sales_by_category_invalid_date_range(self, db_session: Session):
-        """Test that invalid date range raises HTTPException."""
+        """Test that invalid date range raises ValidationError."""
         service = StatsService(db_session)
-        
+
         start_date = datetime.now(timezone.utc)
         end_date = datetime.now(timezone.utc) - timedelta(days=1)  # start > end
-        
-        with pytest.raises(Exception):  # HTTPException
+
+        with pytest.raises(ValidationError, match="start_date cannot be after end_date"):
             service.get_sales_by_category(start_date=start_date, end_date=end_date)
 
 
@@ -269,7 +285,7 @@ class TestSalesStatsByCategoryEndpoint:
         item = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale.id,
-            category="EEE-1",
+            category=str(test_categories["main_cat1"].id),
             quantity=1,
             weight=10.0,
             unit_price=100.0,
@@ -310,7 +326,7 @@ class TestSalesStatsByCategoryEndpoint:
         item = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale.id,
-            category="EEE-1",
+            category=str(test_categories["main_cat1"].id),
             quantity=1,
             weight=10.0,
             unit_price=100.0,
@@ -331,6 +347,26 @@ class TestSalesStatsByCategoryEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+
+    def test_endpoint_invalid_date_range_returns_400(
+        self, client, db_session: Session, test_user: User
+    ):
+        """Plage start_date > end_date : 400 et message métier."""
+        from recyclic_api.core.auth import create_access_token
+
+        token = create_access_token(data={"sub": str(test_user.id)})
+        client.headers["Authorization"] = f"Bearer {token}"
+
+        today = datetime.now(timezone.utc).date()
+        yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).date()
+
+        response = client.get(
+            "/v1/stats/sales/by-category",
+            params={"start_date": str(today), "end_date": str(yesterday)},
+        )
+
+        assert response.status_code == 400
+        assert "start_date cannot be after end_date" in response.json()["detail"]
 
     @pytest.mark.performance
     def test_endpoint_performance_under_load(

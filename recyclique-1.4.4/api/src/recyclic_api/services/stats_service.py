@@ -4,13 +4,13 @@ Service for statistics and analytics aggregation.
 from __future__ import annotations
 
 from typing import Optional, List, Dict, Any
-from datetime import date, datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
-from fastapi import HTTPException, status
 
+from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.ligne_depot import LigneDepot
 from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.models.category import Category
@@ -18,6 +18,32 @@ from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.schemas.stats import ReceptionSummaryStats, CategoryStats
+
+
+def _utc_aware(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _created_at_end_filter(column, end_date: datetime):
+    """
+    Borne supérieure inclusive alignée sur les plages « jour calendaire ».
+
+    Les paramètres de requête au format date (YYYY-MM-DD) sont typés datetime à minuit UTC.
+    Sans ajustement, created_at <= minuit exclut le reste de la journée. Pour une borne
+    exactement à minuit, on utilise donc created_at < (jour + 1) à minuit UTC.
+    Si l'heure n'est pas minuit, on conserve <= end_date (filtre datetime explicite).
+    """
+    end = _utc_aware(end_date)
+    if end.hour == 0 and end.minute == 0 and end.second == 0 and end.microsecond == 0:
+        next_midnight = datetime.combine(
+            end.date() + timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=timezone.utc,
+        )
+        return column < next_midnight
+    return column <= end
 
 
 class StatsService:
@@ -35,13 +61,10 @@ class StatsService:
             end_date: End date to validate
 
         Raises:
-            HTTPException: If start_date is after end_date
+            ValidationError: If start_date is after end_date
         """
         if start_date and end_date and start_date > end_date:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="start_date cannot be after end_date"
-            )
+            raise ValidationError("start_date cannot be after end_date")
 
     def get_reception_summary(
         self,
@@ -63,14 +86,13 @@ class StatsService:
             ReceptionSummaryStats with aggregated data
 
         Raises:
-            HTTPException: If start_date is after end_date
+            ValidationError: If start_date is after end_date
         """
         # Validate date range
         self._validate_date_range(start_date, end_date)
         # Build base query
         # Story B48-P1: Ne PAS filtrer Category.deleted_at - conserver toutes les catégories pour stats historiques
         # Story B48-P3: Exclure is_exit=true pour weight_in (poids reçu, pas sorti)
-        from sqlalchemy import or_
         query = self.db.query(
             func.coalesce(func.sum(LigneDepot.poids_kg), 0).label('total_weight'),
             func.count(LigneDepot.id).label('total_items'),
@@ -86,15 +108,9 @@ class StatsService:
         # Apply date filters if provided
         filters = []
         if start_date:
-            # Rendre la date consciente du fuseau horaire (UTC)
-            if start_date.tzinfo is None:
-                start_date = start_date.replace(tzinfo=timezone.utc)
-            filters.append(TicketDepot.created_at >= start_date)
+            filters.append(TicketDepot.created_at >= _utc_aware(start_date))
         if end_date:
-            # Rendre la date consciente du fuseau horaire (UTC)
-            if end_date.tzinfo is None:
-                end_date = end_date.replace(tzinfo=timezone.utc)
-            filters.append(TicketDepot.created_at <= end_date)
+            filters.append(_created_at_end_filter(TicketDepot.created_at, end_date))
 
         if filters:
             query = query.filter(and_(*filters))
@@ -137,16 +153,16 @@ class StatsService:
             List of CategoryStats, sorted by total_weight descending (uniquement catégories principales)
 
         Raises:
-            HTTPException: If start_date is after end_date
+            ValidationError: If start_date is after end_date
         """
         # Validate date range
         self._validate_date_range(start_date, end_date)
-        
+
         # Agréger les données des catégories enfants vers leurs catégories parentes
         # Utiliser un LEFT JOIN pour obtenir la catégorie parente si elle existe
         from sqlalchemy.orm import aliased
         ParentCat = aliased(Category)
-        
+
         # Build base query avec agrégation vers les catégories principales
         # Story B48-P1: Ne PAS filtrer Category.deleted_at - conserver toutes les catégories pour stats historiques
         # Story B48-P3: Exclure les sorties (is_exit=true), inclure is_exit IS NULL pour rétrocompatibilité
@@ -175,15 +191,9 @@ class StatsService:
         # Apply date filters if provided
         filters = []
         if start_date:
-            # Rendre la date consciente du fuseau horaire (UTC)
-            if start_date.tzinfo is None:
-                start_date = start_date.replace(tzinfo=timezone.utc)
-            filters.append(TicketDepot.created_at >= start_date)
+            filters.append(TicketDepot.created_at >= _utc_aware(start_date))
         if end_date:
-            # Rendre la date consciente du fuseau horaire (UTC)
-            if end_date.tzinfo is None:
-                end_date = end_date.replace(tzinfo=timezone.utc)
-            filters.append(TicketDepot.created_at <= end_date)
+            filters.append(_created_at_end_filter(TicketDepot.created_at, end_date))
 
         if filters:
             query = query.filter(and_(*filters))
@@ -225,16 +235,16 @@ class StatsService:
             List of CategoryStats, sorted by total_weight descending (uniquement catégories principales)
 
         Raises:
-            HTTPException: If start_date is after end_date
+            ValidationError: If start_date is after end_date
         """
         # Validate date range
         self._validate_date_range(start_date, end_date)
-        
+
         # Agréger les données des catégories enfants vers leurs catégories parentes
         # Utiliser un LEFT JOIN pour obtenir la catégorie parente si elle existe
         from sqlalchemy.orm import aliased
         ParentCat = aliased(Category)
-        
+
         # Build base query avec agrégation vers les catégories principales
         # Faire exactement comme get_reception_by_category :
         # - JOIN direct sur Category.id (en castant SaleItem.category string en UUID)
@@ -275,15 +285,9 @@ class StatsService:
         # Apply date filters if provided
         filters = []
         if start_date:
-            # Rendre la date consciente du fuseau horaire (UTC)
-            if start_date.tzinfo is None:
-                start_date = start_date.replace(tzinfo=timezone.utc)
-            filters.append(Sale.created_at >= start_date)
+            filters.append(Sale.created_at >= _utc_aware(start_date))
         if end_date:
-            # Rendre la date consciente du fuseau horaire (UTC)
-            if end_date.tzinfo is None:
-                end_date = end_date.replace(tzinfo=timezone.utc)
-            filters.append(Sale.created_at <= end_date)
+            filters.append(_created_at_end_filter(Sale.created_at, end_date))
 
         if filters:
             query = query.filter(and_(*filters))
