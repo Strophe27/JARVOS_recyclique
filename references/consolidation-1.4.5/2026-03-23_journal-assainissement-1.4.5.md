@@ -1128,6 +1128,54 @@
 
 ---
 
+## Lot 1J — Pilote ARCH-02 sur creation `cash_sessions`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** etendre le pilote transactionnel a un flux plus sensible en eliminant les commits redondants sur l'ouverture de session de caisse
+
+### Actions
+- Deplacement de l'initialisation `current_step=ENTRY` dans `CashSessionService.create_session()` avant le `commit` final.
+- Remplacement du `commit` intermediaire sur la creation implicite du `Default Register` par un `flush()` pour conserver une seule transaction metier de creation.
+- Suppression dans l'endpoint `create_cash_session` du `set_current_step(...)` et du `db.commit()` redondants apres l'appel service.
+- Ajout d'un test dedie `test_cash_session_transaction_policy.py` pour figer :
+  - un seul `commit` cote service sur le flux create
+  - usage de `flush()` pour le registre implicite
+  - initialisation de l'etape `ENTRY`
+- Renforcement du test service existant `TestCashSessionService::test_create_session` pour verifier aussi :
+  - `current_step`
+  - `step_start_time`
+  - `last_activity`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/cash_session_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_transaction_policy.py`
+- `recyclique-1.4.4/api/tests/test_cash_sessions.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale :
+  - `tests/test_cash_session_transaction_policy.py`
+- Resultat local :
+  - **2 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_transaction_policy.py`
+  - `tests/test_cash_sessions.py::TestCashSessionService::test_create_session`
+- Resultat Docker :
+  - **3 tests passes**
+- QA de cloture seule : **fermable avec reserves**
+
+### Resultat
+- Le flux de creation `cash_sessions` a maintenant une frontiere transactionnelle plus claire :
+  - service = point principal de persistance de la creation
+  - endpoint = permissions, audit, traduction HTTP et serialisation
+- Le registre implicite et la session initialisee partagent desormais le meme commit metier sur ce flux.
+- Reserves acceptees :
+  - l'audit d'ouverture reste sur un `commit` distinct hors du perimetre strict du lot
+  - la couverture HTTP du contrat JSON de creation peut encore etre etendue sur les champs d'etape
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1156,7 +1204,7 @@
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site` et premier lot `ARCH-02` sur `reception` fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site` et deux premiers lots `ARCH-02` (`reception`, `cash_sessions/create`) fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1164,8 +1212,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-02` sur une deuxieme verticale backend plus sensible, idealement `cash_sessions`, avant d'ouvrir la bascule plus large vers `ARCH-03`
+- **Lots fermes avec reserve:** `1J`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-02` sur la fermeture `cash_sessions` ou ouvrir la bascule pilote `ARCH-03` sur un flux deja assaini
 
 ---
 

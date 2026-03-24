@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime, timedelta, timezone
 import json
 
-from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.cash_session import CashSession, CashSessionStatus, CashSessionStep
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.schemas.cash_register import WorkflowOptions
 from uuid import UUID
@@ -75,8 +75,7 @@ class CashSessionService:
                 if default_register is None:
                     default_register = CashRegister(name="Default Register", site_id=site_uuid, is_active=True)
                     self.db.add(default_register)
-                    self.db.commit()
-                    self.db.refresh(default_register)
+                    self.db.flush()
                 register_uuid = default_register.id  # type: ignore[assignment]
 
             # B44-P1: Unicité: pas de session ouverte pour ce registre
@@ -106,6 +105,7 @@ class CashSessionService:
                 session_kwargs["opened_at"] = opened_at
             
             cash_session = CashSession(**session_kwargs)
+            cash_session.set_current_step(CashSessionStep.ENTRY)
 
             self.db.add(cash_session)
             self.db.commit()

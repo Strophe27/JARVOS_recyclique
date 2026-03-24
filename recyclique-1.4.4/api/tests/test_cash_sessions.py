@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 import uuid
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -519,6 +519,10 @@ class TestCashSessionService:
         assert session.current_amount == 50.0
         assert session.status == CashSessionStatus.OPEN
         assert session.id is not None
+        assert session.current_step is not None
+        assert session.current_step.value == "ENTRY"
+        assert session.step_start_time is not None
+        assert session.last_activity is not None
     
     def test_get_open_session_by_operator(self, db_session: Session, test_cashier, test_site):
         """Test de rÃ©cupÃ©ration de la session ouverte d'un opÃ©rateur."""

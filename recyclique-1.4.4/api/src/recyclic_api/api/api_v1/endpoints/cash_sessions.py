@@ -208,12 +208,6 @@ async def create_cash_session(
             opened_at=session_data.opened_at,
         )
 
-        # Initialiser les métriques d'étape (commencer par 'entry' pour les sessions de réception)
-        cash_session.set_current_step(CashSessionStep.ENTRY)
-
-        # Sauvegarder l'initialisation des métriques
-        db.commit()
-
         # Log de l'ouverture de session (avec flag is_deferred si opened_at fourni)
         is_deferred = session_data.opened_at is not None
         log_cash_session_opening(
