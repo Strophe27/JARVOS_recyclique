@@ -126,14 +126,21 @@ def add_ligne(
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     service = ReceptionService(db)
-    ligne = service.create_ligne(
-        ticket_id=UUID(payload.ticket_id),
-        category_id=UUID(payload.category_id),
-        poids_kg=float(payload.poids_kg),
-        destination=payload.destination,
-        notes=payload.notes,
-        is_exit=payload.is_exit if payload.is_exit is not None else False,
-    )
+    try:
+        ligne = service.create_ligne(
+            ticket_id=UUID(payload.ticket_id),
+            category_id=UUID(payload.category_id),
+            poids_kg=float(payload.poids_kg),
+            destination=payload.destination,
+            notes=payload.notes,
+            is_exit=payload.is_exit if payload.is_exit is not None else False,
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     
     # Récupérer le nom de la catégorie
     from recyclic_api.services.category_service import CategoryService

@@ -1370,6 +1370,54 @@
 
 ---
 
+## Lot 1O — Pilote ARCH-03 sur creation `reception/ligne`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** ouvrir le chantier ARCH-03 des lignes par le plus petit flux utile, en preservant le contrat HTTP `404` / `409` / `422`
+
+### Actions
+- Remplacement des `HTTPException` de `ReceptionService.create_ligne()` par :
+  - `NotFoundError` pour `Ticket introuvable`
+  - `ConflictError` pour `Ticket ferme`
+  - `NotFoundError` pour `Categorie introuvable`
+  - `ValidationError` pour les cas de validation metier (`poids_kg`, destination invalide, regle `is_exit`)
+- Translation explicite de ces exceptions dans la route `POST /reception/lignes`.
+- Ajout de tests unitaires `ARCH-03` pour figer les branches metier de `create_ligne`.
+- Ajout d'un test d'integration cible `test_reception_line_create_arch03.py` pour verrouiller :
+  - ticket inconnu -> `404`
+  - ticket ferme -> `409`
+  - categorie inconnue -> `404`
+  - `is_exit=true` avec `MAGASIN` -> `422`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/reception_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_arch03_domain_errors.py`
+- `recyclique-1.4.4/api/tests/test_reception_line_create_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale unitaire :
+  - `tests/test_reception_arch03_domain_errors.py`
+- Resultat local :
+  - **13 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_line_create_arch03.py`
+- Resultat Docker :
+  - **4 tests passes**
+- QA de cloture seule : **OK**
+
+### Resultat
+- `create_ligne` suit maintenant le meme patron ARCH-03 que les autres flux `reception` deja migres :
+  - service = exceptions metier
+  - endpoint = traduction HTTP
+- Le contrat HTTP utile du flux de creation de ligne est maintenant verrouille explicitement sur les branches critiques.
+- Reserves acceptees :
+  - `update_ligne`, `delete_ligne` et `update_ligne_weight_admin` restent hors lot et continuent de lever des `HTTPException`
+  - `ValidationError("Destination invalide")` reste surtout utile pour les appels directs au service, le schema HTTP filtrant deja la plupart des valeurs invalides
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1398,7 +1446,7 @@
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et trois premiers lots `ARCH-03/reception` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et quatre premiers lots `ARCH-03/reception` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1406,8 +1454,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** ouvrir un premier micro-lot `ARCH-03` sur les lignes `reception`, idealement en commencant par `create_ligne` avant `update_ligne` / `delete_ligne`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** etendre `ARCH-03` a `update_ligne`, puis `delete_ligne`, avant de traiter `update_ligne_weight_admin`
 
 ---
 

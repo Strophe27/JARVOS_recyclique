@@ -158,29 +158,31 @@ class ReceptionService:
         """Créer une ligne de dépôt avec règles métier: poids>0 et ticket ouvert."""
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ticket_id)
         if not ticket:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket introuvable")
+            raise NotFoundError("Ticket introuvable")
         if ticket.status != TicketDepotStatus.OPENED.value:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket fermé")
+            raise ConflictError("Ticket fermé")
 
         if not self.category_repo.exists(category_id):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Catégorie introuvable")
+            raise NotFoundError("Catégorie introuvable")
 
         # Validation poids côté service (déjà validé par Pydantic au niveau schéma d'entrée)
         if poids_kg <= 0:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="poids_kg doit être > 0")
+            raise ValidationError("poids_kg doit être > 0")
 
         # Convertir destination en enum DB si string fournie
         dest_value = None
         if destination is not None:
-            dest_value = DBLigneDestination(destination)
+            try:
+                dest_value = DBLigneDestination(destination)
+            except ValueError as exc:
+                raise ValidationError("Destination invalide") from exc
 
         # Story B48-P3: Validation is_exit + destination
         # Si is_exit=true, destination doit être RECYCLAGE ou DECHETERIE (pas MAGASIN)
         if is_exit is True:
             if dest_value is None or dest_value not in [DBLigneDestination.RECYCLAGE, DBLigneDestination.DECHETERIE]:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Une sortie de stock (is_exit=true) ne peut avoir comme destination que RECYCLAGE ou DECHETERIE"
+                raise ValidationError(
+                    "Une sortie de stock (is_exit=true) ne peut avoir comme destination que RECYCLAGE ou DECHETERIE"
                 )
 
         ligne = LigneDepot(

@@ -78,3 +78,81 @@ def test_create_ticket_raises_not_found_when_user_is_missing():
 
     with pytest.raises(NotFoundError, match="Utilisateur introuvable"):
         service.create_ticket(uuid4(), uuid4())
+
+
+def test_create_ligne_raises_not_found_when_ticket_is_missing():
+    service = ReceptionService(SimpleNamespace())
+    service.ticket_repo.get = lambda _ticket_id: None
+
+    with pytest.raises(NotFoundError, match="Ticket introuvable"):
+        service.create_ligne(
+            ticket_id=uuid4(),
+            category_id=uuid4(),
+            poids_kg=1.0,
+            destination="MAGASIN",
+            notes=None,
+        )
+
+
+def test_create_ligne_raises_conflict_when_ticket_is_closed():
+    service = ReceptionService(SimpleNamespace())
+    ticket = SimpleNamespace(status=TicketDepotStatus.CLOSED.value)
+    service.ticket_repo.get = lambda _ticket_id: ticket
+
+    with pytest.raises(ConflictError, match="Ticket fermé"):
+        service.create_ligne(
+            ticket_id=uuid4(),
+            category_id=uuid4(),
+            poids_kg=1.0,
+            destination="MAGASIN",
+            notes=None,
+        )
+
+
+def test_create_ligne_raises_not_found_when_category_is_missing():
+    service = ReceptionService(SimpleNamespace())
+    ticket = SimpleNamespace(status=TicketDepotStatus.OPENED.value)
+    service.ticket_repo.get = lambda _ticket_id: ticket
+    service.category_repo.exists = lambda _category_id: False
+
+    with pytest.raises(NotFoundError, match="Catégorie introuvable"):
+        service.create_ligne(
+            ticket_id=uuid4(),
+            category_id=uuid4(),
+            poids_kg=1.0,
+            destination="MAGASIN",
+            notes=None,
+        )
+
+
+def test_create_ligne_raises_validation_for_non_positive_weight():
+    service = ReceptionService(SimpleNamespace())
+    ticket = SimpleNamespace(status=TicketDepotStatus.OPENED.value)
+    service.ticket_repo.get = lambda _ticket_id: ticket
+    service.category_repo.exists = lambda _category_id: True
+
+    with pytest.raises(ValidationError, match="poids_kg"):
+        service.create_ligne(
+            ticket_id=uuid4(),
+            category_id=uuid4(),
+            poids_kg=0,
+            destination="MAGASIN",
+            notes=None,
+        )
+
+
+def test_create_ligne_raises_validation_for_invalid_exit_destination():
+    service = ReceptionService(SimpleNamespace())
+    ticket = SimpleNamespace(status=TicketDepotStatus.OPENED.value)
+    service.ticket_repo.get = lambda _ticket_id: ticket
+    service.category_repo.exists = lambda _category_id: True
+
+    with pytest.raises(ValidationError, match="sortie de stock"):
+        service.create_ligne(
+            ticket_id=uuid4(),
+            category_id=uuid4(),
+            poids_kg=1.0,
+            destination="MAGASIN",
+            notes=None,
+            is_exit=True,
+        )
