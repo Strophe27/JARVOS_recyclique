@@ -45,7 +45,9 @@ class CategoryService:
         existing = self.db.query(Category).filter(Category.name == category_data.name).first()
 
         if existing:
-            raise HTTPException(status_code=400, detail=f"Category with name '{category_data.name}' already exists")
+            raise ValidationError(
+                f"Category with name '{category_data.name}' already exists"
+            )
 
         # Validate parent_id if provided
         parent_id = None
@@ -58,7 +60,9 @@ class CategoryService:
                     Category.is_active == True
                 ).first()
                 if not parent:
-                    raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
+                    raise ValidationError(
+                        f"Parent category with ID '{category_data.parent_id}' not found or inactive"
+                    )
 
                 # NEW RULE: If parent has prices, remove them automatically to make it a container
                 if parent.price is not None or parent.max_price is not None:
@@ -70,12 +74,13 @@ class CategoryService:
                 # Check hierarchy depth
                 parent_depth = self._get_hierarchy_depth(parent_id)
                 if parent_depth >= self.MAX_HIERARCHY_DEPTH:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Cannot create category: maximum hierarchy depth of {self.MAX_HIERARCHY_DEPTH} levels exceeded"
+                    raise ValidationError(
+                        f"Cannot create category: maximum hierarchy depth of {self.MAX_HIERARCHY_DEPTH} levels exceeded"
                     )
             except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid parent_id format: '{category_data.parent_id}'")
+                raise ValidationError(
+                    f"Invalid parent_id format: '{category_data.parent_id}'"
+                ) from None
 
         # Create new category
         new_category = Category(
@@ -97,7 +102,9 @@ class CategoryService:
             self.db.refresh(new_category)
         except IntegrityError:
             self.db.rollback()
-            raise HTTPException(status_code=400, detail=f"Category with name '{category_data.name}' already exists")
+            raise ValidationError(
+                f"Category with name '{category_data.name}' already exists"
+            )
 
         return CategoryRead.model_validate(new_category)
 

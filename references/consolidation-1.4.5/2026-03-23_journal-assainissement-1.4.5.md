@@ -2081,13 +2081,56 @@
 
 ---
 
+## Lot 2AC — Pilote ARCH-03 sur `CategoryService.create_category`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la creation de categorie hors HTTP en preservant le contrat metier et le `400` historique sur les erreurs de validation
+
+### Actions
+- Refactor de `CategoryService.create_category()` pour remplacer les `HTTPException(400, ...)` par `ValidationError`, avec conservation des messages existants :
+  - doublon de nom
+  - parent absent ou inactif
+  - `parent_id` invalide
+  - profondeur maximale atteinte
+  - `IntegrityError` mappee sur le meme message de doublon
+- Conservation volontaire de la logique metier existante qui retire les prix du parent quand on cree un enfant sous une categorie tarifee.
+- Refactor de `POST /categories/` dans `categories.py` pour traduire `ValidationError` -> `400`, en preservant `201` sur succes.
+- Ajout du fichier cible `test_category_create_arch03.py` pour verrouiller :
+  - levees `ValidationError` cote service
+  - mapping HTTP `400` sur la route
+  - comportement parent tarife conserve
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/category_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/categories.py`
+- `recyclique-1.4.4/api/tests/test_category_create_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_category_create_arch03.py`
+- Resultat local :
+  - **7 tests passes**
+- Validation Docker/PostgreSQL :
+  - non conclusif dans cet environnement sur `test_categories_endpoint.py` a cause de la fixture `AsyncClient(app=...)` / `httpx`, preexistante au lot
+- QA finale seule : **OK**
+
+### Resultat
+- `CategoryService.create_category()` ne leve plus d'erreur HTTP directe.
+- Le contrat HTTP de `POST /categories/` est preserve sur `201` et `400` pour les erreurs metier de validation.
+- Reserves acceptees :
+  - `IntegrityError` reste mappee de facon large sur le message de doublon
+  - la logique transactionnelle en deux temps (retrait prix parent puis creation enfant) reste une dette voisine hors du perimetre strict du lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore` et `ARCH-03/category_soft_delete` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore`, `ARCH-03/category_soft_delete` et `ARCH-03/category_create` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2095,8 +2138,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService` avec un lot borne `create/update`, Telegram etant explicitement reporte
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** poursuivre `ARCH-03` sur `CategoryService.update_category`, Telegram etant explicitement reporte
 
 ---
 

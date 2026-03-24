@@ -55,7 +55,12 @@ async def create_category(
 ):
     """Create a new category"""
     service = CategoryService(db)
-    return await service.create_category(category_data)
+    try:
+        return await service.create_category(category_data)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
 
 @router.get(
