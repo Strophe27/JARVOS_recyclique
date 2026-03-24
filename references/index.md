@@ -53,6 +53,9 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`recherche/`** — Prompts et reponses de recherche externe (Perplexity, Claude.ai, GPT, etc.). Detail : **recherche/index.md**.
   _(Charger : fichiers mentionnes dans ou-on-en-est ou sur demande explicite.)_
 
+- **`consolidation-1.4.5/`** — Référentiel durable pour l'audit brownfield et le backlog d'assainissement de la base active `recyclique-1.4.4/`. Detail : **consolidation-1.4.5/index.md**.
+  _(Charger : session d'audit qualité/cohérence, priorisation technique, assainissement brownfield ou préparation d'une refonte fondée sur l'existant.)_
+
 - **`ecosysteme/`** — References JARVOS_ecosysteme et JARVOS_fondations. Confidentiel. Gitignore. Detail : **ecosysteme/index.md**. Les documents ecosysteme sont **references** (liens, index), jamais **copies** ailleurs.
   _(Charger : sur demande explicite uniquement.)_
 

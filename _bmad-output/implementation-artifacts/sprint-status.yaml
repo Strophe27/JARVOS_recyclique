@@ -3,6 +3,10 @@
 # project_key: NOKEY
 # tracking_system: file-system
 # story_location: d:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\_bmad-output\implementation-artifacts
+#
+# Pilotage brownfield v1.4.5 : ce fichier reste l'artefact du pilotage greenfield BMAD.
+# Ne pas l'utiliser pour piloter la consolidation 1.4.5 tant qu'un nouveau tracking
+# n'est pas dérivé et aligné (remplacer ou dupliquer ce fichier explicitement).
 
 # STATUS DEFINITIONS:
 # ==================
