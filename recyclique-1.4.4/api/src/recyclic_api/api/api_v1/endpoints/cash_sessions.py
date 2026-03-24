@@ -498,39 +498,39 @@ async def get_cash_sessions(
     )
 
 
-@router.get("/current", response_model=Optional[CashSessionResponse])
+@router.get(
+    "/current",
+    response_model=Optional[CashSessionResponse],
+    summary="Session de caisse ouverte pour l'utilisateur connecté",
+    description=(
+        "Retourne la session ouverte (non différée) de l'utilisateur authentifié, "
+        "ou null s'il n'en a pas — cas normal, pas une erreur."
+    ),
+    tags=["Sessions de Caisse"],
+)
 async def get_current_cash_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
-    """
-    Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté.
-    """
-    logging.info(f"=== DEBUG: get_current_cash_session appelé pour user {current_user.id} ===")
+    """Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté."""
+    service = CashSessionService(db)
     try:
-        service = CashSessionService(db)
         session = service.get_open_session_by_operator(str(current_user.id))
-        
-        logging.info(f"=== DEBUG: session trouvée: {session is not None} ===")
-        
         if not session:
-            logging.info("=== DEBUG: Aucune session ouverte, retour null ===")
             return None
-        
-        logging.info(f"=== DEBUG: Retour de la session {session.id} ===")
-        # Story B49-P1: Enrichir avec les options du register
         return enrich_session_response(session, service)
-        
-    except Exception as e:
-        # Log de l'erreur pour debug
-        logging.error(f"=== DEBUG: Erreur dans get_current_cash_session: {e} ===")
-        logging.error(f"=== DEBUG: Type d'erreur: {type(e)} ===")
-        logging.error(f"=== DEBUG: User ID: {current_user.id} ===")
-        
-        # Retourner une erreur 500 avec plus de détails
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Erreur inattendue lors de la récupération de la session courante pour user %s",
+            current_user.id,
+        )
         raise HTTPException(
             status_code=500,
-            detail=f"DEBUG: Erreur lors de la récupération de la session courante: {str(e)}"
+            detail="Erreur lors de la récupération de la session courante",
         )
 
 

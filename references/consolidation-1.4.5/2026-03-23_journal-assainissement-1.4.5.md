@@ -1717,13 +1717,67 @@
 
 ---
 
+## Lot 1U — Pilote ARCH-03 sur `cash_sessions/current`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** nettoyer la route de session courante pour supprimer le mode debug ad hoc et stabiliser le contrat HTTP sans sur-architecturer le service
+
+### Actions
+- Simplification de `GET /cash-sessions/current` dans `cash_sessions.py` :
+  - suppression des logs `=== DEBUG ===`
+  - suppression du `500` exposant des details techniques au client
+  - conservation du contrat `200 + null` quand aucune session ouverte n'existe
+  - traduction explicite de `ValidationError` metier -> `400`
+  - logging serveur via `logger.exception(...)` sur le chemin `500` inattendu
+- Ajout d'un fichier cible `test_cash_session_current_arch03.py` pour verrouiller sans dependance DB complete :
+  - `null` HTTP quand le service retourne `None`
+  - `400` HTTP quand le service leve `ValidationError`
+  - test unitaire `no_db` deja utile sur le service
+- Realignement de `test_cash_session_current_endpoint.py` sur `settings.API_V1_STR`.
+- Clarification du contrat d'acces non authentifie (`403` constate) dans les tests.
+- Correction des fixtures PostgreSQL de `test_cash_session_current_endpoint.py` :
+  - creation d'un `Site` minimal
+  - rattachement de `site_id` aux `CashSession` de test pour respecter le schema reel
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_current_arch03.py`
+- `recyclique-1.4.4/api/tests/test_cash_session_current_endpoint.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_cash_session_current_endpoint.py`
+  - `tests/test_cash_session_current_arch03.py`
+- Resultat local :
+  - **4 tests passes** + **4 skips PostgreSQL-only**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_cash_session_current_endpoint.py`
+  - `tests/test_cash_session_current_arch03.py`
+- Resultat Docker :
+  - **8 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- La route `cash_sessions/current` ne renvoie plus de `500` ad hoc avec message `DEBUG`.
+- Le contrat HTTP utile est maintenant verrouille sur :
+  - `200` + objet si session ouverte
+  - `200` + `null` si aucune session ouverte
+  - `400` sur `ValidationError` metier
+  - `403` sans authentification / auth stricte non satisfaite
+- Reserves acceptees :
+  - les scenarii integration complets de `current` restent PostgreSQL-only
+  - l'heuristique interne de `90 jours` dans `get_open_session_by_operator()` reste une reserve metier distincte, hors lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close` et `ARCH-03/cash_sessions/detail` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail` et `ARCH-03/cash_sessions/current` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1731,8 +1785,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** prolonger `ARCH-03` sur `cash_sessions/current`, puis sur `step update`, avant une petite passe de reduction de repetition sur les traductions HTTP des verticales deja migrees
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** prolonger `ARCH-03` sur `cash_sessions/step update`, puis reevaluer une petite passe de reduction de repetition sur les traductions HTTP des verticales deja migrees
 
 ---
 
