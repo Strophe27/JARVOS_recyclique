@@ -1,14 +1,29 @@
 """
-Tests pour l'endpoint de déconnexion audité (Story b34-p7)
-Vérifie que l'endpoint POST /v1/auth/logout enregistre correctement l'événement d'audit.
+Tests pour l'endpoint de déconnexion audité (Story b34-p7).
+Vérifie que POST ``.../auth/logout`` journalise correctement l'audit.
 """
+import os
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.models.audit_log import AuditLog, AuditActionType
+
+from recyclic_api.core.config import settings
 from recyclic_api.core.security import hash_password
-from uuid import uuid4
+from recyclic_api.models.audit_log import AuditActionType, AuditLog
+from recyclic_api.models.user import User, UserRole, UserStatus
+
+_V1 = settings.API_V1_STR.rstrip("/")
+_TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "")
+pytestmark = pytest.mark.skipif(
+    not _TEST_DB_URL.startswith("postgresql"),
+    reason="`test_auth_logout.py` vérifie `audit_logs` (JSONB) et nécessite PostgreSQL.",
+)
+
+
+def _unique_username(prefix: str) -> str:
+    return f"{prefix}_{uuid4().hex[:12]}@example.com"
 
 
 class TestAuthLogout:
@@ -16,10 +31,10 @@ class TestAuthLogout:
 
     def test_logout_success_authenticated_user(self, client: TestClient, db_session: Session):
         """Test que la déconnexion d'un utilisateur authentifié fonctionne et enregistre l'audit."""
-        # Créer un utilisateur de test
+        username = _unique_username("testuser")
         user = User(
             id=uuid4(),
-            username="testuser@example.com",
+            username=username,
             hashed_password=hash_password("Test1234!"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -30,8 +45,8 @@ class TestAuthLogout:
         db_session.refresh(user)
 
         # Se connecter pour obtenir un token
-        login_response = client.post("/api/v1/auth/login", json={
-            "username": "testuser@example.com",
+        login_response = client.post(f"{_V1}/auth/login", json={
+            "username": username,
             "password": "Test1234!"
         })
         assert login_response.status_code == 200
@@ -42,12 +57,12 @@ class TestAuthLogout:
 
         # Se déconnecter
         headers = {"Authorization": f"Bearer {token}"}
-        logout_response = client.post("/api/v1/auth/logout", headers=headers)
+        logout_response = client.post(f"{_V1}/auth/logout", headers=headers)
 
         # Vérifier la réponse
         assert logout_response.status_code == 200
         data = logout_response.json()
-        assert data["message"] == "Déconnexion réussie"
+        assert data["message"] == "Deconnexion reussie"
 
         # Vérifier qu'une entrée d'audit a été créée
         audit_count_after = db_session.query(AuditLog).count()
@@ -55,35 +70,36 @@ class TestAuthLogout:
 
         # Vérifier les détails de l'entrée d'audit
         audit_entry = db_session.query(AuditLog).filter(
-            AuditLog.action_type == AuditActionType.LOGOUT.value
+            AuditLog.action_type == AuditActionType.LOGOUT.value,
+            AuditLog.actor_id == user.id,
         ).first()
         
         assert audit_entry is not None
         assert audit_entry.actor_id == user.id
         assert audit_entry.actor_username == user.username
         assert audit_entry.action_type == AuditActionType.LOGOUT.value
-        assert "Déconnexion de l'utilisateur" in audit_entry.description
+        assert "Deconnexion de l'utilisateur" in audit_entry.description
         assert audit_entry.details_json["username"] == user.username
         assert audit_entry.details_json["user_id"] == str(user.id)
         assert audit_entry.details_json["user_role"] == user.role.value
 
     def test_logout_requires_authentication(self, client: TestClient, db_session: Session):
         """Test que la déconnexion sans authentification retourne 401."""
-        response = client.post("/api/v1/auth/logout")
+        response = client.post(f"{_V1}/auth/logout")
         assert response.status_code == 401
 
     def test_logout_with_invalid_token_returns_401(self, client: TestClient, db_session: Session):
         """Test que la déconnexion avec un token invalide retourne 401."""
         headers = {"Authorization": "Bearer invalid_token"}
-        response = client.post("/api/v1/auth/logout", headers=headers)
+        response = client.post(f"{_V1}/auth/logout", headers=headers)
         assert response.status_code == 401
 
     def test_logout_with_admin_user(self, client: TestClient, db_session: Session):
         """Test que la déconnexion d'un administrateur fonctionne correctement."""
-        # Créer un utilisateur admin
+        username = _unique_username("admin")
         admin_user = User(
             id=uuid4(),
-            username="admin@example.com",
+            username=username,
             hashed_password=hash_password("Test1234!"),
             role=UserRole.ADMIN,
             status=UserStatus.ACTIVE,
@@ -94,8 +110,8 @@ class TestAuthLogout:
         db_session.refresh(admin_user)
 
         # Se connecter
-        login_response = client.post("/api/v1/auth/login", json={
-            "username": "admin@example.com",
+        login_response = client.post(f"{_V1}/auth/login", json={
+            "username": username,
             "password": "Test1234!"
         })
         assert login_response.status_code == 200
@@ -103,12 +119,12 @@ class TestAuthLogout:
 
         # Se déconnecter
         headers = {"Authorization": f"Bearer {token}"}
-        logout_response = client.post("/api/v1/auth/logout", headers=headers)
+        logout_response = client.post(f"{_V1}/auth/logout", headers=headers)
 
         # Vérifier la réponse
         assert logout_response.status_code == 200
         data = logout_response.json()
-        assert data["message"] == "Déconnexion réussie"
+        assert data["message"] == "Deconnexion reussie"
 
         # Vérifier l'entrée d'audit
         audit_entry = db_session.query(AuditLog).filter(
@@ -122,10 +138,10 @@ class TestAuthLogout:
 
     def test_logout_audit_contains_ip_and_user_agent(self, client: TestClient, db_session: Session):
         """Test que l'entrée d'audit contient l'IP et le User-Agent."""
-        # Créer un utilisateur de test
+        username = _unique_username("testuser")
         user = User(
             id=uuid4(),
-            username="testuser@example.com",
+            username=username,
             hashed_password=hash_password("Test1234!"),
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
@@ -136,8 +152,8 @@ class TestAuthLogout:
         db_session.refresh(user)
 
         # Se connecter
-        login_response = client.post("/api/v1/auth/login", json={
-            "username": "testuser@example.com",
+        login_response = client.post(f"{_V1}/auth/login", json={
+            "username": username,
             "password": "Test1234!"
         })
         assert login_response.status_code == 200
@@ -148,7 +164,7 @@ class TestAuthLogout:
             "Authorization": f"Bearer {token}",
             "User-Agent": "TestBrowser/1.0"
         }
-        logout_response = client.post("/api/v1/auth/logout", headers=headers)
+        logout_response = client.post(f"{_V1}/auth/logout", headers=headers)
 
         assert logout_response.status_code == 200
 

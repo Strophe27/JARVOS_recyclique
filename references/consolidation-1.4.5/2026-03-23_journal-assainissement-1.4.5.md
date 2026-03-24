@@ -1020,6 +1020,70 @@
 
 ---
 
+## Lot 3H — Tests backend refresh endpoint
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** etendre l'axe auth backend du pilote/service vers l'endpoint `/auth/refresh`
+
+### Actions
+- Realignement de `api/tests/test_refresh_token_endpoint.py` sur `settings.API_V1_STR`.
+- Unicification des usernames de test pour reduire les collisions residuelles.
+- Correction du scenario "inactivite" pour supprimer explicitement le marqueur d'activite Redis apres login, au lieu de supposer une absence d'activite deja fausse.
+- Ajout d'une fixture `requires_redis` pour rendre les executions locales sans Redis explicitement `skip` plutot que trompeuses.
+- Ajout de `test_refresh_token_endpoint.py` a `_PILOT_DB_ISOLATION_BASENAMES` dans `api/tests/conftest.py`.
+- Extension de `api/run_tests.sh` a `tests/test_refresh_token_endpoint.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/tests/test_refresh_token_endpoint.py`
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/run_tests.sh`
+
+### Validation
+- Local sans Redis : `pytest tests/test_refresh_token_endpoint.py -q`
+- Resultat local : **3 passes, 4 skips**
+- Docker/PostgreSQL/Redis : `pytest tests/test_refresh_token_endpoint.py -q`
+- Resultat Docker : **7 tests passes**
+- QA de cloture seule : **fermable avec reserves**
+
+### Resultat
+- L'endpoint refresh est maintenant couvre proprement a la fois en execution locale degradee et en validation reelle Docker.
+- Le pilote auth couvre desormais aussi le test endpoint refresh, pas seulement le service.
+- Reserves acceptees :
+  - quelques assertions restent couplees au wording francais des messages d'erreur
+  - le nom du test "inactive_user" raconte encore imparfaitement une absence d'activite Redis plutot qu'un statut utilisateur en base
+
+---
+
+## Lot 3I — Tests backend logout / audit PostgreSQL
+
+**Statut:** ferme  
+**Theme:** stabiliser `test_auth_logout.py` dans son vrai environnement cible au lieu de forcer une compatibilite artificielle avec SQLite
+
+### Actions
+- Realignement de `api/tests/test_auth_logout.py` sur `settings.API_V1_STR`.
+- Unicification des usernames pour eviter les collisions avec une base PostgreSQL partagee.
+- Alignement des assertions texte sur le comportement reel actuel de `auth.logout` (`Deconnexion reussie`, description d'audit sans accents).
+- Ajout d'un `skip` explicite hors PostgreSQL pour eviter les faux rouges sur SQLite alors que `audit_logs` repose sur `JSONB`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/tests/test_auth_logout.py`
+
+### Validation
+- Local SQLite : `pytest tests/test_auth_logout.py -q`
+- Resultat local : **5 skips**
+- Docker/PostgreSQL/Redis : `pytest tests/test_auth_logout.py -q`
+- Resultat Docker : **5 tests passes**
+- Validation d'integration auth backend ciblee :
+  - `pytest tests/test_refresh_token_service.py tests/test_refresh_token_endpoint.py tests/test_auth_logout.py -q`
+- Resultat integration : **24 tests passes**
+- QA de cloture seule : **fermable**
+
+### Resultat
+- Les tests logout/audit refletent maintenant le comportement reel de l'endpoint sans dependre du pilote SQLite minimal.
+- La frontiere est clarifiee : SQLite minimal pour le pilote rentable, PostgreSQL reel pour l'audit `JSONB`.
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1053,11 +1117,11 @@
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
-- **Vague 7:** extension backend tests auth/admin/refresh fermee
+- **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `2I`, `3G`
-- **Prochaine etape logique:** poursuivre la fiabilisation backend soit par l'extension auth/logout/refresh endpoint, soit par un lot plus large sur la politique transactionnelle et l'isolation tests
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
+- **Lots fermes avec reserve:** `2I`, `3G`, `3H`
+- **Prochaine etape logique:** ouvrir un lot backend plus structurant sur la politique transactionnelle et les frontieres service/endpoint (`ARCH-02`) maintenant que l'axe auth tests est stabilise
 
 ---
 

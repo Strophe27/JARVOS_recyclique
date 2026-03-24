@@ -2,8 +2,9 @@
 Configuration des tests pour l'API Recyclic
 
 Lot C pilote (TEST-01 + extension) : isolation DB pour un sous-ensemble de
-modules auth/infra, admin utilisateur, et ``test_refresh_token_service`` (voir
-``_PILOT_DB_ISOLATION_BASENAMES`` et ``_cleanup_pilot_db_tables``). Le
+modules auth/infra, admin utilisateur, ``test_refresh_token_service`` et
+``test_refresh_token_endpoint`` (voir ``_PILOT_DB_ISOLATION_BASENAMES`` et
+``_cleanup_pilot_db_tables``). Le
 nettoyage s'exécute dans le ``finally`` de ``_db_autouse`` après fermeture
 session + connexion du test (évite les verrous SQLite avec un hook teardown).
 Un échec de cleanup (inspect schéma ou ``DELETE``) est journalisé et fait
@@ -216,6 +217,7 @@ _PILOT_DB_ISOLATION_BASENAMES = frozenset(
         "test_admin_user_status_endpoint.py",
         "test_admin_user_management.py",
         "test_refresh_token_service.py",
+        "test_refresh_token_endpoint.py",
     }
 )
 
