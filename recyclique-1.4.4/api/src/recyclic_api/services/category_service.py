@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
-from fastapi import HTTPException
 from datetime import datetime, timezone
 
 from ..core.exceptions import ConflictError, NotFoundError, ValidationError
@@ -163,7 +162,9 @@ class CategoryService:
             existing = self.db.query(Category).filter(Category.name == category_data.name).first()
 
             if existing:
-                raise HTTPException(status_code=400, detail=f"Category with name '{category_data.name}' already exists")
+                raise ValidationError(
+                    f"Category with name '{category_data.name}' already exists"
+                )
 
         # Determine final parent_id value for validation
         # We need to check if parent_id was provided in the update, even if it's None
@@ -181,7 +182,9 @@ class CategoryService:
                         Category.is_active == True
                     ).first()
                     if not parent:
-                        raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
+                        raise ValidationError(
+                            f"Parent category with ID '{category_data.parent_id}' not found or inactive"
+                        )
 
                     # NEW RULE: If parent has prices, remove them automatically to make it a container
                     if parent.price is not None or parent.max_price is not None:
@@ -192,17 +195,18 @@ class CategoryService:
 
                     # Prevent self-reference
                     if final_parent_id == cat_uuid:
-                        raise HTTPException(status_code=400, detail="Category cannot be its own parent")
+                        raise ValidationError("Category cannot be its own parent")
 
                     # Check hierarchy depth
                     parent_depth = self._get_hierarchy_depth(final_parent_id)
                     if parent_depth >= self.MAX_HIERARCHY_DEPTH:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Cannot update category: maximum hierarchy depth of {self.MAX_HIERARCHY_DEPTH} levels exceeded"
+                        raise ValidationError(
+                            f"Cannot update category: maximum hierarchy depth of {self.MAX_HIERARCHY_DEPTH} levels exceeded"
                         )
                 except ValueError:
-                    raise HTTPException(status_code=400, detail=f"Invalid parent_id format: '{category_data.parent_id}'")
+                    raise ValidationError(
+                        f"Invalid parent_id format: '{category_data.parent_id}'"
+                    ) from None
             else:
                 final_parent_id = None
 
@@ -221,9 +225,8 @@ class CategoryService:
             ).count()
 
             if children_count > 0:
-                raise HTTPException(
-                    status_code=422,
-                    detail="Cannot set prices on a category that has subcategories. Prices can only be set on leaf categories (without children)."
+                raise ConflictError(
+                    "Cannot set prices on a category that has subcategories. Prices can only be set on leaf categories (without children)."
                 )
 
         # Update fields
@@ -241,7 +244,9 @@ class CategoryService:
                 self.db.refresh(category)
             except IntegrityError:
                 self.db.rollback()
-                raise HTTPException(status_code=400, detail=f"Category with name '{category_data.name}' already exists")
+                raise ValidationError(
+                    f"Category with name '{category_data.name}' already exists"
+                )
 
         return CategoryRead.model_validate(category)
 

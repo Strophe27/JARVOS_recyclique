@@ -235,7 +235,16 @@ async def update_category(
 ):
     """Update a category"""
     service = CategoryService(db)
-    category = await service.update_category(category_id, category_data)
+    try:
+        category = await service.update_category(category_id, category_data)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.detail
+        ) from exc
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
