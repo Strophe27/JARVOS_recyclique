@@ -1084,6 +1084,50 @@
 
 ---
 
+## Lot 1I — Pilote ARCH-02 sur `reception`
+
+**Statut:** ferme  
+**Theme:** clarifier la frontiere transactionnelle sur une verticale backend etroite avant toute generalisation
+
+### Actions
+- Retrait des `commit()` / `refresh()` des repositories `reception`.
+- Centralisation des ecritures transactionnelles dans `ReceptionService` via :
+  - `_commit_and_refresh()` pour les creations / mises a jour
+  - `_commit()` pour les suppressions
+- Realignement de `open_poste()` sur le repository `PosteReceptionRepository` pour supprimer un chemin d'ecriture parallele.
+- Ajout d'un test unitaire dedie de politique transactionnelle pour figer :
+  - repository sans `commit`
+  - service comme point unique de `commit`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/repositories/reception.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/reception_service.py`
+- `recyclique-1.4.4/api/tests/test_reception_transaction_policy.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_reception_transaction_policy.py`
+- Resultat local :
+  - **2 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_transaction_policy.py`
+  - `tests/test_integration_category_migration.py::TestCategoryMigrationIntegration::test_reception_service_uses_new_categories`
+- Resultat Docker :
+  - **3 tests passes**
+- QA de cloture seule : **fermable**
+
+### Resultat
+- La verticale `reception` a maintenant une regle transactionnelle plus lisible :
+  - repository = acces donnees / mutation en memoire
+  - service = point de `commit`
+- Le lot fournit un premier pilote concret `ARCH-02` sans melanger encore la question `HTTPException` (`ARCH-03`).
+- Reserves faibles acceptees :
+  - la couverture specifique de politique transactionnelle reste volontairement etroite sur ce premier pilote
+  - plusieurs tests HTTP historiques en `/api/v1/...` restent hors lot et ne servent pas encore de validation fiable pour `reception`
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1112,16 +1156,16 @@
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilote architecture backend ouvert et ferme avec reserve sur `delete_site`
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site` et premier lot `ARCH-02` sur `reception` fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
 - **Lots fermes avec reserve:** `2I`, `3G`, `3H`
-- **Prochaine etape logique:** ouvrir un lot backend plus structurant sur la politique transactionnelle et les frontieres service/endpoint (`ARCH-02`) maintenant que l'axe auth tests est stabilise
+- **Prochaine etape logique:** poursuivre `ARCH-02` sur une deuxieme verticale backend plus sensible, idealement `cash_sessions`, avant d'ouvrir la bascule plus large vers `ARCH-03`
 
 ---
 

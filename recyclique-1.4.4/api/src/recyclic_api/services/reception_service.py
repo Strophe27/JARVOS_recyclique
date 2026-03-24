@@ -37,6 +37,14 @@ class ReceptionService:
         self.ligne_repo = LigneDepotRepository(db)
         self.category_repo = CategoryRepository(db)
 
+    def _commit_and_refresh(self, entity):
+        self.db.commit()
+        self.db.refresh(entity)
+        return entity
+
+    def _commit(self) -> None:
+        self.db.commit()
+
     # Postes
     def open_poste(self, opened_by_user_id: UUID, opened_at: Optional[datetime] = None) -> PosteReception:
         """
@@ -71,10 +79,8 @@ class ReceptionService:
             status=PosteReceptionStatus.OPENED.value,
             opened_at=opened_at if opened_at is not None else None
         )
-        self.db.add(poste)
-        self.db.commit()
-        self.db.refresh(poste)
-        return poste
+        self.poste_repo.add(poste)
+        return self._commit_and_refresh(poste)
 
     def close_poste(self, poste_id: UUID) -> PosteReception:
         poste: Optional[PosteReception] = self.poste_repo.get(poste_id)
@@ -90,7 +96,8 @@ class ReceptionService:
         from sqlalchemy.sql import func
 
         poste.closed_at = func.now()
-        return self.poste_repo.update(poste)
+        self.poste_repo.update(poste)
+        return self._commit_and_refresh(poste)
 
     # Tickets
     def create_ticket(self, poste_id: UUID, benevole_user_id: UUID) -> TicketDepot:
@@ -127,7 +134,8 @@ class ReceptionService:
             status=TicketDepotStatus.OPENED.value,
             created_at=ticket_created_at if ticket_created_at is not None else None
         )
-        return self.ticket_repo.add(ticket)
+        self.ticket_repo.add(ticket)
+        return self._commit_and_refresh(ticket)
 
     def close_ticket(self, ticket_id: UUID) -> TicketDepot:
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ticket_id)
@@ -140,7 +148,8 @@ class ReceptionService:
 
         ticket.status = TicketDepotStatus.CLOSED.value
         ticket.closed_at = func.now()
-        return self.ticket_repo.update(ticket)
+        self.ticket_repo.update(ticket)
+        return self._commit_and_refresh(ticket)
 
 
     # Lignes de dépôt
@@ -181,7 +190,8 @@ class ReceptionService:
             notes=notes,
             is_exit=is_exit if is_exit is not None else False,
         )
-        return self.ligne_repo.add(ligne)
+        self.ligne_repo.add(ligne)
+        return self._commit_and_refresh(ligne)
 
     def update_ligne(
         self,
@@ -233,7 +243,8 @@ class ReceptionService:
                     )
             ligne.is_exit = final_is_exit
 
-        return self.ligne_repo.update(ligne)
+        self.ligne_repo.update(ligne)
+        return self._commit_and_refresh(ligne)
     
     def update_ligne_weight_admin(
         self,
@@ -269,7 +280,8 @@ class ReceptionService:
         # qui doit pouvoir corriger les erreurs même après fermeture
         
         ligne.poids_kg = poids_kg
-        return self.ligne_repo.update(ligne)
+        self.ligne_repo.update(ligne)
+        return self._commit_and_refresh(ligne)
 
     def delete_ligne(self, *, ligne_id: UUID) -> None:
         ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
@@ -280,6 +292,7 @@ class ReceptionService:
         if ticket.status != TicketDepotStatus.OPENED.value:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket fermé")
         self.ligne_repo.delete(ligne)
+        self._commit()
 
     # Méthodes pour l'historique des tickets
     def get_tickets_list(

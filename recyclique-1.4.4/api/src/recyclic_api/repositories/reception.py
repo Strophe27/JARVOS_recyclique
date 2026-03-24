@@ -26,13 +26,9 @@ class PosteReceptionRepository:
 
     def add(self, poste: PosteReception) -> PosteReception:
         self.db.add(poste)
-        self.db.commit()
-        self.db.refresh(poste)
         return poste
 
     def update(self, poste: PosteReception) -> PosteReception:
-        self.db.commit()
-        self.db.refresh(poste)
         return poste
 
 
@@ -45,13 +41,9 @@ class TicketDepotRepository:
 
     def add(self, ticket: TicketDepot) -> TicketDepot:
         self.db.add(ticket)
-        self.db.commit()
-        self.db.refresh(ticket)
         return ticket
 
     def update(self, ticket: TicketDepot) -> TicketDepot:
-        self.db.commit()
-        self.db.refresh(ticket)
         return ticket
 
 
@@ -72,18 +64,13 @@ class LigneDepotRepository:
 
     def add(self, ligne: LigneDepot) -> LigneDepot:
         self.db.add(ligne)
-        self.db.commit()
-        self.db.refresh(ligne)
         return ligne
 
     def update(self, ligne: LigneDepot) -> LigneDepot:
-        self.db.commit()
-        self.db.refresh(ligne)
         return ligne
 
     def delete(self, ligne: LigneDepot) -> None:
         self.db.delete(ligne)
-        self.db.commit()
 
 
 class CategoryRepository:
