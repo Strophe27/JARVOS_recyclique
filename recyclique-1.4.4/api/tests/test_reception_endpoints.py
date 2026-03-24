@@ -65,3 +65,24 @@ def test_404_unknown_ids(admin_client):
     assert r.status_code == 404
 
 
+def test_create_ticket_unknown_poste_returns_404(admin_client):
+    unknown_id = str(uuid.uuid4())
+
+    r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": unknown_id})
+    assert r.status_code == 404
+    assert "Poste introuvable" in r.json()["detail"]
+
+
+def test_create_ticket_on_closed_poste_returns_409(admin_client):
+    r = admin_client.post(f"{_V1}/reception/postes/open")
+    assert r.status_code == 200
+    poste_id = r.json()["id"]
+
+    r = admin_client.post(f"{_V1}/reception/postes/{poste_id}/close")
+    assert r.status_code == 200
+
+    r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
+    assert r.status_code == 409
+    assert "Poste fermé" in r.json()["detail"]
+
+

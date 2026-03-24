@@ -11,10 +11,13 @@ os.environ["TESTING"] = "true"
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from recyclic_api.core.config import settings
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.poste_reception import PosteReception
 from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.core.security import hash_password, create_access_token
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 @pytest.fixture(scope="function")
@@ -59,7 +62,7 @@ def test_create_deferred_poste_with_past_date(admin_client):
     
     # Ouvrir un poste avec date passée
     response = admin_client.post(
-        "/api/v1/reception/postes/open",
+        f"{_V1}/reception/postes/open",
         json={"opened_at": past_date.isoformat()}
     )
     
@@ -80,7 +83,7 @@ def test_create_deferred_poste_with_future_date_error(admin_client):
     
     # Tenter d'ouvrir un poste avec date future
     response = admin_client.post(
-        "/api/v1/reception/postes/open",
+        f"{_V1}/reception/postes/open",
         json={"opened_at": future_date.isoformat()}
     )
     
@@ -95,7 +98,7 @@ def test_create_deferred_poste_by_user_forbidden(user_client):
     
     # Tenter d'ouvrir un poste avec date passée (USER ne peut pas)
     response = user_client.post(
-        "/api/v1/reception/postes/open",
+        f"{_V1}/reception/postes/open",
         json={"opened_at": past_date.isoformat()}
     )
     
@@ -106,7 +109,7 @@ def test_create_deferred_poste_by_user_forbidden(user_client):
 def test_create_normal_poste_without_opened_at(admin_client):
     """Test création poste normale sans opened_at (comportement actuel)."""
     # Ouvrir un poste sans date personnalisée
-    response = admin_client.post("/api/v1/reception/postes/open")
+    response = admin_client.post(f"{_V1}/reception/postes/open")
     
     assert response.status_code == 200
     data = response.json()
@@ -121,7 +124,7 @@ def test_create_ticket_in_deferred_poste_uses_poste_date(admin_client, db_sessio
     
     # Ouvrir un poste avec date passée
     response = admin_client.post(
-        "/api/v1/reception/postes/open",
+        f"{_V1}/reception/postes/open",
         json={"opened_at": past_date.isoformat()}
     )
     assert response.status_code == 200
@@ -129,7 +132,7 @@ def test_create_ticket_in_deferred_poste_uses_poste_date(admin_client, db_sessio
     
     # Créer un ticket dans ce poste
     response = admin_client.post(
-        "/api/v1/reception/tickets",
+        f"{_V1}/reception/tickets",
         json={"poste_id": poste_id}
     )
     assert response.status_code == 200
@@ -169,14 +172,14 @@ def test_create_ticket_in_deferred_poste_uses_poste_date(admin_client, db_sessio
 def test_create_ticket_in_normal_poste_uses_current_time(admin_client, db_session):
     """Test création ticket dans poste normale (created_at = now())."""
     # Ouvrir un poste normale (sans date personnalisée)
-    response = admin_client.post("/api/v1/reception/postes/open")
+    response = admin_client.post(f"{_V1}/reception/postes/open")
     assert response.status_code == 200
     poste_id = response.json()["id"]
     
     # Créer un ticket dans ce poste
     before_creation = datetime.now(timezone.utc)
     response = admin_client.post(
-        "/api/v1/reception/tickets",
+        f"{_V1}/reception/tickets",
         json={"poste_id": poste_id}
     )
     assert response.status_code == 200
@@ -196,8 +199,9 @@ def test_create_ticket_in_normal_poste_uses_current_time(admin_client, db_sessio
         ticket_created_at = ticket_created_at.astimezone(timezone.utc)
     
     # Vérifier que la date est proche de maintenant (tolérance de 5 secondes)
-    assert before_creation <= ticket_created_at <= after_creation, \
-        f"Ticket created_at ({ticket_created_at}) should be between {before_creation} and {after_creation}"
+    tolerance = timedelta(seconds=5)
+    assert (before_creation - tolerance) <= ticket_created_at <= (after_creation + tolerance), \
+        f"Ticket created_at ({ticket_created_at}) should stay close to now ({before_creation} -> {after_creation})"
 
 
 def test_create_deferred_poste_with_very_old_date(admin_client):
@@ -207,7 +211,7 @@ def test_create_deferred_poste_with_very_old_date(admin_client):
     
     # Ouvrir un poste avec date très ancienne
     response = admin_client.post(
-        "/api/v1/reception/postes/open",
+        f"{_V1}/reception/postes/open",
         json={"opened_at": very_old_date.isoformat()}
     )
     
@@ -224,7 +228,7 @@ def test_create_deferred_poste_with_today_date(admin_client):
     
     # Ouvrir un poste avec date d'aujourd'hui
     response = admin_client.post(
-        "/api/v1/reception/postes/open",
+        f"{_V1}/reception/postes/open",
         json={"opened_at": today_date.isoformat()}
     )
     
@@ -241,7 +245,7 @@ def test_super_admin_can_create_deferred_poste(super_admin_client):
     
     # Ouvrir un poste avec date passée
     response = super_admin_client.post(
-        "/api/v1/reception/postes/open",
+        f"{_V1}/reception/postes/open",
         json={"opened_at": past_date.isoformat()}
     )
     

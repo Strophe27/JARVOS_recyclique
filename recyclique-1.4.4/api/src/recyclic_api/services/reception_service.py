@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Optional, List, Tuple
 from uuid import UUID
 from decimal import Decimal
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func, desc, and_, String
 from fastapi import HTTPException, status
-from recyclic_api.core.exceptions import ConflictError, NotFoundError
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 
 from recyclic_api.models import (
     PosteReception,
@@ -69,10 +69,7 @@ class ReceptionService:
             
             # Vérifier que la date n'est pas dans le futur
             if opened_at > now:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="La date d'ouverture ne peut pas être dans le futur"
-                )
+                raise ValidationError("La date d'ouverture ne peut pas être dans le futur")
         
         # Créer le poste avec la date fournie ou None (utilisera la valeur par défaut)
         poste = PosteReception(
@@ -105,16 +102,18 @@ class ReceptionService:
         # Vérifier que le poste existe et est ouvert
         poste: Optional[PosteReception] = self.poste_repo.get(poste_id)
         if not poste:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Poste introuvable")
+            raise NotFoundError("Poste introuvable")
         if poste.status != PosteReceptionStatus.OPENED.value:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Poste fermé")
+            raise ConflictError("Poste fermé")
 
         # Vérifier l'utilisateur
         if not self.user_repo.get(benevole_user_id):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+            raise NotFoundError("Utilisateur introuvable")
 
-        # Déterminer la date de création du ticket
-        # Si le poste est différé (opened_at < now()), utiliser opened_at du poste
+        # Déterminer la date de création du ticket.
+        # Un poste "normal" reçoit `opened_at` via la valeur par défaut DB au moment de l'ouverture,
+        # donc cette date est seulement quelques instants avant la création du ticket suivant.
+        # On ne reprend `opened_at` que si le poste est réellement différé.
         ticket_created_at = None
         if poste.opened_at:
             now = datetime.now(timezone.utc)
@@ -125,8 +124,9 @@ class ReceptionService:
             elif poste_opened_at.tzinfo != timezone.utc:
                 poste_opened_at = poste_opened_at.astimezone(timezone.utc)
             
-            # Si le poste est différé (date dans le passé), utiliser cette date
-            if poste_opened_at < now:
+            # Considérer le poste comme différé seulement si sa date d'ouverture
+            # est suffisamment ancienne pour ne pas correspondre à l'ouverture normale du flux.
+            if poste_opened_at < (now - timedelta(seconds=5)):
                 ticket_created_at = poste_opened_at
 
         ticket = TicketDepot(

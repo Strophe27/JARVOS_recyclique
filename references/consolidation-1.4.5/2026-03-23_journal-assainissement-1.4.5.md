@@ -1278,6 +1278,98 @@
 
 ---
 
+## Lot 1M — Pilote ARCH-03 sur creation `reception/ticket`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** etendre le decouplage `HTTPException` -> exceptions metier au flux de creation de ticket sans ouvrir encore le chantier des lignes
+
+### Actions
+- Retrait de `HTTPException` dans `ReceptionService.create_ticket()` au profit de :
+  - `NotFoundError` pour `Poste introuvable`
+  - `ConflictError` pour `Poste ferme`
+  - `NotFoundError` pour `Utilisateur introuvable`
+- Translation explicite de ces exceptions dans la route `POST /reception/tickets`.
+- Extension des tests unitaires `ARCH-03` pour figer les trois branches metier de `create_ticket`.
+- Ajout de deux verrous HTTP cibles :
+  - creation sur poste inconnu -> `404`
+  - creation sur poste ferme -> `409`
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/reception_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_arch03_domain_errors.py`
+- `recyclique-1.4.4/api/tests/test_reception_endpoints.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale unitaire :
+  - `tests/test_reception_arch03_domain_errors.py`
+- Resultat local :
+  - **7 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_endpoints.py`
+  - `tests/test_reception_user_access.py`
+- Resultat Docker :
+  - **9 tests passes**
+- QA de cloture seule : **OK**
+
+### Resultat
+- Le flux `create_ticket` suit maintenant la meme frontiere ARCH-03 que `close_poste` / `close_ticket` :
+  - service = exceptions metier
+  - endpoint = traduction HTTP
+- Le contrat HTTP existant reste stable sur les cas critiques `404` / `409`.
+- Reserves acceptees :
+  - la verticale `reception` reste encore heterogene tant que `open_poste` et les lignes levent toujours des `HTTPException`
+  - la traduction `NotFoundError` / `ConflictError` reste implemente par route, sans helper partage
+
+---
+
+## Lot 1N — Pilote ARCH-03 sur ouverture `reception/poste`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la validation d'ouverture de poste du service HTTP tout en consolidant les tests de saisie differee
+
+### Actions
+- Remplacement du `HTTPException(400)` de `ReceptionService.open_poste()` par `ValidationError` quand `opened_at` est dans le futur.
+- Translation explicite de `ValidationError` dans la route `POST /reception/postes/open`.
+- Ajout d'un test unitaire `ARCH-03` pour figer le rejet metier d'une date future.
+- Realignement de `test_reception_deferred.py` sur `settings.API_V1_STR`.
+- Stabilisation du test `test_create_ticket_in_normal_poste_uses_current_time` pour verifier un ticket "proche de maintenant" avec une vraie tolerance, au lieu d'une fenetre strictement comprise entre deux horodatages du client de test.
+- Correction locale de la logique de date dans `create_ticket()` :
+  - un poste normal n'est plus assimile a un poste differe juste parce que son `opened_at` precede de quelques millisecondes la creation du ticket
+  - `opened_at` n'est reutilise que pour un poste reellement ancien (saisie differee)
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/reception_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+- `recyclique-1.4.4/api/tests/test_reception_arch03_domain_errors.py`
+- `recyclique-1.4.4/api/tests/test_reception_deferred.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale unitaire :
+  - `tests/test_reception_arch03_domain_errors.py`
+- Resultat local :
+  - **8 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_reception_endpoints.py`
+  - `tests/test_reception_user_access.py`
+  - `tests/test_reception_deferred.py`
+- Resultat Docker :
+  - **18 tests passes**
+- QA de cloture seule : **OK**
+
+### Resultat
+- `open_poste` suit maintenant la meme frontiere ARCH-03 que les autres flux `reception` deja migres :
+  - service = validation / exceptions metier
+  - endpoint = traduction HTTP
+- Les tests de saisie differee sont maintenant alignes sur le prefixe API courant et moins sensibles au timing de test.
+- Reserves acceptees :
+  - la comparaison "date future" reste stricte et peut etre sensible a un cas limite "quasi maintenant"
+  - la verticale `reception` reste heterogene tant que les lignes n'ont pas ete migrees hors `HTTPException`
+
+---
+
 ## Structure Git — detachement de `recyclique-1.4.4/`
 
 **Statut:** execute (index parent reecrit)  
@@ -1306,7 +1398,7 @@
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
 - **Vague 4:** terminee pour cette passe
-- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et un premier pilote `ARCH-03/reception` sont fermes
+- **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`) et trois premiers lots `ARCH-03/reception` sont fermes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -1314,8 +1406,8 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `2I`, `3G`, `3H`
-- **Prochaine etape logique:** etendre `ARCH-03` sur le reste de `reception` par un micro-lot distinct (`open_poste` / `create_ticket` puis lignes), avec vigilance sur `legacy_import_service.py`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `2I`, `3G`, `3H`
+- **Prochaine etape logique:** ouvrir un premier micro-lot `ARCH-03` sur les lignes `reception`, idealement en commencant par `create_ligne` avant `update_ligne` / `delete_ligne`
 
 ---
 

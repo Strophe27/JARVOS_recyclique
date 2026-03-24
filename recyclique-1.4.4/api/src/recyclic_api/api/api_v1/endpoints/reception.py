@@ -10,7 +10,7 @@ import io
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_role_strict
-from recyclic_api.core.exceptions import ConflictError, NotFoundError
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.user import UserRole, User
 from recyclic_api.utils.report_tokens import generate_download_token, verify_download_token
 from recyclic_api.schemas.reception import (
@@ -58,14 +58,16 @@ def open_poste(
     # Validation des permissions: si opened_at fourni, requiert ADMIN ou SUPER_ADMIN
     if opened_at is not None:
         if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-            from fastapi import HTTPException, status
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Seuls les administrateurs peuvent créer des postes avec une date personnalisée"
             )
     
     service = ReceptionService(db)
-    poste = service.open_poste(opened_by_user_id=current_user.id, opened_at=opened_at)
+    try:
+        poste = service.open_poste(opened_by_user_id=current_user.id, opened_at=opened_at)
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return {"id": str(poste.id), "status": poste.status}
 
 
@@ -92,7 +94,12 @@ def create_ticket(
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     service = ReceptionService(db)
-    ticket = service.create_ticket(poste_id=UUID(payload.poste_id), benevole_user_id=current_user.id)
+    try:
+        ticket = service.create_ticket(poste_id=UUID(payload.poste_id), benevole_user_id=current_user.id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail) from exc
     return {"id": str(ticket.id)}
 
 
