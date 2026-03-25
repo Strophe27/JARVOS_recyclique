@@ -2,13 +2,15 @@
 Service de création de ventes (logique métier hors routeurs HTTP).
 
 ARCH-04 : extraire la logique lourde de POST /sales depuis endpoints/sales.py.
-ARCH-03 : erreurs métier via core.exceptions ; traduction HTTP au routeur.
+ARCH-03 : erreurs métier via core.exceptions ; traduction HTTP au routeur ;
+          mise à jour note admin (PUT /sales/{id}) déléguée ici.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import List
+from uuid import UUID
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
@@ -23,10 +25,42 @@ from recyclic_api.schemas.sale import PaymentCreate, SaleCreate
 
 
 class SaleService:
-    """Création et règles métier associées aux ventes."""
+    """Création, mise à jour note admin et règles métier associées aux ventes."""
 
     def __init__(self, db: Session) -> None:
         self.db = db
+
+    def update_admin_note(self, sale_id: str, note: str | None) -> Sale:
+        """
+        Met à jour le champ ``note`` d'une vente (autorisation admin déjà vérifiée par la route).
+
+        Raises:
+            ValidationError: identifiant vente invalide (traduite en 400).
+            NotFoundError: vente absente (traduite en 404).
+        """
+        try:
+            sale_uuid = UUID(sale_id)
+        except ValueError:
+            raise ValidationError("Invalid sale ID format") from None
+
+        db = self.db
+        sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
+        if not sale:
+            raise NotFoundError("Sale not found")
+
+        if note is not None:
+            sale.note = note
+
+        db.commit()
+        sale = (
+            db.query(Sale)
+            .options(selectinload(Sale.payments), selectinload(Sale.items))
+            .filter(Sale.id == sale_uuid)
+            .first()
+        )
+        if not sale:
+            raise NotFoundError("Sale not found")
+        return sale
 
     def create_sale(self, sale_data: SaleCreate, operator_id: str) -> Sale:
         """

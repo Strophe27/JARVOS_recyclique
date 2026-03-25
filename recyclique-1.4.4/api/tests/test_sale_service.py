@@ -1,5 +1,5 @@
 """
-Tests ciblés pour SaleService.create_sale (ARCH-04 + ARCH-03 domaine).
+Tests ciblés pour SaleService (create_sale ARCH-04 ; update_admin_note ARCH-03 PUT /sales/{id}).
 """
 
 import uuid
@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
-from recyclic_api.models.sale import PaymentMethod
+from recyclic_api.models.sale import PaymentMethod, Sale
+from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.sale import PaymentCreate, SaleCreate, SaleItemCreate
@@ -172,3 +173,63 @@ def test_sale_service_creates_sale_and_payments(db_session: Session):
     assert len(sale.payments) == 2
     db_session.refresh(session)
     assert session.total_sales >= 30.0
+
+
+def test_sale_service_update_admin_note_invalid_uuid_raises_validation_error(db_session: Session):
+    """Aucune requête DB : ne dépend pas du schéma SQLite partiel des tests."""
+    with pytest.raises(ValidationError, match="Invalid sale ID format"):
+        SaleService(db_session).update_admin_note("not-a-uuid", "x")
+
+
+def test_sale_service_update_admin_note_missing_sale_raises_not_found(db_session: Session):
+    _seed_session(db_session)
+    missing = uuid.uuid4()
+    with pytest.raises(NotFoundError, match="Sale not found"):
+        SaleService(db_session).update_admin_note(str(missing), "note")
+
+
+def test_sale_service_update_admin_note_sets_note_and_eager_loads(db_session: Session):
+    user, session = _seed_session(db_session)
+    sale = Sale(
+        cash_session_id=session.id,
+        operator_id=user.id,
+        total_amount=10.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+        note="avant",
+    )
+    db_session.add(sale)
+    db_session.flush()
+    db_session.add(
+        SaleItem(
+            sale_id=sale.id,
+            category="EEE-1",
+            quantity=1,
+            weight=1.0,
+            unit_price=10.0,
+            total_price=10.0,
+        )
+    )
+    db_session.commit()
+
+    out = SaleService(db_session).update_admin_note(str(sale.id), "après")
+    assert out.note == "après"
+    assert len(out.items) == 1
+    assert len(out.payments) == 0
+
+
+def test_sale_service_update_admin_note_none_preserves_note(db_session: Session):
+    user, session = _seed_session(db_session)
+    sale = Sale(
+        cash_session_id=session.id,
+        operator_id=user.id,
+        total_amount=10.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+        note="inchangé",
+    )
+    db_session.add(sale)
+    db_session.commit()
+
+    out = SaleService(db_session).update_admin_note(str(sale.id), None)
+    assert out.note == "inchangé"

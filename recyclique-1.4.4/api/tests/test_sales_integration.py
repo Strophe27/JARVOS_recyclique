@@ -718,6 +718,29 @@ class TestSalesIntegration:
         # Doit retourner 404 Not Found
         assert response.status_code == 404
 
+    def test_update_sale_note_invalid_sale_id_format(self, client: TestClient, admin_token, db_session):
+        """PUT /sales/{id} avec identifiant non-UUID → 400 (contrat ARCH-03)."""
+        admin_user = User(
+            id=uuid.uuid4(),
+            username="admin_test_uuid",
+            hashed_password="hashed_password",
+            role=UserRole.ADMIN,
+            status=UserStatus.APPROVED,
+            is_active=True,
+        )
+        db_session.add(admin_user)
+        db_session.commit()
+
+        admin_token_real = create_access_token(data={"sub": str(admin_user.id)})
+        _v1 = settings.API_V1_STR.rstrip("/")
+        response = client.put(
+            f"{_v1}/sales/not-a-uuid",
+            json={"note": "x"},
+            headers={"Authorization": f"Bearer {admin_token_real}"},
+        )
+        assert response.status_code == 400
+        assert response.json().get("detail") == "Invalid sale ID format"
+
     def test_update_sale_note_super_admin_success(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, db_session):
         """
         Test de mise à jour de la note par un super admin.

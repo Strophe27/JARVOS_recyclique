@@ -29,6 +29,13 @@ _SALE_CREATE_DOMAIN_HTTP = {
     "validation_status": 400,
 }
 
+# ARCH-03 PUT /sales/{id} : note admin — exceptions domaine → HTTP.
+_SALE_NOTE_UPDATE_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 422,
+    "validation_status": 400,
+}
+
 @router.get("/", response_model=List[SaleResponse])
 async def get_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Get all sales"""
@@ -71,11 +78,10 @@ async def update_sale_note(
     - Restricted to Admin/SuperAdmin roles
     - Updates only the note field
     """
-    # Enforce 401 when no Authorization header is provided
+    # Aligné sur POST /sales/ (create_sale) : Bearer optionnel → 401 explicites, rôles → 403 inchangés.
     if credentials is None:
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
 
-    # Validate token and extract user_id
     try:
         payload = verify_token(credentials.credentials)
         user_id = payload.get("sub")
@@ -84,37 +90,14 @@ async def update_sale_note(
     except Exception:
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
 
-    # Check user role - only admin/super-admin can edit notes
     user = db.query(User).filter(User.id == user_id).first()
     if not user or user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(status_code=403, detail="Insufficient permissions. Admin access required.")
 
-    # Validate sale ID
     try:
-        sale_uuid = UUID(sale_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid sale ID format")
-
-    # Find and update the sale
-    sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
-    if not sale:
-        raise HTTPException(status_code=404, detail="Sale not found")
-
-    # Update only the note field
-    if sale_update.note is not None:
-        sale.note = sale_update.note
-
-    db.commit()
-    # Même chargement relationnel que GET /sales/{id} pour SaleResponse (items, paiements).
-    sale = (
-        db.query(Sale)
-        .options(selectinload(Sale.payments), selectinload(Sale.items))
-        .filter(Sale.id == sale_uuid)
-        .first()
-    )
-    if not sale:
-        raise HTTPException(status_code=404, detail="Sale not found")
-    return sale
+        return SaleService(db).update_admin_note(sale_id, sale_update.note)
+    except (NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_SALE_NOTE_UPDATE_DOMAIN_HTTP)
 
 
 @router.patch("/{sale_id}/items/{item_id}/weight", response_model=SaleItemResponse)

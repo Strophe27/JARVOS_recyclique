@@ -2675,6 +2675,51 @@
 
 ---
 
+## Lot 2AP — ARCH-03 sur `PUT /sales/{sale_id}` (note admin)
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la logique metier / DB de mise a jour de note admin hors de `endpoints/sales.py`
+
+### Actions
+- Creation de `SaleService.update_admin_note(...)` pour porter :
+  - validation UUID du `sale_id`
+  - chargement de la vente
+  - mise a jour conditionnelle de `note`
+  - `commit`
+  - rechargement eager `items` + `payments`
+- Amincissement de `PUT /sales/{sale_id}` dans `endpoints/sales.py` avec traduction centralisee des erreurs domaine `400 / 404`.
+- Adaptation de `tests/test_sale_service.py` avec des cas cibles sur `update_admin_note`.
+- Ajout d'un scenario d'integration `invalid sale ID format` dans `tests/test_sales_integration.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/sales.py`
+- `recyclique-1.4.4/api/tests/test_sale_service.py`
+- `recyclique-1.4.4/api/tests/test_sales_integration.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_sales_integration.py -k update_sale_note`
+  - `tests/test_sale_service.py -k update_admin_note`
+- Resultat Docker/PostgreSQL :
+  - **10 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `PUT /sales/{sale_id}` n'assemble plus inline la logique metier de note admin.
+- Le contrat HTTP reste stable sur les scenarios verifies :
+  - `401` auth
+  - `403` droits admin
+  - `400` format UUID invalide
+  - `404` vente absente
+  - `200` succes
+- Reserves acceptees :
+  - pas encore de scenario integration HTTP sur `note=null` / omission
+  - l'auth JWT reste sur un `except Exception` large, aligne avec le reste du fichier
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2692,6 +2737,7 @@
 - **Vague 8:** nettoyage des tests `reception` aligne et valide en PostgreSQL
 - **Vague 5:** nouvel axe ouvert sur `sales` avec un premier lot `ARCH-03` ferme sur `create_sale`
 - **Vague 5:** reserve integration `sales` sur le `404` fermee
+- **Vague 5:** second lot `ARCH-03` ferme sur `PUT /sales/{sale_id}` (note admin)
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2699,9 +2745,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** poursuivre `sales.py` par le prochain micro-lot `ARCH-03` adjacent le plus rentable
+- **Prochaine etape logique:** poursuivre `sales.py` par le premier PATCH metier rentable
 
 ---
 
