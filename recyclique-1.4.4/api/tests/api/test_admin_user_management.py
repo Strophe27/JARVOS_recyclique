@@ -350,6 +350,95 @@ def test_update_user_profile_user_not_found(client: TestClient, db_session: Sess
     assert "non trouv" in response.json()["detail"]
 
 
+def test_update_user_role_success(client: TestClient, db_session: Session):
+    """Admin : PUT /admin/users/{id}/role met à jour le rôle (module admin_users_mutations)."""
+    tid = uuid.uuid4().hex[:10]
+    uname_u = f"mgmt_role_ok_u_{tid}"
+    uname_a = f"mgmt_role_ok_a_{tid}"
+    test_user = User(
+        username=uname_u,
+        hashed_password=hash_password("password"),
+        telegram_id=_unique_numeric_telegram(),
+        first_name="U",
+        last_name="Ser",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(test_user)
+    db_session.commit()
+    db_session.refresh(test_user)
+
+    admin_user = User(
+        username=uname_a,
+        hashed_password=hash_password("password"),
+        telegram_id=_unique_numeric_telegram(),
+        first_name="Ad",
+        last_name="Min",
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(admin_user)
+    db_session.commit()
+
+    login_response = client.post(
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"},
+    )
+    token = login_response.json()["access_token"]
+
+    response = client.put(
+        f"{_V1}/admin/users/{test_user.id}/role",
+        json={"role": "admin"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["role"] == "admin"
+    assert data["data"]["previous_role"] == "user"
+    db_session.refresh(test_user)
+    assert test_user.role == UserRole.ADMIN
+
+
+def test_update_user_role_admin_cannot_downgrade_self(client: TestClient, db_session: Session):
+    """Un admin ne peut pas se rétrograder via PUT .../role."""
+    tid = uuid.uuid4().hex[:10]
+    uname_a = f"mgmt_role_self_a_{tid}"
+    admin_user = User(
+        username=uname_a,
+        hashed_password=hash_password("password"),
+        telegram_id=_unique_numeric_telegram(),
+        first_name="Ad",
+        last_name="Min",
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(admin_user)
+    db_session.commit()
+    db_session.refresh(admin_user)
+
+    login_response = client.post(
+        f"{_V1}/auth/login",
+        json={"username": uname_a, "password": "password"},
+    )
+    token = login_response.json()["access_token"]
+
+    response = client.put(
+        f"{_V1}/admin/users/{admin_user.id}/role",
+        json={"role": "user"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
+    assert "dégrader" in response.json()["detail"]
+    db_session.refresh(admin_user)
+    assert admin_user.role == UserRole.ADMIN
+
+
 def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Session):
     """Test que les endpoints nécessitent un rôle admin"""
     tid = uuid.uuid4().hex[:10]
@@ -383,6 +472,13 @@ def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Sess
     response = client.put(
         f"{_V1}/admin/users/123",
         json={"first_name": "New"},
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 403
+
+    response = client.put(
+        f"{_V1}/admin/users/123/role",
+        json={"role": "admin"},
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 403

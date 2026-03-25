@@ -3025,6 +3025,48 @@
 
 ---
 
+## Lot 2AX — Extraction mutations compte utilisateur dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir les mutations admin de compte utilisateur hors de `admin.py`, sans toucher aux credentials ni a Telegram
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_mutations.py`.
+- Extraction dans ce module des routes :
+  - `PUT /admin/users/{user_id}/role`
+  - `PUT /admin/users/{user_id}/status`
+  - `PUT /admin/users/{user_id}`
+- Enregistrement via `register_admin_users_mutations_routes(router, limiter)` depuis `admin.py`.
+- Mise a jour mineure du docstring de `admin_users_read.py` pour refleter la nouvelle separation.
+- Ajout du fichier cible `tests/test_admin_users_mutations_routes.py`.
+- Realignement et validation ciblee des tests d'integration sur la gestion admin des utilisateurs.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_mutations.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`
+- `recyclique-1.4.4/api/tests/test_admin_users_mutations_routes.py`
+- `recyclique-1.4.4/api/tests/api/test_admin_user_management.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_admin_users_mutations_routes.py`
+  - `tests/test_admin_user_status_endpoint.py`
+  - `tests/api/test_admin_user_management.py`
+- Resultat local :
+  - **20 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un cinquieme sous-bloc coherent, cette fois sur les mutations de compte les plus centrales.
+- Les routes, l'auth admin, les schemas d'entree/sortie et les gardes-fous metier restent preserves.
+- Reserves acceptees :
+  - les messages API sont reappliques en UTF-8 propre, ce qui peut diverger d'anciennes chaines mojibake si un client comparait au caractere pres
+  - `update_user_status` conserve sa logique historique en deux `commit`, hors refactor transactionnel dans ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3050,6 +3092,7 @@
 - **Vague 5:** second lot `admin` ferme sur le sous-bloc observabilite / journaux
 - **Vague 5:** troisieme lot `admin` ferme sur le seuil d'activite
 - **Vague 5:** quatrieme lot `admin` ferme sur la lecture utilisateurs
+- **Vague 5:** cinquieme lot `admin` ferme sur les mutations de compte utilisateur
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3057,7 +3100,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

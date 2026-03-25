@@ -19,24 +19,22 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.services.telegram_service import telegram_service
 from recyclic_api.schemas.admin import (
-    UserRoleUpdate,
     AdminResponse,
     AdminErrorResponse,
     PaginationInfo,
     UserApprovalRequest,
     UserRejectionRequest,
-    UserProfileUpdate,
     UserHistoryResponse,
     ForcePasswordRequest
 )
 from recyclic_api.schemas.permission import UserGroupUpdateRequest
-from recyclic_api.schemas.user import UserStatusUpdate
 from recyclic_api.services.user_history_service import UserHistoryService
 from recyclic_api.core.auth import send_reset_password_email
 from .admin_activity_threshold import register_admin_activity_threshold_routes
 from .admin_health import register_admin_health_routes
 from .admin_observability import register_admin_observability_routes
 from .admin_users_read import register_admin_users_read_routes
+from .admin_users_mutations import register_admin_users_mutations_routes
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -48,103 +46,9 @@ register_admin_health_routes(router, limiter)
 register_admin_observability_routes(router, limiter)
 register_admin_activity_threshold_routes(router, limiter)
 register_admin_users_read_routes(router, limiter)
+register_admin_users_mutations_routes(router, limiter)
 
 # La fonction require_admin_role est maintenant import├®e depuis core.auth
-
-@router.put(
-    "/users/{user_id}/role",
-    response_model=AdminResponse,
-    summary="Modifier le r├┤le d'un utilisateur (Admin)",
-    description="Met ├á jour le r├┤le d'un utilisateur sp├®cifique"
-)
-def update_user_role(
-    user_id: str,
-    role_update: UserRoleUpdate,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """Met ├á jour le r├┤le d'un utilisateur"""
-    try:
-        # Log de l'acc├¿s admin
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint="/admin/users/{user_id}/role",
-            success=True
-        )
-
-        # Recherche de l'utilisateur - conversion UUID
-        try:
-            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-            user = db.query(User).filter(User.id == user_uuid).first()
-        except ValueError:
-            # user_id n'est pas un UUID valide
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-        if not user:
-            # Log de l'├®chec
-            log_admin_access(
-                user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
-                endpoint="/admin/users/{user_id}/role",
-                success=False,
-                error_message="Utilisateur non trouv├®"
-            )
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        # V├®rifier que l'admin ne se d├®grade pas lui-m├¬me
-        if str(user.id) == str(current_user.id):
-            # Emp├¬cher la r├®trogradation (admin -> role inf├®rieur)
-            admin_roles = [UserRole.SUPER_ADMIN, UserRole.ADMIN]
-            if (current_user.role in admin_roles and
-                role_update.role not in admin_roles):
-                raise HTTPException(
-                    status_code=http_status.HTTP_403_FORBIDDEN,
-                    detail="Un administrateur ne peut pas se d├®grader lui-m├¬me"
-                )
-
-        # Mise ├á jour du r├┤le
-        old_role = user.role
-        user.role = role_update.role
-        db.commit()
-        db.refresh(user)
-
-        # Log de la modification de r├┤le
-        log_role_change(
-            admin_user_id=str(current_user.id),
-            admin_username=current_user.username or current_user.telegram_id,
-            target_user_id=str(user.id),
-            target_username=user.username or user.telegram_id,
-            old_role=old_role.value,
-            new_role=user.role.value,
-            success=True,
-            db=db
-        )
-
-        full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-
-        return AdminResponse(
-            data={
-                "user_id": str(user.id),
-                "role": user.role.value,
-                "previous_role": old_role.value
-            },
-            message=f"R├┤le de l'utilisateur {full_name or user.username} mis ├á jour de {old_role.value} vers {user.role.value}",
-            success=True
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la mise ├á jour du r├┤le: {str(e)}"
-        )
 
 @router.post(
     "/users/{user_id}/approve",
@@ -351,233 +255,6 @@ async def reject_user(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors du rejet: {str(e)}"
-        )
-
-@router.put(
-    "/users/{user_id}/status",
-    response_model=AdminResponse,
-    summary="Modifier le statut actif d'un utilisateur (Admin)",
-    description="Met ├á jour le statut is_active d'un utilisateur et enregistre l'historique"
-)
-def update_user_status(
-    user_id: str,
-    status_update: UserStatusUpdate,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """Met ├á jour le statut is_active d'un utilisateur et enregistre l'historique"""
-    try:
-        # Log de l'acc├¿s admin
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint="/admin/users/{user_id}/status",
-            success=True
-        )
-
-        # Recherche de l'utilisateur
-        try:
-            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-            user = db.query(User).filter(User.id == user_uuid).first()
-        except ValueError:
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        if not user:
-            # Log de l'├®chec
-            log_admin_access(
-                user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
-                endpoint="/admin/users/{user_id}/status",
-                success=False,
-                error_message="Utilisateur non trouv├®"
-            )
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        # V├®rifier que l'admin ne se d├®sactive pas lui-m├¬me
-        if str(user.id) == str(current_user.id) and not status_update.is_active:
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN,
-                detail="Un administrateur ne peut pas se d├®sactiver lui-m├¬me"
-            )
-
-        # Enregistrer l'ancien statut
-        old_status = user.is_active
-
-        # Mettre ├á jour le statut de l'utilisateur
-        user.is_active = status_update.is_active
-        db.commit()
-        db.refresh(user)
-
-        # Cr├®er une entr├®e dans l'historique
-        status_history = UserStatusHistory(
-            user_id=user.id,
-            changed_by_admin_id=current_user.id,
-            old_status=old_status,
-            new_status=status_update.is_active,
-            reason=status_update.reason
-        )
-        db.add(status_history)
-        db.commit()
-
-        # Log de la modification de statut
-        log_role_change(
-            admin_user_id=str(current_user.id),
-            admin_username=current_user.username or current_user.telegram_id,
-            target_user_id=str(user.id),
-            target_username=user.username or user.telegram_id,
-            old_role=f"is_active={old_status}",
-            new_role=f"is_active={status_update.is_active}",
-            success=True,
-            db=db
-        )
-
-        full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-        status_text = "activ├®" if status_update.is_active else "d├®sactiv├®"
-
-        return AdminResponse(
-            data={
-                "user_id": str(user.id),
-                "is_active": user.is_active,
-                "previous_status": old_status,
-                "reason": status_update.reason
-            },
-            message=f"Utilisateur {full_name or user.username} {status_text} avec succ├¿s",
-            success=True
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la mise ├á jour du statut: {str(e)}"
-        )
-
-@router.put(
-    "/users/{user_id}",
-    response_model=AdminResponse,
-    summary="Mettre ├á jour le profil d'un utilisateur (Admin)",
-    description="Met ├á jour les informations de base du profil utilisateur"
-)
-def update_user_profile(
-    user_id: str,
-    profile_update: UserProfileUpdate,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """Met ├á jour les informations du profil utilisateur"""
-    try:
-        # Log de l'acc├¿s admin
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint="/admin/users/{user_id}",
-            success=True
-        )
-
-        # Recherche de l'utilisateur
-        try:
-            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-            user = db.query(User).filter(User.id == user_uuid).first()
-        except ValueError:
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        if not user:
-            # Log de l'├®chec
-            log_admin_access(
-                user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
-                endpoint="/admin/users/{user_id}",
-                success=False,
-                error_message="Utilisateur non trouv├®"
-            )
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        # Mettre ├á jour les champs fournis
-        updated_fields = []
-        update_data = profile_update.model_dump(exclude_unset=True)
-
-        # V├®rifier l'unicit├® du nom d'utilisateur si modifi├®
-        if 'username' in update_data and update_data['username'] != user.username:
-            existing_user = db.query(User).filter(User.username == update_data['username']).first()
-            if existing_user:
-                raise HTTPException(
-                    status_code=http_status.HTTP_409_CONFLICT,
-                    detail="Ce nom d'utilisateur est d├®j├á pris"
-                )
-
-        # V├®rifier l'unicit├® de l'email si modifi├®
-        if 'email' in update_data and update_data['email'] is not None and update_data['email'] != user.email:
-            existing_email_user = db.query(User).filter(
-                User.email == update_data['email'],
-                User.id != user.id
-            ).first()
-            if existing_email_user:
-                raise HTTPException(
-                    status_code=http_status.HTTP_409_CONFLICT,
-                    detail="Un compte avec cet email existe d├®j├á"
-                )
-
-        for field, value in update_data.items():
-            if hasattr(user, field):
-                setattr(user, field, value)
-                updated_fields.append(field)
-
-        if not updated_fields:
-            raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail="Aucun champ ├á mettre ├á jour fourni"
-            )
-
-        db.commit()
-        db.refresh(user)
-
-        # Log de la modification de profil
-        log_role_change(
-            admin_user_id=str(current_user.id),
-            admin_username=current_user.username or current_user.telegram_id,
-            target_user_id=str(user.id),
-            target_username=user.username or user.telegram_id,
-            old_role="profile_update",
-            new_role=f"updated_fields={','.join(updated_fields)}",
-            success=True,
-            db=db
-        )
-
-        full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-
-        return AdminResponse(
-            data={
-                "user_id": str(user.id),
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "username": user.username,
-                "role": user.role,
-                "status": user.status,
-                "updated_fields": updated_fields
-            },
-            message=f"Profil de l'utilisateur {full_name or user.username} mis ├á jour avec succ├¿s",
-            success=True
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la mise ├á jour du profil: {str(e)}"
         )
 
 @router.post(

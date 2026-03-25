@@ -1,7 +1,8 @@
 """
 Endpoints admin : consultation des utilisateurs (liste, statuts d'activité, pending).
 
-Les mutations (rôle, approbation, profil, etc.) et Telegram restent dans admin.py.
+Les mutations rôle / statut actif / profil : `admin_users_mutations`.
+Approbation, rejet, credentials, Telegram, etc. : `admin`.
 """
 
 from typing import List, Optional
