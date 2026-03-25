@@ -2,6 +2,7 @@
 Service de création de ventes (logique métier hors routeurs HTTP).
 
 ARCH-04 : extraire la logique lourde de POST /sales depuis endpoints/sales.py.
+ARCH-03 : erreurs métier via core.exceptions ; traduction HTTP au routeur.
 """
 
 from __future__ import annotations
@@ -9,10 +10,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.core.logging import log_transaction_event
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.payment_transaction import PaymentTransaction
@@ -32,25 +33,25 @@ class SaleService:
         Crée une vente avec lignes, paiements, mise à jour session caisse et log PAYMENT_VALIDATED.
 
         Raises:
-            HTTPException: mêmes codes / messages que l'ancien endpoint POST /sales/.
+            NotFoundError: session de caisse absente (traduite en 404 par POST /sales/).
+            ConflictError: session non ouverte (traduite en 422, contrat historique).
+            ValidationError: totaux / paiements incohérents (traduite en 400).
         """
         db = self.db
 
         cash_session = db.query(CashSession).filter(CashSession.id == sale_data.cash_session_id).first()
         if not cash_session:
-            raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
+            raise NotFoundError("Session de caisse non trouvée")
 
         if cash_session.status != CashSessionStatus.OPEN:
-            raise HTTPException(
-                status_code=422,
-                detail=f"Impossible de créer une vente pour une session fermée (statut: {cash_session.status.value})",
+            raise ConflictError(
+                f"Impossible de créer une vente pour une session fermée (statut: {cash_session.status.value})"
             )
 
         subtotal = sum(item.total_price for item in sale_data.items if item.total_price > 0)
         if subtotal > 0 and sale_data.total_amount < subtotal:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Le total ({sale_data.total_amount}) ne peut pas être inférieur au sous-total ({subtotal})",
+            raise ValidationError(
+                f"Le total ({sale_data.total_amount}) ne peut pas être inférieur au sous-total ({subtotal})"
             )
 
         payments_to_create = self._resolve_payments(sale_data)
@@ -170,12 +171,9 @@ class SaleService:
         if sale_data.payments:
             total_payments = sum(p.amount for p in sale_data.payments)
             if total_payments < sale_data.total_amount:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        f"La somme des paiements ({total_payments}) doit être supérieure ou égale "
-                        f"au total ({sale_data.total_amount})"
-                    ),
+                raise ValidationError(
+                    f"La somme des paiements ({total_payments}) doit être supérieure ou égale "
+                    f"au total ({sale_data.total_amount})"
                 )
             return list(sale_data.payments)
         if sale_data.payment_method:

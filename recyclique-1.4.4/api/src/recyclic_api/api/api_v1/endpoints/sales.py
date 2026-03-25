@@ -11,14 +11,23 @@ from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import SaleResponse, SaleCreate, SaleUpdate, SaleItemUpdate, SaleItemResponse, SaleItemWeightUpdate
 from recyclic_api.core.auth import require_role_strict
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
 from recyclic_api.services.sale_service import SaleService
 from recyclic_api.core.audit import log_audit
+from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from recyclic_api.models.audit_log import AuditActionType
 from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 auth_scheme = HTTPBearer(auto_error=False)
+
+# ARCH-03 POST /sales/ : mêmes statuts qu'avant extraction ARCH-04 (Conflict → 422 session fermée).
+_SALE_CREATE_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 422,
+    "validation_status": 400,
+}
 
 @router.get("/", response_model=List[SaleResponse])
 async def get_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -223,7 +232,10 @@ async def create_sale(
     except Exception:
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
 
-    return SaleService(db).create_sale(sale_data, user_id)
+    try:
+        return SaleService(db).create_sale(sale_data, user_id)
+    except (NotFoundError, ValidationError, ConflictError) as e:
+        raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
 
 @router.patch("/{sale_id}/items/{item_id}", response_model=SaleItemResponse)
 async def update_sale_item(

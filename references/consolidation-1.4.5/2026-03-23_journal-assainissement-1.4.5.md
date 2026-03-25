@@ -2601,6 +2601,52 @@
 
 ---
 
+## Lot 2AN — ARCH-03 sur `SaleService.create_sale`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** retirer les `HTTPException` metier de `SaleService.create_sale` et traduire ces erreurs uniquement au niveau de `POST /sales/`
+
+### Actions
+- Remplacement des `HTTPException` levees dans `SaleService.create_sale` et `_resolve_payments` par des exceptions domaine :
+  - `NotFoundError` pour session absente
+  - `ConflictError` pour session fermee
+  - `ValidationError` pour paiements insuffisants / erreurs de validation metier
+- Amincissement de `POST /sales/` dans `endpoints/sales.py` avec traduction centralisee via `raise_domain_exception_as_http`.
+- Ajout du fichier cible `tests/test_sale_create_arch03.py` pour verrouiller les traductions HTTP 404 / 400 / 422.
+- Adaptation de `tests/test_sale_service.py` aux exceptions domaine.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/sales.py`
+- `recyclique-1.4.4/api/tests/test_sale_service.py`
+- `recyclique-1.4.4/api/tests/test_sale_create_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_sale_create_arch03.py`
+- Resultat local :
+  - **3 tests passes**
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_sale_create_arch03.py`
+  - `tests/test_sale_service.py`
+  - `tests/test_sales_integration.py`
+- Resultat Docker/PostgreSQL :
+  - **29 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `SaleService.create_sale` n'exprime plus ses erreurs metier en `HTTPException`.
+- Le contrat HTTP de `POST /sales/` reste stable sur les scenarios verifies :
+  - `404` session absente
+  - `422` session fermee
+  - `400` validation / paiements
+- Reserves acceptees :
+  - le `404` session absente est couvert en HTTP via mock, pas encore par un scenario integration complet
+  - d'autres routes `sales.py` restent a traiter dans des micro-lots suivants
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2616,6 +2662,7 @@
 - **Vague 8:** sixieme pilote `ARCH-04` sur l'export CSV des lignes `reception` ferme avec reserves acceptees
 - **Vague 8:** septieme pilote `ARCH-04` sur la presentation des listes JSON `reception` ferme avec reserves acceptees
 - **Vague 8:** nettoyage des tests `reception` aligne et valide en PostgreSQL
+- **Vague 5:** nouvel axe ouvert sur `sales` avec un premier lot `ARCH-03` ferme sur `create_sale`
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2623,9 +2670,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout du lot `2AM` (realignement des tests `reception`)
-- **Prochaine etape logique:** sortir de la zone `reception` et reprendre le prochain axe backend restant hors Telegram
+- **Prochaine etape logique:** poursuivre `sales.py` par micro-lots `ARCH-03` adjacents ou ouvrir le prochain gros axe backend hors Telegram
 
 ---
 

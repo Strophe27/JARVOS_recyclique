@@ -1,14 +1,14 @@
 """
-Tests ciblés pour SaleService.create_sale (ARCH-04).
+Tests ciblés pour SaleService.create_sale (ARCH-04 + ARCH-03 domaine).
 """
 
 import uuid
 from datetime import datetime
 
 import pytest
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import PaymentMethod
@@ -56,7 +56,7 @@ def _seed_session(db_session: Session) -> tuple[User, CashSession]:
     return user, session
 
 
-def test_sale_service_insufficient_payments_400(db_session: Session):
+def test_sale_service_insufficient_payments_raises_validation_error(db_session: Session):
     user, session = _seed_session(db_session)
     sale_data = SaleCreate(
         cash_session_id=session.id,
@@ -76,10 +76,74 @@ def test_sale_service_insufficient_payments_400(db_session: Session):
             PaymentCreate(payment_method=PaymentMethod.CHECK, amount=15.0),
         ],
     )
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(ValidationError, match="paiements"):
         SaleService(db_session).create_sale(sale_data, str(user.id))
-    assert exc_info.value.status_code == 400
-    assert "paiements" in exc_info.value.detail.lower()
+
+
+def test_sale_service_unknown_cash_session_raises_not_found(db_session: Session):
+    user, _ = _seed_session(db_session)
+    missing_id = uuid.uuid4()
+    sale_data = SaleCreate(
+        cash_session_id=missing_id,
+        items=[
+            SaleItemCreate(
+                category="EEE-1",
+                quantity=1,
+                weight=1.0,
+                unit_price=10.0,
+                total_price=10.0,
+            )
+        ],
+        total_amount=10.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+    )
+    with pytest.raises(NotFoundError, match="Session de caisse"):
+        SaleService(db_session).create_sale(sale_data, str(user.id))
+
+
+def test_sale_service_closed_session_raises_conflict(db_session: Session):
+    user, session = _seed_session(db_session)
+    session.status = CashSessionStatus.CLOSED
+    db_session.commit()
+    sale_data = SaleCreate(
+        cash_session_id=session.id,
+        items=[
+            SaleItemCreate(
+                category="EEE-1",
+                quantity=1,
+                weight=1.0,
+                unit_price=10.0,
+                total_price=10.0,
+            )
+        ],
+        total_amount=10.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+    )
+    with pytest.raises(ConflictError, match="session fermée"):
+        SaleService(db_session).create_sale(sale_data, str(user.id))
+
+
+def test_sale_service_total_below_subtotal_raises_validation_error(db_session: Session):
+    user, session = _seed_session(db_session)
+    sale_data = SaleCreate(
+        cash_session_id=session.id,
+        items=[
+            SaleItemCreate(
+                category="EEE-1",
+                quantity=1,
+                weight=1.0,
+                unit_price=20.0,
+                total_price=20.0,
+            )
+        ],
+        total_amount=15.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+    )
+    with pytest.raises(ValidationError, match="sous-total"):
+        SaleService(db_session).create_sale(sale_data, str(user.id))
 
 
 def test_sale_service_creates_sale_and_payments(db_session: Session):
