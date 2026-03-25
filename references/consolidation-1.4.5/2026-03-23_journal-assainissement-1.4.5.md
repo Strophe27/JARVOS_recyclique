@@ -3067,6 +3067,47 @@
 
 ---
 
+## Lot 2AY — Extraction groupes utilisateur dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la mutation admin de groupes utilisateur hors de `admin.py`
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_groups.py`.
+- Extraction dans ce module de la route :
+  - `PUT /admin/users/{user_id}/groups`
+- Enregistrement via `register_admin_users_groups_routes(router, limiter)` depuis `admin.py`.
+- Stabilisation des tests groupes avec JWT reels et prefixe `API_V1_STR`.
+- Extension ciblee du schema SQLite minimal de test pour `groups` et `user_groups`.
+- Ajout du fichier cible `tests/test_admin_users_groups_routes.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_groups.py`
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_user_groups.py`
+- `recyclique-1.4.4/api/tests/test_admin_users_groups_routes.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_admin_users_groups_routes.py`
+  - `tests/test_user_groups.py`
+  - `tests/test_admin_users_mutations_routes.py`
+  - `tests/test_admin_users_read_routes.py`
+- Resultat local :
+  - **10 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un sixieme sous-bloc coherent, cette fois sur la gestion des groupes utilisateur.
+- La route, l'auth admin, les validations de groupes et les messages HTTP restent preserves.
+- Reserves acceptees :
+  - l'ordre entre `group_ids` et `group_names` n'est pas strictement garanti par la requete SQL, comme dans la logique historique
+  - la verification PostgreSQL reelle de ce flux reste a refaire en environnement complet si necessaire
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3093,6 +3134,7 @@
 - **Vague 5:** troisieme lot `admin` ferme sur le seuil d'activite
 - **Vague 5:** quatrieme lot `admin` ferme sur la lecture utilisateurs
 - **Vague 5:** cinquieme lot `admin` ferme sur les mutations de compte utilisateur
+- **Vague 5:** sixieme lot `admin` ferme sur les groupes utilisateur
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3100,7 +3142,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

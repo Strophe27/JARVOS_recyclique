@@ -8,7 +8,31 @@ from uuid import uuid4
 
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.permission import Group
-from recyclic_api.core.security import hash_password
+from recyclic_api.core.security import hash_password, create_access_token
+
+_V1 = "/v1"
+
+
+def _bearer_headers(user: User) -> dict:
+    token = create_access_token(data={"sub": str(user.id)})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def admin_user(db_session: Session) -> User:
+    """Admin JWT + session DB (aligné sur test_groups_and_permissions)."""
+    user = User(
+        id=uuid4(),
+        username=f"admin_groups_{uuid4().hex[:8]}@test.com",
+        hashed_password=hash_password("TestPassword123!"),
+        role=UserRole.ADMIN,
+        status=UserStatus.ACTIVE,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
 
 class TestUserGroups:
@@ -23,33 +47,30 @@ class TestUserGroups:
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
             status=UserStatus.APPROVED,
-            is_active=True
+            is_active=True,
         )
         db_session.add(test_user)
-        
+
         # Créer des groupes de test
         group1 = Group(
             id=uuid4(),
             name="Groupe Test 1",
-            description="Premier groupe de test"
+            description="Premier groupe de test",
         )
         group2 = Group(
             id=uuid4(),
-            name="Groupe Test 2", 
-            description="Deuxième groupe de test"
+            name="Groupe Test 2",
+            description="Deuxième groupe de test",
         )
         db_session.add_all([group1, group2])
         db_session.commit()
 
-        # Authentifier l'admin
-        client.headers["Authorization"] = f"Bearer {admin_user.id}"
-
-        # Mettre à jour les groupes de l'utilisateur
         response = client.put(
-            f"/api/v1/admin/users/{test_user.id}/groups",
+            f"{_V1}/admin/users/{test_user.id}/groups",
             json={
-                "group_ids": [str(group1.id), str(group2.id)]
-            }
+                "group_ids": [str(group1.id), str(group2.id)],
+            },
+            headers=_bearer_headers(admin_user),
         )
 
         assert response.status_code == 200
@@ -61,16 +82,13 @@ class TestUserGroups:
 
     def test_update_user_groups_user_not_found(self, client: TestClient, admin_user: User):
         """Test de mise à jour des groupes avec un utilisateur inexistant."""
-        # Authentifier l'admin
-        client.headers["Authorization"] = f"Bearer {admin_user.id}"
-
-        # Essayer de mettre à jour les groupes d'un utilisateur inexistant
         fake_user_id = str(uuid4())
         response = client.put(
-            f"/api/v1/admin/users/{fake_user_id}/groups",
+            f"{_V1}/admin/users/{fake_user_id}/groups",
             json={
-                "group_ids": ["group1", "group2"]
-            }
+                "group_ids": ["group1", "group2"],
+            },
+            headers=_bearer_headers(admin_user),
         )
 
         assert response.status_code == 404
@@ -79,27 +97,23 @@ class TestUserGroups:
 
     def test_update_user_groups_invalid_group_id(self, client: TestClient, db_session: Session, admin_user: User):
         """Test de mise à jour avec un ID de groupe invalide."""
-        # Créer un utilisateur de test
         test_user = User(
             id=uuid4(),
             username="testuser@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
             status=UserStatus.APPROVED,
-            is_active=True
+            is_active=True,
         )
         db_session.add(test_user)
         db_session.commit()
 
-        # Authentifier l'admin
-        client.headers["Authorization"] = f"Bearer {admin_user.id}"
-
-        # Essayer de mettre à jour avec un ID de groupe invalide
         response = client.put(
-            f"/api/v1/admin/users/{test_user.id}/groups",
+            f"{_V1}/admin/users/{test_user.id}/groups",
             json={
-                "group_ids": ["invalid-group-id"]
-            }
+                "group_ids": ["invalid-group-id"],
+            },
+            headers=_bearer_headers(admin_user),
         )
 
         assert response.status_code == 400
@@ -108,28 +122,24 @@ class TestUserGroups:
 
     def test_update_user_groups_nonexistent_group(self, client: TestClient, db_session: Session, admin_user: User):
         """Test de mise à jour avec un groupe inexistant."""
-        # Créer un utilisateur de test
         test_user = User(
             id=uuid4(),
             username="testuser@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
             status=UserStatus.APPROVED,
-            is_active=True
+            is_active=True,
         )
         db_session.add(test_user)
         db_session.commit()
 
-        # Authentifier l'admin
-        client.headers["Authorization"] = f"Bearer {admin_user.id}"
-
-        # Essayer de mettre à jour avec un groupe inexistant
         fake_group_id = str(uuid4())
         response = client.put(
-            f"/api/v1/admin/users/{test_user.id}/groups",
+            f"{_V1}/admin/users/{test_user.id}/groups",
             json={
-                "group_ids": [fake_group_id]
-            }
+                "group_ids": [fake_group_id],
+            },
+            headers=_bearer_headers(admin_user),
         )
 
         assert response.status_code == 404
@@ -138,27 +148,23 @@ class TestUserGroups:
 
     def test_update_user_groups_empty_list(self, client: TestClient, db_session: Session, admin_user: User):
         """Test de mise à jour avec une liste vide de groupes."""
-        # Créer un utilisateur de test
         test_user = User(
             id=uuid4(),
             username="testuser@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
             status=UserStatus.APPROVED,
-            is_active=True
+            is_active=True,
         )
         db_session.add(test_user)
         db_session.commit()
 
-        # Authentifier l'admin
-        client.headers["Authorization"] = f"Bearer {admin_user.id}"
-
-        # Mettre à jour avec une liste vide (retirer tous les groupes)
         response = client.put(
-            f"/api/v1/admin/users/{test_user.id}/groups",
+            f"{_V1}/admin/users/{test_user.id}/groups",
             json={
-                "group_ids": []
-            }
+                "group_ids": [],
+            },
+            headers=_bearer_headers(admin_user),
         )
 
         assert response.status_code == 200
@@ -168,62 +174,55 @@ class TestUserGroups:
 
     def test_update_user_groups_unauthorized(self, client: TestClient, db_session: Session):
         """Test de mise à jour des groupes sans authentification."""
-        # Créer un utilisateur de test
         test_user = User(
             id=uuid4(),
             username="testuser@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
             status=UserStatus.APPROVED,
-            is_active=True
+            is_active=True,
         )
         db_session.add(test_user)
         db_session.commit()
 
-        # Essayer de mettre à jour sans authentification
         response = client.put(
-            f"/api/v1/admin/users/{test_user.id}/groups",
+            f"{_V1}/admin/users/{test_user.id}/groups",
             json={
-                "group_ids": ["group1"]
-            }
+                "group_ids": ["group1"],
+            },
         )
 
         assert response.status_code == 401
 
     def test_update_user_groups_non_admin(self, client: TestClient, db_session: Session):
         """Test de mise à jour des groupes par un utilisateur non-admin."""
-        # Créer un utilisateur non-admin
         regular_user = User(
             id=uuid4(),
             username="regular@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
             status=UserStatus.APPROVED,
-            is_active=True
+            is_active=True,
         )
         db_session.add(regular_user)
-        
-        # Créer un autre utilisateur de test
+
         test_user = User(
             id=uuid4(),
-            username="testuser@example.com",
+            username="testuser2@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
             status=UserStatus.APPROVED,
-            is_active=True
+            is_active=True,
         )
         db_session.add(test_user)
         db_session.commit()
 
-        # Authentifier l'utilisateur non-admin
-        client.headers["Authorization"] = f"Bearer {regular_user.id}"
-
-        # Essayer de mettre à jour les groupes
         response = client.put(
-            f"/api/v1/admin/users/{test_user.id}/groups",
+            f"{_V1}/admin/users/{test_user.id}/groups",
             json={
-                "group_ids": ["group1"]
-            }
+                "group_ids": ["00000000-0000-0000-0000-000000000001"],
+            },
+            headers=_bearer_headers(regular_user),
         )
 
         assert response.status_code == 403
