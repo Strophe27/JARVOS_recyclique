@@ -370,6 +370,10 @@ def create_tables_if_not_exist():
                     EmailLog.__table__,
                     Group.__table__,
                     user_groups,
+                    # Sessions caisse / ventes (tests admin maintenance, cash_session_*, etc.)
+                    Site.__table__,
+                    CashSession.__table__,
+                    Sale.__table__,
                 ],
             )
         else:

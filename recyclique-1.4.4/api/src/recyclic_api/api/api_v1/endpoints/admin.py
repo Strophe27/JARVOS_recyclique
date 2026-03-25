@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status as http_status, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, status as http_status, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -12,7 +12,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from recyclic_api.core.database import get_db
-from recyclic_api.core.auth import require_admin_role, require_admin_role_strict, require_role_strict, require_super_admin_role
+from recyclic_api.core.auth import require_admin_role, require_admin_role_strict, require_role_strict
 from recyclic_api.core.audit import log_role_change, log_admin_access
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.services.telegram_service import telegram_service
@@ -31,6 +31,7 @@ from .admin_users_history import register_admin_users_history_routes
 from .admin_users_mutations import register_admin_users_mutations_routes
 from .admin_users_groups import register_admin_users_groups_routes
 from .admin_users_credentials import register_admin_users_credentials_routes
+from .admin_cash_sessions_maintenance import register_admin_cash_sessions_maintenance_routes
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ register_admin_users_history_routes(router, limiter)
 register_admin_users_mutations_routes(router, limiter)
 register_admin_users_groups_routes(router, limiter)
 register_admin_users_credentials_routes(router, limiter)
+register_admin_cash_sessions_maintenance_routes(router, limiter)
 
 # La fonction require_admin_role est maintenant importée depuis core.auth
 
@@ -363,177 +365,6 @@ async def download_reception_offline_template(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erreur lors de la génération du template"
-        )
-
-
-@router.post(
-    "/cash-sessions/fix-blocked-deferred",
-    summary="Corriger les sessions différées bloquées (Super Admin uniquement)",
-    description="Ferme ou supprime les sessions différées ouvertes qui sont bloquées (opened_at dans le passé)."
-)
-async def fix_blocked_deferred_sessions(
-    current_user: User = Depends(require_super_admin_role()),
-    db: Session = Depends(get_db)
-):
-    """
-    Corrige les sessions différées bloquées en :
-    - Fermant les sessions avec transactions (avec montant théorique calculé)
-    - Supprimant les sessions vides
-    
-    Cette opération est sécurisée et ne supprime que les sessions différées ouvertes
-    qui sont à plus de 90 jours dans le passé (opened_at < NOW() - 90 jours).
-    """
-    from recyclic_api.models.cash_session import CashSession, CashSessionStatus
-    from recyclic_api.models.sale import Sale
-    from sqlalchemy import func
-    from datetime import timedelta
-    
-    try:
-        now = datetime.now(timezone.utc)
-        # Seuil de 90 jours : identifier les sessions différées créées avec opened_at
-        # explicitement défini dans le passé lointain (cohérent avec les autres méthodes)
-        threshold = now - timedelta(days=90)
-        
-        # Récupérer toutes les sessions différées ouvertes (opened_at à plus de 90 jours dans le passé)
-        blocked_sessions = db.query(CashSession).filter(
-            CashSession.status == CashSessionStatus.OPEN,
-            CashSession.opened_at < threshold
-        ).all()
-        
-        fixed_count = 0
-        deleted_count = 0
-        errors = []
-        
-        for session in blocked_sessions:
-            try:
-                # Compter les ventes réelles
-                sales_count = db.query(Sale).filter(Sale.cash_session_id == session.id).count()
-                
-                # Vérifier si la session est vide
-                is_empty = (session.total_sales is None or session.total_sales == 0) and \
-                          (session.total_items is None or session.total_items == 0) and \
-                          sales_count == 0
-                
-                if is_empty:
-                    # Session vide : supprimer
-                    db.delete(session)
-                    deleted_count += 1
-                    logger.info(f"Session {session.id} supprimée (vide)")
-                else:
-                    # Session avec transactions : fermer avec montant théorique
-                    total_donations = db.query(func.coalesce(func.sum(Sale.donation), 0)).filter(
-                        Sale.cash_session_id == session.id
-                    ).scalar() or 0.0
-                    total_donations = float(total_donations)
-                    
-                    theoretical_amount = (session.initial_amount or 0.0) + (session.total_sales or 0.0) + total_donations
-                    
-                    session.status = CashSessionStatus.CLOSED
-                    session.closed_at = datetime.now(timezone.utc)
-                    session.variance = 0.0
-                    session.variance_comment = "Fermeture automatique - session différée bloquée"
-                    
-                    fixed_count += 1
-                    logger.info(f"Session {session.id} fermée (montant théorique: {theoretical_amount:.2f}€)")
-            except Exception as e:
-                error_msg = f"Erreur lors du traitement de la session {session.id}: {str(e)}"
-                errors.append(error_msg)
-                logger.error(error_msg)
-        
-        db.commit()
-        
-        return {
-            "status": "success",
-            "message": f"Correction terminée: {fixed_count} session(s) fermée(s), {deleted_count} session(s) supprimée(s)",
-            "fixed_count": fixed_count,
-            "deleted_count": deleted_count,
-            "errors": errors if errors else None
-        }
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Erreur lors de la correction des sessions bloquées: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la correction: {str(e)}"
-        )
-
-
-@router.post(
-    "/cash-sessions/merge-duplicate-deferred",
-    response_model=AdminResponse,
-    summary="Fusionner les sessions différées dupliquées pour une même date (Super Admin uniquement)",
-    description="Ferme les sessions différées dupliquées (même opérateur, même date) en gardant seulement la première. Les ventes sont préservées."
-)
-async def merge_duplicate_deferred_sessions(
-    operator_id: str = Query(..., description="ID de l'opérateur"),
-    date: str = Query(..., description="Date au format YYYY-MM-DD"),
-    current_user: User = Depends(require_super_admin_role()),
-    db: Session = Depends(get_db)
-):
-    """Fusionne les sessions différées dupliquées pour un opérateur et une date donnés."""
-    from datetime import datetime, timezone, timedelta
-    from recyclic_api.models.cash_session import CashSession, CashSessionStatus
-    from recyclic_api.services.cash_session_service import CashSessionService
-    from uuid import UUID
-    
-    try:
-        # Parser la date
-        target_date = datetime.strptime(date, "%Y-%m-%d")
-        target_date = target_date.replace(tzinfo=timezone.utc)
-        
-        # Calculer le début et la fin de la journée
-        start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_day = start_of_day + timedelta(days=1)
-        
-        now = datetime.now(timezone.utc)
-        operator_uuid = UUID(operator_id)
-        
-        # Trouver toutes les sessions différées ouvertes pour cette date et cet opérateur
-        duplicate_sessions = db.query(CashSession).filter(
-            CashSession.operator_id == operator_uuid,
-            CashSession.status == CashSessionStatus.OPEN,
-            CashSession.opened_at < now,
-            CashSession.opened_at >= start_of_day,
-            CashSession.opened_at < end_of_day
-        ).order_by(CashSession.opened_at).all()
-        
-        if len(duplicate_sessions) <= 1:
-            return {
-                "status": "success",
-                "message": f"Aucune session dupliquée trouvée pour cette date."
-            }
-        
-        # Garder la première session (la plus ancienne)
-        main_session = duplicate_sessions[0]
-        sessions_to_close = duplicate_sessions[1:]
-        
-        service = CashSessionService(db)
-        closed_count = 0
-        
-        for session in sessions_to_close:
-            # Fermer la session dupliquée
-            if service.is_session_empty(session):
-                service.delete_session(str(session.id))
-            else:
-                service.close_session_with_amounts(
-                    str(session.id), 
-                    actual_amount=0.0, 
-                    variance_comment=f"Fermeture automatique - session dupliquée fusionnée avec session {main_session.id}"
-                )
-            closed_count += 1
-            logger.info(f"Session dupliquée fermée: {session.id} (fusionnée avec {main_session.id})")
-        
-        db.commit()
-        
-        return {
-            "status": "success",
-            "message": f"{closed_count} session(s) dupliquée(s) fermée(s). Session principale conservée: {main_session.id}"
-        }
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Format de date invalide. Utilisez YYYY-MM-DD. Erreur: {str(e)}"
         )
 
 
