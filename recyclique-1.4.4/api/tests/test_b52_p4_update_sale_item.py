@@ -463,4 +463,70 @@ class TestUpdateSaleItem:
         assert response.status_code == 401
         assert response.json()["detail"] == "User not found"
 
+    def test_patch_sale_item_weight_admin_success_arch03(
+        self,
+        client: TestClient,
+        test_admin,
+        test_user,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        test_sale,
+        test_sale_item,
+        admin_token,
+        db_session,
+    ):
+        """ARCH-03 : PATCH /sales/.../items/.../weight délégué à SaleService."""
+        admin = User(**test_admin)
+        user = User(**test_user)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        sale = Sale(**test_sale)
+        sale_item = SaleItem(**test_sale_item)
+        db_session.add_all([admin, user, site, cash_register, cash_session, sale, sale_item])
+        db_session.commit()
+
+        response = client.patch(
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}/weight",
+            json={"weight": 3.25},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["weight"] == 3.25
+        assert data["sale_id"] == str(test_sale["id"])
+        assert data["id"] == str(test_sale_item["id"])
+
+    def test_patch_sale_item_weight_invalid_sale_id_format_arch03(
+        self,
+        client: TestClient,
+        test_admin,
+        test_user,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        test_sale,
+        test_sale_item,
+        admin_token,
+        db_session,
+    ):
+        admin = User(**test_admin)
+        user = User(**test_user)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        sale = Sale(**test_sale)
+        sale_item = SaleItem(**test_sale_item)
+        db_session.add_all([admin, user, site, cash_register, cash_session, sale, sale_item])
+        db_session.commit()
+
+        response = client.patch(
+            f"{_V1}/sales/not-a-uuid/items/{test_sale_item['id']}/weight",
+            json={"weight": 2.0},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Invalid ID format"
+
 

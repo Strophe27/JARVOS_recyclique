@@ -3,13 +3,14 @@ Service de création de ventes (logique métier hors routeurs HTTP).
 
 ARCH-04 : extraire la logique lourde de POST /sales depuis endpoints/sales.py.
 ARCH-03 : erreurs métier via core.exceptions ; traduction HTTP au routeur ;
-          mise à jour note admin (PUT /sales/{id}) et item (PATCH …/items/{item_id}) déléguées ici.
+          mise à jour note admin (PUT /sales/{id}), item (PATCH …/items/{item_id}) et
+          poids admin (PATCH …/items/{item_id}/weight) déléguées ici.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import List
+from typing import Any, List
 from uuid import UUID
 
 from sqlalchemy import func
@@ -26,6 +27,7 @@ from recyclic_api.models.sale import PaymentMethod, Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import PaymentCreate, SaleCreate, SaleItemUpdate
+from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
 
 
 class SaleService:
@@ -115,6 +117,77 @@ class SaleService:
 
         if item_update.notes is not None:
             item.notes = item_update.notes
+
+        db.commit()
+        db.refresh(item)
+        return item
+
+    def update_sale_item_weight_admin(
+        self,
+        sale_id: str,
+        item_id: str,
+        new_weight: float,
+        actor: Any,
+    ) -> SaleItem:
+        """
+        Met à jour le poids d'un item de vente (admin / super-admin — vérifié par la route).
+
+        Recalcule les statistiques impactées, journalise l'audit et valide la transaction
+        (même enchaînement flush → recalcul → log_audit → commit qu'avant extraction).
+
+        Raises:
+            ValidationError: UUID invalides (détail ``Invalid ID format``) ou poids ≤ 0.
+            NotFoundError: item absent ou ne correspond pas à la vente.
+        """
+        db = self.db
+        try:
+            sale_uuid = UUID(sale_id)
+            item_uuid = UUID(item_id)
+        except ValueError:
+            raise ValidationError("Invalid ID format") from None
+
+        if new_weight <= 0:
+            raise ValidationError("Le poids doit être supérieur à 0")
+
+        item = db.query(SaleItem).filter(
+            SaleItem.id == item_uuid,
+            SaleItem.sale_id == sale_uuid,
+        ).first()
+        if not item:
+            raise NotFoundError("Sale item not found")
+
+        old_weight = float(item.weight) if item.weight else 0.0
+        item.weight = new_weight
+        db.flush()
+
+        recalculation_result = None
+        try:
+            recalculation_service = StatisticsRecalculationService(db)
+            recalculation_result = recalculation_service.recalculate_after_sale_item_weight_update(
+                sale_id=sale_uuid,
+                item_id=item_uuid,
+                old_weight=old_weight,
+                new_weight=new_weight,
+            )
+        except Exception as e:  # pragma: no cover - chemin de secours
+            recalculation_result = {"error": str(e)}
+
+        log_audit(
+            action_type=AuditActionType.SYSTEM_CONFIG_CHANGED,
+            actor=actor,
+            target_id=item_uuid,
+            target_type="sale_item",
+            details={
+                "sale_id": str(sale_uuid),
+                "item_id": str(item_uuid),
+                "old_weight": old_weight,
+                "new_weight": new_weight,
+                "weight_delta": new_weight - old_weight,
+                "recalculation_result": recalculation_result,
+            },
+            description=f"Modification du poids d'un item de vente: {old_weight} kg → {new_weight} kg",
+            db=db,
+        )
 
         db.commit()
         db.refresh(item)

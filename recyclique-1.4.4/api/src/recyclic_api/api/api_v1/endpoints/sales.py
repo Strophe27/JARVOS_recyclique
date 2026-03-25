@@ -7,16 +7,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from recyclic_api.core.security import verify_token
 from recyclic_api.models.sale import Sale
-from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import SaleResponse, SaleCreate, SaleUpdate, SaleItemUpdate, SaleItemResponse, SaleItemWeightUpdate
 from recyclic_api.core.auth import require_role_strict
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
-from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
 from recyclic_api.services.sale_service import SaleService
-from recyclic_api.core.audit import log_audit
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
-from recyclic_api.models.audit_log import AuditActionType
 from sqlalchemy.orm import selectinload
 
 router = APIRouter()
@@ -38,6 +34,13 @@ _SALE_NOTE_UPDATE_DOMAIN_HTTP = {
 
 # ARCH-03 PATCH /sales/{id}/items/{item_id} : exceptions domaine → HTTP (403 géré à part).
 _SALE_ITEM_PATCH_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 422,
+    "validation_status": 400,
+}
+
+# ARCH-03 PATCH /sales/{id}/items/{item_id}/weight : admin — UUID / poids → 400, item absent → 404.
+_SALE_ITEM_WEIGHT_DOMAIN_HTTP = {
     "not_found_status": 404,
     "conflict_status": 422,
     "validation_status": 400,
@@ -123,78 +126,12 @@ async def update_sale_item_weight(
     - Recalcule automatiquement les statistiques affectées
     - Log d'audit complet
     """
-    # Valider les UUIDs
     try:
-        sale_uuid = UUID(sale_id)
-        item_uuid = UUID(item_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    
-    # Récupérer l'item
-    item = db.query(SaleItem).filter(
-        SaleItem.id == item_uuid,
-        SaleItem.sale_id == sale_uuid
-    ).first()
-    
-    if not item:
-        raise HTTPException(status_code=404, detail="Sale item not found")
-    
-    # Sauvegarder l'ancien poids pour l'audit et le recalcul
-    old_weight = float(item.weight) if item.weight else 0.0
-    new_weight = weight_update.weight
-    
-    # Mettre à jour le poids
-    item.weight = new_weight
-    db.flush()  # Flush pour avoir l'ID disponible pour l'audit
-    
-    # Recalculer les statistiques affectées
-    recalculation_result = None
-    try:
-        recalculation_service = StatisticsRecalculationService(db)
-        recalculation_result = recalculation_service.recalculate_after_sale_item_weight_update(
-            sale_id=sale_uuid,
-            item_id=item_uuid,
-            old_weight=old_weight,
-            new_weight=new_weight
+        return SaleService(db).update_sale_item_weight_admin(
+            sale_id, item_id, weight_update.weight, current_user
         )
-    except Exception as e:  # pragma: no cover - chemin de secours
-        # En cas d'échec du recalcul, on conserve la modification de poids
-        # mais on trace l'erreur dans les détails d'audit.
-        recalculation_result = {"error": str(e)}
-    
-    # Logger l'audit
-    log_audit(
-        action_type=AuditActionType.SYSTEM_CONFIG_CHANGED,
-        actor=current_user,
-        target_id=item_uuid,
-        target_type="sale_item",
-        details={
-            "sale_id": str(sale_uuid),
-            "item_id": str(item_uuid),
-            "old_weight": old_weight,
-            "new_weight": new_weight,
-            "weight_delta": new_weight - old_weight,
-            "recalculation_result": recalculation_result
-        },
-        description=f"Modification du poids d'un item de vente: {old_weight} kg → {new_weight} kg",
-        db=db
-    )
-    
-    db.commit()
-    db.refresh(item)
-    
-    # Construire la réponse
-    return SaleItemResponse(
-        id=str(item.id),
-        sale_id=str(item.sale_id),
-        category=item.category,
-        quantity=item.quantity,
-        weight=float(item.weight) if item.weight else 0.0,
-        unit_price=float(item.unit_price),
-        total_price=float(item.total_price),
-        preset_id=str(item.preset_id) if item.preset_id else None,
-        notes=item.notes
-    )
+    except (NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_SALE_ITEM_WEIGHT_DOMAIN_HTTP)
 
 
 @router.post("/", response_model=SaleResponse)

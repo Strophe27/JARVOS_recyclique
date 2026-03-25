@@ -1,5 +1,6 @@
 """
-Tests ciblés pour SaleService (create_sale ARCH-04 ; update_admin_note ARCH-03 PUT /sales/{id}).
+Tests ciblés pour SaleService (create_sale ARCH-04 ; update_admin_note ARCH-03 PUT /sales/{id} ;
+update_sale_item_weight_admin ARCH-03 PATCH …/weight).
 """
 
 import uuid
@@ -395,3 +396,35 @@ def test_sale_service_update_sale_item_admin_updates_price(db_session: Session):
     )
     assert float(out.unit_price) == 12.5
     assert float(out.total_price) == 12.5
+
+
+def test_sale_service_update_item_weight_admin_invalid_id_format(db_session: Session):
+    user, _, _ = _seed_sale_with_item(db_session)
+    with pytest.raises(ValidationError, match="Invalid ID format"):
+        SaleService(db_session).update_sale_item_weight_admin("bad-sale", str(uuid.uuid4()), 1.0, user)
+    with pytest.raises(ValidationError, match="Invalid ID format"):
+        SaleService(db_session).update_sale_item_weight_admin(str(uuid.uuid4()), "bad-item", 1.0, user)
+
+
+def test_sale_service_update_item_weight_admin_item_not_found(db_session: Session):
+    user, sale, _ = _seed_sale_with_item(db_session)
+    missing_item = uuid.uuid4()
+    with pytest.raises(NotFoundError, match="Sale item not found"):
+        SaleService(db_session).update_sale_item_weight_admin(str(sale.id), str(missing_item), 2.0, user)
+
+
+def test_sale_service_update_item_weight_admin_non_positive_weight(db_session: Session):
+    user, sale, item = _seed_sale_with_item(db_session)
+    with pytest.raises(ValidationError, match="Le poids doit être supérieur à 0"):
+        SaleService(db_session).update_sale_item_weight_admin(str(sale.id), str(item.id), 0.0, user)
+
+
+def test_sale_service_update_item_weight_admin_success(db_session: Session):
+    user, sale, item = _seed_sale_with_item(db_session)
+    out = SaleService(db_session).update_sale_item_weight_admin(
+        str(sale.id), str(item.id), 2.25, user
+    )
+    assert out.id == item.id
+    assert out.weight == 2.25
+    db_session.refresh(item)
+    assert item.weight == 2.25

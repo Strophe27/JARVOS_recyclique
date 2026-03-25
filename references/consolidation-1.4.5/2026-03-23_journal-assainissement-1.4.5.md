@@ -2771,6 +2771,51 @@
 
 ---
 
+## Lot 2AR — ARCH-03 sur `PATCH /sales/{sale_id}/items/{item_id}/weight`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la logique metier / DB du PATCH poids hors de `endpoints/sales.py` en preservant recalcul stats et audit
+
+### Actions
+- Creation de `SaleService.update_sale_item_weight_admin(...)` pour porter :
+  - validation UUID `sale_id` / `item_id`
+  - verification item rattache a la vente
+  - validation du poids
+  - `flush`
+  - recalcul via `StatisticsRecalculationService.recalculate_after_sale_item_weight_update(...)`
+  - `log_audit`
+  - `commit` + `refresh`
+- Amincissement de `PATCH /sales/{sale_id}/items/{item_id}/weight` dans `endpoints/sales.py` avec traduction centralisee des erreurs domaine `400 / 404`.
+- Adaptation de `tests/test_sale_service.py` avec des cas cibles sur `update_sale_item_weight_admin`.
+- Adaptation de `tests/test_b52_p4_update_sale_item.py` pour couvrir aussi le lot ARCH-03 sur `/weight`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/sales.py`
+- `recyclique-1.4.4/api/tests/test_sale_service.py`
+- `recyclique-1.4.4/api/tests/test_b52_p4_update_sale_item.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_sale_service.py`
+  - `tests/test_b52_p4_update_sale_item.py`
+- Resultat Docker/PostgreSQL :
+  - **37 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `PATCH /sales/{sale_id}/items/{item_id}/weight` n'assemble plus inline sa logique metier principale.
+- Le contrat HTTP reste stable sur les scenarios verifies :
+  - `400` UUID invalide / valeurs invalides
+  - `404` vente ou item absents
+  - `200` succes
+- Reserves acceptees :
+  - sans Bearer, la route stricte reste sur le comportement historique de securite (`403` FastAPI/security) plutot que `401`
+  - pas encore de test HTTP dedie sur un poids invalide passe via le body Pydantic (422 historique)
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2790,6 +2835,7 @@
 - **Vague 5:** reserve integration `sales` sur le `404` fermee
 - **Vague 5:** second lot `ARCH-03` ferme sur `PUT /sales/{sale_id}` (note admin)
 - **Vague 5:** troisieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}`
+- **Vague 5:** quatrieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}/weight`
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2797,9 +2843,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** poursuivre `sales.py` par le PATCH poids ou arbitrer la sortie de la verticale `sales`
+- **Prochaine etape logique:** arbitrer si la verticale `sales` est suffisamment propre ou ouvrir le prochain axe backend hors Telegram
 
 ---
 
