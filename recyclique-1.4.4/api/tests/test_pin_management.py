@@ -6,7 +6,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password, verify_password
+from recyclic_api.core.config import settings
 from uuid import uuid4
+
+# Préfixe API v1 (ex. /api/v1 ou /v1) — aligné sur test_admin_e2e et env.test.
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 class TestPinManagement:
@@ -204,7 +208,7 @@ class TestAdminPinReset:
         user_id = str(user.id)
 
         # Admin resets PIN
-        reset_response = admin_client.post(f"/admin/users/{user_id}/reset-pin")
+        reset_response = admin_client.post(f"{_V1}/admin/users/{user_id}/reset-pin")
         assert reset_response.status_code == 200
         response_data = reset_response.json()
         assert "PIN réinitialisé avec succès" in response_data["message"]
@@ -217,13 +221,13 @@ class TestAdminPinReset:
     def test_reset_pin_user_not_found(self, admin_client: TestClient):
         """Test admin resetting PIN for non-existent user (should fail)"""
         fake_user_id = str(uuid4())
-        reset_response = admin_client.post(f"/admin/users/{fake_user_id}/reset-pin")
+        reset_response = admin_client.post(f"{_V1}/admin/users/{fake_user_id}/reset-pin")
         assert reset_response.status_code == 404
         assert "Utilisateur non trouvé" in reset_response.json()["detail"]
 
     def test_reset_pin_invalid_user_id(self, admin_client: TestClient):
         """Test admin resetting PIN with invalid user ID (should fail)"""
-        reset_response = admin_client.post("/admin/users/invalid-id/reset-pin")
+        reset_response = admin_client.post(f"{_V1}/admin/users/invalid-id/reset-pin")
         assert reset_response.status_code == 404
 
     def test_reset_pin_unauthorized(self, client: TestClient, db_session: Session):
@@ -240,17 +244,20 @@ class TestAdminPinReset:
         db_session.commit()
 
         # Login as regular user
-        login_response = client.post("/auth/login", json={
-            "username": "testuser7@example.com",
-            "password": "Test1234!"
-        })
+        login_response = client.post(
+            f"{_V1}/auth/login",
+            json={
+                "username": "testuser7@example.com",
+                "password": "Test1234!",
+            },
+        )
         assert login_response.status_code == 200
         token = login_response.json()["access_token"]
 
         # Try to reset PIN (should fail)
         reset_response = client.post(
-            f"/admin/users/{user.id}/reset-pin",
-            headers={"Authorization": f"Bearer {token}"}
+            f"{_V1}/admin/users/{user.id}/reset-pin",
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert reset_response.status_code == 403
 
@@ -271,7 +278,7 @@ class TestAdminPinReset:
 
         # Make multiple requests quickly (should hit rate limit)
         for i in range(12):  # More than the 10/minute limit
-            reset_response = admin_client.post(f"/admin/users/{user_id}/reset-pin")
+            reset_response = admin_client.post(f"{_V1}/admin/users/{user_id}/reset-pin")
             if i < 10:
                 assert reset_response.status_code == 200
             else:
@@ -372,22 +379,25 @@ class TestPinSecurity:
         user_id = str(user.id)
 
         # Admin resets PIN
-        reset_response = admin_client.post(f"/admin/users/{user_id}/reset-pin")
+        reset_response = admin_client.post(f"{_V1}/admin/users/{user_id}/reset-pin")
         assert reset_response.status_code == 200
 
         # User can now set new PIN without current password
-        login_response = client.post("/auth/login", json={
-            "username": "testuser11@example.com",
-            "password": "Test1234!"
-        })
+        login_response = client.post(
+            f"{_V1}/auth/login",
+            json={
+                "username": "testuser11@example.com",
+                "password": "Test1234!",
+            },
+        )
         assert login_response.status_code == 200
         token = login_response.json()["access_token"]
 
         # Set new PIN (should work without current password)
         pin_response = client.put(
-            "/users/me/pin",
+            f"{_V1}/users/me/pin",
             json={"pin": "5678"},
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert pin_response.status_code == 200
 

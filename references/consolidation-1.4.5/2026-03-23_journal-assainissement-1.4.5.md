@@ -3108,6 +3108,49 @@
 
 ---
 
+## Lot 2AZ — Extraction credentials utilisateur dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir les endpoints admin de reset / forçage des credentials hors de `admin.py`, sans toucher a Telegram
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_credentials.py`.
+- Extraction dans ce module des routes :
+  - `POST /admin/users/{user_id}/reset-password`
+  - `POST /admin/users/{user_id}/force-password`
+  - `POST /admin/users/{user_id}/reset-pin`
+- Enregistrement via `register_admin_users_credentials_routes(router, limiter)` depuis `admin.py`.
+- Realignement cible des tests force-password / reset-pin et ajout du fichier `tests/test_admin_users_credentials_routes.py`.
+- Harmonisation de `reset-password` sur UUID invalide (`404` au lieu d'un `500` accidentel).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_credentials.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_admin_force_password.py`
+- `recyclique-1.4.4/api/tests/test_pin_management.py`
+- `recyclique-1.4.4/api/tests/test_admin_users_credentials_routes.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee avec `API_V1_STR=/api/v1` :
+  - `tests/test_admin_users_credentials_routes.py`
+  - `tests/test_admin_force_password.py`
+  - `tests/test_pin_management.py::TestAdminPinReset`
+- Resultat local :
+  - **15 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un septieme sous-bloc coherent, sur un domaine sensible mais bien borne.
+- Les routes, auth, limites et comportements metier des flux credentials restent preserves.
+- Reserves acceptees :
+  - certains tests du projet restent encore couples a un prefixe `/api/v1` en dur au lieu de `settings.API_V1_STR`
+  - la verification PostgreSQL reelle de l'audit credentials reste a rejouer en environnement complet
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3135,6 +3178,7 @@
 - **Vague 5:** quatrieme lot `admin` ferme sur la lecture utilisateurs
 - **Vague 5:** cinquieme lot `admin` ferme sur les mutations de compte utilisateur
 - **Vague 5:** sixieme lot `admin` ferme sur les groupes utilisateur
+- **Vague 5:** septieme lot `admin` ferme sur les credentials utilisateur
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3142,7 +3186,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

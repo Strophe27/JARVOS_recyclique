@@ -10,13 +10,11 @@ from pathlib import Path
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from uuid import UUID
 
 from recyclic_api.core.database import get_db
-from recyclic_api.core.auth import get_current_user, require_admin_role, require_admin_role_strict, require_role_strict, require_super_admin_role
-from recyclic_api.core.audit import log_role_change, log_admin_access, log_audit, AuditActionType
+from recyclic_api.core.auth import require_admin_role, require_admin_role_strict, require_role_strict, require_super_admin_role
+from recyclic_api.core.audit import log_role_change, log_admin_access
 from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.services.telegram_service import telegram_service
 from recyclic_api.schemas.admin import (
     AdminResponse,
@@ -25,16 +23,15 @@ from recyclic_api.schemas.admin import (
     UserApprovalRequest,
     UserRejectionRequest,
     UserHistoryResponse,
-    ForcePasswordRequest
 )
 from recyclic_api.services.user_history_service import UserHistoryService
-from recyclic_api.core.auth import send_reset_password_email
 from .admin_activity_threshold import register_admin_activity_threshold_routes
 from .admin_health import register_admin_health_routes
 from .admin_observability import register_admin_observability_routes
 from .admin_users_read import register_admin_users_read_routes
 from .admin_users_mutations import register_admin_users_mutations_routes
 from .admin_users_groups import register_admin_users_groups_routes
+from .admin_users_credentials import register_admin_users_credentials_routes
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -48,8 +45,9 @@ register_admin_activity_threshold_routes(router, limiter)
 register_admin_users_read_routes(router, limiter)
 register_admin_users_mutations_routes(router, limiter)
 register_admin_users_groups_routes(router, limiter)
+register_admin_users_credentials_routes(router, limiter)
 
-# La fonction require_admin_role est maintenant import├®e depuis core.auth
+# La fonction require_admin_role est maintenant importée depuis core.auth
 
 @router.post(
     "/users/{user_id}/approve",
@@ -258,63 +256,6 @@ async def reject_user(
             detail=f"Erreur lors du rejet: {str(e)}"
         )
 
-@router.post(
-    "/users/{user_id}/reset-password",
-    response_model=AdminResponse,
-    summary="D├®clencher la r├®initialisation du mot de passe (Admin)",
-    description="Envoie un e-mail de r├®initialisation de mot de passe ├á l'utilisateur sp├®cifi├®."
-)
-async def trigger_reset_password(
-    user_id: str,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """D├®clenche l'envoi d'un e-mail de r├®initialisation de mot de passe."""
-    try:
-        user_uuid = UUID(user_id)
-        user = db.query(User).filter(User.id == user_uuid).first()
-
-        if not user:
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        if not user.email:
-            raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail="L'utilisateur n'a pas d'adresse e-mail configur├®e."
-            )
-
-        await send_reset_password_email(user.email, db)
-
-        # Log audit for password reset trigger
-        log_audit(
-            action_type=AuditActionType.PASSWORD_RESET,
-            actor=current_user,
-            target_id=user.id,
-            target_type="user",
-            details={
-                "target_username": user.username or user.telegram_id,
-                "target_email": user.email,
-                "admin_username": current_user.username or current_user.telegram_id
-            },
-            description=f"R├®initialisation de mot de passe d├®clench├®e pour {user.username or user.telegram_id} par {current_user.username or current_user.telegram_id}",
-            db=db
-        )
-
-        return AdminResponse(
-            message=f"E-mail de r├®initialisation de mot de passe envoy├® ├á {user.email}",
-            success=True
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de l'envoi de l'e-mail de r├®initialisation: {str(e)}"
-        )
-
 @router.get(
     "/users/{user_id}/history",
     response_model=UserHistoryResponse,
@@ -426,265 +367,6 @@ async def test_notifications(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de l'envoi de la notification: {str(e)}"
-        )
-
-
-@router.post(
-    "/users/{user_id}/force-password",
-    response_model=AdminResponse,
-    summary="Forcer un nouveau mot de passe (Super Admin uniquement)",
-    description="Force un nouveau mot de passe pour un utilisateur. R├®serv├® aux Super Administrateurs uniquement."
-)
-@limiter.limit("5/minute")
-async def force_user_password(
-    user_id: str,
-    force_request: ForcePasswordRequest,
-    request: Request,
-    current_user: User = Depends(require_admin_role_strict()),
-    db: Session = Depends(get_db)
-):
-    """Force un nouveau mot de passe pour un utilisateur (Super Admin uniquement)"""
-    try:
-        # V├®rifier que l'utilisateur actuel est un Super Admin
-        if current_user.role != UserRole.SUPER_ADMIN:
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN,
-                detail="Cette action est r├®serv├®e aux Super Administrateurs uniquement"
-            )
-
-        # Log de l'acc├¿s admin
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint=f"/admin/users/{user_id}/force-password",
-            success=True
-        )
-
-        # Recherche de l'utilisateur cible
-        try:
-            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-            target_user = db.query(User).filter(User.id == user_uuid).first()
-        except ValueError:
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        if not target_user:
-            # Log de l'├®chec
-            log_admin_access(
-                user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
-                endpoint=f"/admin/users/{user_id}/force-password",
-                success=False,
-                error_message="Utilisateur non trouv├®"
-            )
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        # Valider la force du nouveau mot de passe
-        from recyclic_api.core.security import validate_password_strength
-        is_valid, errors = validate_password_strength(force_request.new_password)
-        if not is_valid:
-            # Translate common English messages to French keywords expected by tests
-            translations = {
-                "Password must be at least 8 characters long": "Le mot de passe doit contenir au moins 8 caract├¿res",
-                "Password must contain at least one uppercase letter": "Le mot de passe doit contenir au moins une lettre majuscule",
-                "Password must contain at least one lowercase letter": "Le mot de passe doit contenir au moins une lettre minuscule",
-                "Password must contain at least one digit": "Le mot de passe doit contenir au moins un chiffre",
-                "Password must contain at least one special character": "Le mot de passe doit contenir au moins un caract├¿re sp├®cial",
-            }
-            fr_errors = [translations.get(e, e) for e in errors]
-            raise HTTPException(
-                status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Mot de passe invalide: {' '.join(fr_errors)}",
-            )
-
-        # Hasher le nouveau mot de passe
-        from recyclic_api.core.security import hash_password
-        new_hashed_password = hash_password(force_request.new_password)
-
-        # Sauvegarder l'ancien mot de passe pour l'audit
-        old_password_hash = target_user.hashed_password
-
-        # Mettre ├á jour le mot de passe
-        target_user.hashed_password = new_hashed_password
-        db.commit()
-        db.refresh(target_user)
-
-        # Log de l'action de for├ºage de mot de passe
-        log_role_change(
-            admin_user_id=str(current_user.id),
-            admin_username=current_user.username or current_user.telegram_id,
-            target_user_id=str(target_user.id),
-            target_username=target_user.username or target_user.telegram_id,
-            old_role="password_forced",
-            new_role=f"new_password_set_by_super_admin",
-            success=True,
-            db=db
-        )
-
-        # Enregistrer l'action dans l'historique utilisateur
-        from recyclic_api.models.user_status_history import UserStatusHistory
-        password_force_history = UserStatusHistory(
-            user_id=target_user.id,
-            changed_by_admin_id=current_user.id,
-            old_status=True,  # L'utilisateur ├®tait actif
-            new_status=True,  # L'utilisateur reste actif
-            reason=f"Mot de passe forc├® par Super Admin. Raison: {force_request.reason or 'Non sp├®cifi├®e'}"
-        )
-        db.add(password_force_history)
-        db.commit()
-
-        # Log audit pour le for├ºage de mot de passe
-        log_audit(
-            action_type=AuditActionType.PASSWORD_FORCED,
-            actor=current_user,
-            target_id=target_user.id,
-            target_type="user",
-            details={
-                "target_username": target_user.username,
-                "target_telegram_id": target_user.telegram_id,
-                "reason": force_request.reason,
-                "admin_username": current_user.username or current_user.telegram_id
-            },
-            description=f"Mot de passe forc├® pour l'utilisateur {target_user.username} par Super Admin {current_user.username or current_user.telegram_id}",
-            db=db
-        )
-
-        full_name = f"{target_user.first_name} {target_user.last_name}" if target_user.first_name and target_user.last_name else target_user.first_name or target_user.last_name
-
-        return AdminResponse(
-            data={
-                "user_id": str(target_user.id),
-                "action": "password_forced",
-                "reason": force_request.reason,
-                "forced_by": str(current_user.id),
-                "forced_at": datetime.now(timezone.utc).isoformat()
-            },
-            message=f"Mot de passe forc├® avec succ├¿s pour l'utilisateur {full_name or target_user.username}",
-            success=True
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Log de l'├®chec
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint=f"/admin/users/{user_id}/force-password",
-            success=False,
-            error_message=str(e)
-        )
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors du for├ºage du mot de passe: {str(e)}"
-        )
-
-
-@router.post(
-    "/users/{user_id}/reset-pin",
-    response_model=dict,
-    summary="R├®initialiser le PIN d'un utilisateur",
-    description="Efface le PIN d'un utilisateur, le for├ºant ├á en cr├®er un nouveau"
-)
-@limiter.limit("10/minute")
-def reset_user_pin(
-    request: Request,
-    user_id: str,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """R├®initialise le PIN d'un utilisateur (Admin uniquement)"""
-    try:
-        # Log de l'acc├¿s admin
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint=f"/admin/users/{user_id}/reset-pin",
-            success=True
-        )
-
-        # Recherche de l'utilisateur cible
-        try:
-            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-            target_user = db.query(User).filter(User.id == user_uuid).first()
-        except ValueError:
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        if not target_user:
-            # Log de l'├®chec
-            log_admin_access(
-                user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
-                endpoint=f"/admin/users/{user_id}/reset-pin",
-                success=False,
-                error_message="Utilisateur non trouv├®"
-            )
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouv├®"
-            )
-
-        # Effacer le PIN (mettre ├á NULL)
-        target_user.hashed_pin = None
-        db.commit()
-
-        # Log audit pour la r├®initialisation de PIN
-        log_audit(
-            action_type=AuditActionType.PIN_RESET,
-            actor=current_user,
-            target_id=target_user.id,
-            target_type="user",
-            details={
-                "target_username": target_user.username,
-                "target_telegram_id": target_user.telegram_id,
-                "admin_username": current_user.username or current_user.telegram_id
-            },
-            description=f"PIN r├®initialis├® pour l'utilisateur {target_user.username} par Admin {current_user.username or current_user.telegram_id}",
-            db=db
-        )
-
-        # Log de l'action
-        full_name = f"{target_user.first_name} {target_user.last_name}".strip() if target_user.first_name and target_user.last_name else target_user.first_name or target_user.last_name
-        logger.info(
-            f"PIN reset for user {target_user.id} by admin {current_user.id}",
-            extra={
-                "target_user_id": str(target_user.id),
-                "target_username": target_user.username,
-                "admin_user_id": str(current_user.id),
-                "admin_username": current_user.username or current_user.telegram_id,
-                "action": "pin_reset",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-        )
-
-        return {
-            "message": f"PIN r├®initialis├® avec succ├¿s pour l'utilisateur {full_name or target_user.username}",
-            "user_id": str(target_user.id),
-            "username": target_user.username
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Log de l'├®chec
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint=f"/admin/users/{user_id}/reset-pin",
-            success=False,
-            error_message=str(e)
-        )
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®initialisation du PIN: {str(e)}"
         )
 
 

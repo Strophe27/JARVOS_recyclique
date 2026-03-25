@@ -391,7 +391,7 @@ def _sqlite_skip_audit_log_commit(request):
     """
     Sous SQLite, audit_logs (JSONB) n'est pas créé ; log_audit() et dérivés
     (log_role_change, etc.) font un commit() ou échouent sur insert. On neutralise
-    log_audit dans core.audit (imports dynamiques ex. users), auth, admin et
+    log_audit dans core.audit (imports dynamiques ex. users), auth,     admin_users_credentials et
     admin_activity_threshold (rollback d'insert audit annulerait la session SQLite).
     """
     if not SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
@@ -403,7 +403,9 @@ def _sqlite_skip_audit_log_commit(request):
     from unittest.mock import patch
 
     from recyclic_api.core import audit as audit_core
-    from recyclic_api.api.api_v1.endpoints import admin as admin_endpoints
+    from recyclic_api.api.api_v1.endpoints import (
+        admin_users_credentials as admin_users_credentials_endpoints,
+    )
     from recyclic_api.api.api_v1.endpoints import admin_activity_threshold as admin_activity_threshold_endpoints
     from recyclic_api.api.api_v1.endpoints import auth as auth_endpoints
     from recyclic_api.services import sale_service as sale_service_mod
@@ -413,7 +415,7 @@ def _sqlite_skip_audit_log_commit(request):
     with (
         patch.object(audit_core, "log_audit", _noop),
         patch.object(auth_endpoints, "log_audit", _noop),
-        patch.object(admin_endpoints, "log_audit", _noop),
+        patch.object(admin_users_credentials_endpoints, "log_audit", _noop),
         patch.object(admin_activity_threshold_endpoints, "log_audit", _noop),
         patch.object(sale_service_mod, "log_audit", _noop),
     ):

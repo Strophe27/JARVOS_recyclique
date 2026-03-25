@@ -2,7 +2,8 @@
 Endpoints admin : consultation des utilisateurs (liste, statuts d'activité, pending).
 
 Les mutations rôle / statut actif / profil : `admin_users_mutations`.
-Approbation, rejet, credentials, Telegram, etc. : `admin`.
+Credentials (reset / force mot de passe, reset PIN) : `admin_users_credentials`.
+Approbation, rejet, Telegram, etc. : `admin`.
 """
 
 from typing import List, Optional
