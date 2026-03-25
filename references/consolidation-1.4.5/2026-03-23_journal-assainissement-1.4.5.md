@@ -3226,6 +3226,42 @@
 
 ---
 
+## Lot 2BC — Extraction template reception offline dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir le telechargement du template CSV offline hors de `admin.py`
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_templates_offline.py`.
+- Extraction dans ce module de la route :
+  - `GET /admin/templates/reception-offline.csv`
+- Enregistrement via `register_admin_templates_offline_routes(router, limiter)` depuis `admin.py`.
+- Ajout d'un shim importable `recyclique-1.4.4/api/scripts/generate_offline_template.py` pour charger le script canonique legacy.
+- Realignement cible des tests template offline sur `settings.API_V1_STR`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_templates_offline.py`
+- `recyclique-1.4.4/api/scripts/generate_offline_template.py`
+- `recyclique-1.4.4/api/tests/test_template_offline.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_template_offline.py`
+- Resultat local :
+  - **9 tests passes, 1 skipped**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un dixieme sous-bloc coherent, sur un endpoint utilitaire isole.
+- La route, l'auth admin stricte et le contrat CSV restent preserves.
+- Reserves acceptees :
+  - le shim d'import legacy reste sensible au layout disque tant que le script canonique garde son nom non importable
+  - un test de cycle complet reste dependant d'un schema plus complet que le SQLite minimal
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3256,6 +3292,7 @@
 - **Vague 5:** septieme lot `admin` ferme sur les credentials utilisateur
 - **Vague 5:** huitieme lot `admin` ferme sur l'historique utilisateur
 - **Vague 5:** neuvieme lot `admin` ferme sur la maintenance cash sessions
+- **Vague 5:** dixieme lot `admin` ferme sur le template reception offline
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3263,7 +3300,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 
