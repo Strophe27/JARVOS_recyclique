@@ -2941,6 +2941,47 @@
 
 ---
 
+## Lot 2AV — Extraction du seuil d'activite admin
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la lecture / mise a jour du seuil d'activite hors de `admin.py`
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_activity_threshold.py`.
+- Extraction dans ce module des routes :
+  - `GET /admin/settings/activity-threshold`
+  - `PUT /admin/settings/activity-threshold`
+- Enregistrement via `register_admin_activity_threshold_routes(router, limiter)` depuis `admin.py`.
+- Correction ciblee du trou d'audit associe en ajoutant `SETTING_UPDATED` a `AuditActionType`.
+- Ajout des tests cibles `tests/test_admin_activity_threshold_endpoints.py`.
+- Harmonisation du fallback GET avec `DEFAULT_ACTIVITY_THRESHOLD_MINUTES`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_activity_threshold.py`
+- `recyclique-1.4.4/api/src/recyclic_api/models/audit_log.py`
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_admin_activity_threshold_endpoints.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_admin_activity_threshold_endpoints.py`
+  - `tests/test_admin_observability_endpoints.py`
+  - `tests/test_admin_health_endpoints.py`
+- Resultat local :
+  - **19 tests passes, 1 skipped**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un troisieme sous-bloc coherent, simple et frequemment sensible cote admin.
+- Les contrats HTTP, les limites, le refresh du cache d'activite et l'audit restent preserves.
+- Reserves acceptees :
+  - le body du `PUT` reste un `dict` non typé, comme avant
+  - la verification PostgreSQL reelle du `PUT` avec table `audit_logs` reste a rejouer en environnement complet
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2964,6 +3005,7 @@
 - **Vague 5:** coherence auth amelioree sur les mutantes `sales`
 - **Vague 5:** premier lot `admin` ferme sur le sous-bloc sante / probes
 - **Vague 5:** second lot `admin` ferme sur le sous-bloc observabilite / journaux
+- **Vague 5:** troisieme lot `admin` ferme sur le seuil d'activite
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2971,7 +3013,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

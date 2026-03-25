@@ -37,10 +37,8 @@ from recyclic_api.schemas.permission import UserGroupUpdateRequest
 from recyclic_api.schemas.user import UserStatusUpdate
 from recyclic_api.services.user_history_service import UserHistoryService
 from recyclic_api.core.auth import send_reset_password_email
-from recyclic_api.services.activity_service import (
-    ActivityService,
-    DEFAULT_ACTIVITY_THRESHOLD_MINUTES,
-)
+from recyclic_api.services.activity_service import ActivityService
+from .admin_activity_threshold import register_admin_activity_threshold_routes
 from .admin_health import register_admin_health_routes
 from .admin_observability import register_admin_observability_routes
 
@@ -52,6 +50,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 register_admin_health_routes(router, limiter)
 register_admin_observability_routes(router, limiter)
+register_admin_activity_threshold_routes(router, limiter)
 
 # La fonction require_admin_role est maintenant import├®e depuis core.auth
 
@@ -1163,120 +1162,6 @@ def reset_user_pin(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la r├®initialisation du PIN: {str(e)}"
-        )
-
-
-@router.get(
-    "/settings/activity-threshold",
-    summary="R├®cup├®rer le seuil d'activit├®",
-    description="R├®cup├¿re le seuil d'activit├® configur├® pour d├®terminer si un utilisateur est en ligne"
-)
-@limiter.limit("30/minute")
-async def get_activity_threshold(
-    request: Request,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """R├®cup├¿re le seuil d'activit├® configur├®"""
-    try:
-        from recyclic_api.models.setting import Setting
-        
-        # R├®cup├®rer le seuil d'activit├® depuis la base de donn├®es
-        setting = db.query(Setting).filter(Setting.key == "activity_threshold_minutes").first()
-        
-        if setting:
-            threshold = int(setting.value)
-        else:
-            # Valeur par d├®faut si pas configur├®
-            threshold = 15
-        
-        return {
-            "activity_threshold_minutes": threshold,
-            "description": "Seuil en minutes pour consid├®rer un utilisateur comme en ligne"
-        }
-        
-    except Exception as e:
-        logger.error(f"Erreur lors de la r├®cup├®ration du seuil d'activit├®: {str(e)}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®cup├®ration du seuil d'activit├®: {str(e)}"
-        )
-
-
-@router.put(
-    "/settings/activity-threshold",
-    summary="Modifier le seuil d'activit├®",
-    description="Modifie le seuil d'activit├® pour d├®terminer si un utilisateur est en ligne"
-)
-@limiter.limit("10/minute")
-async def update_activity_threshold(
-    request: Request,
-    threshold_data: dict,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """Modifie le seuil d'activit├® configur├®"""
-    try:
-        from recyclic_api.models.setting import Setting
-        
-        # Valider les donn├®es
-        threshold = threshold_data.get("activity_threshold_minutes")
-        if not isinstance(threshold, int) or threshold < 1 or threshold > 1440:  # Max 24h
-            raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail="Le seuil doit ├¬tre un entier entre 1 et 1440 minutes"
-            )
-        
-        # R├®cup├®rer ou cr├®er le param├¿tre
-        setting = (
-            db.query(Setting)
-            .filter(Setting.key == "activity_threshold_minutes")
-            .with_for_update()
-            .first()
-        )
-
-        previous_value = setting.value if setting else None
-
-        if setting:
-            setting.value = str(threshold)
-        else:
-            setting = Setting(
-                key="activity_threshold_minutes",
-                value=str(threshold)
-            )
-            db.add(setting)
-
-        db.commit()
-        db.refresh(setting)
-        ActivityService.refresh_cache(threshold)
-        
-        # Log de l'audit
-        log_audit(
-            action_type=AuditActionType.SETTING_UPDATED,
-            actor=current_user,
-            details={
-                "setting_key": "activity_threshold_minutes",
-                "old_value": previous_value if previous_value is not None else str(DEFAULT_ACTIVITY_THRESHOLD_MINUTES),
-                "new_value": str(threshold)
-            },
-            description=f"Seuil d'activit├® modifi├® ├á {threshold} minutes",
-            ip_address=getattr(request.client, 'host', 'unknown') if request.client else 'unknown',
-            user_agent=request.headers.get("user-agent", "unknown"),
-            db=db
-        )
-        
-        return {
-            "message": f"Seuil d'activit├® mis ├á jour ├á {threshold} minutes",
-            "activity_threshold_minutes": threshold
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur lors de la mise ├á jour du seuil d'activit├®: {str(e)}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la mise ├á jour du seuil d'activit├®: {str(e)}"
         )
 
 

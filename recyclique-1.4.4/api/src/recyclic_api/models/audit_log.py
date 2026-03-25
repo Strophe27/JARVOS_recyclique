@@ -38,6 +38,7 @@ class AuditActionType(str, enum.Enum):
     
     # Actions système
     SYSTEM_CONFIG_CHANGED = "system_config_changed"
+    SETTING_UPDATED = "setting_updated"
     DATA_EXPORTED = "data_exported"
     BACKUP_CREATED = "backup_created"
     DB_IMPORT = "db_import"
