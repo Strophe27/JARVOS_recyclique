@@ -19,28 +19,24 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.services.telegram_service import telegram_service
 from recyclic_api.schemas.admin import (
-    AdminUserList,
-    AdminUser,
     UserRoleUpdate,
     AdminResponse,
     AdminErrorResponse,
     PaginationInfo,
-    PendingUserResponse,
     UserApprovalRequest,
     UserRejectionRequest,
     UserProfileUpdate,
     UserHistoryResponse,
-    UserStatusesResponse,
     ForcePasswordRequest
 )
 from recyclic_api.schemas.permission import UserGroupUpdateRequest
 from recyclic_api.schemas.user import UserStatusUpdate
 from recyclic_api.services.user_history_service import UserHistoryService
 from recyclic_api.core.auth import send_reset_password_email
-from recyclic_api.services.activity_service import ActivityService
 from .admin_activity_threshold import register_admin_activity_threshold_routes
 from .admin_health import register_admin_health_routes
 from .admin_observability import register_admin_observability_routes
+from .admin_users_read import register_admin_users_read_routes
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -51,112 +47,9 @@ limiter = Limiter(key_func=get_remote_address)
 register_admin_health_routes(router, limiter)
 register_admin_observability_routes(router, limiter)
 register_admin_activity_threshold_routes(router, limiter)
+register_admin_users_read_routes(router, limiter)
 
 # La fonction require_admin_role est maintenant import├®e depuis core.auth
-
-@router.get(
-    "/users",
-    response_model=List[AdminUser],
-    summary="Liste des utilisateurs (Admin)",
-    description="R├®cup├¿re la liste des utilisateurs avec filtres optionnels"
-)
-@limiter.limit("30/minute")
-def get_users(
-    request: Request,
-    skip: int = Query(0, ge=0, description="Nombre d'├®l├®ments ├á ignorer"),
-    limit: int = Query(20, ge=1, le=100, description="Nombre d'├®l├®ments par page"),
-    role: Optional[UserRole] = Query(None, description="Filtrer par r├┤le"),
-    user_status: Optional[UserStatus] = Query(None, description="Filtrer par statut"),
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """R├®cup├¿re la liste des utilisateurs avec filtres"""
-    try:
-        # Log de l'acc├¿s admin
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint="/admin/users",
-            success=True
-        )
-
-        query = db.query(User)
-
-        # Application des filtres
-        if role:
-            query = query.filter(User.role == role)
-        if user_status:
-            query = query.filter(User.status == user_status)
-
-        users = query.offset(skip).limit(limit).all()
-
-        # Conversion en AdminUser
-        admin_users = []
-        for user in users:
-            full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-            admin_user = AdminUser(
-                id=str(user.id),
-                telegram_id=user.telegram_id,
-                username=user.username,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                full_name=full_name,
-                email=None,
-                role=user.role,
-                status=user.status,
-                is_active=user.is_active,
-                site_id=str(user.site_id) if user.site_id else None,
-                created_at=user.created_at,
-                updated_at=user.updated_at
-            )
-            admin_users.append(admin_user)
-
-        return admin_users
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®cup├®ration des utilisateurs: {str(e)}"
-        )
-
-@router.get(
-    "/users/statuses",
-    response_model=UserStatusesResponse,
-    summary="Statuts des utilisateurs (Admin)",
-    description="R├®cup├¿re les statuts en ligne/hors ligne de tous les utilisateurs"
-)
-@limiter.limit("30/minute")
-def get_users_statuses(
-    request: Request,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """R├®cup├¿re les statuts en ligne/hors ligne de tous les utilisateurs"""
-    try:
-        # Journalise l'acces admin pour l'endpoint
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint="/admin/users/statuses",
-            success=True
-        )
-
-        activity_service = ActivityService(db)
-        return activity_service.get_user_statuses_response()
-
-    except Exception as e:
-        # Log de l'├®chec
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint="/admin/users/statuses",
-            success=False,
-            error_message=str(e)
-        )
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®cup├®ration des statuts: {str(e)}"
-        )
 
 @router.put(
     "/users/{user_id}/role",
@@ -251,54 +144,6 @@ def update_user_role(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la mise ├á jour du r├┤le: {str(e)}"
-        )
-
-@router.get(
-    "/users/pending",
-    response_model=List[PendingUserResponse],
-    summary="Liste des utilisateurs en attente (Admin)",
-    description="R├®cup├¿re la liste des utilisateurs avec le statut 'pending'"
-)
-def get_pending_users(
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """R├®cup├¿re la liste des utilisateurs en attente d'approbation"""
-    try:
-        # Log de l'acc├¿s admin
-        log_admin_access(
-            user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
-            endpoint="/admin/users/pending",
-            success=True
-        )
-
-        # R├®cup├®rer les utilisateurs en attente
-        pending_users = db.query(User).filter(User.status == UserStatus.PENDING).all()
-
-        # Conversion en PendingUserResponse
-        pending_responses = []
-        for user in pending_users:
-            full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-            pending_response = PendingUserResponse(
-                id=str(user.id),
-                telegram_id=int(user.telegram_id),
-                username=user.username,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                full_name=full_name,
-                role=user.role,
-                status=user.status,
-                created_at=user.created_at
-            )
-            pending_responses.append(pending_response)
-
-        return pending_responses
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®cup├®ration des utilisateurs en attente: {str(e)}"
         )
 
 @router.post(

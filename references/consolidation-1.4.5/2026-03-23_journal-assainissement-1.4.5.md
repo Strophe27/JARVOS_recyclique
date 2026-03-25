@@ -2982,6 +2982,49 @@
 
 ---
 
+## Lot 2AW — Extraction lecture utilisateurs dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la consultation admin des utilisateurs hors de `admin.py` sans toucher aux mutations
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`.
+- Extraction dans ce module des routes :
+  - `GET /admin/users`
+  - `GET /admin/users/statuses`
+  - `GET /admin/users/pending`
+- Enregistrement via `register_admin_users_read_routes(router, limiter)` depuis `admin.py`.
+- Realignement des tests concernes sur `settings.API_V1_STR`.
+- Stabilisation des fixtures/tests lies aux pending users et aux statuts utilisateurs en SQLite.
+- Ajout du fichier cible `tests/test_admin_users_read_routes.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`
+- `recyclique-1.4.4/api/tests/test_admin_users_read_routes.py`
+- `recyclique-1.4.4/api/tests/test_admin_pending_endpoints.py`
+- `recyclique-1.4.4/api/tests/test_user_statuses_endpoint.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_admin_users_read_routes.py`
+  - `tests/test_admin_pending_endpoints.py`
+  - `tests/test_user_statuses_endpoint.py`
+  - `tests/test_auth_inactive_user_middleware.py`
+- Resultat local :
+  - **24 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un quatrieme sous-bloc coherent, centre sur la lecture admin des utilisateurs.
+- Les routes, l'auth admin et les contrats HTTP restent preserves sous le prefixe `/admin`.
+- Reserves acceptees :
+  - `GET /users/pending` reste fragile si `telegram_id` est nul, comme avant ce lot
+  - la couverture de `test_admin_users_read_routes.py` reste volontairement structurelle, pas comportementale
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3006,6 +3049,7 @@
 - **Vague 5:** premier lot `admin` ferme sur le sous-bloc sante / probes
 - **Vague 5:** second lot `admin` ferme sur le sous-bloc observabilite / journaux
 - **Vague 5:** troisieme lot `admin` ferme sur le seuil d'activite
+- **Vague 5:** quatrieme lot `admin` ferme sur la lecture utilisateurs
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3013,7 +3057,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

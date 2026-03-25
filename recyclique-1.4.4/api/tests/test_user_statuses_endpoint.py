@@ -1,7 +1,9 @@
 """
-Tests pour l'endpoint GET /v1/admin/users/statuses
+Tests pour l'endpoint GET {API_V1_STR}/admin/users/statuses
 Teste la récupération des statuts en ligne/hors ligne des utilisateurs
 """
+
+import uuid
 
 import pytest
 from datetime import datetime, timedelta
@@ -10,6 +12,9 @@ from fastapi.testclient import TestClient
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.core.auth import create_access_token
+from recyclic_api.core.config import settings
+
+_STATUSES_URL = f"{settings.API_V1_STR.rstrip('/')}/admin/users/statuses"
 
 
 class TestUserStatusesEndpoint:
@@ -17,7 +22,7 @@ class TestUserStatusesEndpoint:
 
     def test_get_user_statuses_requires_admin_auth(self, client: TestClient):
         """Test que l'endpoint nécessite une authentification admin"""
-        response = client.get("/v1/admin/users/statuses")
+        response = client.get(_STATUSES_URL)
         assert response.status_code == 401
 
     def test_get_user_statuses_requires_admin_role(self, client: TestClient, db_session: Session):
@@ -38,7 +43,7 @@ class TestUserStatusesEndpoint:
         access_token = create_access_token(data={"sub": str(user.id)})
         client.headers["Authorization"] = f"Bearer {access_token}"
 
-        response = client.get("/v1/admin/users/statuses")
+        response = client.get(_STATUSES_URL)
         assert response.status_code == 403
 
     def test_get_user_statuses_success_with_admin(self, admin_client: TestClient, db_session: Session):
@@ -66,6 +71,7 @@ class TestUserStatusesEndpoint:
         
         # User1: connexion récente (en ligne)
         recent_login = LoginHistory(
+            id=uuid.uuid4(),
             user_id=user1.id,
             username=user1.username,
             success=True,
@@ -74,6 +80,7 @@ class TestUserStatusesEndpoint:
         
         # User2: connexion ancienne (hors ligne)
         old_login = LoginHistory(
+            id=uuid.uuid4(),
             user_id=user2.id,
             username=user2.username,
             success=True,
@@ -83,7 +90,7 @@ class TestUserStatusesEndpoint:
         db_session.add_all([recent_login, old_login])
         db_session.commit()
 
-        response = admin_client.get("/v1/admin/users/statuses")
+        response = admin_client.get(_STATUSES_URL)
         assert response.status_code == 200
         
         data = response.json()
@@ -126,7 +133,7 @@ class TestUserStatusesEndpoint:
         db_session.add(user)
         db_session.commit()
 
-        response = admin_client.get("/v1/admin/users/statuses")
+        response = admin_client.get(_STATUSES_URL)
         assert response.status_code == 200
         
         data = response.json()
@@ -159,12 +166,14 @@ class TestUserStatusesEndpoint:
         
         # Ajouter des tentatives de connexion échouées
         failed_login1 = LoginHistory(
+            id=uuid.uuid4(),
             user_id=user.id,
             username=user.username,
             success=False,
             created_at=now - timedelta(minutes=5)
         )
         failed_login2 = LoginHistory(
+            id=uuid.uuid4(),
             user_id=user.id,
             username=user.username,
             success=False,
@@ -173,6 +182,7 @@ class TestUserStatusesEndpoint:
         
         # Ajouter une connexion réussie ancienne
         successful_login = LoginHistory(
+            id=uuid.uuid4(),
             user_id=user.id,
             username=user.username,
             success=True,
@@ -182,7 +192,7 @@ class TestUserStatusesEndpoint:
         db_session.add_all([failed_login1, failed_login2, successful_login])
         db_session.commit()
 
-        response = admin_client.get("/v1/admin/users/statuses")
+        response = admin_client.get(_STATUSES_URL)
         assert response.status_code == 200
         
         data = response.json()
@@ -220,6 +230,7 @@ class TestUserStatusesEndpoint:
         
         # User en ligne: connexion il y a exactement 14 minutes
         login_online = LoginHistory(
+            id=uuid.uuid4(),
             user_id=user_online.id,
             username=user_online.username,
             success=True,
@@ -228,6 +239,7 @@ class TestUserStatusesEndpoint:
         
         # User hors ligne: connexion il y a exactement 16 minutes
         login_offline = LoginHistory(
+            id=uuid.uuid4(),
             user_id=user_offline.id,
             username=user_offline.username,
             success=True,
@@ -237,7 +249,7 @@ class TestUserStatusesEndpoint:
         db_session.add_all([login_online, login_offline])
         db_session.commit()
 
-        response = admin_client.get("/v1/admin/users/statuses")
+        response = admin_client.get(_STATUSES_URL)
         assert response.status_code == 200
         
         data = response.json()
@@ -277,6 +289,7 @@ class TestUserStatusesEndpoint:
         logins = []
         for i, user in enumerate(users):
             login = LoginHistory(
+                id=uuid.uuid4(),
                 user_id=user.id,
                 username=user.username,
                 success=True,
@@ -291,7 +304,7 @@ class TestUserStatusesEndpoint:
         import time
         start_time = time.time()
         
-        response = admin_client.get("/v1/admin/users/statuses")
+        response = admin_client.get(_STATUSES_URL)
         
         end_time = time.time()
         response_time = end_time - start_time
