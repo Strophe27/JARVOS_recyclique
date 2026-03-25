@@ -3151,6 +3151,44 @@
 
 ---
 
+## Lot 2BA — Extraction historique utilisateur dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la lecture d'historique utilisateur hors de `admin.py`
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_history.py`.
+- Extraction dans ce module de la route :
+  - `GET /admin/users/{user_id}/history`
+- Enregistrement via `register_admin_users_history_routes(router, limiter)` depuis `admin.py`.
+- Mise a jour mineure du docstring de `admin_users_read.py` pour refléter la separation.
+- Harmonisation preventive du cas UUID invalide avant l'appel base pour eviter un ecart potentiel SQLite/PostgreSQL.
+- Ajout du fichier cible `tests/test_admin_users_history_routes.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_history.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`
+- `recyclique-1.4.4/api/tests/test_admin_users_history_routes.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_admin_users_history_routes.py`
+  - `tests/test_admin_users_read_routes.py`
+- Resultat local :
+  - **2 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un huitieme sous-bloc coherent, cote lecture utilisateur.
+- La route, l'auth admin, les query params et le contrat HTTP restent preserves.
+- Reserves acceptees :
+  - la validation a surtout porte sur l'enregistrement de route ; les tests d'integration history existants restent dependants d'un environnement plus complet
+  - `target_name` reste calcule mais non utilise, comme dans la logique historique
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3179,6 +3217,7 @@
 - **Vague 5:** cinquieme lot `admin` ferme sur les mutations de compte utilisateur
 - **Vague 5:** sixieme lot `admin` ferme sur les groupes utilisateur
 - **Vague 5:** septieme lot `admin` ferme sur les credentials utilisateur
+- **Vague 5:** huitieme lot `admin` ferme sur l'historique utilisateur
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3186,7 +3225,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

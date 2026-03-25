@@ -1,6 +1,7 @@
 """
 Endpoints admin : consultation des utilisateurs (liste, statuts d'activité, pending).
 
+Historique d'activité chronologique : `admin_users_history`.
 Les mutations rôle / statut actif / profil : `admin_users_mutations`.
 Credentials (reset / force mot de passe, reset PIN) : `admin_users_credentials`.
 Approbation, rejet, Telegram, etc. : `admin`.
