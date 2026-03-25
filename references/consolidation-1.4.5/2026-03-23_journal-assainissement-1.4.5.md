@@ -2856,6 +2856,46 @@
 
 ---
 
+## Lot 2AT — Premier decoupage de `admin.py` sur la sante
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire les endpoints sante / probes hors de `admin.py` vers un sous-module dedie, sans toucher au bloc Telegram
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_health.py`.
+- Extraction dans ce module des routes :
+  - `GET /admin/health-test`
+  - `GET /admin/health/public`
+  - `GET /admin/health/database`
+  - `GET /admin/health`
+  - `GET /admin/health/anomalies`
+  - `GET /admin/health/scheduler`
+- Enregistrement via `register_admin_health_routes(router, limiter)` depuis `admin.py`.
+- Conservation de `POST /admin/health/test-notifications` dans `admin.py` car lie Telegram.
+- Ajout du fichier cible `tests/test_admin_health_endpoints.py`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_health.py`
+- `recyclique-1.4.4/api/tests/test_admin_health_endpoints.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_admin_health_endpoints.py`
+- Resultat local :
+  - **6 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` commence a etre decoupe par sous-blocs coherents.
+- Les routes sante / probes restent stables et toujours publiees sous le prefixe `/admin`.
+- Reserves acceptees :
+  - `POST /admin/health/test-notifications` reste dans `admin.py`
+  - `db.execute("SELECT 1")` n'a pas ete modernise en `text("SELECT 1")` dans ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2877,6 +2917,7 @@
 - **Vague 5:** troisieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}`
 - **Vague 5:** quatrieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}/weight`
 - **Vague 5:** coherence auth amelioree sur les mutantes `sales`
+- **Vague 5:** premier lot `admin` ferme sur le sous-bloc sante / probes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2884,9 +2925,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** arbitrer si la verticale `sales` est suffisamment propre ou ouvrir le prochain axe backend hors Telegram
+- **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 
 ---
 

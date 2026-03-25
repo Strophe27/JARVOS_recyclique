@@ -44,12 +44,15 @@ from recyclic_api.services.activity_service import (
     DEFAULT_ACTIVITY_THRESHOLD_MINUTES,
 )
 from recyclic_api.core.logging import TRANSACTION_LOG_FILE, TRANSACTION_LOG_DIR
+from .admin_health import register_admin_health_routes
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
 
 # Configuration du rate limiting
 limiter = Limiter(key_func=get_remote_address)
+
+register_admin_health_routes(router, limiter)
 
 # La fonction require_admin_role est maintenant import├®e depuis core.auth
 
@@ -874,135 +877,6 @@ def get_user_history(
         )
 
 
-# Endpoints pour le monitoring et la sant├® du syst├¿me
-
-@router.get(
-    "/health-test",
-    summary="Test simple de l'endpoint admin"
-)
-@limiter.limit("10/minute")
-async def test_admin_endpoint(request: Request):
-    """Test simple pour v├®rifier que l'endpoint admin fonctionne"""
-    return {"message": "Admin endpoint accessible"}
-
-# Endpoints de health check publics (sans authentification)
-@router.get(
-    "/health/public",
-    summary="Health check public",
-    description="Endpoint de health check public pour Docker et monitoring externe"
-)
-async def get_public_health():
-    """Health check public - accessible sans authentification"""
-    return {
-        "status": "healthy",
-        "service": "recyclic-api",
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-@router.get(
-    "/health/database",
-    summary="Health check base de donn├®es",
-    description="V├®rifie la connectivit├® ├á la base de donn├®es"
-)
-async def get_database_health(db: Session = Depends(get_db)):
-    """Health check de la base de donn├®es"""
-    try:
-        # Test simple de connexion ├á la base
-        db.execute("SELECT 1")
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "database": "disconnected",
-            "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-@router.get(
-    "/health",
-    summary="M├®triques de sant├® du syst├¿me",
-    description="Expose les m├®triques de sant├®, anomalies d├®tect├®es et recommandations"
-)
-@limiter.limit("20/minute")
-async def get_system_health(
-    request: Request,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """R├®cup├¿re les m├®triques de sant├® du syst├¿me"""
-    try:
-        from recyclic_api.services.anomaly_detection_service import get_anomaly_detection_service
-        from recyclic_api.services.scheduler_service import get_scheduler_service
-
-        # Ex├®cuter la d├®tection d'anomalies
-        anomaly_service = get_anomaly_detection_service(db)
-        anomalies = await anomaly_service.run_anomaly_detection()
-
-        # R├®cup├®rer le statut du scheduler
-        scheduler = get_scheduler_service()
-        scheduler_status = scheduler.get_status()
-
-        return {
-            "status": "success",
-            "system_health": {
-                "overall_status": "healthy" if anomalies["summary"]["critical_anomalies"] == 0 else "degraded",
-                "anomalies_detected": anomalies["summary"]["total_anomalies"],
-                "critical_anomalies": anomalies["summary"]["critical_anomalies"],
-                "scheduler_running": scheduler_status["running"],
-                "active_tasks": scheduler_status["total_tasks"],
-                "timestamp": anomalies["timestamp"]
-            },
-            "anomalies": anomalies["anomalies"],
-            "recommendations": anomalies["recommendations"],
-            "scheduler_status": scheduler_status
-        }
-
-    except Exception as e:
-        logger.error(f"Erreur lors de la r├®cup├®ration des m├®triques de sant├®: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®cup├®ration des m├®triques: {str(e)}"
-        )
-
-
-@router.get(
-    "/health/anomalies",
-    summary="Anomalies d├®tect├®es",
-    description="R├®cup├¿re uniquement les anomalies d├®tect├®es sans r├®ex├®cuter la d├®tection"
-)
-@limiter.limit("15/minute")
-async def get_anomalies(
-    request: Request,
-    current_user: User = Depends(require_admin_role),
-    db: Session = Depends(get_db)
-):
-    """R├®cup├¿re les anomalies d├®tect├®es"""
-    try:
-        from recyclic_api.services.anomaly_detection_service import get_anomaly_detection_service
-
-        # Ex├®cuter la d├®tection d'anomalies
-        anomaly_service = get_anomaly_detection_service(db)
-        anomalies = await anomaly_service.run_anomaly_detection()
-
-        return {
-            "status": "success",
-            "anomalies": anomalies["anomalies"],
-            "summary": anomalies["summary"],
-            "timestamp": anomalies["timestamp"]
-        }
-
-    except Exception as e:
-        logger.error(f"Erreur lors de la r├®cup├®ration des anomalies: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®cup├®ration des anomalies: {str(e)}"
-        )
-
-
 @router.post(
     "/health/test-notifications",
     summary="Test des notifications",
@@ -1033,35 +907,6 @@ async def test_notifications(
             detail=f"Erreur lors de l'envoi de la notification: {str(e)}"
         )
 
-
-@router.get(
-    "/health/scheduler",
-    summary="Statut du scheduler",
-    description="R├®cup├¿re le statut du scheduler de t├óches planifi├®es"
-)
-@limiter.limit("10/minute")
-async def get_scheduler_status(
-    request: Request,
-    current_user: User = Depends(require_admin_role_strict())
-):
-    """R├®cup├¿re le statut du scheduler"""
-    try:
-        from recyclic_api.services.scheduler_service import get_scheduler_service
-
-        scheduler = get_scheduler_service()
-        status = scheduler.get_status()
-
-        return {
-            "status": "success",
-            "scheduler": status
-        }
-
-    except Exception as e:
-        logger.error(f"Erreur lors de la r├®cup├®ration du statut du scheduler: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la r├®cup├®ration du statut: {str(e)}"
-        )
 
 @router.post(
     "/users/{user_id}/force-password",
