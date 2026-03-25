@@ -3262,6 +3262,48 @@
 
 ---
 
+## Lot 2BD — Neutralisation prudente des notifications Telegram sortantes
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** desactiver par defaut les envois Telegram sans encore supprimer les colonnes ni les routes Telegram
+
+### Actions
+- Ajout dans `config.py` de `TELEGRAM_NOTIFICATIONS_ENABLED = False` par defaut.
+- Neutralisation `no-op` de `telegram_service` tant que ce flag est faux.
+- Court-circuit explicite de `POST /admin/health/test-notifications` avec retour `disabled` si Telegram est desactive.
+- Garde preventive dans `sync_service` et `anomaly_detection_service` pour eviter les appels reseau Telegram inutiles.
+- Ajout des tests cibles `tests/test_outbound_bot_notifications_disabled.py`.
+- Realignement des tests existants qui veulent encore verifier le chemin Telegram actif en leur forcant `TELEGRAM_NOTIFICATIONS_ENABLED=True`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/core/config.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/telegram_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/sync_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/anomaly_detection_service.py`
+- `recyclique-1.4.4/api/tests/test_outbound_bot_notifications_disabled.py`
+- `recyclique-1.4.4/api/tests/test_sync_service.py`
+- `recyclique-1.4.4/api/tests/test_monitoring.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_outbound_bot_notifications_disabled.py`
+  - `tests/test_sync_service.py::test_upload_file_failure_triggers_notification`
+  - `tests/test_monitoring.py::TestAnomalyDetectionService::test_send_anomaly_notifications`
+- Resultat local :
+  - **7 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Le backend ne depend plus d'un bot Telegram actif pour ses notifications sortantes par defaut.
+- Le comportement est explicite et prudent : no-op / `disabled` plutot qu'echec reseau.
+- Reserves acceptees :
+  - la reactivation Telegram demande maintenant un flag explicite en plus de la configuration historique
+  - la suppression complete des routes / schemas / colonnes Telegram reste un lot distinct
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3293,6 +3335,7 @@
 - **Vague 5:** huitieme lot `admin` ferme sur l'historique utilisateur
 - **Vague 5:** neuvieme lot `admin` ferme sur la maintenance cash sessions
 - **Vague 5:** dixieme lot `admin` ferme sur le template reception offline
+- **Vague 5:** premier lot final Telegram ferme sur la neutralisation des notifications sortantes
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3300,7 +3343,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

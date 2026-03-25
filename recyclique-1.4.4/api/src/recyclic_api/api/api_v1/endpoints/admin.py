@@ -7,6 +7,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from recyclic_api.core.database import get_db
+from recyclic_api.core.config import settings
 from recyclic_api.core.auth import require_admin_role, require_admin_role_strict
 from recyclic_api.core.audit import log_role_change, log_admin_access
 from recyclic_api.models.user import User, UserStatus
@@ -267,6 +268,18 @@ async def test_notifications(
 ):
     """Envoie une notification de test"""
     try:
+        if not settings.TELEGRAM_NOTIFICATIONS_ENABLED:
+            logger.info(
+                "POST /admin/health/test-notifications : TELEGRAM_NOTIFICATIONS_ENABLED=false, aucun envoi"
+            )
+            return {
+                "status": "disabled",
+                "message": (
+                    "Notifications Telegram désactivées (TELEGRAM_NOTIFICATIONS_ENABLED=false). "
+                    "Aucun message envoyé vers le bot."
+                ),
+            }
+
         await telegram_service.notify_sync_failure(
             file_path="system-test",
             remote_path="notification-test",

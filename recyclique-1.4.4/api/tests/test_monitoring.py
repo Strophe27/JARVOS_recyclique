@@ -11,6 +11,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.config import settings
 from recyclic_api.services.anomaly_detection_service import AnomalyDetectionService
 from recyclic_api.services.scheduler_service import SchedulerService, ScheduledTask
 from recyclic_api.models.cash_session import CashSession
@@ -173,8 +174,9 @@ class TestAnomalyDetectionService:
             assert 'summary' in result
 
     @pytest.mark.asyncio
-    async def test_send_anomaly_notifications(self, anomaly_service):
+    async def test_send_anomaly_notifications(self, anomaly_service, monkeypatch):
         """Test l'envoi de notifications d'anomalies."""
+        monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", True)
         # Mock du service Telegram
         with patch('recyclic_api.services.anomaly_detection_service.telegram_service') as mock_telegram:
             mock_telegram.notify_sync_failure = AsyncMock(return_value=True)

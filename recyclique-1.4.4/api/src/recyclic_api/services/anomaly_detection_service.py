@@ -20,6 +20,7 @@ from recyclic_api.models.sale import Sale
 from recyclic_api.models.user import User
 from recyclic_api.models.login_history import LoginHistory
 
+from recyclic_api.core.config import settings
 from recyclic_api.services.telegram_service import telegram_service
 
 logger = logging.getLogger(__name__)
@@ -465,6 +466,15 @@ class AnomalyDetectionService:
 
             if critical_anomalies == 0 and total_anomalies == 0:
                 logger.info("Aucune anomalie détectée, pas de notification à envoyer")
+                return True
+
+            if not settings.TELEGRAM_NOTIFICATIONS_ENABLED:
+                logger.info(
+                    "Notifications d'anomalies Telegram ignorées — TELEGRAM_NOTIFICATIONS_ENABLED=false "
+                    "(critical=%s, total=%s)",
+                    critical_anomalies,
+                    total_anomalies,
+                )
                 return True
 
             # Construire le message de notification

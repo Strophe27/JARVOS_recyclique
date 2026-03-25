@@ -1,4 +1,4 @@
-﻿"""Tests for the kDrive synchronization service (Story 4.2)."""
+"""Tests for the kDrive synchronization service (Story 4.2)."""
 
 from __future__ import annotations
 
@@ -88,6 +88,7 @@ def test_upload_file_failure_triggers_notification(monkeypatch, tmp_path: Path) 
     service = KDriveSyncService(client_factory=_client_factory(client), max_retries=2, retry_delay_seconds=0)
 
     monkeypatch.setattr(settings, "ADMIN_TELEGRAM_IDS", "123")
+    monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", True)
 
     called: dict[str, tuple[str, str, str]] = {}
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Service pour envoyer des notifications Telegram depuis l'API
 """
 
@@ -8,6 +8,11 @@ from typing import Optional
 from ..core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _telegram_notifications_active() -> bool:
+    return bool(getattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", False))
+
 
 class TelegramNotificationService:
     """Service pour envoyer des notifications Telegram via le bot"""
@@ -24,6 +29,14 @@ class TelegramNotificationService:
     
     async def send_user_approval_notification(self, telegram_id: str, user_name: str, message: Optional[str] = None) -> bool:
         """Envoyer une notification d'approbation Ã  un utilisateur"""
+        if not _telegram_notifications_active():
+            logger.info(
+                "Notification Telegram (approbation) ignorée — TELEGRAM_NOTIFICATIONS_ENABLED=false "
+                "(telegram_id=%s, user_name=%s)",
+                telegram_id,
+                user_name,
+            )
+            return True
         try:
             notification_data = {
                 "telegram_id": telegram_id,
@@ -51,6 +64,14 @@ class TelegramNotificationService:
     
     async def send_user_rejection_notification(self, telegram_id: str, user_name: str, reason: Optional[str] = None) -> bool:
         """Envoyer une notification de rejet Ã  un utilisateur"""
+        if not _telegram_notifications_active():
+            logger.info(
+                "Notification Telegram (rejet) ignorée — TELEGRAM_NOTIFICATIONS_ENABLED=false "
+                "(telegram_id=%s, user_name=%s)",
+                telegram_id,
+                user_name,
+            )
+            return True
         try:
             notification_data = {
                 "telegram_id": telegram_id,
@@ -78,6 +99,14 @@ class TelegramNotificationService:
     
     async def notify_admins_user_processed(self, admin_user_id: str, target_user_name: str, action: str) -> bool:
         """Notifier les autres admins qu'un utilisateur a Ã©tÃ© traitÃ©"""
+        if not _telegram_notifications_active():
+            logger.info(
+                "Notification Telegram (admin user processed) ignorée — TELEGRAM_NOTIFICATIONS_ENABLED=false "
+                "(action=%s, target=%s)",
+                action,
+                target_user_name,
+            )
+            return True
         try:
             if not self.admin_ids:
                 logger.warning("Aucun admin configurÃ© pour les notifications")
@@ -109,6 +138,14 @@ class TelegramNotificationService:
 
     async def notify_sync_failure(self, file_path: str, remote_path: str, error_message: str) -> bool:
         """Envoyer une notification aux administrateurs lorsqu'une synchro kDrive échoue."""
+        if not _telegram_notifications_active():
+            logger.info(
+                "Notification Telegram (sync/alerte) ignorée — TELEGRAM_NOTIFICATIONS_ENABLED=false "
+                "(file_path=%s, remote_path=%s)",
+                file_path,
+                remote_path,
+            )
+            return True
         if not self.admin_ids:
             logger.warning("Aucun admin configuré pour recevoir les notifications de synchronisation")
             return False

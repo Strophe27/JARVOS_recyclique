@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_URL: str | None = None
     TELEGRAM_BOT_TOKEN: str | None = None  # For validating bot requests
     ADMIN_TELEGRAM_IDS: str | None = None
+    # Notifications HTTP vers le bot (approbations, sync, monitoring). False = no-op / logs uniquement.
+    TELEGRAM_NOTIFICATIONS_ENABLED: bool = False
 
     # Environment
     ENVIRONMENT: str = "development"

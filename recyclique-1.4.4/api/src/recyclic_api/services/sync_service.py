@@ -1,4 +1,4 @@
-﻿"""Services for syncing exports to Infomaniak kDrive (Story 4.2)."""
+"""Services for syncing exports to Infomaniak kDrive (Story 4.2)."""
 
 from __future__ import annotations
 
@@ -175,6 +175,13 @@ class KDriveSyncService:
         error: Exception | None,
     ) -> None:
         if not settings.ADMIN_TELEGRAM_IDS:
+            return
+        if not settings.TELEGRAM_NOTIFICATIONS_ENABLED:
+            logger.info(
+                "kDrive sync failure notification skipped — TELEGRAM_NOTIFICATIONS_ENABLED=false "
+                "(file=%s)",
+                local_file,
+            )
             return
 
         async def _notify() -> None:
