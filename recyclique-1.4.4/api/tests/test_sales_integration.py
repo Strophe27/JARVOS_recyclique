@@ -3,6 +3,8 @@ Tests d'intégration pour l'endpoint POST /sales
 Story 5.2 - Interface Vente Multi-Modes
 """
 
+import os
+
 import pytest
 import uuid
 import time
@@ -11,6 +13,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
 from recyclic_api.main import app
+from recyclic_api.core.config import settings
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.site import Site
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
@@ -233,6 +236,51 @@ class TestSalesIntegration:
 
         response = client.post("/api/v1/sales/", json=sale_data)
         assert response.status_code == 401
+
+    @pytest.mark.integration_db
+    @pytest.mark.skipif(
+        not os.getenv("TEST_DATABASE_URL", "").startswith("postgresql"),
+        reason="Schéma complet cash_sessions/sales requis (voir conftest SQLite minimal).",
+    )
+    def test_create_sale_cash_session_not_found_integration(
+        self, client: TestClient, test_cashier, cashier_token, db_session
+    ):
+        """
+        Réserve ARCH-2AN : 404 quand la session de caisse n'existe pas.
+
+        Couvre le chemin réel SaleService.create_sale → NotFoundError → HTTP,
+        sans mock (complète test_sale_create_arch03.py).
+        """
+        user = User(**test_cashier)
+        db_session.add(user)
+        db_session.commit()
+
+        missing_session_id = str(uuid.uuid4())
+        sale_data = {
+            "cash_session_id": missing_session_id,
+            "items": [
+                {
+                    "category": "EEE-1",
+                    "quantity": 1,
+                    "weight": 1.0,
+                    "unit_price": 10.0,
+                    "total_price": 10.0,
+                }
+            ],
+            "total_amount": 10.0,
+            "donation": 0.0,
+            "payment_method": "cash",
+        }
+
+        _v1 = settings.API_V1_STR.rstrip("/")
+        response = client.post(
+            f"{_v1}/sales/",
+            json=sale_data,
+            headers={"Authorization": f"Bearer {cashier_token}"},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Session de caisse non trouvée"
 
     def test_create_sale_invalid_data(self, client: TestClient, cashier_token):
         """Test de création d'une vente avec des données invalides"""

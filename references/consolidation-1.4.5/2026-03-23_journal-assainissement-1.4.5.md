@@ -2647,6 +2647,34 @@
 
 ---
 
+## Lot 2AO — Fermeture de la reserve integration `sales` sur le `404`
+
+**Statut:** ferme  
+**Theme:** couvrir en integration PostgreSQL reelle le `404` de `POST /sales/` quand `cash_session_id` ne correspond a aucune session
+
+### Actions
+- Ajout dans `tests/test_sales_integration.py` d'un scenario d'integration complet pour `POST /sales/` avec `cash_session_id` inexistant.
+- Mise a jour legere de `tests/test_sale_create_arch03.py` pour documenter la complementarite entre tests de mapping HTTP par mock et couverture integration reelle.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/tests/test_sales_integration.py`
+- `recyclique-1.4.4/api/tests/test_sale_create_arch03.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_sales_integration.py::TestSalesIntegration::test_create_sale_cash_session_not_found_integration`
+  - `tests/test_sale_create_arch03.py`
+- Resultat Docker/PostgreSQL :
+  - **4 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- La reserve principale du lot `2AN` est fermee par un scenario integration bout-en-bout.
+- Le `404` de `POST /sales/` pour session absente est maintenant verrouille sans mock du service.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2663,6 +2691,7 @@
 - **Vague 8:** septieme pilote `ARCH-04` sur la presentation des listes JSON `reception` ferme avec reserves acceptees
 - **Vague 8:** nettoyage des tests `reception` aligne et valide en PostgreSQL
 - **Vague 5:** nouvel axe ouvert sur `sales` avec un premier lot `ARCH-03` ferme sur `create_sale`
+- **Vague 5:** reserve integration `sales` sur le `404` fermee
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2671,8 +2700,8 @@
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2I`, `3G`, `3H`
-- **Lots fermes:** ajout du lot `2AM` (realignement des tests `reception`)
-- **Prochaine etape logique:** poursuivre `sales.py` par micro-lots `ARCH-03` adjacents ou ouvrir le prochain gros axe backend hors Telegram
+- **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
+- **Prochaine etape logique:** poursuivre `sales.py` par le prochain micro-lot `ARCH-03` adjacent le plus rentable
 
 ---
 

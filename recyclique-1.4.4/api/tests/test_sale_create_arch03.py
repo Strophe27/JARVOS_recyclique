@@ -1,6 +1,9 @@
 """
 ARCH-03 : POST /sales/ — SaleService.create_sale lève des exceptions domaine ;
 le routeur les traduit en HTTP (404 / 400 / 422) sans changer le contrat.
+
+404 session absente : scénario intégration réel (sans mock SaleService) dans
+``test_sales_integration.TestSalesIntegration.test_create_sale_cash_session_not_found_integration``.
 """
 
 from unittest.mock import patch
