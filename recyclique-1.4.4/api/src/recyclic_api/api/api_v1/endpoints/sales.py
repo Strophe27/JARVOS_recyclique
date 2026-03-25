@@ -18,6 +18,61 @@ from sqlalchemy.orm import selectinload
 router = APIRouter()
 auth_scheme = HTTPBearer(auto_error=False)
 
+
+def _jwt_sub_from_optional_bearer(
+    credentials: Optional[HTTPAuthorizationCredentials],
+) -> str:
+    """
+    Extrait le claim ``sub`` du Bearer pour POST /sales/, PUT /sales/{id}, PATCH .../items/{item_id}.
+
+    Contrat inchangé (401 explicites, messages historiques) — diffère de
+    ``PATCH .../weight`` qui utilise ``require_role_strict`` (403 sans en-tête).
+    """
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        payload = verify_token(credentials.credentials)
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return user_id
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def _user_for_sale_item_patch(db: Session, user_id: str) -> User:
+    """Charge l'utilisateur pour PATCH item ; 401 ``User not found`` si absent (tests B52-P4)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+
+def _require_admin_for_sale_note(db: Session, user_id: str) -> None:
+    """
+    Vérifie admin/super-admin pour PUT note.
+
+    Absence en base ou rôle insuffisant → 403 (même message) ; comportement distinct
+    de PATCH item (401 ``User not found`` si utilisateur absent).
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions. Admin access required.",
+        )
+
+
 # ARCH-03 POST /sales/ : mêmes statuts qu'avant extraction ARCH-04 (Conflict → 422 session fermée).
 _SALE_CREATE_DOMAIN_HTTP = {
     "not_found_status": 404,
@@ -88,21 +143,8 @@ async def update_sale_note(
     - Restricted to Admin/SuperAdmin roles
     - Updates only the note field
     """
-    # Aligné sur POST /sales/ (create_sale) : Bearer optionnel → 401 explicites, rôles → 403 inchangés.
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
-
-    try:
-        payload = verify_token(credentials.credentials)
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
-
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-        raise HTTPException(status_code=403, detail="Insufficient permissions. Admin access required.")
+    user_id = _jwt_sub_from_optional_bearer(credentials)
+    _require_admin_for_sale_note(db, user_id)
 
     try:
         return SaleService(db).update_admin_note(sale_id, sale_update.note)
@@ -148,16 +190,7 @@ async def create_sale(
     - CRITICAL: total_amount = sum of all total_price (NO multiplication by weight)
     - Example: Item with weight=2.5kg and total_price=15.0 contributes 15.0 to total (NOT 37.5)
     """
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
-
-    try:
-        payload = verify_token(credentials.credentials)
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
+    user_id = _jwt_sub_from_optional_bearer(credentials)
 
     try:
         return SaleService(db).create_sale(sale_data, user_id)
@@ -181,23 +214,8 @@ async def update_sale_item(
     - Quantity and weight: editable by all operators
     - Price modifications are logged in audit log
     """
-    # Enforce 401 when no Authorization header is provided
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
-
-    # Validate token and extract user_id
-    try:
-        payload = verify_token(credentials.credentials)
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
-
-    # Get current user
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+    user_id = _jwt_sub_from_optional_bearer(credentials)
+    user = _user_for_sale_item_patch(db, user_id)
 
     try:
         return SaleService(db).update_sale_item(sale_id, item_id, item_update, user)

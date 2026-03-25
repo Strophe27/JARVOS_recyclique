@@ -2816,6 +2816,46 @@
 
 ---
 
+## Lot 2AS — Harmonisation prudente de l'auth sur les mutantes `sales`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** reduire la duplication auth des routes mutantes `sales.py` sans changer leurs contrats historiques 401/403
+
+### Actions
+- Factorisation dans `endpoints/sales.py` de l'extraction JWT Bearer optionnelle pour les routes mutantes qui n'utilisent pas `require_role_strict`.
+- Centralisation prudente de la resolution utilisateur pour :
+  - `POST /sales/`
+  - `PUT /sales/{sale_id}`
+  - `PATCH /sales/{sale_id}/items/{item_id}`
+- Ajout de `tests/test_sales_mutation_auth_contract.py` pour verrouiller la nuance historique :
+  - `PUT /sales/{sale_id}` avec JWT orphelin -> `403`
+  - `PATCH /sales/{sale_id}/items/{item_id}` avec JWT orphelin -> `401`
+- Aucune modification des `GET /sales` ni de `PATCH .../weight`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/sales.py`
+- `recyclique-1.4.4/api/tests/test_sales_mutation_auth_contract.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_sales_mutation_auth_contract.py`
+  - `tests/test_sale_create_arch03.py`
+  - `tests/test_b52_p4_update_sale_item.py`
+  - `tests/test_sales_integration.py -k update_sale_note`
+- Resultat Docker/PostgreSQL :
+  - **25 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Les routes mutantes `sales.py` sont plus homogenes cote auth sans basculer brutalement vers le modele `require_role_strict`.
+- Les contrats historiques sensibles 401/403 restent verrouilles par test.
+- Reserves acceptees :
+  - `GET /sales` et `GET /sales/{id}` restent hors de ce lot
+  - la divergence historique entre PUT note / PATCH item / PATCH weight en cas d'absence de Bearer reste assumee et documentee
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2836,6 +2876,7 @@
 - **Vague 5:** second lot `ARCH-03` ferme sur `PUT /sales/{sale_id}` (note admin)
 - **Vague 5:** troisieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}`
 - **Vague 5:** quatrieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}/weight`
+- **Vague 5:** coherence auth amelioree sur les mutantes `sales`
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2843,7 +2884,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** arbitrer si la verticale `sales` est suffisamment propre ou ouvrir le prochain axe backend hors Telegram
 
