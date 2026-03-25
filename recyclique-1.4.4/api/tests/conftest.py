@@ -182,6 +182,7 @@ from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.models.category import Category
 from recyclic_api.models.user_session import UserSession  # noqa: F401 — table login / refresh
 from recyclic_api.models.setting import Setting  # noqa: F401 — refresh_token_max_hours (RefreshTokenService)
+from recyclic_api.models.email_log import EmailLog  # noqa: F401 — tests email_logs (SQLite partiel)
 from recyclic_api.core.security import create_access_token, hash_password
 
 logger = logging.getLogger(__name__)
@@ -365,6 +366,7 @@ def create_tables_if_not_exist():
                     LoginHistory.__table__,
                     UserSession.__table__,
                     Setting.__table__,
+                    EmailLog.__table__,
                 ],
             )
         else:

@@ -3,12 +3,22 @@ Service for managing email logs.
 """
 import json
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, and_, or_
 
 from recyclic_api.models.email_log import EmailLog, EmailStatus, EmailType
 from recyclic_api.models.user import User
+
+
+def _as_uuid(value: Union[str, UUID, None]) -> Union[UUID, None]:
+    if value is None:
+        return None
+    if isinstance(value, UUID):
+        return value
+    return UUID(str(value))
 
 
 class EmailLogService:
@@ -24,7 +34,7 @@ class EmailLogService:
         body_text: Optional[str] = None,
         body_html: Optional[str] = None,
         email_type: EmailType = EmailType.OTHER,
-        user_id: Optional[str] = None,
+        user_id: Optional[Union[str, UUID]] = None,
         recipient_name: Optional[str] = None,
         external_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None
@@ -38,7 +48,7 @@ class EmailLogService:
             body_text=body_text,
             body_html=body_html,
             email_type=email_type,
-            user_id=user_id,
+            user_id=_as_uuid(user_id),
             external_id=external_id,
             additional_data=json.dumps(metadata) if metadata else None,
             status=EmailStatus.PENDING
@@ -60,10 +70,11 @@ class EmailLogService:
     ) -> Optional[EmailLog]:
         """Update the status of an email log entry."""
         
-        email_log = self.db.query(EmailLog).filter(EmailLog.id == email_log_id).first()
+        uid = _as_uuid(email_log_id)
+        email_log = self.db.query(EmailLog).filter(EmailLog.id == uid).first()
         if not email_log:
             return None
-        
+
         email_log.status = status
         if external_id:
             email_log.external_id = external_id
@@ -167,24 +178,25 @@ class EmailLogService:
         if email_type:
             query = query.filter(EmailLog.email_type == email_type)
         
-        if user_id:
-            query = query.filter(EmailLog.user_id == user_id)
-        
+        uid = _as_uuid(user_id)
+        if uid is not None:
+            query = query.filter(EmailLog.user_id == uid)
+
         # Order by creation date (newest first)
         query = query.order_by(desc(EmailLog.created_at))
-        
+
         # Apply pagination
         return query.offset(skip).limit(limit).all()
-    
+
     def get_email_log_by_id(self, email_log_id: str) -> Optional[EmailLog]:
         """Get a specific email log by ID."""
-        return self.db.query(EmailLog).filter(EmailLog.id == email_log_id).first()
-    
+        return self.db.query(EmailLog).filter(EmailLog.id == _as_uuid(email_log_id)).first()
+
     def get_email_logs_by_user(self, user_id: str, limit: int = 50) -> List[EmailLog]:
         """Get email logs for a specific user."""
         return (
             self.db.query(EmailLog)
-            .filter(EmailLog.user_id == user_id)
+            .filter(EmailLog.user_id == _as_uuid(user_id))
             .order_by(desc(EmailLog.created_at))
             .limit(limit)
             .all()
@@ -211,9 +223,10 @@ class EmailLogService:
         if email_type:
             query = query.filter(EmailLog.email_type == email_type)
         
-        if user_id:
-            query = query.filter(EmailLog.user_id == user_id)
-        
+        uid = _as_uuid(user_id)
+        if uid is not None:
+            query = query.filter(EmailLog.user_id == uid)
+
         return query.count()
 
 

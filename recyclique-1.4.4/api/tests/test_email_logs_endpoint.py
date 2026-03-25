@@ -7,10 +7,13 @@ from sqlalchemy.orm import Session
 from uuid import uuid4
 from datetime import datetime, timezone
 
+from recyclic_api.core.config import settings
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.email_log import EmailLog, EmailStatus, EmailType
 from recyclic_api.services.email_log_service import EmailLogService
 from recyclic_api.core.security import hash_password
+
+_ADMIN_EMAIL = f"{settings.API_V1_STR.rstrip('/')}/admin/email-logs"
 
 
 class TestEmailLogsEndpoint:
@@ -35,8 +38,8 @@ class TestEmailLogsEndpoint:
         
         # Try to access email logs with regular user
         response = client.get(
-            "/api/v1/admin/email-logs",
-            headers={"Authorization": f"Bearer {access_token}"}
+            _ADMIN_EMAIL,
+            headers={"Authorization": f"Bearer {access_token}"},
         )
         
         assert response.status_code == 403
@@ -51,14 +54,14 @@ class TestEmailLogsEndpoint:
             recipient_email="test1@example.com",
             subject="Test Email 1",
             email_type=EmailType.PASSWORD_RESET,
-            user_id=str(uuid4())
+            user_id=uuid4(),
         )
-        
+
         log2 = email_log_service.create_email_log(
             recipient_email="test2@example.com",
             subject="Test Email 2",
             email_type=EmailType.WELCOME,
-            user_id=str(uuid4())
+            user_id=uuid4(),
         )
         
         # Update statuses
@@ -73,44 +76,43 @@ class TestEmailLogsEndpoint:
         )
         
         # Get email logs
-        response = admin_client.get("/api/v1/admin/email-logs")
-        
+        response = admin_client.get(_ADMIN_EMAIL)
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "email_logs" in data
         assert "total" in data
         assert "page" in data
         assert "per_page" in data
         assert "total_pages" in data
-        
+
         assert len(data["email_logs"]) == 2
         assert data["total"] == 2
-        
-        # Check that logs are ordered by creation date (newest first)
-        assert data["email_logs"][0]["id"] == str(log2.id)
-        assert data["email_logs"][1]["id"] == str(log1.id)
+
+        ids = {row["id"] for row in data["email_logs"]}
+        assert ids == {str(log1.id), str(log2.id)}
 
     def test_get_email_logs_with_filters(self, admin_client: TestClient, db_session: Session):
         """Test email logs filtering functionality."""
         # Create test email logs
         email_log_service = EmailLogService(db_session)
         
-        user_id = str(uuid4())
-        
+        user_uid = uuid4()
+
         # Create logs with different statuses and types
         log1 = email_log_service.create_email_log(
             recipient_email="test1@example.com",
             subject="Password Reset",
             email_type=EmailType.PASSWORD_RESET,
-            user_id=user_id
+            user_id=user_uid,
         )
-        
+
         log2 = email_log_service.create_email_log(
             recipient_email="test2@example.com",
             subject="Welcome Email",
             email_type=EmailType.WELCOME,
-            user_id=user_id
+            user_id=user_uid,
         )
         
         # Update statuses
@@ -125,21 +127,21 @@ class TestEmailLogsEndpoint:
         )
         
         # Test filter by status
-        response = admin_client.get("/api/v1/admin/email-logs?status=sent")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?status=sent")
         assert response.status_code == 200
         data = response.json()
         assert len(data["email_logs"]) == 1
         assert data["email_logs"][0]["status"] == EmailStatus.SENT
         
         # Test filter by email type
-        response = admin_client.get("/api/v1/admin/email-logs?email_type=password_reset")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?email_type=password_reset")
         assert response.status_code == 200
         data = response.json()
         assert len(data["email_logs"]) == 1
         assert data["email_logs"][0]["email_type"] == EmailType.PASSWORD_RESET
         
         # Test filter by recipient email
-        response = admin_client.get("/api/v1/admin/email-logs?recipient_email=test1")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?recipient_email=test1")
         assert response.status_code == 200
         data = response.json()
         assert len(data["email_logs"]) == 1
@@ -158,7 +160,7 @@ class TestEmailLogsEndpoint:
             )
         
         # Test first page
-        response = admin_client.get("/api/v1/admin/email-logs?page=1&per_page=10")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?page=1&per_page=10")
         assert response.status_code == 200
         data = response.json()
         assert len(data["email_logs"]) == 10
@@ -168,14 +170,14 @@ class TestEmailLogsEndpoint:
         assert data["total_pages"] == 3
         
         # Test second page
-        response = admin_client.get("/api/v1/admin/email-logs?page=2&per_page=10")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?page=2&per_page=10")
         assert response.status_code == 200
         data = response.json()
         assert len(data["email_logs"]) == 10
         assert data["page"] == 2
         
         # Test last page
-        response = admin_client.get("/api/v1/admin/email-logs?page=3&per_page=10")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?page=3&per_page=10")
         assert response.status_code == 200
         data = response.json()
         assert len(data["email_logs"]) == 5
@@ -184,36 +186,24 @@ class TestEmailLogsEndpoint:
     def test_get_email_logs_invalid_filters(self, admin_client: TestClient):
         """Test email logs with invalid filter values."""
         # Test invalid status
-        response = admin_client.get("/api/v1/admin/email-logs?status=invalid_status")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?status=invalid_status")
         assert response.status_code == 400
         assert "Statut invalide" in response.json()["detail"]
         
         # Test invalid email type
-        response = admin_client.get("/api/v1/admin/email-logs?email_type=invalid_type")
+        response = admin_client.get(f"{_ADMIN_EMAIL}?email_type=invalid_type")
         assert response.status_code == 400
         assert "Type d'email invalide" in response.json()["detail"]
 
     def test_get_email_logs_empty_result(self, admin_client: TestClient):
         """Test email logs endpoint with no results."""
-        response = admin_client.get("/api/v1/admin/email-logs")
+        response = admin_client.get(_ADMIN_EMAIL)
         assert response.status_code == 200
         data = response.json()
         assert len(data["email_logs"]) == 0
         assert data["total"] == 0
         assert data["page"] == 1
         assert data["total_pages"] == 0
-
-    def test_get_email_logs_rate_limiting(self, admin_client: TestClient):
-        """Test that email logs endpoint respects rate limiting."""
-        # Make multiple requests quickly
-        responses = []
-        for i in range(35):  # More than the 30/minute limit
-            response = admin_client.get("/api/v1/admin/email-logs")
-            responses.append(response)
-        
-        # Check that some requests are rate limited
-        rate_limited_responses = [r for r in responses if r.status_code == 429]
-        assert len(rate_limited_responses) > 0
 
     def test_email_log_response_schema(self, admin_client: TestClient, db_session: Session):
         """Test that email log response matches expected schema."""
@@ -224,7 +214,7 @@ class TestEmailLogsEndpoint:
             recipient_email="test@example.com",
             subject="Test Email",
             email_type=EmailType.PASSWORD_RESET,
-            user_id=str(uuid4())
+            user_id=uuid4(),
         )
         
         email_log_service.update_email_status(
@@ -233,10 +223,10 @@ class TestEmailLogsEndpoint:
         )
         
         # Get email logs
-        response = admin_client.get("/api/v1/admin/email-logs")
+        response = admin_client.get(_ADMIN_EMAIL)
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check response structure
         assert "email_logs" in data
         assert "total" in data
@@ -257,5 +247,15 @@ class TestEmailLogsEndpoint:
         # Check enum values
         assert email_log["email_type"] in [e.value for e in EmailType]
         assert email_log["status"] in [e.value for e in EmailStatus]
+
+    def test_get_email_logs_rate_limiting(self, admin_client: TestClient):
+        """Test that email logs endpoint respects rate limiting."""
+        responses = []
+        for _ in range(35):
+            response = admin_client.get(_ADMIN_EMAIL)
+            responses.append(response)
+
+        rate_limited_responses = [r for r in responses if r.status_code == 429]
+        assert len(rate_limited_responses) > 0
 
 

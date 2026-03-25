@@ -2896,6 +2896,51 @@
 
 ---
 
+## Lot 2AU — Extraction observabilite dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** isoler les endpoints de consultation des journaux admin hors de `admin.py`
+
+### Actions
+- Creation de `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_observability.py`.
+- Extraction dans ce module des routes :
+  - `GET /admin/transaction-logs`
+  - `GET /admin/audit-log`
+  - `GET /admin/email-logs`
+- Enregistrement via `register_admin_observability_routes(router, limiter)` depuis `admin.py`.
+- Alignement des tests sur `settings.API_V1_STR`.
+- Durcissement ciblé de `EmailLogService` pour normaliser les filtres `user_id` string/UUID.
+- Extension du schema SQLite minimal de test pour inclure `email_logs`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_observability.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/email_log_service.py`
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_admin_observability_endpoints.py`
+- `recyclique-1.4.4/api/tests/test_transaction_logs_api.py`
+- `recyclique-1.4.4/api/tests/test_email_logs_endpoint.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_admin_observability_endpoints.py`
+  - `tests/test_transaction_logs_api.py`
+  - `tests/test_email_logs_endpoint.py`
+  - `tests/test_admin_health_endpoints.py`
+- Resultat local :
+  - **27 tests passes, 1 skipped**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` perd un second gros bloc non Telegram, centre sur la lecture des journaux.
+- Les trois routes d'observabilite gardent leur auth admin stricte, leurs contrats HTTP et leur prefixe `/admin`.
+- Reserves acceptees :
+  - la couverture `GET /admin/audit-log` reste partielle en SQLite et doit etre reverifiee sous PostgreSQL reel
+  - `log_admin_access` reste asymetrique par rapport aux autres endpoints de consultation
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2918,6 +2963,7 @@
 - **Vague 5:** quatrieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}/weight`
 - **Vague 5:** coherence auth amelioree sur les mutantes `sales`
 - **Vague 5:** premier lot `admin` ferme sur le sous-bloc sante / probes
+- **Vague 5:** second lot `admin` ferme sur le sous-bloc observabilite / journaux
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2925,7 +2971,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 
