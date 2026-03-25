@@ -399,6 +399,7 @@ def _sqlite_skip_audit_log_commit(request):
     from recyclic_api.core import audit as audit_core
     from recyclic_api.api.api_v1.endpoints import admin as admin_endpoints
     from recyclic_api.api.api_v1.endpoints import auth as auth_endpoints
+    from recyclic_api.services import sale_service as sale_service_mod
 
     _noop = lambda *args, **kwargs: None
 
@@ -406,6 +407,7 @@ def _sqlite_skip_audit_log_commit(request):
         patch.object(audit_core, "log_audit", _noop),
         patch.object(auth_endpoints, "log_audit", _noop),
         patch.object(admin_endpoints, "log_audit", _noop),
+        patch.object(sale_service_mod, "log_audit", _noop),
     ):
         yield
 

@@ -2720,6 +2720,57 @@
 
 ---
 
+## Lot 2AQ — ARCH-03 sur `PATCH /sales/{sale_id}/items/{item_id}`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** sortir la logique metier / DB du PATCH item hors de `endpoints/sales.py`, avec validation explicite de `preset_id`
+
+### Actions
+- Creation de `SaleService.update_sale_item(...)` pour porter :
+  - validation UUID `sale_id` / `item_id`
+  - verification vente + item rattache a la vente
+  - regles metier sur `quantity`, `weight`, `unit_price`
+  - garde admin pour la mise a jour de prix
+  - validation explicite de `preset_id` pour eviter une erreur FK PostgreSQL brute
+  - audit prix et persistence
+- Amincissement de `PATCH /sales/{sale_id}/items/{item_id}` dans `endpoints/sales.py` avec traduction centralisee des erreurs domaine `400 / 404` et `403` sur `AuthorizationError`.
+- Adaptation de `tests/test_sale_service.py` pour les cas `update_sale_item`, y compris `preset` inconnu.
+- Adaptation de `tests/test_b52_p4_update_sale_item.py` pour le schema PostgreSQL complet :
+  - chemins via `settings.API_V1_STR`
+  - seed valide de `PresetButton`
+  - garde `skipif` hors PostgreSQL
+- Ajustement de `tests/conftest.py` pour neutraliser `log_audit` aussi dans `sale_service` sous SQLite minimal.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/sales.py`
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_b52_p4_update_sale_item.py`
+- `recyclique-1.4.4/api/tests/test_sale_service.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation Docker/PostgreSQL ciblee :
+  - `tests/test_b52_p4_update_sale_item.py`
+  - `tests/test_sale_service.py`
+- Resultat Docker/PostgreSQL :
+  - **31 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `PATCH /sales/{sale_id}/items/{item_id}` n'assemble plus inline sa logique metier principale.
+- Le contrat HTTP reste stable sur les scenarios verifies :
+  - `401` auth / user absent
+  - `400` UUID invalides, valeurs invalides, `preset` inconnu
+  - `403` prix reserve admin
+  - `404` vente ou item absents
+  - `200` succes
+- Reserves acceptees :
+  - un `preset_id` non-UUID reste valide par Pydantic avant d'atteindre le service (422 potentielle selon schema)
+  - pas encore de scenario HTTP dedie sur `preset` inconnu, meme si le service le couvre
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -2738,6 +2789,7 @@
 - **Vague 5:** nouvel axe ouvert sur `sales` avec un premier lot `ARCH-03` ferme sur `create_sale`
 - **Vague 5:** reserve integration `sales` sur le `404` fermee
 - **Vague 5:** second lot `ARCH-03` ferme sur `PUT /sales/{sale_id}` (note admin)
+- **Vague 5:** troisieme lot `ARCH-03` ferme sur `PATCH /sales/{sale_id}/items/{item_id}`
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -2745,9 +2797,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** poursuivre `sales.py` par le premier PATCH metier rentable
+- **Prochaine etape logique:** poursuivre `sales.py` par le PATCH poids ou arbitrer la sortie de la verticale `sales`
 
 ---
 

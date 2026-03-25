@@ -11,7 +11,7 @@ from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import SaleResponse, SaleCreate, SaleUpdate, SaleItemUpdate, SaleItemResponse, SaleItemWeightUpdate
 from recyclic_api.core.auth import require_role_strict
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
 from recyclic_api.services.sale_service import SaleService
 from recyclic_api.core.audit import log_audit
@@ -31,6 +31,13 @@ _SALE_CREATE_DOMAIN_HTTP = {
 
 # ARCH-03 PUT /sales/{id} : note admin — exceptions domaine → HTTP.
 _SALE_NOTE_UPDATE_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 422,
+    "validation_status": 400,
+}
+
+# ARCH-03 PATCH /sales/{id}/items/{item_id} : exceptions domaine → HTTP (403 géré à part).
+_SALE_ITEM_PATCH_DOMAIN_HTTP = {
     "not_found_status": 404,
     "conflict_status": 422,
     "validation_status": 400,
@@ -255,84 +262,9 @@ async def update_sale_item(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Validate sale ID
     try:
-        sale_uuid = UUID(sale_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid sale ID format")
-
-    # Validate item ID
-    try:
-        item_uuid = UUID(item_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid item ID format")
-
-    # Find the sale
-    sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
-    if not sale:
-        raise HTTPException(status_code=404, detail="Sale not found")
-
-    # Find the item
-    item = db.query(SaleItem).filter(SaleItem.id == item_uuid, SaleItem.sale_id == sale_uuid).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Sale item not found")
-
-    # Check permissions for price modification
-    if item_update.unit_price is not None:
-        if user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-            raise HTTPException(
-                status_code=403,
-                detail="Insufficient permissions. Admin access required to modify price."
-            )
-        
-        # Log price modification in audit log
-        old_price = item.unit_price
-        new_price = item_update.unit_price
-        
-        # Validate price >= 0
-        if new_price < 0:
-            raise HTTPException(status_code=400, detail="Price must be >= 0")
-        
-        log_audit(
-            action_type=AuditActionType.SYSTEM_CONFIG_CHANGED,
-            actor=user,
-            target_id=item_uuid,
-            target_type="sale_item",
-            details={
-                "sale_id": str(sale_uuid),
-                "item_id": str(item_uuid),
-                "old_price": float(old_price),
-                "new_price": float(new_price),
-                "user_id": str(user_id),
-                "username": user.username or user.telegram_id
-            },
-            description=f"Price modification: {old_price} → {new_price} for item {item_id}",
-            db=db
-        )
-
-    # Update fields
-    if item_update.quantity is not None:
-        if item_update.quantity <= 0:
-            raise HTTPException(status_code=400, detail="Quantity must be > 0")
-        item.quantity = item_update.quantity
-    
-    if item_update.weight is not None:
-        if item_update.weight <= 0:
-            raise HTTPException(status_code=400, detail="Weight must be > 0")
-        item.weight = item_update.weight
-    
-    if item_update.unit_price is not None:
-        item.unit_price = item_update.unit_price
-        # Recalculate total_price (total_price = unit_price for consistency with create_sale)
-        item.total_price = item_update.unit_price
-    
-    if item_update.preset_id is not None:
-        item.preset_id = item_update.preset_id
-    
-    if item_update.notes is not None:
-        item.notes = item_update.notes
-
-    db.commit()
-    db.refresh(item)
-    
-    return item
+        return SaleService(db).update_sale_item(sale_id, item_id, item_update, user)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_SALE_ITEM_PATCH_DOMAIN_HTTP)

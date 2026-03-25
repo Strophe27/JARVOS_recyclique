@@ -1,7 +1,9 @@
 """
-Tests pour l'endpoint PATCH /api/v1/sales/{sale_id}/items/{item_id}
+Tests pour l'endpoint PATCH {API_V1_STR}/sales/{sale_id}/items/{item_id}
 Story B52-P4: Amélioration éditeur d'item (destination et prix)
 """
+
+import os
 
 import pytest
 import uuid
@@ -15,7 +17,18 @@ from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
+from recyclic_api.models.category import Category
+from recyclic_api.models.preset_button import PresetButton, ButtonType
+from recyclic_api.core.config import settings
 from recyclic_api.core.security import create_access_token, hash_password
+
+_V1 = settings.API_V1_STR.rstrip("/")
+_TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "")
+
+pytestmark = pytest.mark.skipif(
+    not _TEST_DB_URL.startswith("postgresql"),
+    reason="Schéma complet (sites, ventes, categories, preset_buttons) requis — exécuter avec TEST_DATABASE_URL PostgreSQL.",
+)
 
 
 class TestUpdateSaleItem:
@@ -126,6 +139,18 @@ class TestUpdateSaleItem:
                                              test_cash_register, test_cash_session, test_sale, 
                                              test_sale_item, user_token, db_session):
         """Test de mise à jour du preset d'un item (utilisateur standard)"""
+        # FK PostgreSQL : preset_id doit exister dans preset_buttons (category_id requis).
+        # id explicite : sinon category.id peut être None avant flush sous PG.
+        cat_id = uuid.uuid4()
+        category = Category(id=cat_id, name=f"b52-preset-cat-{cat_id}", is_active=True)
+        preset = PresetButton(
+            name="B52 test preset",
+            category_id=cat_id,
+            preset_price=10.0,
+            button_type=ButtonType.RECYCLING,
+            sort_order=0,
+            is_active=True,
+        )
         # Créer les données en base
         user = User(**test_user)
         site = Site(**test_site)
@@ -134,20 +159,19 @@ class TestUpdateSaleItem:
         sale = Sale(**test_sale)
         sale_item = SaleItem(**test_sale_item)
         
-        db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
+        db_session.add_all([category, preset, user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
 
         # Mettre à jour le preset
-        preset_id = uuid.uuid4()
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
-            json={"preset_id": str(preset_id)},
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            json={"preset_id": str(preset.id)},
             headers={"Authorization": f"Bearer {user_token}"}
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["preset_id"] == str(preset_id)
+        assert data["preset_id"] == str(preset.id)
 
     def test_update_sale_item_price_admin_success(self, client: TestClient, test_admin, test_user, 
                                                    test_site, test_cash_register, test_cash_session, 
@@ -168,7 +192,7 @@ class TestUpdateSaleItem:
         # Mettre à jour le prix
         new_price = 15.0
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
             json={"unit_price": new_price},
             headers={"Authorization": f"Bearer {admin_token}"}
         )
@@ -195,7 +219,7 @@ class TestUpdateSaleItem:
 
         # Tentative de mise à jour du prix par un utilisateur standard
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
             json={"unit_price": 15.0},
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -221,7 +245,7 @@ class TestUpdateSaleItem:
         # Mettre à jour la quantité
         new_quantity = 5
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
             json={"quantity": new_quantity},
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -248,7 +272,7 @@ class TestUpdateSaleItem:
         # Mettre à jour le poids
         new_weight = 2.5
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
             json={"weight": new_weight},
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -275,7 +299,7 @@ class TestUpdateSaleItem:
         # Mettre à jour les notes
         new_notes = "Item modifié"
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
             json={"notes": new_notes},
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -302,7 +326,7 @@ class TestUpdateSaleItem:
 
         # Tentative de mise à jour avec prix négatif
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
             json={"unit_price": -10.0},
             headers={"Authorization": f"Bearer {admin_token}"}
         )
@@ -320,7 +344,7 @@ class TestUpdateSaleItem:
         fake_item_id = uuid.uuid4()
 
         response = client.patch(
-            f"/api/v1/sales/{fake_sale_id}/items/{fake_item_id}",
+            f"{_V1}/sales/{fake_sale_id}/items/{fake_item_id}",
             json={"quantity": 5},
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -344,11 +368,99 @@ class TestUpdateSaleItem:
 
         # Tentative sans token
         response = client.patch(
-            f"/api/v1/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
             json={"quantity": 5}
         )
 
         assert response.status_code == 401
 
+    def test_update_sale_item_invalid_sale_id_format(
+        self,
+        client: TestClient,
+        test_user,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        test_sale,
+        test_sale_item,
+        user_token,
+        db_session,
+    ):
+        user = User(**test_user)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        sale = Sale(**test_sale)
+        sale_item = SaleItem(**test_sale_item)
+        db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
+        db_session.commit()
+
+        response = client.patch(
+            f"{_V1}/sales/not-a-uuid/items/{test_sale_item['id']}",
+            json={"quantity": 3},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Invalid sale ID format"
+
+    def test_update_sale_item_invalid_item_id_format(
+        self,
+        client: TestClient,
+        test_user,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        test_sale,
+        test_sale_item,
+        user_token,
+        db_session,
+    ):
+        user = User(**test_user)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        sale = Sale(**test_sale)
+        sale_item = SaleItem(**test_sale_item)
+        db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
+        db_session.commit()
+
+        response = client.patch(
+            f"{_V1}/sales/{test_sale['id']}/items/not-a-uuid",
+            json={"quantity": 3},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Invalid item ID format"
+
+    def test_update_sale_item_user_not_found(
+        self,
+        client: TestClient,
+        test_user,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        test_sale,
+        test_sale_item,
+        db_session,
+    ):
+        """JWT valide mais utilisateur absent en base → 401 User not found."""
+        user = User(**test_user)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        sale = Sale(**test_sale)
+        sale_item = SaleItem(**test_sale_item)
+        db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
+        db_session.commit()
+
+        orphan_id = uuid.uuid4()
+        token = create_access_token(data={"sub": str(orphan_id)})
+        response = client.patch(
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            json={"quantity": 3},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 401
+        assert response.json()["detail"] == "User not found"
 
 

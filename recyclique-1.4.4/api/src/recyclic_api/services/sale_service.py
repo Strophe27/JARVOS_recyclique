@@ -3,7 +3,7 @@ Service de création de ventes (logique métier hors routeurs HTTP).
 
 ARCH-04 : extraire la logique lourde de POST /sales depuis endpoints/sales.py.
 ARCH-03 : erreurs métier via core.exceptions ; traduction HTTP au routeur ;
-          mise à jour note admin (PUT /sales/{id}) déléguée ici.
+          mise à jour note admin (PUT /sales/{id}) et item (PATCH …/items/{item_id}) déléguées ici.
 """
 
 from __future__ import annotations
@@ -15,13 +15,17 @@ from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.core.audit import log_audit
+from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.core.logging import log_transaction_event
+from recyclic_api.models.audit_log import AuditActionType
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.payment_transaction import PaymentTransaction
+from recyclic_api.models.preset_button import PresetButton
 from recyclic_api.models.sale import PaymentMethod, Sale
 from recyclic_api.models.sale_item import SaleItem
-from recyclic_api.schemas.sale import PaymentCreate, SaleCreate
+from recyclic_api.models.user import User, UserRole
+from recyclic_api.schemas.sale import PaymentCreate, SaleCreate, SaleItemUpdate
 
 
 class SaleService:
@@ -29,6 +33,92 @@ class SaleService:
 
     def __init__(self, db: Session) -> None:
         self.db = db
+
+    def update_sale_item(
+        self,
+        sale_id: str,
+        item_id: str,
+        item_update: SaleItemUpdate,
+        user: User,
+    ) -> SaleItem:
+        """
+        Met à jour un item de vente (authentification / 401 déjà vérifiés par la route).
+
+        Raises:
+            ValidationError: UUID ou valeurs numériques invalides (→ 400).
+            NotFoundError: vente ou item absent (→ 404).
+            AuthorizationError: modification de prix réservée admin (→ 403).
+        """
+        db = self.db
+        try:
+            sale_uuid = UUID(sale_id)
+        except ValueError:
+            raise ValidationError("Invalid sale ID format") from None
+        try:
+            item_uuid = UUID(item_id)
+        except ValueError:
+            raise ValidationError("Invalid item ID format") from None
+
+        sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
+        if not sale:
+            raise NotFoundError("Sale not found")
+
+        item = db.query(SaleItem).filter(SaleItem.id == item_uuid, SaleItem.sale_id == sale_uuid).first()
+        if not item:
+            raise NotFoundError("Sale item not found")
+
+        if item_update.unit_price is not None:
+            if user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+                raise AuthorizationError(
+                    "Insufficient permissions. Admin access required to modify price."
+                )
+            new_price = item_update.unit_price
+            if new_price < 0:
+                raise ValidationError("Price must be >= 0")
+            old_price = item.unit_price
+            log_audit(
+                action_type=AuditActionType.SYSTEM_CONFIG_CHANGED,
+                actor=user,
+                target_id=item_uuid,
+                target_type="sale_item",
+                details={
+                    "sale_id": str(sale_uuid),
+                    "item_id": str(item_uuid),
+                    "old_price": float(old_price),
+                    "new_price": float(new_price),
+                    "user_id": str(user.id),
+                    "username": user.username or user.telegram_id,
+                },
+                description=f"Price modification: {old_price} → {new_price} for item {item_id}",
+                db=db,
+            )
+
+        if item_update.quantity is not None:
+            if item_update.quantity <= 0:
+                raise ValidationError("Quantity must be > 0")
+            item.quantity = item_update.quantity
+
+        if item_update.weight is not None:
+            if item_update.weight <= 0:
+                raise ValidationError("Weight must be > 0")
+            item.weight = item_update.weight
+
+        if item_update.unit_price is not None:
+            item.unit_price = item_update.unit_price
+            item.total_price = item_update.unit_price
+
+        if item_update.preset_id is not None:
+            preset = db.query(PresetButton).filter(PresetButton.id == item_update.preset_id).first()
+            if not preset:
+                raise ValidationError("Preset not found")
+            item.preset_id = item_update.preset_id
+
+        if item_update.notes is not None:
+            item.notes = item_update.notes
+
+        db.commit()
+        db.refresh(item)
+        return item
 
     def update_admin_note(self, sale_id: str, note: str | None) -> Sale:
         """

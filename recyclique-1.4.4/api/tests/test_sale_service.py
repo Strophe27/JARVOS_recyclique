@@ -8,14 +8,14 @@ from datetime import datetime
 import pytest
 from sqlalchemy.orm import Session
 
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import PaymentMethod, Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.schemas.sale import PaymentCreate, SaleCreate, SaleItemCreate
+from recyclic_api.schemas.sale import PaymentCreate, SaleCreate, SaleItemCreate, SaleItemUpdate
 from recyclic_api.services.sale_service import SaleService
 
 
@@ -233,3 +233,165 @@ def test_sale_service_update_admin_note_none_preserves_note(db_session: Session)
 
     out = SaleService(db_session).update_admin_note(str(sale.id), None)
     assert out.note == "inchangé"
+
+
+def _seed_sale_with_item(db_session: Session) -> tuple[User, Sale, SaleItem]:
+    user, session = _seed_session(db_session)
+    sale = Sale(
+        cash_session_id=session.id,
+        operator_id=user.id,
+        total_amount=10.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+    )
+    db_session.add(sale)
+    db_session.flush()
+    item = SaleItem(
+        sale_id=sale.id,
+        category="EEE-1",
+        quantity=2,
+        weight=1.5,
+        unit_price=10.0,
+        total_price=10.0,
+    )
+    db_session.add(item)
+    db_session.commit()
+    db_session.refresh(sale)
+    db_session.refresh(item)
+    return user, sale, item
+
+
+def test_sale_service_update_sale_item_invalid_sale_uuid(db_session: Session):
+    user, _, _ = _seed_sale_with_item(db_session)
+    with pytest.raises(ValidationError, match="Invalid sale ID format"):
+        SaleService(db_session).update_sale_item("bad-uuid", str(uuid.uuid4()), SaleItemUpdate(quantity=3), user)
+
+
+def test_sale_service_update_sale_item_invalid_item_uuid(db_session: Session):
+    _, sale, _ = _seed_sale_with_item(db_session)
+    user = db_session.query(User).filter(User.id == sale.operator_id).first()
+    with pytest.raises(ValidationError, match="Invalid item ID format"):
+        SaleService(db_session).update_sale_item(str(sale.id), "nope", SaleItemUpdate(quantity=3), user)
+
+
+def test_sale_service_update_sale_item_sale_not_found(db_session: Session):
+    user, _, _ = _seed_sale_with_item(db_session)
+    missing_sale = uuid.uuid4()
+    missing_item = uuid.uuid4()
+    with pytest.raises(NotFoundError, match="Sale not found"):
+        SaleService(db_session).update_sale_item(str(missing_sale), str(missing_item), SaleItemUpdate(quantity=3), user)
+
+
+def test_sale_service_update_sale_item_item_not_found(db_session: Session):
+    user, sale, _ = _seed_sale_with_item(db_session)
+    missing_item = uuid.uuid4()
+    with pytest.raises(NotFoundError, match="Sale item not found"):
+        SaleService(db_session).update_sale_item(str(sale.id), str(missing_item), SaleItemUpdate(quantity=3), user)
+
+
+def test_sale_service_update_sale_item_price_forbidden_for_user(db_session: Session):
+    user, sale, item = _seed_sale_with_item(db_session)
+    with pytest.raises(AuthorizationError, match="Admin access required"):
+        SaleService(db_session).update_sale_item(
+            str(sale.id), str(item.id), SaleItemUpdate(unit_price=99.0), user
+        )
+
+
+def test_sale_service_update_sale_item_price_negative(db_session: Session):
+    user, session = _seed_session(db_session)
+    admin = User(
+        id=uuid.uuid4(),
+        username="admin_svc",
+        hashed_password="x",
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(admin)
+    db_session.commit()
+    sale = Sale(
+        cash_session_id=session.id,
+        operator_id=user.id,
+        total_amount=10.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+    )
+    db_session.add(sale)
+    db_session.flush()
+    item = SaleItem(
+        sale_id=sale.id,
+        category="EEE-1",
+        quantity=1,
+        weight=1.0,
+        unit_price=5.0,
+        total_price=5.0,
+    )
+    db_session.add(item)
+    db_session.commit()
+    with pytest.raises(ValidationError, match="Price must be >= 0"):
+        SaleService(db_session).update_sale_item(
+            str(sale.id), str(item.id), SaleItemUpdate(unit_price=-1.0), admin
+        )
+
+
+def test_sale_service_update_sale_item_quantity_non_positive(db_session: Session):
+    user, sale, item = _seed_sale_with_item(db_session)
+    with pytest.raises(ValidationError, match="Quantity must be > 0"):
+        SaleService(db_session).update_sale_item(
+            str(sale.id), str(item.id), SaleItemUpdate(quantity=0), user
+        )
+
+
+def test_sale_service_update_sale_item_weight_non_positive(db_session: Session):
+    user, sale, item = _seed_sale_with_item(db_session)
+    with pytest.raises(ValidationError, match="Weight must be > 0"):
+        SaleService(db_session).update_sale_item(
+            str(sale.id), str(item.id), SaleItemUpdate(weight=0), user
+        )
+
+
+def test_sale_service_update_sale_item_unknown_preset_raises_validation_error(db_session: Session):
+    user, sale, item = _seed_sale_with_item(db_session)
+    bogus_preset = uuid.uuid4()
+    with pytest.raises(ValidationError, match="Preset not found"):
+        SaleService(db_session).update_sale_item(
+            str(sale.id), str(item.id), SaleItemUpdate(preset_id=bogus_preset), user
+        )
+
+
+def test_sale_service_update_sale_item_admin_updates_price(db_session: Session):
+    user, session = _seed_session(db_session)
+    admin = User(
+        id=uuid.uuid4(),
+        username="admin_price",
+        hashed_password="x",
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(admin)
+    db_session.commit()
+    sale = Sale(
+        cash_session_id=session.id,
+        operator_id=user.id,
+        total_amount=10.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+    )
+    db_session.add(sale)
+    db_session.flush()
+    item = SaleItem(
+        sale_id=sale.id,
+        category="EEE-1",
+        quantity=1,
+        weight=1.0,
+        unit_price=10.0,
+        total_price=10.0,
+    )
+    db_session.add(item)
+    db_session.commit()
+    out = SaleService(db_session).update_sale_item(
+        str(sale.id), str(item.id), SaleItemUpdate(unit_price=12.5), admin
+    )
+    assert float(out.unit_price) == 12.5
+    assert float(out.total_price) == 12.5
