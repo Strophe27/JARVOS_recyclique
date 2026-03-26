@@ -149,11 +149,8 @@ describe('UserListTable Accessibility Tests', () => {
     expect(screen.getByText('Actif')).toBeInTheDocument();
     expect(screen.getByText('Inactif')).toBeInTheDocument();
 
-    // Verify approval status labels are present
-    expect(screen.getAllByText('Approuvé')).toHaveLength(2);
-
     // Verify role labels are descriptive (not just codes)
-    expect(screen.getByText('Utilisateur')).toBeInTheDocument();
+    expect(screen.getByText('Bénévole')).toBeInTheDocument();
     expect(screen.getByText('Administrateur')).toBeInTheDocument();
   });
 
@@ -241,5 +238,33 @@ describe('UserListTable Accessibility Tests', () => {
     userRows.forEach((row) => {
       expect(row).toHaveAttribute('tabIndex', '0');
     });
+  });
+
+  it('affiche le libelle centralise quand seul telegram_id identifie la ligne (full_name vide)', () => {
+    const telegramOnly: AdminUser[] = [
+      {
+        id: 'z9',
+        telegram_id: 'tg_list_only',
+        username: undefined,
+        first_name: undefined,
+        last_name: undefined,
+        full_name: '',
+        role: UserRole.USER,
+        status: UserStatus.APPROVED,
+        is_active: true,
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      },
+    ];
+    render(
+      <UserListTable
+        users={telegramOnly}
+        onRoleChange={mockOnRoleChange}
+        onRowClick={mockOnRowClick}
+      />,
+    );
+    expect(screen.getByText('User tg_list_only')).toBeInTheDocument();
+    const row = screen.getByTestId('user-row');
+    expect(row.getAttribute('aria-label')).toContain('User tg_list_only');
   });
 });

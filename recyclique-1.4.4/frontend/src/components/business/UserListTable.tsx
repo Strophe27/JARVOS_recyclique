@@ -1,7 +1,10 @@
 import React from 'react';
-import { Table, Badge, Text, Skeleton, Tooltip, Group } from '@mantine/core';
-import { AdminUser, UserRole, UserStatus } from '../../services/adminService';
-import { usernameOrTelegramForAtHandle } from '../../utils/userDisplay';
+import { Table, Badge, Text, Skeleton, Tooltip } from '@mantine/core';
+import { AdminUser, UserRole } from '../../services/adminService';
+import {
+  fullNameOrUsernameOrTelegramFallback,
+  usernameOrTelegramForAtHandle,
+} from '../../utils/userDisplay';
 
 interface UserStatusInfo {
   user_id: string;
@@ -32,32 +35,6 @@ interface UserListTableProps {
 //       return 'blue';
 //   }
 // };
-
-const getStatusColor = (status: UserStatus) => {
-  switch (status) {
-    case UserStatus.APPROVED:
-      return 'green';
-    case UserStatus.PENDING:
-      return 'yellow';
-    case UserStatus.REJECTED:
-      return 'red';
-    default:
-      return 'gray';
-  }
-};
-
-const getStatusLabel = (status: UserStatus) => {
-  switch (status) {
-    case UserStatus.APPROVED:
-      return 'Approuvé';
-    case UserStatus.PENDING:
-      return 'En attente';
-    case UserStatus.REJECTED:
-      return 'Rejeté';
-    default:
-      return 'Inconnu';
-  }
-};
 
 const getActiveStatusLabel = (isActive: boolean) => {
   return isActive ? 'Actif' : 'Inactif';
@@ -107,7 +84,7 @@ const getOnlineStatusTooltip = (statusInfo: UserStatusInfo | null) => {
 export const UserListTable: React.FC<UserListTableProps> = ({
   users,
   loading = false,
-  onRoleChange,
+  onRoleChange: _onRoleChange,
   onRowClick,
   userStatuses
 }) => {
@@ -155,7 +132,16 @@ export const UserListTable: React.FC<UserListTableProps> = ({
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {users.map((user) => (
+        {users.map((user) => {
+          const rowDisplayName =
+            user.full_name ||
+            fullNameOrUsernameOrTelegramFallback(
+              user.first_name,
+              user.last_name,
+              user.username,
+              user.telegram_id,
+            );
+          return (
           <Table.Tr
             key={user.id}
             data-testid="user-row"
@@ -168,15 +154,13 @@ export const UserListTable: React.FC<UserListTableProps> = ({
             }}
             tabIndex={0}
             role="button"
-            aria-label={`Sélectionner l'utilisateur ${user.full_name || user.username}`}
+            aria-label={`Sélectionner l'utilisateur ${rowDisplayName}`}
             style={{ cursor: 'pointer' }}
           >
             <Table.Td>
               <div>
                 <Text fw={500}>
-                  {user.first_name && user.last_name 
-                    ? `${user.first_name} ${user.last_name}`
-                    : user.first_name || user.last_name || user.username || 'Bénévole'}
+                  {rowDisplayName}
                 </Text>
                 <Text size="sm" c="dimmed">
                   @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
@@ -212,7 +196,8 @@ export const UserListTable: React.FC<UserListTableProps> = ({
               })()}
             </Table.Td>
           </Table.Tr>
-        ))}
+        );
+        })}
       </Table.Tbody>
     </Table>
   );
