@@ -65,6 +65,58 @@ describe('Login', () => {
     });
   });
 
+  it('ne devrait pas appeler login si le nom d\'utilisateur est vide (validation Zod)', async () => {
+    mockLogin.mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+
+    const passwordInput = screen.getByLabelText('Mot de passe');
+    fireEvent.change(passwordInput, { target: { value: 'x' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/nom d'utilisateur est requis/i)).toBeInTheDocument();
+    });
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('ne devrait pas appeler login si le mot de passe est vide (validation Zod)', async () => {
+    mockLogin.mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('Nom d\'utilisateur'), { target: { value: 'u' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/mot de passe est requis/i)).toBeInTheDocument();
+    });
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('devrait trimmer le nom d\'utilisateur avant appel login', async () => {
+    mockLogin.mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('Nom d\'utilisateur'), { target: { value: '  spaced  ' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'p' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith('spaced', 'p');
+    });
+  });
+
   it('devrait afficher un message d\'erreur si fourni par le store', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       login: mockLogin,

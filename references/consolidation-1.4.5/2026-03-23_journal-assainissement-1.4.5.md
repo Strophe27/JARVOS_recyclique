@@ -4171,6 +4171,31 @@ Meme semantique que le detail admin (lot `FE-TG-07`) et que `convertToAdminUser`
 
 ---
 
+## Micro-lot FE-TG-03 — Connexion : validation client Zod (alignee `LoginRequest`)
+
+### Theme
+Introduire un premier schéma Zod dédié aux formulaires publics : `loginFormSchema` dans `src/schemas/loginForm.ts`, consommé par `Login.tsx` (sans toucher `generated/*`). Remplacer la validation HTML `required` par `noValidate` + messages par champ et attributs `aria-invalid` / `aria-describedby`. Trim du nom d'utilisateur avant appel `login()` (cohérent avec chaîne non vide côté API).
+
+### Verification worktree
+- Branche `chore/v1.4.5-consolidation` ; worktree **propre** avant modification.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/schemas/loginForm.ts` (nouveau)
+- `recyclique-1.4.4/frontend/src/pages/Login.tsx`
+- `recyclique-1.4.4/frontend/src/pages/__tests__/Login.test.tsx`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `npx vitest run src/pages/__tests__/Login.test.tsx` : **8 tests OK**
+- `npx eslint` sur les fichiers touches : **0 erreur** (warnings preexistants / `no-unescaped-entities` sur libelle existant)
+- `generated/*` : **non modifie**
+
+### Resultat / mini-QA
+- Soumission avec champs vides : pas d'appel store ; messages Zod affichés. Cas `spaced` : login appelé avec username trimmé.
+- Lot ferme ; **pret commit/push** si le diff reste limite aux fichiers ci-dessus + ce journal.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -4229,9 +4254,10 @@ Meme semantique que le detail admin (lot `FE-TG-07`) et que `convertToAdminUser`
 - **Vague 6:** micro-lot `FE-TG-06` ferme sur suppression de la ligne « ID Telegram » redondante dans `UserProfileTab` lorsque seul `telegram_id` sert de repli d'affichage @
 - **Vague 6:** micro-lot `FE-TG-07` ferme sur alignement en-tete `UserDetailView` (titre + avatar) avec `fullNameOrUsernameOrTelegramFallback`
 - **Vague 6:** micro-lot `FE-TG-08` ferme sur alignement colonne « Nom » + `aria-label` dans `UserListTable` avec le meme helper
+- **Vague 6 (paquet P2B formulaires):** micro-lot `FE-TG-03` ferme sur validation Zod de la page `Login` + schéma `schemas/loginForm.ts`
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`, `FE-TG-07`, `FE-TG-08`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-03`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`, `FE-TG-07`, `FE-TG-08`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** reliquats d'affichage session / header (`Header.jsx`, `AdminLayout.jsx`, greeting `Reception.tsx`) avec `fullNameOrUsernameOrTelegramFallback` ou equivalent — **risque moyen** (chemins auth multi-ecrans, tests a rebrancher) ; migration `UserListTable.test.tsx` Jest vers Vitest si on veut une suite « Nom » non regressive hors accessibilite
