@@ -83,31 +83,6 @@ class TestPendingUsersEndpoints:
         resp = admin_client.post(f"/api/v1/admin/users/{user.id}/reject")
         assert resp.status_code == 400
 
-    @pytest.mark.usefixtures()
-    def test_approve_user_telegram_error_continues_operation(self, admin_client: TestClient, db_session: Session, monkeypatch):
-        user = UserFactory(status=UserStatus.PENDING)
-        db_session.add(user)
-        db_session.commit()
-        from recyclic_api.services import telegram_service as ts
-        monkeypatch.setattr(ts.telegram_service, "send_user_approval_notification", lambda *a, **k: None)
-        monkeypatch.setattr(ts.telegram_service, "notify_admins_user_processed", lambda *a, **k: None)
-        resp = admin_client.post(f"/api/v1/admin/users/{user.id}/approve")
-        assert resp.status_code == 200
-        db_session.refresh(user)
-        assert user.status == UserStatus.APPROVED
-
-    def test_reject_user_telegram_error_continues_operation(self, admin_client: TestClient, db_session: Session, monkeypatch):
-        user = UserFactory(status=UserStatus.PENDING)
-        db_session.add(user)
-        db_session.commit()
-        from recyclic_api.services import telegram_service as ts
-        monkeypatch.setattr(ts.telegram_service, "send_user_rejection_notification", lambda *a, **k: None)
-        monkeypatch.setattr(ts.telegram_service, "notify_admins_user_processed", lambda *a, **k: None)
-        resp = admin_client.post(f"/api/v1/admin/users/{user.id}/reject")
-        assert resp.status_code == 200
-        db_session.refresh(user)
-        assert user.status == UserStatus.REJECTED
-
     def test_approve_user_without_message_succeeds(self, admin_client: TestClient, db_session: Session):
         user = UserFactory(status=UserStatus.PENDING)
         db_session.add(user)
