@@ -328,7 +328,7 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                 extra={
                     "admin_user_id": str(current_user.id),
                     "admin_username": username_or_telegram_id(
-                        current_user.username, current_user.telegram_id
+                        current_user.username, None
                     ),
                     "action": "audit_log_access",
                     "filters": {
@@ -400,7 +400,7 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
             log_admin_access(
                 user_id=str(current_user.id),
                 username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
+                    current_user.username, None
                 ),
                 endpoint="get_email_logs",
                 success=True,

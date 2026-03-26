@@ -203,7 +203,6 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
                 target_type="user",
                 details={
                     "target_username": target_u,
-                    "target_telegram_id": target_user.telegram_id,
                     "reason": force_request.reason,
                     "admin_username": admin_u,
                 },
@@ -310,7 +309,6 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
                 target_type="user",
                 details={
                     "target_username": target_u,
-                    "target_telegram_id": target_user.telegram_id,
                     "admin_username": admin_u,
                 },
                 description=(

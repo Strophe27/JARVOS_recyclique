@@ -77,7 +77,7 @@ async def approve_user(
         # Log de l'acc├¿s admin
         log_admin_access(
             user_id=str(current_user.id),
-            username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+            username=username_or_telegram_id(current_user.username, None),
             endpoint="/admin/users/{user_id}/approve",
             success=True
         )
@@ -112,9 +112,9 @@ async def approve_user(
         # Log de l'approbation
         log_role_change(
             admin_user_id=str(current_user.id),
-            admin_username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+            admin_username=username_or_telegram_id(current_user.username, None),
             target_user_id=str(user.id),
-            target_username=username_or_telegram_id(user.username, user.telegram_id),
+            target_username=username_or_telegram_id(user.username, None),
             old_role="pending",
             new_role="approved",
             success=True,
@@ -160,7 +160,7 @@ async def reject_user(
         # Log de l'acc├¿s admin
         log_admin_access(
             user_id=str(current_user.id),
-            username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+            username=username_or_telegram_id(current_user.username, None),
             endpoint="/admin/users/{user_id}/reject",
             success=True
         )
@@ -195,9 +195,9 @@ async def reject_user(
         # Log du rejet
         log_role_change(
             admin_user_id=str(current_user.id),
-            admin_username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+            admin_username=username_or_telegram_id(current_user.username, None),
             target_user_id=str(user.id),
-            target_username=username_or_telegram_id(user.username, user.telegram_id),
+            target_username=username_or_telegram_id(user.username, None),
             old_role="pending",
             new_role="rejected",
             success=True,

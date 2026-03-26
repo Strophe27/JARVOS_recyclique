@@ -90,7 +90,7 @@ class SaleService:
                     "old_price": float(old_price),
                     "new_price": float(new_price),
                     "user_id": str(user.id),
-                    "username": username_or_telegram_id(user.username, user.telegram_id),
+                    "username": username_or_telegram_id(user.username, None),
                 },
                 description=f"Price modification: {old_price} → {new_price} for item {item_id}",
                 db=db,

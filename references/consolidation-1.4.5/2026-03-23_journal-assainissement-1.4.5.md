@@ -4740,6 +4740,28 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Lot backend (2026-03-26) — Paquet 10B : audits/helpers sans trace Telegram interne
+
+**Statut:** execute (sans commit)  
+**Theme:** second argument de `username_or_telegram_id` aligne sur `None` (approve/reject, historique utilisateur, journal d’audit admin, logs e-mail) ; retrait de `target_telegram_id` des `details` de `log_audit` (mot de passe force, reset PIN) ; audit prix item dans `sale_service` aligne. `target_id` / UUID et le reste des audits conserves ; pas d’inputs metier, pas de contrat public, pas DB, pas `legacy_import` / OpenRouter.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_history.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_observability.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_credentials.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+
+### Validation
+- `pytest tests/test_admin_pending_endpoints.py tests/test_admin_users_history_routes.py tests/test_admin_users_credentials_routes.py tests/test_admin_observability_endpoints.py tests/test_b52_p4_update_sale_item.py tests/test_user_identity.py -q` depuis `recyclique-1.4.4/api` : **20 passed**, skips attendus, warnings Pydantic existants.
+- `tests/test_sale_service.py` et `tests/test_admin_force_password.py` : echecs environnement / client (sqlite `cash_registers`, `404` sur routes admin avec `client` nu) — **hors diff 10B**, deja signales en lots 8D–9A.
+
+### Reserve — lot suivant
+- Poursuivre le meme traitement sur tout reliquat `username_or_telegram_id(..., *.telegram_id)` hors fichiers deja a `None`.
+- Strategie produit : champs `telegram_*` encore exposes ailleurs (schemas admin, listes) si besoin de lots dedies.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

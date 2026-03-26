@@ -48,7 +48,7 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
             log_admin_access(
                 user_id=str(current_user.id),
                 username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
+                    current_user.username, None
                 ),
                 endpoint=f"/admin/users/{user_id}/history",
                 success=True,
@@ -84,7 +84,7 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
             log_admin_access(
                 user_id=str(current_user.id),
                 username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
+                    current_user.username, None
                 ),
                 endpoint=f"/admin/users/{user_id}/history",
                 success=False,
@@ -98,7 +98,7 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
             log_admin_access(
                 user_id=str(current_user.id),
                 username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
+                    current_user.username, None
                 ),
                 endpoint=f"/admin/users/{user_id}/history",
                 success=False,
