@@ -49,7 +49,6 @@ const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'));
-const TelegramAuth = lazy(() => import('./pages/TelegramAuth.jsx'));
 const Reception = lazy(() => import('./pages/Reception.tsx'));
 const ReceptionDashboard = lazy(() => import('./pages/ReceptionDashboard.tsx'));
 const TicketForm = lazy(() => import('./pages/Reception/TicketForm.tsx'));
@@ -126,7 +125,7 @@ function App() {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   // Pages publiques (sans header)
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/telegram-auth', '/inscription'];
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/inscription'];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   // Afficher le header seulement si ce n'est ni kiosque, ni admin, ni page publique
@@ -146,7 +145,6 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/telegram-auth" element={<TelegramAuth />} />
             <Route path="/" element={<ProtectedRoute><UnifiedDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/benevole" element={<ProtectedRoute><BenevoleDashboard /></ProtectedRoute>} />
             {/* Route /caisse : Dashboard des caisses réelles */}

@@ -4575,6 +4575,48 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Lot backend (2026-03-26) — Affichage / audit : fin du repli `telegram_id` sur le pseudo (sous-ensemble 1)
+
+**Statut:** execute (sans commit)  
+**Theme:** `username_or_telegram_id` ne reprend plus `telegram_id` ; messages approve/reject admin sans pseudo Telegram implicite.
+
+### Contrat retenu
+- Audit / champ ``username`` : **username** non vide après ``strip``, sinon ``None`` ; ``telegram_id`` ignoré (argument conservé pour compatibilité d'appel).
+- Réponses HTTP approve/reject : libellé **prénom/nom ou username** ; si aucun : message générique (« Utilisateur approuvé/rejeté avec succès »).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/core/user_identity.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/tests/test_user_identity.py`
+- `sale_service.py` : **inchangé** (même appel au helper ; comportement aligné via `user_identity`).
+
+### Validation
+- `pytest tests/test_user_identity.py tests/test_admin_pending_endpoints.py -q` depuis `recyclique-1.4.4/api` : **OK** (warnings Pydantic existants).
+- `test_sale_service.py::test_sale_service_update_sale_item_admin_updates_price` : non reproductible sur l’agent (SQLite sans tables `cash_registers` dans ce run) — à rejouer dans l’environnement CI / Postgres habituel du projet.
+
+### Reserve — lot backend suivant (avant 8B)
+- Autres endpoints admin (`admin_users_*`, `admin_observability`) : appels inchangés mais **héritent** du nouveau contrat ; vérifier assertions / docs si un test attendait l'ancien repli.
+- Champs `telegram_id` explicites dans JSON schémas, ORM, `legacy_import`, OpenRouter : **hors périmètre**.
+
+---
+
+## Lot backend (2026-03-26) — Paquet 8B : historique utilisateur + observabilité (affichage sans repli `telegram_id`)
+
+**Statut:** execute (sans commit)  
+**Theme:** ne plus utiliser `telegram_id` comme pseudo de secours ni `@telegram_id` dans les libellés de ces routes ; alignement logs structurés audit sur `username_or_telegram_id`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_history.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_observability.py`
+
+### Validation
+- `pytest tests/test_admin_users_history_routes.py tests/test_admin_observability_endpoints.py -q` depuis `recyclique-1.4.4/api` : **5 passed, 1 skipped** (`test_audit_log_admin_empty_shape` si SQLite — deja connu) ; warnings Pydantic existants.
+
+### Reserve — lot suivant
+- Autres modules encore susceptibles d'afficher ou journaliser `telegram_id` comme pseudo (hors ce perimetre) : grep cible ou lots dédiés schémas / ORM / OpenAPI.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

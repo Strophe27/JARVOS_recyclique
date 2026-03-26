@@ -48,6 +48,18 @@ register_admin_templates_offline_routes(router, limiter)
 
 # La fonction require_admin_role est maintenant importée depuis core.auth
 
+
+def _user_display_label(user: User) -> str | None:
+    """Prénom/nom ou username (strip) ; pas de repli sur telegram_id."""
+    full_name = (
+        f"{user.first_name} {user.last_name}"
+        if user.first_name and user.last_name
+        else user.first_name or user.last_name
+    )
+    un = user.username.strip() if user.username else None
+    return full_name or un or None
+
+
 @router.post(
     "/users/{user_id}/approve",
     response_model=AdminResponse,
@@ -109,15 +121,18 @@ async def approve_user(
             db=db
         )
 
-        full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-
+        label = _user_display_label(user)
         return AdminResponse(
             data={
                 "user_id": str(user.id),
                 "status": user.status.value,
                 "telegram_id": user.telegram_id
             },
-            message=f"Utilisateur {full_name or user.username} approuv├® avec succ├¿s",
+            message=(
+                f"Utilisateur {label} approuvé avec succès"
+                if label
+                else "Utilisateur approuvé avec succès"
+            ),
             success=True
         )
 
@@ -190,8 +205,8 @@ async def reject_user(
             db=db
         )
 
-        full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-        reason = rejection_request.reason if rejection_request and rejection_request.reason else "Aucune raison sp├®cifi├®e"
+        label = _user_display_label(user)
+        reason = rejection_request.reason if rejection_request and rejection_request.reason else "Aucune raison spécifiée"
 
         return AdminResponse(
             data={
@@ -199,7 +214,11 @@ async def reject_user(
                 "status": user.status.value,
                 "reason": reason
             },
-            message=f"Utilisateur {full_name or user.username} rejet├® avec succ├¿s",
+            message=(
+                f"Utilisateur {label} rejeté avec succès"
+                if label
+                else "Utilisateur rejeté avec succès"
+            ),
             success=True
         )
 

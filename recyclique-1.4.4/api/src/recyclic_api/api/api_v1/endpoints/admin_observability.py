@@ -263,10 +263,6 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                                 actor_display_name = (
                                     f"{actor_user.first_name} {actor_user.last_name} (@{actor_user.username})"
                                 )
-                            elif actor_user.telegram_id:
-                                actor_display_name = (
-                                    f"{actor_user.first_name} {actor_user.last_name} (@{actor_user.telegram_id})"
-                                )
                             else:
                                 actor_display_name = (
                                     f"{actor_user.first_name} {actor_user.last_name}"
@@ -274,14 +270,10 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                         elif actor_user.first_name:
                             if actor_user.username:
                                 actor_display_name = f"{actor_user.first_name} (@{actor_user.username})"
-                            elif actor_user.telegram_id:
-                                actor_display_name = f"{actor_user.first_name} (@{actor_user.telegram_id})"
                             else:
                                 actor_display_name = actor_user.first_name
                         elif actor_user.username:
                             actor_display_name = f"@{actor_user.username}"
-                        elif actor_user.telegram_id:
-                            actor_display_name = f"@{actor_user.telegram_id}"
                         else:
                             actor_display_name = f"ID: {str(actor_user.id)[:8]}..."
 
@@ -294,10 +286,6 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                                 target_display_name = (
                                     f"{target_user.first_name} {target_user.last_name} (@{target_user.username})"
                                 )
-                            elif target_user.telegram_id:
-                                target_display_name = (
-                                    f"{target_user.first_name} {target_user.last_name} (@{target_user.telegram_id})"
-                                )
                             else:
                                 target_display_name = (
                                     f"{target_user.first_name} {target_user.last_name}"
@@ -305,14 +293,10 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                         elif target_user.first_name:
                             if target_user.username:
                                 target_display_name = f"{target_user.first_name} (@{target_user.username})"
-                            elif target_user.telegram_id:
-                                target_display_name = f"{target_user.first_name} (@{target_user.telegram_id})"
                             else:
                                 target_display_name = target_user.first_name
                         elif target_user.username:
                             target_display_name = f"@{target_user.username}"
-                        elif target_user.telegram_id:
-                            target_display_name = f"@{target_user.telegram_id}"
                         else:
                             target_display_name = f"ID: {str(target_user.id)[:8]}..."
 
@@ -343,7 +327,9 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                 f"Audit log accessed by admin {current_user.id}",
                 extra={
                     "admin_user_id": str(current_user.id),
-                    "admin_username": current_user.username or current_user.telegram_id,
+                    "admin_username": username_or_telegram_id(
+                        current_user.username, current_user.telegram_id
+                    ),
                     "action": "audit_log_access",
                     "filters": {
                         "action_type": action_type,

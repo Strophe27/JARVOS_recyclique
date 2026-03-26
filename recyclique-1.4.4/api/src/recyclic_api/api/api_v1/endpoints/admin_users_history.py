@@ -66,8 +66,6 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
                     target_name = target_user.first_name
                 elif target_user.username:
                     target_name = target_user.username
-                elif target_user.telegram_id:
-                    target_name = f"@{target_user.telegram_id}"
 
             history_service = UserHistoryService(db)
 

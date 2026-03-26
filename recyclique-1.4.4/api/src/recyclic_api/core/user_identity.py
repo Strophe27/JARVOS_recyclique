@@ -1,8 +1,14 @@
 """Identifiants utilisateur pour journaux / audit (logique pure, sans ORM)."""
 
 
-def username_or_telegram_id(username: str | None, telegram_id: str | None) -> str | None:
+def username_or_telegram_id(username: str | None, _telegram_id: str | None) -> str | None:
     """
-    Équivalent strict de ``username or telegram_id`` (chaîne vide → repli sur telegram_id).
+    Chaîne d'audit / libellé court : **username** non vide après ``strip`` uniquement.
+
+    Le second argument reste pour la compatibilité d'appel historique et est **ignoré**
+    (ne plus servir de pseudo de secours dans les journaux).
     """
-    return username or telegram_id
+    if username is None:
+        return None
+    s = username.strip()
+    return s if s else None

@@ -93,42 +93,6 @@ describe('Public Routes Integration Tests', () => {
     })
   })
 
-  describe('Telegram Auth Route', () => {
-    it('should render telegram auth page when accessing /telegram-auth', async () => {
-      renderAppWithRoute('/telegram-auth')
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Liaison via Telegram indisponible/i })).toBeInTheDocument()
-        expect(
-          screen.getByText(/La liaison automatique de compte depuis Telegram n'est plus proposée/i)
-        ).toBeInTheDocument()
-        expect(screen.getByText("S'inscrire")).toBeInTheDocument()
-        expect(screen.getByText('Se connecter')).toBeInTheDocument()
-      })
-    })
-
-    it('should render telegram auth page with URL parameters preserved', async () => {
-      renderAppWithRoute('/telegram-auth?telegram_id=123456789&source=bot')
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Liaison via Telegram indisponible/i })).toBeInTheDocument()
-        expect(
-          screen.getByText(/La liaison automatique de compte depuis Telegram n'est plus proposée/i)
-        ).toBeInTheDocument()
-      })
-    })
-
-    it('should not redirect to login when accessing /telegram-auth', async () => {
-      renderAppWithRoute('/telegram-auth')
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Liaison via Telegram indisponible/i })).toBeInTheDocument()
-      })
-
-      expect(screen.queryByText(/connexion/i)).not.toBeInTheDocument()
-    })
-  })
-
   describe('Other Public Routes', () => {
     it('should render login page when accessing /login', async () => {
       renderAppWithRoute('/login')

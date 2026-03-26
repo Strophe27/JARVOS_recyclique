@@ -24,6 +24,7 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-03-26_07_paquet-7-frontend-suppression-page-telegram-auth.md` | Paquet 7 (frontend) : suppression page `TelegramAuth` + test unitaire ; `App.jsx` sans entrée `publicRoutes` pour ce chemin, redirection vers `/inscription` (query conservée) ; intégration `public-routes` réalignée ; pas de commit. |
 | `2026-03-26_06_paquet-6-telegram-notifications-canal-retire.md` | Paquet 6 : suppression `telegram_service.py`, retrait variables `TELEGRAM_*` dans `config` + env exemples, sync/anomalies en logs seuls, `rollback.sh` sans Telegram, docs/scripts alignés ; tests cibles OK ; pas de commit. |
 | `2026-03-26_05_paquet-4-put-deposits-sans-bot-auth.md` | Paquet 4 : retrait `get_bot_token_dependency` / `X-Bot-Token` sur `PUT /v1/deposits/{id}` ; suppression `bot_auth.py` et `test_bot_auth_simple.py` ; OpenAPI + tests workflow dépôts réalignés ; pas de commit. |
 | `2026-03-26_04_paquet-3-suppression-routes-api-telegram.md` | Paquet 3 : retrait des routes HTTP `link-telegram`, `from-bot`, `classify` et alignement OpenAPI / tests / docs ; `PUT /deposits/{id}` et `X-Bot-Token` intacts pour paquet 4. |
