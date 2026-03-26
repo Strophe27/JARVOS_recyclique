@@ -4245,6 +4245,32 @@ Extraire la logique de `validatePassword` + contrôle de concordance des champs 
 
 ---
 
+## Micro-lot FE-TG-12 — Surface `/telegram-auth` : desactivation (backend link-telegram 410)
+
+### Theme
+Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route publique `/telegram-auth` avec un message explicite et des actions vers `/inscription` (query preservee) et `/login`. Suppression de `linkTelegramAccount` dans `api.ts`. `App.jsx` et `publicRoutes` inchanges (route toujours publique).
+
+### Verification worktree
+- Branche `chore/v1.4.5-consolidation` ; worktree **propre** avant modification (HEAD apres `FE-TG-10`).
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/pages/TelegramAuth.jsx` (page informative, sans API)
+- `recyclique-1.4.4/frontend/src/services/api.ts` (retrait `linkTelegramAccount` ; `catch` sans binding inutilise sur export CSV reception)
+- `recyclique-1.4.4/frontend/src/test/pages/TelegramAuth.test.tsx`
+- `recyclique-1.4.4/frontend/src/test/integration/public-routes.test.tsx`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `npx vitest run src/test/pages/TelegramAuth.test.tsx src/test/integration/public-routes.test.tsx` : **18 tests OK**
+- `npx eslint` sur les fichiers touches : **0 erreur** (warnings `any` historiques dans `api.ts`)
+- `generated/*` : **non modifie**
+
+### Resultat / mini-QA
+- `/telegram-auth` : pas de formulaire mot de passe / pas d'appel reseau vers la liaison Telegram ; liens profonds vers inscription conservent les parametres d'URL.
+- Lot ferme ; **pret commit/push** si le diff reste limite aux fichiers ci-dessus + ce journal.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -4306,9 +4332,10 @@ Extraire la logique de `validatePassword` + contrôle de concordance des champs 
 - **Vague 6 (paquet P2B formulaires):** micro-lot `FE-TG-03` ferme sur validation Zod de la page `Login` + schéma `schemas/loginForm.ts`
 - **Vague 6 (paquet P2B formulaires):** micro-lot `FE-TG-09` ferme sur validation Zod de `ForgotPassword` + schéma `schemas/forgotPasswordForm.ts`
 - **Vague 6 (paquet P2B formulaires):** micro-lot `FE-TG-10` ferme sur schéma Zod `resetPasswordForm` + refactor `ResetPassword.tsx` (fin de la fonction locale `validatePassword`)
+- **Vague 6 (paquet P2C Telegram frontend):** micro-lot `FE-TG-12` ferme sur desactivation de la page `/telegram-auth` + retrait de `linkTelegramAccount` (`api.ts`)
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-03`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`, `FE-TG-07`, `FE-TG-08`, `FE-TG-09`, `FE-TG-10`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-03`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`, `FE-TG-07`, `FE-TG-08`, `FE-TG-09`, `FE-TG-10`, `FE-TG-12`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** reliquats d'affichage session / header (`Header.jsx`, `AdminLayout.jsx`, greeting `Reception.tsx`) avec `fullNameOrUsernameOrTelegramFallback` ou equivalent — **risque moyen** (chemins auth multi-ecrans, tests a rebrancher) ; migration `UserListTable.test.tsx` Jest vers Vitest si on veut une suite « Nom » non regressive hors accessibilite

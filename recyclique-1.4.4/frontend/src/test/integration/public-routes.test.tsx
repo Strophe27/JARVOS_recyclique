@@ -98,8 +98,10 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/telegram-auth')
 
       await waitFor(() => {
-        expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
-        expect(screen.getByText('Avez-vous déjà un compte RecyClique ?')).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /Liaison via Telegram indisponible/i })).toBeInTheDocument()
+        expect(
+          screen.getByText(/La liaison automatique de compte depuis Telegram n'est plus proposée/i)
+        ).toBeInTheDocument()
         expect(screen.getByText("S'inscrire")).toBeInTheDocument()
         expect(screen.getByText('Se connecter')).toBeInTheDocument()
       })
@@ -109,8 +111,10 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/telegram-auth?telegram_id=123456789&source=bot')
 
       await waitFor(() => {
-        expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
-        expect(screen.getByText('Avez-vous déjà un compte RecyClique ?')).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /Liaison via Telegram indisponible/i })).toBeInTheDocument()
+        expect(
+          screen.getByText(/La liaison automatique de compte depuis Telegram n'est plus proposée/i)
+        ).toBeInTheDocument()
       })
     })
 
@@ -118,7 +122,7 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/telegram-auth')
 
       await waitFor(() => {
-        expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /Liaison via Telegram indisponible/i })).toBeInTheDocument()
       })
 
       expect(screen.queryByText(/connexion/i)).not.toBeInTheDocument()

@@ -160,12 +160,6 @@ export const deleteCashRegister = async (id: string): Promise<void> => {
   await api.delete(`/v1/cash-registers/${id}`);
 };
 
-// Link Telegram Account
-export const linkTelegramAccount = async (linkData: any): Promise<any> => {
-  const response: AxiosResponse = await api.post('/v1/users/link-telegram', linkData);
-  return response.data;
-};
-
 // Reception Tickets
 export const getReceptionTickets = async (page: number = 1, perPage: number = 10): Promise<any> => {
   const response: AxiosResponse = await api.get('/v1/reception/tickets', {
@@ -259,7 +253,7 @@ export const exportReceptionLignesCSV = async (
     if (extracted) {
       try {
         filename = decodeURIComponent(extracted);
-      } catch (_) {
+      } catch {
         filename = extracted;
       }
     }
