@@ -15,7 +15,7 @@ from recyclic_api.main import app
 _V1 = settings.API_V1_STR.rstrip("/")
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
-from recyclic_api.schemas.auth import LoginResponse, AuthUser
+from recyclic_api.schemas.auth import LoginResponse
 
 
 class TestAuthLoginEndpoint:
@@ -69,6 +69,34 @@ class TestAuthLoginEndpoint:
             pytest.fail(f"Validation Pydantic échouée pour la réponse de login: {e}")
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
+
+    def test_login_success_non_numeric_telegram_id(self, client: TestClient, db_engine, db_session: Session):
+        """Le login doit sérialiser un telegram_id alphanumérique comme en base (VARCHAR), sans erreur 500."""
+        username = f"testuser_tg_alpha_{uuid.uuid4().hex}"
+        telegram_handle = "tg_login_alpha_42"
+        hashed_password = hash_password("testpassword123")
+        test_user = User(
+            username=username,
+            hashed_password=hashed_password,
+            telegram_id=telegram_handle,
+            role=UserRole.USER,
+            status=UserStatus.APPROVED,
+            is_active=True,
+        )
+        db_session.add(test_user)
+        db_session.commit()
+        db_session.refresh(test_user)
+
+        response = client.post(
+            f"{_V1}/auth/login",
+            json={"username": username, "password": "testpassword123"},
+        )
+
+        assert response.status_code == 200, response.text
+        data = response.json()
+        validated = LoginResponse(**data)
+        assert validated.user.telegram_id == telegram_handle
+        assert data["user"]["telegram_id"] == telegram_handle
 
     def test_login_failure_invalid_username(self, client: TestClient, db_engine, db_session: Session):
         """Test d'échec de connexion avec un nom d'utilisateur invalide"""
