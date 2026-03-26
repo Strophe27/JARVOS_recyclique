@@ -31,7 +31,6 @@ export interface UserRoleUpdate {
 }
 
 export interface UserCreate {
-  telegram_id?: string | null;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -74,7 +73,7 @@ export type AdminUser = GeneratedAdminUser & {
 };
 
 // Helper pour convertir UserResponse en AdminUser
-// UserResponse (flux UsersApi) n'expose pas telegram_id en JSON (lot 9C) ; réponses admin idem (lot 10A).
+// UserResponse n'expose pas telegram_id (lots 9C / 10A / 11B).
 function convertToAdminUser(user: UserResponse): AdminUser {
   return {
     id: user.id,
@@ -110,7 +109,7 @@ export const adminService = {
   async getUsers(filters: UsersFilter = {}): Promise<AdminUser[]> {
     try {
       // Utiliser l'API générée
-      const users = await UsersApi.usersapiv1usersget(filters);
+      const users = await UsersApi.usersv1usersget(filters);
 
       // Convertir UserResponse en AdminUser et appliquer les filtres
       let adminUsers: AdminUser[] = users.map(convertToAdminUser);
@@ -145,7 +144,7 @@ export const adminService = {
   async updateUserRole(userId: string, roleUpdate: UserRoleUpdate): Promise<AdminResponse> {
     try {
       // Utiliser l'API générée
-      const response = await AdminApi.userroleapiv1adminusersuseridroleput(userId, roleUpdate);
+      const response = await AdminApi.userrolev1adminusersuseridroleput(userId, roleUpdate);
       return response;
     } catch (error) {
       console.error('Erreur lors de la mise à jour du rôle:', error);
@@ -159,7 +158,7 @@ export const adminService = {
   async getUserById(userId: string): Promise<AdminUser> {
     try {
       // Utiliser l'API générée
-      const user = await UsersApi.userapiv1usersuseridget(userId);
+      const user = await UsersApi.userv1usersuseridget(userId);
 
       // Convertir UserResponse en AdminUser
       return convertToAdminUser(user);
@@ -175,7 +174,7 @@ export const adminService = {
   async updateUserStatus(userId: string, statusUpdate: UserStatusUpdate): Promise<AdminResponse> {
     try {
       // Utiliser l'endpoint Admin dédié (client généré)
-      const response = await AdminApi.userstatusapiv1adminusersuseridstatusput(userId, statusUpdate);
+      const response = await AdminApi.userstatusv1adminusersuseridstatusput(userId, statusUpdate);
       return response;
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
@@ -189,7 +188,7 @@ export const adminService = {
   async createUser(userData: UserCreate): Promise<AdminUser> {
     try {
       // Utiliser l'API générée pour créer un utilisateur
-      const newUser = await UsersApi.userapiv1userspost(userData as any);
+      const newUser = await UsersApi.userv1userspost(userData as any);
 
       // Convertir UserResponse en AdminUser
       const adminUser = convertToAdminUser(newUser);
@@ -207,7 +206,7 @@ export const adminService = {
   async updateUser(userId: string, userData: UserUpdate & Partial<Pick<UserCreate, 'email'|'phone_number'|'address'|'notes'|'skills'|'availability'>>): Promise<AdminResponse> {
     try {
       // Utiliser l'API générée
-      const updatedUser = await UsersApi.userapiv1usersuseridput(userId, userData as any);
+      const updatedUser = await UsersApi.userv1usersuseridput(userId, userData as any);
 
       // Convertir en AdminUser
       const adminUser = convertToAdminUser(updatedUser);
@@ -242,7 +241,7 @@ export const adminService = {
   async deleteUser(userId: string): Promise<AdminResponse> {
     try {
       // Utiliser l'API générée
-      await UsersApi.userapiv1usersuseriddelete(userId);
+      await UsersApi.userv1usersuseriddelete(userId);
       
       return {
         data: undefined,
@@ -261,7 +260,7 @@ export const adminService = {
   async getPendingUsers(): Promise<AdminUser[]> {
     try {
       // Utiliser l'API générée
-      const pendingUsers = await AdminApi.pendingusersapiv1adminuserspendingget();
+      const pendingUsers = await AdminApi.pendingusersv1adminuserspendingget();
       
       // Convertir PendingUserResponse en AdminUser
       return pendingUsers.map((user) => ({
@@ -296,7 +295,7 @@ export const adminService = {
   async approveUser(userId: string, message?: string): Promise<AdminResponse> {
     try {
       // Utiliser l'API générée
-      const result = await AdminApi.userapiv1adminusersuseridapprovepost(userId, { message });
+      const result = await AdminApi.userv1adminusersuseridapprovepost(userId, { message });
       return result;
     } catch (error) {
       console.error('Erreur lors de l\'approbation de l\'utilisateur:', error);
@@ -310,7 +309,7 @@ export const adminService = {
   async rejectUser(userId: string, reason?: string): Promise<AdminResponse> {
     try {
       // Utiliser l'API générée
-      const result = await AdminApi.userapiv1adminusersuseridrejectpost(userId, { reason });
+      const result = await AdminApi.userv1adminusersuseridrejectpost(userId, { reason });
       return result;
     } catch (error) {
       console.error('Erreur lors du rejet de l\'utilisateur:', error);
@@ -373,7 +372,7 @@ export const adminService = {
       console.log(`Récupération de l'historique pour l'utilisateur ${userId} avec filtres:`, params);
 
       // Appel à l'API réelle
-      const response = await AdminApi.userhistoryapiv1adminusersuseridhistoryget(userId, params);
+      const response = await AdminApi.userhistoryv1adminusersuseridhistoryget(userId, params);
       
       // Convertir les données de l'API vers le format attendu par le frontend
       const historyEvents = response.events.map((event: any) => ({

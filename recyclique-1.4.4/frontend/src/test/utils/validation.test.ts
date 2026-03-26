@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   isValidEmail,
   isValidPhone,
-  isValidTelegramId,
   isValidUsername,
   isRequired,
   validateRegistrationForm,
@@ -45,20 +44,6 @@ describe('Validation Utils', () => {
     })
   })
 
-  describe('isValidTelegramId', () => {
-    it('should validate correct Telegram IDs', () => {
-      expect(isValidTelegramId('123456789')).toBe(true)
-      expect(isValidTelegramId('1234567890')).toBe(true)
-    })
-
-    it('should reject invalid Telegram IDs', () => {
-      expect(isValidTelegramId('12345678')).toBe(false)
-      expect(isValidTelegramId('12345678901')).toBe(false)
-      expect(isValidTelegramId('abc123456')).toBe(false)
-      expect(isValidTelegramId('')).toBe(false)
-    })
-  })
-
   describe('isValidUsername', () => {
     it('should validate correct usernames', () => {
       expect(isValidUsername('@username')).toBe(true)
@@ -94,7 +79,6 @@ describe('Validation Utils', () => {
 
   describe('validateRegistrationForm', () => {
     const validFormData: RegistrationFormData = {
-      telegram_id: '123456789',
       username: '@testuser',
       first_name: 'John',
       last_name: 'Doe',
@@ -109,28 +93,6 @@ describe('Validation Utils', () => {
       
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
-    })
-
-    it('should require telegram_id', () => {
-      const data = { ...validFormData, telegram_id: '' }
-      const result = validateRegistrationForm(data)
-      
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toContainEqual({
-        field: 'telegram_id',
-        message: 'L\'ID Telegram est requis'
-      })
-    })
-
-    it('should validate telegram_id format', () => {
-      const data = { ...validFormData, telegram_id: '123' }
-      const result = validateRegistrationForm(data)
-      
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toContainEqual({
-        field: 'telegram_id',
-        message: 'L\'ID Telegram doit contenir 9 ou 10 chiffres'
-      })
     })
 
     it('should require first_name', () => {
@@ -205,17 +167,17 @@ describe('Validation Utils', () => {
 
   describe('getFieldError', () => {
     const errors = [
-      { field: 'telegram_id', message: 'ID Telegram requis' },
+      { field: 'first_name', message: 'Prénom requis' },
       { field: 'email', message: 'Email invalide' }
     ]
 
     it('should return error message for existing field', () => {
-      expect(getFieldError(errors, 'telegram_id')).toBe('ID Telegram requis')
+      expect(getFieldError(errors, 'first_name')).toBe('Prénom requis')
       expect(getFieldError(errors, 'email')).toBe('Email invalide')
     })
 
     it('should return undefined for non-existing field', () => {
-      expect(getFieldError(errors, 'first_name')).toBeUndefined()
+      expect(getFieldError(errors, 'last_name')).toBeUndefined()
     })
   })
 

@@ -64,7 +64,6 @@ vi.mock('../../../pages/Admin/Users', () => ({
 const mockUsers: AdminUser[] = [
   {
     id: 'user-1',
-    telegram_id: 123456789,
     username: 'user1',
     first_name: 'John',
     last_name: 'Doe',
@@ -79,7 +78,6 @@ const mockUsers: AdminUser[] = [
   },
   {
     id: 'user-2',
-    telegram_id: 987654321,
     username: 'user2',
     first_name: 'Jane',
     last_name: 'Smith',

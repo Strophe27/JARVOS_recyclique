@@ -14,7 +14,7 @@ vi.mock('../../api/axiosClient', () => ({
 // Mock du client API
 vi.mock('../../generated/api', () => ({
   AuthApi: {
-    apiv1authloginpost: vi.fn(),
+    v1authloginpost: vi.fn(),
   },
 }));
 
@@ -68,12 +68,12 @@ describe('authStore', () => {
         },
       };
 
-      vi.mocked(AuthApi.apiv1authloginpost).mockResolvedValue(mockResponse);
+      vi.mocked(AuthApi.v1authloginpost).mockResolvedValue(mockResponse);
 
       const { login } = useAuthStore.getState();
       await login('testuser', 'testpass');
 
-      expect(AuthApi.apiv1authloginpost).toHaveBeenCalledWith({
+      expect(AuthApi.v1authloginpost).toHaveBeenCalledWith({
         username: 'testuser',
         password: 'testpass',
       });
@@ -94,7 +94,7 @@ describe('authStore', () => {
         },
       };
 
-      vi.mocked(AuthApi.apiv1authloginpost).mockResolvedValue(mockResponse);
+      vi.mocked(AuthApi.v1authloginpost).mockResolvedValue(mockResponse);
 
       const { login } = useAuthStore.getState();
       await login('testuser', 'testpass');
@@ -119,7 +119,7 @@ describe('authStore', () => {
         },
       };
 
-      vi.mocked(AuthApi.apiv1authloginpost).mockResolvedValue(mockResponse);
+      vi.mocked(AuthApi.v1authloginpost).mockResolvedValue(mockResponse);
 
       const { login } = useAuthStore.getState();
       await login('testuser', 'testpass');
@@ -128,7 +128,6 @@ describe('authStore', () => {
       expect(state.isAuthenticated).toBe(true);
       expect(state.currentUser).toEqual({
         id: '1',
-        telegram_id: undefined,
         username: 'testuser',
         first_name: 'Test',
         last_name: 'User',
@@ -147,7 +146,7 @@ describe('authStore', () => {
         detail: 'Invalid credentials',
       };
 
-      vi.mocked(AuthApi.apiv1authloginpost).mockRejectedValue(mockError);
+      vi.mocked(AuthApi.v1authloginpost).mockRejectedValue(mockError);
 
       const { login } = useAuthStore.getState();
       
@@ -170,7 +169,7 @@ describe('authStore', () => {
         resolvePromise = resolve;
       });
 
-      vi.mocked(AuthApi.apiv1authloginpost).mockReturnValue(promise as any);
+      vi.mocked(AuthApi.v1authloginpost).mockReturnValue(promise as any);
 
       const { login } = useAuthStore.getState();
       const loginPromise = login('testuser', 'testpass');
@@ -199,28 +198,6 @@ describe('authStore', () => {
       expect(useAuthStore.getState().loading).toBe(false);
     });
 
-    it('login sans telegram_id dans la réponse : currentUser sans telegram_id', async () => {
-      const mockResponse = {
-        access_token: 'test-token',
-        token_type: 'bearer',
-        user: {
-          id: '1',
-          username: 'tgui',
-          role: 'user',
-          status: 'approved',
-          is_active: true,
-          created_at: '2023-01-01T00:00:00Z',
-          updated_at: '2023-01-01T00:00:00Z',
-        },
-      };
-
-      vi.mocked(AuthApi.apiv1authloginpost).mockResolvedValue(mockResponse);
-
-      const { login } = useAuthStore.getState();
-      await login('tgui', 'testpass');
-
-      expect(useAuthStore.getState().currentUser?.telegram_id).toBeUndefined();
-    });
   });
 
   describe('initializeAuth', () => {
@@ -281,37 +258,6 @@ describe('authStore', () => {
       expect(state.permissions).toEqual(['reception.access']);
       expect(state.loading).toBe(false);
       expect(state.token).toBe('jwt-test');
-    });
-
-    it('GET /v1/users/me sans telegram_id : currentUser sans telegram_id', async () => {
-      localStorageMock.getItem.mockImplementation((key: string) =>
-        key === 'token' ? 'jwt-test' : null
-      );
-
-      const me = {
-        id: 'user-99',
-        username: 'volunteer',
-        role: 'user',
-        status: 'approved',
-        is_active: true,
-        created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z',
-      };
-
-      vi.mocked(axiosClient.get).mockImplementation(async (path: string) => {
-        if (path === '/v1/users/me/permissions') {
-          return { data: { permissions: [] } };
-        }
-        if (path === '/v1/users/me') {
-          return { data: me };
-        }
-        return { data: {} };
-      });
-
-      const { initializeAuth } = useAuthStore.getState();
-      await initializeAuth();
-
-      expect(useAuthStore.getState().currentUser?.telegram_id).toBeUndefined();
     });
 
     it('échec /v1/users/me : déclenche logout (nettoyage local)', async () => {

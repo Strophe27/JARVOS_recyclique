@@ -47,7 +47,6 @@ export const renderWithRouter = (ui: React.ReactElement, route = '/') =>
 // Mock data factories
 export const mockUser = {
   id: 1,
-  telegram_id: '123456789',
   username: 'testuser',
   first_name: 'Test',
   last_name: 'User',
@@ -84,7 +83,6 @@ export const mockSites = [
 ]
 
 export const mockRegistrationData = {
-  telegram_id: '123456789',
   username: 'testuser',
   first_name: 'Test',
   last_name: 'User',

@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { mockUsersApi } = vi.hoisted(() => ({
   mockUsersApi: {
-    usersapiv1usersget: vi.fn(),
-    userapiv1usersuseridget: vi.fn(),
-    userapiv1userspost: vi.fn(),
-    userapiv1usersuseridput: vi.fn(),
+    usersv1usersget: vi.fn(),
+    userv1usersuseridget: vi.fn(),
+    userv1userspost: vi.fn(),
+    userv1usersuseridput: vi.fn(),
   },
 }))
 
@@ -47,7 +47,7 @@ describe('AdminService user mapping', () => {
   })
 
   it('ne propage pas telegram_id depuis UsersApi (liste) — lot 10A', async () => {
-    mockUsersApi.usersapiv1usersget.mockResolvedValue([userResponseAsApi])
+    mockUsersApi.usersv1usersget.mockResolvedValue([userResponseAsApi])
 
     const result = await adminService.getUsers()
 
@@ -57,17 +57,17 @@ describe('AdminService user mapping', () => {
   })
 
   it('ne propage pas telegram_id depuis UsersApi (getUserById)', async () => {
-    mockUsersApi.userapiv1usersuseridget.mockResolvedValue(userResponseAsApi)
+    mockUsersApi.userv1usersuseridget.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.getUserById('user-1')
 
-    expect(mockUsersApi.userapiv1usersuseridget).toHaveBeenCalledWith('user-1')
+    expect(mockUsersApi.userv1usersuseridget).toHaveBeenCalledWith('user-1')
     expect(result).toMatchObject(expectedAdminMappingSlice)
     expect(result).not.toHaveProperty('telegram_id')
   })
 
   it('ne propage pas telegram_id depuis la réponse createUser (UsersApi)', async () => {
-    mockUsersApi.userapiv1userspost.mockResolvedValue(userResponseAsApi)
+    mockUsersApi.userv1userspost.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.createUser({
       telegram_id: 'tg_admin_alpha',
@@ -78,17 +78,17 @@ describe('AdminService user mapping', () => {
       status: UserStatus.APPROVED,
     })
 
-    expect(mockUsersApi.userapiv1userspost).toHaveBeenCalled()
+    expect(mockUsersApi.userv1userspost).toHaveBeenCalled()
     expect(result).toMatchObject(expectedAdminMappingSlice)
     expect(result).not.toHaveProperty('telegram_id')
   })
 
   it('ne propage pas telegram_id depuis la réponse updateUser (UsersApi)', async () => {
-    mockUsersApi.userapiv1usersuseridput.mockResolvedValue(userResponseAsApi)
+    mockUsersApi.userv1usersuseridput.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.updateUser('user-1', { first_name: 'Admin' })
 
-    expect(mockUsersApi.userapiv1usersuseridput).toHaveBeenCalledWith('user-1', { first_name: 'Admin' })
+    expect(mockUsersApi.userv1usersuseridput).toHaveBeenCalledWith('user-1', { first_name: 'Admin' })
     expect(result.success).toBe(true)
     expect(result.data).toMatchObject(expectedAdminMappingSlice)
     expect(result.data).not.toHaveProperty('telegram_id')

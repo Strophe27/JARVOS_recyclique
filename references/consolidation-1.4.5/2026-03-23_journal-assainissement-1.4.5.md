@@ -4799,6 +4799,37 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Lot 11B (2026-03-27) — `purge-telegram-code` : formulaires / payloads frontend sans `telegram_id`
+
+**Statut:** execute (sans commit)  
+**Theme:** retirer `telegram_id` des parcours vivants (inscription publique, creation admin, types services/store/hook, validation utilitaire) ; alignement avec `UserCreate` backend deja sans ce champ (lot 11A). DB, `legacy_import`, OpenRouter **non touches**.
+
+### Fichiers touches (principaux)
+- `recyclique-1.4.4/frontend/src/pages/Registration.jsx` : plus de champ ni query `telegram_id`, payload sans cle ; message de succes sans promesse Telegram ; `noValidate` pour laisser la validation metier s’afficher sous jsdom/tests.
+- `recyclique-1.4.4/frontend/src/components/business/UserProfileTab.tsx` : suppression champ et payload creation.
+- `recyclique-1.4.4/frontend/src/services/adminService.ts` (`UserCreate`), `usersService.ts`, `stores/authStore.ts`, `hooks/useAuth.ts`, `utils/validation.ts` (`RegistrationFormData`, suppression `isValidTelegramId`).
+- Tests : `Registration.test.tsx`, `registration-workflow.test.tsx`, `public-routes.test.tsx`, `validation.test.ts`, `useAuth.test.ts`, `authStore` (`__tests__` + `test/stores`), `adminService*.test.ts`, `test-utils`, pages admin / integration / e2e (`public-registration.spec.ts`, `admin.spec.ts`), `Users.test.tsx` (pages + `__tests__`), `PendingUsers.test.tsx`, `admin-user-management.test.tsx`.
+- Journal : ce fichier.
+
+### Validation
+- `npm run test:run --` (liste ciblee des 10 fichiers de test lies au lot) : **102 passed** (Registration, registration-workflow, validation, useAuth, authStore `__tests__`, adminService + pending + userMapping, public-routes, UserProfileTab).
+- Suite `vitest` complete du frontend : **nombreux echecs preexistants** (Dashboard, scrollManager, authStore `test/stores` avec `canManageUsers`, etc.) — **hors perimetre 11B**.
+
+### Reserves
+- E2E Playwright (`public-registration`, `admin`) non executes ici (serveurs / env).
+- Reliquats texte « Telegram » possibles hors fichiers du lot (README test, openapi descriptions).
+- `src/test/stores/authStore.test.ts` : ecarts API store (`canManageUsers`, `hasCashAccess` / permissions) — deja en echec dans la suite globale, non corrige en 11B.
+
+### Suivi post-11B (2026-03-27) — Noms de methodes `UsersApi` / `AdminApi` dans `adminService`
+
+Apres regeneration OpenAPI, les symboles client ne contiennent plus le segment `apiv1` dans ces handlers (ex. `usersv1usersget` au lieu de `usersapiv1usersget`). `adminService.ts` et les tests unitaires `adminService*.test.ts` / `adminService.userMapping.test.ts` ont ete realignes sur `frontend/src/generated/api.ts` (sans commit).
+
+### Suivi post-11B (2026-03-27) — `AuthApi` login / signup
+
+`AuthApi.apiv1authloginpost` / `apiv1authsignuppost` remplaces par `v1authloginpost` / `v1authsignuppost` dans `stores/authStore.ts`, `stores/__tests__/authStore.test.ts`, `test/stores/authStore.test.ts` (sans commit). Commentaire obsolete dans `services/authService.ts` hors lot 11B — drift documentaire restant.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

@@ -19,7 +19,6 @@ vi.mock('../../../stores/adminStore', () => ({
     users: [
       {
         id: '1',
-        telegram_id: 123456789,
         username: 'testuser1',
         first_name: 'Test',
         last_name: 'User1',
@@ -32,7 +31,6 @@ vi.mock('../../../stores/adminStore', () => ({
       },
       {
         id: '2',
-        telegram_id: 987654321,
         username: 'testuser2',
         first_name: 'Test',
         last_name: 'User2',

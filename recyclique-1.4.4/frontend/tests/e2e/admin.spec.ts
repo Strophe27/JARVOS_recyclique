@@ -25,7 +25,6 @@ const TEST_USER = {
 // Utilisateur de test pour la modale d'édition
 const TEST_EDIT_USER = {
   id: 'edit-user-123',
-  telegram_id: '123456789',
   username: 'edit_user',
   first_name: 'Edit',
   last_name: 'User',
@@ -67,7 +66,6 @@ test.describe('Interface d\'Administration E2E', () => {
         body: JSON.stringify([
           {
             id: 'user-1',
-            telegram_id: '123456789',
             username: 'user1',
             first_name: 'John',
             last_name: 'Doe',
@@ -79,7 +77,6 @@ test.describe('Interface d\'Administration E2E', () => {
           },
           {
             id: 'user-2',
-            telegram_id: '987654321',
             username: 'user2',
             first_name: 'Jane',
             last_name: 'Smith',
@@ -113,7 +110,6 @@ test.describe('Interface d\'Administration E2E', () => {
         body: JSON.stringify([
           {
             id: 'user-1',
-            telegram_id: '123456789',
             username: 'user1',
             first_name: 'John',
             last_name: 'Doe',
@@ -175,7 +171,6 @@ test.describe('Interface d\'Administration E2E', () => {
         users = [
           {
             id: 'user-1',
-            telegram_id: '123456789',
             username: 'user1',
             first_name: 'John',
             last_name: 'Doe',
@@ -190,7 +185,6 @@ test.describe('Interface d\'Administration E2E', () => {
         users = [
           {
             id: 'user-1',
-            telegram_id: '123456789',
             username: 'user1',
             first_name: 'John',
             last_name: 'Doe',
@@ -202,7 +196,6 @@ test.describe('Interface d\'Administration E2E', () => {
           },
           {
             id: 'user-2',
-            telegram_id: '987654321',
             username: 'user2',
             first_name: 'Jane',
             last_name: 'Smith',
@@ -282,7 +275,6 @@ test.describe('Interface d\'Administration E2E', () => {
       // Simuler 50 utilisateurs
       const users = Array.from({ length: Math.min(limit, 50 - skip) }, (_, i) => ({
         id: `user-${skip + i + 1}`,
-        telegram_id: `${123456789 + skip + i}`,
         username: `user${skip + i + 1}`,
         first_name: `User${skip + i + 1}`,
         last_name: 'Test',
@@ -319,7 +311,6 @@ test.describe('Interface d\'Administration E2E', () => {
       let users = [
           {
           id: 'user-1',
-          telegram_id: '123456789',
           username: 'john_doe',
           first_name: 'John',
           last_name: 'Doe',
@@ -331,7 +322,6 @@ test.describe('Interface d\'Administration E2E', () => {
         },
         {
           id: 'user-2',
-          telegram_id: '987654321',
           username: 'jane_smith',
           first_name: 'Jane',
           last_name: 'Smith',

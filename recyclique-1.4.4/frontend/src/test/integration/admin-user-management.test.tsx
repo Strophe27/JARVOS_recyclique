@@ -44,7 +44,6 @@ vi.mock('@mantine/notifications', () => ({
 const mockUsers = [
   {
     id: '1',
-    telegram_id: 123456789,
     username: 'activeuser',
     first_name: 'Active',
     last_name: 'User',
@@ -57,7 +56,6 @@ const mockUsers = [
   },
   {
     id: '2',
-    telegram_id: 987654321,
     username: 'inactiveuser',
     first_name: 'Inactive',
     last_name: 'User',
@@ -283,7 +281,6 @@ describe('Profile Update Synchronization', () => {
       role: 'USER' as const,
       status: 'APPROVED' as const,
       is_active: true,
-      telegram_id: 123456,
       created_at: '2025-01-01T00:00:00Z',
       updated_at: '2025-01-01T00:00:00Z'
     }

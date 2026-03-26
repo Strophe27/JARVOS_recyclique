@@ -35,16 +35,16 @@ describe('useAuth Hook', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('should preserve telegram_id as number or string after load from localStorage', () => {
-    const numeric = { id: '1', username: 'u', role: 'user' as const, email: 'a@b.c', telegram_id: 123456789 }
-    localStorageMock.getItem.mockReturnValue(JSON.stringify(numeric))
-    const { result: r1 } = renderHook(() => useAuth())
-    expect(r1.current.user?.telegram_id).toBe(123456789)
-
-    const alpha = { id: '2', username: 'u2', role: 'user' as const, email: 'x@y.z', telegram_id: 'tg_alpha' }
-    localStorageMock.getItem.mockReturnValue(JSON.stringify(alpha))
-    const { result: r2 } = renderHook(() => useAuth())
-    expect(r2.current.user?.telegram_id).toBe('tg_alpha')
+  it('should load user from localStorage même si JSON contient des clés legacy (ex. telegram_id)', () => {
+    const legacy = { id: '1', username: 'u', role: 'user' as const, email: 'a@b.c', telegram_id: 123456789 }
+    localStorageMock.getItem.mockReturnValue(JSON.stringify(legacy))
+    const { result } = renderHook(() => useAuth())
+    expect(result.current.user).toMatchObject({
+      id: '1',
+      username: 'u',
+      role: 'user',
+      email: 'a@b.c',
+    })
   })
 
   it('should load user from localStorage on mount', () => {

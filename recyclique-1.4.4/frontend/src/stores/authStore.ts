@@ -7,8 +7,6 @@ import { getTokenExpiration } from '../utils/jwt';
 
 export interface User {
   id: string;
-  /** Données persistées héritées uniquement ; ni login ni `GET /v1/users/me` ne renvoient ce champ. */
-  telegram_id?: string | number;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -93,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: true, error: null });
           try {
             const loginData: LoginRequest = { username, password };
-            const response = await AuthApi.apiv1authloginpost(loginData) as LoginResponse & {
+            const response = await AuthApi.v1authloginpost(loginData) as LoginResponse & {
               refresh_token?: string | null;
             };
             
@@ -150,7 +148,7 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: true, error: null });
           try {
             const signupData = { username, password, email };
-            await AuthApi.apiv1authsignuppost(signupData);
+            await AuthApi.v1authsignuppost(signupData);
             set({ loading: false, error: null });
           } catch (error: any) {
             let errorMessage = "Erreur lors de l'inscription";

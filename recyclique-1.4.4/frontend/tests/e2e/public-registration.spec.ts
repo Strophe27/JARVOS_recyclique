@@ -10,7 +10,7 @@ test.describe('Public Registration Route', () => {
     await expect(page.locator('h1')).toContainText('📝 Inscription RecyClique');
 
     // Vérifier la présence des éléments du formulaire
-    await expect(page.locator('label')).toContainText('ID Telegram');
+    await expect(page.locator('label')).toContainText('Identifiant');
     await expect(page.locator('label')).toContainText('Prénom');
     await expect(page.locator('label')).toContainText('Nom de famille');
 
@@ -18,14 +18,11 @@ test.describe('Public Registration Route', () => {
     await expect(page).not.toHaveURL('**/login');
   });
 
-  test('should handle telegram_id parameter correctly', async ({ page }) => {
-    // Accéder avec un paramètre telegram_id
+  test('legacy telegram_id query param does not surface a Telegram field', async ({ page }) => {
     await page.goto('/inscription?telegram_id=123456789');
-
-    // Vérifier que le champ est pré-rempli et désactivé
-    const telegramInput = page.locator('input[label*="ID Telegram"]');
-    await expect(telegramInput).toHaveValue('123456789');
-    await expect(telegramInput).toBeDisabled();
+    await expect(page.locator('h1')).toContainText('📝 Inscription RecyClique');
+    await expect(page.getByLabel('Identifiant')).toBeVisible();
+    await expect(page.getByLabel(/telegram/i)).toHaveCount(0);
   });
 
   test('should not redirect to login when accessing registration', async ({ page }) => {

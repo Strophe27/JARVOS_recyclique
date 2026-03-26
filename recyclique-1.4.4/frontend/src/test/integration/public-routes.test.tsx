@@ -63,22 +63,20 @@ describe('Public Routes Integration Tests', () => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      expect(screen.getByLabelText(/id telegram/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^identifiant$/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/prénom/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/nom de famille/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /envoyer la demande/i })).toBeInTheDocument()
     })
 
-    it('should render registration page with telegram_id parameter without authentication', async () => {
+    it('should render registration page with legacy query params without authentication', async () => {
       renderAppWithRoute('/inscription?telegram_id=123456789')
 
       await waitFor(() => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      const telegramInput = screen.getByLabelText(/id telegram/i) as HTMLInputElement
-      expect(telegramInput.value).toBe('123456789')
-      expect(telegramInput).toBeDisabled()
+      expect(screen.queryByLabelText(/telegram/i)).not.toBeInTheDocument()
     })
 
     it('should not redirect to login page when accessing registration route', async () => {
@@ -161,19 +159,18 @@ describe('Public Routes Integration Tests', () => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      expect(screen.getByLabelText(/id telegram/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^identifiant$/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /envoyer la demande/i })).toBeInTheDocument()
     })
 
-    it('should preserve URL parameters on registration page load', async () => {
+    it('should load registration with query string without binding telegram_id to a field', async () => {
       renderAppWithRoute('/inscription?telegram_id=987654321&ref=telegram')
 
       await waitFor(() => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      const telegramInput = screen.getByLabelText(/id telegram/i) as HTMLInputElement
-      expect(telegramInput.value).toBe('987654321')
+      expect(screen.queryByLabelText(/telegram/i)).not.toBeInTheDocument()
     })
   })
 })

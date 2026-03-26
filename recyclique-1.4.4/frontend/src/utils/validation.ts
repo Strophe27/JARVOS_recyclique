@@ -22,13 +22,7 @@ export const isValidPhone = (phone: string): boolean => {
   return phoneRegex.test(phone.replace(/\s/g, ''))
 }
 
-// Telegram ID validation
-export const isValidTelegramId = (telegramId: string): boolean => {
-  const telegramIdRegex = /^\d{9,10}$/
-  return telegramIdRegex.test(telegramId)
-}
-
-// Username validation (Telegram format)
+// Username validation (optional @handle style)
 export const isValidUsername = (username: string): boolean => {
   if (!username) return true // Username is optional
   const usernameRegex = /^@[a-zA-Z0-9_]{5,32}$/
@@ -42,7 +36,6 @@ export const isRequired = (value: string): boolean => {
 
 // Registration form validation
 export interface RegistrationFormData {
-  telegram_id: string
   username: string
   first_name: string
   last_name: string
@@ -54,13 +47,6 @@ export interface RegistrationFormData {
 
 export const validateRegistrationForm = (data: RegistrationFormData): ValidationResult => {
   const errors: ValidationError[] = []
-
-  // Required fields
-  if (!isRequired(data.telegram_id)) {
-    errors.push({ field: 'telegram_id', message: 'L\'ID Telegram est requis' })
-  } else if (!isValidTelegramId(data.telegram_id)) {
-    errors.push({ field: 'telegram_id', message: 'L\'ID Telegram doit contenir 9 ou 10 chiffres' })
-  }
 
   if (!isRequired(data.first_name)) {
     errors.push({ field: 'first_name', message: 'Le prénom est requis' })

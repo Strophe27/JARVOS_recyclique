@@ -30,8 +30,6 @@ interface UserProfileTabProps {
 }
 
 interface UserFormData {
-  /** Optionnel : saisi uniquement en création admin (payload UserCreate), jamais renseigné depuis les réponses API. */
-  telegram_id?: string;
   first_name?: string;
   last_name?: string;
   username?: string;
@@ -47,7 +45,6 @@ interface UserFormData {
 }
 
 const sanitizeUserForForm = (user: AdminUser | null): UserFormData => ({
-  telegram_id: '',
   first_name: user?.first_name || '',
   last_name: user?.last_name || '',
   username: user?.username || '',
@@ -235,7 +232,6 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
       if (isCreateMode) {
         // Mode création
         const createData = {
-          telegram_id: values.telegram_id || null, // Peut être null maintenant
           first_name: values.first_name,
           last_name: values.last_name,
           username: values.username,
@@ -603,19 +599,6 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
       >
         <form onSubmit={handleSubmit(handleSave)}>
           <Stack gap="md">
-            {isCreateMode && (
-              <TextInput
-                label="ID Telegram"
-                placeholder="Entrez l'ID Telegram (optionnel)"
-                {...register('telegram_id', {
-                  minLength: { value: 1, message: 'L\'ID Telegram ne peut pas être vide si renseigné' }
-                })}
-                value={watch('telegram_id') || ''}
-                onChange={(e) => setValue('telegram_id', e.target.value, { shouldValidate: true })}
-                error={errors.telegram_id?.message}
-              />
-            )}
-
             <TextInput
               label="Prénom"
               placeholder="Entrez le prénom"

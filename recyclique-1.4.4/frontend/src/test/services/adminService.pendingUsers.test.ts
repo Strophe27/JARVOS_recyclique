@@ -6,7 +6,7 @@ const { mockPendingUsersApi } = vi.hoisted(() => ({
 
 vi.mock('../../generated/api', () => ({
   AdminApi: {
-    pendingusersapiv1adminuserspendingget: mockPendingUsersApi,
+    pendingusersv1adminuserspendingget: mockPendingUsersApi,
   },
   UsersApi: {},
 }))
@@ -22,11 +22,10 @@ describe('AdminService pending users', () => {
     vi.clearAllMocks()
   })
 
-  it('preserves non numeric telegram_id values for pending users', async () => {
+  it('mappe les utilisateurs en attente sans exposer telegram_id côté AdminUser', async () => {
     mockPendingUsersApi.mockResolvedValue([
       {
         id: 'pending-1',
-        telegram_id: 'tg_pending_alpha',
         username: 'pending_alpha',
         first_name: 'Pending',
         last_name: 'Alpha',
@@ -42,7 +41,6 @@ describe('AdminService pending users', () => {
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       id: 'pending-1',
-      telegram_id: 'tg_pending_alpha',
       username: 'pending_alpha',
       status: UserStatus.PENDING,
       is_active: true,

@@ -35,7 +35,7 @@ describe('useAuthStore', () => {
         }
       };
 
-      mockAuthApi.apiv1authloginpost = vi.fn().mockResolvedValue(mockLoginResponse);
+      mockAuthApi.v1authloginpost = vi.fn().mockResolvedValue(mockLoginResponse);
 
       const { result } = renderHook(() => useAuthStore());
 
@@ -46,7 +46,6 @@ describe('useAuthStore', () => {
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.currentUser).toEqual({
         id: 'user-123',
-        telegram_id: undefined,
         username: 'testuser',
         role: 'user',
         status: 'approved',
@@ -64,7 +63,7 @@ describe('useAuthStore', () => {
         detail: 'Identifiants invalides ou utilisateur inactif'
       };
 
-      mockAuthApi.apiv1authloginpost = vi.fn().mockRejectedValue(mockError);
+      mockAuthApi.v1authloginpost = vi.fn().mockRejectedValue(mockError);
 
       const { result } = renderHook(() => useAuthStore());
 
@@ -92,7 +91,7 @@ describe('useAuthStore', () => {
         status: 'pending'
       };
 
-      mockAuthApi.apiv1authsignuppost = vi.fn().mockResolvedValue(mockSignupResponse);
+      mockAuthApi.v1authsignuppost = vi.fn().mockResolvedValue(mockSignupResponse);
 
       const { result } = renderHook(() => useAuthStore());
 
@@ -105,7 +104,7 @@ describe('useAuthStore', () => {
       // L'utilisateur ne devrait pas être connecté automatiquement après signup
       expect(result.current.isAuthenticated).toBe(false);
       expect(result.current.currentUser).toBeNull();
-      expect(mockAuthApi.apiv1authsignuppost).toHaveBeenCalledWith({
+      expect(mockAuthApi.v1authsignuppost).toHaveBeenCalledWith({
         username: 'newuser',
         password: 'password123',
         email: 'test@example.com'
@@ -119,7 +118,7 @@ describe('useAuthStore', () => {
         status: 'pending'
       };
 
-      mockAuthApi.apiv1authsignuppost = vi.fn().mockResolvedValue(mockSignupResponse);
+      mockAuthApi.v1authsignuppost = vi.fn().mockResolvedValue(mockSignupResponse);
 
       const { result } = renderHook(() => useAuthStore());
 
@@ -129,7 +128,7 @@ describe('useAuthStore', () => {
 
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBeNull();
-      expect(mockAuthApi.apiv1authsignuppost).toHaveBeenCalledWith({
+      expect(mockAuthApi.v1authsignuppost).toHaveBeenCalledWith({
         username: 'newuser2',
         password: 'password123',
         email: undefined
@@ -141,7 +140,7 @@ describe('useAuthStore', () => {
         detail: 'Ce nom d\'utilisateur est déjà pris'
       };
 
-      mockAuthApi.apiv1authsignuppost = vi.fn().mockRejectedValue(mockError);
+      mockAuthApi.v1authsignuppost = vi.fn().mockRejectedValue(mockError);
 
       const { result } = renderHook(() => useAuthStore());
 
@@ -162,7 +161,7 @@ describe('useAuthStore', () => {
     it('should handle signup failure with generic error', async () => {
       const mockError = {};
 
-      mockAuthApi.apiv1authsignuppost = vi.fn().mockRejectedValue(mockError);
+      mockAuthApi.v1authsignuppost = vi.fn().mockRejectedValue(mockError);
 
       const { result } = renderHook(() => useAuthStore());
 

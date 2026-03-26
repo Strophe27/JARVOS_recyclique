@@ -77,7 +77,6 @@ vi.mock('../../../components/business/PendingUsersTable', () => ({
 // Données de test
 const createMockUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   id: '1',
-  telegram_id: 123456789,
   username: 'testuser',
   first_name: 'Test',
   last_name: 'User',
@@ -93,7 +92,6 @@ const createMockUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
 const mockUsers: AdminUser[] = [
   createMockUser({
     id: '1',
-    telegram_id: 123456789,
     username: 'testuser1',
     first_name: 'Test',
     last_name: 'User',
@@ -101,7 +99,6 @@ const mockUsers: AdminUser[] = [
   }),
   createMockUser({
     id: '2',
-    telegram_id: 987654321,
     username: 'testuser2',
     first_name: 'Another',
     last_name: 'User',
@@ -545,7 +542,6 @@ describe('PendingUsers', () => {
       const manyUsers = Array.from({ length: 100 }, (_, i) => 
         createMockUser({
           id: `${i}`,
-          telegram_id: 100000000 + i,
           username: `user${i}`,
           first_name: `User${i}`,
           last_name: `Test`,
