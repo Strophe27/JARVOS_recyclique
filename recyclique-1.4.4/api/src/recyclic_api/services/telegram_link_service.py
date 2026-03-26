@@ -3,7 +3,7 @@
 Seul l'helper d'authentification local subsiste ; ``link_telegram_account`` reste
 neutralisé sans modifier le schéma DB.
 """
-from typing import Optional, Tuple
+from typing import NoReturn, Optional
 from sqlalchemy.orm import Session
 
 from recyclic_api.core.exceptions import TelegramLinkDisabledError
@@ -32,7 +32,7 @@ class TelegramLinkService:
 
         return user if user.is_active else None
 
-    def link_telegram_account(self, username: str, password: str, telegram_id: str) -> Tuple[bool, str]:
+    def link_telegram_account(self, username: str, password: str, telegram_id: str) -> NoReturn:
         """Ancienne liaison Telegram — désactivée (lever ``TelegramLinkDisabledError``).
 
         Conservé pour tout appelant hors HTTP ; la route ``POST .../link-telegram`` renvoie 410.
