@@ -407,20 +407,6 @@ def require_admin_role_strict():
     return admin_checker
 
 
-# Utilities for Telegram auth flows
-def get_user_by_telegram_id(db: Session, telegram_id: str) -> Optional[User]:
-    """Fetch user by telegram_id."""
-    result = db.execute(select(User).where(User.telegram_id == telegram_id))
-    return result.scalar_one_or_none()
-
-
-def authenticate_user(db: Session, telegram_id: str) -> Optional[User]:
-    """Authenticate a user by telegram_id."""
-    user = get_user_by_telegram_id(db, telegram_id)
-    if user and user.is_active:
-        return user
-    return None
-
 async def send_reset_password_email(email: str, db: Session) -> None:
     """Génère un token de réinitialisation et envoie l'e-mail."""
     user = db.query(User).filter(User.email == email).first()
