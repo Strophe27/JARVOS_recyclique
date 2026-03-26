@@ -3769,6 +3769,32 @@
 
 ---
 
+## Lot 4H — Core : helper `username_or_telegram_id` pour audit `SaleService`
+
+**Statut:** ferme  
+**Theme:** extraire le fallback `username or telegram_id` (details audit modification de prix) dans un helper pur reutilisable, sans changer le comportement
+
+### Actions
+- Ajout de `recyclic_api.core.user_identity.username_or_telegram_id` : meme semantique que `username or telegram_id` (chaine vide → repli sur `telegram_id`).
+- `SaleService.update_sale_item` : cle `username` des details `log_audit` passe par ce helper.
+- Tests `@pytest.mark.no_db` sur le helper (`tests/test_user_identity.py`).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/core/user_identity.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`
+- `recyclique-1.4.4/api/tests/test_user_identity.py`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_user_identity.py` : **4 tests OK** (semantique `or` verrouillee).
+- `pytest tests/test_sale_service.py::test_sale_service_update_sale_item_admin_updates_price` : **non execute avec succes** sur la machine du run sous SQLite minimal (`cash_registers` absent du `create_all` partiel dans `conftest`) — **hors regression de ce lot** ; a rejouer avec `TEST_DATABASE_URL` PostgreSQL ou schema SQLite elargi si besoin.
+- Diagnostics IDE / lints sur les fichiers Python modifies : **0 probleme**
+
+### Resultat
+- Un seul point d'usage conserve dans `sale_service` ; le fallback est documente et testable sans DB.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3805,13 +3831,14 @@
 - **Vague 5:** troisieme lot final Telegram ferme sur les endpoints bot de depots
 - **Vague 5:** quatrieme lot final Telegram ferme sur la suppression des appels directs admin
 - **Vague 5:** cinquieme lot final Telegram ferme sur l'elagage du service Telegram
+- **Vague 4:** lot `4H` ferme sur helper core `username_or_telegram_id` + usage dans `SaleService` (audit prix item)
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre la coherence `telegram_id` / fallbacks sur d'autres surfaces faible risque si le backlog le demande

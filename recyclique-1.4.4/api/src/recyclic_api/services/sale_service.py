@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from recyclic_api.core.audit import log_audit
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
+from recyclic_api.core.user_identity import username_or_telegram_id
 from recyclic_api.core.logging import log_transaction_event
 from recyclic_api.models.audit_log import AuditActionType
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
@@ -89,7 +90,7 @@ class SaleService:
                     "old_price": float(old_price),
                     "new_price": float(new_price),
                     "user_id": str(user.id),
-                    "username": user.username or user.telegram_id,
+                    "username": username_or_telegram_id(user.username, user.telegram_id),
                 },
                 description=f"Price modification: {old_price} → {new_price} for item {item_id}",
                 db=db,
