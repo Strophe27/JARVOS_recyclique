@@ -3667,6 +3667,35 @@
 
 ---
 
+## Lot 2BO — Suppression d'un reliquat mort dans `telegram_link_service`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** retirer la methode morte `check_telegram_id_conflict` et realigner la documentation du service de liaison Telegram
+
+### Actions
+- Suppression de `check_telegram_id_conflict`, sans usage residuel dans le depot.
+- Mise a jour de la docstring du module pour indiquer que seul l'helper d'auth locale reste aux cotes de `link_telegram_account` desactive.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/telegram_link_service.py`
+
+### Validation
+- Diagnostics IDE / lints sur le fichier modifie.
+- Validation locale ciblee backend :
+  - `tests/test_telegram_link_arch03.py`
+  - `tests/test_telegram_link_endpoint.py`
+- Resultat backend :
+  - **7 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `telegram_link_service.py` ne conserve plus ce reliquat mort.
+- Le service est maintenant plus coherent avec la desactivation deja effective du flux `link-telegram`.
+- Reserves acceptees :
+  - un appelant externe au depot qui utiliserait encore cette methode obtiendrait desormais une `AttributeError`
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
