@@ -3462,6 +3462,38 @@
 
 ---
 
+## Lot 2BI — Gel contractuel du reliquat auth bot sur `PUT /deposits/{id}`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** confirmer explicitement que la finalisation de depot reste le seul endpoint depots encore protege par `X-Bot-Token`
+
+### Actions
+- Documentation explicite dans `deposits.py` pour signaler que `PUT /deposits/{id}` est le dernier endpoint depots conservant l'auth bot.
+- Ajout d'un test OpenAPI cible qui verifie que le header `X-Bot-Token` n'est documente que sur `PUT /deposits/{id}` et plus sur les routes Telegram deja desactivees.
+- Decision de prudence enterinee : ne pas retirer `get_bot_token_dependency` tant qu'aucun contrat d'auth de remplacement n'est defini pour la finalisation.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/deposits.py`
+- `recyclique-1.4.4/api/tests/test_bot_auth_simple.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_bot_auth_simple.py`
+  - `tests/test_deposit_validation_workflow.py`
+- Resultat local :
+  - **15 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Le reliquat `get_bot_token_dependency` est maintenant explicite et verrouille par un test de contrat OpenAPI.
+- Le micro-lot confirme que ce reliquat n'est pas du code mort mais un contrat HTTP encore vivant autour de la finalisation de depot.
+- Reserves acceptees :
+  - l'auth bot reste une dette ciblee tant qu'aucune auth de remplacement n'est decidee pour `PUT /deposits/{id}`
+  - le test OpenAPI protege l'unicite actuelle du header documente, pas l'ensemble des usages eventuels hors schema genere
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3505,9 +3537,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
+- **Prochaine etape logique:** ouvrir la cartographie du premier sous-lot transversal sur les champs `telegram_*`, en commencant par les usages de schema/reponse a plus faible risque de contrat
 
 ---
 

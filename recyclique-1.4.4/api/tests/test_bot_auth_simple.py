@@ -88,5 +88,24 @@ def test_bot_auth_no_token_configured(client, db_session):
         assert "Bot token not configured on server" in response.json()["detail"]
 
 
+def test_openapi_documents_bot_token_only_on_finalize_endpoint(openapi_schema):
+    paths = openapi_schema["paths"]
+    operations_with_bot_token = []
+
+    for path, path_item in paths.items():
+        for method, operation in path_item.items():
+            if method not in {"get", "post", "put", "patch", "delete"}:
+                continue
+
+            parameters = operation.get("parameters", [])
+            if any(
+                parameter["in"] == "header" and parameter["name"] == "x-bot-token"
+                for parameter in parameters
+            ):
+                operations_with_bot_token.append((method, path))
+
+    assert operations_with_bot_token == [("put", f"{_V1}/deposits/{{deposit_id}}")]
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -94,6 +94,9 @@ async def finalize_deposit(
     """
     Finalize deposit after human validation/correction (Story 4.3).
 
+    This is the last deposit route that still requires bot token auth.
+    Keep the dependency in place until a replacement auth contract is chosen.
+
     This endpoint handles:
     - Validation of AI classification by user
     - Correction of AI classification with user's choice
