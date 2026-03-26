@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 
 interface User {
   id: string
-  telegram_id?: string
+  /** Identifiant Telegram : nombre (API historique) ou chaîne (ex. id non numérique / test). Aligné sur `authStore` / persistance JSON. */
+  telegram_id?: string | number
   username: string
   first_name?: string
   last_name?: string
@@ -146,7 +147,7 @@ export const useAuth = () => {
         })
         return false
       }
-    } catch (error) {
+    } catch {
       setAuthState({
         user: null,
         isAuthenticated: false,
