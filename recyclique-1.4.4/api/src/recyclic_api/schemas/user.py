@@ -24,12 +24,11 @@ class UserProfileFields(BaseModel):
 
 
 class UserBase(UserProfileFields):
-    telegram_id: Optional[str] = None
+    """Base schéma utilisateur (création admin) : pas de telegram_id en entrée (colonne DB inchangée)."""
 
 
 class UserCreate(UserBase):
     password: str
-    telegram_id: Optional[str] = None  # Rendre optionnel
 
     @field_validator('password')
     @classmethod

@@ -17509,17 +17509,6 @@
             ],
             "title": "Site Id"
           },
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id"
-          },
           "password": {
             "type": "string",
             "title": "Password"

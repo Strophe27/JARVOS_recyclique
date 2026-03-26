@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2026-03-26T22:44:32.133Z
+ * Généré le: 2026-03-26T23:12:28.528Z
  */
 
 // ============================================================================
@@ -1069,7 +1069,6 @@ export interface UserCreate {
   status?: UserStatus;
   is_active?: boolean;
   site_id?: string | any;
-  telegram_id?: string | any;
   password: string;
 }
 export interface UserGroupUpdateRequest {

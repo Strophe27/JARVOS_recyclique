@@ -10535,17 +10535,6 @@
             ],
             "title": "Id"
           },
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id"
-          },
           "username": {
             "anyOf": [
               {
@@ -10702,7 +10691,7 @@
           "updated_at"
         ],
         "title": "AdminUser",
-        "description": "Schéma pour les utilisateurs dans l'interface d'administration"
+        "description": "Schéma pour les utilisateurs dans l'interface d'administration (réponse JSON sans telegram_id)."
       },
       "AlertThresholds-Input": {
         "properties": {
@@ -10839,18 +10828,6 @@
           "id": {
             "type": "string",
             "title": "Id"
-          },
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id",
-            "description": "Identifiant Telegram tel qu'en base (chaîne ; peut être non numérique)."
           },
           "username": {
             "anyOf": [
@@ -15423,17 +15400,6 @@
             ],
             "title": "Id"
           },
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id"
-          },
           "username": {
             "anyOf": [
               {
@@ -15498,7 +15464,7 @@
           "created_at"
         ],
         "title": "PendingUserResponse",
-        "description": "Schéma pour la réponse des utilisateurs en attente"
+        "description": "Réponse utilisateurs en attente (sans telegram_id)."
       },
       "PermissionCreate": {
         "properties": {
@@ -17419,17 +17385,6 @@
       },
       "UserCreate": {
         "properties": {
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id"
-          },
           "username": {
             "anyOf": [
               {
@@ -17731,17 +17686,6 @@
       },
       "UserResponse": {
         "properties": {
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id"
-          },
           "username": {
             "anyOf": [
               {
@@ -17887,7 +17831,8 @@
           "created_at",
           "updated_at"
         ],
-        "title": "UserResponse"
+        "title": "UserResponse",
+        "description": "Réponse API utilisateur (liste, détail, /me, création) : sans telegram_id."
       },
       "UserRole": {
         "type": "string",

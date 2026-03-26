@@ -4762,6 +4762,43 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Lot 11A (2026-03-27) — `purge-telegram-code` : inputs `UserCreate` sans `telegram_id`
+
+**Statut:** execute (sans commit)  
+**Theme:** retirer `telegram_id` des schémas Pydantic `UserBase` / `UserCreate` ; `POST /v1/users/` ne propage plus ce champ vers le modele ORM (garde-fou `pop` dans `create_user`). Colonne `users.telegram_id` et autres flux (auth, admin, CLI) **non modifies** ; `schemas/registration_request.py` **hors lot** (aucune route API ne consomme ces schémas — seulement modele ORM / conftest).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/user.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/users.py`
+- `recyclique-1.4.4/api/tests/test_user_creation.py`
+- `recyclique-1.4.4/api/openapi.json` (+ copies racine / frontend)
+- `recyclique-1.4.4/frontend/src/generated/` (`types.ts`, `api.ts`, `index.ts`)
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Suite contrat OpenAPI / codegen (meme lot 11A, sans commit)
+- Regeneration de `api/openapi.json` via `python generate_openapi.py` avec `DATABASE_URL=sqlite:///:memory:`, `REDIS_URL`, `SECRET_KEY` (import `main` OK) ; **sync** vers `recyclique-1.4.4/openapi.json`, `frontend/openapi.json`, `frontend/api/openapi.json`.
+- `npm run codegen` (`frontend/scripts/generate-api.cjs`) → `frontend/src/generated/*`.
+- **Note outil:** sous Windows console cp1252, les `print` emoji de `generate_openapi.py` peuvent lever `UnicodeEncodeError` apres ecriture du fichier ; le JSON est neanmoins produit.
+
+### Validation
+- `pytest` depuis `recyclique-1.4.4/api` :  
+  `tests/test_user_creation.py::test_create_user_success`,  
+  `::test_create_user_username_already_exists`,  
+  `::test_create_user_optional_fields_omitted`,  
+  `::test_create_user_missing_required_fields`,  
+  `::test_create_user_legacy_telegram_id_in_json_not_persisted`,  
+  `tests/test_user_self_endpoints.py`  
+  → **8 passed** (warnings Pydantic existants).
+- Post-regen : assertion JSON `UserCreate` sans cle `telegram_id` sur les `openapi.json` synchronises ; `frontend/src/generated/types.ts` : interface `UserCreate` sans `telegram_id`.
+- `pytest` cible incluant `test_openapi_validation.py::test_openapi_schema_structure` : **echec connu** (chemins `/api/v1/...` attendus vs montage reel `/v1/...` — deja signale journal, hors correctif contrat).
+
+### Reserves (hors 11A)
+- Tests `test_user_creation.py` sur erreurs 422 (mot de passe / username invalides) : echec connu du handler `validation_exception_handler` (`ctx` non JSON-serializable) — deja signale lot 9C.
+- `test_create_user_with_all_fields` : friction `site_id` string vs UUID — deja signale lot 9C.
+- `tests/test_auth_signup_endpoint.py` et `tests/api/test_signup_endpoint.py` : chemins hardcodes `/api/v1/...` vs montage app `/v1/...` → **404** si lances tels quels (alignement hors lot 11A). L’inscription reelle utilise `SignupRequest`, pas `UserCreate`.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

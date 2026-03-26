@@ -149,6 +149,8 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
     # Remove password from user data as it's not needed for User model
     del user_data['password']
+    # telegram_id n'est pas fourni par UserCreate ; la colonne reste nullable en DB (défaut NULL).
+    user_data.pop("telegram_id", None)
 
     db_user = User(**user_data)
     db.add(db_user)

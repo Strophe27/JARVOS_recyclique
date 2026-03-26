@@ -3,7 +3,6 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.schemas.user import UserCreate
 from recyclic_api.core.config import settings
 
 _USERS_ROOT = f"{settings.API_V1_STR.rstrip('/')}/users/"
@@ -13,7 +12,6 @@ def test_create_user_success(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec succès"""
     # Données de test valides
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -47,7 +45,7 @@ def test_create_user_success(client: TestClient, db_session: Session):
     assert user.role == UserRole.USER
     assert user.status == UserStatus.PENDING
     assert user.is_active is True
-    assert user.telegram_id == "123456789"
+    assert user.telegram_id is None
     assert user.hashed_password != "SecurePass123!"  # Le mot de passe doit être hashé
 
 
@@ -69,7 +67,6 @@ def test_create_user_username_already_exists(client: TestClient, db_session: Ses
 
     # Essayer de créer un utilisateur avec le même username
     user_data = {
-        "telegram_id": "123456789",
         "username": "existinguser",  # Username déjà pris
         "first_name": "Test",
         "last_name": "User",
@@ -89,7 +86,6 @@ def test_create_user_username_already_exists(client: TestClient, db_session: Ses
 def test_create_user_invalid_password_too_short(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec mot de passe trop court"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -110,7 +106,6 @@ def test_create_user_invalid_password_too_short(client: TestClient, db_session: 
 def test_create_user_invalid_password_no_uppercase(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec mot de passe sans majuscule"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -131,7 +126,6 @@ def test_create_user_invalid_password_no_uppercase(client: TestClient, db_sessio
 def test_create_user_invalid_password_no_lowercase(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec mot de passe sans minuscule"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -152,7 +146,6 @@ def test_create_user_invalid_password_no_lowercase(client: TestClient, db_sessio
 def test_create_user_invalid_password_no_digit(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec mot de passe sans chiffre"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -173,7 +166,6 @@ def test_create_user_invalid_password_no_digit(client: TestClient, db_session: S
 def test_create_user_invalid_password_no_special_char(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec mot de passe sans caractère spécial"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -194,7 +186,6 @@ def test_create_user_invalid_password_no_special_char(client: TestClient, db_ses
 def test_create_user_invalid_username_too_short(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec username trop court"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "ab",  # Username trop court
         "first_name": "Test",
         "last_name": "User",
@@ -215,7 +206,6 @@ def test_create_user_invalid_username_too_short(client: TestClient, db_session: 
 def test_create_user_invalid_username_format(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec username au format invalide"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "test@user",  # Caractères non autorisés
         "first_name": "Test",
         "last_name": "User",
@@ -237,7 +227,6 @@ def test_create_user_missing_required_fields(client: TestClient, db_session: Ses
     """Test de création d'utilisateur avec champs requis manquants"""
     # Données incomplètes (password manquant)
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -258,7 +247,6 @@ def test_create_user_missing_required_fields(client: TestClient, db_session: Ses
 def test_create_user_optional_fields_omitted(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec champs optionnels omis"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "testuser",
         "password": "SecurePass123!",
         "role": UserRole.USER,
@@ -287,7 +275,6 @@ def test_create_user_optional_fields_omitted(client: TestClient, db_session: Ses
 def test_create_user_with_all_fields(client: TestClient, db_session: Session):
     """Test de création d'utilisateur avec tous les champs remplis"""
     user_data = {
-        "telegram_id": "123456789",
         "username": "completeuser",
         "first_name": "Complete",
         "last_name": "User",
@@ -316,3 +303,22 @@ def test_create_user_with_all_fields(client: TestClient, db_session: Session):
     assert user.role == UserRole.ADMIN
     assert user.status == UserStatus.APPROVED
     assert str(user.site_id) == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_create_user_legacy_telegram_id_in_json_not_persisted(client: TestClient, db_session: Session):
+    """Champ telegram_id absent du schéma : le JSON client est ignoré par Pydantic, pas d'écriture en base."""
+    response = client.post(
+        _USERS_ROOT,
+        json={
+            "username": "no_tg_from_body",
+            "password": "SecurePass123!",
+            "role": "user",
+            "status": "pending",
+            "is_active": True,
+            "telegram_id": "should_not_apply",
+        },
+    )
+    assert response.status_code == 200
+    user = db_session.query(User).filter(User.username == "no_tg_from_body").first()
+    assert user is not None
+    assert user.telegram_id is None
