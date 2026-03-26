@@ -153,7 +153,7 @@ describe('authStore', () => {
       
       try {
         await login('testuser', 'wrongpass');
-      } catch (error) {
+      } catch {
         // Expected to throw
       }
 
@@ -197,6 +197,54 @@ describe('authStore', () => {
 
       // Vérifier que loading est false après la connexion
       expect(useAuthStore.getState().loading).toBe(false);
+    });
+
+    it('conserve un telegram_id alphanumerique après login', async () => {
+      const mockResponse = {
+        access_token: 'test-token',
+        token_type: 'bearer',
+        user: {
+          id: '1',
+          username: 'tgui',
+          telegram_id: 'tg_alpha_session',
+          role: 'user',
+          status: 'approved',
+          is_active: true,
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T00:00:00Z',
+        },
+      };
+
+      vi.mocked(AuthApi.apiv1authloginpost).mockResolvedValue(mockResponse);
+
+      const { login } = useAuthStore.getState();
+      await login('tgui', 'testpass');
+
+      expect(useAuthStore.getState().currentUser?.telegram_id).toBe('tg_alpha_session');
+    });
+
+    it('normalise une chaîne purement numérique en nombre', async () => {
+      const mockResponse = {
+        access_token: 'test-token',
+        token_type: 'bearer',
+        user: {
+          id: '1',
+          username: 'u',
+          telegram_id: '123456789',
+          role: 'user',
+          status: 'approved',
+          is_active: true,
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T00:00:00Z',
+        },
+      };
+
+      vi.mocked(AuthApi.apiv1authloginpost).mockResolvedValue(mockResponse);
+
+      const { login } = useAuthStore.getState();
+      await login('u', 'testpass');
+
+      expect(useAuthStore.getState().currentUser?.telegram_id).toBe(123456789);
     });
   });
 
@@ -258,6 +306,38 @@ describe('authStore', () => {
       expect(state.permissions).toEqual(['reception.access']);
       expect(state.loading).toBe(false);
       expect(state.token).toBe('jwt-test');
+    });
+
+    it('conserve un telegram_id alphanumerique depuis GET /v1/users/me', async () => {
+      localStorageMock.getItem.mockImplementation((key: string) =>
+        key === 'token' ? 'jwt-test' : null
+      );
+
+      const me = {
+        id: 'user-99',
+        telegram_id: 'tg_me_alpha',
+        username: 'volunteer',
+        role: 'user',
+        status: 'approved',
+        is_active: true,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z',
+      };
+
+      vi.mocked(axiosClient.get).mockImplementation(async (path: string) => {
+        if (path === '/v1/users/me/permissions') {
+          return { data: { permissions: [] } };
+        }
+        if (path === '/v1/users/me') {
+          return { data: me };
+        }
+        return { data: {} };
+      });
+
+      const { initializeAuth } = useAuthStore.getState();
+      await initializeAuth();
+
+      expect(useAuthStore.getState().currentUser?.telegram_id).toBe('tg_me_alpha');
     });
 
     it('échec /v1/users/me : déclenche logout (nettoyage local)', async () => {

@@ -7,7 +7,8 @@ import { getTokenExpiration } from '../utils/jwt';
 
 export interface User {
   id: string;
-  telegram_id?: number;
+  /** Identifiant Telegram : nombre (API historique) ou chaîne (ex. id non numérique / test). */
+  telegram_id?: string | number;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -484,14 +485,27 @@ function parseApiUserRole(raw: unknown): UserRole {
   return UserRole.USER;
 }
 
+/** Extrait `telegram_id` depuis la réponse API sans perdre les valeurs non numériques. */
+function parseTelegramIdFromApi(raw: unknown): string | number | undefined {
+  if (raw == null || raw === '') return undefined;
+  if (typeof raw === 'number') {
+    return Number.isFinite(raw) ? raw : undefined;
+  }
+  if (typeof raw === 'string') {
+    const s = raw.trim();
+    if (!s) return undefined;
+    if (/^\d+$/.test(s)) {
+      const n = Number(s);
+      return Number.isSafeInteger(n) ? n : s;
+    }
+    return s;
+  }
+  return undefined;
+}
+
 /** Réponse API user (login ou `GET /v1/users/me`) → modèle du store. */
 function mapApiUserToUser(raw: Record<string, unknown>): User {
-  const telegramRaw = raw.telegram_id;
-  let telegram_id: number | undefined;
-  if (telegramRaw != null && telegramRaw !== '') {
-    const n = typeof telegramRaw === 'number' ? telegramRaw : Number(telegramRaw);
-    if (!Number.isNaN(n)) telegram_id = n;
-  }
+  const telegram_id = parseTelegramIdFromApi(raw.telegram_id);
 
   const user: User = {
     id: String(raw.id),

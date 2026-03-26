@@ -4,7 +4,7 @@ export interface LoginRequest {
 
 export interface AuthUser {
   id: string;
-  telegram_id?: number;
+  telegram_id?: string | number;
   username?: string;
   first_name?: string;
   last_name?: string;

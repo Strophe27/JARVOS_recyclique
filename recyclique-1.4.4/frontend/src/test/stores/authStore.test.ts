@@ -46,6 +46,7 @@ describe('useAuthStore', () => {
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.currentUser).toEqual({
         id: 'user-123',
+        telegram_id: undefined,
         username: 'testuser',
         role: 'user',
         status: 'approved',
