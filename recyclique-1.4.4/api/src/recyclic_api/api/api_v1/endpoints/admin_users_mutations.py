@@ -41,7 +41,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users/{user_id}/role",
                 success=True,
             )
@@ -57,7 +57,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
             if not user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                    username=username_or_telegram_id(current_user.username, None),
                     endpoint="/admin/users/{user_id}/role",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -82,9 +82,9 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=current_user.username or current_user.telegram_id,
+                admin_username=username_or_telegram_id(current_user.username, None) or "",
                 target_user_id=str(user.id),
-                target_username=user.username or user.telegram_id,
+                target_username=username_or_telegram_id(user.username, None),
                 old_role=old_role.value,
                 new_role=user.role.value,
                 success=True,
@@ -96,6 +96,13 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                 if user.first_name and user.last_name
                 else user.first_name or user.last_name
             )
+            display = full_name or username_or_telegram_id(user.username, None)
+            role_msg = (
+                f"Rôle de l'utilisateur {display} mis à jour "
+                f"de {old_role.value} vers {user.role.value}"
+                if display
+                else f"Rôle mis à jour de {old_role.value} vers {user.role.value}"
+            )
 
             return AdminResponse(
                 data={
@@ -103,10 +110,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                     "role": user.role.value,
                     "previous_role": old_role.value,
                 },
-                message=(
-                    f"Rôle de l'utilisateur {full_name or user.username} mis à jour "
-                    f"de {old_role.value} vers {user.role.value}"
-                ),
+                message=role_msg,
                 success=True,
             )
 
@@ -134,7 +138,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users/{user_id}/status",
                 success=True,
             )
@@ -151,7 +155,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
             if not user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                    username=username_or_telegram_id(current_user.username, None),
                     endpoint="/admin/users/{user_id}/status",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -185,9 +189,9 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=current_user.username or current_user.telegram_id,
+                admin_username=username_or_telegram_id(current_user.username, None) or "",
                 target_user_id=str(user.id),
-                target_username=user.username or user.telegram_id,
+                target_username=username_or_telegram_id(user.username, None),
                 old_role=f"is_active={old_status}",
                 new_role=f"is_active={status_update.is_active}",
                 success=True,
@@ -200,6 +204,12 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                 else user.first_name or user.last_name
             )
             status_text = "activé" if status_update.is_active else "désactivé"
+            display = full_name or username_or_telegram_id(user.username, None)
+            status_msg = (
+                f"Utilisateur {display} {status_text} avec succès"
+                if display
+                else f"Utilisateur {status_text} avec succès"
+            )
 
             return AdminResponse(
                 data={
@@ -208,7 +218,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                     "previous_status": old_status,
                     "reason": status_update.reason,
                 },
-                message=f"Utilisateur {full_name or user.username} {status_text} avec succès",
+                message=status_msg,
                 success=True,
             )
 
@@ -236,7 +246,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users/{user_id}",
                 success=True,
             )
@@ -253,7 +263,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
             if not user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                    username=username_or_telegram_id(current_user.username, None),
                     endpoint="/admin/users/{user_id}",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -306,9 +316,9 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=current_user.username or current_user.telegram_id,
+                admin_username=username_or_telegram_id(current_user.username, None) or "",
                 target_user_id=str(user.id),
-                target_username=user.username or user.telegram_id,
+                target_username=username_or_telegram_id(user.username, None),
                 old_role="profile_update",
                 new_role=f"updated_fields={','.join(updated_fields)}",
                 success=True,
@@ -319,6 +329,12 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                 f"{user.first_name} {user.last_name}"
                 if user.first_name and user.last_name
                 else user.first_name or user.last_name
+            )
+            display = full_name or username_or_telegram_id(user.username, None)
+            profile_msg = (
+                f"Profil de l'utilisateur {display} mis à jour avec succès"
+                if display
+                else "Profil de l'utilisateur mis à jour avec succès"
             )
 
             return AdminResponse(
@@ -331,7 +347,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                     "status": user.status,
                     "updated_fields": updated_fields,
                 },
-                message=f"Profil de l'utilisateur {full_name or user.username} mis à jour avec succès",
+                message=profile_msg,
                 success=True,
             )
 

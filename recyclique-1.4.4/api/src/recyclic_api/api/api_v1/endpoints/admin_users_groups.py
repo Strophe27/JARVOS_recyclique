@@ -41,9 +41,7 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
             # Log de l'accès admin
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
-                ),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users/{user_id}/groups",
                 success=True,
             )
@@ -62,9 +60,7 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
                 # Log de l'échec
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(
-                        current_user.username, current_user.telegram_id
-                    ),
+                    username=username_or_telegram_id(current_user.username, None),
                     endpoint="/admin/users/{user_id}/groups",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -109,9 +105,9 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
             # Log de la modification des groupes
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=current_user.username or current_user.telegram_id,
+                admin_username=username_or_telegram_id(current_user.username, None) or "",
                 target_user_id=str(user.id),
-                target_username=user.username or user.telegram_id,
+                target_username=username_or_telegram_id(user.username, None),
                 old_role=f"groups={previous_group_names}",
                 new_role=f"groups={[g.name for g in existing_groups]}",
                 success=True,
@@ -124,6 +120,12 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
                 else user.first_name or user.last_name
             )
             group_names = [group.name for group in existing_groups]
+            display = full_name or username_or_telegram_id(user.username, None)
+            msg = (
+                f"Groupes de l'utilisateur {display} mis à jour avec succès"
+                if display
+                else "Groupes de l'utilisateur mis à jour avec succès"
+            )
 
             return AdminResponse(
                 data={
@@ -131,7 +133,7 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
                     "group_ids": group_update.group_ids,
                     "group_names": group_names,
                 },
-                message=f"Groupes de l'utilisateur {full_name or user.username} mis à jour avec succès",
+                message=msg,
                 success=True,
             )
 

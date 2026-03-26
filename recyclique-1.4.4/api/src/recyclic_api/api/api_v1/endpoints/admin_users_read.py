@@ -45,9 +45,7 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
-                ),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users",
                 success=True,
             )
@@ -109,9 +107,7 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
-                ),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users/statuses",
                 success=True,
             )
@@ -122,9 +118,7 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
         except Exception as e:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
-                ),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users/statuses",
                 success=False,
                 error_message=str(e),
@@ -148,9 +142,7 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(
-                    current_user.username, current_user.telegram_id
-                ),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint="/admin/users/pending",
                 success=True,
             )

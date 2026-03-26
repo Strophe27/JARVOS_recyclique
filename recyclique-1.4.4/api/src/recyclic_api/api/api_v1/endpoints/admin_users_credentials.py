@@ -63,20 +63,22 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
 
             await send_reset_password_email(user.email, db)
 
+            target_u = username_or_telegram_id(user.username, None)
+            admin_u = username_or_telegram_id(current_user.username, None)
             log_audit(
                 action_type=AuditActionType.PASSWORD_RESET,
                 actor=current_user,
                 target_id=user.id,
                 target_type="user",
                 details={
-                    "target_username": user.username or user.telegram_id,
+                    "target_username": target_u,
                     "target_email": user.email,
-                    "admin_username": current_user.username or current_user.telegram_id,
+                    "admin_username": admin_u,
                 },
                 description=(
                     f"Réinitialisation de mot de passe déclenchée pour "
-                    f"{user.username or user.telegram_id} par "
-                    f"{current_user.username or current_user.telegram_id}"
+                    f"{target_u or str(user.id)} par "
+                    f"{admin_u or str(current_user.id)}"
                 ),
                 db=db,
             )
@@ -117,7 +119,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
 
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint=f"/admin/users/{user_id}/force-password",
                 success=True,
             )
@@ -134,7 +136,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             if not target_user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                    username=username_or_telegram_id(current_user.username, None),
                     endpoint=f"/admin/users/{user_id}/force-password",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -170,9 +172,9 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=current_user.username or current_user.telegram_id,
+                admin_username=username_or_telegram_id(current_user.username, None) or "",
                 target_user_id=str(target_user.id),
-                target_username=target_user.username or target_user.telegram_id,
+                target_username=username_or_telegram_id(target_user.username, None),
                 old_role="password_forced",
                 new_role="new_password_set_by_super_admin",
                 success=True,
@@ -192,20 +194,23 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             db.add(password_force_history)
             db.commit()
 
+            target_u = username_or_telegram_id(target_user.username, None)
+            admin_u = username_or_telegram_id(current_user.username, None)
             log_audit(
                 action_type=AuditActionType.PASSWORD_FORCED,
                 actor=current_user,
                 target_id=target_user.id,
                 target_type="user",
                 details={
-                    "target_username": target_user.username,
+                    "target_username": target_u,
                     "target_telegram_id": target_user.telegram_id,
                     "reason": force_request.reason,
-                    "admin_username": current_user.username or current_user.telegram_id,
+                    "admin_username": admin_u,
                 },
                 description=(
-                    f"Mot de passe forcé pour l'utilisateur {target_user.username} "
-                    f"par Super Admin {current_user.username or current_user.telegram_id}"
+                    f"Mot de passe forcé pour l'utilisateur "
+                    f"{target_u or str(target_user.id)} "
+                    f"par Super Admin {admin_u or str(current_user.id)}"
                 ),
                 db=db,
             )
@@ -214,6 +219,12 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
                 f"{target_user.first_name} {target_user.last_name}"
                 if target_user.first_name and target_user.last_name
                 else target_user.first_name or target_user.last_name
+            )
+            display = full_name or target_u
+            pwd_msg = (
+                f"Mot de passe forcé avec succès pour l'utilisateur {display}"
+                if display
+                else "Mot de passe forcé avec succès pour l'utilisateur"
             )
 
             return AdminResponse(
@@ -224,7 +235,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
                     "forced_by": str(current_user.id),
                     "forced_at": datetime.now(timezone.utc).isoformat(),
                 },
-                message=f"Mot de passe forcé avec succès pour l'utilisateur {full_name or target_user.username}",
+                message=pwd_msg,
                 success=True,
             )
 
@@ -233,7 +244,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
         except Exception as e:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint=f"/admin/users/{user_id}/force-password",
                 success=False,
                 error_message=str(e),
@@ -260,7 +271,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint=f"/admin/users/{user_id}/reset-pin",
                 success=True,
             )
@@ -277,7 +288,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             if not target_user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                    username=username_or_telegram_id(current_user.username, None),
                     endpoint=f"/admin/users/{user_id}/reset-pin",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -290,19 +301,21 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             target_user.hashed_pin = None
             db.commit()
 
+            target_u = username_or_telegram_id(target_user.username, None)
+            admin_u = username_or_telegram_id(current_user.username, None)
             log_audit(
                 action_type=AuditActionType.PIN_RESET,
                 actor=current_user,
                 target_id=target_user.id,
                 target_type="user",
                 details={
-                    "target_username": target_user.username,
+                    "target_username": target_u,
                     "target_telegram_id": target_user.telegram_id,
-                    "admin_username": current_user.username or current_user.telegram_id,
+                    "admin_username": admin_u,
                 },
                 description=(
-                    f"PIN réinitialisé pour l'utilisateur {target_user.username} "
-                    f"par Admin {current_user.username or current_user.telegram_id}"
+                    f"PIN réinitialisé pour l'utilisateur {target_u or str(target_user.id)} "
+                    f"par Admin {admin_u or str(current_user.id)}"
                 ),
                 db=db,
             )
@@ -312,20 +325,26 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
                 if target_user.first_name and target_user.last_name
                 else target_user.first_name or target_user.last_name
             )
+            display = full_name or target_u
             logger.info(
                 f"PIN reset for user {target_user.id} by admin {current_user.id}",
                 extra={
                     "target_user_id": str(target_user.id),
-                    "target_username": target_user.username,
+                    "target_username": target_u,
                     "admin_user_id": str(current_user.id),
-                    "admin_username": current_user.username or current_user.telegram_id,
+                    "admin_username": admin_u,
                     "action": "pin_reset",
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 },
             )
 
+            pin_msg = (
+                f"PIN réinitialisé avec succès pour l'utilisateur {display}"
+                if display
+                else "PIN réinitialisé avec succès pour l'utilisateur"
+            )
             return {
-                "message": f"PIN réinitialisé avec succès pour l'utilisateur {full_name or target_user.username}",
+                "message": pin_msg,
                 "user_id": str(target_user.id),
                 "username": target_user.username,
             }
@@ -335,7 +354,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
         except Exception as e:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, current_user.telegram_id),
+                username=username_or_telegram_id(current_user.username, None),
                 endpoint=f"/admin/users/{user_id}/reset-pin",
                 success=False,
                 error_message=str(e),

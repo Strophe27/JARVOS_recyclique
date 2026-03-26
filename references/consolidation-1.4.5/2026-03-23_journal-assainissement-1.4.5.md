@@ -4617,6 +4617,42 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Lot backend (2026-03-26) — Paquet 8C : admin lecture utilisateurs + groupes (sans repli `telegram_id`)
+
+**Statut:** execute (sans commit)  
+**Theme:** audit et messages alignés sur **username strip / None** ; plus de `username or telegram_id` dans ce sous-ensemble ; champs JSON `telegram_id` des schémas inchangés.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_groups.py`
+
+### Validation
+- `pytest tests/test_admin_users_read_routes.py tests/test_admin_users_groups_routes.py -q` depuis `recyclique-1.4.4/api` : **2 passed** (warnings Pydantic existants).
+
+### Reserve — lot suivant
+- `admin_users_mutations`, `admin_users_credentials`, autres `register_admin_*` encore avec `or telegram_id` dans `log_role_change` / messages : micro-lot dédié si alignement global souhaité.
+
+---
+
+## Lot backend (2026-03-26) — Paquet 8D : admin mutations + credentials (sans repli `telegram_id`)
+
+**Statut:** execute (sans commit)  
+**Theme:** `log_admin_access`, `log_role_change`, `log_audit`, messages HTTP et logs structurés : **username strip / None** uniquement ; `telegram_id` ni comme pseudo de secours ni dans les libellés ; champs explicites `target_telegram_id` dans `details` audit conservés (pas schémas API larges).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_mutations.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_credentials.py`
+
+### Validation
+- `pytest tests/test_admin_users_mutations_routes.py tests/test_admin_users_credentials_routes.py tests/test_user_identity.py tests/api/test_admin_user_management.py::test_update_user_role_success tests/api/test_admin_user_management.py::test_update_user_role_admin_cannot_downgrade_self -q` depuis `recyclique-1.4.4/api` : **9 passed** (warnings Pydantic existants).
+- `test_admin_force_password.py` et `test_pin_management.py` en lot large : **404** sur routes (`/api/v1/admin/...`, `/auth/login`) dans ce run — **non attribuable au diff** ; à rejouer avec la fixture `client` / app complète du projet si besoin.
+
+### Reserve — lot suivant
+- `admin.py` et autres endpoints encore avec `username_or_telegram_id(..., current_user.telegram_id)` : aligner second argument `None` pour cohérence stylistique.
+- Schémas OpenAPI / ORM / `legacy_import` / OpenRouter : **hors périmètre**.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:
