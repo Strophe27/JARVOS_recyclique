@@ -121,8 +121,7 @@ def generate_bulk_cash_sessions_csv(
         operator_name = ''
         if operator:
             operator_name = (getattr(operator, 'full_name', None) or 
-                           getattr(operator, 'username', None) or 
-                           getattr(operator, 'telegram_id', None) or '')
+                           getattr(operator, 'username', None) or '')
         
         site_name = getattr(site, 'name', '') if site else ''
         register_name = getattr(register, 'name', '') if register else ''
@@ -254,8 +253,7 @@ def generate_bulk_cash_sessions_excel(
         operator_name = ''
         if operator:
             operator_name = (getattr(operator, 'full_name', None) or 
-                           getattr(operator, 'username', None) or 
-                           getattr(operator, 'telegram_id', None) or '')
+                           getattr(operator, 'username', None) or '')
         
         site_name = getattr(site, 'name', '') if site else ''
         register_name = getattr(register, 'name', '') if register else ''
@@ -342,8 +340,7 @@ def generate_bulk_cash_sessions_excel(
         operator_name = ''
         if operator:
             operator_name = (getattr(operator, 'full_name', None) or 
-                           getattr(operator, 'username', None) or 
-                           getattr(operator, 'telegram_id', None) or '')
+                           getattr(operator, 'username', None) or '')
         
         site_name = getattr(site, 'name', '') if site else ''
         register_name = getattr(register, 'name', '') if register else ''
@@ -666,8 +663,7 @@ def generate_bulk_reception_tickets_csv(
         benevole_name = ''
         if ticket.benevole:
             benevole_name = (getattr(ticket.benevole, 'full_name', None) or 
-                           getattr(ticket.benevole, 'username', None) or 
-                           getattr(ticket.benevole, 'telegram_id', None) or '')
+                           getattr(ticket.benevole, 'username', None) or '')
         
         # Si le ticket n'a pas de lignes, créer quand même une ligne pour le ticket
         if not ticket.lignes:
@@ -818,8 +814,7 @@ def generate_bulk_reception_tickets_excel(
         benevole_name = ''
         if ticket.benevole:
             benevole_name = (getattr(ticket.benevole, 'full_name', None) or 
-                           getattr(ticket.benevole, 'username', None) or 
-                           getattr(ticket.benevole, 'telegram_id', None) or '')
+                           getattr(ticket.benevole, 'username', None) or '')
         
         total_lignes += nb_lignes
         total_poids += float(poids)
@@ -912,8 +907,7 @@ def generate_bulk_reception_tickets_excel(
         benevole_name = ''
         if ticket.benevole:
             benevole_name = (getattr(ticket.benevole, 'full_name', None) or 
-                           getattr(ticket.benevole, 'username', None) or 
-                           getattr(ticket.benevole, 'telegram_id', None) or '')
+                           getattr(ticket.benevole, 'username', None) or '')
         
         # Si le ticket n'a pas de lignes, créer quand même une ligne pour le ticket
         if not ticket.lignes:

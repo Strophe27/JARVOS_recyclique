@@ -23,7 +23,6 @@ def classified_deposit(db_session):
 
     deposit = Deposit(
         user_id=user.id,
-        telegram_user_id="validation_test_user",
         audio_file_path="/audio/validation_test.ogg",
         status=DepositStatus.CLASSIFIED,
         category=EEECategory.OTHER,
@@ -137,7 +136,6 @@ class TestDepositValidationWorkflow:
         db_session.flush()
         deposit = Deposit(
             user_id=user.id,
-            telegram_user_id="invalid_status_test",
             audio_file_path="/audio/invalid_status_test.ogg",
             status=DepositStatus.PENDING_AUDIO,
         )

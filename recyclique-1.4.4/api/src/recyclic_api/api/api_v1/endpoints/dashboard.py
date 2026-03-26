@@ -37,8 +37,7 @@ def _to_summary(session: CashSession) -> CashSessionSummary:
     if operator is not None:
         full_name = getattr(operator, "full_name", None)
         username = getattr(operator, "username", None)
-        telegram = getattr(operator, "telegram_id", None)
-        operator_label = full_name or username or telegram or str(session.operator_id)
+        operator_label = full_name or username or str(session.operator_id)
 
     return CashSessionSummary(
         session_id=str(session.id),

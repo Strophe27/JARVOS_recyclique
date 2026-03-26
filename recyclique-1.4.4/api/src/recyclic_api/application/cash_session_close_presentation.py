@@ -78,11 +78,10 @@ def present_close_cash_session_outcome(
                 )
 
             if closed_session.operator:
-                operator_label = (
-                    closed_session.operator.username
-                    or getattr(closed_session.operator, "telegram_id", None)
-                    or str(closed_session.operator_id)
-                )
+                op = closed_session.operator
+                full_name = getattr(op, "full_name", None)
+                username = getattr(op, "username", None)
+                operator_label = full_name or username or str(closed_session.operator_id)
             else:
                 operator_label = str(closed_session.operator_id)
 

@@ -13220,17 +13220,6 @@
             ],
             "title": "Site Id"
           },
-          "telegram_user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram User Id"
-          },
           "audio_file_path": {
             "anyOf": [
               {
@@ -13408,17 +13397,6 @@
               }
             ],
             "title": "Site Id"
-          },
-          "telegram_user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram User Id"
           },
           "audio_file_path": {
             "anyOf": [

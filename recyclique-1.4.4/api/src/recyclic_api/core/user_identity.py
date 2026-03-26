@@ -1,4 +1,8 @@
-"""Identifiants utilisateur pour journaux / audit (logique pure, sans ORM)."""
+"""Identifiants utilisateur pour journaux / audit (logique pure, sans ORM).
+
+Le nom ``username_or_telegram_id`` est historique ; un refactor d'import global
+(admin) est volontairement évité — le second argument reste ignoré.
+"""
 
 
 def username_or_telegram_id(username: str | None, _telegram_id: str | None) -> str | None:

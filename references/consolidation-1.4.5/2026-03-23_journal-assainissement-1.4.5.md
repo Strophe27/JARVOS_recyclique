@@ -4830,6 +4830,38 @@ Apres regeneration OpenAPI, les symboles client ne contiennent plus le segment `
 
 ---
 
+## Lot 11C (2026-03-27) — `purge-telegram-code` : annexes metier sans repli Telegram
+
+**Statut:** execute (sans commit)  
+**Theme:** retirer les derniers fallbacks / champs Telegram visibles dans presentations et exports annexes (dashboard, rapports CSV/Excel, email fermeture session, schema API depots). ORM `Deposit.telegram_user_id`, migrations et CLI **non touches** ; pas de `legacy_import` / OpenRouter.
+
+### Decision de perimetre
+- **`telegram_user_id` (schema Pydantic depots)** : retire du contrat JSON (create/response) — la colonne BDD reste ; les POST ne l'alimentent plus via `model_dump()` ; les GET ne l'exposent plus. Pas d'ambiguite fonctionnelle avec un bot Telegram encore branché sur ce champ (produit retire).
+- **`username_or_telegram_id`** : pas de renommage (blast radius admin) ; documentation module renforcee.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/deposit.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/dashboard.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/report_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/export_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/application/cash_session_close_presentation.py`
+- `recyclique-1.4.4/api/src/recyclic_api/core/user_identity.py`
+- `recyclique-1.4.4/api/tests/test_deposit_validation_workflow.py` (fixtures ORM sans `telegram_user_id`)
+
+### Validation
+- `pytest tests/test_deposit_validation_workflow.py tests/test_user_identity.py` : **15 passed** (machine locale, warnings Pydantic existants).
+- Tests voisins non retenus comme verdict vert ici : `test_dashboard_stats` → **404** sur chemin hardcode `/api/v1/...` (deja note journal, alignement hors lot) ; `test_export_service` / `test_report_generation` → sqlite sans tables `sale_items` / `cash_registers` sur l'env d'execution ; `test_bulk_cash_sessions_excel_tickets` → **ImportError** `openpyxl.styles.Border` (dependance / version locale).
+
+### Suivi contrat OpenAPI (2026-03-27, QA 11C)
+- Regeneration : `api/generate_openapi.py` avec `DATABASE_URL=sqlite:///:memory:`, `REDIS_URL`, `SECRET_KEY` ; synchronisation vers `recyclique-1.4.4/openapi.json`, `frontend/openapi.json`, `frontend/api/openapi.json` ; `npm run codegen` (`frontend/src/generated/*`).
+- Controle : aucune occurrence de `telegram_user_id` dans les quatre `openapi.json` ni dans `frontend/src/generated/` ; `DepositCreate` / `DepositResponse` alignes sur le schema Pydantic courant.
+- **Note outil** : sous Windows console cp1252, le script peut retourner exit code 1 apres ecriture du JSON (emojis dans les `print`) — le fichier `api/openapi.json` est neanmoins produit.
+
+### Reserves
+- Rejouer export/report/bulk sur CI ou venv projet avec deps completes + Postgres/SQLite migre si besoin d'un vert elargi.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2026-03-26T23:12:28.528Z
+ * Généré le: 2026-03-26T23:34:25.113Z
  */
 
 // ============================================================================
@@ -448,7 +448,6 @@ export interface DashboardStatsResponse {
 export interface DepositCreate {
   user_id: string;
   site_id?: string | any;
-  telegram_user_id?: string | any;
   audio_file_path?: string | any;
   status?: DepositStatus | any;
   category?: EEECategory | any;
@@ -469,7 +468,6 @@ export interface DepositFinalize {
 export interface DepositResponse {
   user_id: string;
   site_id?: string | any;
-  telegram_user_id?: string | any;
   audio_file_path?: string | any;
   status?: DepositStatus | any;
   category?: EEECategory | any;

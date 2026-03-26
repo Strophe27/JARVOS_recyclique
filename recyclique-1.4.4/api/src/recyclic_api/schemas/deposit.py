@@ -6,8 +6,7 @@ import uuid
 
 class DepositBase(BaseModel):
     user_id: str
-    site_id: Optional[str] = None  # Made optional for telegram deposits
-    telegram_user_id: Optional[str] = None
+    site_id: Optional[str] = None  # Lien site optionnel (colonne nullable en base)
     audio_file_path: Optional[str] = None
     status: Optional[DepositStatus] = DepositStatus.PENDING_AUDIO
     category: Optional[EEECategory] = None  # Made optional initially

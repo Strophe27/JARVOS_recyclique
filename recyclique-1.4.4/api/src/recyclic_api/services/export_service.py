@@ -291,7 +291,7 @@ def generate_cash_session_report(
     summary_rows = [
         ("ID Session", str(session.id)),
         ("ID Opérateur", str(session.operator_id)),
-        ("Nom Opérateur", (getattr(operator, "full_name", None) or getattr(operator, "username", None) or getattr(operator, "telegram_id", None) or "")),
+        ("Nom Opérateur", (getattr(operator, "full_name", None) or getattr(operator, "username", None) or "")),
         ("ID Site", str(session.site_id)),
         ("Nom Site", getattr(site, "name", "") or ""),
         ("Date Ouverture", _format_date(session.opened_at)),
