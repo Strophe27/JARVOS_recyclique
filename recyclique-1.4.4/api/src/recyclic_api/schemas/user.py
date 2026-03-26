@@ -5,7 +5,7 @@ import re
 from recyclic_api.models.user import UserRole, UserStatus
 
 class UserBase(BaseModel):
-    telegram_id: str
+    telegram_id: Optional[str] = None
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None

@@ -7,7 +7,7 @@ from recyclic_api.models.user import UserRole, UserStatus
 class AdminUser(BaseModel):
     """Schéma pour les utilisateurs dans l'interface d'administration"""
     id: Union[str, UUID]
-    telegram_id: Optional[Union[int, str]] = None
+    telegram_id: Optional[str] = None
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None

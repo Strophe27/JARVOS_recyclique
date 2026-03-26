@@ -3956,12 +3956,35 @@ Retirer `get_user_by_telegram_id` et `authenticate_user` (module `recyclic_api.c
 
 ---
 
+## Micro-lot 4Q — Harmonisation typage `telegram_id` (`AdminUser` / `UserBase`)
+
+### Theme
+Aligner les annotations Pydantic sur une chaine optionnelle coherente avec la colonne VARCHAR et les lots `4F` / `UserResponse` : `AdminUser.telegram_id` en `Optional[str]` (plus `Union[int, str]`) ; `UserBase.telegram_id` en `Optional[str] = None` (aligne `UserCreate` / reponses utilisateur). `model_post_init` sur `AdminUser` conserve la normalisation `str(...)` lorsque la valeur est non nulle. Aucun autre schema elargi dans ce micro-lot.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/user.py`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- Worktree de depart : **propre** (`chore/v1.4.5-consolidation`, aucun diff avant modifications).
+- `pytest tests/test_admin_schemas.py tests/test_user_self_endpoints.py tests/test_auth_login_endpoint.py` : **19 tests OK** (warnings Pydantic hors sujet).
+- `pytest tests/test_admin_pending_endpoints.py::TestPendingUsersEndpoints::test_get_pending_users_success_returns_list tests/test_admin_pending_endpoints.py::TestPendingUsersEndpoints::test_get_pending_users_preserves_non_numeric_telegram_id` : **2 tests OK**.
+- `tests/test_user_creation.py` et `tests/test_auth_signup_endpoint.py` : **non retenus** pour ce lot (routes `POST /users/` et `POST /auth/signup` renvoient **404** dans cette invocation pytest locale ; debranchement connu, sans lien avec le typage des schemas).
+- Diagnostics IDE / lints sur `admin.py` et `user.py` : **0 probleme**.
+
+### Resultat / mini-QA
+- Contrat type plus strict cote annotation ; entiers issus de l'ORM restent assimilables via coercion Pydantic v2 vers `str` si necessaire, et `model_post_init` garde une couche de normalisation sur `AdminUser`.
+- Lot ferme ; **pret commit/push** si le worktree reste limite a ces trois fichiers.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
-- **Vague 4:** terminee pour cette passe ; micro-lots `4N` (credentials), `4O` (`admin.py` approve/reject) et `4P` (elagage helpers Telegram morts dans `core/auth.py`) executes apres la passe initiale
+- **Vague 4:** terminee pour cette passe ; micro-lots `4N` (credentials), `4O` (`admin.py` approve/reject), `4P` (elagage helpers Telegram morts dans `core/auth.py`) et `4Q` (schemas `telegram_id` admin / user base) executes apres la passe initiale
 - **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore`, `ARCH-03/category_soft_delete`, `ARCH-03/category_create`, `ARCH-03/category_update` et la passe DRY HTTP sont fermes
 - **Vague 8:** premier pilote `ARCH-04` sur `create_sale` ferme avec reserves acceptees
 - **Vague 8:** second pilote `ARCH-04` sur `create_cash_session` ferme avec reserves acceptees
@@ -4001,13 +4024,14 @@ Retirer `get_user_by_telegram_id` et `authenticate_user` (module `recyclic_api.c
 - **Vague 4:** lot `4N` ferme sur `admin_users_credentials` : `log_admin_access` via `username_or_telegram_id`
 - **Vague 4:** lot `4O` ferme sur `admin.py` (approve/reject) : `log_admin_access` et `log_role_change` via `username_or_telegram_id`
 - **Vague 4:** lot `4P` ferme sur suppression de `get_user_by_telegram_id` / `authenticate_user` (telegram_id) dans `core/auth.py` (code mort sans consommateurs)
+- **Vague 4:** lot `4Q` ferme sur harmonisation `telegram_id` : `AdminUser` et `UserBase` en `Optional[str]` (perimetre minimal schemas)
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre la coherence `telegram_id` / fallbacks sur d'autres surfaces faible risque si le backlog le demande
