@@ -3895,12 +3895,32 @@ Reutiliser le helper `username_or_telegram_id` pour le parametre `username` des 
 
 ---
 
+## Micro-lot 4N — `admin_users_credentials` + `username_or_telegram_id`
+
+### Theme
+Reutiliser le helper `username_or_telegram_id` pour le parametre `username` des six appels `log_admin_access` dans `admin_users_credentials.py` (force-password et reset-pin : succes initial, echec utilisateur introuvable, exception generique), en conservant la semantique stricte `username or telegram_id` ; `log_audit`, `log_role_change` et `logger.info` laissent en place `current_user.username or current_user.telegram_id` (hors perimetre, comme en 4M) ; aucun changement aux schemas JSON (`AdminResponse`, corps de requete inchanges).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_credentials.py`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_admin_users_credentials_routes.py tests/test_user_identity.py` : **5 tests OK** (warnings Pydantic hors sujet)
+- Diagnostics IDE / lints sur le fichier endpoint modifie : **0 probleme**
+
+### Resultat / mini-QA
+- Meme valeur passee a `log_admin_access` qu'avec `current_user.username or current_user.telegram_id` (helper documente comme equivalent strict dans `user_identity.py`).
+- Alignement avec `admin_users_mutations`, `admin_users_groups`, `admin_users_read`, `admin_users_history`, `admin_observability`.
+- Lot ferme ; pret commit/push si worktree reste limite a ces fichiers.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
 - **Vague 2:** terminee en micro-lots executes jusqu'ici
 - **Vague 3:** pilote d'isolation ouvert et ferme avec reserve sur le sous-ensemble auth + infra
-- **Vague 4:** terminee pour cette passe
+- **Vague 4:** terminee pour cette passe ; micro-lot `4N` (credentials admin / `log_admin_access`) execute apres la passe initiale
 - **Vague 5:** pilotes architecture backend ouverts ; `delete_site`, trois premiers lots `ARCH-02` (`reception`, `cash_sessions/create`, `cash_sessions/close`), l'axe `ARCH-03/reception` et les pilotes `ARCH-03/cash_sessions/create`, `ARCH-03/cash_sessions/close`, `ARCH-03/cash_sessions/detail`, `ARCH-03/cash_sessions/current`, `ARCH-03/cash_sessions/step update`, `ARCH-03/stats_service`, `ARCH-03/cash_register_service`, `ARCH-03/category_management`, `ARCH-03/category_hard_delete`, `ARCH-03/category_restore`, `ARCH-03/category_soft_delete`, `ARCH-03/category_create`, `ARCH-03/category_update` et la passe DRY HTTP sont fermes
 - **Vague 8:** premier pilote `ARCH-04` sur `create_sale` ferme avec reserves acceptees
 - **Vague 8:** second pilote `ARCH-04` sur `create_cash_session` ferme avec reserves acceptees
@@ -3937,13 +3957,14 @@ Reutiliser le helper `username_or_telegram_id` pour le parametre `username` des 
 - **Vague 4:** lot `4K` ferme sur `admin_observability` (`get_email_logs`) : `log_admin_access` via `username_or_telegram_id`
 - **Vague 4:** lot `4L` ferme sur `admin_users_groups` : `log_admin_access` via `username_or_telegram_id`
 - **Vague 4:** lot `4M` ferme sur `admin_users_mutations` : `log_admin_access` via `username_or_telegram_id`
+- **Vague 4:** lot `4N` ferme sur `admin_users_credentials` : `log_admin_access` via `username_or_telegram_id`
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre la coherence `telegram_id` / fallbacks sur d'autres surfaces faible risque si le backlog le demande
