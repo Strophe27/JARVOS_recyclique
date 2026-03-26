@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { forgotPasswordFormSchema } from '../schemas/forgotPasswordForm';
 
 export default function ForgotPassword(): JSX.Element {
   const { forgotPassword, loading, error } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const parsed = forgotPasswordFormSchema.safeParse({ email });
+    if (!parsed.success) {
+      setClientError(parsed.error.issues[0]?.message ?? 'Données invalides');
+      return;
+    }
+    setClientError(null);
     try {
-      await forgotPassword(email);
+      await forgotPassword(parsed.data.email);
       setIsSubmitted(true);
     } catch {
       // L'erreur est déjà gérée dans le store
@@ -49,15 +57,21 @@ export default function ForgotPassword(): JSX.Element {
         Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
       </p>
 
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} noValidate>
         <label htmlFor="email">Adresse email</label>
         <input
           id="email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (clientError) {
+              setClientError(null);
+            }
+          }}
           placeholder="Entrez votre adresse email"
-          aria-describedby={error ? "email-error" : undefined}
+          aria-invalid={clientError || error ? true : undefined}
+          aria-describedby={clientError || error ? 'email-error' : undefined}
           style={{
             width: '100%',
             padding: '10px',
@@ -65,12 +79,11 @@ export default function ForgotPassword(): JSX.Element {
             border: '1px solid #d1d5db',
             borderRadius: '4px'
           }}
-          required
         />
 
-        {error && (
+        {(clientError || error) && (
           <div id="email-error" style={{ color: '#dc2626', marginBottom: '16px', fontSize: '14px' }}>
-            {error}
+            {clientError || error}
           </div>
         )}
 

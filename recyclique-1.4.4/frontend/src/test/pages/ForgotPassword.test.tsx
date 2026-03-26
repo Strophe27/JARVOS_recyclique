@@ -83,19 +83,17 @@ describe('ForgotPassword Component', () => {
     expect(screen.getByRole('link', { name: /retour à la connexion/i })).toBeInTheDocument();
   });
 
-  it('should require email field', () => {
+  it('should reject empty email with Zod validation', () => {
     renderForgotPassword();
 
     const emailInput = screen.getByLabelText(/adresse email/i);
     const submitButton = screen.getByRole('button', { name: /envoyer le lien de réinitialisation/i });
 
-    expect(emailInput).toHaveAttribute('required');
     expect(emailInput).toHaveAttribute('type', 'email');
 
-    // Tentative de soumission sans email
     fireEvent.click(submitButton);
 
-    // La validation HTML5 devrait empêcher la soumission
+    expect(screen.getByText(/adresse email est requise/i)).toBeInTheDocument();
     expect(mockForgotPassword).not.toHaveBeenCalled();
   });
 
@@ -191,17 +189,18 @@ describe('ForgotPassword Component', () => {
     expect(screen.getByText('Email envoyé')).toBeInTheDocument();
   });
 
-  it('should validate email format', () => {
+  it('should reject invalid email format via Zod', () => {
     renderForgotPassword();
 
     const emailInput = screen.getByLabelText(/adresse email/i);
+    const submitButton = screen.getByRole('button', { name: /envoyer le lien de réinitialisation/i });
 
-    // Test avec un email invalide
     fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
+    fireEvent.click(submitButton);
 
-    // Le navigateur devrait empêcher la soumission avec un email invalide
     expect(emailInput).toHaveValue('invalid-email');
-    expect(emailInput.validity.valid).toBe(false);
+    expect(screen.getByText(/adresse email n'est pas valide/i)).toBeInTheDocument();
+    expect(mockForgotPassword).not.toHaveBeenCalled();
   });
 
   it('should accept valid email format', () => {
