@@ -12,8 +12,8 @@ def _auth_headers_for(user_id: str):
 
 
 class TestUserSelfEndpoints:
-    def test_get_me_preserves_non_numeric_telegram_id(self, client, db_session):
-        """GET /users/me doit sérialiser un telegram_id alphanumérique comme en base, sans erreur 500."""
+    def test_get_me_omits_telegram_id_even_when_set_in_db(self, client, db_session):
+        """GET /users/me ne doit pas exposer telegram_id (contrat UserResponse) ; la valeur reste en base."""
         telegram_handle = "tg_me_alpha_42"
         username = f"user_me_tg_{uuid4().hex[:12]}"
         user = User(
@@ -33,9 +33,10 @@ class TestUserSelfEndpoints:
         resp = client.get("/v1/users/me")
         assert resp.status_code == 200, resp.text
         data = resp.json()
-        validated = UserResponse.model_validate(data)
-        assert validated.telegram_id == telegram_handle
-        assert data["telegram_id"] == telegram_handle
+        UserResponse.model_validate(data)
+        assert "telegram_id" not in data
+        db_session.refresh(user)
+        assert user.telegram_id == telegram_handle
 
     def test_update_me(self, client, db_session):
         user = User(

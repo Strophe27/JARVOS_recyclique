@@ -1,26 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import axios from 'axios'
-import { adminService, AdminUser, UserRole, UserStatus } from '../../services/adminService'
-import { UsersApi, AdminApi } from '../../generated/api'
 
-// Mock axios
-const mockAxiosInstance = {
-  get: vi.fn(),
-  post: vi.fn(),
-  put: vi.fn(),
-  patch: vi.fn(),
-  delete: vi.fn(),
-  interceptors: {
-    request: { use: vi.fn() },
-    response: { use: vi.fn() }
-  }
-}
+const { mockAxiosInstance } = vi.hoisted(() => ({
+  mockAxiosInstance: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
+    },
+  },
+}))
 
 vi.mock('axios', () => ({
   default: {
-    create: vi.fn(() => mockAxiosInstance)
-  }
+    create: vi.fn(() => mockAxiosInstance),
+  },
 }))
+
+import axios from 'axios'
+import { adminService, AdminUser, UserRole, UserStatus } from '../../services/adminService'
+import { UsersApi, AdminApi } from '../../generated/api'
 
 // Mock du client API généré
 vi.mock('../../generated/api', () => ({
@@ -65,7 +67,6 @@ describe('AdminService', () => {
       const mockUsers = [
         {
           id: '1',
-          telegram_id: '123456789',
           username: 'john_doe',
           first_name: 'John',
           last_name: 'Doe',
@@ -77,7 +78,6 @@ describe('AdminService', () => {
         },
         {
           id: '2',
-          telegram_id: '987654321',
           username: 'jane_smith',
           first_name: 'Jane',
           last_name: 'Smith',
@@ -98,7 +98,7 @@ describe('AdminService', () => {
       expect(result).toHaveLength(2)
       expect(result[0]).toMatchObject({
         id: '1',
-        telegram_id: 123456789, // Should be converted to number
+        telegram_id: undefined,
         username: 'john_doe',
         first_name: 'John',
         last_name: 'Doe',
@@ -108,7 +108,7 @@ describe('AdminService', () => {
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
         full_name: 'John Doe',
-        email: undefined,
+        email: null,
         site_id: undefined
       })
     })
@@ -117,7 +117,6 @@ describe('AdminService', () => {
       const mockUsers = [
         {
           id: '1',
-          telegram_id: '123456789',
           username: 'john_doe',
           first_name: 'John',
           last_name: 'Doe',
@@ -129,7 +128,6 @@ describe('AdminService', () => {
         },
         {
           id: '2',
-          telegram_id: '987654321',
           username: 'jane_smith',
           first_name: 'Jane',
           last_name: 'Smith',
@@ -154,7 +152,6 @@ describe('AdminService', () => {
       const mockUsers = [
         {
           id: '1',
-          telegram_id: '123456789',
           username: 'john_doe',
           first_name: 'John',
           last_name: 'Doe',
@@ -166,7 +163,6 @@ describe('AdminService', () => {
         },
         {
           id: '2',
-          telegram_id: '987654321',
           username: 'jane_smith',
           first_name: 'Jane',
           last_name: 'Smith',
@@ -192,7 +188,6 @@ describe('AdminService', () => {
     it('should update user role and return AdminResponse', async () => {
       const mockUpdatedUser = {
         id: '1',
-        telegram_id: '123456789',
         username: 'john_doe',
         first_name: 'John',
         last_name: 'Doe',
@@ -206,7 +201,7 @@ describe('AdminService', () => {
       const mockResponse = {
         data: {
           id: '1',
-          telegram_id: 123456789,
+          telegram_id: undefined,
           username: 'john_doe',
           first_name: 'John',
           last_name: 'Doe',
@@ -216,7 +211,7 @@ describe('AdminService', () => {
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           full_name: 'John Doe',
-          email: undefined,
+          email: null,
           site_id: undefined
         },
         message: 'Rôle mis à jour avec succès',
@@ -237,7 +232,6 @@ describe('AdminService', () => {
     it('should get user by id and convert to AdminUser', async () => {
       const mockUser = {
         id: '1',
-        telegram_id: '123456789',
         username: 'john_doe',
         first_name: 'John',
         last_name: 'Doe',
@@ -256,7 +250,7 @@ describe('AdminService', () => {
       expect(UsersApi.userapiv1usersuseridget).toHaveBeenCalledWith('1')
       expect(result).toMatchObject({
         id: '1',
-        telegram_id: 123456789, // Should be converted to number
+        telegram_id: undefined,
         username: 'john_doe',
         first_name: 'John',
         last_name: 'Doe',
@@ -266,7 +260,7 @@ describe('AdminService', () => {
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
         full_name: 'John Doe',
-        email: undefined,
+        email: null,
         site_id: undefined
       })
     })
@@ -285,7 +279,11 @@ describe('AdminService', () => {
 
       const mockCreatedUser = {
         id: '1',
-        ...userData,
+        username: userData.username,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        role: userData.role,
+        status: userData.status,
         is_active: true,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z'
@@ -298,23 +296,19 @@ describe('AdminService', () => {
 
       expect(UsersApi.userapiv1userspost).toHaveBeenCalledWith(userData)
       expect(result).toMatchObject({
-        data: {
-          id: '1',
-          telegram_id: 123456789, // Should be converted to number
-          username: 'john_doe',
-          first_name: 'John',
-          last_name: 'Doe',
-          role: UserRole.USER,
-          status: UserStatus.PENDING,
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-          full_name: 'John Doe',
-          email: undefined,
-          site_id: undefined
-        },
-        message: 'Utilisateur créé avec succès',
-        success: true
+        id: '1',
+        telegram_id: undefined,
+        username: 'john_doe',
+        first_name: 'John',
+        last_name: 'Doe',
+        role: UserRole.USER,
+        status: UserStatus.PENDING,
+        is_active: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        full_name: 'John Doe',
+        email: null,
+        site_id: undefined
       })
     })
   })
@@ -328,7 +322,6 @@ describe('AdminService', () => {
 
       const mockUpdatedUser = {
         id: '1',
-        telegram_id: '123456789',
         username: 'john_doe_updated',
         first_name: 'John Updated',
         last_name: 'Doe',
@@ -348,12 +341,12 @@ describe('AdminService', () => {
       expect(result).toMatchObject({
         data: {
           ...mockUpdatedUser,
-          telegram_id: 123456789, // Converted from string to number
+          telegram_id: undefined,
           full_name: 'John Updated Doe',
-          email: undefined,
+          email: null,
           site_id: undefined
         },
-        message: 'Utilisateur mis à jour avec succès',
+        message: 'Bénévole mis à jour avec succès',
         success: true
       })
     })
@@ -369,7 +362,7 @@ describe('AdminService', () => {
       expect(UsersApi.userapiv1usersuseriddelete).toHaveBeenCalledWith('1')
       expect(result).toMatchObject({
         data: undefined,
-        message: 'Utilisateur supprimé avec succès',
+        message: 'Bénévole supprimé avec succès',
         success: true
       })
     })

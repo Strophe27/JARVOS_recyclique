@@ -251,7 +251,10 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
 
         const newUser = await adminService.createUser(createData);
 
-        onUserUpdate?.(newUser);
+        onUserUpdate?.({
+          ...newUser,
+          telegram_id: values.telegram_id || newUser.telegram_id || null,
+        });
 
         notifications.show({
           title: 'Succès',

@@ -20,10 +20,9 @@ vi.mock('../../api/axiosClient', () => ({
 
 import { adminService, UserRole, UserStatus } from '../../services/adminService'
 
-/** Réponse API type UserResponse : `telegram_id` non numérique (après lot 2BM, `full_name` via helper). */
-const userResponseNonNumericTelegram = {
+/** Réponse API type UserResponse (lot 9C) : pas de `telegram_id` ; `full_name` dérivé prénom/nom/username. */
+const userResponseAsApi = {
   id: 'user-1',
-  telegram_id: 'tg_admin_alpha',
   username: 'admin_alpha',
   first_name: 'Admin',
   last_name: 'Alpha',
@@ -36,7 +35,7 @@ const userResponseNonNumericTelegram = {
 
 const expectedAdminMappingSlice = {
   id: 'user-1',
-  telegram_id: 'tg_admin_alpha',
+  telegram_id: undefined,
   username: 'admin_alpha',
   full_name: 'Admin Alpha',
   role: UserRole.ADMIN,
@@ -48,8 +47,8 @@ describe('AdminService user mapping', () => {
     vi.clearAllMocks()
   })
 
-  it('preserves non numeric telegram_id values in admin user lists', async () => {
-    mockUsersApi.usersapiv1usersget.mockResolvedValue([userResponseNonNumericTelegram])
+  it('ne propage pas telegram_id depuis UsersApi (liste)', async () => {
+    mockUsersApi.usersapiv1usersget.mockResolvedValue([userResponseAsApi])
 
     const result = await adminService.getUsers()
 
@@ -57,8 +56,8 @@ describe('AdminService user mapping', () => {
     expect(result[0]).toMatchObject(expectedAdminMappingSlice)
   })
 
-  it('preserves non numeric telegram_id and full_name via getUserById', async () => {
-    mockUsersApi.userapiv1usersuseridget.mockResolvedValue(userResponseNonNumericTelegram)
+  it('ne propage pas telegram_id depuis UsersApi (getUserById)', async () => {
+    mockUsersApi.userapiv1usersuseridget.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.getUserById('user-1')
 
@@ -66,8 +65,8 @@ describe('AdminService user mapping', () => {
     expect(result).toMatchObject(expectedAdminMappingSlice)
   })
 
-  it('preserves non numeric telegram_id and full_name via createUser', async () => {
-    mockUsersApi.userapiv1userspost.mockResolvedValue(userResponseNonNumericTelegram)
+  it('ne propage pas telegram_id depuis la réponse createUser (UsersApi)', async () => {
+    mockUsersApi.userapiv1userspost.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.createUser({
       telegram_id: 'tg_admin_alpha',
@@ -82,8 +81,8 @@ describe('AdminService user mapping', () => {
     expect(result).toMatchObject(expectedAdminMappingSlice)
   })
 
-  it('preserves non numeric telegram_id and full_name via updateUser', async () => {
-    mockUsersApi.userapiv1usersuseridput.mockResolvedValue(userResponseNonNumericTelegram)
+  it('ne propage pas telegram_id depuis la réponse updateUser (UsersApi)', async () => {
+    mockUsersApi.userapiv1usersuseridput.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.updateUser('user-1', { first_name: 'Admin' })
 

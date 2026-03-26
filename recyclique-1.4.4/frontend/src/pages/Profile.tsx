@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Text } from '@mantine/core';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore, mapApiUserToUser } from '../stores/authStore';
 import axiosClient from '../api/axiosClient';
 
 const Container = styled.div`
@@ -128,8 +128,8 @@ export default function Profile(): JSX.Element {
         setPhoneNumber(userData.phone_number || '');
         setAddress(userData.address || '');
         
-        // Mettre à jour le store avec les données complètes
-        setCurrentUser(userData);
+        // Mettre à jour le store (même mapping que login/init pour cohérence des champs)
+        setCurrentUser(mapApiUserToUser(userData as Record<string, unknown>));
       } catch (error) {
         console.error('Erreur lors du chargement des données utilisateur:', error);
       }
@@ -151,7 +151,7 @@ export default function Profile(): JSX.Element {
         phone_number: phoneNumber,
         address
       });
-      setCurrentUser(response.data);
+      setCurrentUser(mapApiUserToUser(response.data as Record<string, unknown>));
       setInfoMessage('Informations mises à jour avec succès');
     } catch (e: any) {
       // Gestion spécifique de l'erreur 409 Conflict pour email dupliqué

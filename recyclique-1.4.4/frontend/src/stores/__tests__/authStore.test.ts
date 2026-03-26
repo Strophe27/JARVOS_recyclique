@@ -283,14 +283,13 @@ describe('authStore', () => {
       expect(state.token).toBe('jwt-test');
     });
 
-    it('conserve un telegram_id alphanumerique depuis GET /v1/users/me', async () => {
+    it('GET /v1/users/me sans telegram_id : currentUser sans telegram_id', async () => {
       localStorageMock.getItem.mockImplementation((key: string) =>
         key === 'token' ? 'jwt-test' : null
       );
 
       const me = {
         id: 'user-99',
-        telegram_id: 'tg_me_alpha',
         username: 'volunteer',
         role: 'user',
         status: 'approved',
@@ -312,7 +311,7 @@ describe('authStore', () => {
       const { initializeAuth } = useAuthStore.getState();
       await initializeAuth();
 
-      expect(useAuthStore.getState().currentUser?.telegram_id).toBe('tg_me_alpha');
+      expect(useAuthStore.getState().currentUser?.telegram_id).toBeUndefined();
     });
 
     it('échec /v1/users/me : déclenche logout (nettoyage local)', async () => {

@@ -74,10 +74,11 @@ export type AdminUser = GeneratedAdminUser & {
 };
 
 // Helper pour convertir UserResponse en AdminUser
+// UserResponse (flux UsersApi) n'expose plus telegram_id en JSON (lot 9C) ; le champ reste optionnel côté UI (saisie, pending admin).
 function convertToAdminUser(user: UserResponse): AdminUser {
   return {
     id: user.id,
-    telegram_id: user.telegram_id,
+    telegram_id: undefined,
     username: user.username,
     first_name: user.first_name,
     last_name: user.last_name,
@@ -85,7 +86,7 @@ function convertToAdminUser(user: UserResponse): AdminUser {
       user.first_name,
       user.last_name,
       user.username,
-      user.telegram_id,
+      undefined,
     ),
     email: (user as any).email ?? null,
     phone_number: (user as any).phone_number ?? null,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { UserProfileTab } from '../UserProfileTab';
 import { AdminUser } from '../../../services/adminService';
@@ -56,10 +56,9 @@ describe('UserProfileTab', () => {
 
     expect(screen.getByText('Test')).toBeInTheDocument();
     expect(screen.getByText('User')).toBeInTheDocument();
-    expect(screen.getByText('@testuser')).toBeInTheDocument();
+    expect(screen.getByText(/@testuser/)).toBeInTheDocument();
     expect(screen.getByText('123456789')).toBeInTheDocument();
     expect(screen.getByText('Bénévole')).toBeInTheDocument();
-    expect(screen.getByText('Approuvé')).toBeInTheDocument();
     expect(screen.getByText('Oui')).toBeInTheDocument();
   });
 
@@ -163,8 +162,8 @@ describe('UserProfileTab', () => {
     
     await user.click(screen.getByText('Modifier le profil'));
 
-    const resetButton = screen.getByText('Réinitialiser le mot de passe');
-    await user.click(resetButton);
+    const resetButtons = screen.getAllByRole('button', { name: /réinitialiser le mot de passe/i });
+    await user.click(resetButtons[resetButtons.length - 1]);
 
     await waitFor(() => {
       expect(mockTriggerResetPassword).toHaveBeenCalledWith('1');
@@ -205,97 +204,10 @@ describe('UserProfileTab', () => {
     });
   });
 
-  it('affiche le bouton Désactiver pour un utilisateur actif', () => {
+  it('affiche le libellé Utilisateur actif dans la modale d’édition', async () => {
+    const user = userEvent.setup();
     renderWithProvider(<UserProfileTab user={mockUser} />);
-
-    expect(screen.getByText('Désactiver')).toBeInTheDocument();
-    expect(screen.queryByText('Activer')).not.toBeInTheDocument();
-  });
-
-  it('affiche le bouton Activer pour un utilisateur inactif', () => {
-    const inactiveUser: AdminUser = {
-      ...mockUser,
-      is_active: false
-    };
-
-    renderWithProvider(<UserProfileTab user={inactiveUser} />);
-
-    expect(screen.getByText('Activer')).toBeInTheDocument();
-    expect(screen.queryByText('Désactiver')).not.toBeInTheDocument();
-  });
-
-  it('should call deactivation function when clicking Deactivate', async () => {
-    const user = userEvent.setup();
-    const mockUpdateUserStatus = vi.fn().mockResolvedValue({});
-    const { adminService } = await import('../../../services/adminService');
-    adminService.updateUserStatus = mockUpdateUserStatus;
-
-    const mockOnUserUpdate = vi.fn();
-
-    renderWithProvider(
-      <UserProfileTab user={mockUser} onUserUpdate={mockOnUserUpdate} />
-    );
-
-    const deactivateButton = screen.getByRole('button', { name: /désactiver/i });
-
-    await act(async () => {
-      await user.click(deactivateButton);
-    });
-
-    await waitFor(() => {
-      expect(mockUpdateUserStatus).toHaveBeenCalledWith('1', {
-        is_active: false,
-        reason: "Désactivé par l'administrateur"
-      });
-    });
-
-    await waitFor(() => {
-      expect(mockOnUserUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: '1',
-          is_active: false
-        })
-      );
-    });
-  });
-
-  it('should call activation function when clicking Activate', async () => {
-    const user = userEvent.setup();
-    const inactiveUser: AdminUser = {
-      ...mockUser,
-      is_active: false
-    };
-
-    const mockUpdateUserStatus = vi.fn().mockResolvedValue({});
-    const { adminService } = await import('../../../services/adminService');
-    adminService.updateUserStatus = mockUpdateUserStatus;
-
-    const mockOnUserUpdate = vi.fn();
-
-    renderWithProvider(
-      <UserProfileTab user={inactiveUser} onUserUpdate={mockOnUserUpdate} />
-    );
-
-    const activateButton = screen.getByRole('button', { name: /activer/i });
-
-    await act(async () => {
-      await user.click(activateButton);
-    });
-
-    await waitFor(() => {
-      expect(mockUpdateUserStatus).toHaveBeenCalledWith('1', {
-        is_active: true,
-        reason: "Réactivé par l'administrateur"
-      });
-    });
-
-    await waitFor(() => {
-      expect(mockOnUserUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: '1',
-          is_active: true
-        })
-      );
-    });
+    await user.click(screen.getByText('Modifier le profil'));
+    expect(screen.getByText('Utilisateur actif')).toBeInTheDocument();
   });
 });

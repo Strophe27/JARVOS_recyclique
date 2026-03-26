@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2026-03-26T22:20:31.855Z
+ * Généré le: 2026-03-26T22:27:34.732Z
  */
 
 // ============================================================================
@@ -1058,7 +1058,6 @@ export interface UserApprovalRequest {
   message?: string | any;
 }
 export interface UserCreate {
-  telegram_id?: string | any;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
@@ -1072,6 +1071,7 @@ export interface UserCreate {
   status?: UserStatus;
   is_active?: boolean;
   site_id?: string | any;
+  telegram_id?: string | any;
   password: string;
 }
 export interface UserGroupUpdateRequest {
@@ -1097,7 +1097,6 @@ export interface UserRejectionRequest {
   reason?: string | any;
 }
 export interface UserResponse {
-  telegram_id?: string | any;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;

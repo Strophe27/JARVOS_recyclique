@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 interface User {
   id: string
-  /** Optionnel : persistance JSON héritée ou champs annexes ; le login ne renvoie plus ce champ. */
+  /** Optionnel : persistance héritée ; login et `/v1/users/me` ne renvoient pas ce champ. */
   telegram_id?: string | number
   username: string
   first_name?: string

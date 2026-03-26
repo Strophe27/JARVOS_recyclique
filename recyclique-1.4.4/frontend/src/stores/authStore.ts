@@ -7,7 +7,7 @@ import { getTokenExpiration } from '../utils/jwt';
 
 export interface User {
   id: string;
-  /** Présent si fourni par `GET /v1/users/me` (hors contrat login). */
+  /** Données persistées héritées uniquement ; ni login ni `GET /v1/users/me` ne renvoient ce champ. */
   telegram_id?: string | number;
   username?: string;
   first_name?: string;
@@ -485,31 +485,10 @@ function parseApiUserRole(raw: unknown): UserRole {
   return UserRole.USER;
 }
 
-/** Extrait `telegram_id` depuis un profil API (ex. GET /v1/users/me), pas depuis le login. */
-function parseTelegramIdFromApi(raw: unknown): string | number | undefined {
-  if (raw == null || raw === '') return undefined;
-  if (typeof raw === 'number') {
-    return Number.isFinite(raw) ? raw : undefined;
-  }
-  if (typeof raw === 'string') {
-    const s = raw.trim();
-    if (!s) return undefined;
-    if (/^\d+$/.test(s)) {
-      const n = Number(s);
-      return Number.isSafeInteger(n) ? n : s;
-    }
-    return s;
-  }
-  return undefined;
-}
-
 /** Réponse API user (login ou `GET /v1/users/me`) → modèle du store. */
-function mapApiUserToUser(raw: Record<string, unknown>): User {
-  const telegram_id = parseTelegramIdFromApi(raw.telegram_id);
-
+export function mapApiUserToUser(raw: Record<string, unknown>): User {
   const user: User = {
     id: String(raw.id),
-    telegram_id,
     username: (raw.username as string | undefined) ?? undefined,
     first_name: (raw.first_name as string | undefined) ?? undefined,
     last_name: (raw.last_name as string | undefined) ?? undefined,

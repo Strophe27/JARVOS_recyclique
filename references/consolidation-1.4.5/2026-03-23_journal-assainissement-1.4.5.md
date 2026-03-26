@@ -4653,6 +4653,93 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Lot backend (2026-03-26) — Paquet 9A : `AdminResponse.data` approve sans `telegram_id`
+
+**Statut:** execute (sans commit)  
+**Theme:** retirer `telegram_id` du dict libre `data` sur `POST .../approve` dans `admin.py` (canal Telegram sortant retiré du produit) ; schémas Pydantic larges, DB, `legacy_import`, OpenRouter **inchangés**.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_admin_pending_endpoints.py -q` depuis `recyclique-1.4.4/api` : **14 passed** (warnings Pydantic existants).
+- OpenAPI : `AdminResponse.data` reste `dict` generique (`additionalProperties`) — **pas de regen** requise pour ce champ.
+
+### Reserve — lot suivant
+- Harmoniser `username_or_telegram_id(..., telegram_id)` → second argument `None` dans `admin.py` (approve/reject) si lot style-only.
+- `target_telegram_id` / autres champs explicites dans d'autres endpoints admin : lots separes si besoin.
+
+---
+
+## Lot 9B (2026-03-26) — Auth / session : `AuthUser` + login sans `telegram_id`
+
+**Statut:** execute (sans commit)  
+**Theme:** retirer `telegram_id` du schéma Pydantic `AuthUser` (réponse login / OpenAPI) ; fallback manuel login aligné ; cache Redis `CachedUser` et JWT **inchangés** ; `GET /v1/users/me` et modèle DB **inchangés** ; `legacy_import` / OpenRouter **non touchés**.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/auth.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/auth.py`
+- `recyclique-1.4.4/api/tests/test_auth_login_endpoint.py`
+- `recyclique-1.4.4/openapi.json`, `recyclique-1.4.4/api/openapi.json` (sync + regen)
+- `recyclique-1.4.4/frontend/src/generated/*` (`npm run codegen`)
+- `recyclique-1.4.4/frontend/src/stores/authStore.ts`, `frontend/src/stores/__tests__/authStore.test.ts`
+- `recyclique-1.4.4/frontend/src/hooks/useAuth.ts`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_auth_login_endpoint.py tests/test_auth_login_username_password.py -q` depuis `recyclique-1.4.4/api` (env test minimal) : **24 passed**.
+- `npx vitest run src/stores/__tests__/authStore.test.ts src/test/hooks/useAuth.test.ts` depuis `recyclique-1.4.4/frontend` : **29 passed**.
+- `src/test/stores/authStore.test.ts` : **6 echecs** (API store obsolete : `canManageUsers`, `hasCashAccess`, logout) — **hors diff 9B**, deja desaligne du store actuel.
+
+### Reserve — lot suivant
+- Reparer ou retirer `frontend/src/test/stores/authStore.test.ts` (aligner sur `isAdmin` / `hasCashAccess` du store ou supprimer les tests morts).
+- Option : retirer `telegram_id` du payload cache `CachedUser` si on veut une pile auth sans ce champ côté serveur (hors contrat HTTP).
+
+---
+
+## Lot 9C (2026-03-26) — `UserResponse` / `/v1/users/me` sans `telegram_id`
+
+**Statut:** execute (sans commit)  
+**Theme:** `UserResponse` (toutes les routes `users.py` qui l’utilisent) **sans** champ `telegram_id` en JSON/OpenAPI ; `telegram_id` reste sur `UserBase` / `UserCreate` et en base ; `AdminUser` / `PendingUserResponse` **inchangés** ; `legacy_import` / OpenRouter **non touchés**.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/user.py` (`UserProfileFields`, `UserResponse` sans telegram)
+- `recyclique-1.4.4/api/tests/test_user_self_endpoints.py`, `api/tests/test_user_creation.py` (assertions + URLs `_USERS_ROOT` via `settings.API_V1_STR`)
+- `recyclique-1.4.4/openapi.json`, `recyclique-1.4.4/api/openapi.json`, `frontend/src/generated/*` (regen)
+- `frontend/src/stores/authStore.ts` (`mapApiUserToUser` exporte, plus de remplissage `telegram_id` depuis l’API)
+- `frontend/src/stores/__tests__/authStore.test.ts`, `frontend/src/hooks/useAuth.ts`, `frontend/src/pages/Profile.tsx`, `frontend/src/test/pages/Profile.test.tsx`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_user_self_endpoints.py tests/test_user_creation.py::test_create_user_success tests/test_user_creation.py::test_create_user_username_already_exists tests/test_user_creation.py::test_create_user_optional_fields_omitted -q` depuis `recyclique-1.4.4/api` : **6 passed** (warnings Pydantic existants).
+- `npx vitest run src/stores/__tests__/authStore.test.ts src/test/pages/Profile.test.tsx` depuis `recyclique-1.4.4/frontend` : **15 passed**.
+- `npm run codegen` (OpenAPI racine `recyclique-1.4.4/openapi.json`).
+
+### Reserve — lot suivant
+- `test_user_creation.py` : cas **422** échouent encore chez run local à cause du handler `validation_exception_handler` (`exc.errors()` non JSON-serializable) — **hors diff 9C**.
+- `test_user_creation.py::test_create_user_with_all_fields` : `site_id` string vs UUID SQLAlchemy — **hors diff 9C**.
+- `test_openapi_validation.py` : chemins `/api/v1/...` vs schéma réel `/v1/...` — alignement fichier ou génération **lot dédié**.
+
+### Suite 9C (2026-03-26) — admin `UsersApi` sans `telegram_id` sur `UserResponse`
+
+**Theme:** `convertToAdminUser` ne lit plus `telegram_id` sur `UserResponse` ; `full_name` sans repli Telegram côté UsersApi ; création admin : `onUserUpdate` réinjecte l’ID saisi (la réponse create ne le renvoie pas). `getPendingUsers` inchangé (`PendingUserResponse` conserve `telegram_id`).
+
+**Fichiers touches**
+- `frontend/src/services/adminService.ts`
+- `frontend/src/components/business/UserProfileTab.tsx`
+- `frontend/src/test/services/adminService.test.ts` (hoist mock axios + attentes alignées contrat / messages)
+- `frontend/src/test/services/adminService.userMapping.test.ts`
+- `frontend/src/components/business/__tests__/UserProfileTab.test.tsx`
+
+**Validation**
+- `npx vitest run src/test/services/adminService.test.ts src/test/services/adminService.userMapping.test.ts src/test/services/adminService.pendingUsers.test.ts src/components/business/__tests__/UserProfileTab.test.tsx` depuis `recyclique-1.4.4/frontend`.
+
+**Reserve**
+- Liste admin : les lignes issues uniquement de `UsersApi` n’ont plus d’ID Telegram tant qu’on ne bascule pas la liste sur un endpoint admin enrichi ou une autre source.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

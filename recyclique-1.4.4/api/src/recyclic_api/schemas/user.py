@@ -1,11 +1,13 @@
-from pydantic import BaseModel, field_validator, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from typing import Optional, Tuple, List
 from datetime import datetime
 import re
 from recyclic_api.models.user import UserRole, UserStatus
 
-class UserBase(BaseModel):
-    telegram_id: Optional[str] = None
+
+class UserProfileFields(BaseModel):
+    """Champs profil publics hors identifiant Telegram (non exposé sur UserResponse / routes v1 users)."""
+
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -19,6 +21,11 @@ class UserBase(BaseModel):
     status: UserStatus = UserStatus.PENDING
     is_active: bool = True
     site_id: Optional[str] = None
+
+
+class UserBase(UserProfileFields):
+    telegram_id: Optional[str] = None
+
 
 class UserCreate(UserBase):
     password: str
@@ -104,12 +111,10 @@ class UserStatusUpdate(BaseModel):
     is_active: bool
     reason: Optional[str] = None
 
-from pydantic import field_validator, ConfigDict
 
+class UserResponse(UserProfileFields):
+    """Réponse API utilisateur (liste, détail, /me, création) : sans telegram_id."""
 
-class UserResponse(UserBase):
-    # Override to allow null telegram_id in DB
-    telegram_id: Optional[str] = None
     id: str
     created_at: datetime
     updated_at: datetime

@@ -4,6 +4,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.user import UserCreate
+from recyclic_api.core.config import settings
+
+_USERS_ROOT = f"{settings.API_V1_STR.rstrip('/')}/users/"
 
 
 def test_create_user_success(client: TestClient, db_session: Session):
@@ -21,7 +24,7 @@ def test_create_user_success(client: TestClient, db_session: Session):
     }
 
     # Créer l'utilisateur via l'API
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 200
@@ -32,7 +35,7 @@ def test_create_user_success(client: TestClient, db_session: Session):
     assert data["role"] == "user"
     assert data["status"] == "pending"
     assert data["is_active"] is True
-    assert data["telegram_id"] == "123456789"
+    assert "telegram_id" not in data
     assert "hashed_password" not in data  # Le mot de passe ne doit pas être dans la réponse
 
     # Vérifier que l'utilisateur existe en base
@@ -76,7 +79,7 @@ def test_create_user_username_already_exists(client: TestClient, db_session: Ses
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 400
@@ -96,7 +99,7 @@ def test_create_user_invalid_password_too_short(client: TestClient, db_session: 
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -117,7 +120,7 @@ def test_create_user_invalid_password_no_uppercase(client: TestClient, db_sessio
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -138,7 +141,7 @@ def test_create_user_invalid_password_no_lowercase(client: TestClient, db_sessio
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -159,7 +162,7 @@ def test_create_user_invalid_password_no_digit(client: TestClient, db_session: S
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -180,7 +183,7 @@ def test_create_user_invalid_password_no_special_char(client: TestClient, db_ses
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -201,7 +204,7 @@ def test_create_user_invalid_username_too_short(client: TestClient, db_session: 
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -222,7 +225,7 @@ def test_create_user_invalid_username_format(client: TestClient, db_session: Ses
         "is_active": True
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -244,7 +247,7 @@ def test_create_user_missing_required_fields(client: TestClient, db_session: Ses
         # password manquant
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 422  # Validation error
@@ -264,7 +267,7 @@ def test_create_user_optional_fields_omitted(client: TestClient, db_session: Ses
         # first_name, last_name, site_id omis
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 200
@@ -295,7 +298,7 @@ def test_create_user_with_all_fields(client: TestClient, db_session: Session):
         "site_id": "550e8400-e29b-41d4-a716-446655440000"
     }
 
-    response = client.post("/api/v1/users/", json=user_data)
+    response = client.post(_USERS_ROOT, json=user_data)
 
     # Vérifications
     assert response.status_code == 200
