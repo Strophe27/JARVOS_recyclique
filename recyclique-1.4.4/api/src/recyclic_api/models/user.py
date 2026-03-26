@@ -30,7 +30,8 @@ class User(Base):
     email = Column(String, unique=False, nullable=True)
     hashed_password = Column(String, nullable=False)
     hashed_pin = Column(String, nullable=True)
-    telegram_id = Column(String, unique=False, nullable=True, index=True)
+    # Colonne DB historique ; ne pas exposer via API ni cache (nom Python neutre).
+    legacy_external_contact_id = Column("telegram_id", String, unique=False, nullable=True, index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     # Profile enrichment fields (all optional)
@@ -54,4 +55,4 @@ class User(Base):
     email_logs = relationship("EmailLog", back_populates="user")
 
     def __repr__(self):
-        return f"<User(id={self.id}, telegram_id={self.telegram_id}, role={self.role}, status={self.status})>"
+        return f"<User(id={self.id}, username={self.username!r}, role={self.role}, status={self.status})>"

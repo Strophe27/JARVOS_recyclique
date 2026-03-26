@@ -519,7 +519,7 @@ def admin_client(db_session: Session) -> Generator[TestClient, None, None]:
             hashed_password=hashed_password,
             role=UserRole.ADMIN,
             status=UserStatus.ACTIVE,
-            telegram_id=999999999  # integer comme attendu par les tests
+            legacy_external_contact_id="999999999",
         )
         db_session.add(admin_user)
         db_session.commit()
@@ -583,7 +583,7 @@ def super_admin_client(db_session: Session) -> Generator[TestClient, None, None]
         hashed_password=hashed_password,
         role=UserRole.SUPER_ADMIN,
         status=UserStatus.ACTIVE,
-        telegram_id=888888888  # integer comme attendu par les tests
+        legacy_external_contact_id="888888888",
     )
     db_session.add(super_admin_user)
     db_session.commit()

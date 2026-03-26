@@ -33,7 +33,6 @@ def _create_site(db_session: Session, name: str) -> Site:
 
 def _create_user(db_session: Session, *, username: str, role: UserRole, site: Site) -> User:
     user = User(
-        telegram_id=f"tg_{username}",
         username=username,
         email=f"{username}@example.com",
         hashed_password=hash_password("secret"),

@@ -78,7 +78,7 @@ class TestAuthLoginEndpoint:
         test_user = User(
             username=username,
             hashed_password=hashed_password,
-            telegram_id=telegram_handle,
+            legacy_external_contact_id=telegram_handle,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
             is_active=True,

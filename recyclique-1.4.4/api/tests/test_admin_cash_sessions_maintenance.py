@@ -19,7 +19,6 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 
 def _make_operator(db_session: Session) -> User:
     user = User(
-        telegram_id=777001,
         username="operator_cash_maint",
         email="op_cash_maint@test.com",
         hashed_password=hash_password("pw"),

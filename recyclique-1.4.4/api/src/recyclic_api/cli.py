@@ -62,9 +62,9 @@ def create_super_admin(username: str, password: str):
             first_name=first_name,
             last_name=last_name,
             hashed_password=hashed_password,
-            role=UserRole.SUPER_ADMIN.value,  # Use enum value
-            status=UserStatus.APPROVED.value,  # Use enum value
-            is_active=True
+            role=UserRole.SUPER_ADMIN,
+            status=UserStatus.APPROVED,
+            is_active=True,
         )
 
         db.add(new_user)

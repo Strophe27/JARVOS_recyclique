@@ -27,7 +27,7 @@ def test_create_super_admin_success(mock_db_session):
     # Mock database operations
     mock_user = MagicMock()
     mock_user.id = "test-uuid"
-    mock_user.telegram_id = "123456789"
+    mock_user.username = "cli_super_test"
     mock_user.first_name = "Test"
     mock_user.last_name = "Admin"
     mock_user.role = UserRole.SUPER_ADMIN
@@ -39,7 +39,7 @@ def test_create_super_admin_success(mock_db_session):
     
     # Test the function directly
     try:
-        create_super_admin("123456789", "Test Admin")
+        create_super_admin("cli_super_test", "SecureP@ss1!")
         # If we get here, the function succeeded
         assert True
     except SystemExit as e:
@@ -56,7 +56,7 @@ def test_create_super_admin_user_exists(mock_db_session):
     
     # Test the function directly
     try:
-        create_super_admin("123456789", "Test Admin")
+        create_super_admin("cli_super_test", "SecureP@ss1!")
         assert False, "Should have exited with error"
     except SystemExit as e:
         assert e.code == 1
@@ -71,7 +71,7 @@ def test_create_super_admin_database_error(mock_db_session):
     
     # Test the function directly
     try:
-        create_super_admin("123456789", "Test Admin")
+        create_super_admin("cli_super_test", "SecureP@ss1!")
         assert False, "Should have exited with error"
     except SystemExit as e:
         assert e.code == 1
@@ -88,7 +88,7 @@ def test_create_super_admin_name_parsing():
         # Mock database operations
         mock_user = MagicMock()
         mock_user.id = "test-uuid"
-        mock_user.telegram_id = "123456789"
+        mock_user.username = "cli_super_test"
         mock_user.first_name = "John"
         mock_user.last_name = "Doe Smith"
         mock_user.role = UserRole.SUPER_ADMIN
@@ -100,7 +100,7 @@ def test_create_super_admin_name_parsing():
         
         # Test the function directly
         try:
-            create_super_admin("123456789", "John Doe Smith")
+            create_super_admin("cli_super_test", "John Doe Smith")
             # Verify that User was created with correct name parts
             mock_session.add.assert_called_once()
             created_user = mock_session.add.call_args[0][0]
@@ -122,7 +122,7 @@ def test_create_super_admin_single_name():
         # Mock database operations
         mock_user = MagicMock()
         mock_user.id = "test-uuid"
-        mock_user.telegram_id = "123456789"
+        mock_user.username = "cli_super_test"
         mock_user.first_name = "Admin"
         mock_user.last_name = ""
         mock_user.role = UserRole.SUPER_ADMIN
@@ -134,7 +134,7 @@ def test_create_super_admin_single_name():
         
         # Test the function directly
         try:
-            create_super_admin("123456789", "Admin")
+            create_super_admin("cli_super_test", "Admin")
             # Verify that User was created with correct name parts
             mock_session.add.assert_called_once()
             created_user = mock_session.add.call_args[0][0]

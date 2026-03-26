@@ -22,7 +22,6 @@ import uuid
 # Configuration de test
 TEST_ADMIN_USER = {
     "id": "admin-test-123",
-    "telegram_id": "123456789",
     "username": "admin_test",
     "first_name": "Admin",
     "last_name": "Test",
@@ -33,7 +32,6 @@ TEST_ADMIN_USER = {
 
 TEST_USER = {
     "id": "user-test-456",
-    "telegram_id": "987654321",
     "username": "user_test",
     "first_name": "User",
     "last_name": "Test",
@@ -81,7 +79,6 @@ def test_db(db_session):
     if not existing_admin:
         admin_user = User(
             id=admin_uuid,
-            telegram_id=TEST_ADMIN_USER["telegram_id"],
             username=TEST_ADMIN_USER["username"],
             first_name=TEST_ADMIN_USER["first_name"],
             last_name=TEST_ADMIN_USER["last_name"],
@@ -97,7 +94,6 @@ def test_db(db_session):
     if not existing_user:
         normal_user = User(
             id=user_uuid,
-            telegram_id=TEST_USER["telegram_id"],
             username=TEST_USER["username"],
             first_name=TEST_USER["first_name"],
             last_name=TEST_USER["last_name"],

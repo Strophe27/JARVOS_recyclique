@@ -4,8 +4,11 @@ from datetime import datetime
 import uuid
 
 class RegistrationRequestBase(BaseModel):
-    telegram_id: str = Field(..., description="ID Telegram de l'utilisateur")
-    username: Optional[str] = Field(None, description="Nom d'utilisateur Telegram")
+    external_registration_key: str = Field(
+        ...,
+        description="Identifiant d'inscription externe (colonne DB historique)",
+    )
+    username: Optional[str] = Field(None, description="Nom d'utilisateur associé")
     first_name: Optional[str] = Field(None, description="Prénom")
     last_name: Optional[str] = Field(None, description="Nom de famille")
     email: Optional[str] = Field(None, description="Adresse email")

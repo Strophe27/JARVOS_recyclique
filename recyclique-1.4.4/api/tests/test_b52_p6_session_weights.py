@@ -18,7 +18,6 @@ from recyclic_api.core.security import hash_password
 def _create_operator(db_session: Session) -> User:
   """Crée un utilisateur opérateur simple pour les tests."""
   user = User(
-      telegram_id="b52-p6-operator",
       username="b52p6_operator",
       email="b52p6@example.com",
       hashed_password=hash_password("testpassword123"),

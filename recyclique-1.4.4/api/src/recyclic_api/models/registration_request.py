@@ -16,7 +16,8 @@ class RegistrationRequest(Base):
     __tablename__ = "registration_requests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    telegram_id = Column(String, nullable=False, index=True)
+    # Colonne DB historique ``telegram_id`` (NOT NULL) ; nom Python neutre.
+    external_registration_key = Column("telegram_id", String, nullable=False, index=True)
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
@@ -35,4 +36,4 @@ class RegistrationRequest(Base):
     reviewer = relationship("User", foreign_keys=[reviewed_by])
 
     def __repr__(self):
-        return f"<RegistrationRequest(id={self.id}, telegram_id={self.telegram_id}, status={self.status})>"
+        return f"<RegistrationRequest(id={self.id}, status={self.status})>"

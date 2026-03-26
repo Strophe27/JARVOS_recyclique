@@ -6,7 +6,7 @@ from recyclic_api.models.user import UserRole, UserStatus
 
 
 class UserProfileFields(BaseModel):
-    """Champs profil publics hors identifiant Telegram (non exposé sur UserResponse / routes v1 users)."""
+    """Champs profil exposés côté API (routes v1 users) ; identifiants internes non mappés exclus."""
 
     username: Optional[str] = None
     first_name: Optional[str] = None
@@ -24,7 +24,7 @@ class UserProfileFields(BaseModel):
 
 
 class UserBase(UserProfileFields):
-    """Base schéma utilisateur (création admin) : pas de telegram_id en entrée (colonne DB inchangée)."""
+    """Base schéma utilisateur (création admin), alignée sur le modèle ORM courant."""
 
 
 class UserCreate(UserBase):
@@ -112,7 +112,7 @@ class UserStatusUpdate(BaseModel):
 
 
 class UserResponse(UserProfileFields):
-    """Réponse API utilisateur (liste, détail, /me, création) : sans telegram_id."""
+    """Réponse API utilisateur (liste, détail, /me, création) : champs internes exclus."""
 
     id: str
     created_at: datetime

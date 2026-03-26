@@ -29,7 +29,6 @@ def test_user(client, db_session: Session):
     hashed_password = hash_password("testpassword123")
 
     user = User(
-        telegram_id="test_user_123",
         username="test_cashier",
         email="test@example.com",
         hashed_password=hashed_password,
@@ -293,7 +292,6 @@ class TestCashSessionClose:
         from recyclic_api.core.security import hash_password
 
         other_user = User(
-            telegram_id="test_user_other_close",
             username="test_cashier_other",
             email="other-close@example.com",
             hashed_password=hash_password("testpassword123"),

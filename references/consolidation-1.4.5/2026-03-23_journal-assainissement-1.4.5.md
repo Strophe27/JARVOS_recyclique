@@ -4862,6 +4862,38 @@ Apres regeneration OpenAPI, les symboles client ne contiennent plus le segment `
 
 ---
 
+## Lot 11D (2026-03-27) — `purge-telegram-code` : ORM / cache / CLI internes
+
+**Statut:** execute (sans commit)  
+**Theme:** retirer Telegram des couches internes (cache Redis auth, attributs Python explicites sur modeles, CLI du paquet) tout en conservant les colonnes DB historiques sans migration destructive. Pas de `legacy_import` / OpenRouter.
+
+### Decision de perimetre
+- **User** : plus de champ Python `telegram_id` ; mapping neutre `legacy_external_contact_id` → colonne DB `telegram_id`. Cache `CachedUser` / `serialize_user_for_cache` sans ce champ (pas de fuite Redis).
+- **Deposit** : `legacy_deposit_channel_user` → colonne `telegram_user_id` (alignement schema SQLite `create_all` + prod migree).
+- **RegistrationRequest** : `external_registration_key` → colonne `telegram_id` ; schemas Pydantic alignes (`external_registration_key`).
+- **CLI** : `api/src/cli.py` = relais vers `recyclic_api.cli` (CLI supportee : username + mot de passe, sous-commande export existante). Tests `tests/cli` alignes sur `create_super_admin(username, password)`.
+- **Tests** : remplacement des kwargs `telegram_id=` par `legacy_external_contact_id=` ou suppression ; assertions API inchangees (`telegram_id` absent du JSON). Pas de correction des tests signup / certains `test_user_creation` avec chemins `/api/v1/...` ou erreurs JSON 422 (hors lot, deja notes journal).
+
+### Fichiers touches (principaux)
+- `recyclique-1.4.4/api/src/recyclic_api/core/auth.py`
+- `recyclique-1.4.4/api/src/recyclic_api/models/user.py`, `deposit.py`, `registration_request.py`
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/registration_request.py`, `user.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/users.py`
+- `recyclique-1.4.4/api/src/recyclic_api/cli.py` (role/status enums)
+- `recyclique-1.4.4/api/src/cli.py` (wrapper)
+- Tests : `tests/factories.py`, `tests/conftest.py`, `tests/cli/test_cli.py`, `tests/test_auth_cache_behavior.py`, `tests/test_auth_login_endpoint.py`, `tests/test_user_self_endpoints.py`, `tests/test_admin_pending_endpoints.py`, `tests/test_user_creation.py` (partiel), `tests/test_auth_signup_endpoint.py` (assert legacy ORM seulement), `tests/api/test_signup_endpoint.py`, nombreux tests creant des `User` (admin, cash, b49, reports, etc.)
+- Scripts racine : `api/test_simple.py`, `api/test_cli_final.py`
+
+### Validation
+- `pytest tests/test_auth_cache_behavior.py tests/test_auth_login_endpoint.py tests/cli/test_cli.py tests/test_user_creation.py::test_create_user_success tests/test_user_creation.py::test_create_user_username_already_exists tests/test_user_creation.py::test_create_user_legacy_telegram_id_in_json_not_persisted tests/test_user_self_endpoints.py tests/test_admin_pending_endpoints.py tests/test_integration_pending_workflow.py` : **47 passed** (machine locale).
+- `pytest tests/test_user_identity.py tests/test_deposit_validation_workflow.py` : **15 passed**.
+
+### Reserves / suivi migration (non execute en 11D)
+- **Optionnel** : migration Alembic pour renommer ou supprimer les colonnes physiques `users.telegram_id`, `deposits.telegram_user_id`, `registration_requests.telegram_id` une fois donnees migrees ou abandonnees — **non** fait ici (perimetre prudent).
+- Regenerer OpenAPI / codegen si un jour les schemas `RegistrationRequest*` sont exposes publiquement (champ renomme).
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

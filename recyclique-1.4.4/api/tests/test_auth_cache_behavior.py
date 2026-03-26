@@ -64,7 +64,6 @@ def _build_cached_payload(user_id: uuid.UUID) -> str:
         "role": UserRole.USER.value,
         "status": UserStatus.APPROVED.value,
         "is_active": True,
-        "telegram_id": None,
         "site_id": None,
         "phone_number": None,
         "address": None,

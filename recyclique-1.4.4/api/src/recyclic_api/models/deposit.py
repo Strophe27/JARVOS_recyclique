@@ -33,8 +33,8 @@ class Deposit(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=True)  # Made nullable for telegram_user_id deposits
-    telegram_user_id = Column(String, nullable=True)  # Telegram user ID for bot deposits
+    site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=True)
+    legacy_deposit_channel_user = Column("telegram_user_id", String, nullable=True)
     audio_file_path = Column(String, nullable=True)  # Path to audio file
     status = Column(Enum(DepositStatus), nullable=False, default=DepositStatus.PENDING_AUDIO)
     category = Column(Enum(EEECategory), nullable=True)  # Made nullable initially

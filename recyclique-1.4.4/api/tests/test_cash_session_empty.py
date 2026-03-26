@@ -20,7 +20,6 @@ def test_user(client, db_session: Session):
     hashed_password = hash_password("testpassword123")
 
     user = User(
-        telegram_id="test_user_123",
         username="test_cashier",
         email="test@example.com",
         hashed_password=hashed_password,

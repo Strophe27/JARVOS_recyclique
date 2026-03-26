@@ -19,7 +19,6 @@ def close_test_user(db_session: Session) -> User:
     from recyclic_api.core.security import hash_password
 
     user = User(
-        telegram_id="arch02_close_user",
         username="arch02_close_user",
         email="arch02-close@example.com",
         hashed_password=hash_password("testpassword123"),

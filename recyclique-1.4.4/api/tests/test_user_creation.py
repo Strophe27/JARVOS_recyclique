@@ -45,7 +45,7 @@ def test_create_user_success(client: TestClient, db_session: Session):
     assert user.role == UserRole.USER
     assert user.status == UserStatus.PENDING
     assert user.is_active is True
-    assert user.telegram_id is None
+    assert user.legacy_external_contact_id is None
     assert user.hashed_password != "SecurePass123!"  # Le mot de passe doit être hashé
 
 
@@ -55,7 +55,7 @@ def test_create_user_username_already_exists(client: TestClient, db_session: Ses
     existing_user = User(
         username="existinguser",
         hashed_password="hashedpassword",
-        telegram_id="987654321",
+        legacy_external_contact_id="987654321",
         first_name="Existing",
         last_name="User",
         role=UserRole.USER,
@@ -321,4 +321,4 @@ def test_create_user_legacy_telegram_id_in_json_not_persisted(client: TestClient
     assert response.status_code == 200
     user = db_session.query(User).filter(User.username == "no_tg_from_body").first()
     assert user is not None
-    assert user.telegram_id is None
+    assert user.legacy_external_contact_id is None

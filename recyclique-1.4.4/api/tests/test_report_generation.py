@@ -33,7 +33,6 @@ def _create_site(db_session: Session) -> Site:
 
 def _create_operator(db_session: Session, site: Site) -> User:
     operator = User(
-        telegram_id="report_operator",
         username="report_operator",
         email="report@example.com",
         hashed_password=hash_password("operator-secret"),

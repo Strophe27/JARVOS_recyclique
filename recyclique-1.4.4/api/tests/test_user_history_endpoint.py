@@ -24,7 +24,6 @@ def test_admin_user(db_session: Session):
     """Créer un utilisateur administrateur pour les tests"""
     admin_user = User(
         id=uuid.uuid4(),
-        telegram_id=123456789,
         username="admin_test",
         hashed_password=hash_password("admin"),
         first_name="Admin",
@@ -44,7 +43,6 @@ def test_user(db_session: Session):
     """Créer un utilisateur de test pour l'historique"""
     user = User(
         id=uuid.uuid4(),
-        telegram_id=987654321,
         username="test_user",
         hashed_password=hash_password("userpwd"),
         first_name="Test",

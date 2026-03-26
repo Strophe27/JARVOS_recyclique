@@ -15,7 +15,7 @@ def UserFactory(**overrides) -> User:
         "role": UserRole.USER,
         "status": UserStatus.PENDING,
         "is_active": True,
-        "telegram_id": None,
+        "legacy_external_contact_id": None,
         "first_name": None,
         "last_name": None,
         "site_id": None,

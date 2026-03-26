@@ -13,11 +13,6 @@ from recyclic_api.core.security import hash_password
 _V1 = settings.API_V1_STR.rstrip("/")
 
 
-def _unique_numeric_telegram() -> str:
-    """Identifiant telegram test unique, chaîne de chiffres (schéma AuthUser au login)."""
-    return str(1_000_000_000 + (uuid.uuid4().int % 8_999_999_999))
-
-
 def test_update_user_status_success(client: TestClient, db_session: Session):
     """Test de mise à jour du statut utilisateur avec succès"""
     tid = uuid.uuid4().hex[:10]
@@ -26,7 +21,6 @@ def test_update_user_status_success(client: TestClient, db_session: Session):
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -40,7 +34,6 @@ def test_update_user_status_success(client: TestClient, db_session: Session):
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -95,7 +88,6 @@ def test_update_user_status_user_not_found(client: TestClient, db_session: Sessi
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -128,7 +120,6 @@ def test_update_user_status_admin_cannot_deactivate_self(client: TestClient, db_
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -163,7 +154,6 @@ def test_update_user_profile_success(client: TestClient, db_session: Session):
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Old",
         last_name="Name",
         role=UserRole.USER,
@@ -177,7 +167,6 @@ def test_update_user_profile_success(client: TestClient, db_session: Session):
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -220,7 +209,6 @@ def test_update_user_profile_partial_update(client: TestClient, db_session: Sess
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Old",
         last_name="Name",
         role=UserRole.USER,
@@ -234,7 +222,6 @@ def test_update_user_profile_partial_update(client: TestClient, db_session: Sess
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -276,7 +263,6 @@ def test_update_user_profile_no_fields_provided(client: TestClient, db_session: 
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -290,7 +276,6 @@ def test_update_user_profile_no_fields_provided(client: TestClient, db_session: 
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -324,7 +309,6 @@ def test_update_user_profile_user_not_found(client: TestClient, db_session: Sess
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
@@ -358,7 +342,6 @@ def test_update_user_role_success(client: TestClient, db_session: Session):
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="U",
         last_name="Ser",
         role=UserRole.USER,
@@ -372,7 +355,6 @@ def test_update_user_role_success(client: TestClient, db_session: Session):
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Ad",
         last_name="Min",
         role=UserRole.ADMIN,
@@ -410,7 +392,6 @@ def test_update_user_role_admin_cannot_downgrade_self(client: TestClient, db_ses
     admin_user = User(
         username=uname_a,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Ad",
         last_name="Min",
         role=UserRole.ADMIN,
@@ -446,7 +427,6 @@ def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Sess
     normal_user = User(
         username=uname_n,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Normal",
         last_name="User",
         role=UserRole.USER,
@@ -491,7 +471,6 @@ def test_get_user_response_excludes_hashed_password(client: TestClient, db_sessi
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -522,7 +501,6 @@ def test_get_users_list_excludes_hashed_password(client: TestClient, db_session:
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="Test",
         last_name="User",
         role=UserRole.USER,
@@ -552,7 +530,6 @@ def test_update_user_profile_persistence(client: TestClient, db_session: Session
     test_user = User(
         username=uname_u,
         hashed_password=hash_password("password"),
-        telegram_id=_unique_numeric_telegram(),
         first_name="OldFirst",
         last_name="OldLast",
         role=UserRole.USER,

@@ -53,7 +53,6 @@ def test_cashier():
     """CrÃ©er un utilisateur caissier pour les tests."""
     return {
         "id": uuid.uuid4(),
-        "telegram_id": 123456789,
         "username": "test_cashier",
         "first_name": "Test",
         "last_name": "Cashier",
@@ -69,7 +68,6 @@ def test_admin():
     """CrÃ©er un utilisateur admin pour les tests."""
     return {
         "id": uuid.uuid4(),
-        "telegram_id": 987654321,
         "username": "test_admin",
         "first_name": "Test",
         "last_name": "Admin",

@@ -39,7 +39,6 @@ def _create_site(db_session: Session, name: str) -> Site:
 
 def _create_operator(db_session: Session, site: Site, username: str = "report_operator") -> User:
     operator = User(
-        telegram_id=f"tg_{username}",
         username=username,
         email=f"{username}@example.com",
         hashed_password=hash_password("operator-secret"),
@@ -91,7 +90,6 @@ def _create_session_record(db_session: Session, operator: User, site: Site) -> C
 def admin_user(db_session: Session) -> User:
     site = _create_site(db_session, "Site Admin")
     user = User(
-        telegram_id='admin_reports',
         username='admin_reports',
         first_name='Admin',
         last_name='Reports',
@@ -223,7 +221,6 @@ def test_download_report_access_control(monkeypatch, tmp_path: Path, client: Tes
     report_path.write_text("data\n", encoding="utf-8")
 
     admin_allowed = User(
-        telegram_id='admin_allowed',
         username='admin_allowed',
         first_name='Admin',
         last_name='Allowed',
@@ -234,7 +231,6 @@ def test_download_report_access_control(monkeypatch, tmp_path: Path, client: Tes
         site_id=site_allowed.id,
     )
     admin_restricted = User(
-        telegram_id='admin_restricted',
         username='admin_restricted',
         first_name='Admin',
         last_name='Restricted',

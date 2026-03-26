@@ -193,7 +193,7 @@ class TestAuthSignupEndpoint:
         assert created_user.role == UserRole.USER
         assert created_user.status == UserStatus.PENDING
         assert created_user.is_active is True
-        assert created_user.telegram_id is None
+        assert created_user.legacy_external_contact_id is None
         assert created_user.first_name is None
         assert created_user.last_name is None
 

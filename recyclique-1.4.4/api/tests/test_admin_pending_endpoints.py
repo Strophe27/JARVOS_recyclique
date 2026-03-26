@@ -17,9 +17,9 @@ from tests.factories import UserFactory
 _ADMIN_USERS = f"{settings.API_V1_STR.rstrip('/')}/admin/users"
 
 
-def _telegram_id() -> int:
-    """Identifiant Telegram numérique pour les users pending (évite int(None) dans l'API)."""
-    return 1_000_000_000 + (uuid.uuid4().int % 8_999_999_999)
+def _legacy_contact_id() -> str:
+    """Identifiant texte unique pour la colonne DB legacy (non exposée en JSON)."""
+    return str(1_000_000_000 + (uuid.uuid4().int % 8_999_999_999))
 
 
 class TestPendingUsersEndpoints:
@@ -27,8 +27,8 @@ class TestPendingUsersEndpoints:
 
     def test_get_pending_users_success_returns_list(self, admin_client: TestClient, db_session: Session):
         """Teste que la récupération des utilisateurs en attente réussit et retourne une liste."""
-        u_pending = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
-        u_approved = UserFactory(status=UserStatus.APPROVED, telegram_id=_telegram_id())
+        u_pending = UserFactory(status=UserStatus.PENDING, legacy_external_contact_id=_legacy_contact_id())
+        u_approved = UserFactory(status=UserStatus.APPROVED, legacy_external_contact_id=_legacy_contact_id())
         db_session.add_all([u_pending, u_approved])
         db_session.commit()
 
@@ -43,9 +43,13 @@ class TestPendingUsersEndpoints:
 
     def test_get_pending_users_omits_telegram_id_when_set_in_db(self, admin_client: TestClient, db_session: Session):
         """La réponse pending n'expose pas telegram_id même si renseigné en base."""
-        pending_user = UserFactory(status=UserStatus.PENDING, telegram_id="tg_pending_alpha")
+        pending_user = UserFactory(
+            status=UserStatus.PENDING,
+            legacy_external_contact_id="tg_pending_alpha",
+        )
         db_session.add(pending_user)
         db_session.commit()
+        db_session.refresh(pending_user)
 
         response = admin_client.get(f"{_ADMIN_USERS}/pending")
 
@@ -54,7 +58,7 @@ class TestPendingUsersEndpoints:
         assert len(data) == 1
         assert "telegram_id" not in data[0]
         db_session.refresh(pending_user)
-        assert pending_user.telegram_id == "tg_pending_alpha"
+        assert pending_user.legacy_external_contact_id == "tg_pending_alpha"
 
     def test_get_pending_users_empty_list_returns_empty(self, admin_client: TestClient, db_session: Session):
         """Teste que la récupération des utilisateurs en attente retourne une liste vide s'il n'y en a pas."""
@@ -82,7 +86,7 @@ class TestPendingUsersEndpoints:
 
     def test_approve_user_success_updates_status(self, admin_client: TestClient, db_session: Session):
         """Teste que l'approbation d'un utilisateur met à jour son statut."""
-        user = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
+        user = UserFactory(status=UserStatus.PENDING, legacy_external_contact_id=_legacy_contact_id())
         db_session.add(user)
         db_session.commit()
 
@@ -112,7 +116,7 @@ class TestPendingUsersEndpoints:
 
     def test_reject_user_success_updates_status(self, admin_client: TestClient, db_session: Session):
         """Teste que le rejet d'un utilisateur met à jour son statut."""
-        user = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
+        user = UserFactory(status=UserStatus.PENDING, legacy_external_contact_id=_legacy_contact_id())
         db_session.add(user)
         db_session.commit()
 
@@ -137,7 +141,7 @@ class TestPendingUsersEndpoints:
 
     def test_approve_user_without_message_succeeds(self, admin_client: TestClient, db_session: Session):
         """Teste que l'approbation sans message personnalisé réussit."""
-        user = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
+        user = UserFactory(status=UserStatus.PENDING, legacy_external_contact_id=_legacy_contact_id())
         db_session.add(user)
         db_session.commit()
         response = admin_client.post(f"{_ADMIN_USERS}/{user.id}/approve", json=None)
@@ -145,7 +149,7 @@ class TestPendingUsersEndpoints:
 
     def test_reject_user_without_reason_succeeds(self, admin_client: TestClient, db_session: Session):
         """Teste que le rejet sans raison personnalisée réussit."""
-        user = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
+        user = UserFactory(status=UserStatus.PENDING, legacy_external_contact_id=_legacy_contact_id())
         db_session.add(user)
         db_session.commit()
         response = admin_client.post(f"{_ADMIN_USERS}/{user.id}/reject", json=None)
@@ -155,7 +159,7 @@ class TestPendingUsersEndpoints:
         self, admin_client: TestClient, db_session: Session, monkeypatch,
     ):
         """Après la résolution de l'admin (1er db.query), la 2e requête échoue → 500."""
-        user = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
+        user = UserFactory(status=UserStatus.PENDING, legacy_external_contact_id=_legacy_contact_id())
         db_session.add(user)
         db_session.commit()
 

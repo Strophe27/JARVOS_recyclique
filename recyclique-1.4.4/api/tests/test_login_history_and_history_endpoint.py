@@ -21,7 +21,6 @@ from recyclic_api.core.security import hash_password
 def admin_user(db_session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
-        telegram_id=111222333,
         username="admin_login_hist",
         first_name="Admin",
         last_name="LH",
@@ -45,7 +44,6 @@ def admin_token(admin_user: User) -> str:
 def active_user(db_session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
-        telegram_id=999888777,
         username="active_login_hist",
         first_name="Active",
         last_name="User",

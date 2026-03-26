@@ -20,10 +20,10 @@ class TestUserSelfEndpoints:
             id=uuid4(),
             username=username,
             hashed_password=hash_password("StrongP@ssw0rd"),
+            legacy_external_contact_id=telegram_handle,
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
             is_active=True,
-            telegram_id=telegram_handle,
         )
         db_session.add(user)
         db_session.commit()
@@ -36,7 +36,7 @@ class TestUserSelfEndpoints:
         UserResponse.model_validate(data)
         assert "telegram_id" not in data
         db_session.refresh(user)
-        assert user.telegram_id == telegram_handle
+        assert user.legacy_external_contact_id == telegram_handle
 
     def test_update_me(self, client, db_session):
         user = User(

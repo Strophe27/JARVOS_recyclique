@@ -26,7 +26,6 @@ class TestPendingUsersIntegration:
                 role=UserRole.USER,
                 status=UserStatus.PENDING,
                 is_active=True,
-                telegram_id=str(200000000 + i),
             )
             users.append(user)
         db_session.add_all(users)
@@ -164,7 +163,7 @@ class TestPendingUsersIntegration:
     @pytest.mark.performance
     def test_performance_with_large_dataset_completes_quickly(self, admin_client: TestClient, db_session: Session):
         # Create many pending users
-        bulk = [UserFactory(username=f"user_{i}", status=UserStatus.PENDING, telegram_id=str(300000000 + i)) for i in range(100)]
+        bulk = [UserFactory(username=f"user_{i}", status=UserStatus.PENDING) for i in range(100)]
         db_session.add_all(bulk)
         db_session.commit()
 

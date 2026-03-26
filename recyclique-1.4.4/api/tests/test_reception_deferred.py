@@ -39,7 +39,6 @@ def user_client(db_session: Session) -> TestClient:
         hashed_password=hashed_password,
         role=UserRole.USER,
         status=UserStatus.ACTIVE,
-        telegram_id=777777777
     )
     db_session.add(user)
     db_session.commit()

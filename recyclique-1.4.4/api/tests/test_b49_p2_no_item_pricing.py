@@ -27,7 +27,6 @@ def test_user(db_session: Session):
     """Créer un utilisateur de test."""
     hashed_password = hash_password("testpassword123")
     user = User(
-        telegram_id="test_user_b49_p2",
         username="test_user_b49_p2",
         email="test_b49_p2@example.com",
         hashed_password=hashed_password,

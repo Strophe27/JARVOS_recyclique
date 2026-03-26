@@ -42,7 +42,6 @@ def test_dashboard_stats_endpoint(admin_client: TestClient, db_session: Session)
     admin_user = User(
         id=uuid4(),
         username="test_admin",
-        telegram_id="123456789",
         role=UserRole.ADMIN,
         status=UserStatus.APPROVED,
         is_active=True

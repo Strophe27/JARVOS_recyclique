@@ -49,7 +49,6 @@ class CachedUser:
     role: UserRole
     status: UserStatus
     is_active: bool
-    telegram_id: Optional[str]
     site_id: Optional[uuid.UUID]
     phone_number: Optional[str]
     address: Optional[str]
@@ -78,7 +77,6 @@ class CachedUser:
             role=UserRole(data["role"]),
             status=UserStatus(data["status"]),
             is_active=bool(data.get("is_active", True)),
-            telegram_id=data.get("telegram_id"),
             site_id=_parse_uuid(data.get("site_id")),
             phone_number=data.get("phone_number"),
             address=data.get("address"),
@@ -110,7 +108,6 @@ class CachedUser:
             "role": self.role.value,
             "status": self.status.value,
             "is_active": self.is_active,
-            "telegram_id": self.telegram_id,
             "site_id": str(self.site_id) if self.site_id else None,
             "phone_number": self.phone_number,
             "address": self.address,
@@ -133,7 +130,6 @@ def serialize_user_for_cache(user: User) -> dict:
         "role": user.role.value if user.role else UserRole.USER.value,
         "status": user.status.value if user.status else UserStatus.PENDING.value,
         "is_active": user.is_active,
-        "telegram_id": user.telegram_id,
         "site_id": str(user.site_id) if user.site_id else None,
         "phone_number": user.phone_number,
         "address": user.address,
