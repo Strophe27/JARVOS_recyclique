@@ -3637,6 +3637,36 @@
 
 ---
 
+## Lot 2BN — Tests anti-regression `convertToAdminUser` hors liste (getUserById / createUser / updateUser)
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** verrouiller les chemins admin qui passent par `convertToAdminUser` avec un `telegram_id` non numerique
+
+### Actions
+- Extension de `adminService.userMapping.test.ts` : mock `UsersApi` pour `userapiv1usersuseridget`, `userapiv1userspost`, `userapiv1usersuseridput`.
+- Trois tests cibles : `getUserById`, `createUser`, `updateUser` avec reponse API `telegram_id: tg_admin_alpha` et attente `full_name: Admin Alpha` (coherent avec le helper post-lot 2BM).
+- Le test existant sur `getUsers` est factorise sur un objet reponse partage.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/test/services/adminService.userMapping.test.ts`
+
+### Validation
+- Diagnostics IDE / lints sur le fichier modifie.
+- Validation locale ciblee frontend :
+  - `src/test/services/adminService.userMapping.test.ts`
+- Resultat frontend :
+  - **4 tests passes**
+- ESLint sur le fichier de test : **OK** (exit 0)
+- QA mini-lot : **OK** (comportement attendu : pas de coercion numerique, `full_name` = prenom + nom)
+
+### Resultat
+- Les quatre entrees utilisant `convertToAdminUser` cote liste + detail + creation + mise a jour sont couvertes pour le cas `telegram_id` alphanumerique.
+- Reserves acceptees :
+  - le lot ne modifie pas `generated/*` ; le bruit local residuel sur ce dossier reste ignore et hors commit
+  - pas de changement produit, uniquement tests
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3680,9 +3710,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** ouvrir le sous-lot suivant sur une autre surface faible risque encore heterogene autour de `telegram_id` ou des fallbacks frontend/admin
+- **Prochaine etape logique:** poursuivre la coherence `telegram_id` / fallbacks sur d'autres surfaces faible risque si le backlog le demande
 
 ---
 
