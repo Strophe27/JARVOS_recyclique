@@ -11,10 +11,13 @@ import {
   Alert
 } from '@mantine/core';
 import { IconUser, IconHistory, IconAlertCircle } from '@tabler/icons-react';
-import { AdminUser, UserRole, UserStatus } from '../../services/adminService';
+import { AdminUser, UserRole } from '../../services/adminService';
 import { UserProfileTab } from './UserProfileTab';
 import { UserHistoryTab } from './UserHistoryTab';
-import { usernameOrTelegramForAtHandle } from '../../utils/userDisplay';
+import {
+  fullNameOrUsernameOrTelegramFallback,
+  usernameOrTelegramForAtHandle,
+} from '../../utils/userDisplay';
 
 interface UserDetailViewProps {
   user: AdminUser | null;
@@ -74,32 +77,6 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
     }
   };
 
-  const getStatusColor = (status: UserStatus) => {
-    switch (status) {
-      case UserStatus.APPROVED:
-        return 'green';
-      case UserStatus.PENDING:
-        return 'yellow';
-      case UserStatus.REJECTED:
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getStatusLabel = (status: UserStatus) => {
-    switch (status) {
-      case UserStatus.APPROVED:
-        return 'Approuvé';
-      case UserStatus.PENDING:
-        return 'En attente';
-      case UserStatus.REJECTED:
-        return 'Rejeté';
-      default:
-        return 'Inconnu';
-    }
-  };
-
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
       case UserRole.SUPER_ADMIN:
@@ -112,17 +89,27 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
     }
   };
 
+  const headerDisplayName =
+    user.full_name ||
+    fullNameOrUsernameOrTelegramFallback(
+      user.first_name,
+      user.last_name,
+      user.username,
+      user.telegram_id,
+    );
+  const avatarInitial = (headerDisplayName.trim().charAt(0) || 'U').toUpperCase();
+
   return (
     <Paper p="md" withBorder>
       <Stack gap="md">
         {/* Header avec informations de base */}
         <Group>
           <Avatar size="lg" color="blue">
-            {user.first_name?.[0] || user.username?.[0] || 'U'}
+            {avatarInitial}
           </Avatar>
           <div style={{ flex: 1 }}>
             <Text size="lg" fw={600}>
-              {user.full_name || `${user.first_name} ${user.last_name}` || user.username || 'Bénévole'}
+              {headerDisplayName}
             </Text>
             <Text size="sm" c="dimmed">
               @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}

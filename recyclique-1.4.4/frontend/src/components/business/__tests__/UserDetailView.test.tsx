@@ -66,6 +66,25 @@ describe('UserDetailView', () => {
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
+  it('affiche le libellé centralisé quand seul telegram_id identifie l’utilisateur (sans full_name)', () => {
+    const telegramOnly: AdminUser = {
+      id: '99',
+      telegram_id: 'tg_detail_only',
+      username: undefined,
+      first_name: undefined,
+      last_name: undefined,
+      full_name: '',
+      role: UserRole.USER,
+      status: UserStatus.APPROVED,
+      is_active: true,
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z',
+    };
+    renderWithProvider(<UserDetailView user={telegramOnly} />);
+    expect(screen.getByText('User tg_detail_only')).toBeInTheDocument();
+    expect(document.body.textContent || '').toMatch(/@\s*tg_detail_only/);
+  });
+
   it('affiche les informations de l\'utilisateur sélectionné', () => {
     renderWithProvider(<UserDetailView user={mockUser} />);
     
@@ -73,9 +92,8 @@ describe('UserDetailView', () => {
     // Tolère le split entre nœuds et multiples correspondances
     expect(document.body.textContent || '').toMatch(/@\s*testuser/);
 
-    // Peut apparaître plusieurs fois (badge + texte), tolérer multiplicité
-    expect(screen.getAllByText('Utilisateur').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Approuvé').length).toBeGreaterThan(0);
+    // Rôle USER affiché « Bénévole » (badge en-tête ; peut apparaître ailleurs)
+    expect(screen.getAllByText('Bénévole').length).toBeGreaterThan(0);
   });
 
   it('affiche les onglets Profil et Historique', () => {

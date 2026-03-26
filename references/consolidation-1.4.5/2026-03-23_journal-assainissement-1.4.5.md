@@ -4122,6 +4122,30 @@ Apres centralisation `usernameOrTelegramForAtHandle` (lot 2BL), la fiche profil 
 
 ---
 
+## Micro-lot FE-TG-07 — `UserDetailView` : titre et avatar alignes sur `fullNameOrUsernameOrTelegramFallback`
+
+### Theme
+Harmoniser l'en-tete detail utilisateur admin avec le helper deja utilise par `convertToAdminUser` / liste : `user.full_name` puis repli `fullNameOrUsernameOrTelegramFallback` (inclut `User {telegram_id}` lorsque seuls prenom / nom / username absents). Initiale avatar derivee du libelle affiche. Retrait de helpers `getStatusColor` / `getStatusLabel` non utilises (lint). Ajustement du test « informations selectionnees » : attendre « Bénévole » (role USER) au lieu de libelles obsoletes.
+
+### Verification worktree
+- Branche `chore/v1.4.5-consolidation` ; worktree **propre** avant modification.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/components/business/UserDetailView.tsx`
+- `recyclique-1.4.4/frontend/src/components/business/__tests__/UserDetailView.test.tsx`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `npx vitest run src/components/business/__tests__/UserDetailView.test.tsx` : **7 tests OK**
+- `npx eslint` sur les deux fichiers touches : **OK**
+- `generated/*` : **non modifie**
+
+### Resultat / mini-QA
+- Cas `full_name` vide + seul `telegram_id` : titre `User …` coherent avec la ligne `@` et avec `userDisplay.ts` ; pas de divergence avec la table utilisateurs.
+- Lot ferme ; **pret commit/push** si le diff reste limite aux fichiers ci-dessus + ce journal.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -4178,9 +4202,10 @@ Apres centralisation `usernameOrTelegramForAtHandle` (lot 2BL), la fiche profil 
 - **Vague 6:** micro-lot `FE-TG-04` ferme sur alignement `useAuth.ts` : `User.telegram_id` optionnel `string | number` (contrat aligne sur `authStore`)
 - **Vague 6:** micro-lot `FE-TG-05` ferme sur alignement `usersService.ts` : `User.telegram_id` optionnel `string | number | null` (schema OpenAPI `AdminUser`)
 - **Vague 6:** micro-lot `FE-TG-06` ferme sur suppression de la ligne « ID Telegram » redondante dans `UserProfileTab` lorsque seul `telegram_id` sert de repli d'affichage @
+- **Vague 6:** micro-lot `FE-TG-07` ferme sur alignement en-tete `UserDetailView` (titre + avatar) avec `fullNameOrUsernameOrTelegramFallback`
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`, `FE-TG-07`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre la coherence `telegram_id` / fallbacks sur d'autres surfaces faible risque si le backlog le demande
