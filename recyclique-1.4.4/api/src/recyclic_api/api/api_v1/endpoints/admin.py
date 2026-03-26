@@ -8,6 +8,7 @@ from slowapi.errors import RateLimitExceeded
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_admin_role, require_admin_role_strict
+from recyclic_api.core.user_identity import username_or_telegram_id
 from recyclic_api.core.audit import log_role_change, log_admin_access
 from recyclic_api.models.user import User, UserStatus
 from recyclic_api.schemas.admin import (
@@ -64,7 +65,7 @@ async def approve_user(
         # Log de l'acc├¿s admin
         log_admin_access(
             user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
+            username=username_or_telegram_id(current_user.username, current_user.telegram_id),
             endpoint="/admin/users/{user_id}/approve",
             success=True
         )
@@ -99,9 +100,9 @@ async def approve_user(
         # Log de l'approbation
         log_role_change(
             admin_user_id=str(current_user.id),
-            admin_username=current_user.username or current_user.telegram_id,
+            admin_username=username_or_telegram_id(current_user.username, current_user.telegram_id),
             target_user_id=str(user.id),
-            target_username=user.username or user.telegram_id,
+            target_username=username_or_telegram_id(user.username, user.telegram_id),
             old_role="pending",
             new_role="approved",
             success=True,
@@ -145,7 +146,7 @@ async def reject_user(
         # Log de l'acc├¿s admin
         log_admin_access(
             user_id=str(current_user.id),
-            username=current_user.username or current_user.telegram_id,
+            username=username_or_telegram_id(current_user.username, current_user.telegram_id),
             endpoint="/admin/users/{user_id}/reject",
             success=True
         )
@@ -180,9 +181,9 @@ async def reject_user(
         # Log du rejet
         log_role_change(
             admin_user_id=str(current_user.id),
-            admin_username=current_user.username or current_user.telegram_id,
+            admin_username=username_or_telegram_id(current_user.username, current_user.telegram_id),
             target_user_id=str(user.id),
-            target_username=user.username or user.telegram_id,
+            target_username=username_or_telegram_id(user.username, user.telegram_id),
             old_role="pending",
             new_role="rejected",
             success=True,
