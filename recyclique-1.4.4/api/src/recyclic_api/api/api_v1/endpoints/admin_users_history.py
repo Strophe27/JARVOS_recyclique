@@ -14,6 +14,7 @@ from slowapi import Limiter
 
 from recyclic_api.core.audit import log_admin_access
 from recyclic_api.core.auth import require_admin_role
+from recyclic_api.core.user_identity import username_or_telegram_id
 from recyclic_api.core.database import get_db
 from recyclic_api.models.user import User
 from recyclic_api.schemas.admin import UserHistoryResponse
@@ -46,7 +47,9 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
+                username=username_or_telegram_id(
+                    current_user.username, current_user.telegram_id
+                ),
                 endpoint=f"/admin/users/{user_id}/history",
                 success=True,
             )
@@ -82,7 +85,9 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
         except ValueError as e:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
+                username=username_or_telegram_id(
+                    current_user.username, current_user.telegram_id
+                ),
                 endpoint=f"/admin/users/{user_id}/history",
                 success=False,
                 error_message=str(e),
@@ -94,7 +99,9 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
         except Exception as e:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=current_user.username or current_user.telegram_id,
+                username=username_or_telegram_id(
+                    current_user.username, current_user.telegram_id
+                ),
                 endpoint=f"/admin/users/{user_id}/history",
                 success=False,
                 error_message=str(e),
