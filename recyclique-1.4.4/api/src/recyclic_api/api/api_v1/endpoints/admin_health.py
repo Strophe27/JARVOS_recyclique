@@ -1,8 +1,8 @@
 """
 Endpoints admin : santé, probes légères et monitoring (sans Telegram).
 
-Le endpoint POST /admin/health/test-notifications reste dans admin.py car il
-appelle le service Telegram.
+Le endpoint POST /admin/health/test-notifications reste dans admin.py (réponse
+informative uniquement ; plus d'appel au service Telegram).
 """
 
 from __future__ import annotations

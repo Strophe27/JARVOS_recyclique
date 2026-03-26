@@ -5,7 +5,6 @@ Refactorisé selon la Charte de Stratégie de Test (pattern Mocks & Overrides)
 
 import pytest
 import uuid
-from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -118,32 +117,6 @@ class TestPendingUsersEndpoints:
 
         response = admin_client.post(f"{_ADMIN_USERS}/{user.id}/reject")
         assert response.status_code == 400
-
-    @pytest.mark.skip(reason="Telegram retiré du système")
-    @patch('recyclic_api.services.telegram_service.telegram_service.send_user_approval_notification', side_effect=Exception("Telegram error"))
-    def test_approve_user_telegram_error_continues_operation(self, mock_send_notification, admin_client: TestClient, db_session: Session):
-        """Teste que l'approbation réussit même si la notification Telegram échoue."""
-        user = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
-        db_session.add(user)
-        db_session.commit()
-
-        response = admin_client.post(f"{_ADMIN_USERS}/{user.id}/approve")
-        assert response.status_code == 200
-        db_session.refresh(user)
-        assert user.status == UserStatus.APPROVED
-
-    @pytest.mark.skip(reason="Telegram retiré du système")
-    @patch('recyclic_api.services.telegram_service.telegram_service.send_user_rejection_notification', side_effect=Exception("Telegram error"))
-    def test_reject_user_telegram_error_continues_operation(self, mock_send_notification, admin_client: TestClient, db_session: Session):
-        """Teste que le rejet réussit même si la notification Telegram échoue."""
-        user = UserFactory(status=UserStatus.PENDING, telegram_id=_telegram_id())
-        db_session.add(user)
-        db_session.commit()
-
-        response = admin_client.post(f"{_ADMIN_USERS}/{user.id}/reject")
-        assert response.status_code == 200
-        db_session.refresh(user)
-        assert user.status == UserStatus.REJECTED
 
     def test_approve_user_without_message_succeeds(self, admin_client: TestClient, db_session: Session):
         """Teste que l'approbation sans message personnalisé réussit."""

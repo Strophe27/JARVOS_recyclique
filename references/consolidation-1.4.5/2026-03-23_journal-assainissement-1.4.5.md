@@ -3389,6 +3389,44 @@
 
 ---
 
+## Lot 2BG — Suppression des appels Telegram directs restants dans `admin.py`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** retirer les derniers appels directs a `telegram_service` dans les flux admin, sans casser le coeur metier
+
+### Actions
+- Suppression dans `approve_user` et `reject_user` des blocs de notification Telegram utilisateur/admin.
+- Conservation intacte du coeur metier de validation/rejet (controle, commit, audit, reponse API).
+- Simplification de `POST /admin/health/test-notifications` vers une reponse explicite `unavailable`, sans appel Telegram.
+- Realignement des tests admin/pending/workflow sur ce nouveau comportement et sur le prefixe API reel.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_health.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`
+- `recyclique-1.4.4/api/tests/test_outbound_bot_notifications_disabled.py`
+- `recyclique-1.4.4/api/tests/test_admin_pending_endpoints.py`
+- `recyclique-1.4.4/api/tests/test_integration_pending_workflow.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_outbound_bot_notifications_disabled.py`
+  - `tests/test_admin_pending_endpoints.py`
+  - `tests/test_integration_pending_workflow.py`
+- Resultat local :
+  - **26 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `admin.py` ne depend plus directement de `telegram_service` pour les flux approve/reject.
+- Le retrait de Telegram devient explicite aussi sur l'endpoint de test admin.
+- Reserves acceptees :
+  - le champ `message` des requetes d'approbation reste accepte mais n'est plus utilise pour notifier
+  - la qualite des libelles mojibake dans `admin.py` reste un sujet distinct hors de ce lot
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3423,6 +3461,7 @@
 - **Vague 5:** premier lot final Telegram ferme sur la neutralisation des notifications sortantes
 - **Vague 5:** second lot final Telegram ferme sur la desactivation de `link-telegram`
 - **Vague 5:** troisieme lot final Telegram ferme sur les endpoints bot de depots
+- **Vague 5:** quatrieme lot final Telegram ferme sur la suppression des appels directs admin
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3430,7 +3469,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 

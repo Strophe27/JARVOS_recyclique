@@ -7,11 +7,9 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from recyclic_api.core.database import get_db
-from recyclic_api.core.config import settings
 from recyclic_api.core.auth import require_admin_role, require_admin_role_strict
 from recyclic_api.core.audit import log_role_change, log_admin_access
 from recyclic_api.models.user import User, UserStatus
-from recyclic_api.services.telegram_service import telegram_service
 from recyclic_api.schemas.admin import (
     AdminResponse,
     AdminErrorResponse,
@@ -53,7 +51,7 @@ register_admin_templates_offline_routes(router, limiter)
     "/users/{user_id}/approve",
     response_model=AdminResponse,
     summary="Approuver un utilisateur (Admin)",
-    description="Approuve un utilisateur en attente et envoie une notification"
+    description="Approuve un utilisateur en attente (sans notification sortante Telegram)"
 )
 async def approve_user(
     user_id: str,
@@ -109,28 +107,6 @@ async def approve_user(
             success=True,
             db=db
         )
-
-        # Envoyer notification Telegram ├á l'utilisateur
-        try:
-            user_name = user.first_name or user.username or f"User {user.telegram_id}"
-            custom_message = approval_request.message if approval_request else None
-            await telegram_service.send_user_approval_notification(
-                telegram_id=user.telegram_id,
-                user_name=user_name,
-                message=custom_message
-            )
-        except Exception as e:
-            logger.error(f"Erreur lors de l'envoi de notification d'approbation: {e}")
-
-        # Notifier les autres admins
-        try:
-            await telegram_service.notify_admins_user_processed(
-                admin_user_id=str(current_user.id),
-                target_user_name=user_name,
-                action="approved"
-            )
-        except Exception as e:
-            logger.error(f"Erreur lors de la notification admin: {e}")
 
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
 
@@ -213,28 +189,6 @@ async def reject_user(
             db=db
         )
 
-        # Envoyer notification Telegram ├á l'utilisateur
-        try:
-            user_name = user.first_name or user.username or f"User {user.telegram_id}"
-            reason = rejection_request.reason if rejection_request and rejection_request.reason else "Aucune raison sp├®cifi├®e"
-            await telegram_service.send_user_rejection_notification(
-                telegram_id=user.telegram_id,
-                user_name=user_name,
-                reason=reason
-            )
-        except Exception as e:
-            logger.error(f"Erreur lors de l'envoi de notification de rejet: {e}")
-
-        # Notifier les autres admins
-        try:
-            await telegram_service.notify_admins_user_processed(
-                admin_user_id=str(current_user.id),
-                target_user_name=user_name,
-                action="rejected"
-            )
-        except Exception as e:
-            logger.error(f"Erreur lors de la notification admin: {e}")
-
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
         reason = rejection_request.reason if rejection_request and rejection_request.reason else "Aucune raison sp├®cifi├®e"
 
@@ -258,42 +212,25 @@ async def reject_user(
 
 @router.post(
     "/health/test-notifications",
-    summary="Test des notifications",
-    description="Envoie une notification de test pour v├®rifier le syst├¿me de notifications"
+    summary="Test des notifications (retiré)",
+    description=(
+        "Ne déclenche plus d'envoi. Le test de notification sortante via Telegram / bot a été retiré "
+        "du périmètre administrateur (cohérent avec le retrait du canal sortant)."
+    ),
 )
 @limiter.limit("5/minute")
 async def test_notifications(
     request: Request,
     current_user: User = Depends(require_admin_role_strict())
 ):
-    """Envoie une notification de test"""
-    try:
-        if not settings.TELEGRAM_NOTIFICATIONS_ENABLED:
-            logger.info(
-                "POST /admin/health/test-notifications : TELEGRAM_NOTIFICATIONS_ENABLED=false, aucun envoi"
-            )
-            return {
-                "status": "disabled",
-                "message": (
-                    "Notifications Telegram désactivées (TELEGRAM_NOTIFICATIONS_ENABLED=false). "
-                    "Aucun message envoyé vers le bot."
-                ),
-            }
-
-        await telegram_service.notify_sync_failure(
-            file_path="system-test",
-            remote_path="notification-test",
-            error_message="[TEST] Notification de test du syst├¿me de monitoring - Si vous recevez ce message, le syst├¿me fonctionne correctement !"
-        )
-
-        return {
-            "status": "success",
-            "message": "Notification de test envoy├®e avec succ├¿s"
-        }
-
-    except Exception as e:
-        logger.error(f"Erreur lors de l'envoi de la notification de test: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de l'envoi de la notification: {str(e)}"
-        )
+    """Ancien envoi de test vers le bot — désactivé ; réponse informative uniquement."""
+    logger.info(
+        "POST /admin/health/test-notifications : aucun envoi (canal Telegram / bot retiré pour ce flux admin)"
+    )
+    return {
+        "status": "unavailable",
+        "message": (
+            "Ce point de terminaison ne déclenche plus d'envoi vers le bot Telegram. "
+            "Les tests de notification sortante admin ont été retirés du périmètre API."
+        ),
+    }

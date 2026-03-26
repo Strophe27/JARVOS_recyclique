@@ -44,30 +44,27 @@ async def test_anomaly_alerts_skipped_when_channel_disabled(
     mock_ts.notify_sync_failure.assert_not_called()
 
 
-def test_admin_health_test_notifications_returns_disabled(admin_client, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", False)
+def test_admin_health_test_notifications_always_unavailable(admin_client) -> None:
+    """Le flux admin ne déclenche plus d'envoi, quel que soit TELEGRAM_NOTIFICATIONS_ENABLED."""
     url = f"{settings.API_V1_STR.rstrip('/')}/admin/health/test-notifications"
     response = admin_client.post(url)
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "disabled"
-    assert "TELEGRAM_NOTIFICATIONS_ENABLED" in body["message"]
+    assert body["status"] == "unavailable"
+    assert "Telegram" in body["message"]
 
 
-@pytest.mark.asyncio
-async def test_admin_health_test_notifications_when_enabled_invokes_notify(
-    admin_client,
-    monkeypatch: pytest.MonkeyPatch,
+def test_admin_health_test_notifications_still_unavailable_when_flag_true(
+    admin_client, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", True)
     monkeypatch.setattr(settings, "ADMIN_TELEGRAM_IDS", "123")
     url = f"{settings.API_V1_STR.rstrip('/')}/admin/health/test-notifications"
-    with patch("recyclic_api.api.api_v1.endpoints.admin.telegram_service") as mock_svc:
-        mock_svc.notify_sync_failure = AsyncMock(return_value=True)
+    with patch("recyclic_api.services.telegram_service.httpx.AsyncClient") as mock_client:
         response = admin_client.post(url)
     assert response.status_code == 200
-    assert response.json()["status"] == "success"
-    mock_svc.notify_sync_failure.assert_awaited_once()
+    assert response.json()["status"] == "unavailable"
+    mock_client.assert_not_called()
 
 
 def test_sync_failure_does_not_schedule_notify_when_channel_disabled(
