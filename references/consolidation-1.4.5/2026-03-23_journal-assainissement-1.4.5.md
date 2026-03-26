@@ -3537,6 +3537,39 @@
 
 ---
 
+## Lot 2BK — Alignement `telegram_id` sur la liste admin frontend
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** supprimer la coercition locale `parseInt` dans le mapping frontend des utilisateurs admin
+
+### Actions
+- Suppression du `parseInt` dans `convertToAdminUser` afin de conserver `telegram_id` tel que renvoye par l'API.
+- Ajout d'un test frontend dedie qui verrouille la preservation d'un `telegram_id` non numerique sur `getUsers()`.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/services/adminService.ts`
+- `recyclique-1.4.4/frontend/src/test/services/adminService.userMapping.test.ts`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee frontend :
+  - `src/test/services/adminService.userMapping.test.ts`
+  - `src/test/services/adminService.pendingUsers.test.ts`
+  - `src/test/pages/Admin/PendingUsers.test.tsx`
+  - `src/test/components/business/PendingUsersTable.test.tsx`
+- Resultat frontend :
+  - **62 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- La liste admin frontend n'ecrase plus `telegram_id` en nombre et ne peut plus produire de `NaN` sur cette surface.
+- Le comportement frontend est maintenant coherent entre `getUsers()` et `getPendingUsers()`.
+- Reserves acceptees :
+  - le helper `convertToAdminUser` est aussi reutilise par d'autres chemins (`getUserById`, `createUser`, `updateUser`) mais ce lot ne les reteste pas explicitement
+  - le bruit local residuel sur `frontend/src/generated/*` reste hors lot et n'est pas embarque
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3580,9 +3613,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** ouvrir le sous-lot suivant sur l'alignement `telegram_id` des surfaces admin/auth a plus faible risque apres `pending`
+- **Prochaine etape logique:** ouvrir le sous-lot suivant sur les autres chemins frontend reuses par `convertToAdminUser` ou sur une autre surface admin/auth a faible risque
 
 ---
 
