@@ -70,7 +70,7 @@ class AdminErrorResponse(BaseModel):
 class PendingUserResponse(BaseModel):
     """Schéma pour la réponse des utilisateurs en attente"""
     id: Union[str, UUID]
-    telegram_id: Union[int, str]
+    telegram_id: Optional[str] = None
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -85,8 +85,8 @@ class PendingUserResponse(BaseModel):
         """Convertit les UUIDs en strings après validation"""
         if isinstance(self.id, UUID):
             self.id = str(self.id)
-        if isinstance(self.telegram_id, str):
-            self.telegram_id = int(self.telegram_id)
+        if self.telegram_id is not None:
+            self.telegram_id = str(self.telegram_id)
 
 class UserApprovalRequest(BaseModel):
     """Schéma pour l'approbation d'un utilisateur"""

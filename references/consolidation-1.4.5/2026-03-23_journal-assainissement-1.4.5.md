@@ -3494,6 +3494,49 @@
 
 ---
 
+## Lot 2BJ — Alignement `telegram_id` sur `/admin/users/pending`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** eliminer le cast `int(...)` fragile sur les users pending et aligner la surface backend/frontend sur la valeur string reelle stockee
+
+### Actions
+- Alignement de `PendingUserResponse.telegram_id` sur `Optional[str]` avec normalisation string cote schema.
+- Suppression du cast `int(user.telegram_id)` dans `GET /admin/users/pending`.
+- Ajout d'un test backend anti-regression pour garantir qu'un `telegram_id` non numerique ne provoque plus de `500`.
+- Alignement de `adminService.getPendingUsers()` pour preserver `telegram_id` tel quel cote front.
+- Ajout d'un test front dedie sur l'adaptateur `pending` pour verrouiller la preservation des valeurs non numeriques.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/admin.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_users_read.py`
+- `recyclique-1.4.4/api/tests/test_admin_pending_endpoints.py`
+- `recyclique-1.4.4/frontend/src/services/adminService.ts`
+- `recyclique-1.4.4/frontend/src/test/services/adminService.pendingUsers.test.ts`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee backend :
+  - `tests/test_admin_pending_endpoints.py`
+- Resultat backend :
+  - **14 tests passes**
+- Validation locale ciblee frontend :
+  - `src/test/services/adminService.pendingUsers.test.ts`
+  - `src/test/pages/Admin/PendingUsers.test.tsx`
+  - `src/test/components/business/PendingUsersTable.test.tsx`
+- Resultat frontend :
+  - **61 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- `GET /admin/users/pending` ne casse plus quand `telegram_id` n'est pas un entier pur.
+- Le front `pending` conserve desormais la valeur reelle de `telegram_id` au lieu de produire un `NaN`.
+- Reserves acceptees :
+  - le contrat JSON de `telegram_id` sur ce endpoint peut apparaitre en string la ou certains consommateurs pouvaient tolerer un nombre
+  - `api/openapi.json` statique n'a pas pu etre regenere localement faute de variables d'environnement backend (`DATABASE_URL`, `REDIS_URL`, `SECRET_KEY`) ; la reserve documentaire reste explicite
+  - le reste des surfaces `telegram_id` hors `/admin/users/pending` demeure a traiter en micro-lots distincts
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3537,9 +3580,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** ouvrir la cartographie du premier sous-lot transversal sur les champs `telegram_*`, en commencant par les usages de schema/reponse a plus faible risque de contrat
+- **Prochaine etape logique:** ouvrir le sous-lot suivant sur l'alignement `telegram_id` des surfaces admin/auth a plus faible risque apres `pending`
 
 ---
 

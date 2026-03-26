@@ -262,7 +262,7 @@ export const adminService = {
       // Convertir PendingUserResponse en AdminUser
       return pendingUsers.map((user) => ({
         id: user.id,
-        telegram_id: typeof user.telegram_id === 'string' ? parseInt(user.telegram_id) : user.telegram_id,
+        telegram_id: user.telegram_id,
         username: user.username,
         first_name: user.first_name,
         last_name: user.last_name,

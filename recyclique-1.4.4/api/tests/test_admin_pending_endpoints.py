@@ -38,6 +38,20 @@ class TestPendingUsersEndpoints:
         assert isinstance(data, list)
         assert len(data) == 1
         assert data[0]['status'] == UserStatus.PENDING.value
+        assert data[0]["telegram_id"] == str(u_pending.telegram_id)
+
+    def test_get_pending_users_preserves_non_numeric_telegram_id(self, admin_client: TestClient, db_session: Session):
+        """Un telegram_id non numérique ne doit plus faire échouer la sérialisation pending."""
+        pending_user = UserFactory(status=UserStatus.PENDING, telegram_id="tg_pending_alpha")
+        db_session.add(pending_user)
+        db_session.commit()
+
+        response = admin_client.get(f"{_ADMIN_USERS}/pending")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["telegram_id"] == "tg_pending_alpha"
 
     def test_get_pending_users_empty_list_returns_empty(self, admin_client: TestClient, db_session: Session):
         """Teste que la récupération des utilisateurs en attente retourne une liste vide s'il n'y en a pas."""
