@@ -13,7 +13,9 @@ Pour Recyclique, la combinaison la plus realiste est :
 - **Workflow explicite** : machine d'etats pour les parcours clavier caisse et reception.
 - **Configuration d'ecran legere** : schemas TypeScript/JSON pour decrire panneaux, raccourcis, variantes desktop/tablette.
 - **Layout configurable cible** : docking seulement la ou ca apporte un vrai gain, d'abord sur les postes desktop de reception.
+- **Handles + pilotage machine** : le layout modulable garde des **handles** UI (resize, split, drag de panneaux la ou c'est permis) **et** des **branchements** pour piloter le meme etat via **API**, **CLI** ou contrat stable, pour qu'un **agent specialise** (ou JARVOS amont) puisse appliquer une config sans simuler des clics.
 - **Conservation du socle existant** : Mantine, Zustand, React Router, responsive/kiosk mode.
+- **Evolution JARVOS** : preparer les **points d'accroche** vers **JARVOS Nano** et **Peintre** comme organe d'affichage (alignement FR26, LayoutConfigService / VisualProvider).
 
 ---
 
@@ -63,6 +65,19 @@ type ScreenDefinition = {
 - **Court terme** : garder `react-resizable-panels` pour les ecrans simples et la reception actuelle.
 - **Moyen terme** : evaluer `FlexLayout` seulement pour les postes desktop qui ont un vrai besoin de docking/reorganisation.
 - **Tablette** : variante guidee, peu configurable, gros points de contact.
+
+### 4. Handles UI et pilotage externe (API / CLI / agent)
+
+- **Handles** : toute zone redimensionnable ou deplacable doit avoir un controle visible et utilisable au clavier/souris/tactile la ou le mode le permet (eviter le layout "fantome" sans affordance).
+- **API** : exposer des operations sur le **meme modele** que la config d'ecran (lire layout courant, appliquer un preset, montrer/cacher un panneau, tailles fractionnaires). Auth + RBAC obligatoires ; en **mode caisse verrouille**, desactiver ou restreindre les commandes qui cassent le poste.
+- **CLI** : memes operations pour dev, scripts, tests d'integration, agents en CI (pas un second systeme de verite).
+- **Agent specialise** : le contrat (JSON / OpenAPI minimal plus tard) est la frontiere : l'agent envoie des **intentions** ("appliquer preset reception-large", "focus panneau ticket") ; le **shell Recyclique** valide et applique (pas d'execution arbitraire de JS distant).
+
+### 5. Branchements JARVOS Nano et Peintre
+
+- **Peintre** : positionne comme **organe d'affichage** — Recyclique rend selon un flux de config / theme / zones ; la source peut rester locale puis etre **remplacee ou enrichie** par un service JARVOS (Nano) quand il existera.
+- **Nano** : peut produire des propositions de layout ou de densite d'UI ; elles passent par le **meme contrat** que l'API/CLI (pas de contournement ad hoc).
+- **Alignement doc existante** : FR26, stubs **LayoutConfigService** et **VisualProvider**, recherche `_bmad-output/planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md`. Le blueprint ci-dessus complete ces stubs avec la dimension **handles + pilotage machine**.
 
 ---
 
@@ -122,6 +137,8 @@ En brownfield `recyclique-1.4.4`, l'equivalent pratique sera d'abord :
 2. Definir un contrat `ScreenDefinition` pour caisse/reception.
 3. Brancher la variante `desktop/tablet/kiosk` sur ce contrat.
 4. Evaluer ou non un layout dockable desktop pour reception.
+5. Spec minimale API (et option CLI) pour layout / presets, alignee sur le contrat `ScreenDefinition`, avec garde-fous mode caisse.
+6. Raccorder progressivement **LayoutConfigService** / **VisualProvider** pour une future alimentation Peintre / JARVOS Nano.
 
 ---
 
