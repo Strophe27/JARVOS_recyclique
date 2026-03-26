@@ -80,7 +80,6 @@ bash scripts/rollback.sh
 ```bash
 # Vérifier que docker-compose.yml utilise les variables
 grep "API_IMAGE_TAG" docker-compose.yml
-grep "BOT_IMAGE_TAG" docker-compose.yml
 grep "FRONTEND_IMAGE_TAG" docker-compose.yml
 ```
 
@@ -90,7 +89,6 @@ grep "FRONTEND_IMAGE_TAG" docker-compose.yml
 ```bash
 # Créer un fichier .env de test
 echo "API_IMAGE_TAG=test-version" > .env.test
-echo "BOT_IMAGE_TAG=test-version" >> .env.test
 echo "FRONTEND_IMAGE_TAG=test-version" >> .env.test
 
 # Tester la configuration
@@ -105,11 +103,9 @@ docker-compose --env-file .env.test config
 ```bash
 # Créer des images de test avec des tags différents
 docker build -t recyclic-api:v1.0.0 -f api/Dockerfile .
-docker build -t recyclic-bot:v1.0.0 -f bot/Dockerfile .
 docker build -t recyclic-frontend:v1.0.0 -f frontend/Dockerfile .
 
 docker build -t recyclic-api:v1.1.0 -f api/Dockerfile .
-docker build -t recyclic-bot:v1.1.0 -f bot/Dockerfile .
 docker build -t recyclic-frontend:v1.1.0 -f frontend/Dockerfile .
 ```
 
@@ -117,7 +113,6 @@ docker build -t recyclic-frontend:v1.1.0 -f frontend/Dockerfile .
 ```bash
 # Déployer la version 1.1.0
 echo "API_IMAGE_TAG=v1.1.0" > .env.production
-echo "BOT_IMAGE_TAG=v1.1.0" >> .env.production
 echo "FRONTEND_IMAGE_TAG=v1.1.0" >> .env.production
 
 docker-compose --env-file .env.production up -d
@@ -168,7 +163,6 @@ bash scripts/rollback.sh v1.0.0
 ```bash
 # Nettoyer les images de test
 docker rmi recyclic-api:v1.0.0 recyclic-api:v1.1.0 || true
-docker rmi recyclic-bot:v1.0.0 recyclic-bot:v1.1.0 || true
 docker rmi recyclic-frontend:v1.0.0 recyclic-frontend:v1.1.0 || true
 
 # Nettoyer les conteneurs de test

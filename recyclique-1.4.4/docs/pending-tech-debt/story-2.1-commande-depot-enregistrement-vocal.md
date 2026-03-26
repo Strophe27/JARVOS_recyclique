@@ -174,7 +174,7 @@ Aucun fichier modifié - L'implémentation est complète et de qualité.
 
 ### Gate Status
 
-**Gate: PASS** → `docs/qa/gates/4.1-commande-depot-enregistrement-vocal.yml`
+**Gate: PASS** (historique) → le YAML `docs/qa/gates/4.1-commande-depot-enregistrement-vocal.yml` a ete retire du depot le 2026-03-26.
 **Risk profile**: `docs/qa/assessments/4.1-risk-20250115.md`
 **NFR assessment**: `docs/qa/assessments/4.1-nfr-20250115.md`
 
@@ -204,12 +204,12 @@ Claude Sonnet 4 (claude-sonnet-4-20250514)
 ### File List
 #### Nouveaux fichiers créés:
 - `bot/src/handlers/depot.py` - Handler complet pour commande /depot et messages vocaux
-- `api/src/recyclic_api/core/bot_auth.py` - Validation sécurisée du token bot
+- ~~`api/src/recyclic_api/core/bot_auth.py`~~ — retiré (paquet 4, 2026-03-26) ; finalisation dépôt sans `X-Bot-Token`.
 - `api/src/recyclic_api/services/audio_processing_service.py` - Service LangChain pour traitement audio
 - `api/migrations/versions/3f67c2e8edc1_add_audio_support_to_deposits.py` - Migration pour support audio
 - `bot/tests/test_depot_handler.py` - Tests unitaires pour handlers bot
 - `api/tests/test_deposit_bot_integration.py` - Tests d'intégration Bot-API
-- `api/tests/test_bot_auth_simple.py` - Tests authentification bot corrigés
+- ~~`api/tests/test_bot_auth_simple.py`~~ — supprimé ; couverture finalisation dans `test_deposit_validation_workflow.py` + contrat OpenAPI sans `x-bot-token`.
 - `api/tests/test_classification_fixed.py` - Tests classification audio validés
 - `bot/tests/__init__.py` - Package tests bot
 - `bot/tests/conftest.py` - Configuration pytest

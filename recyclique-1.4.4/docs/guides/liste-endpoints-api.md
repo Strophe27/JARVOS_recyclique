@@ -42,7 +42,6 @@ Tous les endpoints sont préfixés par **`/v1`** (ex. `GET /v1/health`). En prod
 | POST | `/v1/users` | Création d’un utilisateur (admin) |
 | PUT | `/v1/users/{user_id}` | Mise à jour d’un utilisateur (admin) |
 | DELETE | `/v1/users/{user_id}` | Suppression d’un utilisateur (admin) |
-| POST | `/v1/users/link-telegram` | Lier un compte Telegram à l’utilisateur |
 
 ---
 
@@ -58,15 +57,13 @@ Tous les endpoints sont préfixés par **`/v1`** (ex. `GET /v1/health`). En prod
 
 ---
 
-## Dépôts / dépôts bot (`/v1/deposits`)
+## Dépôts (`/v1/deposits`)
 
 | Méthode | Chemin | Utilité |
 |--------|--------|---------|
 | GET | `/v1/deposits` | Liste des dépôts |
 | GET | `/v1/deposits/{deposit_id}` | Détail d’un dépôt |
 | POST | `/v1/deposits` | Création d’un dépôt |
-| POST | `/v1/deposits/from-bot` | Création d’un dépôt depuis le bot Telegram |
-| POST | `/v1/deposits/{deposit_id}/classify` | Classification (catégories) d’un dépôt |
 | PUT | `/v1/deposits/{deposit_id}` | Finaliser un dépôt |
 | GET | `/v1/deposits/metrics/validation-performance` | Métriques de performance de validation |
 

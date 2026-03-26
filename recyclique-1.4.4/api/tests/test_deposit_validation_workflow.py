@@ -4,36 +4,19 @@ Tests the human validation and correction of AI-classified deposits.
 """
 
 import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import patch
 
-from recyclic_api.main import app
 from recyclic_api.core.config import settings
 from recyclic_api.models.deposit import Deposit, DepositStatus, EEECategory
 from recyclic_api.models.user import UserStatus
 from tests.factories import UserFactory
 
-# Mock bot token for testing
-TEST_BOT_TOKEN = "test_bot_token_123"
 _V1 = settings.API_V1_STR.rstrip("/")
+_JSON = {"Content-Type": "application/json"}
 
 
 @pytest.fixture
-def mock_bot_token():
-    """Mock the bot token configuration."""
-    with patch('recyclic_api.core.config.settings.TELEGRAM_BOT_TOKEN', TEST_BOT_TOKEN):
-        yield TEST_BOT_TOKEN
-
-
-@pytest.fixture
-def client_with_mock_token(mock_bot_token):
-    """Create test client with mocked bot token."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def classified_deposit(client_with_mock_token, db_session):
-    """Dépôt déjà classifié (seed DB) — les routes bot from-bot/classify sont retirées (410)."""
+def classified_deposit(db_session):
+    """Dépôt déjà classifié (seed DB) pour tests de finalisation ``PUT .../deposits/{id}``."""
     user = UserFactory(status=UserStatus.APPROVED)
     db_session.add(user)
     db_session.flush()
@@ -58,142 +41,96 @@ def classified_deposit(client_with_mock_token, db_session):
     db_session.commit()
     db_session.refresh(deposit)
 
-    headers = {
-        "X-Bot-Token": TEST_BOT_TOKEN,
-        "Content-Type": "application/json"
-    }
-
-    return str(deposit.id), headers
+    return str(deposit.id)
 
 
 class TestDepositValidationWorkflow:
     """Test class for deposit validation/correction workflow."""
 
-    def test_validate_ai_classification_success(self, client_with_mock_token, classified_deposit):
+    def test_validate_ai_classification_success(self, client, classified_deposit):
         """Test successful validation of AI classification."""
-        deposit_id, headers = classified_deposit
+        deposit_id = classified_deposit
 
-        # Prepare validation payload
         payload = {
             "validated": True,
             "correction_applied": False
         }
 
-        # Validate the deposit
-        response = client_with_mock_token.put(
+        response = client.put(
             f"{_V1}/deposits/{deposit_id}",
             json=payload,
-            headers=headers
+            headers=_JSON,
         )
 
         assert response.status_code == 200
         data = response.json()
 
-        # Check validation results
         assert data["status"] == "completed"
-        # assert data["human_validated"] == True  # Temporarily commented out
-        # assert data["human_corrected"] == False  # Temporarily commented out
-        assert data["category"] == "other"  # Fallback classification returns "other"
+        assert data["category"] == "other"
         assert data["eee_category"] == "other"
 
-        # Check that validation info is stored
         assert data["alternative_categories"] is not None
         assert "validation_info" in data["alternative_categories"]
         validation_info = data["alternative_categories"]["validation_info"]
-        assert validation_info["human_validated"] == True
-        assert validation_info["ai_suggested"] == "EEECategory.OTHER"  # Fallback returns OTHER
+        assert validation_info["human_validated"] is True
+        assert validation_info["ai_suggested"] == "EEECategory.OTHER"
 
-    def test_correct_ai_classification_success(self, client_with_mock_token, classified_deposit):
+    def test_correct_ai_classification_success(self, client, classified_deposit):
         """Test successful correction of AI classification."""
-        deposit_id, headers = classified_deposit
+        deposit_id = classified_deposit
 
-        # Prepare correction payload
         payload = {
             "validated": False,
             "correction_applied": True,
             "final_category": "small_appliance"
         }
 
-        # Correct the deposit
-        response = client_with_mock_token.put(
+        response = client.put(
             f"{_V1}/deposits/{deposit_id}",
             json=payload,
-            headers=headers
+            headers=_JSON,
         )
 
         assert response.status_code == 200
         data = response.json()
 
-        # Check correction results
         assert data["status"] == "completed"
-        # assert data["human_validated"] == False  # Temporarily commented out
-        # assert data["human_corrected"] == True  # Temporarily commented out
         assert data["category"] == "small_appliance"
         assert data["eee_category"] == "small_appliance"
 
-        # Check that correction info is stored
         assert data["alternative_categories"] is not None
         assert "correction_info" in data["alternative_categories"]
         correction_info = data["alternative_categories"]["correction_info"]
-        assert correction_info["human_corrected"] == "EEECategory.SMALL_APPLIANCE"  # Enum converted to string
-        assert correction_info["ai_suggested"] == "EEECategory.OTHER"  # Fallback returns OTHER
+        assert correction_info["human_corrected"] == "EEECategory.SMALL_APPLIANCE"
+        assert correction_info["ai_suggested"] == "EEECategory.OTHER"
 
-    def test_finalize_deposit_missing_token(self, client_with_mock_token, classified_deposit):
-        """Test finalization without bot token."""
-        deposit_id, _ = classified_deposit
+    def test_finalize_deposit_put_without_extra_auth_succeeds(self, client, classified_deposit):
+        """Finalisation sans en-tête bot (même contrat que GET/POST ``/deposits``)."""
+        deposit_id = classified_deposit
+        response = client.put(
+            f"{_V1}/deposits/{deposit_id}",
+            json={"validated": True, "correction_applied": False},
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "completed"
 
-        payload = {
-            "validated": True,
-            "correction_applied": False
-        }
-
-        # Try to finalize without token
-        response = client_with_mock_token.put(f"{_V1}/deposits/{deposit_id}", json=payload)
-
-        assert response.status_code == 401
-        assert "Missing X-Bot-Token header" in response.json()["detail"]
-
-    def test_finalize_deposit_invalid_token(self, client_with_mock_token, classified_deposit):
-        """Test finalization with invalid bot token."""
-        deposit_id, _ = classified_deposit
-
-        payload = {
-            "validated": True,
-            "correction_applied": False
-        }
-
-        headers = {
-            "X-Bot-Token": "invalid_token",
-            "Content-Type": "application/json"
-        }
-
-        response = client_with_mock_token.put(f"{_V1}/deposits/{deposit_id}", json=payload, headers=headers)
-
-        assert response.status_code == 401
-        assert "Invalid bot token" in response.json()["detail"]
-
-    def test_finalize_deposit_not_found(self, client_with_mock_token):
+    def test_finalize_deposit_not_found(self, client):
         """Test finalization of non-existent deposit."""
-        headers = {
-            "X-Bot-Token": TEST_BOT_TOKEN,
-            "Content-Type": "application/json"
-        }
-
         payload = {
             "validated": True,
             "correction_applied": False
         }
 
-        response = client_with_mock_token.put(
+        response = client.put(
             f"{_V1}/deposits/11111111-1111-1111-1111-111111111111",
             json=payload,
-            headers=headers
+            headers=_JSON,
         )
 
         assert response.status_code == 404
         assert "Deposit not found" in response.json()["detail"]
 
-    def test_finalize_deposit_invalid_status(self, client_with_mock_token, db_session):
+    def test_finalize_deposit_invalid_status(self, client, db_session):
         """Test finalization of deposit with invalid status."""
         user = UserFactory(status=UserStatus.APPROVED)
         db_session.add(user)
@@ -209,69 +146,60 @@ class TestDepositValidationWorkflow:
         db_session.refresh(deposit)
         deposit_id = str(deposit.id)
 
-        headers = {
-            "X-Bot-Token": TEST_BOT_TOKEN,
-            "Content-Type": "application/json"
-        }
-
         finalize_payload = {
             "validated": True,
             "correction_applied": False
         }
 
-        response = client_with_mock_token.put(
+        response = client.put(
             f"{_V1}/deposits/{deposit_id}",
             json=finalize_payload,
-            headers=headers
+            headers=_JSON,
         )
 
         assert response.status_code == 400
         assert "cannot be finalized from status" in response.json()["detail"]
 
-    def test_finalize_deposit_invalid_payload(self, client_with_mock_token, classified_deposit):
+    def test_finalize_deposit_invalid_payload(self, client, classified_deposit):
         """Test finalization with invalid payload (neither validated nor corrected)."""
-        deposit_id, headers = classified_deposit
+        deposit_id = classified_deposit
 
-        # Invalid payload - neither validation nor correction
         payload = {
             "validated": False,
             "correction_applied": False
         }
 
-        response = client_with_mock_token.put(
+        response = client.put(
             f"{_V1}/deposits/{deposit_id}",
             json=payload,
-            headers=headers
+            headers=_JSON,
         )
 
         assert response.status_code == 400
         assert "Either validation must be true or correction" in response.json()["detail"]
 
-    def test_correction_without_category(self, client_with_mock_token, classified_deposit):
+    def test_correction_without_category(self, client, classified_deposit):
         """Test correction without providing final_category."""
-        deposit_id, headers = classified_deposit
+        deposit_id = classified_deposit
 
-        # Correction without final_category
         payload = {
             "validated": False,
             "correction_applied": True
-            # Missing final_category
         }
 
-        response = client_with_mock_token.put(
+        response = client.put(
             f"{_V1}/deposits/{deposit_id}",
             json=payload,
-            headers=headers
+            headers=_JSON,
         )
 
         assert response.status_code == 400
         assert "Either validation must be true or correction" in response.json()["detail"]
 
-    def test_all_eee_categories_correction(self, client_with_mock_token, classified_deposit):
+    def test_all_eee_categories_correction(self, client, classified_deposit):
         """Test that all EEE categories can be used for correction."""
-        deposit_id, headers = classified_deposit
+        deposit_id = classified_deposit
 
-        # Test each EEE category
         categories_to_test = [
             "small_appliance",
             "large_appliance",
@@ -286,14 +214,10 @@ class TestDepositValidationWorkflow:
         ]
 
         for category in categories_to_test:
-            # Get fresh deposit info first
-            get_response = client_with_mock_token.get(f"{_V1}/deposits/{deposit_id}")
+            get_response = client.get(f"{_V1}/deposits/{deposit_id}")
             assert get_response.status_code == 200
 
-            # Reset status to classified for next test
-            # This is a bit of a hack for testing, in reality each correction would be on a new deposit
             if get_response.json()["status"] == "completed":
-                # We need a fresh deposit for each test, so let's just test one category thoroughly
                 break
 
             payload = {
@@ -302,48 +226,56 @@ class TestDepositValidationWorkflow:
                 "final_category": category
             }
 
-            response = client_with_mock_token.put(
+            response = client.put(
                 f"{_V1}/deposits/{deposit_id}",
                 json=payload,
-                headers=headers
+                headers=_JSON,
             )
 
-            # Should accept the first valid category
             assert response.status_code == 200
             data = response.json()
             assert data["category"] == category
             assert data["eee_category"] == category
-            # assert data["human_corrected"] == True  # Temporarily commented out
             break
 
-    def test_validation_preserves_ai_fields(self, client_with_mock_token, classified_deposit):
+    def test_validation_preserves_ai_fields(self, client, classified_deposit):
         """Test that validation preserves AI classification fields."""
-        deposit_id, headers = classified_deposit
+        deposit_id = classified_deposit
 
-        # Get deposit before validation to check AI fields
-        get_response = client_with_mock_token.get(f"{_V1}/deposits/{deposit_id}")
+        get_response = client.get(f"{_V1}/deposits/{deposit_id}")
         original_data = get_response.json()
 
-        # Validate the deposit
         payload = {
             "validated": True,
             "correction_applied": False
         }
 
-        response = client_with_mock_token.put(
+        response = client.put(
             f"{_V1}/deposits/{deposit_id}",
             json=payload,
-            headers=headers
+            headers=_JSON,
         )
 
         assert response.status_code == 200
         data = response.json()
 
-        # Check that AI fields are preserved
         assert data["transcription"] == original_data["transcription"]
         assert data["confidence_score"] == original_data["confidence_score"]
         assert data["ai_confidence"] == original_data["ai_confidence"]
         assert data["ai_classification"] == original_data["ai_classification"]
+
+
+def test_openapi_has_no_x_bot_token_header(openapi_schema):
+    """Le contrat OpenAPI ne doit plus référencer l'en-tête bot (produit Telegram retiré)."""
+    paths = openapi_schema["paths"]
+    for path, path_item in paths.items():
+        for method, operation in path_item.items():
+            if method not in {"get", "post", "put", "patch", "delete"}:
+                continue
+            parameters = operation.get("parameters", [])
+            for parameter in parameters:
+                if parameter.get("in") == "header" and parameter.get("name", "").lower() == "x-bot-token":
+                    pytest.fail(f"x-bot-token still documented on {method.upper()} {path}")
 
 
 if __name__ == '__main__':

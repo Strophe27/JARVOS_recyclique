@@ -1,7 +1,7 @@
 /**
  * Client API généré automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-10-15T12:52:29.510Z
+ * Généré le: 2026-03-26T21:30:33.963Z
  */
 
 import type { AxiosResponse } from 'axios';
@@ -151,22 +151,6 @@ export class DepositsApi {
    */
   static async depositapiv1depositsdepositidput(deposit_id, data?: any): Promise<DepositResponse> {
     const response: AxiosResponse<DepositResponse> = await apiClient.put(`/v1/deposits/${deposit_id}`, data);
-    return response.data;
-  }
-
-    /**
-   * Create Deposit From Bot
-   */
-  static async depositfrombotapiv1depositsfrombotpost(data?: any): Promise<DepositResponse> {
-    const response: AxiosResponse<DepositResponse> = await apiClient.post(`/v1/deposits/from-bot`, data);
-    return response.data;
-  }
-
-    /**
-   * Classify Deposit
-   */
-  static async depositapiv1depositsdepositidclassifypost(deposit_id): Promise<DepositResponse> {
-    const response: AxiosResponse<DepositResponse> = await apiClient.post(`/v1/deposits/${deposit_id}/classify`);
     return response.data;
   }
 

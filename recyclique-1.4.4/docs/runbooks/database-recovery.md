@@ -45,7 +45,7 @@ docker-compose exec postgres pg_isready -U recyclic
 docker-compose exec postgres pg_dump -U recyclic -d recyclic > pre_recovery_backup.sql
 
 # 3. Arrêter les services dépendants
-docker-compose stop api bot frontend
+docker-compose stop api frontend
 
 # 4. Supprimer la base existante
 docker-compose exec postgres psql -U recyclic -c "DROP DATABASE IF EXISTS recyclic;"
@@ -57,7 +57,7 @@ docker-compose exec postgres psql -U recyclic -c "CREATE DATABASE recyclic;"
 docker-compose exec -T postgres psql -U recyclic -d recyclic < /path/to/backup.sql
 
 # 7. Redémarrer les services
-docker-compose start api bot frontend
+docker-compose start api frontend
 
 # 8. Vérifier la restauration
 docker-compose exec api python -c "from recyclic_api.database import get_db; db = next(get_db()); print('Connection successful')"
@@ -252,7 +252,7 @@ docker-compose exec postgres psql -U recyclic -d recyclic -c "SELECT now();"
 
 2. **Arrêter les services dépendants**
    ```bash
-   docker-compose stop api bot frontend
+   docker-compose stop api frontend
    ```
 
 3. **Restaurer depuis le backup de sécurité**
@@ -298,7 +298,7 @@ docker-compose exec postgres psql -U recyclic -d recyclic -c "SELECT now();"
 
 5. **Redémarrer les services**
    ```bash
-   docker-compose start api bot frontend
+   docker-compose start api frontend
    
    # Vérifier que les services démarrent correctement
    docker-compose ps
@@ -352,13 +352,13 @@ recover_database() {
     fi
 
     # Arrêt des services
-    docker-compose stop api bot frontend
+    docker-compose stop api frontend
 
     # Récupération
     docker-compose exec -T postgres psql -U recyclic -d recyclic < "$BACKUP_FILE"
 
     # Redémarrage
-    docker-compose start api bot frontend
+    docker-compose start api frontend
 
     echo "Recovery completed successfully"
 }

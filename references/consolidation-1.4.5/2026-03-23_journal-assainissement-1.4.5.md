@@ -4362,6 +4362,219 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Lot DOC-TG-03 - bandeaux historiques sur classify
+
+**Objectif:** neutraliser la lecture "contrat actif" de quelques docs historiques qui presentent encore `POST /deposits/{id}/classify` comme flux de reference.
+
+### Verification worktree
+- Lot ouvert apres `BOT-TG-03`, sans changement inattendu.
+
+### Fichiers touches
+- `recyclique-1.4.4/docs/qa/assessments/4.2-trace-20250115.md`
+- `recyclique-1.4.4/docs/qa/assessments/4.2-test-design-20250115.md`
+- `recyclique-1.4.4/docs/architecture_old.md`
+- `recyclique-1.4.4/docs/architecture.old/api-specification.md`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- Relecture ciblee des bandeaux ajoutes
+- QA dediee par sous-agent : **acceptable**
+
+### Resultat / mini-QA
+- Chaque document cible annonce explicitement son statut historique / archive.
+- Le `410 Gone` du flux bot `classify` est signale dans les deux assessments QA.
+- Reserve acceptee : notation mixte `{id}` / `{deposit_id}` dans des docs historiques ; pas de risque runtime.
+
+---
+
+## Lot BOT-TG-03 - alignement des messages bot avec l'etat reel
+
+**Objectif:** supprimer les promesses trompeuses restantes dans l'aide, l'accueil, l'inscription et la notification d'approbation du bot.
+
+### Verification worktree
+- Lot ouvert apres la QA dediee des lots precedents.
+
+### Fichiers touches
+- `recyclique-1.4.4/bot/src/handlers/help.py`
+- `recyclique-1.4.4/bot/src/handlers/start.py`
+- `recyclique-1.4.4/bot/src/handlers/registration.py`
+- `recyclique-1.4.4/bot/src/services/notification_service.py`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_depot_handler_redis.py -q` : **6 tests OK**
+- `ReadLints` sur les 4 fichiers : **0 erreur**
+- QA dediee par sous-agent : **PASS avec reserve**
+
+### Resultat / mini-QA
+- `help`, `start`, `registration` et le message d'approbation n'annoncent plus le bot comme parcours fonctionnel complet.
+- Le rendu texte a ete simplifie pour ne pas dependre du parse mode Telegram sur les nouveaux messages touches.
+- Reserves acceptees hors flux nominal :
+  - `notification_service.py` garde des messages Markdown dynamiques plus anciens a securiser plus tard
+  - fallback HTML des liens d'inscription non echappe en profondeur
+
+### Blocage QA transversal constate pendant le lot
+- `pytest -q` dans `recyclique-1.4.4/bot` echoue hors perimetre du lot sur `tests/test_webhook.py` a la collecte (`FastAPIError` autour de `telegram.ext.Application` dans `src/webhook_server.py` / `src/handlers/webhook.py`).
+- Ce blocage est traite comme dette existante distincte : il n'invalide pas les tests cibles du lot, mais empeche pour l'instant une regression bot "suite complete" propre.
+
+---
+
+## Lot DOC-TG-02 - neutralisation docs utilisateur bot
+
+**Objectif:** retirer le caractere "actif" de la documentation utilisateur Telegram encore visible, sans supprimer l'historique.
+
+### Verification worktree
+- Lot ouvert apres `BOT-TG-02`, sans changement inattendu.
+
+### Fichiers touches
+- `recyclique-1.4.4/docs/guides/bot-telegram-guide.md`
+- `recyclique-1.4.4/docs/training/new-user-checklist.md`
+- `recyclique-1.4.4/docs/guides/troubleshooting-faq.md`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- Verification par recherche ciblee :
+  - `bot-telegram-guide.md` annonce maintenant explicitement un statut historique / archive
+  - `new-user-checklist.md` ne presente plus Telegram comme flux utilisateur prioritaire
+  - `troubleshooting-faq.md` indique que le bot ne fait plus partie du parcours actif
+
+### Resultat / mini-QA
+- Les docs utilisateur ciblees ne vendent plus `@RecyclicBot` comme parcours courant.
+- L'historique reste consultable pour contexte produit / technique.
+- Lot ferme ; prochain candidat safe: docs d'architecture et listes d'endpoints qui mentionnent encore `/deposits/{id}/classify` comme endpoint actif, a traiter a part pour ne pas melanger contrat historique et contrat courant.
+
+---
+
+## Lot BOT-TG-02 - suppression du faux handler photo
+
+**Objectif:** retirer le handler photo `classify` du bot Telegram, mocke et sans lien avec le flux `legacy_import` / OpenRouter backend.
+
+### Verification worktree
+- Lot ouvert apres `DOC-TG-01`, sans changement inattendu.
+
+### Fichiers touches
+- `recyclique-1.4.4/bot/src/bot_handlers.py`
+- `recyclique-1.4.4/bot/src/handlers/classify.py` (supprime)
+- `recyclique-1.4.4/bot/src/services/notification_service.py`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_depot_handler_redis.py -q` : **6 tests OK**
+- `ReadLints` sur `bot_handlers.py` et `notification_service.py` : **0 erreur**
+
+### Resultat / mini-QA
+- Le bot n'enregistre plus de `MessageHandler(filters.PHOTO, ...)` fantome.
+- La commande `/classify` n'est plus annoncee dans le message d'approbation utilisateur.
+- Aucun lien detecte avec `legacy_import` ; le reliquat `depot` / `classify` cote bot reste un flux historique distinct, a traiter separement des besoins legacy import.
+- Lot ferme ; prochain candidat safe: nettoyage des docs utilisateur qui presentent encore `@RecyclicBot` / `/classify` comme flux actif.
+
+---
+
+## Lot DOC-TG-01 - dedoublonnage archive bot
+
+**Objectif:** retirer deux doublons documentaires lies a l'ancienne vision bot Telegram, sans toucher au runtime ni au flux `legacy_import`.
+
+### Verification worktree
+- Worktree propre avant lot ; aucun diff code/runtime.
+
+### Fichiers touches
+- `recyclique-1.4.4/docs/index.md`
+- `recyclique-1.4.4/docs/backup-pre-cleanup/archive/bug-bot-asyncio-event-loop.md` (supprime)
+- `recyclique-1.4.4/docs/backup-pre-cleanup/archive/bug-bot-container-import-error.md` (supprime)
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- Verification manuelle des occurrences dans `docs/index.md` :
+  - suppression des entrees `backup-pre-cleanup` pour ces deux bugs bot
+  - correction du lien canonique `bug-bot-container-import-error` vers `docs/archive/v1.2-and-earlier/`
+- Verification par recherche : plus aucune reference active a ces deux chemins supprimes dans `docs/index.md`
+
+### Resultat / mini-QA
+- Un seul canon documentaire conserve par bug bot cible :
+  - `bug-bot-asyncio-event-loop` reste sous `docs/stories/to-review/archive/`
+  - `bug-bot-container-import-error` reste sous `docs/archive/v1.2-and-earlier/`
+- Les traces restantes dans `story-audit-report.json` sont historiques et acceptees.
+- Lot ferme ; pret pour un lot suivant sur reliquats docs/bot a faible risque.
+
+---
+
+## Paquet 1 — Suppression totale dossier `bot/` + references ops / CI / deploiement
+
+**Statut:** ferme  
+**Date execution:** 2026-03-26  
+**Theme:** retirer le code et les artefacts Docker du service Telegram bot, sans modifier `legacy_import` / OpenRouter ni les routes API Telegram restantes (lot ulterieur).
+
+### Actions
+- Suppression complete du repertoire `recyclique-1.4.4/bot/` (commande native PowerShell `Remove-Item -Recurse -Force`).
+- CI : `deploy.yaml` ne build plus `recyclic-bot` et n'ecrit plus `BOT_IMAGE_TAG` dans `.env.production` sur le serveur.
+- Scripts : `atomic-deploy.sh` (healthchecks api+frontend seulement, plus de sed / prune `recyclic-bot`) ; `rollback.sh` (`check_version_exists` et `.env.rollback` sans bot) ; `tests/test_rollback.sh` (builds et `.env.test` sans bot).
+- Compose : `docker-compose.yml`, `docker-compose.yml.backup`, `docker-compose.prod.yml`, `docker-compose.staging.yml` — blocs commentes bot/bot-tests remplaces par une note de retrait ; `env.production.example` et `env.staging.example` sans `BOT_IMAGE_TAG`.
+- `.gitignore` : retrait des entrees `/bot/venv` et `/bot/env`.
+- Docs / guides alignes sur l'absence d'image bot : `docs/architecture/deployment-and-rollback.md`, `docs/rollback-test-guide.md`, `docs/qa/rollback-test-guide.md`, `docs/architecture-current/architecture-brownfield.md`, `tests/README.md`, `dependency_cleanup_plan.md`.
+
+### Fichiers / dossiers
+- **Supprime:** tout `recyclique-1.4.4/bot/`.
+- **Modifies:** fichiers listes ci-dessus + journal (presente entree).
+
+### Validation
+- `rg` sur `*.yml`, `*.yaml`, `*.sh`, `*.example` sous `recyclique-1.4.4/` : **aucune** occurrence residuelle de `BOT_IMAGE_TAG`, `bot/Dockerfile`, `recyclic-bot:`.
+- Tests API cibles (Telegram desactive cote API, sans dependance au dossier bot) : `pytest api/tests/test_bot_auth_simple.py api/tests/test_deposit_bot_integration.py api/tests/test_deposit_classification_integration.py -q` depuis `recyclique-1.4.4/api` — **16 tests OK** (warnings Pydantic existants).
+
+### Resultat
+- Lot ferme. Le deploiement et le rollback ne supposent plus d'image `recyclic-bot`. Des mentions historiques `bot/` restent dans des docs archives / pending-tech-debt / PRD (hors perimetre strict ops du paquet 1).
+
+### Correctif QA (2026-03-26) — runbooks `docs/runbooks/`
+- Retrait des commandes et checklist faisant encore reference au service Docker `bot` : `deployment-independent-stacks.md` (healthchecks / `logs`), `database-recovery.md`, `dev-workflow-guide.md` (`stop`/`start` : `api frontend` seulement).
+- Validation : `rg` sous `recyclique-1.4.4/docs/runbooks/` sans `logs bot` ni `stop api bot`.
+
+### Correctif QA (2026-03-26) — TELEGRAM_BOT_URL / fallback `bot:8001` (paquet 1)
+- `env.example`, `env.staging.example`, `env.production.example` : suppression de `TELEGRAM_BOT_URL=http://bot:8001` ; commentaire + valeur vide (configuration explicite si reactivation du canal).
+- `api/src/recyclic_api/services/telegram_service.py` : plus de fallback runtime vers `http://bot:8001` ; si le canal est actif et l'URL absente, log warning et `return False` avant tout HTTP.
+- Validation : `rg` `http://bot:8001` sous `recyclique-1.4.4` (hors archives type `architecture.md.backup`).
+
+### Reserves / suite
+- Nettoyage documentaire large (chemins `bot/src/...`, gates QA, openapi) et evolution des routes API Telegram / `PUT /deposits/{id}` : **paquets ulterieurs**.
+- Les serveurs peuvent encore avoir `BOT_IMAGE_TAG` dans d'anciens `.env.production` : ignore par compose actuel ; nettoyage manuel possible.
+- `tests/test_rollback.sh` complet reste dependant de Docker : non execute sur l'agent Windows si Docker indisponible.
+
+---
+
+## Paquet 2 — Docs / gates / script Telegram hors `bot/` (hors routes API et tests contrat)
+
+**Statut:** ferme  
+**Date execution:** 2026-03-26  
+**Theme:** retirer documentation, gates QA et script manuel purement lies au canal Telegram / epic bot-classify, **sans** modifier les routes API (`410` / `bot_auth` / `PUT deposits`), **sans** toucher `api/tests/test_telegram_link_*.py`, `legacy_import` ni OpenRouter.
+
+### Actions
+- Suppression du script manuel `api/test_telegram_notifications.py` (plus de point d'entree documente pour tests notify hors CI).
+- Suppression du guide utilisateur `docs/guides/bot-telegram-guide.md`.
+- Suppression des gates QA morts cote bot / liaison Telegram / epic 4 vocal-classify : `be.link-telegram-account-link-telegram-account.yml`, `1.2-bot-telegram-base-inscription.yml`, `4.1-commande-depot-enregistrement-vocal.yml`, `4.2-classification-ia-automatique.yml`, `4.3-validation-correction-humaine.yml`, `4.4-documentation-utilisateur.md`, `b35.p4-optimisation-infra-bot.yml`.
+- Bandeau historique minimal : `docs/brief.md`, `docs/prd/epic-4-bot-telegram-ia-classification.md`, `docs/v1.3.0-active/prd/epic-4-bot-telegram-ia-classification.md`.
+- References actives : `docs/index.md`, `docs/guides/troubleshooting-faq.md`, `docs/qa/assessments/4.4-trace-20250127.md`, `docs/pending-tech-debt/story-2.1-commande-depot-enregistrement-vocal.md`.
+
+### Fichiers supprimes
+- `recyclique-1.4.4/api/test_telegram_notifications.py`
+- `recyclique-1.4.4/docs/guides/bot-telegram-guide.md`
+- `recyclique-1.4.4/docs/qa/gates/be.link-telegram-account-link-telegram-account.yml`
+- `recyclique-1.4.4/docs/qa/gates/1.2-bot-telegram-base-inscription.yml`
+- `recyclique-1.4.4/docs/qa/gates/4.1-commande-depot-enregistrement-vocal.yml`
+- `recyclique-1.4.4/docs/qa/gates/4.2-classification-ia-automatique.yml`
+- `recyclique-1.4.4/docs/qa/gates/4.3-validation-correction-humaine.yml`
+- `recyclique-1.4.4/docs/qa/gates/4.4-documentation-utilisateur.md`
+- `recyclique-1.4.4/docs/qa/gates/b35.p4-optimisation-infra-bot.yml`
+
+### Validation
+- `rg` sous `recyclique-1.4.4/docs/` (hors `archive/`, `backup-pre-cleanup/`, `stories/` archives implicites) : aucun lien fichier vers `bot-telegram-guide.md` ni vers les gates supprimes (sauf mentions explicites « retire » dans les fichiers mis a jour).
+- `pytest tests/test_telegram_link_endpoint.py tests/test_telegram_link_arch03.py tests/test_bot_auth_simple.py -q` depuis `recyclique-1.4.4/api` : **12 passed** (warnings Pydantic existants).
+
+### Resultat
+- Lot ferme. Les stories archives conservent des chemins de gates desormais absents : acceptable comme trace historique.
+
+### Reserves — paquet 3
+- Routes API Telegram residuelles, `get_bot_token_dependency` sur `PUT /deposits/{id}`, OpenAPI / liste endpoints si alignement, champs `telegram_*` transverses : **hors paquet 2**.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

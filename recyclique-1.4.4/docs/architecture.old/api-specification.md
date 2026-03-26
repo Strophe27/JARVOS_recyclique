@@ -1,5 +1,9 @@
 # API Specification
 
+> Note 2026-03-26 : specification archivee redigee a la main.
+> Les definitions Telegram / bot et la route `POST /deposits/{deposit_id}/classify` ne refletent plus le parcours actif de reference.
+> Pour le contrat runtime courant, se referer d'abord a l'implementation et a l'OpenAPI actuelle du repo.
+
 ## REST API Specification
 
 ```yaml

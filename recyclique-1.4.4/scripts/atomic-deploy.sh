@@ -38,7 +38,7 @@ log_error() {
 # Fonction pour vérifier l'état des services
 check_services_health() {
     local compose_file="$1"
-    local services=("api" "bot" "frontend")
+    local services=("api" "frontend")
     
     for service in "${services[@]}"; do
         local status
@@ -114,12 +114,10 @@ atomic_deploy() {
     
     # Modifier les noms des services pour éviter les conflits
     sed -i "s/^  api:/  api${new_service_suffix}:/" "$temp_compose_file"
-    sed -i "s/^  bot:/  bot${new_service_suffix}:/" "$temp_compose_file"
     sed -i "s/^  frontend:/  frontend${new_service_suffix}:/" "$temp_compose_file"
     
     # Modifier les dépendances pour pointer vers les nouveaux services
     sed -i "s/service: api/service: api${new_service_suffix}/" "$temp_compose_file"
-    sed -i "s/service: bot/service: bot${new_service_suffix}/" "$temp_compose_file"
     
     # Modifier les ports pour éviter les conflits
     sed -i "s/\"8000:8000\"/\"8001:8000\"/" "$temp_compose_file"  # API sur port 8001
@@ -167,9 +165,6 @@ atomic_deploy() {
     log "Nettoyage des anciennes images..."
     docker images recyclic-api --format "{{.Tag}}" | grep -v "TAG" | tail -n +6 | while read tag; do
         [ -n "$tag" ] && docker rmi "recyclic-api:$tag" || true
-    done
-    docker images recyclic-bot --format "{{.Tag}}" | grep -v "TAG" | tail -n +6 | while read tag; do
-        [ -n "$tag" ] && docker rmi "recyclic-bot:$tag" || true
     done
     docker images recyclic-frontend --format "{{.Tag}}" | grep -v "TAG" | tail -n +6 | while read tag; do
         [ -n "$tag" ] && docker rmi "recyclic-frontend:$tag" || true

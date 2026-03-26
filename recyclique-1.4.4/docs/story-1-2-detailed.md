@@ -1,5 +1,7 @@
 # Story 1.2: Bot Telegram Base & Inscription - Version Détaillée
 
+> **Note historique (état actuel)** : le canal **bot Telegram** n’est plus un parcours utilisateur actif dans le produit. Ce document reste une spécification d’archive / de référence ; ne pas l’utiliser comme périmètre opérationnel ou livrable courant.
+
 **As a new volunteer,**  
 **I want to contact the Recyclic bot and get a registration link,**  
 **so that I can request access to use the deposit system.**
@@ -436,13 +438,15 @@ CREATE TRIGGER trigger_new_registration
 
 ## QA Results
 
+> **Lecture avec le bandeau historique (l.3–4)** : ce qui suit est une **archive de revue** (janvier 2025). Elle ne constitue pas une validation du bot Telegram comme livrable **courant** ni un statut produit actuel.
+
 ### Review Date: 2025-01-09
 
 ### Reviewed By: Quinn (Test Architect)
 
 ### Code Quality Assessment
 
-**Overall Assessment: GOOD** - L'implémentation de la Story 1.2 Bot Telegram est globalement solide avec une architecture bien structurée. Le workflow d'inscription est complet et fonctionnel. Quelques améliorations mineures identifiées mais pas de problèmes bloquants.
+**Overall Assessment (historique) : GOOD** — Au moment de la revue, l’implémentation décrite pour la Story 1.2 (bot Telegram) était jugée solide sur le plan technique. **Depuis le retrait du canal bot du périmètre opérationnel**, cette évaluation ne s’applique plus au produit livré tel qu’il est utilisé aujourd’hui.
 
 ### Refactoring Performed
 
@@ -451,12 +455,12 @@ CREATE TRIGGER trigger_new_registration
   - **Why**: Erreur de syntaxe qui empêchait l'exécution correcte
   - **How**: Améliore la lisibilité et corrige l'erreur de compilation
 
-### Compliance Check
+### Compliance Check (contexte de l’époque de la revue)
 
 - Coding Standards: ✓ Conforme aux standards du projet
 - Project Structure: ✓ Respecte l'architecture définie
 - Testing Strategy: ⚠️ Tests de base présents, tests d'intégration manquants
-- All ACs Met: ✓ Tous les critères d'acceptation sont implémentés
+- All ACs Met: ✓ Tous les critères d'acceptation étaient considérés comme implémentés **à cette date**
 
 ### Improvements Checklist
 
@@ -483,8 +487,8 @@ CREATE TRIGGER trigger_new_registration
 
 ### Gate Status
 
-Gate: PASS → docs/qa/gates/1.2-bot-telegram-base-inscription.yml
+**PASS** (historique — revue de l’époque). *L’ancien artefact YAML de gate pour cette story a été retiré du dépôt ; le statut ci-dessus correspond à la trace documentée, pas à un gate produit courant.*
 
-### Recommended Status
+### Statut recommandé (aujourd’hui)
 
-✓ **Ready for Done** - La story peut être marquée comme terminée. Les améliorations suggérées peuvent être adressées dans des stories futures.
+**Non applicable comme « Ready for Done » livrable courant** — le bot Telegram n’est plus un parcours utilisateur actif ; ne pas inférer un statut « terminé / en production » pour le produit actuel à partir de cette section. Les améliorations listées ci-dessus restent des pistes d’archive si le périmètre bot était réactivé.

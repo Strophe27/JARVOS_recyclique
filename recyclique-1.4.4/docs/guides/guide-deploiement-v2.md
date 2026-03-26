@@ -67,10 +67,6 @@ POSTGRES_PASSWORD=votre_mot_de_passe
 # Security
 SECRET_KEY=votre_cle_secrete_longue
 
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=votre_token_bot
-ADMIN_TELEGRAM_IDS=votre_telegram_id
-
 # Frontend
 FRONTEND_URL=http://localhost:4444
 VITE_API_URL=/api
@@ -161,10 +157,6 @@ POSTGRES_PASSWORD=mot_de_passe_staging_fort
 # Security
 SECRET_KEY=cle_secrete_staging_longue
 
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=token_bot_staging
-ADMIN_TELEGRAM_IDS=vos_ids_admin
-
 # Frontend
 FRONTEND_URL=https://devrecyclic.jarvos.eu
 VITE_API_URL_STAGING=/api
@@ -238,10 +230,6 @@ POSTGRES_PASSWORD=mot_de_passe_production_TRES_fort
 
 # Security
 SECRET_KEY=cle_secrete_production_TRES_longue_et_aleatoire
-
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=token_bot_production
-ADMIN_TELEGRAM_IDS=vos_ids_admin
 
 # Frontend
 FRONTEND_URL=https://recyclic.jarvos.eu

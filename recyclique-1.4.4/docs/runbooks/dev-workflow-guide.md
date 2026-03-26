@@ -235,13 +235,13 @@ NOTIFICATION_TELEGRAM_CHAT_ID=your_chat_id
 ##### 1. Récupération Simple (Test/Développement)
 ```bash
 # Arrêter les services
-docker-compose stop api bot frontend
+docker-compose stop api frontend
 
 # Restaurer la base
 docker-compose exec -T postgres psql -U recyclic -d recyclic < /path/to/backup.sql
 
 # Redémarrer les services
-docker-compose start api bot frontend
+docker-compose start api frontend
 ```
 
 ##### 2. Récupération d'Urgence (Production)

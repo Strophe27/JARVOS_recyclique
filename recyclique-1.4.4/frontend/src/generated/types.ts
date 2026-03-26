@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-10-15T12:52:29.503Z
+ * Généré le: 2026-03-26T21:30:33.954Z
  */
 
 // ============================================================================
@@ -215,11 +215,6 @@ export interface DepositCreate {
   eee_category?: EEECategory | any;
   confidence_score?: number | any;
   alternative_categories?: object | object[] | any;
-}
-export interface DepositCreateFromBot {
-  telegram_user_id: string;
-  audio_file_path?: string | any;
-  status?: any;
 }
 export interface DepositFinalize {
   final_category?: EEECategory | any;

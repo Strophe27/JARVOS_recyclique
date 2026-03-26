@@ -33,7 +33,7 @@ Exemples typiques :
 ## 2. Matrice de Décision des Patterns de Test
 | Type de Test / Objectif | Pattern Recommandé | Quand l'utiliser | Modules Exemples |
 |---|---|---|---|
-| **Logique métier pure (Services)** | Mocks Purs | Isoler la logique des dépendances externes (DB, API tierces). | `auth_service.py`, `telegram_service.py` |
+| **Logique métier pure (Services)** | Mocks Purs | Isoler la logique des dépendances externes (DB, API tierces). | `auth_service.py`, `sync_service.py` |
 | **Endpoints CRUD & Contraintes DB** | Fixtures-DB | Valider la sérialisation, les contraintes de la DB et le flux HTTP. | `cash_registers_endpoint.py` |
 | **Workflows Complexes (Admin)** | Mocks & Overrides | Tester des workflows avec de multiples étapes sans la lourdeur d'une DB complète. | `admin_pending_endpoints.py` |
 | **Workflows Critiques de Bout en Bout** | Tests E2E | Valider un parcours utilisateur complet (ex: Inscription -> Approbation -> Première connexion). | `test_full_user_journey.py` |

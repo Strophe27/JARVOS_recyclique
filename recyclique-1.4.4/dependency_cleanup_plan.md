@@ -16,13 +16,9 @@ Ce document suit l'avancement du nettoyage des fichiers `requirements.txt`.
 - **pytest**: Outil de test.
 - **pytest-asyncio**: Outil de test.
 
-## Service Bot (`bot/requirements.txt`)
+## ~~Service Bot~~ (retiré, 2026-03-26)
 
-### Bibliothèques à Supprimer
-
-- **sqlalchemy**, **psycopg2-binary**: Le bot ne se connecte pas directement à la base de données.
-- **python-dotenv**: Redondant avec `pydantic-settings`.
-- **nest-asyncio**: Utilisation non détectée dans le code du bot.
+Le dossier `bot/` et le service Docker associé ont été supprimés (paquet assainissement 1.4.5). Cette section historique n'est plus applicable.
 
 ## Investigation en cours (demandé par l'utilisateur) - TERMINÉE
 

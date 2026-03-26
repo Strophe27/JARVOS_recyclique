@@ -5,9 +5,8 @@ from typing import List, Dict, Any
 from datetime import datetime, timezone
 from uuid import UUID
 from recyclic_api.core.database import get_db
-from recyclic_api.core.bot_auth import get_bot_token_dependency, TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL
 from recyclic_api.models.deposit import Deposit, DepositStatus
-from recyclic_api.schemas.deposit import DepositResponse, DepositCreate, DepositCreateFromBot, DepositFinalize
+from recyclic_api.schemas.deposit import DepositResponse, DepositCreate, DepositFinalize
 
 router = APIRouter()
 
@@ -34,68 +33,17 @@ async def create_deposit(deposit: DepositCreate, db: Session = Depends(get_db)):
     db.refresh(db_deposit)
     return db_deposit
 
-@router.post(
-    "/from-bot",
-    responses={
-        410: {
-            "description": "Fonctionnalité retirée — création de dépôt via le bot Telegram n'est plus proposée.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL},
-                }
-            },
-        },
-    },
-)
-async def create_deposit_from_bot(_deposit: DepositCreateFromBot):
-    """Ancienne création de dépôt via le bot Telegram — désactivée (410 Gone).
-
-    Le corps reste validé comme auparavant pour un contrat stable côté clients ;
-    aucune écriture en base n'est effectuée.
-    """
-    raise HTTPException(
-        status_code=status.HTTP_410_GONE,
-        detail=TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL,
-    )
-
-
-@router.post(
-    "/{deposit_id}/classify",
-    responses={
-        410: {
-            "description": "Fonctionnalité retirée — classification audio via le bot Telegram n'est plus proposée.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL},
-                }
-            },
-        },
-    },
-)
-async def classify_deposit(deposit_id: UUID):
-    """Ancienne classification de dépôt déclenchée par le bot — désactivée (410 Gone).
-
-    L'identifiant de dépôt est accepté dans l'URL pour conserver le contrat de route ;
-    aucune lecture ni écriture en base n'est effectuée.
-    """
-    _ = deposit_id  # segment d'URL requis pour la stabilité du chemin
-    raise HTTPException(
-        status_code=status.HTTP_410_GONE,
-        detail=TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL,
-    )
-
 @router.put("/{deposit_id}", response_model=DepositResponse)
 async def finalize_deposit(
     deposit_id: UUID,
     finalization: DepositFinalize,
     db: Session = Depends(get_db),
-    bot_token: str = Depends(get_bot_token_dependency)
 ):
     """
     Finalize deposit after human validation/correction (Story 4.3).
 
-    This is the last deposit route that still requires bot token auth.
-    Keep the dependency in place until a replacement auth contract is chosen.
+    Auth: même périmètre que les autres routes ``/deposits`` (pas de garde dédiée
+    sur cette route ; confiance réseau / couche applicative amont si besoin).
 
     This endpoint handles:
     - Validation of AI classification by user
@@ -103,8 +51,6 @@ async def finalize_deposit(
     - Setting final status to completed
     - Tracking AI vs human decisions for analysis
     """
-    # Bot token is validated by the dependency
-
     # Get the deposit
     deposit = db.query(Deposit).filter(Deposit.id == deposit_id).first()
     if not deposit:

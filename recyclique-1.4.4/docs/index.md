@@ -1384,15 +1384,7 @@ Ce document est un état des lieux de l'ensemble des stories présentes dans le 
 
 - **Statut**: Done
 
-### [Bug: Le bot s'arrête avec une erreur de boucle d'événements asyncio](./backup-pre-cleanup/archive/bug-bot-asyncio-event-loop.md)
-
-- **Statut**: Done
-
 ### [Bug: Le bot utilise un token Telegram invalide](./backup-pre-cleanup/archive/bug-bot-telegram-token-config.md)
-
-- **Statut**: Done
-
-### [Bug: Le conteneur du bot ne démarre pas (ImportError)](./backup-pre-cleanup/archive/bug-bot-container-import-error.md)
 
 - **Statut**: Done
 
@@ -1966,9 +1958,9 @@ Cette spécification définit l'expérience utilisateur, l'architecture d'inform
 
 **Auteur:** Équipe de Développement
 
-### [Guide Utilisateur - Bot Telegram Recyclic](./guides/bot-telegram-guide.md)
+### Guide Bot Telegram (retire)
 
-## Introduction
+Le guide utilisateur `guides/bot-telegram-guide.md` a ete retire (2026-03-26) : le canal bot n'est plus documente comme actif. Voir `architecture-current/` et la FAQ.
 
 ### [Manuel Utilisateur - Interface de Caisse Recyclic](./guides/interface-caisse-manual.md)
 
@@ -2446,9 +2438,9 @@ Date: 2025-01-27
 
 Date: 2025-01-27
 
-### [Untitled Document](./qa/gates/4.4-documentation-utilisateur.md)
+### Gate 4.4 documentation utilisateur (retire)
 
-Description a completer.
+Fichier `qa/gates/4.4-documentation-utilisateur.md` retire en consolidation 2026-03-26 (gate lie au guide bot, desormais hors reference active).
 
 ### [🚨 RAPPORT CRITIQUE - Problème d'alignement footer poids](./qa/rapport-probleme-alignment-footer-poids.md)
 
@@ -2514,7 +2506,7 @@ Description a completer.
 
 - **Statut**: Done
 
-### [Bug: Le conteneur du bot ne démarre pas (ImportError)](./stories/to-review/archive/bug-bot-container-import-error.md)
+### [Bug: Le conteneur du bot ne démarre pas (ImportError)](./archive/v1.2-and-earlier/bug-bot-container-import-error.md)
 
 - **Statut**: Done
 

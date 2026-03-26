@@ -71,7 +71,6 @@ cleanup() {
     
     # Supprimer les images de test
     docker rmi recyclic-api:test-v1 recyclic-api:test-v2 >/dev/null 2>&1 || true
-    docker rmi recyclic-bot:test-v1 recyclic-bot:test-v2 >/dev/null 2>&1 || true
     docker rmi recyclic-frontend:test-v1 recyclic-frontend:test-v2 >/dev/null 2>&1 || true
     
     # Supprimer les fichiers temporaires
@@ -87,22 +86,17 @@ setup_test_environment() {
     
     # Créer des images de test
     docker build -t recyclic-api:test-v1 -f api/Dockerfile . >/dev/null 2>&1
-    docker build -t recyclic-bot:test-v1 -f bot/Dockerfile . >/dev/null 2>&1
     docker build -t recyclic-frontend:test-v1 -f frontend/Dockerfile . >/dev/null 2>&1
     
     docker build -t recyclic-api:test-v2 -f api/Dockerfile . >/dev/null 2>&1
-    docker build -t recyclic-bot:test-v2 -f bot/Dockerfile . >/dev/null 2>&1
     docker build -t recyclic-frontend:test-v2 -f frontend/Dockerfile . >/dev/null 2>&1
     
     # Créer un fichier .env de test
     cat > .env.test << EOF
 API_IMAGE_TAG=test-v2
-BOT_IMAGE_TAG=test-v2
 FRONTEND_IMAGE_TAG=test-v2
 POSTGRES_PASSWORD=testpass
 SECRET_KEY=test-secret
-TELEGRAM_BOT_TOKEN=test-token
-ADMIN_TELEGRAM_IDS=123456789
 EOF
     
     test_log "Test environment ready"

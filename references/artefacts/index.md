@@ -24,6 +24,9 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-03-26_06_paquet-6-telegram-notifications-canal-retire.md` | Paquet 6 : suppression `telegram_service.py`, retrait variables `TELEGRAM_*` dans `config` + env exemples, sync/anomalies en logs seuls, `rollback.sh` sans Telegram, docs/scripts alignés ; tests cibles OK ; pas de commit. |
+| `2026-03-26_05_paquet-4-put-deposits-sans-bot-auth.md` | Paquet 4 : retrait `get_bot_token_dependency` / `X-Bot-Token` sur `PUT /v1/deposits/{id}` ; suppression `bot_auth.py` et `test_bot_auth_simple.py` ; OpenAPI + tests workflow dépôts réalignés ; pas de commit. |
+| `2026-03-26_04_paquet-3-suppression-routes-api-telegram.md` | Paquet 3 : retrait des routes HTTP `link-telegram`, `from-bot`, `classify` et alignement OpenAPI / tests / docs ; `PUT /deposits/{id}` et `X-Bot-Token` intacts pour paquet 4. |
 | `2026-03-26_03_qa-handoff-paquet-final-consolidation.md` | Bilan fin de paquet QA consolidation 1.4.5 : worktree propre, lots faible risque clos, reliquats a risque moyen+, bloc decisionnel auth bot `PUT /deposits/{id}`, openapi statique bloque par env ; pas d'identifiant « TL-02 » dans le repo (assimile a cette dette). |
 | `2026-03-26_02_handoff-long-run-telegram-nettoyage.md` | Handoff long run pour agent frais : etat acquis du nettoyage Telegram/backend, derniers lots fermes, worktree a surveiller, prochains chantiers prudents (`bot_auth`, reliquats `telegram_*`, fallbacks, migrations a eviter trop tot). |
 | `2026-03-26_01_blueprint-layout-workflow-ecrans.md` | Blueprint : workflow explicite, config d'ecran, layout avec handles + pilotage API/CLI/agent, branchements JARVOS Nano / Peintre (FR26), emplacement BMAD et ordre de migration. |

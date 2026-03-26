@@ -27,22 +27,11 @@ Cette checklist vous guide pas à pas pour prendre en main le système Recyclic.
 
 ## Formation Bot Telegram 📱
 
-### Configuration Telegram
-- [ ] J'ai installé l'application Telegram sur mon téléphone
-- [ ] J'ai trouvé et ajouté le bot @RecyclicBot
-- [ ] J'ai démarré la conversation avec le bot
+> Section conservee pour historique. Le parcours Telegram n'est plus le flux utilisateur actif a former en priorite.
 
-### Utilisation du Bot
-- [ ] Je sais taper la commande `/depot` pour commencer
-- [ ] J'ai testé l'envoi d'un message vocal simple
-- [ ] Je comprends les boutons "Valider" et "Corriger"
-- [ ] Je sais consulter mes dépôts avec `/mesdepots`
-- [ ] Je connais la commande `/help` pour l'aide
-
-### Pratique Bot
-- [ ] J'ai enregistré au moins 3 dépôts de test
-- [ ] J'ai testé la correction d'une classification
-- [ ] J'ai consulté mes statistiques avec `/stats`
+### Ancien parcours Telegram (archive)
+- [ ] J'ai repere que l'ancien bot `@RecyclicBot` appartient a un flux historique
+- [ ] Je sais que les parcours actifs a privilegier sont l'interface web et les outils admin
 
 ## Formation Interface de Caisse 💻
 
@@ -160,7 +149,7 @@ Cette checklist vous guide pas à pas pour prendre en main le système Recyclic.
 ## Validation des Compétences 🎯
 
 ### Test de Compétences de Base
-- [ ] Je peux enregistrer un dépôt via le bot sans aide
+- [ ] Je peux enregistrer un dépôt via l'interface active sans aide
 - [ ] Je peux traiter une vente complète sans assistance
 - [ ] Je sais utiliser le mode caisse virtuelle pour m'entraîner
 - [ ] Je sais résoudre les 3 erreurs les plus courantes

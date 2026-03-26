@@ -55,7 +55,7 @@ if [ -f "$ENV_FILE" ]; then
     pass "Environment file exists: $ENV_FILE"
 
     # Check for critical variables
-    CRITICAL_VARS=("POSTGRES_PASSWORD" "SECRET_KEY" "TELEGRAM_BOT_TOKEN")
+    CRITICAL_VARS=("POSTGRES_PASSWORD" "SECRET_KEY")
     for var in "${CRITICAL_VARS[@]}"; do
         if grep -q "^${var}=" "$ENV_FILE" && ! grep -q "^${var}=<" "$ENV_FILE"; then
             pass "$var is set"

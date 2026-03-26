@@ -80,31 +80,18 @@ def test_upload_file_retries_then_success(tmp_path: Path) -> None:
     assert len(client.uploads) == 1
 
 
-def test_upload_file_failure_triggers_notification(monkeypatch, tmp_path: Path) -> None:
+def test_upload_file_failure_logs_no_external_notify(caplog, tmp_path: Path) -> None:
     local_file = tmp_path / "failure.csv"
     local_file.write_text("ko", encoding="utf-8")
 
     client = DummyClient(failures_before_success=5)
     service = KDriveSyncService(client_factory=_client_factory(client), max_retries=2, retry_delay_seconds=0)
 
-    monkeypatch.setattr(settings, "ADMIN_TELEGRAM_IDS", "123")
-    monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", True)
-
-    called: dict[str, tuple[str, str, str]] = {}
-
-    async def fake_notify(file_path: str, remote_path: str, error_message: str) -> bool:
-        called["args"] = (file_path, remote_path, error_message)
-        return True
-
-    monkeypatch.setattr(sync_service.telegram_service, "notify_sync_failure", fake_notify)
-
+    caplog.set_level(logging.WARNING)
     with pytest.raises(UploadFailedError):
         service.upload_file_to_kdrive(local_file, "/exports/failure.csv")
 
-    assert "args" in called
-    assert called["args"][0] == str(local_file)
-    assert called["args"][1] == "/exports/failure.csv"
-    assert "simulated" in called["args"][2]
+    assert any("no external alert channel" in r.message for r in caplog.records)
 
 
 def test_sync_directory_uploads_all_files(tmp_path: Path) -> None:

@@ -24,12 +24,6 @@ class DepositBase(BaseModel):
 class DepositCreate(DepositBase):
     pass
 
-class DepositCreateFromBot(BaseModel):
-    """Schema for creating deposits from Telegram bot"""
-    telegram_user_id: str
-    audio_file_path: Optional[str] = None
-    status: DepositStatus = DepositStatus.PENDING_AUDIO
-
 class DepositFinalize(BaseModel):
     """Schema for finalizing deposits after validation/correction"""
     final_category: Optional[EEECategory] = None

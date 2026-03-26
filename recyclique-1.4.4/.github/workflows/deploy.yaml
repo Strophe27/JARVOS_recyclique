@@ -113,7 +113,6 @@ jobs:
       - name: Build Docker images
         run: |
           docker build -t recyclic-api:${{ steps.vars.outputs.tag }} -f api/Dockerfile .
-          docker build -t recyclic-bot:${{ steps.vars.outputs.tag }} -f bot/Dockerfile .
           docker build -t recyclic-frontend:${{ steps.vars.outputs.tag }} -f frontend/Dockerfile .
       
       - name: Deploy to production
@@ -131,7 +130,6 @@ jobs:
             
             # Create environment file with version tags
             echo "API_IMAGE_TAG=${{ steps.vars.outputs.tag }}" > .env.production
-            echo "BOT_IMAGE_TAG=${{ steps.vars.outputs.tag }}" >> .env.production
             echo "FRONTEND_IMAGE_TAG=${{ steps.vars.outputs.tag }}" >> .env.production
             
             # Use atomic deployment script

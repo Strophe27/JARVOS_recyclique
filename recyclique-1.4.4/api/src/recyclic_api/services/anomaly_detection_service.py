@@ -20,9 +20,6 @@ from recyclic_api.models.sale import Sale
 from recyclic_api.models.user import User
 from recyclic_api.models.login_history import LoginHistory
 
-from recyclic_api.core.config import settings
-from recyclic_api.services.telegram_service import telegram_service
-
 logger = logging.getLogger(__name__)
 
 
@@ -452,13 +449,13 @@ class AnomalyDetectionService:
 
     async def send_anomaly_notifications(self, anomalies: Dict[str, Any]) -> bool:
         """
-        Envoie des notifications Telegram pour les anomalies détectées.
+        Enregistre un résumé des anomalies (canal Telegram / HTTP sortant retiré).
 
         Args:
             anomalies: Résultats de la détection d'anomalies
 
         Returns:
-            True si les notifications ont été envoyées avec succès
+            True si le traitement s'est bien passé (pas d'envoi externe).
         """
         try:
             critical_anomalies = anomalies.get('summary', {}).get('critical_anomalies', 0)
@@ -468,48 +465,23 @@ class AnomalyDetectionService:
                 logger.info("Aucune anomalie détectée, pas de notification à envoyer")
                 return True
 
-            if not settings.TELEGRAM_NOTIFICATIONS_ENABLED:
-                logger.info(
-                    "Notifications d'anomalies Telegram ignorées — TELEGRAM_NOTIFICATIONS_ENABLED=false "
-                    "(critical=%s, total=%s)",
-                    critical_anomalies,
-                    total_anomalies,
-                )
-                return True
-
-            # Construire le message de notification
-            message = "[ALERTE SYSTÈME] Anomalies détectées\n\n"
-
-            if critical_anomalies > 0:
-                message += f"🚨 {critical_anomalies} anomalies CRITIQUES détectées\n"
-
-            if total_anomalies > 0:
-                message += f"⚠️ {total_anomalies} anomalies au total\n"
-
-            message += f"\n📊 Résumé par type:\n"
-
+            logger.warning(
+                "Anomalies détectées — pas de canal de notification sortant (critical=%s, total=%s). "
+                "Consulter les logs / monitoring.",
+                critical_anomalies,
+                total_anomalies,
+            )
             for anomaly_type, anomaly_list in anomalies.get('anomalies', {}).items():
                 if isinstance(anomaly_list, list) and anomaly_list:
-                    message += f"• {anomaly_type}: {len(anomaly_list)} anomalies\n"
-
-            message += "\n🔧 Recommandations disponibles dans le système de monitoring"
-
-            # Envoyer la notification via Telegram
-            success = await telegram_service.notify_sync_failure(
-                file_path="system-monitoring",
-                remote_path="anomaly-detection",
-                error_message=message
-            )
-
-            if success:
-                logger.info("Notification d'anomalies envoyée avec succès")
-            else:
-                logger.error("Échec de l'envoi de la notification d'anomalies")
-
-            return success
+                    logger.info(
+                        "Anomalie type=%s count=%s",
+                        anomaly_type,
+                        len(anomaly_list),
+                    )
+            return True
 
         except Exception as e:
-            logger.error(f"Erreur lors de l'envoi des notifications d'anomalies: {e}")
+            logger.error(f"Erreur lors du traitement du résumé d'anomalies: {e}")
             return False
 
 

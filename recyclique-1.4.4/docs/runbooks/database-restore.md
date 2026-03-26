@@ -309,13 +309,9 @@ echo "Base de données cible: recyclic" >> "$RESTORE_LOG"
 echo "Utilisateur: recyclic" >> "$RESTORE_LOG"
 ```
 
-### Notification d'Équipe
-```bash
-# Notifier l'équipe de la restauration
-curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-    -d "chat_id=$ADMIN_CHAT_ID" \
-    -d "text=🔄 RESTAURATION TERMINÉE - Base de données Recyclic restaurée depuis $BACKUP_FILE"
-```
+### Notification d'équipe
+
+Le canal Telegram pour ce type d'alerte a été retiré. Prévoir un **email**, un **ticket** ou un **message** manuel aux personnes concernées après restauration (les variables `TELEGRAM_*` ne sont plus utilisées par l'API Recyclic pour les notifications sortantes).
 
 ---
 

@@ -1,39 +1,10 @@
 """
-Intégration dépôt / classification : routes bot historiques retirées (410 Gone).
-
-Les tests de workflow audio via bot sont remplacés par des assertions de contrat HTTP ;
-les champs Story 4.2 du modèle restent couverts en bas de fichier.
+Champs Story 4.2 du modèle dépôt (les routes bot from-bot / classify ont été retirées du contrat HTTP).
 """
 
 import pytest
 
-from recyclic_api.core.bot_auth import TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL
-from recyclic_api.core.config import settings
 from recyclic_api.models.deposit import DepositStatus
-
-_V1 = settings.API_V1_STR.rstrip("/")
-
-
-class TestDepositBotClassificationRetired:
-    """POST from-bot et POST classify ne modifient plus la base."""
-
-    def test_from_bot_returns_410(self, client):
-        response = client.post(
-            f"{_V1}/deposits/from-bot",
-            json={
-                "telegram_user_id": "story42_user",
-                "audio_file_path": "/audio/ordinateur_test.ogg",
-                "status": "pending_audio",
-            },
-        )
-        assert response.status_code == 410
-        assert response.json()["detail"] == TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL
-
-    def test_classify_returns_410_even_if_uuid_valid(self, client):
-        deposit_id = "00000000-0000-0000-0000-000000000000"
-        response = client.post(f"{_V1}/deposits/{deposit_id}/classify")
-        assert response.status_code == 410
-        assert response.json()["detail"] == TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL
 
 
 class TestDepositModelStory42Fields:

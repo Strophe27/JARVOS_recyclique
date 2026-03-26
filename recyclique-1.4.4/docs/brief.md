@@ -1,5 +1,7 @@
 # Project Brief: Recyclic
 
+> **Historique (2026-03-26)** : document de cadrage initial. Le canal Telegram / bot vocal n'est plus la reference produit active ; voir `docs/architecture-current/` et le journal de consolidation `references/consolidation-1.4.5/`.
+
 **Author:** Analyst (Mary)  
 **Date:** 2025-09-09  
 **Version:** 2.0 - Finalized Technical Specifications

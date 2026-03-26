@@ -8,13 +8,14 @@
 | Date       | Version | Description                    | Auteur   |
 |-----------|---------|--------------------------------|----------|
 | 2025-02-23 | 1.0     | Création état des lieux réel   | Analyst  |
+| 2026-03-26 | 1.1     | Retrait du dossier `bot/` et des références déploiement associées | Assainissement 1.4.5 |
 
 ---
 
 ## 1. Résumé exécutif
 
 - **Stack en production de fait** : Backend FastAPI (Python 3.11+), frontend React/Vite/TypeScript (PWA), PostgreSQL 15, Redis 7, Docker Compose. En staging/production exposée : **Traefik** (pas Nginx) comme reverse proxy / terminaison TLS.
-- **Services Docker actifs** (d’après `docker-compose.yml`) : `postgres`, `redis`, `api`, `api-migrations`, `frontend`. Le service **bot** (Telegram) est **désactivé** (commenté, mention « BOT SERVICE DISABLED (STORY-B36-P3) »). Le code du bot existe encore dans `bot/` mais n’est pas déployé.
+- **Services Docker actifs** (d’après `docker-compose.yml`) : `postgres`, `redis`, `api`, `api-migrations`, `frontend`. L’ancien service **bot** Telegram a été retiré du dépôt (paquet assainissement 1.4.5, 2026-03-26) ; des endpoints API liés à Telegram peuvent subsister jusqu’à un lot ultérieur.
 - **Points d’attention** : Plusieurs documents (dont `docs/export_doc_ecosystem/`) décrivent encore le bot Telegram et parfois Nginx ; ce document reflète uniquement l’état réel des services et du déploiement.
 
 ---
@@ -71,10 +72,9 @@ D’après `docker-compose.yml` (sans override).
 
 En dev, le frontend appelle l’API soit directement (ex. `http://localhost:8000`), soit via le proxy Vite selon la config (voir `frontend/vite.config.js`). Aucun service Nginx dans le compose de base.
 
-### 4.2 Services présents mais désactivés (commentés)
+### 4.2 Services commentés (hors ligne)
 
-- **bot** (Telegram) : bloc commenté avec la mention `# BOT SERVICE DISABLED (STORY-B36-P3)`. Le répertoire `bot/` existe toujours (handlers, webhook, etc.) mais le service n’est pas lancé par défaut.
-- **api-tests** / **bot-tests** : services de test commentés dans le même fichier.
+- **api-tests** : service de test API commenté dans `docker-compose.yml` (le conteneur bot / bot-tests a été supprimé du dépôt).
 
 ### 4.3 Schéma des composants réels (simplifié)
 
@@ -114,7 +114,6 @@ Recyclic/
 │   ├── src/
 │   ├── public/
 │   └── package.json, vite.config.js
-├── bot/                     # Code présent, service Docker désactivé
 ├── docs/                    # Documentation (dont export_doc_ecosystem, architecture, etc.)
 ├── scripts/                 # Utilitaires (build-info, etc.)
 ├── docker-compose.yml       # Dev : postgres, redis, api, api-migrations, frontend

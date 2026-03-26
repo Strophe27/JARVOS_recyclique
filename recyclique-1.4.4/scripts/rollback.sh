@@ -130,60 +130,10 @@ send_notifications() {
     # Notification console
     log "$emoji NOTIFICATION: $message"
     
-    # Notification Telegram (si configuré)
-    if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$ADMIN_TELEGRAM_IDS" ]; then
-        send_telegram_notification "$status" "$version" "$message" "$timestamp"
-    fi
-    
     # Notification email (si configuré)
     if [ -n "$NOTIFICATION_EMAIL" ]; then
         send_email_notification "$status" "$version" "$message" "$timestamp"
     fi
-}
-
-# Fonction de notification Telegram
-send_telegram_notification() {
-    local status="$1"
-    local version="$2"
-    local message="$3"
-    local timestamp="$4"
-    
-    # Emoji selon le statut
-    local emoji=""
-    if [ "$status" = "success" ]; then
-        emoji="✅"
-    elif [ "$status" = "failed" ]; then
-        emoji="❌"
-    elif [ "$status" = "cancelled" ]; then
-        emoji="⚠️"
-    fi
-    
-    # Construire le message formaté
-    local telegram_message="$emoji *ROLLBACK NOTIFICATION*
-
-$message
-
-📋 *Détails:*
-• Version: \`$version\`
-• Timestamp: \`$timestamp\`
-• Hostname: \`$(hostname)\`
-• User: \`$(whoami)\`
-
-🔗 *Logs:* \`logs/rollback-metrics.json\`"
-    
-    # Envoyer à tous les admins configurés
-    IFS=',' read -ra ADMIN_IDS <<< "$ADMIN_TELEGRAM_IDS"
-    for admin_id in "${ADMIN_IDS[@]}"; do
-        # Nettoyer l'ID (enlever les espaces)
-        admin_id=$(echo "$admin_id" | tr -d ' ')
-        
-        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d "chat_id=$admin_id" \
-            -d "text=$telegram_message" \
-            -d "parse_mode=Markdown" \
-            -d "disable_web_page_preview=true" \
-            2>/dev/null || log_warning "Impossible d'envoyer la notification Telegram à l'admin $admin_id"
-    done
 }
 
 # Fonction de notification email
@@ -212,41 +162,6 @@ Logs disponibles dans: logs/rollback-metrics.json
 send_emergency_alert() {
     local version="$1"
     local error_message="$2"
-    
-    # Message d'urgence pour Telegram
-    local emergency_message="🚨 *ALERTE D'URGENCE - ROLLBACK ÉCHOUÉ* 🚨
-
-❌ Le rollback vers la version \`$version\` a échoué !
-
-🔍 *Erreur détectée:*
-\`$error_message\`
-
-⚠️ *Action requise immédiatement:*
-• Vérifier l'état des services
-• Consulter les logs détaillés
-• Contacter l'équipe de développement
-
-🕐 *Timestamp:* \`$(date '+%Y-%m-%d %H:%M:%S')\`
-🖥️ *Hostname:* \`$(hostname)\`
-👤 *User:* \`$(whoami)\`
-
-🔗 *Logs d'urgence:* \`logs/rollback-metrics.json\`"
-    
-    # Envoyer l'alerte d'urgence à tous les admins
-    if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$ADMIN_TELEGRAM_IDS" ]; then
-        IFS=',' read -ra ADMIN_IDS <<< "$ADMIN_TELEGRAM_IDS"
-        for admin_id in "${ADMIN_IDS[@]}"; do
-            admin_id=$(echo "$admin_id" | tr -d ' ')
-            
-            # Envoyer l'alerte avec priorité haute
-            curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-                -d "chat_id=$admin_id" \
-                -d "text=$emergency_message" \
-                -d "parse_mode=Markdown" \
-                -d "disable_web_page_preview=true" \
-                2>/dev/null || log_warning "Impossible d'envoyer l'alerte d'urgence à l'admin $admin_id"
-        done
-    fi
     
     # Log de l'alerte d'urgence
     log_error "ALERTE D'URGENCE: Rollback échoué - $error_message"
@@ -306,10 +221,9 @@ get_previous_version() {
 check_version_exists() {
     local version="$1"
     local api_exists=$(docker images recyclic-api:$version --format "{{.Repository}}" 2>/dev/null || echo "")
-    local bot_exists=$(docker images recyclic-bot:$version --format "{{.Repository}}" 2>/dev/null || echo "")
     local frontend_exists=$(docker images recyclic-frontend:$version --format "{{.Repository}}" 2>/dev/null || echo "")
     
-    if [ -n "$api_exists" ] && [ -n "$bot_exists" ] && [ -n "$frontend_exists" ]; then
+    if [ -n "$api_exists" ] && [ -n "$frontend_exists" ]; then
         return 0
     else
         return 1
@@ -340,7 +254,6 @@ rollback_to_version() {
     log "Création du fichier d'environnement pour le rollback..."
     cat > .env.rollback << EOF
 API_IMAGE_TAG=$target_version
-BOT_IMAGE_TAG=$target_version
 FRONTEND_IMAGE_TAG=$target_version
 EOF
     

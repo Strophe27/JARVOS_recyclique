@@ -188,7 +188,7 @@ Addressed all HIGH and MEDIUM severity risks identified in QA gate review:
 3. **Secrets/env Risk (MEDIUM) - MITIGATED**
    - Created `scripts/pre-deployment-check.sh` with 10 comprehensive checks
    - Validates Docker Compose syntax
-   - Checks critical environment variables (POSTGRES_PASSWORD, SECRET_KEY, TELEGRAM_BOT_TOKEN)
+   - Checks critical environment variables (POSTGRES_PASSWORD, SECRET_KEY)
    - Detects placeholder values (<...>)
    - Prevents deployment with missing configuration
    - Added as mandatory Phase 0 (pre-validation)

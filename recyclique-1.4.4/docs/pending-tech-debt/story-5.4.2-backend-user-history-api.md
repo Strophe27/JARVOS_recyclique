@@ -185,7 +185,7 @@ Changements effectués aujourd’hui (backend API/tests)
   - `api/tests/conftest.py`: ajout fixture `async_client` (HTTPX) avec token admin par défaut; surcharge `get_db` par session partagée; création explicite des tables via `Base.metadata.create_all()`; correction transaction (commit post-create_all) et rollback fiable; fixture `mock_redis` ajoutée.
   - `api/src/recyclic_api/core/auth.py`, `api/src/recyclic_api/api/api_v1/endpoints/admin.py`: vérifs d’admin OK (pas modifiés ici mais validés par tests ciblés).
 - Dépôts (Story 4.2 intégration)
-  - `api/src/recyclic_api/core/config.py`: en mode test (`TESTING=true`), force `ENVIRONMENT=test`, bascule `DATABASE_URL` sur `TEST_DATABASE_URL` si dispo, et injecte un `TELEGRAM_BOT_TOKEN` par défaut `test_bot_token_123` si absent.
+  - `api/src/recyclic_api/core/config.py`: en mode test (`TESTING=true`), force `ENVIRONMENT=test` et bascule `DATABASE_URL` sur `TEST_DATABASE_URL` si dispo (plus d'injection `TELEGRAM_BOT_TOKEN` depuis 2026-03).
   - `api/src/recyclic_api/api/api_v1/endpoints/deposits.py`: endpoint `/from-bot` résout/crée un `User` par `telegram_user_id` (création si absent avec `hashed_password` placeholder) au lieu du placeholder `0000…`; classification conserve le flux Story 4.2.
   - `api/src/recyclic_api/schemas/deposit.py`: `audio_file_path` devient optionnel dans `DepositCreateFromBot` pour accepter `null` (tests low/no-audio).
 - Auth (legacy tests)

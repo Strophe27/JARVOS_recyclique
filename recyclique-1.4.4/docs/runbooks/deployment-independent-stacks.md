@@ -97,10 +97,6 @@ POSTGRES_PASSWORD=mot_de_passe_TRES_fort
 # Security
 SECRET_KEY=cle_secrete_TRES_longue_et_aleatoire
 
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=token_bot_production
-ADMIN_TELEGRAM_IDS=vos_ids_admin
-
 # Frontend
 FRONTEND_URL=https://recyclic.jarvos.eu
 VITE_API_URL_PROD=/api
@@ -212,8 +208,9 @@ docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.produ
 # - postgres healthy
 # - redis healthy
 # - api healthy
-# - bot healthy
+# - frontend healthy
 # - postgres-backup (service de backup automatique)
+# (Le conteneur bot Telegram a été retiré du dépôt ; il n'existe plus dans compose prod.)
 ```
 <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
 read_file
@@ -241,7 +238,6 @@ curl -I https://recyclic.jarvos.eu
 
 # 5. Vérifier les logs pour erreurs critiques
 docker compose -p recyclic-prod -f docker-compose.prod.yml logs api | grep -i error
-docker compose -p recyclic-prod -f docker-compose.prod.yml logs bot | grep -i error
 docker compose -p recyclic-prod -f docker-compose.prod.yml logs frontend | grep -i error
 ```
 

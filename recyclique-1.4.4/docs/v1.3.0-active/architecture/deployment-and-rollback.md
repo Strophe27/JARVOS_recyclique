@@ -205,22 +205,11 @@ Le script enregistre automatiquement des métriques détaillées dans `logs/roll
 }
 ```
 
-### 5.2 Notifications Automatiques
+### 5.2 Notifications automatiques
 
-Le script envoie automatiquement des notifications via Telegram aux administrateurs :
+Le script `scripts/rollback.sh` journalise sur la console et peut envoyer un **email** si `NOTIFICATION_EMAIL` est défini (pas de canal Telegram).
 
-- **Notifications de succès** : Confirmation du rollback réussi
-- **Notifications d'échec** : Alerte en cas de problème
-- **Notifications d'annulation** : Information sur l'annulation
-- **Alertes d'urgence** : Alerte immédiate pour les échecs critiques
-
-**Configuration requise :**
-```bash
-TELEGRAM_BOT_TOKEN=your_bot_token
-ADMIN_TELEGRAM_IDS=123456789,987654321
-```
-
-Voir [Configuration des Notifications](./rollback-notifications-config.md) pour plus de détails.
+Voir [Configuration des Notifications](./rollback-notifications-config.md).
 
 ### 5.3 Surveillance Post-Rollback
 

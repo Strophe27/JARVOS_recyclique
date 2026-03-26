@@ -1,63 +1,38 @@
 # Configuration des Notifications de Rollback
 
-**Version :** 1.0  
-**Date :** 2025-01-27  
+**Version :** 1.1  
+**Date :** 2026-03-26  
 **Objectif :** Guide de configuration des notifications automatiques pour la procédure de rollback
+
+> **Changement produit (2026-03)** : les notifications **Telegram** (API rollback, sync, anomalies) ont été retirées. Le script `scripts/rollback.sh` journalise sur la console et peut envoyer un **email** si `NOTIFICATION_EMAIL` est défini.
 
 ---
 
-## 1. Variables d'Environnement Requises
+## 1. Variables d'environnement
 
-### 1.1 Notifications Telegram (Recommandé)
-
-```bash
-# Token du bot Telegram (obligatoire)
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-
-# IDs des administrateurs (obligatoire)
-# Format: ID1,ID2,ID3 (séparés par des virgules)
-ADMIN_TELEGRAM_IDS=123456789,987654321
-```
-
-### 1.2 Notifications Email (Optionnel)
+### 1.1 Notifications email (optionnel)
 
 ```bash
-# Email de notification (optionnel)
 NOTIFICATION_EMAIL=admin@recyclic.com
 ```
 
+Nécessite une commande `mail` fonctionnelle sur l'hôte qui exécute le script.
+
 ---
 
-## 2. Configuration dans .env
-
-Ajouter ces variables dans votre fichier `.env` :
+## 2. Configuration dans `.env`
 
 ```bash
 # === NOTIFICATIONS ROLLBACK ===
-# Telegram (recommandé)
-TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
-ADMIN_TELEGRAM_IDS=123456789,987654321
-
-# Email (optionnel)
 NOTIFICATION_EMAIL=admin@recyclic.com
 ```
 
 ---
 
-## 3. Obtenir les IDs Telegram
+## 3. Vérification
 
-### 3.1 Pour les Administrateurs
-
-1. **Démarrer le bot** : Envoyer `/start` au bot Recyclic
-2. **Obtenir l'ID** : Utiliser la commande `/id` ou consulter les logs du bot
-3. **Ajouter l'ID** : Ajouter l'ID à la variable `ADMIN_TELEGRAM_IDS`
-
-### 3.2 Vérification des IDs
-
-```bash
-# Tester les notifications
-bash scripts/rollback.sh --test-notifications
-```
+- Consulter la sortie console du script (chaque étape est loguée).
+- Si `NOTIFICATION_EMAIL` est défini, vérifier la réception après un rollback de test en environnement non production.
 
 ---
 
@@ -130,85 +105,51 @@ bash scripts/rollback.sh --test-notifications
 
 ---
 
-## 6. Exemple de Message Telegram
+## 6. Exemple de sortie console
 
-```
-✅ ROLLBACK NOTIFICATION
-
-Rollback réussi vers la version abc1234 sur production-server
-
-📋 Détails:
-• Version: abc1234
-• Timestamp: 2025-01-27 15:30:00
-• Hostname: production-server
-• User: deploy-user
-
-🔗 Logs: logs/rollback-metrics.json
-```
+Le script affiche des lignes préfixées (succès / échec / annulation) ; les détails restent dans `logs/rollback-metrics.json` selon la configuration du script.
 
 ---
 
 ## 7. Dépannage
 
-### 7.1 Notifications Telegram ne fonctionnent pas
-
-**Vérifications :**
-1. Token bot valide : `curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe"`
-2. IDs administrateurs corrects
-3. Bot autorisé à envoyer des messages aux admins
-
-### 7.2 Notifications Email ne fonctionnent pas
+### 7.1 Notifications email ne fonctionnent pas
 
 **Vérifications :**
 1. Serveur mail configuré (`mail` command disponible)
 2. Variable `NOTIFICATION_EMAIL` définie
 3. Permissions d'envoi d'email
 
-### 7.3 Test des Notifications
-
-```bash
-# Test complet des notifications
-bash scripts/rollback.sh --test-notifications
-
-# Test spécifique Telegram
-curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-  -d "chat_id=$ADMIN_TELEGRAM_IDS" \
-  -d "text=Test de notification rollback"
-```
-
 ---
 
 ## 8. Sécurité
 
-### 8.1 Protection des Tokens
+### 8.1 Secrets et `.env`
 
-- **Ne jamais** commiter les tokens dans le code
+- **Ne jamais** commiter mots de passe, clés API ou secrets dans le code
 - Utiliser des variables d'environnement
 - Restreindre l'accès au fichier `.env`
 
-### 8.2 Validation des IDs
+### 8.2 Destinataires
 
-- Vérifier que les IDs Telegram sont valides
-- Limiter les notifications aux administrateurs autorisés
-- Loguer toutes les tentatives de notification
+- Limiter `NOTIFICATION_EMAIL` aux adresses autorisées
+- Ne pas commiter d'adresses personnelles dans le dépôt
 
 ---
 
-## 9. Monitoring et Maintenance
+## 9. Monitoring et maintenance
 
-### 9.1 Surveillance des Notifications
+### 9.1 Surveillance
 
-- Vérifier régulièrement que les notifications arrivent
-- Monitorer les échecs d'envoi dans les logs
-- Tester les notifications après chaque déploiement
+- Relire les logs du script après chaque rollback
+- Vérifier `logs/rollback-metrics.json` en cas d'incident
 
 ### 9.2 Maintenance
 
-- Mettre à jour les IDs administrateurs si nécessaire
-- Renouveler les tokens si expirés
+- Mettre à jour `NOTIFICATION_EMAIL` si l'équipe change
 - Nettoyer les anciens logs de métriques
 
 ---
 
-**Dernière mise à jour :** 2025-01-27  
+**Dernière mise à jour :** 2026-03-26  
 **Responsable :** Équipe DevOps Recyclic

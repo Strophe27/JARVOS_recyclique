@@ -26,7 +26,7 @@ Ce document liste les **fonctionnalités réellement livrées et opérationnelle
 | Mot de passe oublié | Demande par email (Brevo) | `POST /v1/auth/forgot-password`, page `/forgot-password` |
 | Réinitialisation mot de passe | Avec token reçu par email | `POST /v1/auth/reset-password`, page `/reset-password` |
 | Connexion par PIN | Pour caisse / tablette | `POST /v1/auth/pin` |
-| Lien compte Telegram | Lier un compte Telegram à l’utilisateur (bot désactivé mais endpoint présent) | `POST /v1/users/link-telegram`, page `/telegram-auth` |
+| Liaison compte Telegram (héritage) | **Non active** : plus d’endpoint REST documenté pour cette liaison ; le service dédié a été retiré du code. La route `/telegram-auth` n’est pas un parcours utilisateur courant. | — |
 | Profil utilisateur | Consultation et mise à jour (nom, prénom, etc.) | `GET/PUT /v1/users/me`, page `/profil` |
 | Changement mot de passe / PIN | Depuis le profil | `PUT /v1/users/me/password`, `PUT /v1/users/me/pin` |
 | Permissions utilisateur | Liste des permissions de l’utilisateur connecté | `GET /v1/users/me/permissions` |

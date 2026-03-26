@@ -59,7 +59,6 @@ bash scripts/rollback.sh --help
 git tag test-version-1
 docker-compose build
 docker tag recyclic-api:latest recyclic-api:test-version-1
-docker tag recyclic-bot:latest recyclic-bot:test-version-1
 docker tag recyclic-frontend:latest recyclic-frontend:test-version-1
 
 # 2. Faire un petit changement pour simuler une nouvelle version
@@ -71,7 +70,6 @@ git commit -m "Test: simulate new version"
 git tag test-version-2
 docker-compose build
 docker tag recyclic-api:latest recyclic-api:test-version-2
-docker tag recyclic-bot:latest recyclic-bot:test-version-2
 docker tag recyclic-frontend:latest recyclic-frontend:test-version-2
 
 # 4. Vérifier que les images existent
@@ -91,7 +89,6 @@ docker images | grep recyclic
 # 1. Créer un fichier d'environnement pour la version 2
 cat > .env.test << EOF
 API_IMAGE_TAG=test-version-2
-BOT_IMAGE_TAG=test-version-2
 FRONTEND_IMAGE_TAG=test-version-2
 EOF
 
@@ -194,7 +191,6 @@ docker-compose ps
 
 # 3. Nettoyer les images de test
 docker rmi recyclic-api:test-version-1 recyclic-api:test-version-2
-docker rmi recyclic-bot:test-version-1 recyclic-bot:test-version-2
 docker rmi recyclic-frontend:test-version-1 recyclic-frontend:test-version-2
 
 # 4. Nettoyer les tags Git

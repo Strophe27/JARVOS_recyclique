@@ -6,6 +6,8 @@ Ce document compile les problèmes les plus courants rencontrés avec le systèm
 
 ## Bot Telegram
 
+> Cette section decrit un parcours historique. Si vous travaillez sur l'exploitation courante, privilegiez d'abord les guides de l'interface web et de l'administration.
+
 ### Problèmes de Connexion
 
 **Q : Le bot ne répond pas à mes commandes**
@@ -15,9 +17,9 @@ Ce document compile les problèmes les plus courants rencontrés avec le systèm
 - 🔧 **Solution avancée** : Redémarrez l'application Telegram et réessayez
 
 **Q : "Bot non trouvé" lors de la recherche**
-- ✅ Vérifiez le nom exact : `@RecyclicBot`
-- ✅ Assurez-vous que le bot est publié et accessible
-- 📞 Contactez l'administrateur si le problème persiste
+- ✅ Le bot Telegram ne fait plus partie du parcours utilisateur actif
+- 📚 Utilisez plutot les guides de l'interface web et de l'administration
+- 📞 Contactez l'administrateur si vous avez besoin d'un contexte historique precis
 
 ### Problèmes d'Enregistrement Vocal
 
@@ -232,7 +234,7 @@ Ce document compile les problèmes les plus courants rencontrés avec le systèm
 ## Ressources Supplémentaires
 
 ### Documentation Complète
-- 📚 [Guide Bot Telegram](./bot-telegram-guide.md)
+- Guide Bot Telegram : retire (2026-03-26) ; le canal n'est plus actif — voir `docs/architecture-current/`.
 - 📋 [Manuel Interface Caisse](./interface-caisse-manual.md)
 - 👥 [Guide Admin Dashboard](./admin-dashboard-guide.md)
 

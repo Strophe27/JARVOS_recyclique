@@ -104,13 +104,6 @@ class UserStatusUpdate(BaseModel):
     is_active: bool
     reason: Optional[str] = None
 
-class LinkTelegramRequest(BaseModel):
-    """Corps attendu par ``POST .../link-telegram`` (flux Telegram retiré — réponse 410 Gone)."""
-
-    username: str
-    password: str
-    telegram_id: str
-
 from pydantic import field_validator, ConfigDict
 
 

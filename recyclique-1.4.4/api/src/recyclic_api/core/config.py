@@ -23,13 +23,6 @@ class Settings(BaseSettings):
     # Semver produit (Dockerfile ARG APP_VERSION, surcharge compose `environment`)
     APP_VERSION: str = "1.4.4"
     
-    # Telegram
-    TELEGRAM_BOT_URL: str | None = None
-    TELEGRAM_BOT_TOKEN: str | None = None  # For validating bot requests
-    ADMIN_TELEGRAM_IDS: str | None = None
-    # Notifications HTTP vers le bot (approbations, sync, monitoring). False = no-op / logs uniquement.
-    TELEGRAM_NOTIFICATIONS_ENABLED: bool = False
-
     # Environment
     ENVIRONMENT: str = "development"
     ECOLOGIC_EXPORT_DIR: str = "/app/exports"
@@ -144,10 +137,6 @@ if os.getenv("TESTING") == "true":
     settings.ENVIRONMENT = "test"
     if settings.TEST_DATABASE_URL:
         settings.DATABASE_URL = settings.TEST_DATABASE_URL
-    # In tests, always use a fixed bot token to ensure deterministic behavior
-    settings.TELEGRAM_BOT_TOKEN = "test_bot_token_123"
-
-
 
 
 

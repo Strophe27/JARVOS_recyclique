@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from recyclic_api.core.database import get_db
@@ -9,15 +9,12 @@ from recyclic_api.schemas.user import (
     UserCreate,
     UserUpdate,
     UserStatusUpdate,
-    LinkTelegramRequest,
     UserSelfUpdate,
     PasswordChangeRequest,
 )
 from recyclic_api.schemas.pin import PinSetRequest
 from recyclic_api.core.auth import require_role_strict, get_current_user, get_user_permissions
 from recyclic_api.core.security import hash_password
-from recyclic_api.services.telegram_link_service import TELEGRAM_LINK_DISABLED_DETAIL
-from recyclic_api.utils.rate_limit import conditional_rate_limit
 
 router = APIRouter()
 
@@ -250,35 +247,3 @@ async def delete_user(user_id: str, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"message": "User deleted successfully"}
-
-
-@conditional_rate_limit("5/minute")
-@router.post(
-    "/link-telegram",
-    responses={
-        410: {
-            "description": "Fonctionnalité retirée — la liaison Telegram n'est plus proposée.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": TELEGRAM_LINK_DISABLED_DETAIL},
-                }
-            },
-        },
-    },
-)
-async def link_telegram_account(_body: LinkTelegramRequest, request: Request):
-    """Ancienne liaison compte Telegram — désactivée (410 Gone).
-
-    Le corps reste validé comme auparavant pour un contrat stable côté clients ;
-    aucune écriture en base n'est effectuée.
-
-    Limite de taux : 5 requêtes par minute.
-    """
-    raise HTTPException(
-        status_code=status.HTTP_410_GONE,
-        detail=TELEGRAM_LINK_DISABLED_DETAIL,
-    )
-
-
-
-

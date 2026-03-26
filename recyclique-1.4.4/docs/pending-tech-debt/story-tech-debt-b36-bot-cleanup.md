@@ -28,7 +28,7 @@ Suite à la décision de désactiver le service du bot Telegram (story `STORY-B3
 
 ## Acceptance Criteria
 
-1.  Les services backend liés au bot (`telegram_service.py`, `telegram_link_service.py`, etc.) sont supprimés.
+1.  Les services backend liés au bot sont supprimés (le module de **notifications sortantes** `telegram_service.py` a été retiré en 2026-03 ; reliquats `telegram_id` / schémas / UI font l'objet d'autres lots).
 2.  Les endpoints API liés au bot sont supprimés.
 3.  Les champs liés à Telegram (ex: `telegram_id`) sont supprimés des modèles de base de données et des schémas Pydantic, avec une migration Alembic pour appliquer les changements.
 4.  La page frontend `TelegramAuth.jsx` et sa route sont supprimées.
@@ -37,7 +37,8 @@ Suite à la décision de désactiver le service du bot Telegram (story `STORY-B3
 ## Tasks / Subtasks
 
 - [ ] **Nettoyage Backend :**
-    - [ ] Supprimer les fichiers de service : `telegram_service.py`, `telegram_link_service.py`.
+    - [x] Supprimer `telegram_service.py` (notifications sortantes API — fait 2026-03).
+    - [ ] Supprimer les autres reliquats services / endpoints bot encore présents.
     - [ ] Supprimer les endpoints API liés au bot.
     - [ ] Modifier les modèles de données (ex: `User`) pour supprimer les champs `telegram_id`.
     - [ ] Créer une migration Alembic pour supprimer les colonnes correspondantes de la base de données.

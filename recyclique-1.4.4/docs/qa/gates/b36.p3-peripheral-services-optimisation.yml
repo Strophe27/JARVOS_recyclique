@@ -47,7 +47,7 @@ recommendations:
   immediate: []
   future:
     - action: "Consider alternative notification system (email, SMS)"
-      refs: ["api/src/recyclic_api/services/telegram_service.py"]
+      refs: ["api/src/recyclic_api/services/sync_service.py"]
     - action: "Plan migration strategy for telegram_id fields"
       refs: ["api/src/recyclic_api/models/user.py"]
     - action: "Evaluate need for Telegram authentication page"

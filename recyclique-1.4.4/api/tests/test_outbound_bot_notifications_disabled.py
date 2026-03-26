@@ -1,48 +1,35 @@
-"""Canal sortant bot (ex-Telegram) désactivé par défaut — TELEGRAM_NOTIFICATIONS_ENABLED (sans migration DB)."""
+"""Ancien canal sortant bot / Telegram : retiré côté API (sync / anomalies / admin test)."""
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+import logging
 
 import pytest
 
 from recyclic_api.core.config import settings
-from recyclic_api.services import sync_service
 from recyclic_api.services.sync_service import KDriveSyncService, UploadFailedError
-from recyclic_api.services.telegram_service import telegram_service
 
 
 @pytest.mark.asyncio
-async def test_service_no_http_when_channel_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", False)
-    with patch("recyclic_api.services.telegram_service.httpx.AsyncClient") as mock_client:
-        ok = await telegram_service.notify_sync_failure("f", "r", "err")
-    mock_client.assert_not_called()
-    assert ok is True
-
-
-@pytest.mark.asyncio
-async def test_anomaly_alerts_skipped_when_channel_disabled(
-    monkeypatch: pytest.MonkeyPatch,
+async def test_anomaly_alerts_logs_only_no_external_channel(
     db_session,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     from recyclic_api.services.anomaly_detection_service import AnomalyDetectionService
 
-    monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", False)
+    caplog.set_level(logging.WARNING)
     svc = AnomalyDetectionService(db_session)
     anomalies = {
         "summary": {"total_anomalies": 1, "critical_anomalies": 0},
         "anomalies": {"cash_anomalies": [{"type": "cash_variance", "severity": "medium"}]},
     }
-    with patch("recyclic_api.services.anomaly_detection_service.telegram_service") as mock_ts:
-        mock_ts.notify_sync_failure = AsyncMock(return_value=True)
-        ok = await svc.send_anomaly_notifications(anomalies)
+    ok = await svc.send_anomaly_notifications(anomalies)
     assert ok is True
-    mock_ts.notify_sync_failure.assert_not_called()
+    assert any("pas de canal de notification sortant" in r.message for r in caplog.records)
 
 
-def test_admin_health_test_notifications_always_unavailable(admin_client) -> None:
-    """Le flux admin ne déclenche plus d'envoi, quel que soit TELEGRAM_NOTIFICATIONS_ENABLED."""
+def test_admin_health_test_notifications_unavailable(admin_client) -> None:
+    """Le flux admin ne déclenche plus d'envoi."""
     url = f"{settings.API_V1_STR.rstrip('/')}/admin/health/test-notifications"
     response = admin_client.post(url)
     assert response.status_code == 200
@@ -51,21 +38,8 @@ def test_admin_health_test_notifications_always_unavailable(admin_client) -> Non
     assert "Telegram" in body["message"]
 
 
-def test_admin_health_test_notifications_still_unavailable_when_flag_true(
-    admin_client, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", True)
-    monkeypatch.setattr(settings, "ADMIN_TELEGRAM_IDS", "123")
-    url = f"{settings.API_V1_STR.rstrip('/')}/admin/health/test-notifications"
-    with patch("recyclic_api.services.telegram_service.httpx.AsyncClient") as mock_client:
-        response = admin_client.post(url)
-    assert response.status_code == 200
-    assert response.json()["status"] == "unavailable"
-    mock_client.assert_not_called()
-
-
-def test_sync_failure_does_not_schedule_notify_when_channel_disabled(
-    monkeypatch: pytest.MonkeyPatch,
+def test_sync_failure_logs_warning_no_task(
+    caplog: pytest.LogCaptureFixture,
     tmp_path,
 ) -> None:
     local_file = tmp_path / "failure.csv"
@@ -85,18 +59,9 @@ def test_sync_failure_does_not_schedule_notify_when_channel_disabled(
         return _FailClient()
 
     service = KDriveSyncService(client_factory=_factory, max_retries=1, retry_delay_seconds=0)
-    monkeypatch.setattr(settings, "ADMIN_TELEGRAM_IDS", "123")
-    monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", False)
-
-    calls: list[object] = []
-
-    async def fake_notify(*_a, **_kw):
-        calls.append(True)
-        return True
-
-    monkeypatch.setattr(sync_service.telegram_service, "notify_sync_failure", fake_notify)
+    caplog.set_level(logging.WARNING)
 
     with pytest.raises(UploadFailedError):
         service.upload_file_to_kdrive(local_file, "/exports/failure.csv")
 
-    assert calls == []
+    assert any("no external alert channel" in r.message for r in caplog.records)

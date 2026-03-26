@@ -1,5 +1,7 @@
 # Epic 4: Bot Telegram IA & Classification
 
+> **Historique (2026-03-26)** : epic PRD fige a une epoque ou le bot Telegram etait central ; ne pas lire comme specification active. Gates QA associes retires ; etat courant : API et architecture actuelle.
+
 **Objectif :** Implémenter le cœur du système - le workflow vocal via Telegram avec classification automatique EEE. Les bénévoles peuvent enregistrer des dépôts par audio, l'IA classifie automatiquement, et l'utilisateur valide ou corrige. Délivre la valeur métier principale du projet.
 
 ## Story 4.1: Commande /depot et Enregistrement Vocal

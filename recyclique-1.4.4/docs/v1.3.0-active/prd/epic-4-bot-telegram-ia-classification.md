@@ -1,5 +1,7 @@
 # Epic 4: Bot Telegram IA & Classification
 
+> **Historique (2026-03-26)** : copie v1.3.0-active conservee a titre d'archive ; le canal Telegram n'est plus la reference produit. Voir `docs/architecture-current/`.
+
 **Objectif :** Implémenter le cœur du système - le workflow vocal via Telegram avec classification automatique EEE. Les bénévoles peuvent enregistrer des dépôts par audio, l'IA classifie automatiquement, et l'utilisateur valide ou corrige. Délivre la valeur métier principale du projet.
 
 ## Story 4.1: Commande /depot et Enregistrement Vocal

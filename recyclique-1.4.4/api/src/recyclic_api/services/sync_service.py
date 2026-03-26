@@ -17,7 +17,6 @@ else:
     _WEBDAV_IMPORT_ERROR = None
 
 from recyclic_api.core.config import settings
-from recyclic_api.services.telegram_service import telegram_service
 
 logger = logging.getLogger(__name__)
 
@@ -174,31 +173,13 @@ class KDriveSyncService:
         remote_path: str,
         error: Exception | None,
     ) -> None:
-        if not settings.ADMIN_TELEGRAM_IDS:
-            return
-        if not settings.TELEGRAM_NOTIFICATIONS_ENABLED:
-            logger.info(
-                "kDrive sync failure notification skipped — TELEGRAM_NOTIFICATIONS_ENABLED=false "
-                "(file=%s)",
-                local_file,
-            )
-            return
-
-        async def _notify() -> None:
-            try:
-                await telegram_service.notify_sync_failure(
-                    file_path=str(local_file),
-                    remote_path=remote_path,
-                    error_message=str(error) if error else "Unknown error",
-                )
-            except Exception as exc:  # noqa: BLE001 - avoid crashing callers
-                logger.error("Failed to send sync failure notification: %s", exc)
-
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(_notify())
-        except RuntimeError:
-            asyncio.run(_notify())
+        """Journalise l'échec sync kDrive (canal Telegram / HTTP sortant retiré)."""
+        logger.warning(
+            "kDrive upload failed after retries — no external alert channel (file=%s remote=%s err=%s)",
+            local_file,
+            remote_path,
+            error,
+        )
 
 
 def schedule_periodic_kdrive_sync() -> Optional[asyncio.Task]:

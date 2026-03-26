@@ -53,4 +53,4 @@ recommendations:
     - action: "Considérer l'ajout de pagination pour la liste des utilisateurs en attente"
       refs: ["frontend/src/pages/Admin/PendingUsers.tsx"]
     - action: "Implémenter un système de notifications push pour les admins"
-      refs: ["api/src/recyclic_api/services/telegram_service.py"]
+      refs: ["api/src/recyclic_api/api/api_v1/endpoints/admin.py"]

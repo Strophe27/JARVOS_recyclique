@@ -1,5 +1,9 @@
 # Recyclic Brownfield Enhancement Architecture
 
+> Note 2026-03-26 : document d'architecture conserve pour contexte historique.
+> Certaines sections decrivent encore une architecture centree sur un bot Telegram et des appels a `POST /deposits/{id}/classify`.
+> Ce document ne doit plus etre lu comme la reference du contrat runtime courant sans recoupement avec l'etat actuel du code et des routes actives.
+
 **Author:** Winston (Architect)  
 **Date:** 2025-09-09  
 **Version:** 2.0  

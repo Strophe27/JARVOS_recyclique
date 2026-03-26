@@ -122,7 +122,7 @@ Ici, il faudra etre plus fin que sur les lots precedents :
 
 ### 3. Eventuels reliquats mineurs
 
-- methode morte `check_telegram_id_conflict` dans `telegram_link_service.py`
+- ~~methode morte dans `telegram_link_service.py`~~ : **paquet 5 (2026-03-26)** — `telegram_link_service.py`, test `test_telegram_link_arch03.py` et `TelegramLinkDisabledError` supprimes ; doublon `api/api/` retire
 - fichiers / tests orphelins lies a Telegram
 - documentation ou OpenAPI statique a regenerer si necessaire
 
