@@ -25,10 +25,6 @@ class AuthUser(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    telegram_id: Optional[str] = Field(
-        None,
-        description="Identifiant Telegram tel qu'en base (chaîne ; peut être non numérique).",
-    )
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None

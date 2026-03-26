@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 interface User {
   id: string
-  /** Identifiant Telegram : nombre (API historique) ou chaîne (ex. id non numérique / test). Aligné sur `authStore` / persistance JSON. */
+  /** Optionnel : persistance JSON héritée ou champs annexes ; le login ne renvoie plus ce champ. */
   telegram_id?: string | number
   username: string
   first_name?: string

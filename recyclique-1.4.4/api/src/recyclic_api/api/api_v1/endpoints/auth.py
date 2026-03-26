@@ -281,7 +281,6 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
             # Fallback: construction manuelle si model_validate échoue
             auth_user = AuthUser(
                 id=str(user.id),
-                telegram_id=user.telegram_id,
                 username=user.username,
                 first_name=user.first_name,
                 last_name=user.last_name,

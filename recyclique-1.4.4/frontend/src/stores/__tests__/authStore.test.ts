@@ -199,14 +199,13 @@ describe('authStore', () => {
       expect(useAuthStore.getState().loading).toBe(false);
     });
 
-    it('conserve un telegram_id alphanumerique après login', async () => {
+    it('login sans telegram_id dans la réponse : currentUser sans telegram_id', async () => {
       const mockResponse = {
         access_token: 'test-token',
         token_type: 'bearer',
         user: {
           id: '1',
           username: 'tgui',
-          telegram_id: 'tg_alpha_session',
           role: 'user',
           status: 'approved',
           is_active: true,
@@ -220,31 +219,7 @@ describe('authStore', () => {
       const { login } = useAuthStore.getState();
       await login('tgui', 'testpass');
 
-      expect(useAuthStore.getState().currentUser?.telegram_id).toBe('tg_alpha_session');
-    });
-
-    it('normalise une chaîne purement numérique en nombre', async () => {
-      const mockResponse = {
-        access_token: 'test-token',
-        token_type: 'bearer',
-        user: {
-          id: '1',
-          username: 'u',
-          telegram_id: '123456789',
-          role: 'user',
-          status: 'approved',
-          is_active: true,
-          created_at: '2023-01-01T00:00:00Z',
-          updated_at: '2023-01-01T00:00:00Z',
-        },
-      };
-
-      vi.mocked(AuthApi.apiv1authloginpost).mockResolvedValue(mockResponse);
-
-      const { login } = useAuthStore.getState();
-      await login('u', 'testpass');
-
-      expect(useAuthStore.getState().currentUser?.telegram_id).toBe(123456789);
+      expect(useAuthStore.getState().currentUser?.telegram_id).toBeUndefined();
     });
   });
 

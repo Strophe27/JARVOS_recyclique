@@ -126,7 +126,6 @@ async def approve_user(
             data={
                 "user_id": str(user.id),
                 "status": user.status.value,
-                "telegram_id": user.telegram_id
             },
             message=(
                 f"Utilisateur {label} approuvé avec succès"

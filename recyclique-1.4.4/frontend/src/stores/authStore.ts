@@ -7,7 +7,7 @@ import { getTokenExpiration } from '../utils/jwt';
 
 export interface User {
   id: string;
-  /** Identifiant Telegram : nombre (API historique) ou chaîne (ex. id non numérique / test). */
+  /** Présent si fourni par `GET /v1/users/me` (hors contrat login). */
   telegram_id?: string | number;
   username?: string;
   first_name?: string;
@@ -485,7 +485,7 @@ function parseApiUserRole(raw: unknown): UserRole {
   return UserRole.USER;
 }
 
-/** Extrait `telegram_id` depuis la réponse API sans perdre les valeurs non numériques. */
+/** Extrait `telegram_id` depuis un profil API (ex. GET /v1/users/me), pas depuis le login. */
 function parseTelegramIdFromApi(raw: unknown): string | number | undefined {
   if (raw == null || raw === '') return undefined;
   if (typeof raw === 'number') {

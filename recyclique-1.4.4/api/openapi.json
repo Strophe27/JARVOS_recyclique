@@ -10840,18 +10840,6 @@
             "type": "string",
             "title": "Id"
           },
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id",
-            "description": "Identifiant Telegram tel qu'en base (chaîne ; peut être non numérique)."
-          },
           "username": {
             "anyOf": [
               {

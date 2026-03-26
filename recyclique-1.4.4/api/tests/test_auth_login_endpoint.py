@@ -70,8 +70,8 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
 
-    def test_login_success_non_numeric_telegram_id(self, client: TestClient, db_engine, db_session: Session):
-        """Le login doit sérialiser un telegram_id alphanumérique comme en base (VARCHAR), sans erreur 500."""
+    def test_login_success_user_with_telegram_in_db_omits_telegram_in_auth_payload(self, client: TestClient, db_engine, db_session: Session):
+        """Le contrat login (AuthUser) n'expose plus telegram_id même si la ligne user en base en a un."""
         username = f"testuser_tg_alpha_{uuid.uuid4().hex}"
         telegram_handle = "tg_login_alpha_42"
         hashed_password = hash_password("testpassword123")
@@ -94,9 +94,8 @@ class TestAuthLoginEndpoint:
 
         assert response.status_code == 200, response.text
         data = response.json()
-        validated = LoginResponse(**data)
-        assert validated.user.telegram_id == telegram_handle
-        assert data["user"]["telegram_id"] == telegram_handle
+        LoginResponse(**data)
+        assert "telegram_id" not in data["user"]
 
     def test_login_failure_invalid_username(self, client: TestClient, db_engine, db_session: Session):
         """Test d'échec de connexion avec un nom d'utilisateur invalide"""
