@@ -4343,6 +4343,25 @@ Retirer tout appel client a `POST /v1/users/link-telegram` ; conserver la route 
 
 ---
 
+## Paquet QA / handoff — 2026-03-26
+
+**Objectif:** cloture de suivi des lots a faible risque et bilan des seuls vrais freins restants.
+
+### Verification worktree (session QA)
+- Depot `JARVOS_recyclique` : branche `chore/v1.4.5-consolidation`, **alignee** `origin/chore/v1.4.5-consolidation`, **working tree clean** (plus de fichier local hors lot signale dans l'artefact `2026-03-26_02` pour `tests/test_admin_pending_endpoints.py` — etat integre ou abandonne cote Git).
+- Un seul worktree enregistre (racine du repo).
+
+### Bilan express
+- **Ferme / stabilise:** la sequence Telegram backend (`2BD`–`2BH`), le gel contractuel bot `2BI`, les alignements `telegram_id` et affichages admin (`2BJ`–`2BN`), le paquet frontend formulaires Zod (`FE-TG-03`, `09`, `10`) et `FE-TG-12` (`/telegram-auth` sans liaison API).
+- **Executable mais non trivial (risque moyen+):** reliquats UI session / header / greeting (`Header.jsx`, `AdminLayout.jsx`, `Reception.tsx`) ; migration eventuelle `UserListTable.test.tsx` Jest → Vitest ; paquet formulaires Mantine / RHF — **volontairement non force** dans ce paquet QA.
+- **Bloque par decision produit / contrat:** retrait ou remplacement de `get_bot_token_dependency` / `X-Bot-Token` sur `PUT /deposits/{id}` — enterine comme **hors scope** dans le lot `2BI` tant qu'aucune auth de remplacement n'est decidee (note : l'identifiant « TL-02 » n'existe pas dans le repo ; ce bloc correspond a cette dette ciblee).
+- **Bloque par environnement:** regeneration de `api/openapi.json` statique — reserve journalisee (`DATABASE_URL`, `REDIS_URL`, `SECRET_KEY` manquants en local pour un export fiable).
+
+### Artefact de reference
+- `references/artefacts/2026-03-26_03_qa-handoff-paquet-final-consolidation.md`
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:
