@@ -3834,6 +3834,27 @@ Reutiliser le helper `username_or_telegram_id` pour le parametre `username` des 
 
 ---
 
+## Micro-lot 4K — `admin_observability` + `username_or_telegram_id`
+
+### Theme
+Reutiliser le helper `username_or_telegram_id` pour le parametre `username` de l'unique appel `log_admin_access` dans `get_email_logs` (`admin_observability.py`), en conservant la semantique stricte `username or telegram_id` ; aucun changement aux schemas JSON (`EmailLogListResponse` inchangé).
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin_observability.py`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `pytest tests/test_admin_observability_endpoints.py tests/test_user_identity.py` : **8 OK, 1 skip** (warnings Pydantic hors sujet)
+- `pytest tests/test_email_logs_endpoint.py::TestEmailLogsEndpoint::test_get_email_logs_success_admin` : **1 OK** (controle route `/admin/email-logs`)
+- Diagnostics IDE / lints sur le fichier endpoint modifie : **0 probleme**
+
+### Resultat / mini-QA
+- Seul `get_email_logs` appelait `log_admin_access` avec `username=current_user.username` ; les autres routes observabilite n'ont pas d'audit admin access dans ce module.
+- Valeur passee a `log_admin_access` identique a `current_user.username or current_user.telegram_id` via le helper aligne sur 4I/4J.
+- Lot ferme ; pret commit/push si worktree reste limite a ces fichiers.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3873,13 +3894,14 @@ Reutiliser le helper `username_or_telegram_id` pour le parametre `username` des 
 - **Vague 4:** lot `4H` ferme sur helper core `username_or_telegram_id` + usage dans `SaleService` (audit prix item)
 - **Vague 4:** lot `4I` ferme sur `admin_users_history` : `log_admin_access` via `username_or_telegram_id`
 - **Vague 4:** lot `4J` ferme sur `admin_users_read` : `log_admin_access` via `username_or_telegram_id`
+- **Vague 4:** lot `4K` ferme sur `admin_observability` (`get_email_logs`) : `log_admin_access` via `username_or_telegram_id`
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre la coherence `telegram_id` / fallbacks sur d'autres surfaces faible risque si le backlog le demande
