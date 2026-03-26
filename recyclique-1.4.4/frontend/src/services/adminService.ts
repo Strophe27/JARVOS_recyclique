@@ -14,6 +14,7 @@ import {
   AdminApi
 } from '../generated';
 import axiosClient from '../api/axiosClient';
+import { fullNameOrUsernameOrTelegramFallback } from '../utils/userDisplay';
 
 // Types locaux pour l'historique
 export interface HistoryEvent {
@@ -80,9 +81,12 @@ function convertToAdminUser(user: UserResponse): AdminUser {
     username: user.username,
     first_name: user.first_name,
     last_name: user.last_name,
-    full_name: user.first_name && user.last_name
-      ? `${user.first_name} ${user.last_name}`
-      : user.username || `User ${user.telegram_id}`,
+    full_name: fullNameOrUsernameOrTelegramFallback(
+      user.first_name,
+      user.last_name,
+      user.username,
+      user.telegram_id,
+    ),
     email: (user as any).email ?? null,
     phone_number: (user as any).phone_number ?? null,
     address: (user as any).address ?? null,
