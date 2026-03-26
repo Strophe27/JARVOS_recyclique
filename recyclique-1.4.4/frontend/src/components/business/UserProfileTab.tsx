@@ -455,12 +455,17 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
                 </Text>
               </Group>
-              <Group justify="space-between">
-                <Text size="sm">ID Telegram:</Text>
-                <Text size="sm" fw={500}>
-                  {user.telegram_id}
-                </Text>
-              </Group>
+              {user.telegram_id !== undefined &&
+                user.telegram_id !== null &&
+                user.telegram_id !== '' &&
+                Boolean(user.username) && (
+                  <Group justify="space-between">
+                    <Text size="sm">ID Telegram:</Text>
+                    <Text size="sm" fw={500}>
+                      {user.telegram_id}
+                    </Text>
+                  </Group>
+                )}
               <Group justify="space-between">
                 <Text size="sm">Email:</Text>
                 <Text size="sm" fw={500}>

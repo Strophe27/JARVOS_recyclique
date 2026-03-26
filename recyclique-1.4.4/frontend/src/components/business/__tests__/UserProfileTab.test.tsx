@@ -63,6 +63,21 @@ describe('UserProfileTab', () => {
     expect(screen.getByText('Oui')).toBeInTheDocument();
   });
 
+  it('n\'affiche pas la ligne ID Telegram en doublon quand le repli @ repose sur telegram_id seul', () => {
+    renderWithProvider(
+      <UserProfileTab
+        user={{
+          ...mockUser,
+          username: undefined,
+          telegram_id: 'tg_sans_username',
+        }}
+      />
+    );
+
+    expect(screen.getByText('@tg_sans_username')).toBeInTheDocument();
+    expect(screen.queryByText('ID Telegram:')).not.toBeInTheDocument();
+  });
+
   it('affiche le bouton de modification', () => {
     renderWithProvider(<UserProfileTab user={mockUser} />);
     
