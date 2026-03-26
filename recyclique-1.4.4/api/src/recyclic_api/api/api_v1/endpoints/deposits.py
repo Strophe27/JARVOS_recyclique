@@ -1,21 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
 from datetime import datetime, timezone
 from uuid import UUID
 from recyclic_api.core.database import get_db
-from recyclic_api.core.bot_auth import get_bot_token_dependency
+from recyclic_api.core.bot_auth import get_bot_token_dependency, TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL
 from recyclic_api.models.deposit import Deposit, DepositStatus
 from recyclic_api.schemas.deposit import DepositResponse, DepositCreate, DepositCreateFromBot, DepositFinalize
-from recyclic_api.services.classification_service import classify_deposit_audio
-from recyclic_api.models.deposit import EEECategory
-try:
-    import recyclic_api.services.audio_processing_service as aps
-except Exception:
-    aps = None
-from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.core.security import hash_password
 
 router = APIRouter()
 
@@ -42,149 +34,55 @@ async def create_deposit(deposit: DepositCreate, db: Session = Depends(get_db)):
     db.refresh(db_deposit)
     return db_deposit
 
-@router.post("/from-bot", response_model=DepositResponse)
-async def create_deposit_from_bot(
-    deposit: DepositCreateFromBot,
-    db: Session = Depends(get_db),
-    bot_token: str = Depends(get_bot_token_dependency)
-):
-    """Create new deposit from Telegram bot"""
-    # Resolve or create a user by telegram_user_id
-    user = db.query(User).filter(User.telegram_id == str(deposit.telegram_user_id)).first()
-    if not user:
-        user = User(
-            username=f"tg_{deposit.telegram_user_id}",
-            telegram_id=str(deposit.telegram_user_id),
-            hashed_password=hash_password("bot_placeholder_password"),
-            role=UserRole.USER,
-            status=UserStatus.APPROVED,
-            is_active=True,
-        )
-        db.add(user)
-        db.flush()
+@router.post(
+    "/from-bot",
+    responses={
+        410: {
+            "description": "Fonctionnalité retirée — création de dépôt via le bot Telegram n'est plus proposée.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL},
+                }
+            },
+        },
+    },
+)
+async def create_deposit_from_bot(_deposit: DepositCreateFromBot):
+    """Ancienne création de dépôt via le bot Telegram — désactivée (410 Gone).
 
-    db_deposit = Deposit(
-        user_id=user.id,
-        telegram_user_id=deposit.telegram_user_id,
-        audio_file_path=deposit.audio_file_path,
-        status=deposit.status
+    Le corps reste validé comme auparavant pour un contrat stable côté clients ;
+    aucune écriture en base n'est effectuée.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL,
     )
 
-    db.add(db_deposit)
-    db.commit()
-    db.refresh(db_deposit)
-    return db_deposit
 
-@router.post("/{deposit_id}/classify", response_model=DepositResponse)
-async def classify_deposit(
-    deposit_id: UUID,
-    db: Session = Depends(get_db),
-    bot_token: str = Depends(get_bot_token_dependency)
-):
+@router.post(
+    "/{deposit_id}/classify",
+    responses={
+        410: {
+            "description": "Fonctionnalité retirée — classification audio via le bot Telegram n'est plus proposée.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL},
+                }
+            },
+        },
+    },
+)
+async def classify_deposit(deposit_id: UUID):
+    """Ancienne classification de dépôt déclenchée par le bot — désactivée (410 Gone).
+
+    L'identifiant de dépôt est accepté dans l'URL pour conserver le contrat de route ;
+    aucune lecture ni écriture en base n'est effectuée.
     """
-    Classify deposit using LangChain + Gemini AI classification service.
-
-    This endpoint implements Story 4.2 requirements:
-    - Audio transcription using Google Speech-to-Text
-    - EEE classification using LangChain + Gemini LLM
-    - Confidence scoring and alternative suggestions
-    - Proper status management and error handling
-    """
-    # Bot token is validated by the dependency
-
-    # Get the deposit
-    deposit = db.query(Deposit).filter(Deposit.id == deposit_id).first()
-    if not deposit:
-        raise HTTPException(status_code=404, detail="Deposit not found")
-
-    if not deposit.audio_file_path:
-        raise HTTPException(status_code=400, detail="No audio file attached to deposit")
-
-    if deposit.status not in [DepositStatus.PENDING_AUDIO, DepositStatus.CLASSIFICATION_FAILED]:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Deposit status must be pending_audio or classification_failed, got: {deposit.status}"
-        )
-
-    # Update status to processing
-    deposit.status = DepositStatus.AUDIO_PROCESSING
-    db.commit()
-
-    try:
-        # Prefer legacy audio processing service if available (compatibility with older tests)
-        if aps is not None and hasattr(aps, 'process_deposit_audio') and ('AsyncMock' in str(type(aps.process_deposit_audio))):
-            legacy = await aps.process_deposit_audio(deposit.audio_file_path)
-            # Map legacy keys to Story 4.2 structure
-            cat = legacy.get("category")
-            if isinstance(cat, str):
-                cat_key = cat.upper()
-                if cat_key in EEECategory.__members__:
-                    mapped_category = EEECategory[cat_key].value
-                else:
-                    mapped_category = cat.lower()
-            else:
-                mapped_category = None
-            # Map status
-            legacy_status = legacy.get("status")
-            if isinstance(legacy_status, str) and legacy_status.lower() == "classified":
-                mapped_status = DepositStatus.CLASSIFIED
-            else:
-                mapped_status = DepositStatus.PENDING_VALIDATION
-
-            result = {
-                "success": legacy.get("success", False),
-                "transcription": legacy.get("transcription"),
-                "eee_category": mapped_category,
-                "confidence_score": legacy.get("confidence"),
-                "alternative_categories": None,
-                "reasoning": legacy.get("reasoning", ""),
-                "status": mapped_status,
-            }
-        else:
-            # Process the audio using the new LangChain + Gemini classification service
-            result = await classify_deposit_audio(deposit.audio_file_path)
-
-        if result["success"]:
-            # Update deposit with Story 4.2 classification results
-            deposit.status = result["status"]
-
-            # Map to new Story 4.2 fields
-            deposit.transcription = result.get("transcription")
-            deposit.eee_category = result.get("eee_category")
-            deposit.confidence_score = result.get("confidence_score")
-            deposit.alternative_categories = result.get("alternative_categories")
-
-            # Update legacy fields for backward compatibility
-            if result.get("eee_category"):
-                deposit.category = result["eee_category"]
-            if result.get("confidence_score"):
-                deposit.ai_confidence = result["confidence_score"]
-            if result.get("transcription"):
-                deposit.description = result["transcription"]
-            if result.get("reasoning"):
-                deposit.ai_classification = result["reasoning"]
-        else:
-            # Set failure status according to Story 4.2
-            deposit.status = DepositStatus.CLASSIFICATION_FAILED
-
-            # Store error information in transcription for debugging
-            if result.get("transcription"):
-                deposit.transcription = result["transcription"]
-
-            # Store error details
-            error_msg = result.get("error", "Unknown classification error")
-            deposit.ai_classification = f"Classification failed: {error_msg}"
-
-        db.commit()
-        db.refresh(deposit)
-        return deposit
-
-    except Exception as e:
-        # Set failure status on unexpected errors
-        deposit.status = DepositStatus.CLASSIFICATION_FAILED
-        deposit.ai_classification = f"Classification error: {str(e)}"
-        db.commit()
-        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
+    _ = deposit_id  # segment d'URL requis pour la stabilité du chemin
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL,
+    )
 
 @router.put("/{deposit_id}", response_model=DepositResponse)
 async def finalize_deposit(
@@ -246,7 +144,9 @@ async def finalize_deposit(
         }
 
         if isinstance(deposit.alternative_categories, dict):
-            deposit.alternative_categories.update({"correction_info": correction_info})
+            merged = dict(deposit.alternative_categories)
+            merged["correction_info"] = correction_info
+            deposit.alternative_categories = merged
         else:
             deposit.alternative_categories = {"correction_info": correction_info}
 
@@ -272,7 +172,9 @@ async def finalize_deposit(
         }
 
         if isinstance(deposit.alternative_categories, dict):
-            deposit.alternative_categories.update({"validation_info": validation_info})
+            merged = dict(deposit.alternative_categories)
+            merged["validation_info"] = validation_info
+            deposit.alternative_categories = merged
         else:
             deposit.alternative_categories = {"validation_info": validation_info}
     else:

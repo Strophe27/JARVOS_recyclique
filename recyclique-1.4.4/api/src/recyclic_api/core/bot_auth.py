@@ -1,10 +1,20 @@
 """
 Bot authentication utilities for validating Telegram bot requests.
+
+Les routes ``POST .../deposits/from-bot`` et ``POST .../deposits/{id}/classify``
+ne passent plus par ce module : elles répondent **410 Gone** (détail stable
+``TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL``). Le jeton bot reste requis pour les
+autres endpoints qui utilisent encore ``get_bot_token_dependency`` (ex. finalisation).
 """
 
 from fastapi import HTTPException, status, Header
 from typing import Optional
 from .config import settings
+
+TELEGRAM_DEPOSIT_BOT_DISABLED_DETAIL = (
+    "Les dépôts et la classification via le bot Telegram ne sont plus disponibles. "
+    "Cette fonctionnalité a été retirée."
+)
 
 
 def validate_bot_token(x_bot_token: Optional[str] = Header(None)) -> str:

@@ -374,6 +374,7 @@ def create_tables_if_not_exist():
                     Site.__table__,
                     CashSession.__table__,
                     Sale.__table__,
+                    Deposit.__table__,
                 ],
             )
         else:

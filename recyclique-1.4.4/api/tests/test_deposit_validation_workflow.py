@@ -8,10 +8,14 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 
 from recyclic_api.main import app
-from recyclic_api.models.deposit import DepositStatus, EEECategory
+from recyclic_api.core.config import settings
+from recyclic_api.models.deposit import Deposit, DepositStatus, EEECategory
+from recyclic_api.models.user import UserStatus
+from tests.factories import UserFactory
 
 # Mock bot token for testing
 TEST_BOT_TOKEN = "test_bot_token_123"
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 @pytest.fixture
@@ -28,48 +32,38 @@ def client_with_mock_token(mock_bot_token):
 
 
 @pytest.fixture
-def classified_deposit(client_with_mock_token):
-    """Create a classified deposit for testing validation/correction."""
-    # Create deposit
-    payload = {
-        "telegram_user_id": "validation_test_user",
-        "audio_file_path": "/audio/validation_test.ogg",
-        "status": "pending_audio"
-    }
+def classified_deposit(client_with_mock_token, db_session):
+    """Dépôt déjà classifié (seed DB) — les routes bot from-bot/classify sont retirées (410)."""
+    user = UserFactory(status=UserStatus.APPROVED)
+    db_session.add(user)
+    db_session.flush()
+
+    deposit = Deposit(
+        user_id=user.id,
+        telegram_user_id="validation_test_user",
+        audio_file_path="/audio/validation_test.ogg",
+        status=DepositStatus.CLASSIFIED,
+        category=EEECategory.OTHER,
+        eee_category=EEECategory.OTHER,
+        transcription="Un ancien téléphone mobile",
+        confidence_score=0.75,
+        ai_confidence=0.75,
+        ai_classification="Équipement informatique détecté",
+        alternative_categories={
+            "second_choice": "small_appliance",
+            "third_choice": "other"
+        },
+    )
+    db_session.add(deposit)
+    db_session.commit()
+    db_session.refresh(deposit)
 
     headers = {
         "X-Bot-Token": TEST_BOT_TOKEN,
         "Content-Type": "application/json"
     }
 
-    # Create the deposit
-    create_response = client_with_mock_token.post("/api/v1/deposits/from-bot", json=payload, headers=headers)
-    assert create_response.status_code == 200
-    deposit_id = create_response.json()["id"]
-
-    # Mock classification to set it as classified
-    with patch('recyclic_api.services.classification_service.classify_deposit_audio') as mock_classify:
-        mock_classify.return_value = {
-            "success": True,
-            "status": DepositStatus.CLASSIFIED,
-            "transcription": "Un ancien téléphone mobile",
-            "eee_category": EEECategory.IT_EQUIPMENT,
-            "confidence_score": 0.75,
-            "reasoning": "Équipement informatique détecté",
-            "alternative_categories": {
-                "second_choice": "small_appliance",
-                "third_choice": "other"
-            }
-        }
-
-        # Classify the deposit
-        classify_response = client_with_mock_token.post(
-            f"/api/v1/deposits/{deposit_id}/classify",
-            headers=headers
-        )
-        assert classify_response.status_code == 200
-
-    return deposit_id, headers
+    return str(deposit.id), headers
 
 
 class TestDepositValidationWorkflow:
@@ -87,7 +81,7 @@ class TestDepositValidationWorkflow:
 
         # Validate the deposit
         response = client_with_mock_token.put(
-            f"/api/v1/deposits/{deposit_id}",
+            f"{_V1}/deposits/{deposit_id}",
             json=payload,
             headers=headers
         )
@@ -122,7 +116,7 @@ class TestDepositValidationWorkflow:
 
         # Correct the deposit
         response = client_with_mock_token.put(
-            f"/api/v1/deposits/{deposit_id}",
+            f"{_V1}/deposits/{deposit_id}",
             json=payload,
             headers=headers
         )
@@ -154,7 +148,7 @@ class TestDepositValidationWorkflow:
         }
 
         # Try to finalize without token
-        response = client_with_mock_token.put(f"/api/v1/deposits/{deposit_id}", json=payload)
+        response = client_with_mock_token.put(f"{_V1}/deposits/{deposit_id}", json=payload)
 
         assert response.status_code == 401
         assert "Missing X-Bot-Token header" in response.json()["detail"]
@@ -173,7 +167,7 @@ class TestDepositValidationWorkflow:
             "Content-Type": "application/json"
         }
 
-        response = client_with_mock_token.put(f"/api/v1/deposits/{deposit_id}", json=payload, headers=headers)
+        response = client_with_mock_token.put(f"{_V1}/deposits/{deposit_id}", json=payload, headers=headers)
 
         assert response.status_code == 401
         assert "Invalid bot token" in response.json()["detail"]
@@ -191,7 +185,7 @@ class TestDepositValidationWorkflow:
         }
 
         response = client_with_mock_token.put(
-            "/api/v1/deposits/11111111-1111-1111-1111-111111111111",
+            f"{_V1}/deposits/11111111-1111-1111-1111-111111111111",
             json=payload,
             headers=headers
         )
@@ -199,32 +193,34 @@ class TestDepositValidationWorkflow:
         assert response.status_code == 404
         assert "Deposit not found" in response.json()["detail"]
 
-    def test_finalize_deposit_invalid_status(self, client_with_mock_token):
+    def test_finalize_deposit_invalid_status(self, client_with_mock_token, db_session):
         """Test finalization of deposit with invalid status."""
-        # Create a deposit that's not classified yet
-        payload = {
-            "telegram_user_id": "invalid_status_test",
-            "audio_file_path": "/audio/invalid_status_test.ogg",
-            "status": "pending_audio"
-        }
+        user = UserFactory(status=UserStatus.APPROVED)
+        db_session.add(user)
+        db_session.flush()
+        deposit = Deposit(
+            user_id=user.id,
+            telegram_user_id="invalid_status_test",
+            audio_file_path="/audio/invalid_status_test.ogg",
+            status=DepositStatus.PENDING_AUDIO,
+        )
+        db_session.add(deposit)
+        db_session.commit()
+        db_session.refresh(deposit)
+        deposit_id = str(deposit.id)
 
         headers = {
             "X-Bot-Token": TEST_BOT_TOKEN,
             "Content-Type": "application/json"
         }
 
-        # Create deposit (remains in pending_audio status)
-        create_response = client_with_mock_token.post("/api/v1/deposits/from-bot", json=payload, headers=headers)
-        deposit_id = create_response.json()["id"]
-
-        # Try to finalize without classification
         finalize_payload = {
             "validated": True,
             "correction_applied": False
         }
 
         response = client_with_mock_token.put(
-            f"/api/v1/deposits/{deposit_id}",
+            f"{_V1}/deposits/{deposit_id}",
             json=finalize_payload,
             headers=headers
         )
@@ -243,7 +239,7 @@ class TestDepositValidationWorkflow:
         }
 
         response = client_with_mock_token.put(
-            f"/api/v1/deposits/{deposit_id}",
+            f"{_V1}/deposits/{deposit_id}",
             json=payload,
             headers=headers
         )
@@ -263,7 +259,7 @@ class TestDepositValidationWorkflow:
         }
 
         response = client_with_mock_token.put(
-            f"/api/v1/deposits/{deposit_id}",
+            f"{_V1}/deposits/{deposit_id}",
             json=payload,
             headers=headers
         )
@@ -291,7 +287,7 @@ class TestDepositValidationWorkflow:
 
         for category in categories_to_test:
             # Get fresh deposit info first
-            get_response = client_with_mock_token.get(f"/api/v1/deposits/{deposit_id}")
+            get_response = client_with_mock_token.get(f"{_V1}/deposits/{deposit_id}")
             assert get_response.status_code == 200
 
             # Reset status to classified for next test
@@ -307,7 +303,7 @@ class TestDepositValidationWorkflow:
             }
 
             response = client_with_mock_token.put(
-                f"/api/v1/deposits/{deposit_id}",
+                f"{_V1}/deposits/{deposit_id}",
                 json=payload,
                 headers=headers
             )
@@ -325,7 +321,7 @@ class TestDepositValidationWorkflow:
         deposit_id, headers = classified_deposit
 
         # Get deposit before validation to check AI fields
-        get_response = client_with_mock_token.get(f"/api/v1/deposits/{deposit_id}")
+        get_response = client_with_mock_token.get(f"{_V1}/deposits/{deposit_id}")
         original_data = get_response.json()
 
         # Validate the deposit
@@ -335,7 +331,7 @@ class TestDepositValidationWorkflow:
         }
 
         response = client_with_mock_token.put(
-            f"/api/v1/deposits/{deposit_id}",
+            f"{_V1}/deposits/{deposit_id}",
             json=payload,
             headers=headers
         )

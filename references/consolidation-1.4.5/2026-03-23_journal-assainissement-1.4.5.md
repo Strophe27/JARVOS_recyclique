@@ -3344,6 +3344,51 @@
 
 ---
 
+## Lot 2BF — Desactivation explicite des endpoints bot de depots
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** retirer proprement `from-bot` et `classify` comme flux Telegram historiques
+
+### Actions
+- Desactivation explicite avec `410 Gone` de :
+  - `POST /deposits/from-bot`
+  - `POST /deposits/{deposit_id}/classify`
+- Centralisation du message de retrait dans `core/bot_auth.py`.
+- Realignement des tests bot / classification / workflow pour verifier le nouveau contrat `410`.
+- Extension ciblee du schema SQLite minimal de test pour inclure `deposits`.
+- Correctif connexe dans `finalize_deposit` pour persister proprement la fusion JSON de `alternative_categories`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/core/bot_auth.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/deposits.py`
+- `recyclique-1.4.4/api/tests/conftest.py`
+- `recyclique-1.4.4/api/tests/test_deposit_bot_integration.py`
+- `recyclique-1.4.4/api/tests/test_bot_auth_simple.py`
+- `recyclique-1.4.4/api/tests/test_deposit_validation_workflow.py`
+- `recyclique-1.4.4/api/tests/test_deposit_classification_integration.py`
+- `recyclique-1.4.4/api/tests/test_classification_fixed.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_deposit_bot_integration.py`
+  - `tests/test_bot_auth_simple.py`
+  - `tests/test_deposit_validation_workflow.py`
+  - `tests/test_deposit_classification_integration.py`
+  - `tests/test_classification_fixed.py`
+- Resultat local :
+  - **26 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Les endpoints bot historiques de depots ne sont plus semi-actifs : ils annoncent explicitement leur retrait.
+- Le contrat HTTP est clair et stable : `410 Gone` sur ces deux routes.
+- Reserves acceptees :
+  - `PUT /deposits/{id}` garde encore son auth bot pour l'instant, hors perimetre de ce lot
+  - la suppression complete des champs / schemas lies au bot Telegram reste un lot distinct
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3377,6 +3422,7 @@
 - **Vague 5:** dixieme lot `admin` ferme sur le template reception offline
 - **Vague 5:** premier lot final Telegram ferme sur la neutralisation des notifications sortantes
 - **Vague 5:** second lot final Telegram ferme sur la desactivation de `link-telegram`
+- **Vague 5:** troisieme lot final Telegram ferme sur les endpoints bot de depots
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3384,7 +3430,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 
