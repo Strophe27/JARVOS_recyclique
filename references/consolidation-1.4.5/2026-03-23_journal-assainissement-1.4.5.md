@@ -4048,6 +4048,32 @@ Retirer la copie locale divergente de `LoginRequest` / `AuthUser` / `LoginRespon
 
 ---
 
+## Micro-lot FE-TG-05 — `usersService.ts` : `User.telegram_id` aligne sur OpenAPI `AdminUser`
+
+### Theme
+Aligner l'interface locale `User` (reponses `GET /v1/admin/users`) sur le schema OpenAPI `AdminUser.telegram_id` : union `string | integer | null`, propriete **optionnelle** (absente du tableau `required` du schema).
+
+### Verification worktree
+- Branche `chore/v1.4.5-consolidation` ; worktree **propre** avant modification (aucun diff suivi sur les fichiers tracks) ; perimetre volontairement limite a ce service + journal (pas d'import `AdminUser` genere pour eviter toute dependance croisee dans ce micro-lot).
+
+### Consommateurs (aucun fichier supplementaire modifie)
+- `SessionManager.tsx`, `ReceptionSessionManager.tsx`, `CashSessionDetail.tsx` : usages compatibles (labels via `full_name` / `first_name` / `username` / `id` ; `telegram_id` eventuel dans des expressions de repli de type affichage).
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/services/usersService.ts`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `npx eslint src/services/usersService.ts` : **OK** (0 probleme)
+- `npx vitest run src/test/pages/Admin/ReceptionSessionManager.test.tsx src/test/pages/Admin/CashSessionDetail.test.tsx` : **echec de suite preexistant** (mock `axiosClient` / hoisting `useAuthStore` ; `styled.input.attrs` non mocké pour ReceptionSessionManager), **sans lien** avec le seul changement de typage sur `User`
+- `npx tsc -p tsconfig.json --noEmit` : **echecs preexistants** dans `Sites.test.tsx` et `UserProfileTab.test.tsx` (erreurs de syntaxe), **hors perimetre**
+
+### Resultat / mini-QA
+- Le typage n'impose plus une `string` obligatoire pour `telegram_id` sur chaque utilisateur ; alignement contractuel avec `openapi.json` / `generated` `AdminUser`.
+- Lot ferme ; **pret commit/push** si le worktree reste limite a `usersService.ts` + ce journal.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -4101,9 +4127,10 @@ Retirer la copie locale divergente de `LoginRequest` / `AuthUser` / `LoginRespon
 - **Vague 6:** sous-lot UX transverse et doc legere ferme avec reserves acceptees
 - **Vague 6:** micro-lot `FE-TG-01` ferme sur suppression de `frontend/src/types/simple.ts` (module sans import)
 - **Vague 6:** micro-lot `FE-TG-02` ferme sur alignement `authService.ts` (reexport types OpenAPI + `POST /v1/auth/login`)
+- **Vague 6:** micro-lot `FE-TG-05` ferme sur alignement `usersService.ts` : `User.telegram_id` optionnel `string | number | null` (schema OpenAPI `AdminUser`)
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-05`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre la coherence `telegram_id` / fallbacks sur d'autres surfaces faible risque si le backlog le demande

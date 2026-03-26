@@ -2,7 +2,7 @@ import axiosClient from '../api/axiosClient'
 
 export interface User {
   id: string
-  telegram_id: string
+  telegram_id?: string | number | null
   username?: string
   first_name?: string
   last_name?: string
