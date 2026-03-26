@@ -1,32 +1,16 @@
-export interface LoginRequest {
-  telegram_id: string;
-}
-
-export interface AuthUser {
-  id: string;
-  telegram_id?: string | number;
-  username?: string;
-  first_name?: string;
-  last_name?: string;
-  role: 'user' | 'admin' | 'super-admin' | 'manager';
-  status?: string;
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface LoginResponse {
-  access_token: string;
-  token_type: 'bearer';
-  user: AuthUser;
-}
+/**
+ * En-têtes Bearer et login direct via le même client Axios que l’API générée.
+ * Connexion écran Login : `useAuthStore().login(username, password)` → `AuthApi.apiv1authloginpost`
+ * (`POST /v1/auth/login`). Les types reprennent le contrat OpenAPI pour éviter une copie locale divergente.
+ */
+export type { AuthUser, LoginRequest, LoginResponse } from '../generated/types';
 
 import axiosClient from '../api/axiosClient';
+import type { LoginRequest, LoginResponse } from '../generated/types';
 
 export async function login(request: LoginRequest): Promise<LoginResponse> {
-  // axiosClient gère la baseURL et l'intercepteur ajoute le token
-  const response = await axiosClient.post('/auth/login', request);
-  const data = response.data as LoginResponse;
+  const response = await axiosClient.post<LoginResponse>('/v1/auth/login', request);
+  const data = response.data;
   localStorage.setItem('token', data.access_token);
   return data;
 }
