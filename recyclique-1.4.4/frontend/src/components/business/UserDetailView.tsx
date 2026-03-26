@@ -14,6 +14,7 @@ import { IconUser, IconHistory, IconAlertCircle } from '@tabler/icons-react';
 import { AdminUser, UserRole, UserStatus } from '../../services/adminService';
 import { UserProfileTab } from './UserProfileTab';
 import { UserHistoryTab } from './UserHistoryTab';
+import { usernameOrTelegramForAtHandle } from '../../utils/userDisplay';
 
 interface UserDetailViewProps {
   user: AdminUser | null;
@@ -124,7 +125,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
               {user.full_name || `${user.first_name} ${user.last_name}` || user.username || 'Bénévole'}
             </Text>
             <Text size="sm" c="dimmed">
-              @{user.username || user.telegram_id}
+              @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
             </Text>
             <Group gap="xs" mt="xs">
               <Badge color={getRoleColor(user.role)} variant="light">

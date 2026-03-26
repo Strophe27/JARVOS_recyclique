@@ -19,6 +19,7 @@ import { AdminUser, adminService, UserGroupUpdate } from '../../services/adminSe
 import { UserRole, UserStatus } from '../../generated';
 import { useAuthStore } from '../../stores/authStore';
 import { groupService, Group as GroupType } from '../../services/groupService';
+import { usernameOrTelegramForAtHandle } from '../../utils/userDisplay';
 
 interface UserProfileTabProps {
   user: AdminUser | null;
@@ -451,7 +452,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
               <Group justify="space-between">
                 <Text size="sm">Nom d'utilisateur:</Text>
                 <Text size="sm" fw={500}>
-                  @{user.username || user.telegram_id}
+                  @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
                 </Text>
               </Group>
               <Group justify="space-between">

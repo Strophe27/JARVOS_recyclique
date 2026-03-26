@@ -3570,6 +3570,40 @@
 
 ---
 
+## Lot 2BL — Centralisation du fallback d'affichage `@username / telegram_id`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** extraire un helper pur pour uniformiser le fallback d'affichage `@username || telegram_id` sur les ecrans admin
+
+### Actions
+- Creation du helper `usernameOrTelegramForAtHandle`.
+- Remplacement de la logique inline dans `UserListTable`, `UserDetailView` et `UserProfileTab`.
+- Ajout d'un test unitaire dedie pour verrouiller la semantique existante, y compris le cas falsy `0`.
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/utils/userDisplay.ts`
+- `recyclique-1.4.4/frontend/src/utils/__tests__/userDisplay.test.ts`
+- `recyclique-1.4.4/frontend/src/components/business/UserListTable.tsx`
+- `recyclique-1.4.4/frontend/src/components/business/UserDetailView.tsx`
+- `recyclique-1.4.4/frontend/src/components/business/UserProfileTab.tsx`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee frontend :
+  - `src/utils/__tests__/userDisplay.test.ts`
+- Resultat frontend :
+  - **5 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Les trois composants admin partagent maintenant la meme logique de fallback d'affichage pour `@username` / `telegram_id`.
+- Le lot reste purement presentationnel, sans impact sur les contrats API ni sur l'auth.
+- Reserves acceptees :
+  - les suites composants historiques ciblees restent bruyantes hors lot et n'ont pas ete reouvertes
+  - le bruit local residuel sur `frontend/src/generated/*` reste hors lot et n'est pas embarque
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3613,9 +3647,9 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
-- **Prochaine etape logique:** ouvrir le sous-lot suivant sur les autres chemins frontend reuses par `convertToAdminUser` ou sur une autre surface admin/auth a faible risque
+- **Prochaine etape logique:** ouvrir le sous-lot suivant sur un autre fallback/frontend mineur ou sur une surface admin/auth a faible risque, toujours sans toucher `generated/*`
 
 ---
 

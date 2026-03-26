@@ -1,6 +1,7 @@
 import React from 'react';
 import { Table, Badge, Text, Skeleton, Tooltip, Group } from '@mantine/core';
 import { AdminUser, UserRole, UserStatus } from '../../services/adminService';
+import { usernameOrTelegramForAtHandle } from '../../utils/userDisplay';
 
 interface UserStatusInfo {
   user_id: string;
@@ -178,7 +179,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
                     : user.first_name || user.last_name || user.username || 'Bénévole'}
                 </Text>
                 <Text size="sm" c="dimmed">
-                  @{user.username || user.telegram_id}
+                  @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
                 </Text>
               </div>
             </Table.Td>
