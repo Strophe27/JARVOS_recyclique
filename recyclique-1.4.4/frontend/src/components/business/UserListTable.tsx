@@ -2,8 +2,8 @@ import React from 'react';
 import { Table, Badge, Text, Skeleton, Tooltip } from '@mantine/core';
 import { AdminUser, UserRole } from '../../services/adminService';
 import {
-  fullNameOrUsernameOrTelegramFallback,
-  usernameOrTelegramForAtHandle,
+  displayAtUsername,
+  fullNameOrUsernameDisplayFallback,
 } from '../../utils/userDisplay';
 
 interface UserStatusInfo {
@@ -135,12 +135,13 @@ export const UserListTable: React.FC<UserListTableProps> = ({
         {users.map((user) => {
           const rowDisplayName =
             user.full_name ||
-            fullNameOrUsernameOrTelegramFallback(
+            fullNameOrUsernameDisplayFallback(
               user.first_name,
               user.last_name,
               user.username,
-              user.telegram_id,
+              user.id,
             );
+          const atUser = displayAtUsername(user.username);
           return (
           <Table.Tr
             key={user.id}
@@ -163,7 +164,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
                   {rowDisplayName}
                 </Text>
                 <Text size="sm" c="dimmed">
-                  @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
+                  {atUser ? `@${atUser}` : 'Pas de nom d’utilisateur'}
                 </Text>
               </div>
             </Table.Td>

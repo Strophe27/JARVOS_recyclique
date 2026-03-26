@@ -68,7 +68,6 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
                 )
                 admin_user = AdminUser(
                     id=str(user.id),
-                    telegram_id=user.telegram_id,
                     username=user.username,
                     first_name=user.first_name,
                     last_name=user.last_name,
@@ -158,7 +157,6 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
                 )
                 pending_response = PendingUserResponse(
                     id=str(user.id),
-                    telegram_id=user.telegram_id,
                     username=user.username,
                     first_name=user.first_name,
                     last_name=user.last_name,

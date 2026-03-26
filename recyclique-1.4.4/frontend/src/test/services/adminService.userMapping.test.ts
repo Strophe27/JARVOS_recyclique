@@ -35,7 +35,6 @@ const userResponseAsApi = {
 
 const expectedAdminMappingSlice = {
   id: 'user-1',
-  telegram_id: undefined,
   username: 'admin_alpha',
   full_name: 'Admin Alpha',
   role: UserRole.ADMIN,
@@ -47,13 +46,14 @@ describe('AdminService user mapping', () => {
     vi.clearAllMocks()
   })
 
-  it('ne propage pas telegram_id depuis UsersApi (liste)', async () => {
+  it('ne propage pas telegram_id depuis UsersApi (liste) — lot 10A', async () => {
     mockUsersApi.usersapiv1usersget.mockResolvedValue([userResponseAsApi])
 
     const result = await adminService.getUsers()
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject(expectedAdminMappingSlice)
+    expect(result[0]).not.toHaveProperty('telegram_id')
   })
 
   it('ne propage pas telegram_id depuis UsersApi (getUserById)', async () => {
@@ -63,6 +63,7 @@ describe('AdminService user mapping', () => {
 
     expect(mockUsersApi.userapiv1usersuseridget).toHaveBeenCalledWith('user-1')
     expect(result).toMatchObject(expectedAdminMappingSlice)
+    expect(result).not.toHaveProperty('telegram_id')
   })
 
   it('ne propage pas telegram_id depuis la réponse createUser (UsersApi)', async () => {
@@ -79,6 +80,7 @@ describe('AdminService user mapping', () => {
 
     expect(mockUsersApi.userapiv1userspost).toHaveBeenCalled()
     expect(result).toMatchObject(expectedAdminMappingSlice)
+    expect(result).not.toHaveProperty('telegram_id')
   })
 
   it('ne propage pas telegram_id depuis la réponse updateUser (UsersApi)', async () => {
@@ -89,5 +91,6 @@ describe('AdminService user mapping', () => {
     expect(mockUsersApi.userapiv1usersuseridput).toHaveBeenCalledWith('user-1', { first_name: 'Admin' })
     expect(result.success).toBe(true)
     expect(result.data).toMatchObject(expectedAdminMappingSlice)
+    expect(result.data).not.toHaveProperty('telegram_id')
   })
 })

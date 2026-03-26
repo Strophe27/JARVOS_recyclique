@@ -98,7 +98,6 @@ describe('AdminService', () => {
       expect(result).toHaveLength(2)
       expect(result[0]).toMatchObject({
         id: '1',
-        telegram_id: undefined,
         username: 'john_doe',
         first_name: 'John',
         last_name: 'Doe',
@@ -201,7 +200,6 @@ describe('AdminService', () => {
       const mockResponse = {
         data: {
           id: '1',
-          telegram_id: undefined,
           username: 'john_doe',
           first_name: 'John',
           last_name: 'Doe',
@@ -250,7 +248,6 @@ describe('AdminService', () => {
       expect(UsersApi.userapiv1usersuseridget).toHaveBeenCalledWith('1')
       expect(result).toMatchObject({
         id: '1',
-        telegram_id: undefined,
         username: 'john_doe',
         first_name: 'John',
         last_name: 'Doe',
@@ -297,7 +294,6 @@ describe('AdminService', () => {
       expect(UsersApi.userapiv1userspost).toHaveBeenCalledWith(userData)
       expect(result).toMatchObject({
         id: '1',
-        telegram_id: undefined,
         username: 'john_doe',
         first_name: 'John',
         last_name: 'Doe',
@@ -341,7 +337,6 @@ describe('AdminService', () => {
       expect(result).toMatchObject({
         data: {
           ...mockUpdatedUser,
-          telegram_id: undefined,
           full_name: 'John Updated Doe',
           email: null,
           site_id: undefined

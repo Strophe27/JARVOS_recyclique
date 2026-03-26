@@ -52,7 +52,7 @@
           "users"
         ],
         "summary": "Get Me",
-        "description": "R\u00e9cup\u00e9rer les informations de l'utilisateur connect\u00e9.",
+        "description": "Récupérer les informations de l'utilisateur connecté.",
         "operationId": "get_me_v1_users_me_get",
         "responses": {
           "200": {
@@ -77,7 +77,7 @@
           "users"
         ],
         "summary": "Update Me",
-        "description": "Mettre \u00e0 jour les informations de l'utilisateur connect\u00e9 (champs non sensibles).",
+        "description": "Mettre à jour les informations de l'utilisateur connecté (champs non sensibles).",
         "operationId": "update_me_v1_users_me_put",
         "requestBody": {
           "content": {
@@ -124,7 +124,7 @@
           "users"
         ],
         "summary": "Change My Password",
-        "description": "Changer le mot de passe de l'utilisateur connect\u00e9.",
+        "description": "Changer le mot de passe de l'utilisateur connecté.",
         "operationId": "change_my_password_v1_users_me_password_put",
         "requestBody": {
           "content": {
@@ -173,7 +173,7 @@
           "users"
         ],
         "summary": "Set User Pin",
-        "description": "D\u00e9finir ou modifier le PIN de l'utilisateur connect\u00e9.\n\nLe PIN doit \u00eatre exactement 4 chiffres et sera hach\u00e9 avant stockage.\nL'utilisateur doit \u00eatre authentifi\u00e9 pour modifier son PIN.",
+        "description": "Définir ou modifier le PIN de l'utilisateur connecté.\n\nLe PIN doit être exactement 4 chiffres et sera haché avant stockage.\nL'utilisateur doit être authentifié pour modifier son PIN.",
         "operationId": "set_user_pin_v1_users_me_pin_put",
         "requestBody": {
           "content": {
@@ -222,7 +222,7 @@
           "users"
         ],
         "summary": "Get My Permissions",
-        "description": "R\u00e9cup\u00e9rer les permissions de l'utilisateur connect\u00e9.",
+        "description": "Récupérer les permissions de l'utilisateur connecté.",
         "operationId": "get_my_permissions_v1_users_me_permissions_get",
         "responses": {
           "200": {
@@ -251,7 +251,7 @@
           "users"
         ],
         "summary": "Get Active Operators",
-        "description": "Retourne les utilisateurs actifs pouvant op\u00e9rer une caisse.\n\nR\u00f4les inclus: user, admin, super-admin; exclut les inactifs.",
+        "description": "Retourne les utilisateurs actifs pouvant opérer une caisse.\n\nRôles inclus: user, admin, super-admin; exclut les inactifs.",
         "operationId": "get_active_operators_v1_users_active_operators_get",
         "responses": {
           "200": {
@@ -588,8 +588,8 @@
         "tags": [
           "sites"
         ],
-        "summary": "Cr\u00e9er un site",
-        "description": "Cr\u00e9er un nouveau site",
+        "summary": "Créer un site",
+        "description": "Créer un nouveau site",
         "operationId": "create_site_v1_sites__post",
         "security": [
           {
@@ -635,8 +635,8 @@
         "tags": [
           "sites"
         ],
-        "summary": "R\u00e9cup\u00e9rer un site par ID",
-        "description": "R\u00e9cup\u00e9rer un site par son ID",
+        "summary": "Récupérer un site par ID",
+        "description": "Récupérer un site par son ID",
         "operationId": "get_site_v1_sites__site_id__get",
         "security": [
           {
@@ -681,8 +681,8 @@
         "tags": [
           "sites"
         ],
-        "summary": "Mettre \u00e0 jour un site",
-        "description": "Mettre \u00e0 jour un site existant",
+        "summary": "Mettre à jour un site",
+        "description": "Mettre à jour un site existant",
         "operationId": "update_site_v1_sites__site_id__patch",
         "security": [
           {
@@ -919,7 +919,7 @@
           "deposits"
         ],
         "summary": "Finalize Deposit",
-        "description": "Finalize deposit after human validation/correction (Story 4.3).\n\nAuth: m\u00eame p\u00e9rim\u00e8tre que les autres routes ``/deposits`` (pas de garde d\u00e9di\u00e9e\nsur cette route ; confiance r\u00e9seau / couche applicative amont si besoin).\n\nThis endpoint handles:\n- Validation of AI classification by user\n- Correction of AI classification with user's choice\n- Setting final status to completed\n- Tracking AI vs human decisions for analysis",
+        "description": "Finalize deposit after human validation/correction (Story 4.3).\n\nAuth: même périmètre que les autres routes ``/deposits`` (pas de garde dédiée\nsur cette route ; confiance réseau / couche applicative amont si besoin).\n\nThis endpoint handles:\n- Validation of AI classification by user\n- Correction of AI classification with user's choice\n- Setting final status to completed\n- Tracking AI vs human decisions for analysis",
         "operationId": "finalize_deposit_v1_deposits__deposit_id__put",
         "parameters": [
           {
@@ -1141,7 +1141,7 @@
           "sales"
         ],
         "summary": "Update Sale Note",
-        "description": "Update sale note (admin only).\n\nSTORY-B40-P4: Edition des notes c\u00f4t\u00e9 Admin\n- Restricted to Admin/SuperAdmin roles\n- Updates only the note field",
+        "description": "Update sale note (admin only).\n\nSTORY-B40-P4: Edition des notes côté Admin\n- Restricted to Admin/SuperAdmin roles\n- Updates only the note field",
         "operationId": "update_sale_note_v1_sales__sale_id__put",
         "security": [
           {
@@ -1199,7 +1199,7 @@
           "sales"
         ],
         "summary": "Update Sale Item Weight",
-        "description": "Modifier le poids d'un item de vente (admin uniquement).\n\nStory B52-P2: Permet de corriger les erreurs de saisie de poids apr\u00e8s validation.\n- Seuls les administrateurs peuvent modifier\n- Recalcule automatiquement les statistiques affect\u00e9es\n- Log d'audit complet",
+        "description": "Modifier le poids d'un item de vente (admin uniquement).\n\nStory B52-P2: Permet de corriger les erreurs de saisie de poids après validation.\n- Seuls les administrateurs peuvent modifier\n- Recalcule automatiquement les statistiques affectées\n- Log d'audit complet",
         "operationId": "update_sale_item_weight_v1_sales__sale_id__items__item_id__weight_patch",
         "security": [
           {
@@ -1266,7 +1266,7 @@
           "sales"
         ],
         "summary": "Update Sale Item",
-        "description": "Update a sale item (preset, notes, quantity, weight, price).\n\nSTORY-B52-P4: Am\u00e9lioration \u00e9diteur d'item (destination et prix)\n- Preset and notes: editable by all operators\n- Price: editable by admin/super-admin only\n- Quantity and weight: editable by all operators\n- Price modifications are logged in audit log",
+        "description": "Update a sale item (preset, notes, quantity, weight, price).\n\nSTORY-B52-P4: Amélioration éditeur d'item (destination et prix)\n- Preset and notes: editable by all operators\n- Price: editable by admin/super-admin only\n- Quantity and weight: editable by all operators\n- Price modifications are logged in audit log",
         "operationId": "update_sale_item_v1_sales__sale_id__items__item_id__patch",
         "security": [
           {
@@ -1333,8 +1333,8 @@
           "cash-sessions",
           "Sessions de Caisse"
         ],
-        "summary": "Cr\u00e9er une session de caisse",
-        "description": "Cr\u00e9e une nouvelle session de caisse pour un op\u00e9rateur.\n    \n    **Permissions requises :** CASHIER, ADMIN, ou SUPER_ADMIN\n    \n    **R\u00e8gles m\u00e9tier :**\n    - Un op\u00e9rateur ne peut avoir qu'une seule session ouverte \u00e0 la fois\n    - Le montant initial doit \u00eatre positif et inf\u00e9rieur \u00e0 10 000\u20ac\n    - La session est automatiquement marqu\u00e9e comme \"ouverte\"\n    \n    **Audit :** Toutes les op\u00e9rations sont trac\u00e9es dans les logs d'audit",
+        "summary": "Créer une session de caisse",
+        "description": "Crée une nouvelle session de caisse pour un opérateur.\n    \n    **Permissions requises :** CASHIER, ADMIN, ou SUPER_ADMIN\n    \n    **Règles métier :**\n    - Un opérateur ne peut avoir qu'une seule session ouverte à la fois\n    - Le montant initial doit être positif et inférieur à 10 000€\n    - La session est automatiquement marquée comme \"ouverte\"\n    \n    **Audit :** Toutes les opérations sont tracées dans les logs d'audit",
         "operationId": "create_cash_session_v1_cash_sessions__post",
         "security": [
           {
@@ -1353,7 +1353,7 @@
         },
         "responses": {
           "201": {
-            "description": "Session cr\u00e9\u00e9e avec succ\u00e8s",
+            "description": "Session créée avec succès",
             "content": {
               "application/json": {
                 "schema": {
@@ -1381,31 +1381,31 @@
             }
           },
           "400": {
-            "description": "Erreur de validation ou session d\u00e9j\u00e0 ouverte",
+            "description": "Erreur de validation ou session déjà ouverte",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Une session de caisse est d\u00e9j\u00e0 ouverte pour cet op\u00e9rateur"
+                  "detail": "Une session de caisse est déjà ouverte pour cet opérateur"
                 }
               }
             }
           },
           "404": {
-            "description": "Op\u00e9rateur introuvable",
+            "description": "Opérateur introuvable",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Op\u00e9rateur non trouv\u00e9"
+                  "detail": "Opérateur non trouvé"
                 }
               }
             }
           },
           "403": {
-            "description": "Acc\u00e8s non autoris\u00e9",
+            "description": "Accès non autorisé",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Acc\u00e8s non autoris\u00e9"
+                  "detail": "Accès non autorisé"
                 }
               }
             }
@@ -1428,7 +1428,7 @@
           "Sessions de Caisse"
         ],
         "summary": "Lister les sessions de caisse",
-        "description": "R\u00e9cup\u00e8re la liste des sessions de caisse avec filtres optionnels.\n    \n    **Permissions requises :** CASHIER, ADMIN ou SUPER_ADMIN\n    \n    **Filtres disponibles :**\n    - `status` : Filtrer par statut (open/closed)\n    - `operator_id` : Filtrer par op\u00e9rateur\n    - `date_from` : Date de d\u00e9but (ISO 8601)\n    - `date_to` : Date de fin (ISO 8601)\n    - `skip` : Nombre d'\u00e9l\u00e9ments \u00e0 ignorer (pagination)\n    - `limit` : Nombre maximum d'\u00e9l\u00e9ments (1-100)\n    \n    **Pagination :** Les r\u00e9sultats sont pagin\u00e9s pour optimiser les performances",
+        "description": "Récupère la liste des sessions de caisse avec filtres optionnels.\n    \n    **Permissions requises :** CASHIER, ADMIN ou SUPER_ADMIN\n    \n    **Filtres disponibles :**\n    - `status` : Filtrer par statut (open/closed)\n    - `operator_id` : Filtrer par opérateur\n    - `date_from` : Date de début (ISO 8601)\n    - `date_to` : Date de fin (ISO 8601)\n    - `skip` : Nombre d'éléments à ignorer (pagination)\n    - `limit` : Nombre maximum d'éléments (1-100)\n    \n    **Pagination :** Les résultats sont paginés pour optimiser les performances",
         "operationId": "get_cash_sessions_v1_cash_sessions__get",
         "security": [
           {
@@ -1443,11 +1443,11 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer",
+              "description": "Nombre d'éléments à ignorer",
               "default": 0,
               "title": "Skip"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer"
+            "description": "Nombre d'éléments à ignorer"
           },
           {
             "name": "limit",
@@ -1457,11 +1457,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "Nombre maximum d'\u00e9l\u00e9ments \u00e0 retourner",
+              "description": "Nombre maximum d'éléments à retourner",
               "default": 20,
               "title": "Limit"
             },
-            "description": "Nombre maximum d'\u00e9l\u00e9ments \u00e0 retourner"
+            "description": "Nombre maximum d'éléments à retourner"
           },
           {
             "name": "status",
@@ -1494,10 +1494,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filtrer par ID d'op\u00e9rateur",
+              "description": "Filtrer par ID d'opérateur",
               "title": "Operator Id"
             },
-            "description": "Filtrer par ID d'op\u00e9rateur"
+            "description": "Filtrer par ID d'opérateur"
           },
           {
             "name": "site_id",
@@ -1531,10 +1531,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but (ISO 8601)",
+              "description": "Date de début (ISO 8601)",
               "title": "Date From"
             },
-            "description": "Date de d\u00e9but (ISO 8601)"
+            "description": "Date de début (ISO 8601)"
           },
           {
             "name": "date_to",
@@ -1568,10 +1568,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Recherche textuelle (nom op\u00e9rateur ou ID de session)",
+              "description": "Recherche textuelle (nom opérateur ou ID de session)",
               "title": "Search"
             },
-            "description": "Recherche textuelle (nom op\u00e9rateur ou ID de session)"
+            "description": "Recherche textuelle (nom opérateur ou ID de session)"
           },
           {
             "name": "include_empty",
@@ -1636,10 +1636,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Seuil de variance (\u00e9cart minimum)",
+              "description": "Seuil de variance (écart minimum)",
               "title": "Variance Threshold"
             },
-            "description": "Seuil de variance (\u00e9cart minimum)"
+            "description": "Seuil de variance (écart minimum)"
           },
           {
             "name": "variance_has_variance",
@@ -1654,10 +1654,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filtrer par pr\u00e9sence/absence de variance",
+              "description": "Filtrer par présence/absence de variance",
               "title": "Variance Has Variance"
             },
-            "description": "Filtrer par pr\u00e9sence/absence de variance"
+            "description": "Filtrer par présence/absence de variance"
           },
           {
             "name": "duration_min_hours",
@@ -1673,10 +1673,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Dur\u00e9e minimum de session (en heures)",
+              "description": "Durée minimum de session (en heures)",
               "title": "Duration Min Hours"
             },
-            "description": "Dur\u00e9e minimum de session (en heures)"
+            "description": "Durée minimum de session (en heures)"
           },
           {
             "name": "duration_max_hours",
@@ -1692,10 +1692,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Dur\u00e9e maximum de session (en heures)",
+              "description": "Durée maximum de session (en heures)",
               "title": "Duration Max Hours"
             },
-            "description": "Dur\u00e9e maximum de session (en heures)"
+            "description": "Durée maximum de session (en heures)"
           },
           {
             "name": "payment_methods",
@@ -1713,10 +1713,10 @@
                   "type": "null"
                 }
               ],
-              "description": "M\u00e9thodes de paiement (multi-s\u00e9lection)",
+              "description": "Méthodes de paiement (multi-sélection)",
               "title": "Payment Methods"
             },
-            "description": "M\u00e9thodes de paiement (multi-s\u00e9lection)"
+            "description": "Méthodes de paiement (multi-sélection)"
           },
           {
             "name": "has_donation",
@@ -1731,15 +1731,15 @@
                   "type": "null"
                 }
               ],
-              "description": "Filtrer par pr\u00e9sence de don",
+              "description": "Filtrer par présence de don",
               "title": "Has Donation"
             },
-            "description": "Filtrer par pr\u00e9sence de don"
+            "description": "Filtrer par présence de don"
           }
         ],
         "responses": {
           "200": {
-            "description": "Liste des sessions r\u00e9cup\u00e9r\u00e9e avec succ\u00e8s",
+            "description": "Liste des sessions récupérée avec succès",
             "content": {
               "application/json": {
                 "schema": {
@@ -1774,11 +1774,11 @@
             }
           },
           "403": {
-            "description": "Acc\u00e8s non autoris\u00e9",
+            "description": "Accès non autorisé",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Acc\u00e8s non autoris\u00e9"
+                  "detail": "Accès non autorisé"
                 }
               }
             }
@@ -1803,7 +1803,7 @@
           "Sessions de Caisse"
         ],
         "summary": "Statut de session pour un poste de caisse",
-        "description": "Retourne si une session est active pour le poste donn\u00e9 et l'ID de session le cas \u00e9ch\u00e9ant.",
+        "description": "Retourne si une session est active pour le poste donné et l'ID de session le cas échéant.",
         "operationId": "get_cash_session_status_v1_cash_sessions_status__register_id__get",
         "security": [
           {
@@ -1849,8 +1849,8 @@
           "cash-sessions",
           "Sessions de Caisse"
         ],
-        "summary": "V\u00e9rifier si une session diff\u00e9r\u00e9e existe pour une date",
-        "description": "V\u00e9rifie si l'op\u00e9rateur a d\u00e9j\u00e0 une session diff\u00e9r\u00e9e ouverte pour la date sp\u00e9cifi\u00e9e.",
+        "summary": "Vérifier si une session différée existe pour une date",
+        "description": "Vérifie si l'opérateur a déjà une session différée ouverte pour la date spécifiée.",
         "operationId": "check_deferred_session_by_date_v1_cash_sessions_deferred_check_get",
         "security": [
           {
@@ -1898,8 +1898,8 @@
           "cash-sessions",
           "Sessions de Caisse"
         ],
-        "summary": "Session de caisse ouverte pour l'utilisateur connect\u00e9",
-        "description": "Retourne la session ouverte (non diff\u00e9r\u00e9e) de l'utilisateur authentifi\u00e9, ou null s'il n'en a pas \u2014 cas normal, pas une erreur.",
+        "summary": "Session de caisse ouverte pour l'utilisateur connecté",
+        "description": "Retourne la session ouverte (non différée) de l'utilisateur authentifié, ou null s'il n'en a pas — cas normal, pas une erreur.",
         "operationId": "get_current_cash_session_v1_cash_sessions_current_get",
         "responses": {
           "200": {
@@ -1934,8 +1934,8 @@
           "cash-sessions",
           "Sessions de Caisse"
         ],
-        "summary": "R\u00e9cup\u00e9rer les d\u00e9tails d'une session de caisse",
-        "description": "R\u00e9cup\u00e8re les d\u00e9tails complets d'une session de caisse, y compris toutes les ventes associ\u00e9es.\n    \n    **Permissions requises :** ADMIN ou SUPER_ADMIN\n    \n    **Informations retourn\u00e9es :**\n    - D\u00e9tails de la session (op\u00e9rateur, montants, dates, etc.)\n    - Liste compl\u00e8te des ventes avec leurs d\u00e9tails\n    - Informations sur l'op\u00e9rateur et le site\n    \n    **Audit :** L'acc\u00e8s aux d\u00e9tails de session est trac\u00e9 dans les logs d'audit",
+        "summary": "Récupérer les détails d'une session de caisse",
+        "description": "Récupère les détails complets d'une session de caisse, y compris toutes les ventes associées.\n    \n    **Permissions requises :** ADMIN ou SUPER_ADMIN\n    \n    **Informations retournées :**\n    - Détails de la session (opérateur, montants, dates, etc.)\n    - Liste complète des ventes avec leurs détails\n    - Informations sur l'opérateur et le site\n    \n    **Audit :** L'accès aux détails de session est tracé dans les logs d'audit",
         "operationId": "get_cash_session_detail_v1_cash_sessions__session_id__get",
         "security": [
           {
@@ -1955,7 +1955,7 @@
         ],
         "responses": {
           "200": {
-            "description": "D\u00e9tails de la session r\u00e9cup\u00e9r\u00e9s avec succ\u00e8s",
+            "description": "Détails de la session récupérés avec succès",
             "content": {
               "application/json": {
                 "schema": {
@@ -1997,11 +1997,11 @@
             }
           },
           "404": {
-            "description": "Session non trouv\u00e9e",
+            "description": "Session non trouvée",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Session de caisse non trouv\u00e9e"
+                  "detail": "Session de caisse non trouvée"
                 }
               }
             }
@@ -2017,11 +2017,11 @@
             }
           },
           "403": {
-            "description": "Acc\u00e8s non autoris\u00e9",
+            "description": "Accès non autorisé",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Acc\u00e8s non autoris\u00e9"
+                  "detail": "Accès non autorisé"
                 }
               }
             }
@@ -2043,7 +2043,7 @@
           "cash-sessions"
         ],
         "summary": "Update Cash Session",
-        "description": "Met \u00e0 jour une session de caisse.",
+        "description": "Met à jour une session de caisse.",
         "operationId": "update_cash_session_v1_cash_sessions__session_id__put",
         "security": [
           {
@@ -2102,7 +2102,7 @@
           "Sessions de Caisse"
         ],
         "summary": "Fermer une session de caisse",
-        "description": "Ferme une session de caisse ouverte.\n    \n    **Permissions requises :** CASHIER, ADMIN, ou SUPER_ADMIN\n    \n    **R\u00e8gles m\u00e9tier :**\n    - Seul l'op\u00e9rateur de la session peut la fermer (sauf ADMIN/SUPER_ADMIN)\n    - Une session ferm\u00e9e ne peut plus \u00eatre modifi\u00e9e\n    - La date de fermeture est automatiquement enregistr\u00e9e\n    - Les statistiques finales sont calcul\u00e9es et sauvegard\u00e9es\n    \n    **Audit :** La fermeture est trac\u00e9e avec les statistiques finales",
+        "description": "Ferme une session de caisse ouverte.\n    \n    **Permissions requises :** CASHIER, ADMIN, ou SUPER_ADMIN\n    \n    **Règles métier :**\n    - Seul l'opérateur de la session peut la fermer (sauf ADMIN/SUPER_ADMIN)\n    - Une session fermée ne peut plus être modifiée\n    - La date de fermeture est automatiquement enregistrée\n    - Les statistiques finales sont calculées et sauvegardées\n    \n    **Audit :** La fermeture est tracée avec les statistiques finales",
         "operationId": "close_cash_session_v1_cash_sessions__session_id__close_post",
         "security": [
           {
@@ -2132,7 +2132,7 @@
         },
         "responses": {
           "200": {
-            "description": "Session ferm\u00e9e avec succ\u00e8s",
+            "description": "Session fermée avec succès",
             "content": {
               "application/json": {
                 "schema": {
@@ -2161,31 +2161,31 @@
             }
           },
           "400": {
-            "description": "Session d\u00e9j\u00e0 ferm\u00e9e",
+            "description": "Session déjà fermée",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "La session est d\u00e9j\u00e0 ferm\u00e9e"
+                  "detail": "La session est déjà fermée"
                 }
               }
             }
           },
           "403": {
-            "description": "Acc\u00e8s non autoris\u00e9 \u00e0 cette session",
+            "description": "Accès non autorisé à cette session",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Acc\u00e8s non autoris\u00e9 \u00e0 cette session"
+                  "detail": "Accès non autorisé à cette session"
                 }
               }
             }
           },
           "404": {
-            "description": "Session non trouv\u00e9e",
+            "description": "Session non trouvée",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Session de caisse non trouv\u00e9e"
+                  "detail": "Session de caisse non trouvée"
                 }
               }
             }
@@ -2209,7 +2209,7 @@
           "cash-sessions"
         ],
         "summary": "Get Cash Session Stats",
-        "description": "R\u00e9cup\u00e8re les statistiques des sessions de caisse (KPIs agr\u00e9g\u00e9s).\n\nSeuls les administrateurs peuvent voir les statistiques.\n\n**\u26a0\ufe0f DEPRECATED:** This endpoint is deprecated. Use `/v1/stats/live` instead.\nThis endpoint will be removed in 3 months (2025-03-09).",
+        "description": "Récupère les statistiques des sessions de caisse (KPIs agrégés).\n\nSeuls les administrateurs peuvent voir les statistiques.\n\n**⚠️ DEPRECATED:** This endpoint is deprecated. Use `/v1/stats/live` instead.\nThis endpoint will be removed in 3 months (2025-03-09).",
         "operationId": "get_cash_session_stats_v1_cash_sessions_stats_summary_get",
         "security": [
           {
@@ -2231,10 +2231,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but (ISO 8601)",
+              "description": "Date de début (ISO 8601)",
               "title": "Date From"
             },
-            "description": "Date de d\u00e9but (ISO 8601)"
+            "description": "Date de début (ISO 8601)"
           },
           {
             "name": "date_to",
@@ -2302,10 +2302,10 @@
       "get": {
         "tags": [
           "cash-sessions",
-          "Sessions de Caisse - M\u00e9triques d'\u00c9tape"
+          "Sessions de Caisse - Métriques d'Étape"
         ],
-        "summary": "R\u00e9cup\u00e9rer les m\u00e9triques d'\u00e9tape d'une session",
-        "description": "R\u00e9cup\u00e8re l'\u00e9tat actuel de l'\u00e9tape du workflow pour une session de caisse.\n\n    **Permissions requises :** USER, ADMIN, ou SUPER_ADMIN\n\n    **Informations retourn\u00e9es :**\n    - \u00c9tape actuelle du workflow (entry/sale/exit)\n    - Timestamp de d\u00e9but de l'\u00e9tape actuelle\n    - Timestamp de derni\u00e8re activit\u00e9\n    - Dur\u00e9e \u00e9coul\u00e9e dans l'\u00e9tape actuelle\n\n    **Utilisation :** Sert aux indicateurs visuels de progression dans l'interface",
+        "summary": "Récupérer les métriques d'étape d'une session",
+        "description": "Récupère l'état actuel de l'étape du workflow pour une session de caisse.\n\n    **Permissions requises :** USER, ADMIN, ou SUPER_ADMIN\n\n    **Informations retournées :**\n    - Étape actuelle du workflow (entry/sale/exit)\n    - Timestamp de début de l'étape actuelle\n    - Timestamp de dernière activité\n    - Durée écoulée dans l'étape actuelle\n\n    **Utilisation :** Sert aux indicateurs visuels de progression dans l'interface",
         "operationId": "get_session_step_metrics_v1_cash_sessions__session_id__step_get",
         "security": [
           {
@@ -2325,7 +2325,7 @@
         ],
         "responses": {
           "200": {
-            "description": "M\u00e9triques d'\u00e9tape r\u00e9cup\u00e9r\u00e9es avec succ\u00e8s",
+            "description": "Métriques d'étape récupérées avec succès",
             "content": {
               "application/json": {
                 "schema": {
@@ -2342,21 +2342,21 @@
             }
           },
           "404": {
-            "description": "Session non trouv\u00e9e",
+            "description": "Session non trouvée",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Session de caisse non trouv\u00e9e"
+                  "detail": "Session de caisse non trouvée"
                 }
               }
             }
           },
           "403": {
-            "description": "Acc\u00e8s non autoris\u00e9",
+            "description": "Accès non autorisé",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Acc\u00e8s non autoris\u00e9"
+                  "detail": "Accès non autorisé"
                 }
               }
             }
@@ -2376,10 +2376,10 @@
       "put": {
         "tags": [
           "cash-sessions",
-          "Sessions de Caisse - M\u00e9triques d'\u00c9tape"
+          "Sessions de Caisse - Métriques d'Étape"
         ],
-        "summary": "Mettre \u00e0 jour l'\u00e9tape d'une session",
-        "description": "Met \u00e0 jour l'\u00e9tape actuelle du workflow pour une session de caisse.\n\n    **Permissions requises :** USER, ADMIN, ou SUPER_ADMIN\n\n    **R\u00e8gles m\u00e9tier :**\n    - Seul l'op\u00e9rateur de la session peut changer son \u00e9tape\n    - Les transitions d'\u00e9tape mettent \u00e0 jour les m\u00e9triques de performance\n    - L'activit\u00e9 est automatiquement trac\u00e9e avec timestamp\n\n    **\u00c9tapes disponibles :**\n    - `entry` : Phase de r\u00e9ception/d\u00e9p\u00f4t d'objets\n    - `sale` : Phase de vente (caisse)\n    - `exit` : Phase de cl\u00f4ture\n\n    **Audit :** Les changements d'\u00e9tape sont trac\u00e9s dans les logs",
+        "summary": "Mettre à jour l'étape d'une session",
+        "description": "Met à jour l'étape actuelle du workflow pour une session de caisse.\n\n    **Permissions requises :** USER, ADMIN, ou SUPER_ADMIN\n\n    **Règles métier :**\n    - Seul l'opérateur de la session peut changer son étape\n    - Les transitions d'étape mettent à jour les métriques de performance\n    - L'activité est automatiquement tracée avec timestamp\n\n    **Étapes disponibles :**\n    - `entry` : Phase de réception/dépôt d'objets\n    - `sale` : Phase de vente (caisse)\n    - `exit` : Phase de clôture\n\n    **Audit :** Les changements d'étape sont tracés dans les logs",
         "operationId": "update_session_step_v1_cash_sessions__session_id__step_put",
         "security": [
           {
@@ -2409,7 +2409,7 @@
         },
         "responses": {
           "200": {
-            "description": "\u00c9tape mise \u00e0 jour avec succ\u00e8s",
+            "description": "Étape mise à jour avec succès",
             "content": {
               "application/json": {
                 "schema": {
@@ -2430,27 +2430,27 @@
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "\u00c9tape invalide"
+                  "detail": "Étape invalide"
                 }
               }
             }
           },
           "403": {
-            "description": "Acc\u00e8s non autoris\u00e9",
+            "description": "Accès non autorisé",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Acc\u00e8s non autoris\u00e9 \u00e0 cette session"
+                  "detail": "Accès non autorisé à cette session"
                 }
               }
             }
           },
           "404": {
-            "description": "Session non trouv\u00e9e",
+            "description": "Session non trouvée",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Session de caisse non trouv\u00e9e"
+                  "detail": "Session de caisse non trouvée"
                 }
               }
             }
@@ -2566,7 +2566,7 @@
         "tags": [
           "cash-registers"
         ],
-        "summary": "Cr\u00e9er un poste de caisse",
+        "summary": "Créer un poste de caisse",
         "operationId": "create_cash_register_v1_cash_registers__post",
         "security": [
           {
@@ -2637,7 +2637,7 @@
         "tags": [
           "cash-registers"
         ],
-        "summary": "R\u00e9cup\u00e9rer un poste de caisse par ID",
+        "summary": "Récupérer un poste de caisse par ID",
         "operationId": "get_cash_register_v1_cash_registers__register_id__get",
         "security": [
           {
@@ -2682,7 +2682,7 @@
         "tags": [
           "cash-registers"
         ],
-        "summary": "Mettre \u00e0 jour un poste de caisse",
+        "summary": "Mettre à jour un poste de caisse",
         "operationId": "update_cash_register_v1_cash_registers__register_id__patch",
         "security": [
           {
@@ -2779,7 +2779,7 @@
           "admin"
         ],
         "summary": "Test simple de l'endpoint admin",
-        "description": "Test simple pour v\u00e9rifier que l'endpoint admin fonctionne",
+        "description": "Test simple pour vérifier que l'endpoint admin fonctionne",
         "operationId": "test_admin_endpoint_v1_admin_health_test_get",
         "responses": {
           "200": {
@@ -2820,8 +2820,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Health check base de donn\u00e9es",
-        "description": "V\u00e9rifie la connectivit\u00e9 \u00e0 la base de donn\u00e9es",
+        "summary": "Health check base de données",
+        "description": "Vérifie la connectivité à la base de données",
         "operationId": "get_database_health_v1_admin_health_database_get",
         "responses": {
           "200": {
@@ -2841,8 +2841,8 @@
           "admin",
           "admin"
         ],
-        "summary": "M\u00e9triques de sant\u00e9 du syst\u00e8me",
-        "description": "Expose les m\u00e9triques de sant\u00e9, anomalies d\u00e9tect\u00e9es et recommandations",
+        "summary": "Métriques de santé du système",
+        "description": "Expose les métriques de santé, anomalies détectées et recommandations",
         "operationId": "get_system_health_v1_admin_health_get",
         "responses": {
           "200": {
@@ -2867,8 +2867,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Anomalies d\u00e9tect\u00e9es",
-        "description": "R\u00e9cup\u00e8re uniquement les anomalies d\u00e9tect\u00e9es sans r\u00e9ex\u00e9cuter la d\u00e9tection",
+        "summary": "Anomalies détectées",
+        "description": "Récupère uniquement les anomalies détectées sans réexécuter la détection",
         "operationId": "get_anomalies_v1_admin_health_anomalies_get",
         "responses": {
           "200": {
@@ -2894,7 +2894,7 @@
           "admin"
         ],
         "summary": "Statut du scheduler",
-        "description": "R\u00e9cup\u00e8re le statut du scheduler de t\u00e2ches planifi\u00e9es",
+        "description": "Récupère le statut du scheduler de tâches planifiées",
         "operationId": "get_scheduler_status_v1_admin_health_scheduler_get",
         "responses": {
           "200": {
@@ -2920,7 +2920,7 @@
           "admin"
         ],
         "summary": "Logs transactionnels (Admin)",
-        "description": "R\u00e9cup\u00e8re les logs transactionnels avec filtres et pagination",
+        "description": "Récupère les logs transactionnels avec filtres et pagination",
         "operationId": "get_transaction_logs_v1_admin_transaction_logs_get",
         "security": [
           {
@@ -2935,11 +2935,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "Num\u00e9ro de page",
+              "description": "Numéro de page",
               "default": 1,
               "title": "Page"
             },
-            "description": "Num\u00e9ro de page"
+            "description": "Numéro de page"
           },
           {
             "name": "page_size",
@@ -2968,10 +2968,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filtrer par type d'\u00e9v\u00e9nement",
+              "description": "Filtrer par type d'événement",
               "title": "Event Type"
             },
-            "description": "Filtrer par type d'\u00e9v\u00e9nement"
+            "description": "Filtrer par type d'événement"
           },
           {
             "name": "user_id",
@@ -3023,10 +3023,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but (ISO format)",
+              "description": "Date de début (ISO format)",
               "title": "Start Date"
             },
-            "description": "Date de d\u00e9but (ISO format)"
+            "description": "Date de début (ISO format)"
           },
           {
             "name": "end_date",
@@ -3081,7 +3081,7 @@
           "admin"
         ],
         "summary": "Journal d'audit (Admin)",
-        "description": "R\u00e9cup\u00e8re le journal d'audit avec filtres et pagination",
+        "description": "Récupère le journal d'audit avec filtres et pagination",
         "operationId": "get_audit_log_v1_admin_audit_log_get",
         "security": [
           {
@@ -3096,11 +3096,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "Num\u00e9ro de page",
+              "description": "Numéro de page",
               "default": 1,
               "title": "Page"
             },
-            "description": "Num\u00e9ro de page"
+            "description": "Numéro de page"
           },
           {
             "name": "page_size",
@@ -3184,10 +3184,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but (ISO format)",
+              "description": "Date de début (ISO format)",
               "title": "Start Date"
             },
-            "description": "Date de d\u00e9but (ISO format)"
+            "description": "Date de début (ISO format)"
           },
           {
             "name": "end_date",
@@ -3221,10 +3221,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Recherche dans description ou d\u00e9tails",
+              "description": "Recherche dans description ou détails",
               "title": "Search"
             },
-            "description": "Recherche dans description ou d\u00e9tails"
+            "description": "Recherche dans description ou détails"
           }
         ],
         "responses": {
@@ -3260,7 +3260,7 @@
           "admin"
         ],
         "summary": "Liste des logs d'emails (Admin)",
-        "description": "R\u00e9cup\u00e8re la liste des emails envoy\u00e9s avec filtrage et pagination",
+        "description": "Récupère la liste des emails envoyés avec filtrage et pagination",
         "operationId": "get_email_logs_v1_admin_email_logs_get",
         "security": [
           {
@@ -3347,11 +3347,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "Num\u00e9ro de page",
+              "description": "Numéro de page",
               "default": 1,
               "title": "Page"
             },
-            "description": "Num\u00e9ro de page"
+            "description": "Numéro de page"
           },
           {
             "name": "per_page",
@@ -3361,11 +3361,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 50,
               "title": "Per Page"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           }
         ],
         "responses": {
@@ -3398,8 +3398,8 @@
           "admin",
           "admin"
         ],
-        "summary": "R\u00e9cup\u00e9rer le seuil d'activit\u00e9",
-        "description": "R\u00e9cup\u00e8re le seuil d'activit\u00e9 configur\u00e9 pour d\u00e9terminer si un utilisateur est en ligne",
+        "summary": "Récupérer le seuil d'activité",
+        "description": "Récupère le seuil d'activité configuré pour déterminer si un utilisateur est en ligne",
         "operationId": "get_activity_threshold_v1_admin_settings_activity_threshold_get",
         "responses": {
           "200": {
@@ -3422,8 +3422,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Modifier le seuil d'activit\u00e9",
-        "description": "Modifie le seuil d'activit\u00e9 pour d\u00e9terminer si un utilisateur est en ligne",
+        "summary": "Modifier le seuil d'activité",
+        "description": "Modifie le seuil d'activité pour déterminer si un utilisateur est en ligne",
         "operationId": "update_activity_threshold_v1_admin_settings_activity_threshold_put",
         "requestBody": {
           "content": {
@@ -3471,7 +3471,7 @@
           "admin"
         ],
         "summary": "Liste des utilisateurs (Admin)",
-        "description": "R\u00e9cup\u00e8re la liste des utilisateurs avec filtres optionnels",
+        "description": "Récupère la liste des utilisateurs avec filtres optionnels",
         "operationId": "get_users_v1_admin_users_get",
         "security": [
           {
@@ -3486,11 +3486,11 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer",
+              "description": "Nombre d'éléments à ignorer",
               "default": 0,
               "title": "Skip"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer"
+            "description": "Nombre d'éléments à ignorer"
           },
           {
             "name": "limit",
@@ -3500,11 +3500,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 20,
               "title": "Limit"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           },
           {
             "name": "role",
@@ -3519,10 +3519,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filtrer par r\u00f4le",
+              "description": "Filtrer par rôle",
               "title": "Role"
             },
-            "description": "Filtrer par r\u00f4le"
+            "description": "Filtrer par rôle"
           },
           {
             "name": "user_status",
@@ -3578,7 +3578,7 @@
           "admin"
         ],
         "summary": "Statuts des utilisateurs (Admin)",
-        "description": "R\u00e9cup\u00e8re les statuts en ligne/hors ligne de tous les utilisateurs",
+        "description": "Récupère les statuts en ligne/hors ligne de tous les utilisateurs",
         "operationId": "get_users_statuses_v1_admin_users_statuses_get",
         "responses": {
           "200": {
@@ -3606,7 +3606,7 @@
           "admin"
         ],
         "summary": "Liste des utilisateurs en attente (Admin)",
-        "description": "R\u00e9cup\u00e8re la liste des utilisateurs avec le statut 'pending'",
+        "description": "Récupère la liste des utilisateurs avec le statut 'pending'",
         "operationId": "get_pending_users_v1_admin_users_pending_get",
         "responses": {
           "200": {
@@ -3637,8 +3637,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Historique d'activit\u00e9 d'un utilisateur (Admin)",
-        "description": "R\u00e9cup\u00e8re la chronologie compl\u00e8te et filtrable de l'activit\u00e9 d'un utilisateur",
+        "summary": "Historique d'activité d'un utilisateur (Admin)",
+        "description": "Récupère la chronologie complète et filtrable de l'activité d'un utilisateur",
         "operationId": "get_user_history_v1_admin_users__user_id__history_get",
         "security": [
           {
@@ -3669,10 +3669,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but du filtre (format ISO)",
+              "description": "Date de début du filtre (format ISO)",
               "title": "Date From"
             },
-            "description": "Date de d\u00e9but du filtre (format ISO)"
+            "description": "Date de début du filtre (format ISO)"
           },
           {
             "name": "date_to",
@@ -3706,10 +3706,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Type d'\u00e9v\u00e9nement \u00e0 filtrer (ADMINISTRATION, SESSION CAISSE, VENTE, DEPOT)",
+              "description": "Type d'événement à filtrer (ADMINISTRATION, SESSION CAISSE, VENTE, DEPOT)",
               "title": "Event Type"
             },
-            "description": "Type d'\u00e9v\u00e9nement \u00e0 filtrer (ADMINISTRATION, SESSION CAISSE, VENTE, DEPOT)"
+            "description": "Type d'événement à filtrer (ADMINISTRATION, SESSION CAISSE, VENTE, DEPOT)"
           },
           {
             "name": "skip",
@@ -3718,11 +3718,11 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer",
+              "description": "Nombre d'éléments à ignorer",
               "default": 0,
               "title": "Skip"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer"
+            "description": "Nombre d'éléments à ignorer"
           },
           {
             "name": "limit",
@@ -3732,11 +3732,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 20,
               "title": "Limit"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           }
         ],
         "responses": {
@@ -3769,8 +3769,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Modifier le r\u00f4le d'un utilisateur (Admin)",
-        "description": "Met \u00e0 jour le r\u00f4le d'un utilisateur sp\u00e9cifique",
+        "summary": "Modifier le rôle d'un utilisateur (Admin)",
+        "description": "Met à jour le rôle d'un utilisateur spécifique",
         "operationId": "update_user_role_v1_admin_users__user_id__role_put",
         "security": [
           {
@@ -3829,7 +3829,7 @@
           "admin"
         ],
         "summary": "Modifier le statut actif d'un utilisateur (Admin)",
-        "description": "Met \u00e0 jour le statut is_active d'un utilisateur et enregistre l'historique",
+        "description": "Met à jour le statut is_active d'un utilisateur et enregistre l'historique",
         "operationId": "update_user_status_v1_admin_users__user_id__status_put",
         "security": [
           {
@@ -3887,8 +3887,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Mettre \u00e0 jour le profil d'un utilisateur (Admin)",
-        "description": "Met \u00e0 jour les informations de base du profil utilisateur",
+        "summary": "Mettre à jour le profil d'un utilisateur (Admin)",
+        "description": "Met à jour les informations de base du profil utilisateur",
         "operationId": "update_user_profile_v1_admin_users__user_id__put",
         "security": [
           {
@@ -3946,8 +3946,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Mettre \u00e0 jour les groupes d'un utilisateur (Admin)",
-        "description": "Met \u00e0 jour l'assignation des groupes pour un utilisateur sp\u00e9cifique",
+        "summary": "Mettre à jour les groupes d'un utilisateur (Admin)",
+        "description": "Met à jour l'assignation des groupes pour un utilisateur spécifique",
         "operationId": "update_user_groups_v1_admin_users__user_id__groups_put",
         "security": [
           {
@@ -4005,8 +4005,8 @@
           "admin",
           "admin"
         ],
-        "summary": "D\u00e9clencher la r\u00e9initialisation du mot de passe (Admin)",
-        "description": "Envoie un e-mail de r\u00e9initialisation de mot de passe \u00e0 l'utilisateur sp\u00e9cifi\u00e9.",
+        "summary": "Déclencher la réinitialisation du mot de passe (Admin)",
+        "description": "Envoie un e-mail de réinitialisation de mot de passe à l'utilisateur spécifié.",
         "operationId": "trigger_reset_password_v1_admin_users__user_id__reset_password_post",
         "security": [
           {
@@ -4055,7 +4055,7 @@
           "admin"
         ],
         "summary": "Forcer un nouveau mot de passe (Super Admin uniquement)",
-        "description": "Force un nouveau mot de passe pour un utilisateur. R\u00e9serv\u00e9 aux Super Administrateurs uniquement.",
+        "description": "Force un nouveau mot de passe pour un utilisateur. Réservé aux Super Administrateurs uniquement.",
         "operationId": "force_user_password_v1_admin_users__user_id__force_password_post",
         "security": [
           {
@@ -4113,8 +4113,8 @@
           "admin",
           "admin"
         ],
-        "summary": "R\u00e9initialiser le PIN d'un utilisateur",
-        "description": "Efface le PIN d'un utilisateur, le for\u00e7ant \u00e0 en cr\u00e9er un nouveau",
+        "summary": "Réinitialiser le PIN d'un utilisateur",
+        "description": "Efface le PIN d'un utilisateur, le forçant à en créer un nouveau",
         "operationId": "reset_user_pin_v1_admin_users__user_id__reset_pin_post",
         "security": [
           {
@@ -4164,8 +4164,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Corriger les sessions diff\u00e9r\u00e9es bloqu\u00e9es (Super Admin uniquement)",
-        "description": "Ferme ou supprime les sessions diff\u00e9r\u00e9es ouvertes qui sont bloqu\u00e9es (opened_at dans le pass\u00e9).",
+        "summary": "Corriger les sessions différées bloquées (Super Admin uniquement)",
+        "description": "Ferme ou supprime les sessions différées ouvertes qui sont bloquées (opened_at dans le passé).",
         "operationId": "fix_blocked_deferred_sessions_v1_admin_cash_sessions_fix_blocked_deferred_post",
         "responses": {
           "200": {
@@ -4190,8 +4190,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Fusionner les sessions diff\u00e9r\u00e9es dupliqu\u00e9es pour une m\u00eame date (Super Admin uniquement)",
-        "description": "Ferme les sessions diff\u00e9r\u00e9es dupliqu\u00e9es (m\u00eame op\u00e9rateur, m\u00eame date) en gardant seulement la premi\u00e8re. Les ventes sont pr\u00e9serv\u00e9es.",
+        "summary": "Fusionner les sessions différées dupliquées pour une même date (Super Admin uniquement)",
+        "description": "Ferme les sessions différées dupliquées (même opérateur, même date) en gardant seulement la première. Les ventes sont préservées.",
         "operationId": "merge_duplicate_deferred_sessions_v1_admin_cash_sessions_merge_duplicate_deferred_post",
         "security": [
           {
@@ -4205,10 +4205,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "ID de l'op\u00e9rateur",
+              "description": "ID de l'opérateur",
               "title": "Operator Id"
             },
-            "description": "ID de l'op\u00e9rateur"
+            "description": "ID de l'opérateur"
           },
           {
             "name": "date",
@@ -4252,8 +4252,8 @@
           "admin",
           "admin"
         ],
-        "summary": "T\u00e9l\u00e9charger le template CSV offline pour les r\u00e9ceptions",
-        "description": "Retourne un fichier CSV mod\u00e8le vierge pour la saisie manuelle des r\u00e9ceptions en cas de panne r\u00e9seau. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Télécharger le template CSV offline pour les réceptions",
+        "description": "Retourne un fichier CSV modèle vierge pour la saisie manuelle des réceptions en cas de panne réseau. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "download_reception_offline_template_v1_admin_templates_reception_offline_csv_get",
         "responses": {
           "200": {
@@ -4394,8 +4394,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Test des notifications (retir\u00e9)",
-        "description": "Ne d\u00e9clenche plus d'envoi. Le test de notification sortante via Telegram / bot a \u00e9t\u00e9 retir\u00e9 du p\u00e9rim\u00e8tre administrateur (coh\u00e9rent avec le retrait du canal sortant).",
+        "summary": "Test des notifications (retiré)",
+        "description": "Ne déclenche plus d'envoi. Le test de notification sortante via Telegram / bot a été retiré du périmètre administrateur (cohérent avec le retrait du canal sortant).",
         "operationId": "test_notifications_v1_admin_health_test_notifications_post",
         "responses": {
           "200": {
@@ -4990,7 +4990,7 @@
           "auth"
         ],
         "summary": "Signup",
-        "description": "Cr\u00e9e un nouveau compte utilisateur en attente de validation.",
+        "description": "Crée un nouveau compte utilisateur en attente de validation.",
         "operationId": "signup_v1_auth_signup_post",
         "requestBody": {
           "content": {
@@ -5033,7 +5033,7 @@
           "auth"
         ],
         "summary": "Forgot Password",
-        "description": "G\u00e9n\u00e8re un token de r\u00e9initialisation et l'envoie par email.",
+        "description": "Génère un token de réinitialisation et l'envoie par email.",
         "operationId": "forgot_password_v1_auth_forgot_password_post",
         "requestBody": {
           "content": {
@@ -5076,7 +5076,7 @@
           "auth"
         ],
         "summary": "Reset Password",
-        "description": "R\u00e9initialise le mot de passe avec un token valide.",
+        "description": "Réinitialise le mot de passe avec un token valide.",
         "operationId": "reset_password_v1_auth_reset_password_post",
         "requestBody": {
           "content": {
@@ -5119,7 +5119,7 @@
           "auth"
         ],
         "summary": "Authenticate With Pin",
-        "description": "Authentifie un utilisateur via son ID et PIN, et retourne un JWT.\n\nCette route est utilis\u00e9e pour le changement d'op\u00e9rateur en caisse.\nRate limited \u00e0 5 tentatives par minute pour \u00e9viter le bruteforce.",
+        "description": "Authentifie un utilisateur via son ID et PIN, et retourne un JWT.\n\nCette route est utilisée pour le changement d'opérateur en caisse.\nRate limited à 5 tentatives par minute pour éviter le bruteforce.",
         "operationId": "authenticate_with_pin_v1_auth_pin_post",
         "requestBody": {
           "content": {
@@ -5190,7 +5190,7 @@
           "auth"
         ],
         "summary": "Renouveler l'access token",
-        "description": "Renouvelle l'access token en utilisant un refresh token valide.\n    \n    **Fonctionnalit\u00e9s:**\n    - Rotation automatique du refresh token (chaque utilisation g\u00e9n\u00e8re un nouveau token)\n    - V\u00e9rification de l'activit\u00e9 r\u00e9cente de l'utilisateur (via ActivityService)\n    - Refus si l'utilisateur est inactif depuis plus de `token_expiration_minutes`\n    - Refus si le refresh token est expir\u00e9 (TTL max atteint)\n    - Refus si le refresh token a d\u00e9j\u00e0 \u00e9t\u00e9 utilis\u00e9 (protection contre replay)\n    \n    **Codes de r\u00e9ponse:**\n    - `200 OK`: Refresh r\u00e9ussi, nouveaux tokens retourn\u00e9s\n    - `401 Unauthorized`: Refresh token invalide, expir\u00e9 ou d\u00e9j\u00e0 utilis\u00e9\n    - `403 Forbidden`: Utilisateur inactif depuis trop longtemps\n    - `429 Too Many Requests`: Limite de taux d\u00e9pass\u00e9e (10 requ\u00eates/minute)\n    - `500 Internal Server Error`: Erreur serveur\n    \n    **Story B42-P2:** Refresh token avec rotation et v\u00e9rification d'activit\u00e9.\n    **Story B42-P4:** Instrumentation des m\u00e9triques de session.",
+        "description": "Renouvelle l'access token en utilisant un refresh token valide.\n    \n    **Fonctionnalités:**\n    - Rotation automatique du refresh token (chaque utilisation génère un nouveau token)\n    - Vérification de l'activité récente de l'utilisateur (via ActivityService)\n    - Refus si l'utilisateur est inactif depuis plus de `token_expiration_minutes`\n    - Refus si le refresh token est expiré (TTL max atteint)\n    - Refus si le refresh token a déjà été utilisé (protection contre replay)\n    \n    **Codes de réponse:**\n    - `200 OK`: Refresh réussi, nouveaux tokens retournés\n    - `401 Unauthorized`: Refresh token invalide, expiré ou déjà utilisé\n    - `403 Forbidden`: Utilisateur inactif depuis trop longtemps\n    - `429 Too Many Requests`: Limite de taux dépassée (10 requêtes/minute)\n    - `500 Internal Server Error`: Erreur serveur\n    \n    **Story B42-P2:** Refresh token avec rotation et vérification d'activité.\n    **Story B42-P4:** Instrumentation des métriques de session.",
         "operationId": "refresh_token_v1_auth_refresh_post",
         "requestBody": {
           "content": {
@@ -5204,7 +5204,7 @@
         },
         "responses": {
           "200": {
-            "description": "Refresh r\u00e9ussi, nouveaux tokens retourn\u00e9s",
+            "description": "Refresh réussi, nouveaux tokens retournés",
             "content": {
               "application/json": {
                 "schema": {
@@ -5220,11 +5220,11 @@
             }
           },
           "401": {
-            "description": "Refresh token invalide, expir\u00e9 ou d\u00e9j\u00e0 utilis\u00e9",
+            "description": "Refresh token invalide, expiré ou déjà utilisé",
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Refresh token invalide ou expir\u00e9"
+                  "detail": "Refresh token invalide ou expiré"
                 }
               }
             }
@@ -5234,13 +5234,13 @@
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "Session expir\u00e9e - inactivit\u00e9 trop longue"
+                  "detail": "Session expirée - inactivité trop longue"
                 }
               }
             }
           },
           "429": {
-            "description": "Limite de taux d\u00e9pass\u00e9e",
+            "description": "Limite de taux dépassée",
             "content": {
               "application/json": {
                 "example": {
@@ -5488,8 +5488,8 @@
           "admin",
           "reports"
         ],
-        "summary": "T\u00e9l\u00e9charger un rapport de session de caisse par ID de session",
-        "description": "G\u00e9n\u00e8re et t\u00e9l\u00e9charge le rapport CSV d'une session de caisse par son ID.",
+        "summary": "Télécharger un rapport de session de caisse par ID de session",
+        "description": "Génère et télécharge le rapport CSV d'une session de caisse par son ID.",
         "operationId": "download_cash_session_report_by_id_v1_admin_reports_cash_sessions_by_session__session_id__get",
         "security": [
           {
@@ -5584,8 +5584,8 @@
           "admin",
           "reports"
         ],
-        "summary": "Exporter toutes les sessions de caisse filtr\u00e9es",
-        "description": "Exporte toutes les sessions de caisse correspondant aux filtres en format CSV ou Excel.\n    \n    **Format CSV** : Fichier consolid\u00e9 avec toutes les sessions (une ligne par session).\n    **Format Excel** : Fichier avec deux onglets :\n    - \"R\u00e9sum\u00e9\" : Vue synth\u00e9tique avec totaux\n    - \"D\u00e9tails\" : Toutes les informations d\u00e9taill\u00e9es\n    \n    **Permissions** : ADMIN ou SUPER_ADMIN uniquement\n    **Limite** : Maximum 10 000 sessions par export",
+        "summary": "Exporter toutes les sessions de caisse filtrées",
+        "description": "Exporte toutes les sessions de caisse correspondant aux filtres en format CSV ou Excel.\n    \n    **Format CSV** : Fichier consolidé avec toutes les sessions (une ligne par session).\n    **Format Excel** : Fichier avec deux onglets :\n    - \"Résumé\" : Vue synthétique avec totaux\n    - \"Détails\" : Toutes les informations détaillées\n    \n    **Permissions** : ADMIN ou SUPER_ADMIN uniquement\n    **Limite** : Maximum 10 000 sessions par export",
         "operationId": "export_bulk_cash_sessions_v1_admin_reports_cash_sessions_export_bulk_post",
         "requestBody": {
           "content": {
@@ -5630,8 +5630,8 @@
           "admin",
           "reports"
         ],
-        "summary": "Exporter tous les tickets de r\u00e9ception filtr\u00e9s",
-        "description": "Exporte tous les tickets de r\u00e9ception correspondant aux filtres en format CSV ou Excel.\n    \n    **Format CSV** : Fichier consolid\u00e9 avec tous les tickets (une ligne par ticket).\n    **Format Excel** : Fichier avec deux onglets :\n    - \"R\u00e9sum\u00e9\" : Vue synth\u00e9tique avec totaux\n    - \"D\u00e9tails\" : Toutes les informations d\u00e9taill\u00e9es\n    \n    **Permissions** : ADMIN ou SUPER_ADMIN uniquement\n    **Limite** : Maximum 10 000 tickets par export",
+        "summary": "Exporter tous les tickets de réception filtrés",
+        "description": "Exporte tous les tickets de réception correspondant aux filtres en format CSV ou Excel.\n    \n    **Format CSV** : Fichier consolidé avec tous les tickets (une ligne par ticket).\n    **Format Excel** : Fichier avec deux onglets :\n    - \"Résumé\" : Vue synthétique avec totaux\n    - \"Détails\" : Toutes les informations détaillées\n    \n    **Permissions** : ADMIN ou SUPER_ADMIN uniquement\n    **Limite** : Maximum 10 000 tickets par export",
         "operationId": "export_bulk_reception_tickets_v1_admin_reports_reception_tickets_export_bulk_post",
         "requestBody": {
           "content": {
@@ -5783,7 +5783,7 @@
           "settings"
         ],
         "summary": "Get Session Settings",
-        "description": "R\u00e9cup\u00e8re les param\u00e8tres de session (dur\u00e9e d'expiration des tokens).",
+        "description": "Récupère les paramètres de session (durée d'expiration des tokens).",
         "operationId": "get_session_settings_v1_admin_settings_session_get",
         "responses": {
           "200": {
@@ -5811,7 +5811,7 @@
           "settings"
         ],
         "summary": "Update Session Settings",
-        "description": "Met \u00e0 jour les param\u00e8tres de session (dur\u00e9e d'expiration des tokens).",
+        "description": "Met à jour les paramètres de session (durée d'expiration des tokens).",
         "operationId": "update_session_settings_v1_admin_settings_session_put",
         "requestBody": {
           "content": {
@@ -5861,7 +5861,7 @@
           "settings"
         ],
         "summary": "Get Email Settings",
-        "description": "R\u00e9cup\u00e8re les param\u00e8tres de configuration email (Brevo).",
+        "description": "Récupère les paramètres de configuration email (Brevo).",
         "operationId": "get_email_settings_v1_admin_settings_email_get",
         "responses": {
           "200": {
@@ -5889,7 +5889,7 @@
           "settings"
         ],
         "summary": "Update Email Settings",
-        "description": "Met \u00e0 jour les param\u00e8tres de configuration email (Brevo).",
+        "description": "Met à jour les paramètres de configuration email (Brevo).",
         "operationId": "update_email_settings_v1_admin_settings_email_put",
         "requestBody": {
           "content": {
@@ -5939,7 +5939,7 @@
           "settings"
         ],
         "summary": "Test Email Settings",
-        "description": "Envoie un email de test pour v\u00e9rifier la configuration Brevo.\n\nCette endpoint v\u00e9rifie que:\n1. La cl\u00e9 API Brevo est configur\u00e9e\n2. Le service email fonctionne correctement\n3. L'email peut \u00eatre envoy\u00e9 au destinataire sp\u00e9cifi\u00e9",
+        "description": "Envoie un email de test pour vérifier la configuration Brevo.\n\nCette endpoint vérifie que:\n1. La clé API Brevo est configurée\n2. Le service email fonctionne correctement\n3. L'email peut être envoyé au destinataire spécifié",
         "operationId": "test_email_settings_v1_admin_settings_email_test_post",
         "requestBody": {
           "content": {
@@ -6085,7 +6085,7 @@
           "reception"
         ],
         "summary": "Open Poste",
-        "description": "Ouvrir un poste de r\u00e9ception.\n\nSi `opened_at` est fourni, seuls ADMIN et SUPER_ADMIN peuvent cr\u00e9er le poste (saisie diff\u00e9r\u00e9e).",
+        "description": "Ouvrir un poste de réception.\n\nSi `opened_at` est fourni, seuls ADMIN et SUPER_ADMIN peuvent créer le poste (saisie différée).",
         "operationId": "open_poste_v1_reception_postes_open_post",
         "requestBody": {
           "content": {
@@ -6230,7 +6230,7 @@
           "reception"
         ],
         "summary": "Get Tickets",
-        "description": "R\u00e9cup\u00e9rer la liste des tickets de r\u00e9ception avec pagination.",
+        "description": "Récupérer la liste des tickets de réception avec pagination.",
         "operationId": "get_tickets_v1_reception_tickets_get",
         "security": [
           {
@@ -6245,11 +6245,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "Num\u00e9ro de page",
+              "description": "Numéro de page",
               "default": 1,
               "title": "Page"
             },
-            "description": "Num\u00e9ro de page"
+            "description": "Numéro de page"
           },
           {
             "name": "per_page",
@@ -6259,11 +6259,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 10,
               "title": "Per Page"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           },
           {
             "name": "status",
@@ -6297,10 +6297,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but (inclusive) au format ISO 8601",
+              "description": "Date de début (inclusive) au format ISO 8601",
               "title": "Date From"
             },
-            "description": "Date de d\u00e9but (inclusive) au format ISO 8601"
+            "description": "Date de début (inclusive) au format ISO 8601"
           },
           {
             "name": "date_to",
@@ -6334,10 +6334,10 @@
                   "type": "null"
                 }
               ],
-              "description": "ID du b\u00e9n\u00e9vole",
+              "description": "ID du bénévole",
               "title": "Benevole Id"
             },
-            "description": "ID du b\u00e9n\u00e9vole"
+            "description": "ID du bénévole"
           },
           {
             "name": "search",
@@ -6352,10 +6352,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Recherche textuelle (ID ticket ou nom b\u00e9n\u00e9vole)",
+              "description": "Recherche textuelle (ID ticket ou nom bénévole)",
               "title": "Search"
             },
-            "description": "Recherche textuelle (ID ticket ou nom b\u00e9n\u00e9vole)"
+            "description": "Recherche textuelle (ID ticket ou nom bénévole)"
           },
           {
             "name": "include_empty",
@@ -6423,10 +6423,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cat\u00e9gories (multi-s\u00e9lection)",
+              "description": "Catégories (multi-sélection)",
               "title": "Categories"
             },
-            "description": "Cat\u00e9gories (multi-s\u00e9lection)"
+            "description": "Catégories (multi-sélection)"
           },
           {
             "name": "destinations",
@@ -6444,10 +6444,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Destinations (multi-s\u00e9lection)",
+              "description": "Destinations (multi-sélection)",
               "title": "Destinations"
             },
-            "description": "Destinations (multi-s\u00e9lection)"
+            "description": "Destinations (multi-sélection)"
           },
           {
             "name": "lignes_min",
@@ -6609,7 +6609,7 @@
           "reception"
         ],
         "summary": "Get Lignes Depot",
-        "description": "R\u00e9cup\u00e9rer la liste des lignes de d\u00e9p\u00f4t avec filtres et pagination pour les rapports.",
+        "description": "Récupérer la liste des lignes de dépôt avec filtres et pagination pour les rapports.",
         "operationId": "get_lignes_depot_v1_reception_lignes_get",
         "security": [
           {
@@ -6624,11 +6624,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "Num\u00e9ro de page",
+              "description": "Numéro de page",
               "default": 1,
               "title": "Page"
             },
-            "description": "Num\u00e9ro de page"
+            "description": "Numéro de page"
           },
           {
             "name": "per_page",
@@ -6638,11 +6638,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 50,
               "title": "Per Page"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           },
           {
             "name": "start_date",
@@ -6658,10 +6658,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but (inclusive) au format YYYY-MM-DD",
+              "description": "Date de début (inclusive) au format YYYY-MM-DD",
               "title": "Start Date"
             },
-            "description": "Date de d\u00e9but (inclusive) au format YYYY-MM-DD"
+            "description": "Date de début (inclusive) au format YYYY-MM-DD"
           },
           {
             "name": "end_date",
@@ -6695,10 +6695,10 @@
                   "type": "null"
                 }
               ],
-              "description": "ID de la cat\u00e9gorie \u00e0 filtrer",
+              "description": "ID de la catégorie à filtrer",
               "title": "Category Id"
             },
-            "description": "ID de la cat\u00e9gorie \u00e0 filtrer"
+            "description": "ID de la catégorie à filtrer"
           }
         ],
         "responses": {
@@ -6731,7 +6731,7 @@
           "reception"
         ],
         "summary": "Get Categories",
-        "description": "R\u00e9cup\u00e9rer les cat\u00e9gories disponibles.\n\nStory B48-P5: Retourne name (nom court/rapide) pour l'affichage op\u00e9rationnel.",
+        "description": "Récupérer les catégories disponibles.\n\nStory B48-P5: Retourne name (nom court/rapide) pour l'affichage opérationnel.",
         "operationId": "get_categories_v1_reception_categories_get",
         "responses": {
           "200": {
@@ -6856,7 +6856,7 @@
           "reception"
         ],
         "summary": "Update Ligne Weight",
-        "description": "Modifier le poids d'une ligne de r\u00e9ception (admin uniquement).\n\nStory B52-P2: Permet de corriger les erreurs de saisie de poids apr\u00e8s validation.\n- Seuls les administrateurs peuvent modifier\n- Permet la modification m\u00eame si le ticket est ferm\u00e9\n- Recalcule automatiquement les statistiques affect\u00e9es\n- Log d'audit complet",
+        "description": "Modifier le poids d'une ligne de réception (admin uniquement).\n\nStory B52-P2: Permet de corriger les erreurs de saisie de poids après validation.\n- Seuls les administrateurs peuvent modifier\n- Permet la modification même si le ticket est fermé\n- Recalcule automatiquement les statistiques affectées\n- Log d'audit complet",
         "operationId": "update_ligne_weight_v1_reception_tickets__ticket_id__lignes__ligne_id__weight_patch",
         "security": [
           {
@@ -6923,7 +6923,7 @@
           "reception"
         ],
         "summary": "Get Ticket Detail",
-        "description": "R\u00e9cup\u00e9rer les d\u00e9tails complets d'un ticket de r\u00e9ception.",
+        "description": "Récupérer les détails complets d'un ticket de réception.",
         "operationId": "get_ticket_detail_v1_reception_tickets__ticket_id__get",
         "security": [
           {
@@ -6971,7 +6971,7 @@
           "reception"
         ],
         "summary": "Generate Ticket Download Token",
-        "description": "G\u00e9n\u00e9rer un token de t\u00e9l\u00e9chargement pour un ticket de r\u00e9ception (B44-P4).",
+        "description": "Générer un token de téléchargement pour un ticket de réception (B44-P4).",
         "operationId": "generate_ticket_download_token_v1_reception_tickets__ticket_id__download_token_post",
         "security": [
           {
@@ -7017,7 +7017,7 @@
           "reception"
         ],
         "summary": "Export Ticket Csv",
-        "description": "Exporter un ticket de r\u00e9ception au format CSV.\n\nAuthentification via token sign\u00e9 (g\u00e9n\u00e9r\u00e9 via POST /tickets/{ticket_id}/download-token).\nLe navigateur t\u00e9l\u00e9charge directement depuis cette URL, garantissant que le nom de fichier\ndepuis le header Content-Disposition est respect\u00e9.",
+        "description": "Exporter un ticket de réception au format CSV.\n\nAuthentification via token signé (généré via POST /tickets/{ticket_id}/download-token).\nLe navigateur télécharge directement depuis cette URL, garantissant que le nom de fichier\ndepuis le header Content-Disposition est respecté.",
         "operationId": "export_ticket_csv_v1_reception_tickets__ticket_id__export_csv_get",
         "parameters": [
           {
@@ -7035,10 +7035,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Token de t\u00e9l\u00e9chargement sign\u00e9 (obligatoire)",
+              "description": "Token de téléchargement signé (obligatoire)",
               "title": "Token"
             },
-            "description": "Token de t\u00e9l\u00e9chargement sign\u00e9 (obligatoire)"
+            "description": "Token de téléchargement signé (obligatoire)"
           }
         ],
         "responses": {
@@ -7069,7 +7069,7 @@
           "reception"
         ],
         "summary": "Export Lignes Depot Csv",
-        "description": "Exporter les lignes de d\u00e9p\u00f4t au format CSV.",
+        "description": "Exporter les lignes de dépôt au format CSV.",
         "operationId": "export_lignes_depot_csv_v1_reception_lignes_export_csv_get",
         "security": [
           {
@@ -7091,10 +7091,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Date de d\u00e9but (inclusive) au format YYYY-MM-DD",
+              "description": "Date de début (inclusive) au format YYYY-MM-DD",
               "title": "Start Date"
             },
-            "description": "Date de d\u00e9but (inclusive) au format YYYY-MM-DD"
+            "description": "Date de début (inclusive) au format YYYY-MM-DD"
           },
           {
             "name": "end_date",
@@ -7128,10 +7128,10 @@
                   "type": "null"
                 }
               ],
-              "description": "ID de la cat\u00e9gorie \u00e0 filtrer",
+              "description": "ID de la catégorie à filtrer",
               "title": "Category Id"
             },
-            "description": "ID de la cat\u00e9gorie \u00e0 filtrer"
+            "description": "ID de la catégorie à filtrer"
           }
         ],
         "responses": {
@@ -7162,7 +7162,7 @@
           "reception"
         ],
         "summary": "Get Live Reception Stats",
-        "description": "Get live reception statistics for admin dashboard.\n\nReturns real-time KPIs including open tickets, recent closures,\nturnover, donations, and weight metrics for the last 24 hours.\n\nRequires admin or super-admin permissions.\n\n**\u26a0\ufe0f DEPRECATED:** This endpoint is deprecated. Use `/v1/stats/live` instead.\nThis endpoint will be removed in 3 months (2025-03-09).",
+        "description": "Get live reception statistics for admin dashboard.\n\nReturns real-time KPIs including open tickets, recent closures,\nturnover, donations, and weight metrics for the last 24 hours.\n\nRequires admin or super-admin permissions.\n\n**⚠️ DEPRECATED:** This endpoint is deprecated. Use `/v1/stats/live` instead.\nThis endpoint will be removed in 3 months (2025-03-09).",
         "operationId": "get_live_reception_stats_v1_reception_stats_live_get",
         "security": [
           {
@@ -7462,7 +7462,7 @@
           "stats"
         ],
         "summary": "Get Unified Live Stats",
-        "description": "Get unified live statistics for all modules (caisse + r\u00e9ception).\n\nReturns consistent KPIs with same period (daily by default).\n\n**Stats incluses :**\n- Caisse : tickets_count, last_ticket_amount, ca, donations, weight_out_sales\n- R\u00e9ception : tickets_open, tickets_closed_24h, items_received\n- Mati\u00e8re : weight_in (entr\u00e9es), weight_out (sorties)\n\n**P\u00e9riode :**\n- `daily` (d\u00e9faut) : Journ\u00e9e compl\u00e8te (minuit-minuit UTC)\n- `24h` : 24 heures glissantes (r\u00e9trocompatibilit\u00e9)\n\n**Permissions :** Admin ou Super Admin uniquement",
+        "description": "Get unified live statistics for all modules (caisse + réception).\n\nReturns consistent KPIs with same period (daily by default).\n\n**Stats incluses :**\n- Caisse : tickets_count, last_ticket_amount, ca, donations, weight_out_sales\n- Réception : tickets_open, tickets_closed_24h, items_received\n- Matière : weight_in (entrées), weight_out (sorties)\n\n**Période :**\n- `daily` (défaut) : Journée complète (minuit-minuit UTC)\n- `24h` : 24 heures glissantes (rétrocompatibilité)\n\n**Permissions :** Admin ou Super Admin uniquement",
         "operationId": "get_unified_live_stats_v1_stats_live_get",
         "security": [
           {
@@ -7480,11 +7480,11 @@
                 "daily"
               ],
               "type": "string",
-              "description": "Type de p\u00e9riode (daily=minuit-minuit, 24h=24h glissantes)",
+              "description": "Type de période (daily=minuit-minuit, 24h=24h glissantes)",
               "default": "daily",
               "title": "Period Type"
             },
-            "description": "Type de p\u00e9riode (daily=minuit-minuit, 24h=24h glissantes)"
+            "description": "Type de période (daily=minuit-minuit, 24h=24h glissantes)"
           },
           {
             "name": "site_id",
@@ -7582,7 +7582,7 @@
           "categories"
         ],
         "summary": "List all categories",
-        "description": "Get all categories, optionally filtered by active status. Story B48-P1: Exclut les cat\u00e9gories archiv\u00e9es par d\u00e9faut. Requires authentication.",
+        "description": "Get all categories, optionally filtered by active status. Story B48-P1: Exclut les catégories archivées par défaut. Requires authentication.",
         "operationId": "get_categories_v1_categories__get",
         "security": [
           {
@@ -7766,8 +7766,8 @@
           "categories",
           "categories"
         ],
-        "summary": "T\u00e9l\u00e9charger le mod\u00e8le CSV d'import des cat\u00e9gories",
-        "description": "Retourne un fichier CSV mod\u00e8le avec les colonnes requises. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Télécharger le modèle CSV d'import des catégories",
+        "description": "Retourne un fichier CSV modèle avec les colonnes requises. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "download_categories_import_template_v1_categories_import_template_get",
         "responses": {
           "200": {
@@ -7792,8 +7792,8 @@
           "categories",
           "categories"
         ],
-        "summary": "Analyser un CSV d'import de cat\u00e9gories",
-        "description": "Valide le CSV et pr\u00e9pare une session d'import. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Analyser un CSV d'import de catégories",
+        "description": "Valide le CSV et prépare une session d'import. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "analyze_categories_import_v1_categories_import_analyze_post",
         "requestBody": {
           "content": {
@@ -7840,8 +7840,8 @@
           "categories",
           "categories"
         ],
-        "summary": "Ex\u00e9cuter un import de cat\u00e9gories depuis une session",
-        "description": "Ex\u00e9cute l'upsert transactionnel \u00e0 partir d'une session d'analyse. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Exécuter un import de catégories depuis une session",
+        "description": "Exécute l'upsert transactionnel à partir d'une session d'analyse. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "execute_categories_import_v1_categories_import_execute_post",
         "requestBody": {
           "content": {
@@ -8637,7 +8637,7 @@
           "settings"
         ],
         "summary": "Get Settings",
-        "description": "R\u00e9cup\u00e9rer tous les param\u00e8tres (Admin seulement).",
+        "description": "Récupérer tous les paramètres (Admin seulement).",
         "operationId": "get_settings_v1_settings__get",
         "responses": {
           "200": {
@@ -8666,7 +8666,7 @@
           "settings"
         ],
         "summary": "Create Setting",
-        "description": "Cr\u00e9er un nouveau param\u00e8tre (Admin seulement).",
+        "description": "Créer un nouveau paramètre (Admin seulement).",
         "operationId": "create_setting_v1_settings__post",
         "requestBody": {
           "content": {
@@ -8713,7 +8713,7 @@
           "settings"
         ],
         "summary": "Get Setting",
-        "description": "R\u00e9cup\u00e9rer un param\u00e8tre par sa cl\u00e9 (Admin seulement).",
+        "description": "Récupérer un paramètre par sa clé (Admin seulement).",
         "operationId": "get_setting_v1_settings__key__get",
         "security": [
           {
@@ -8759,7 +8759,7 @@
           "settings"
         ],
         "summary": "Update Setting",
-        "description": "Mettre \u00e0 jour un param\u00e8tre existant (Admin seulement).",
+        "description": "Mettre à jour un paramètre existant (Admin seulement).",
         "operationId": "update_setting_v1_settings__key__put",
         "security": [
           {
@@ -8815,7 +8815,7 @@
           "settings"
         ],
         "summary": "Delete Setting",
-        "description": "Supprimer un param\u00e8tre (Admin seulement).",
+        "description": "Supprimer un paramètre (Admin seulement).",
         "operationId": "delete_setting_v1_settings__key__delete",
         "security": [
           {
@@ -8861,8 +8861,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Export manuel de la base de donn\u00e9es (Super Admin uniquement)",
-        "description": "G\u00e9n\u00e8re un export pg_dump au format binaire (.dump) de la base de donn\u00e9es et le t\u00e9l\u00e9charge",
+        "summary": "Export manuel de la base de données (Super Admin uniquement)",
+        "description": "Génère un export pg_dump au format binaire (.dump) de la base de données et le télécharge",
         "operationId": "export_database_v1_admin_db_export_post",
         "responses": {
           "200": {
@@ -8882,8 +8882,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Purge s\u00e9curis\u00e9e des donn\u00e9es transactionnelles (Super Admin uniquement)",
-        "description": "Supprime toutes les donn\u00e9es de ventes, r\u00e9ceptions et sessions de caisse. Action irr\u00e9versible.",
+        "summary": "Purge sécurisée des données transactionnelles (Super Admin uniquement)",
+        "description": "Supprime toutes les données de ventes, réceptions et sessions de caisse. Action irréversible.",
         "operationId": "purge_transactional_data_v1_admin_db_purge_transactions_post",
         "responses": {
           "200": {
@@ -8908,8 +8908,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Import de sauvegarde de base de donn\u00e9es (Super Admin uniquement)",
-        "description": "Importe un fichier .dump de sauvegarde PostgreSQL et remplace la base de donn\u00e9es existante. Action irr\u00e9versible.",
+        "summary": "Import de sauvegarde de base de données (Super Admin uniquement)",
+        "description": "Importe un fichier .dump de sauvegarde PostgreSQL et remplace la base de données existante. Action irréversible.",
         "operationId": "import_database_v1_admin_db_import_post",
         "requestBody": {
           "content": {
@@ -8956,7 +8956,7 @@
           "groups"
         ],
         "summary": "Liste des groupes",
-        "description": "R\u00e9cup\u00e8re la liste de tous les groupes avec leurs utilisateurs et permissions",
+        "description": "Récupère la liste de tous les groupes avec leurs utilisateurs et permissions",
         "operationId": "list_groups_v1_admin_groups__get",
         "security": [
           {
@@ -8971,11 +8971,11 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer",
+              "description": "Nombre d'éléments à ignorer",
               "default": 0,
               "title": "Skip"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer"
+            "description": "Nombre d'éléments à ignorer"
           },
           {
             "name": "limit",
@@ -8985,11 +8985,11 @@
               "type": "integer",
               "maximum": 1000,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 100,
               "title": "Limit"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           }
         ],
         "responses": {
@@ -9025,8 +9025,8 @@
           "groups",
           "groups"
         ],
-        "summary": "Cr\u00e9er un groupe",
-        "description": "Cr\u00e9e un nouveau groupe",
+        "summary": "Créer un groupe",
+        "description": "Crée un nouveau groupe",
         "operationId": "create_group_v1_admin_groups__post",
         "security": [
           {
@@ -9074,8 +9074,8 @@
           "groups",
           "groups"
         ],
-        "summary": "D\u00e9tails d'un groupe",
-        "description": "R\u00e9cup\u00e8re les d\u00e9tails complets d'un groupe incluant les objets utilisateurs et permissions",
+        "summary": "Détails d'un groupe",
+        "description": "Récupère les détails complets d'un groupe incluant les objets utilisateurs et permissions",
         "operationId": "get_group_v1_admin_groups__group_id__get",
         "security": [
           {
@@ -9122,8 +9122,8 @@
           "groups",
           "groups"
         ],
-        "summary": "Mettre \u00e0 jour un groupe",
-        "description": "Met \u00e0 jour les informations d'un groupe",
+        "summary": "Mettre à jour un groupe",
+        "description": "Met à jour les informations d'un groupe",
         "operationId": "update_group_v1_admin_groups__group_id__put",
         "security": [
           {
@@ -9181,7 +9181,7 @@
           "groups"
         ],
         "summary": "Supprimer un groupe",
-        "description": "Supprime un groupe (les utilisateurs et permissions ne sont pas supprim\u00e9s)",
+        "description": "Supprime un groupe (les utilisateurs et permissions ne sont pas supprimés)",
         "operationId": "delete_group_v1_admin_groups__group_id__delete",
         "security": [
           {
@@ -9223,8 +9223,8 @@
           "groups",
           "groups"
         ],
-        "summary": "Assigner des permissions \u00e0 un groupe",
-        "description": "Ajoute une ou plusieurs permissions \u00e0 un groupe",
+        "summary": "Assigner des permissions à un groupe",
+        "description": "Ajoute une ou plusieurs permissions à un groupe",
         "operationId": "assign_permissions_to_group_v1_admin_groups__group_id__permissions_post",
         "security": [
           {
@@ -9342,8 +9342,8 @@
           "groups",
           "groups"
         ],
-        "summary": "Assigner des utilisateurs \u00e0 un groupe",
-        "description": "Ajoute un ou plusieurs utilisateurs \u00e0 un groupe",
+        "summary": "Assigner des utilisateurs à un groupe",
+        "description": "Ajoute un ou plusieurs utilisateurs à un groupe",
         "operationId": "assign_users_to_group_v1_admin_groups__group_id__users_post",
         "security": [
           {
@@ -9462,7 +9462,7 @@
           "permissions"
         ],
         "summary": "Liste des permissions",
-        "description": "R\u00e9cup\u00e8re la liste de toutes les permissions disponibles",
+        "description": "Récupère la liste de toutes les permissions disponibles",
         "operationId": "list_permissions_v1_admin_permissions__get",
         "security": [
           {
@@ -9477,11 +9477,11 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer",
+              "description": "Nombre d'éléments à ignorer",
               "default": 0,
               "title": "Skip"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer"
+            "description": "Nombre d'éléments à ignorer"
           },
           {
             "name": "limit",
@@ -9491,11 +9491,11 @@
               "type": "integer",
               "maximum": 1000,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 100,
               "title": "Limit"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           }
         ],
         "responses": {
@@ -9531,8 +9531,8 @@
           "permissions",
           "permissions"
         ],
-        "summary": "Cr\u00e9er une permission",
-        "description": "Cr\u00e9e une nouvelle permission",
+        "summary": "Créer une permission",
+        "description": "Crée une nouvelle permission",
         "operationId": "create_permission_v1_admin_permissions__post",
         "security": [
           {
@@ -9580,8 +9580,8 @@
           "permissions",
           "permissions"
         ],
-        "summary": "D\u00e9tails d'une permission",
-        "description": "R\u00e9cup\u00e8re les d\u00e9tails d'une permission sp\u00e9cifique",
+        "summary": "Détails d'une permission",
+        "description": "Récupère les détails d'une permission spécifique",
         "operationId": "get_permission_v1_admin_permissions__permission_id__get",
         "security": [
           {
@@ -9628,8 +9628,8 @@
           "permissions",
           "permissions"
         ],
-        "summary": "Mettre \u00e0 jour une permission",
-        "description": "Met \u00e0 jour les informations d'une permission",
+        "summary": "Mettre à jour une permission",
+        "description": "Met à jour les informations d'une permission",
         "operationId": "update_permission_v1_admin_permissions__permission_id__put",
         "security": [
           {
@@ -9687,7 +9687,7 @@
           "permissions"
         ],
         "summary": "Supprimer une permission",
-        "description": "Supprime une permission (sera retir\u00e9e de tous les groupes qui l'ont)",
+        "description": "Supprime une permission (sera retirée de tous les groupes qui l'ont)",
         "operationId": "delete_permission_v1_admin_permissions__permission_id__delete",
         "security": [
           {
@@ -9728,7 +9728,7 @@
           "webhooks"
         ],
         "summary": "Brevo Email Status Webhook",
-        "description": "Webhook pour recevoir les mises \u00e0 jour de statut des emails de Brevo.\n\nBrevo envoie des webhooks pour les \u00e9v\u00e9nements suivants :\n- sent: Email envoy\u00e9\n- delivered: Email livr\u00e9\n- opened: Email ouvert\n- clicked: Lien cliqu\u00e9\n- bounced: Email rebondi\n- blocked: Email bloqu\u00e9\n- invalid: Email invalide\n- complaint: Plainte (spam)",
+        "description": "Webhook pour recevoir les mises à jour de statut des emails de Brevo.\n\nBrevo envoie des webhooks pour les événements suivants :\n- sent: Email envoyé\n- delivered: Email livré\n- opened: Email ouvert\n- clicked: Lien cliqué\n- bounced: Email rebondi\n- blocked: Email bloqué\n- invalid: Email invalide\n- complaint: Plainte (spam)",
         "operationId": "brevo_email_status_webhook_v1_webhooks_brevo_email_status_post",
         "responses": {
           "200": {
@@ -9748,7 +9748,7 @@
           "webhooks"
         ],
         "summary": "Test Brevo Webhook",
-        "description": "Endpoint de test pour v\u00e9rifier que le webhook est accessible.",
+        "description": "Endpoint de test pour vérifier que le webhook est accessible.",
         "operationId": "test_brevo_webhook_v1_webhooks_brevo_test_get",
         "responses": {
           "200": {
@@ -9768,8 +9768,8 @@
           "activity",
           "activity"
         ],
-        "summary": "Enregistrer l'activit\u00e9",
-        "description": "Endpoint de ping pour enregistrer l'activit\u00e9 en temps r\u00e9el.",
+        "summary": "Enregistrer l'activité",
+        "description": "Endpoint de ping pour enregistrer l'activité en temps réel.",
         "operationId": "activity_ping_v1_activity_ping_post",
         "responses": {
           "200": {
@@ -9998,7 +9998,7 @@
           "transactions"
         ],
         "summary": "Log Transaction",
-        "description": "Endpoint pour logger les \u00e9v\u00e9nements transactionnels depuis le frontend.\n\nB48-P2: Permet au frontend d'envoyer des logs pour les \u00e9v\u00e9nements qui se produisent\nc\u00f4t\u00e9 client (TICKET_OPENED, TICKET_RESET, etc.).\n\n**Permissions requises :** Authentification requise (tous les r\u00f4les)",
+        "description": "Endpoint pour logger les événements transactionnels depuis le frontend.\n\nB48-P2: Permet au frontend d'envoyer des logs pour les événements qui se produisent\ncôté client (TICKET_OPENED, TICKET_RESET, etc.).\n\n**Permissions requises :** Authentification requise (tous les rôles)",
         "operationId": "log_transaction_v1_transactions_log_post",
         "requestBody": {
           "content": {
@@ -10043,8 +10043,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Lister les mod\u00e8les LLM OpenRouter pour l'import legacy",
-        "description": "R\u00e9cup\u00e8re la liste des mod\u00e8les OpenRouter compatibles avec l'import legacy (mod\u00e8les texte). Les r\u00e9sultats sont mis en cache pendant 1h pour limiter les appels r\u00e9seau.",
+        "summary": "Lister les modèles LLM OpenRouter pour l'import legacy",
+        "description": "Récupère la liste des modèles OpenRouter compatibles avec l'import legacy (modèles texte). Les résultats sont mis en cache pendant 1h pour limiter les appels réseau.",
         "operationId": "list_legacy_import_llm_models_v1_admin_import_legacy_llm_models_get",
         "responses": {
           "200": {
@@ -10072,7 +10072,7 @@
           "admin"
         ],
         "summary": "Analyser un CSV legacy pour import",
-        "description": "Analyse un CSV nettoy\u00e9 et propose des mappings de cat\u00e9gories via fuzzy matching. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "description": "Analyse un CSV nettoyé et propose des mappings de catégories via fuzzy matching. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "analyze_legacy_import_v1_admin_import_legacy_analyze_post",
         "requestBody": {
           "content": {
@@ -10119,8 +10119,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Ex\u00e9cuter l'import legacy avec mapping valid\u00e9",
-        "description": "Importe le CSV avec le fichier de mapping valid\u00e9. Cr\u00e9e les postes, tickets et lignes en base. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Exécuter l'import legacy avec mapping validé",
+        "description": "Importe le CSV avec le fichier de mapping validé. Crée les postes, tickets et lignes en base. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "execute_legacy_import_v1_admin_import_legacy_execute_post",
         "requestBody": {
           "content": {
@@ -10167,8 +10167,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Relancer uniquement le LLM sur des cat\u00e9gories non mapp\u00e9es",
-        "description": "Appelle le LLM uniquement sur les cat\u00e9gories sp\u00e9cifi\u00e9es, sans refaire le fuzzy matching. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Relancer uniquement le LLM sur des catégories non mappées",
+        "description": "Appelle le LLM uniquement sur les catégories spécifiées, sans refaire le fuzzy matching. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "analyze_legacy_import_llm_only_v1_admin_import_legacy_analyze_llm_only_post",
         "requestBody": {
           "content": {
@@ -10215,8 +10215,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Valider la conformit\u00e9 d'un CSV legacy",
-        "description": "Valide qu'un CSV est conforme au template offline standardis\u00e9. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Valider la conformité d'un CSV legacy",
+        "description": "Valide qu'un CSV est conforme au template offline standardisé. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "validate_legacy_import_v1_admin_import_legacy_validate_post",
         "requestBody": {
           "content": {
@@ -10263,8 +10263,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Pr\u00e9visualiser le r\u00e9capitulatif d'import",
-        "description": "Calcule le r\u00e9capitulatif de ce qui sera import\u00e9 avec les mappings fournis. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Prévisualiser le récapitulatif d'import",
+        "description": "Calcule le récapitulatif de ce qui sera importé avec les mappings fournis. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "preview_legacy_import_v1_admin_import_legacy_preview_post",
         "requestBody": {
           "content": {
@@ -10311,8 +10311,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Exporter le CSV avec les cat\u00e9gories remapp\u00e9es",
-        "description": "Applique les mappings pour remplacer les cat\u00e9gories CSV par les cat\u00e9gories mapp\u00e9es et retourne le CSV remapp\u00e9. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "summary": "Exporter le CSV avec les catégories remappées",
+        "description": "Applique les mappings pour remplacer les catégories CSV par les catégories mappées et retourne le CSV remappé. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "export_remapped_legacy_import_v1_admin_import_legacy_export_remapped_post",
         "requestBody": {
           "content": {
@@ -10358,7 +10358,7 @@
           "admin"
         ],
         "summary": "Nettoyer un CSV legacy",
-        "description": "Nettoie un CSV legacy (non conforme) et retourne le CSV nettoy\u00e9 pr\u00eat \u00e0 \u00eatre analys\u00e9. N\u00e9cessite ADMIN ou SUPER_ADMIN.",
+        "description": "Nettoie un CSV legacy (non conforme) et retourne le CSV nettoyé prêt à être analysé. Nécessite ADMIN ou SUPER_ADMIN.",
         "operationId": "clean_legacy_import_v1_admin_import_legacy_clean_post",
         "requestBody": {
           "content": {
@@ -10453,18 +10453,18 @@
           "event_type": {
             "type": "string",
             "title": "Event Type",
-            "description": "Type d'\u00e9v\u00e9nement (ADMINISTRATION, LOGIN, SESSION CAISSE, VENTE, DEPOT)"
+            "description": "Type d'événement (ADMINISTRATION, LOGIN, SESSION CAISSE, VENTE, DEPOT)"
           },
           "description": {
             "type": "string",
             "title": "Description",
-            "description": "Description de l'\u00e9v\u00e9nement"
+            "description": "Description de l'événement"
           },
           "date": {
             "type": "string",
             "format": "date-time",
             "title": "Date",
-            "description": "Date de l'\u00e9v\u00e9nement"
+            "description": "Date de l'événement"
           },
           "metadata": {
             "anyOf": [
@@ -10477,7 +10477,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "M\u00e9tadonn\u00e9es suppl\u00e9mentaires de l'\u00e9v\u00e9nement"
+            "description": "Métadonnées supplémentaires de l'événement"
           }
         },
         "type": "object",
@@ -10488,7 +10488,7 @@
           "date"
         ],
         "title": "ActivityEvent",
-        "description": "Sch\u00e9ma pour un \u00e9v\u00e9nement d'activit\u00e9 utilisateur"
+        "description": "Schéma pour un événement d'activité utilisateur"
       },
       "AdminResponse": {
         "properties": {
@@ -10519,7 +10519,7 @@
           "message"
         ],
         "title": "AdminResponse",
-        "description": "Sch\u00e9ma de r\u00e9ponse standardis\u00e9 pour les op\u00e9rations d'administration"
+        "description": "Schéma de réponse standardisé pour les opérations d'administration"
       },
       "AdminUser": {
         "properties": {
@@ -10534,17 +10534,6 @@
               }
             ],
             "title": "Id"
-          },
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id"
           },
           "username": {
             "anyOf": [
@@ -10702,7 +10691,7 @@
           "updated_at"
         ],
         "title": "AdminUser",
-        "description": "Sch\u00e9ma pour les utilisateurs dans l'interface d'administration"
+        "description": "Schéma pour les utilisateurs dans l'interface d'administration (réponse JSON sans telegram_id)."
       },
       "AlertThresholds-Input": {
         "properties": {
@@ -10924,7 +10913,7 @@
           "is_active"
         ],
         "title": "AuthUser",
-        "description": "Repr\u00e9sentation de l'utilisateur retourn\u00e9e apr\u00e8s authentification."
+        "description": "Représentation de l'utilisateur retournée après authentification."
       },
       "Body_analyze_categories_import_v1_categories_import_analyze_post": {
         "properties": {
@@ -10946,7 +10935,7 @@
             "type": "string",
             "format": "binary",
             "title": "File",
-            "description": "Fichier CSV nettoy\u00e9 \u00e0 analyser"
+            "description": "Fichier CSV nettoyé à analyser"
           },
           "confidence_threshold": {
             "anyOf": [
@@ -10958,7 +10947,7 @@
               }
             ],
             "title": "Confidence Threshold",
-            "description": "Seuil de confiance pour le fuzzy matching (0-100, d\u00e9faut: 80)"
+            "description": "Seuil de confiance pour le fuzzy matching (0-100, défaut: 80)"
           },
           "llm_model_id": {
             "anyOf": [
@@ -10970,7 +10959,7 @@
               }
             ],
             "title": "Llm Model Id",
-            "description": "ID du mod\u00e8le LLM \u00e0 utiliser (override de la config, optionnel)"
+            "description": "ID du modèle LLM à utiliser (override de la config, optionnel)"
           }
         },
         "type": "object",
@@ -10985,7 +10974,7 @@
             "type": "string",
             "format": "binary",
             "title": "File",
-            "description": "Fichier CSV legacy \u00e0 nettoyer"
+            "description": "Fichier CSV legacy à nettoyer"
           }
         },
         "type": "object",
@@ -11000,13 +10989,13 @@
             "type": "string",
             "format": "binary",
             "title": "Csv File",
-            "description": "Fichier CSV nettoy\u00e9 \u00e0 importer"
+            "description": "Fichier CSV nettoyé à importer"
           },
           "mapping_file": {
             "type": "string",
             "format": "binary",
             "title": "Mapping File",
-            "description": "Fichier JSON de mapping valid\u00e9"
+            "description": "Fichier JSON de mapping validé"
           },
           "import_date": {
             "anyOf": [
@@ -11018,7 +11007,7 @@
               }
             ],
             "title": "Import Date",
-            "description": "Date d'import manuelle (format ISO 8601: YYYY-MM-DD). Si fournie, toutes les donn\u00e9es seront import\u00e9es avec cette date unique."
+            "description": "Date d'import manuelle (format ISO 8601: YYYY-MM-DD). Si fournie, toutes les données seront importées avec cette date unique."
           }
         },
         "type": "object",
@@ -11034,13 +11023,13 @@
             "type": "string",
             "format": "binary",
             "title": "Csv File",
-            "description": "Fichier CSV \u00e0 remapper"
+            "description": "Fichier CSV à remapper"
           },
           "mapping_file": {
             "type": "string",
             "format": "binary",
             "title": "Mapping File",
-            "description": "Fichier JSON de mapping valid\u00e9"
+            "description": "Fichier JSON de mapping validé"
           }
         },
         "type": "object",
@@ -11056,7 +11045,7 @@
             "type": "string",
             "format": "binary",
             "title": "File",
-            "description": "Fichier .dump de sauvegarde PostgreSQL \u00e0 importer"
+            "description": "Fichier .dump de sauvegarde PostgreSQL à importer"
           }
         },
         "type": "object",
@@ -11071,13 +11060,13 @@
             "type": "string",
             "format": "binary",
             "title": "Csv File",
-            "description": "Fichier CSV nettoy\u00e9 \u00e0 pr\u00e9visualiser"
+            "description": "Fichier CSV nettoyé à prévisualiser"
           },
           "mapping_file": {
             "type": "string",
             "format": "binary",
             "title": "Mapping File",
-            "description": "Fichier JSON de mapping valid\u00e9"
+            "description": "Fichier JSON de mapping validé"
           }
         },
         "type": "object",
@@ -11093,7 +11082,7 @@
             "type": "string",
             "format": "binary",
             "title": "File",
-            "description": "Fichier CSV \u00e0 valider"
+            "description": "Fichier CSV à valider"
           }
         },
         "type": "object",
@@ -11203,7 +11192,7 @@
           "format"
         ],
         "title": "BulkExportRequest",
-        "description": "Requ\u00eate pour export bulk."
+        "description": "Requête pour export bulk."
       },
       "BulkReceptionExportFilters": {
         "properties": {
@@ -11272,7 +11261,7 @@
         },
         "type": "object",
         "title": "BulkReceptionExportFilters",
-        "description": "Filtres pour export bulk de tickets de r\u00e9ception."
+        "description": "Filtres pour export bulk de tickets de réception."
       },
       "BulkReceptionExportRequest": {
         "properties": {
@@ -11295,7 +11284,7 @@
           "format"
         ],
         "title": "BulkReceptionExportRequest",
-        "description": "Requ\u00eate pour export bulk de tickets de r\u00e9ception."
+        "description": "Requête pour export bulk de tickets de réception."
       },
       "ButtonType": {
         "type": "string",
@@ -11360,7 +11349,7 @@
           "enable_deferred": {
             "type": "boolean",
             "title": "Enable Deferred",
-            "description": "Activer les caisses diff\u00e9r\u00e9es",
+            "description": "Activer les caisses différées",
             "default": false
           }
         },
@@ -11425,7 +11414,7 @@
           "enable_deferred": {
             "type": "boolean",
             "title": "Enable Deferred",
-            "description": "Activer les caisses diff\u00e9r\u00e9es",
+            "description": "Activer les caisses différées",
             "default": false
           },
           "id": {
@@ -11525,12 +11514,12 @@
               }
             ],
             "title": "Enable Deferred",
-            "description": "Activer les caisses diff\u00e9r\u00e9es"
+            "description": "Activer les caisses différées"
           }
         },
         "type": "object",
         "title": "CashRegisterUpdate",
-        "description": "Sch\u00e9ma de mise \u00e0 jour partielle d'un poste de caisse."
+        "description": "Schéma de mise à jour partielle d'un poste de caisse."
       },
       "CashSessionClose": {
         "properties": {
@@ -11538,7 +11527,7 @@
             "type": "number",
             "minimum": 0.0,
             "title": "Actual Amount",
-            "description": "Montant physique compt\u00e9 en caisse"
+            "description": "Montant physique compté en caisse"
           },
           "variance_comment": {
             "anyOf": [
@@ -11550,7 +11539,7 @@
               }
             ],
             "title": "Variance Comment",
-            "description": "Commentaire obligatoire en cas d'\u00e9cart"
+            "description": "Commentaire obligatoire en cas d'écart"
           }
         },
         "type": "object",
@@ -11558,14 +11547,14 @@
           "actual_amount"
         ],
         "title": "CashSessionClose",
-        "description": "Sch\u00e9ma pour la fermeture d'une session de caisse avec contr\u00f4le des montants."
+        "description": "Schéma pour la fermeture d'une session de caisse avec contrôle des montants."
       },
       "CashSessionCreate": {
         "properties": {
           "operator_id": {
             "type": "string",
             "title": "Operator Id",
-            "description": "ID de l'op\u00e9rateur (caissier)"
+            "description": "ID de l'opérateur (caissier)"
           },
           "site_id": {
             "type": "string",
@@ -11601,7 +11590,7 @@
               }
             ],
             "title": "Opened At",
-            "description": "Date d'ouverture personnalis\u00e9e (pour saisie diff\u00e9r\u00e9e, ADMIN/SUPER_ADMIN uniquement)"
+            "description": "Date d'ouverture personnalisée (pour saisie différée, ADMIN/SUPER_ADMIN uniquement)"
           }
         },
         "type": "object",
@@ -11611,14 +11600,14 @@
           "initial_amount"
         ],
         "title": "CashSessionCreate",
-        "description": "Sch\u00e9ma pour la cr\u00e9ation d'une session de caisse."
+        "description": "Schéma pour la création d'une session de caisse."
       },
       "CashSessionDetailResponse": {
         "properties": {
           "operator_id": {
             "type": "string",
             "title": "Operator Id",
-            "description": "ID de l'op\u00e9rateur (caissier)"
+            "description": "ID de l'opérateur (caissier)"
           },
           "site_id": {
             "type": "string",
@@ -11710,7 +11699,7 @@
               }
             ],
             "title": "Number Of Sales",
-            "description": "Nombre de ventes effectu\u00e9es"
+            "description": "Nombre de ventes effectuées"
           },
           "total_donations": {
             "anyOf": [
@@ -11722,7 +11711,7 @@
               }
             ],
             "title": "Total Donations",
-            "description": "Total des dons collect\u00e9s"
+            "description": "Total des dons collectés"
           },
           "total_weight_out": {
             "anyOf": [
@@ -11734,7 +11723,7 @@
               }
             ],
             "title": "Total Weight Out",
-            "description": "Poids total vendu ou donn\u00e9 sur la session (kg)"
+            "description": "Poids total vendu ou donné sur la session (kg)"
           },
           "closing_amount": {
             "anyOf": [
@@ -11746,7 +11735,7 @@
               }
             ],
             "title": "Closing Amount",
-            "description": "Montant th\u00e9orique calcul\u00e9 \u00e0 la fermeture"
+            "description": "Montant théorique calculé à la fermeture"
           },
           "actual_amount": {
             "anyOf": [
@@ -11758,7 +11747,7 @@
               }
             ],
             "title": "Actual Amount",
-            "description": "Montant physique compt\u00e9 \u00e0 la fermeture"
+            "description": "Montant physique compté à la fermeture"
           },
           "variance": {
             "anyOf": [
@@ -11770,7 +11759,7 @@
               }
             ],
             "title": "Variance",
-            "description": "\u00c9cart entre th\u00e9orique et physique"
+            "description": "Écart entre théorique et physique"
           },
           "variance_comment": {
             "anyOf": [
@@ -11782,7 +11771,7 @@
               }
             ],
             "title": "Variance Comment",
-            "description": "Commentaire sur l'\u00e9cart"
+            "description": "Commentaire sur l'écart"
           },
           "report_download_url": {
             "anyOf": [
@@ -11819,7 +11808,7 @@
               }
             ],
             "title": "Register Options",
-            "description": "Options de workflow du poste de caisse associ\u00e9"
+            "description": "Options de workflow du poste de caisse associé"
           },
           "sales": {
             "items": {
@@ -11839,7 +11828,7 @@
               }
             ],
             "title": "Operator Name",
-            "description": "Nom de l'op\u00e9rateur"
+            "description": "Nom de l'opérateur"
           },
           "site_name": {
             "anyOf": [
@@ -11866,7 +11855,7 @@
           "sales"
         ],
         "title": "CashSessionDetailResponse",
-        "description": "Sch\u00e9ma de r\u00e9ponse d\u00e9taill\u00e9e pour une session de caisse avec ses ventes."
+        "description": "Schéma de réponse détaillée pour une session de caisse avec ses ventes."
       },
       "CashSessionListResponse": {
         "properties": {
@@ -11886,7 +11875,7 @@
           "skip": {
             "type": "integer",
             "title": "Skip",
-            "description": "Nombre de sessions ignor\u00e9es"
+            "description": "Nombre de sessions ignorées"
           },
           "limit": {
             "type": "integer",
@@ -11902,14 +11891,14 @@
           "limit"
         ],
         "title": "CashSessionListResponse",
-        "description": "Sch\u00e9ma de r\u00e9ponse pour la liste des sessions de caisse."
+        "description": "Schéma de réponse pour la liste des sessions de caisse."
       },
       "CashSessionResponse": {
         "properties": {
           "operator_id": {
             "type": "string",
             "title": "Operator Id",
-            "description": "ID de l'op\u00e9rateur (caissier)"
+            "description": "ID de l'opérateur (caissier)"
           },
           "site_id": {
             "type": "string",
@@ -12001,7 +11990,7 @@
               }
             ],
             "title": "Number Of Sales",
-            "description": "Nombre de ventes effectu\u00e9es"
+            "description": "Nombre de ventes effectuées"
           },
           "total_donations": {
             "anyOf": [
@@ -12013,7 +12002,7 @@
               }
             ],
             "title": "Total Donations",
-            "description": "Total des dons collect\u00e9s"
+            "description": "Total des dons collectés"
           },
           "total_weight_out": {
             "anyOf": [
@@ -12025,7 +12014,7 @@
               }
             ],
             "title": "Total Weight Out",
-            "description": "Poids total vendu ou donn\u00e9 sur la session (kg)"
+            "description": "Poids total vendu ou donné sur la session (kg)"
           },
           "closing_amount": {
             "anyOf": [
@@ -12037,7 +12026,7 @@
               }
             ],
             "title": "Closing Amount",
-            "description": "Montant th\u00e9orique calcul\u00e9 \u00e0 la fermeture"
+            "description": "Montant théorique calculé à la fermeture"
           },
           "actual_amount": {
             "anyOf": [
@@ -12049,7 +12038,7 @@
               }
             ],
             "title": "Actual Amount",
-            "description": "Montant physique compt\u00e9 \u00e0 la fermeture"
+            "description": "Montant physique compté à la fermeture"
           },
           "variance": {
             "anyOf": [
@@ -12061,7 +12050,7 @@
               }
             ],
             "title": "Variance",
-            "description": "\u00c9cart entre th\u00e9orique et physique"
+            "description": "Écart entre théorique et physique"
           },
           "variance_comment": {
             "anyOf": [
@@ -12073,7 +12062,7 @@
               }
             ],
             "title": "Variance Comment",
-            "description": "Commentaire sur l'\u00e9cart"
+            "description": "Commentaire sur l'écart"
           },
           "report_download_url": {
             "anyOf": [
@@ -12110,7 +12099,7 @@
               }
             ],
             "title": "Register Options",
-            "description": "Options de workflow du poste de caisse associ\u00e9"
+            "description": "Options de workflow du poste de caisse associé"
           }
         },
         "type": "object",
@@ -12124,7 +12113,7 @@
           "opened_at"
         ],
         "title": "CashSessionResponse",
-        "description": "Sch\u00e9ma de r\u00e9ponse pour une session de caisse."
+        "description": "Schéma de réponse pour une session de caisse."
       },
       "CashSessionStats": {
         "properties": {
@@ -12141,7 +12130,7 @@
           "closed_sessions": {
             "type": "integer",
             "title": "Closed Sessions",
-            "description": "Nombre de sessions ferm\u00e9es"
+            "description": "Nombre de sessions fermées"
           },
           "total_sales": {
             "type": "number",
@@ -12161,7 +12150,7 @@
           "total_donations": {
             "type": "number",
             "title": "Total Donations",
-            "description": "Total des dons sur la p\u00e9riode"
+            "description": "Total des dons sur la période"
           },
           "total_weight_sold": {
             "type": "number",
@@ -12178,7 +12167,7 @@
               }
             ],
             "title": "Average Session Duration",
-            "description": "Dur\u00e9e moyenne des sessions en heures"
+            "description": "Durée moyenne des sessions en heures"
           }
         },
         "type": "object",
@@ -12193,7 +12182,7 @@
           "total_weight_sold"
         ],
         "title": "CashSessionStats",
-        "description": "Sch\u00e9ma pour les statistiques des sessions de caisse."
+        "description": "Schéma pour les statistiques des sessions de caisse."
       },
       "CashSessionStatus": {
         "type": "string",
@@ -12228,7 +12217,7 @@
                 "type": "null"
               }
             ],
-            "description": "\u00c9tape actuelle du workflow"
+            "description": "Étape actuelle du workflow"
           },
           "step_start_time": {
             "anyOf": [
@@ -12241,7 +12230,7 @@
               }
             ],
             "title": "Step Start Time",
-            "description": "D\u00e9but de l'\u00e9tape actuelle"
+            "description": "Début de l'étape actuelle"
           },
           "last_activity": {
             "anyOf": [
@@ -12254,7 +12243,7 @@
               }
             ],
             "title": "Last Activity",
-            "description": "Derni\u00e8re activit\u00e9 utilisateur"
+            "description": "Dernière activité utilisateur"
           },
           "step_duration_seconds": {
             "anyOf": [
@@ -12266,7 +12255,7 @@
               }
             ],
             "title": "Step Duration Seconds",
-            "description": "Dur\u00e9e \u00e9coul\u00e9e dans l'\u00e9tape actuelle"
+            "description": "Durée écoulée dans l'étape actuelle"
           }
         },
         "type": "object",
@@ -12274,13 +12263,13 @@
           "session_id"
         ],
         "title": "CashSessionStepResponse",
-        "description": "Sch\u00e9ma de r\u00e9ponse pour les m\u00e9triques d'\u00e9tape d'une session."
+        "description": "Schéma de réponse pour les métriques d'étape d'une session."
       },
       "CashSessionStepUpdate": {
         "properties": {
           "step": {
             "$ref": "#/components/schemas/CashSessionStep",
-            "description": "Nouvelle \u00e9tape du workflow"
+            "description": "Nouvelle étape du workflow"
           },
           "timestamp": {
             "anyOf": [
@@ -12293,7 +12282,7 @@
               }
             ],
             "title": "Timestamp",
-            "description": "Timestamp de la mise \u00e0 jour (auto-g\u00e9n\u00e9r\u00e9 si non fourni)"
+            "description": "Timestamp de la mise à jour (auto-généré si non fourni)"
           }
         },
         "type": "object",
@@ -12301,7 +12290,7 @@
           "step"
         ],
         "title": "CashSessionStepUpdate",
-        "description": "Sch\u00e9ma pour la mise \u00e0 jour de l'\u00e9tape actuelle d'une session."
+        "description": "Schéma pour la mise à jour de l'étape actuelle d'une session."
       },
       "CashSessionSummary": {
         "properties": {
@@ -12425,7 +12414,7 @@
         },
         "type": "object",
         "title": "CashSessionUpdate",
-        "description": "Sch\u00e9ma pour la mise \u00e0 jour d'une session de caisse."
+        "description": "Schéma pour la mise à jour d'une session de caisse."
       },
       "CategoryCreate": {
         "properties": {
@@ -12620,7 +12609,7 @@
           "confidence"
         ],
         "title": "CategoryMapping",
-        "description": "Mapping d'une cat\u00e9gorie avec score de confiance."
+        "description": "Mapping d'une catégorie avec score de confiance."
       },
       "CategoryRead": {
         "properties": {
@@ -12767,7 +12756,7 @@
         "title": "CategoryStats",
         "description": "Statistics for a single category.",
         "example": {
-          "category_name": "\u00c9crans",
+          "category_name": "Écrans",
           "total_items": 80,
           "total_weight": 350.5
         }
@@ -13024,7 +13013,7 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "description": "Statut mis \u00e0 jour (closed)"
+            "description": "Statut mis à jour (closed)"
           }
         },
         "type": "object",
@@ -13032,19 +13021,19 @@
           "status"
         ],
         "title": "CloseResponse",
-        "description": "R\u00e9ponse standard pour une op\u00e9ration de cl\u00f4ture."
+        "description": "Réponse standard pour une opération de clôture."
       },
       "CreateLigneRequest": {
         "properties": {
           "ticket_id": {
             "type": "string",
             "title": "Ticket Id",
-            "description": "Identifiant du ticket de d\u00e9p\u00f4t"
+            "description": "Identifiant du ticket de dépôt"
           },
           "category_id": {
             "type": "string",
             "title": "Category Id",
-            "description": "Identifiant de la cat\u00e9gorie"
+            "description": "Identifiant de la catégorie"
           },
           "poids_kg": {
             "anyOf": [
@@ -13085,7 +13074,7 @@
               }
             ],
             "title": "Is Exit",
-            "description": "Indique si c'est une sortie de stock (d\u00e9faut: False)",
+            "description": "Indique si c'est une sortie de stock (défaut: False)",
             "default": false
           }
         },
@@ -13097,14 +13086,14 @@
           "destination"
         ],
         "title": "CreateLigneRequest",
-        "description": "Corps de requ\u00eate pour cr\u00e9er une ligne de d\u00e9p\u00f4t."
+        "description": "Corps de requête pour créer une ligne de dépôt."
       },
       "CreateTicketRequest": {
         "properties": {
           "poste_id": {
             "type": "string",
             "title": "Poste Id",
-            "description": "Identifiant du poste de r\u00e9ception"
+            "description": "Identifiant du poste de réception"
           }
         },
         "type": "object",
@@ -13112,14 +13101,14 @@
           "poste_id"
         ],
         "title": "CreateTicketRequest",
-        "description": "Corps de requ\u00eate pour cr\u00e9er un ticket de d\u00e9p\u00f4t."
+        "description": "Corps de requête pour créer un ticket de dépôt."
       },
       "CreateTicketResponse": {
         "properties": {
           "id": {
             "type": "string",
             "title": "Id",
-            "description": "Identifiant du ticket de d\u00e9p\u00f4t"
+            "description": "Identifiant du ticket de dépôt"
           }
         },
         "type": "object",
@@ -13127,7 +13116,7 @@
           "id"
         ],
         "title": "CreateTicketResponse",
-        "description": "R\u00e9ponse lors de la cr\u00e9ation d'un ticket de d\u00e9p\u00f4t."
+        "description": "Réponse lors de la création d'un ticket de dépôt."
       },
       "DashboardMetrics": {
         "properties": {
@@ -13617,7 +13606,7 @@
           "display_order_entry"
         ],
         "title": "DisplayOrderEntryUpdate",
-        "description": "Story B48-P4: Sch\u00e9ma pour la mise \u00e0 jour de l'ordre ENTRY/DEPOT"
+        "description": "Story B48-P4: Schéma pour la mise à jour de l'ordre ENTRY/DEPOT"
       },
       "DisplayOrderUpdate": {
         "properties": {
@@ -14028,7 +14017,7 @@
               }
             ],
             "title": "Reason",
-            "description": "Raison du for\u00e7age du mot de passe"
+            "description": "Raison du forçage du mot de passe"
           }
         },
         "type": "object",
@@ -14036,7 +14025,7 @@
           "new_password"
         ],
         "title": "ForcePasswordRequest",
-        "description": "Sch\u00e9ma pour forcer un nouveau mot de passe (Super Admin uniquement)"
+        "description": "Schéma pour forcer un nouveau mot de passe (Super Admin uniquement)"
       },
       "ForgotPasswordRequest": {
         "properties": {
@@ -14052,7 +14041,7 @@
           "email"
         ],
         "title": "ForgotPasswordRequest",
-        "description": "Sch\u00e9ma de requ\u00eate pour demander la r\u00e9initialisation du mot de passe."
+        "description": "Schéma de requête pour demander la réinitialisation du mot de passe."
       },
       "ForgotPasswordResponse": {
         "properties": {
@@ -14067,7 +14056,7 @@
           "message"
         ],
         "title": "ForgotPasswordResponse",
-        "description": "R\u00e9ponse pour la demande de r\u00e9initialisation du mot de passe."
+        "description": "Réponse pour la demande de réinitialisation du mot de passe."
       },
       "GroupCreate": {
         "properties": {
@@ -14321,7 +14310,7 @@
           "total_kilos"
         ],
         "title": "ImportSummaryByCategory",
-        "description": "R\u00e9partition par cat\u00e9gorie dans le r\u00e9capitulatif."
+        "description": "Répartition par catégorie dans le récapitulatif."
       },
       "ImportSummaryByDate": {
         "properties": {
@@ -14345,7 +14334,7 @@
           "total_kilos"
         ],
         "title": "ImportSummaryByDate",
-        "description": "R\u00e9partition par date dans le r\u00e9capitulatif."
+        "description": "Répartition par date dans le récapitulatif."
       },
       "LLMModelInfo": {
         "properties": {
@@ -14405,7 +14394,7 @@
           "name"
         ],
         "title": "LLMModelInfo",
-        "description": "Informations sur un mod\u00e8le LLM OpenRouter disponible pour l'import legacy."
+        "description": "Informations sur un modèle LLM OpenRouter disponible pour l'import legacy."
       },
       "LLMModelsResponse": {
         "properties": {
@@ -14444,7 +14433,7 @@
           "models"
         ],
         "title": "LLMModelsResponse",
-        "description": "R\u00e9ponse de l'endpoint listant les mod\u00e8les LLM OpenRouter."
+        "description": "Réponse de l'endpoint listant les modèles LLM OpenRouter."
       },
       "LLMOnlyRequest": {
         "properties": {
@@ -14472,7 +14461,7 @@
           "unmapped_categories"
         ],
         "title": "LLMOnlyRequest",
-        "description": "Requ\u00eate pour relancer uniquement le LLM sur des cat\u00e9gories sp\u00e9cifiques."
+        "description": "Requête pour relancer uniquement le LLM sur des catégories spécifiques."
       },
       "LLMOnlyResponse": {
         "properties": {
@@ -14493,7 +14482,7 @@
           "statistics"
         ],
         "title": "LLMOnlyResponse",
-        "description": "R\u00e9ponse de l'endpoint llm-only."
+        "description": "Réponse de l'endpoint llm-only."
       },
       "LLMOnlyStatistics": {
         "properties": {
@@ -14574,7 +14563,7 @@
         },
         "type": "object",
         "title": "LLMOnlyStatistics",
-        "description": "Statistiques LLM uniquement (sans les champs d'analyse CSV compl\u00e8te)."
+        "description": "Statistiques LLM uniquement (sans les champs d'analyse CSV complète)."
       },
       "LegacyImportAnalyzeResponse": {
         "properties": {
@@ -14611,7 +14600,7 @@
           "errors"
         ],
         "title": "LegacyImportAnalyzeResponse",
-        "description": "R\u00e9ponse de l'endpoint analyze."
+        "description": "Réponse de l'endpoint analyze."
       },
       "LegacyImportCleanResponse": {
         "properties": {
@@ -14634,7 +14623,7 @@
           "statistics"
         ],
         "title": "LegacyImportCleanResponse",
-        "description": "R\u00e9ponse de l'endpoint clean."
+        "description": "Réponse de l'endpoint clean."
       },
       "LegacyImportCleanStatistics": {
         "properties": {
@@ -14691,7 +14680,7 @@
           "message": {
             "type": "string",
             "title": "Message",
-            "default": "Import termin\u00e9 avec succ\u00e8s"
+            "default": "Import terminé avec succès"
           }
         },
         "type": "object",
@@ -14699,7 +14688,7 @@
           "report"
         ],
         "title": "LegacyImportExecuteResponse",
-        "description": "R\u00e9ponse de l'endpoint execute."
+        "description": "Réponse de l'endpoint execute."
       },
       "LegacyImportPreviewResponse": {
         "properties": {
@@ -14752,7 +14741,7 @@
           "unmapped_categories"
         ],
         "title": "LegacyImportPreviewResponse",
-        "description": "R\u00e9ponse de l'endpoint preview (r\u00e9capitulatif pr\u00e9-import)."
+        "description": "Réponse de l'endpoint preview (récapitulatif pré-import)."
       },
       "LegacyImportStatistics": {
         "properties": {
@@ -14899,7 +14888,7 @@
           "statistics"
         ],
         "title": "LegacyImportValidationResponse",
-        "description": "R\u00e9ponse de l'endpoint validate."
+        "description": "Réponse de l'endpoint validate."
       },
       "LegacyImportValidationStatistics": {
         "properties": {
@@ -14964,7 +14953,7 @@
             },
             "type": "array",
             "title": "Lignes",
-            "description": "Liste des lignes de d\u00e9p\u00f4t"
+            "description": "Liste des lignes de dépôt"
           },
           "total": {
             "type": "integer",
@@ -14979,7 +14968,7 @@
           "per_page": {
             "type": "integer",
             "title": "Per Page",
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           },
           "total_pages": {
             "type": "integer",
@@ -14996,7 +14985,7 @@
           "total_pages"
         ],
         "title": "LigneDepotListResponse",
-        "description": "R\u00e9ponse pour la liste des lignes de d\u00e9p\u00f4t avec pagination."
+        "description": "Réponse pour la liste des lignes de dépôt avec pagination."
       },
       "LigneDepotReportResponse": {
         "properties": {
@@ -15013,17 +15002,17 @@
           "poste_id": {
             "type": "string",
             "title": "Poste Id",
-            "description": "Identifiant du poste de r\u00e9ception"
+            "description": "Identifiant du poste de réception"
           },
           "benevole_username": {
             "type": "string",
             "title": "Benevole Username",
-            "description": "Nom d'utilisateur du b\u00e9n\u00e9vole"
+            "description": "Nom d'utilisateur du bénévole"
           },
           "category_label": {
             "type": "string",
             "title": "Category Label",
-            "description": "Nom de la cat\u00e9gorie"
+            "description": "Nom de la catégorie"
           },
           "poids_kg": {
             "type": "string",
@@ -15050,7 +15039,7 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "description": "Date de cr\u00e9ation du ticket"
+            "description": "Date de création du ticket"
           }
         },
         "type": "object",
@@ -15065,7 +15054,7 @@
           "created_at"
         ],
         "title": "LigneDepotReportResponse",
-        "description": "R\u00e9ponse pour une ligne de d\u00e9p\u00f4t dans les rapports."
+        "description": "Réponse pour une ligne de dépôt dans les rapports."
       },
       "LigneResponse": {
         "properties": {
@@ -15082,12 +15071,12 @@
           "category_id": {
             "type": "string",
             "title": "Category Id",
-            "description": "Identifiant de la cat\u00e9gorie"
+            "description": "Identifiant de la catégorie"
           },
           "category_label": {
             "type": "string",
             "title": "Category Label",
-            "description": "Nom de la cat\u00e9gorie"
+            "description": "Nom de la catégorie"
           },
           "poids_kg": {
             "type": "string",
@@ -15127,7 +15116,7 @@
           "is_exit"
         ],
         "title": "LigneResponse",
-        "description": "Repr\u00e9sentation d'une ligne de d\u00e9p\u00f4t."
+        "description": "Représentation d'une ligne de dépôt."
       },
       "LigneWeightUpdate": {
         "properties": {
@@ -15150,7 +15139,7 @@
           "poids_kg"
         ],
         "title": "LigneWeightUpdate",
-        "description": "Corps de requ\u00eate pour modifier uniquement le poids d'une ligne de d\u00e9p\u00f4t (admin uniquement)."
+        "description": "Corps de requête pour modifier uniquement le poids d'une ligne de dépôt (admin uniquement)."
       },
       "LoginRequest": {
         "properties": {
@@ -15171,14 +15160,14 @@
           "password"
         ],
         "title": "LoginRequest",
-        "description": "Sch\u00e9ma de requ\u00eate pour la connexion via nom d'utilisateur et mot de passe."
+        "description": "Schéma de requête pour la connexion via nom d'utilisateur et mot de passe."
       },
       "LoginResponse": {
         "properties": {
           "access_token": {
             "type": "string",
             "title": "Access Token",
-            "description": "JWT d'acc\u00e8s"
+            "description": "JWT d'accès"
           },
           "refresh_token": {
             "anyOf": [
@@ -15208,7 +15197,7 @@
               }
             ],
             "title": "Expires In",
-            "description": "Dur\u00e9e de validit\u00e9 de l'access token en secondes"
+            "description": "Durée de validité de l'access token en secondes"
           },
           "user": {
             "$ref": "#/components/schemas/AuthUser"
@@ -15220,7 +15209,7 @@
           "user"
         ],
         "title": "LoginResponse",
-        "description": "R\u00e9ponse d'authentification contenant le token et l'utilisateur."
+        "description": "Réponse d'authentification contenant le token et l'utilisateur."
       },
       "LogoutResponse": {
         "properties": {
@@ -15235,7 +15224,7 @@
           "message"
         ],
         "title": "LogoutResponse",
-        "description": "R\u00e9ponse pour la d\u00e9connexion."
+        "description": "Réponse pour la déconnexion."
       },
       "OpenPosteRequest": {
         "properties": {
@@ -15255,14 +15244,14 @@
         },
         "type": "object",
         "title": "OpenPosteRequest",
-        "description": "Corps de requ\u00eate pour ouvrir un poste de r\u00e9ception."
+        "description": "Corps de requête pour ouvrir un poste de réception."
       },
       "OpenPosteResponse": {
         "properties": {
           "id": {
             "type": "string",
             "title": "Id",
-            "description": "Identifiant du poste de r\u00e9ception"
+            "description": "Identifiant du poste de réception"
           },
           "status": {
             "type": "string",
@@ -15276,7 +15265,7 @@
           "status"
         ],
         "title": "OpenPosteResponse",
-        "description": "R\u00e9ponse lors de l'ouverture d'un poste de r\u00e9ception."
+        "description": "Réponse lors de l'ouverture d'un poste de réception."
       },
       "PasswordChangeRequest": {
         "properties": {
@@ -15328,7 +15317,7 @@
           "payment_method": {
             "type": "string",
             "title": "Payment Method",
-            "description": "M\u00e9thode de paiement"
+            "description": "Méthode de paiement"
           },
           "amount": {
             "type": "number",
@@ -15351,7 +15340,7 @@
           "created_at"
         ],
         "title": "PaymentDetail",
-        "description": "Story B52-P1: Sch\u00e9ma pour un paiement individuel dans une vente."
+        "description": "Story B52-P1: Schéma pour un paiement individuel dans une vente."
       },
       "PaymentMethod": {
         "type": "string",
@@ -15362,7 +15351,7 @@
           "free"
         ],
         "title": "PaymentMethod",
-        "description": "M\u00e9thodes de paiement disponibles - codes simples pour \u00e9viter probl\u00e8mes d'encodage"
+        "description": "Méthodes de paiement disponibles - codes simples pour éviter problèmes d'encodage"
       },
       "PaymentResponse": {
         "properties": {
@@ -15410,17 +15399,6 @@
               }
             ],
             "title": "Id"
-          },
-          "telegram_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Telegram Id"
           },
           "username": {
             "anyOf": [
@@ -15486,7 +15464,7 @@
           "created_at"
         ],
         "title": "PendingUserResponse",
-        "description": "Sch\u00e9ma pour la r\u00e9ponse des utilisateurs en attente"
+        "description": "Réponse utilisateurs en attente (sans telegram_id)."
       },
       "PermissionCreate": {
         "properties": {
@@ -15601,7 +15579,7 @@
           "pin"
         ],
         "title": "PinAuthRequest",
-        "description": "Sch\u00e9ma pour l'authentification par PIN."
+        "description": "Schéma pour l'authentification par PIN."
       },
       "PinAuthResponse": {
         "properties": {
@@ -15635,7 +15613,7 @@
           "role"
         ],
         "title": "PinAuthResponse",
-        "description": "Sch\u00e9ma pour la r\u00e9ponse d'authentification par PIN."
+        "description": "Schéma pour la réponse d'authentification par PIN."
       },
       "PinSetRequest": {
         "properties": {
@@ -15649,7 +15627,7 @@
           "pin"
         ],
         "title": "PinSetRequest",
-        "description": "Sch\u00e9ma pour la d\u00e9finition d'un PIN."
+        "description": "Schéma pour la définition d'un PIN."
       },
       "PresetButtonWithCategory": {
         "properties": {
@@ -15853,7 +15831,7 @@
           "refresh_token": {
             "type": "string",
             "title": "Refresh Token",
-            "description": "Refresh token \u00e0 utiliser pour obtenir un nouveau access token"
+            "description": "Refresh token à utiliser pour obtenir un nouveau access token"
           }
         },
         "type": "object",
@@ -15861,14 +15839,14 @@
           "refresh_token"
         ],
         "title": "RefreshTokenRequest",
-        "description": "Sch\u00e9ma de requ\u00eate pour le refresh token."
+        "description": "Schéma de requête pour le refresh token."
       },
       "RefreshTokenResponse": {
         "properties": {
           "access_token": {
             "type": "string",
             "title": "Access Token",
-            "description": "Nouveau JWT d'acc\u00e8s"
+            "description": "Nouveau JWT d'accès"
           },
           "refresh_token": {
             "type": "string",
@@ -15884,7 +15862,7 @@
           "expires_in": {
             "type": "integer",
             "title": "Expires In",
-            "description": "Dur\u00e9e de validit\u00e9 de l'access token en secondes"
+            "description": "Durée de validité de l'access token en secondes"
           }
         },
         "type": "object",
@@ -15894,7 +15872,7 @@
           "expires_in"
         ],
         "title": "RefreshTokenResponse",
-        "description": "R\u00e9ponse pour le refresh token contenant les nouveaux tokens."
+        "description": "Réponse pour le refresh token contenant les nouveaux tokens."
       },
       "ReportEntry": {
         "properties": {
@@ -15959,7 +15937,7 @@
           "token": {
             "type": "string",
             "title": "Token",
-            "description": "Token de r\u00e9initialisation"
+            "description": "Token de réinitialisation"
           },
           "new_password": {
             "type": "string",
@@ -15973,7 +15951,7 @@
           "new_password"
         ],
         "title": "ResetPasswordRequest",
-        "description": "Sch\u00e9ma de requ\u00eate pour r\u00e9initialiser le mot de passe."
+        "description": "Schéma de requête pour réinitialiser le mot de passe."
       },
       "ResetPasswordResponse": {
         "properties": {
@@ -15988,7 +15966,7 @@
           "message"
         ],
         "title": "ResetPasswordResponse",
-        "description": "R\u00e9ponse pour la r\u00e9initialisation du mot de passe."
+        "description": "Réponse pour la réinitialisation du mot de passe."
       },
       "SaleCreate": {
         "properties": {
@@ -16099,7 +16077,7 @@
               }
             ],
             "title": "Payment Method",
-            "description": "M\u00e9thode de paiement (d\u00e9pr\u00e9ci\u00e9 - utiliser payments)"
+            "description": "Méthode de paiement (déprécié - utiliser payments)"
           },
           "payments": {
             "anyOf": [
@@ -16120,7 +16098,7 @@
             "type": "string",
             "format": "date-time",
             "title": "Sale Date",
-            "description": "Date r\u00e9elle du ticket (date du cahier)"
+            "description": "Date réelle du ticket (date du cahier)"
           },
           "created_at": {
             "type": "string",
@@ -16138,7 +16116,7 @@
               }
             ],
             "title": "Operator Id",
-            "description": "ID de l'op\u00e9rateur"
+            "description": "ID de l'opérateur"
           },
           "operator_name": {
             "anyOf": [
@@ -16150,7 +16128,7 @@
               }
             ],
             "title": "Operator Name",
-            "description": "Nom de l'op\u00e9rateur"
+            "description": "Nom de l'opérateur"
           },
           "note": {
             "anyOf": [
@@ -16162,7 +16140,7 @@
               }
             ],
             "title": "Note",
-            "description": "Note associ\u00e9e \u00e0 la vente"
+            "description": "Note associée à la vente"
           },
           "total_weight": {
             "anyOf": [
@@ -16185,7 +16163,7 @@
           "created_at"
         ],
         "title": "SaleDetail",
-        "description": "Sch\u00e9ma pour les d\u00e9tails d'une vente dans une session."
+        "description": "Schéma pour les détails d'une vente dans une session."
       },
       "SaleItemCreate": {
         "properties": {
@@ -16630,7 +16608,7 @@
           "password"
         ],
         "title": "SignupRequest",
-        "description": "Sch\u00e9ma de requ\u00eate pour l'inscription d'un nouvel utilisateur."
+        "description": "Schéma de requête pour l'inscription d'un nouvel utilisateur."
       },
       "SignupResponse": {
         "properties": {
@@ -16642,7 +16620,7 @@
           "user_id": {
             "type": "string",
             "title": "User Id",
-            "description": "ID de l'utilisateur cr\u00e9\u00e9"
+            "description": "ID de l'utilisateur créé"
           },
           "status": {
             "type": "string",
@@ -16657,7 +16635,7 @@
           "status"
         ],
         "title": "SignupResponse",
-        "description": "R\u00e9ponse d'inscription d'un nouvel utilisateur."
+        "description": "Réponse d'inscription d'un nouvel utilisateur."
       },
       "SiteCreate": {
         "properties": {
@@ -16940,7 +16918,7 @@
         },
         "type": "object",
         "title": "SiteUpdate",
-        "description": "Sch\u00e9ma de mise \u00e0 jour partielle d'un site."
+        "description": "Schéma de mise à jour partielle d'un site."
       },
       "TestEmailRequest": {
         "properties": {
@@ -16966,18 +16944,18 @@
           "poste_id": {
             "type": "string",
             "title": "Poste Id",
-            "description": "Identifiant du poste de r\u00e9ception"
+            "description": "Identifiant du poste de réception"
           },
           "benevole_username": {
             "type": "string",
             "title": "Benevole Username",
-            "description": "Nom d'utilisateur du b\u00e9n\u00e9vole"
+            "description": "Nom d'utilisateur du bénévole"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "description": "Date de cr\u00e9ation"
+            "description": "Date de création"
           },
           "closed_at": {
             "anyOf": [
@@ -16990,7 +16968,7 @@
               }
             ],
             "title": "Closed At",
-            "description": "Date de cl\u00f4ture"
+            "description": "Date de clôture"
           },
           "status": {
             "type": "string",
@@ -17003,7 +16981,7 @@
             },
             "type": "array",
             "title": "Lignes",
-            "description": "Liste des lignes de d\u00e9p\u00f4t"
+            "description": "Liste des lignes de dépôt"
           }
         },
         "type": "object",
@@ -17016,7 +16994,7 @@
           "lignes"
         ],
         "title": "TicketDetailResponse",
-        "description": "D\u00e9tails complets d'un ticket de d\u00e9p\u00f4t."
+        "description": "Détails complets d'un ticket de dépôt."
       },
       "TicketListResponse": {
         "properties": {
@@ -17041,7 +17019,7 @@
           "per_page": {
             "type": "integer",
             "title": "Per Page",
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           },
           "total_pages": {
             "type": "integer",
@@ -17058,7 +17036,7 @@
           "total_pages"
         ],
         "title": "TicketListResponse",
-        "description": "R\u00e9ponse pour la liste des tickets avec pagination."
+        "description": "Réponse pour la liste des tickets avec pagination."
       },
       "TicketSummaryResponse": {
         "properties": {
@@ -17070,18 +17048,18 @@
           "poste_id": {
             "type": "string",
             "title": "Poste Id",
-            "description": "Identifiant du poste de r\u00e9ception"
+            "description": "Identifiant du poste de réception"
           },
           "benevole_username": {
             "type": "string",
             "title": "Benevole Username",
-            "description": "Nom d'utilisateur du b\u00e9n\u00e9vole"
+            "description": "Nom d'utilisateur du bénévole"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "description": "Date de cr\u00e9ation"
+            "description": "Date de création"
           },
           "closed_at": {
             "anyOf": [
@@ -17094,7 +17072,7 @@
               }
             ],
             "title": "Closed At",
-            "description": "Date de cl\u00f4ture"
+            "description": "Date de clôture"
           },
           "status": {
             "type": "string",
@@ -17114,12 +17092,12 @@
           "poids_entree": {
             "type": "string",
             "title": "Poids Entree",
-            "description": "Poids entr\u00e9 en boutique (is_exit=false, destination=MAGASIN)"
+            "description": "Poids entré en boutique (is_exit=false, destination=MAGASIN)"
           },
           "poids_direct": {
             "type": "string",
             "title": "Poids Direct",
-            "description": "Poids recycl\u00e9/d\u00e9chetterie direct (is_exit=false, destination IN (RECYCLAGE, DECHETERIE))"
+            "description": "Poids recyclé/déchetterie direct (is_exit=false, destination IN (RECYCLAGE, DECHETERIE))"
           },
           "poids_sortie": {
             "type": "string",
@@ -17141,7 +17119,7 @@
           "poids_sortie"
         ],
         "title": "TicketSummaryResponse",
-        "description": "R\u00e9sum\u00e9 d'un ticket pour la liste des tickets r\u00e9cents."
+        "description": "Résumé d'un ticket pour la liste des tickets récents."
       },
       "TransactionLogRequest": {
         "properties": {
@@ -17207,7 +17185,7 @@
           "session_id"
         ],
         "title": "TransactionLogRequest",
-        "description": "Sch\u00e9ma pour les logs transactionnels envoy\u00e9s depuis le frontend."
+        "description": "Schéma pour les logs transactionnels envoyés depuis le frontend."
       },
       "UnifiedLiveStatsResponse": {
         "properties": {
@@ -17215,7 +17193,7 @@
             "type": "integer",
             "minimum": 0.0,
             "title": "Tickets Count",
-            "description": "Nombre de tickets vendus dans la p\u00e9riode"
+            "description": "Nombre de tickets vendus dans la période"
           },
           "last_ticket_amount": {
             "type": "number",
@@ -17245,25 +17223,25 @@
             "type": "integer",
             "minimum": 0.0,
             "title": "Tickets Open",
-            "description": "Nombre de tickets de r\u00e9ception ouverts"
+            "description": "Nombre de tickets de réception ouverts"
           },
           "tickets_closed_24h": {
             "type": "integer",
             "minimum": 0.0,
             "title": "Tickets Closed 24H",
-            "description": "Nombre de tickets ferm\u00e9s dans la p\u00e9riode"
+            "description": "Nombre de tickets fermés dans la période"
           },
           "items_received": {
             "type": "integer",
             "minimum": 0.0,
             "title": "Items Received",
-            "description": "Nombre d'items re\u00e7us dans la p\u00e9riode"
+            "description": "Nombre d'items reçus dans la période"
           },
           "weight_in": {
             "type": "number",
             "minimum": 0.0,
             "title": "Weight In",
-            "description": "Poids entr\u00e9s (exclut is_exit=true)"
+            "description": "Poids entrés (exclut is_exit=true)"
           },
           "weight_out": {
             "type": "number",
@@ -17275,13 +17253,13 @@
             "type": "string",
             "format": "date-time",
             "title": "Period Start",
-            "description": "D\u00e9but de la p\u00e9riode de calcul"
+            "description": "Début de la période de calcul"
           },
           "period_end": {
             "type": "string",
             "format": "date-time",
             "title": "Period End",
-            "description": "Fin de la p\u00e9riode de calcul"
+            "description": "Fin de la période de calcul"
           }
         },
         "type": "object",
@@ -17300,7 +17278,7 @@
           "period_end"
         ],
         "title": "UnifiedLiveStatsResponse",
-        "description": "Unified live statistics for all modules (caisse + r\u00e9ception).",
+        "description": "Unified live statistics for all modules (caisse + réception).",
         "example": {
           "ca": 1250.75,
           "donations": 45.8,
@@ -17328,7 +17306,7 @@
               }
             ],
             "title": "Category Id",
-            "description": "Nouvelle cat\u00e9gorie"
+            "description": "Nouvelle catégorie"
           },
           "poids_kg": {
             "anyOf": [
@@ -17384,7 +17362,7 @@
         },
         "type": "object",
         "title": "UpdateLigneRequest",
-        "description": "Corps de requ\u00eate pour modifier une ligne de d\u00e9p\u00f4t."
+        "description": "Corps de requête pour modifier une ligne de dépôt."
       },
       "UserApprovalRequest": {
         "properties": {
@@ -17398,12 +17376,12 @@
               }
             ],
             "title": "Message",
-            "description": "Message personnalis\u00e9 pour l'utilisateur"
+            "description": "Message personnalisé pour l'utilisateur"
           }
         },
         "type": "object",
         "title": "UserApprovalRequest",
-        "description": "Sch\u00e9ma pour l'approbation d'un utilisateur"
+        "description": "Schéma pour l'approbation d'un utilisateur"
       },
       "UserCreate": {
         "properties": {
@@ -17594,7 +17572,7 @@
           "total_count": {
             "type": "integer",
             "title": "Total Count",
-            "description": "Nombre total d'\u00e9v\u00e9nements"
+            "description": "Nombre total d'événements"
           },
           "page": {
             "type": "integer",
@@ -17607,7 +17585,7 @@
             "maximum": 100.0,
             "minimum": 1.0,
             "title": "Limit",
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           },
           "has_next": {
             "type": "boolean",
@@ -17617,7 +17595,7 @@
           "has_prev": {
             "type": "boolean",
             "title": "Has Prev",
-            "description": "Y a-t-il une page pr\u00e9c\u00e9dente"
+            "description": "Y a-t-il une page précédente"
           }
         },
         "type": "object",
@@ -17631,7 +17609,7 @@
           "has_prev"
         ],
         "title": "UserHistoryResponse",
-        "description": "Sch\u00e9ma pour la r\u00e9ponse de l'historique utilisateur"
+        "description": "Schéma pour la réponse de l'historique utilisateur"
       },
       "UserProfileUpdate": {
         "properties": {
@@ -17645,7 +17623,7 @@
               }
             ],
             "title": "First Name",
-            "description": "Pr\u00e9nom de l'utilisateur"
+            "description": "Prénom de l'utilisateur"
           },
           "last_name": {
             "anyOf": [
@@ -17680,7 +17658,7 @@
                 "type": "null"
               }
             ],
-            "description": "R\u00f4le de l'utilisateur"
+            "description": "Rôle de l'utilisateur"
           },
           "status": {
             "anyOf": [
@@ -17696,7 +17674,7 @@
         },
         "type": "object",
         "title": "UserProfileUpdate",
-        "description": "Sch\u00e9ma pour la mise \u00e0 jour du profil utilisateur"
+        "description": "Schéma pour la mise à jour du profil utilisateur"
       },
       "UserRejectionRequest": {
         "properties": {
@@ -17715,7 +17693,7 @@
         },
         "type": "object",
         "title": "UserRejectionRequest",
-        "description": "Sch\u00e9ma pour le rejet d'un utilisateur"
+        "description": "Schéma pour le rejet d'un utilisateur"
       },
       "UserResponse": {
         "properties": {
@@ -17865,7 +17843,7 @@
           "updated_at"
         ],
         "title": "UserResponse",
-        "description": "R\u00e9ponse API utilisateur (liste, d\u00e9tail, /me, cr\u00e9ation) : sans telegram_id."
+        "description": "Réponse API utilisateur (liste, détail, /me, création) : sans telegram_id."
       },
       "UserRole": {
         "type": "string",
@@ -17880,7 +17858,7 @@
         "properties": {
           "role": {
             "$ref": "#/components/schemas/UserRole",
-            "description": "Nouveau r\u00f4le \u00e0 assigner \u00e0 l'utilisateur"
+            "description": "Nouveau rôle à assigner à l'utilisateur"
           }
         },
         "type": "object",
@@ -17888,7 +17866,7 @@
           "role"
         ],
         "title": "UserRoleUpdate",
-        "description": "Sch\u00e9ma pour la modification du r\u00f4le d'un utilisateur"
+        "description": "Schéma pour la modification du rôle d'un utilisateur"
       },
       "UserSelfUpdate": {
         "properties": {
@@ -17962,7 +17940,7 @@
         },
         "type": "object",
         "title": "UserSelfUpdate",
-        "description": "Champs autoris\u00e9s pour la mise \u00e0 jour par l'utilisateur lui-m\u00eame.\n\nContrairement \u00e0 UserUpdate (admin), on n'autorise pas la modification des champs sensibles\ncomme role, status, is_active, site_id."
+        "description": "Champs autorisés pour la mise à jour par l'utilisateur lui-même.\n\nContrairement à UserUpdate (admin), on n'autorise pas la modification des champs sensibles\ncomme role, status, is_active, site_id."
       },
       "UserStatus": {
         "type": "string",
@@ -18004,7 +17982,7 @@
               }
             ],
             "title": "Last Login",
-            "description": "Derni\u00e8re connexion r\u00e9ussie"
+            "description": "Dernière connexion réussie"
           },
           "minutes_since_login": {
             "anyOf": [
@@ -18016,7 +17994,7 @@
               }
             ],
             "title": "Minutes Since Login",
-            "description": "Minutes \u00e9coul\u00e9es depuis la derni\u00e8re connexion"
+            "description": "Minutes écoulées depuis la dernière connexion"
           }
         },
         "type": "object",
@@ -18025,7 +18003,7 @@
           "is_online"
         ],
         "title": "UserStatusInfo",
-        "description": "Sch\u00e9ma pour les informations de statut d'un utilisateur"
+        "description": "Schéma pour les informations de statut d'un utilisateur"
       },
       "UserStatusUpdate": {
         "properties": {
@@ -18084,7 +18062,7 @@
             "type": "string",
             "format": "date-time",
             "title": "Timestamp",
-            "description": "Timestamp de la requ\u00eate"
+            "description": "Timestamp de la requête"
           }
         },
         "type": "object",
@@ -18096,7 +18074,7 @@
           "timestamp"
         ],
         "title": "UserStatusesResponse",
-        "description": "Sch\u00e9ma pour la r\u00e9ponse des statuts des utilisateurs"
+        "description": "Schéma pour la réponse des statuts des utilisateurs"
       },
       "UserUpdate": {
         "properties": {

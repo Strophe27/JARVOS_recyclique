@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2026-03-26T22:27:34.732Z
+ * Généré le: 2026-03-26T22:44:32.133Z
  */
 
 // ============================================================================
@@ -99,7 +99,6 @@ export interface AdminResponse {
 }
 export interface AdminUser {
   id: string | string;
-  telegram_id?: string | any;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
@@ -769,7 +768,6 @@ export interface PaymentResponse {
 }
 export interface PendingUserResponse {
   id: string | string;
-  telegram_id?: string | any;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;

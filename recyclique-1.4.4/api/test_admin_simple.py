@@ -11,7 +11,6 @@ def test_admin_user_schema():
     """Test du schéma AdminUser"""
     user_data = {
         "id": "123e4567-e89b-12d3-a456-426614174000",
-        "telegram_id": "123456789",
         "username": "testuser",
         "first_name": "Test",
         "last_name": "User",
@@ -27,7 +26,7 @@ def test_admin_user_schema():
     
     admin_user = AdminUser(**user_data)
     assert admin_user.id == "123e4567-e89b-12d3-a456-426614174000"
-    assert admin_user.telegram_id == "123456789"
+    assert "telegram_id" not in admin_user.model_dump()
     assert admin_user.role == UserRole.USER
     assert admin_user.status == UserStatus.APPROVED
     print("✅ Test AdminUser réussi")

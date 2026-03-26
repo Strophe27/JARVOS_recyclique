@@ -5,11 +5,15 @@ import { vi } from 'vitest';
 import { UserDetailView } from '../UserDetailView';
 import { AdminUser, UserRole, UserStatus } from '../../../services/adminService';
 
-// Mock des icônes Tabler pour éviter le rendu réel
-vi.mock('@tabler/icons-react', () => ({
-  IconUser: () => <div data-testid="icon-user">IconUser</div>,
-  IconHistory: () => <div data-testid="icon-history">IconHistory</div>,
-}));
+// Mock partiel Tabler : icônes profil/historique en stub, le reste depuis le module réel (UserHistoryTab, etc.)
+vi.mock('@tabler/icons-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tabler/icons-react')>();
+  return {
+    ...actual,
+    IconUser: () => <div data-testid="icon-user">IconUser</div>,
+    IconHistory: () => <div data-testid="icon-history">IconHistory</div>,
+  };
+});
 
 // Spy pour fetchUserHistory via le store
 const fetchUserHistorySpy = vi.fn();
@@ -25,7 +29,6 @@ vi.mock('../../../stores/adminStore', () => ({
 
 const mockUser: AdminUser = {
   id: '1',
-  telegram_id: 123456789,
   username: 'testuser',
   first_name: 'Test',
   last_name: 'User',

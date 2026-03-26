@@ -17,7 +17,6 @@ import { notifications } from '@mantine/notifications';
 // Données de test
 const createMockUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   id: '1',
-  telegram_id: 123456789,
   username: 'testuser',
   first_name: 'Test',
   last_name: 'User',
@@ -33,7 +32,6 @@ const createMockUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
 const mockUsers: AdminUser[] = [
   createMockUser({
     id: '1',
-    telegram_id: 123456789,
     username: 'testuser1',
     first_name: 'Test',
     last_name: 'User',
@@ -41,7 +39,6 @@ const mockUsers: AdminUser[] = [
   }),
   createMockUser({
     id: '2',
-    telegram_id: 987654321,
     username: 'testuser2',
     first_name: 'Another',
     last_name: 'User',
@@ -49,7 +46,6 @@ const mockUsers: AdminUser[] = [
   }),
   createMockUser({
     id: '3',
-    telegram_id: 555666777,
     username: 'testuser3',
     first_name: 'Third',
     last_name: 'User',
@@ -89,18 +85,17 @@ describe('PendingUsersTable', () => {
       expect(screen.getAllByText(/Test\s*User/).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Another\s*User/).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Third\s*User/).length).toBeGreaterThan(0);
-      expect(screen.getByText('123456789')).toBeInTheDocument();
-      expect(screen.getByText('987654321')).toBeInTheDocument();
-      expect(screen.getByText('555666777')).toBeInTheDocument();
+      expect(screen.getByText('1…')).toBeInTheDocument();
+      expect(screen.getByText('2…')).toBeInTheDocument();
+      expect(screen.getByText('3…')).toBeInTheDocument();
     });
 
     it('affiche les noms d\'utilisateur', () => {
       renderWithMantine(<PendingUsersTable {...defaultProps} />);
       
-      // Adapter: certains mocks n'affichent pas le username, on valide les Telegram IDs
-      expect(screen.getByText('123456789')).toBeInTheDocument();
-      expect(screen.getByText('987654321')).toBeInTheDocument();
-      expect(screen.getByText('555666777')).toBeInTheDocument();
+      expect(screen.getByText('1…')).toBeInTheDocument();
+      expect(screen.getByText('2…')).toBeInTheDocument();
+      expect(screen.getByText('3…')).toBeInTheDocument();
     });
 
     it('affiche les dates de création formatées', () => {
@@ -534,7 +529,6 @@ describe('PendingUsersTable', () => {
       const manyUsers = Array.from({ length: 100 }, (_, i) => 
         createMockUser({
           id: `${i}`,
-          telegram_id: 100000000 + i,
           username: `user${i}`,
           first_name: `User${i}`,
           last_name: `Test`,

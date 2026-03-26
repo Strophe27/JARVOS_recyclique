@@ -417,7 +417,14 @@ const SessionManager: React.FC = () => {
           SitesApi.sitesapiv1sitesget().catch(() => []),
           getUsers().catch(() => [])
         ])
-        const opsOpts = (ops as any[]).map((u) => ({ id: String(u.id), label: u.username || u.full_name || u.telegram_id || String(u.id) }))
+        const opsOpts = (ops as any[]).map((u) => {
+          const id = String(u.id);
+          const label =
+            (typeof u.username === 'string' && u.username.trim()) ||
+            u.full_name ||
+            `Opérateur (${id.replace(/-/g, '').slice(0, 8)}…)`;
+          return { id, label };
+        })
         const siteOpts = (sts as any[]).map((s) => ({ id: String(s.id), name: s.name || String(s.id) }))
         setOperators(opsOpts)
         setSites(siteOpts)

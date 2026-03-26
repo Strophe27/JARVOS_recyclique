@@ -127,9 +127,8 @@ class TestAdminE2E:
         for user_data in data:
             try:
                 validated_user = AdminUser(**user_data)
+                assert "telegram_id" not in user_data
                 # Vérifications supplémentaires sur le contenu
-                assert validated_user.id is not None
-                # telegram_id peut être None selon les seeds
                 assert validated_user.id is not None
                 assert validated_user.role in [role.value for role in UserRole]
                 assert validated_user.status in [status.value for status in UserStatus]
@@ -154,11 +153,9 @@ class TestAdminE2E:
         for user_data in data:
             try:
                 validated_user = AdminUser(**user_data)
+                assert "telegram_id" not in user_data
                 # Vérifier que tous les utilisateurs retournés ont le rôle "user"
                 assert validated_user.role == UserRole.USER
-                # Vérifications supplémentaires
-                assert validated_user.id is not None
-                # telegram_id peut être None selon les seeds
                 assert validated_user.id is not None
                 assert validated_user.status in [status.value for status in UserStatus]
                 assert isinstance(validated_user.is_active, bool)
@@ -180,11 +177,8 @@ class TestAdminE2E:
         for user_data in data:
             try:
                 validated_user = AdminUser(**user_data)
-                # Accepter statuses approuvé/actif selon seeds
+                assert "telegram_id" not in user_data
                 assert validated_user.status in [UserStatus.APPROVED, UserStatus.ACTIVE]
-                # Vérifications supplémentaires
-                assert validated_user.id is not None
-                # telegram_id peut être None selon les seeds
                 assert validated_user.id is not None
                 assert validated_user.role in [role.value for role in UserRole]
                 assert isinstance(validated_user.is_active, bool)

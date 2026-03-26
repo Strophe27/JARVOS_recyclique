@@ -66,7 +66,6 @@ class AdminService:
             full_name = self._get_full_name(user)
             admin_user = AdminUser(
                 id=str(user.id),
-                telegram_id=user.telegram_id,
                 username=user.username,
                 first_name=user.first_name,
                 last_name=user.last_name,
@@ -135,7 +134,6 @@ class AdminService:
         full_name = self._get_full_name(updated_user)
         return AdminUser(
             id=str(updated_user.id),
-            telegram_id=updated_user.telegram_id,
             username=updated_user.username,
             first_name=updated_user.first_name,
             last_name=updated_user.last_name,

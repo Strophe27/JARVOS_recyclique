@@ -14,6 +14,12 @@ import {
 } from '@mantine/core';
 import { IconCheck, IconX, IconEye, IconAlertCircle } from '@tabler/icons-react';
 import { AdminUser, UserStatus } from '../../services/adminService';
+import { fullNameOrUsernameDisplayFallback } from '../../utils/userDisplay';
+
+function shortInternalId(id: string): string {
+  const compact = id.replace(/-/g, '');
+  return `${compact.slice(0, 8)}…`;
+}
 
 interface PendingUsersTableProps {
   users: AdminUser[];
@@ -116,7 +122,7 @@ const PendingUsersTable: React.FC<PendingUsersTableProps> = ({
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Utilisateur</Table.Th>
-            <Table.Th>Telegram ID</Table.Th>
+            <Table.Th>ID interne</Table.Th>
             <Table.Th>Rôle</Table.Th>
             <Table.Th>Statut</Table.Th>
             <Table.Th>Date d'inscription</Table.Th>
@@ -128,7 +134,15 @@ const PendingUsersTable: React.FC<PendingUsersTableProps> = ({
             <Table.Tr key={user.id}>
               <Table.Td>
                 <div>
-                  <Text fw={500}>{user.full_name || user.username || 'Utilisateur'}</Text>
+                  <Text fw={500}>
+                    {user.full_name ||
+                      fullNameOrUsernameDisplayFallback(
+                        user.first_name,
+                        user.last_name,
+                        user.username,
+                        user.id,
+                      )}
+                  </Text>
                   {user.first_name && user.last_name && (
                     <Text size="sm" c="dimmed">
                       {user.first_name} {user.last_name}
@@ -137,7 +151,9 @@ const PendingUsersTable: React.FC<PendingUsersTableProps> = ({
                 </div>
               </Table.Td>
               <Table.Td>
-                <Text font="monospace">{user.telegram_id}</Text>
+                <Text ff="monospace" size="sm">
+                  {shortInternalId(user.id)}
+                </Text>
               </Table.Td>
               <Table.Td>
                 <Badge variant="outline">{user.role}</Badge>

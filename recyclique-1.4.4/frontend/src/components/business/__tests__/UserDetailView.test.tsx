@@ -30,7 +30,6 @@ vi.mock('@tabler/icons-react', () => ({
 
 const mockUser: AdminUser = {
   id: '1',
-  telegram_id: 123456789,
   username: 'testuser',
   first_name: 'Test',
   last_name: 'User',
@@ -66,10 +65,9 @@ describe('UserDetailView', () => {
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
-  it('affiche le libellé centralisé quand seul telegram_id identifie l’utilisateur (sans full_name)', () => {
-    const telegramOnly: AdminUser = {
-      id: '99',
-      telegram_id: 'tg_detail_only',
+  it('repli sans nom ni username : libellé sur id interne court', () => {
+    const minimal: AdminUser = {
+      id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
       username: undefined,
       first_name: undefined,
       last_name: undefined,
@@ -80,9 +78,10 @@ describe('UserDetailView', () => {
       created_at: '2025-01-01T00:00:00Z',
       updated_at: '2025-01-01T00:00:00Z',
     };
-    renderWithProvider(<UserDetailView user={telegramOnly} />);
-    expect(screen.getByText('User tg_detail_only')).toBeInTheDocument();
-    expect(document.body.textContent || '').toMatch(/@\s*tg_detail_only/);
+    renderWithProvider(<UserDetailView user={minimal} />);
+    expect(screen.getByText('Utilisateur (aaaaaaaa…)')).toBeInTheDocument();
+    // En-tête + ligne « Nom d'utilisateur » du profil (même libellé)
+    expect(screen.getAllByText('Pas de nom d’utilisateur').length).toBeGreaterThanOrEqual(1);
   });
 
   it('affiche les informations de l\'utilisateur sélectionné', () => {

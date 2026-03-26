@@ -5,9 +5,8 @@ from uuid import UUID
 from recyclic_api.models.user import UserRole, UserStatus
 
 class AdminUser(BaseModel):
-    """Schéma pour les utilisateurs dans l'interface d'administration"""
+    """Schéma pour les utilisateurs dans l'interface d'administration (réponse JSON sans telegram_id)."""
     id: Union[str, UUID]
-    telegram_id: Optional[str] = None
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -33,9 +32,6 @@ class AdminUser(BaseModel):
             self.id = str(self.id)
         if isinstance(self.site_id, UUID):
             self.site_id = str(self.site_id)
-        # Normaliser telegram_id en chaîne pour cohérence d'API et compatibilité tests
-        if self.telegram_id is not None:
-            self.telegram_id = str(self.telegram_id)
 
 class UserRoleUpdate(BaseModel):
     """Schéma pour la modification du rôle d'un utilisateur"""
@@ -68,9 +64,8 @@ class AdminErrorResponse(BaseModel):
     success: bool = False
 
 class PendingUserResponse(BaseModel):
-    """Schéma pour la réponse des utilisateurs en attente"""
+    """Réponse utilisateurs en attente (sans telegram_id)."""
     id: Union[str, UUID]
-    telegram_id: Optional[str] = None
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -85,8 +80,6 @@ class PendingUserResponse(BaseModel):
         """Convertit les UUIDs en strings après validation"""
         if isinstance(self.id, UUID):
             self.id = str(self.id)
-        if self.telegram_id is not None:
-            self.telegram_id = str(self.telegram_id)
 
 class UserApprovalRequest(BaseModel):
     """Schéma pour l'approbation d'un utilisateur"""

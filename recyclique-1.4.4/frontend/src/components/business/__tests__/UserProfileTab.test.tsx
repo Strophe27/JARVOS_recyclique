@@ -26,7 +26,6 @@ vi.mock('@mantine/notifications', () => ({
 
 const mockUser: AdminUser = {
   id: '1',
-  telegram_id: 123456789,
   username: 'testuser',
   first_name: 'Test',
   last_name: 'User',
@@ -57,23 +56,21 @@ describe('UserProfileTab', () => {
     expect(screen.getByText('Test')).toBeInTheDocument();
     expect(screen.getByText('User')).toBeInTheDocument();
     expect(screen.getByText(/@testuser/)).toBeInTheDocument();
-    expect(screen.getByText('123456789')).toBeInTheDocument();
     expect(screen.getByText('Bénévole')).toBeInTheDocument();
     expect(screen.getByText('Oui')).toBeInTheDocument();
   });
 
-  it('n\'affiche pas la ligne ID Telegram en doublon quand le repli @ repose sur telegram_id seul', () => {
+  it('sans username : pas de @ Telegram, libellé explicite', () => {
     renderWithProvider(
       <UserProfileTab
         user={{
           ...mockUser,
           username: undefined,
-          telegram_id: 'tg_sans_username',
         }}
       />
     );
 
-    expect(screen.getByText('@tg_sans_username')).toBeInTheDocument();
+    expect(screen.getByText('Pas de nom d’utilisateur')).toBeInTheDocument();
     expect(screen.queryByText('ID Telegram:')).not.toBeInTheDocument();
   });
 

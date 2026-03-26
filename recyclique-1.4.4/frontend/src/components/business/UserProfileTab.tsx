@@ -19,7 +19,7 @@ import { AdminUser, adminService, UserGroupUpdate } from '../../services/adminSe
 import { UserRole, UserStatus } from '../../generated';
 import { useAuthStore } from '../../stores/authStore';
 import { groupService, Group as GroupType } from '../../services/groupService';
-import { usernameOrTelegramForAtHandle } from '../../utils/userDisplay';
+import { displayAtUsername } from '../../utils/userDisplay';
 
 interface UserProfileTabProps {
   user: AdminUser | null;
@@ -30,7 +30,8 @@ interface UserProfileTabProps {
 }
 
 interface UserFormData {
-  telegram_id: string;
+  /** Optionnel : saisi uniquement en création admin (payload UserCreate), jamais renseigné depuis les réponses API. */
+  telegram_id?: string;
   first_name?: string;
   last_name?: string;
   username?: string;
@@ -46,7 +47,7 @@ interface UserFormData {
 }
 
 const sanitizeUserForForm = (user: AdminUser | null): UserFormData => ({
-  telegram_id: user?.telegram_id || '',
+  telegram_id: '',
   first_name: user?.first_name || '',
   last_name: user?.last_name || '',
   username: user?.username || '',
@@ -251,10 +252,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
 
         const newUser = await adminService.createUser(createData);
 
-        onUserUpdate?.({
-          ...newUser,
-          telegram_id: values.telegram_id || newUser.telegram_id || null,
-        });
+        onUserUpdate?.(newUser);
 
         notifications.show({
           title: 'Succès',
@@ -455,20 +453,12 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
               <Group justify="space-between">
                 <Text size="sm">Nom d'utilisateur:</Text>
                 <Text size="sm" fw={500}>
-                  @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
+                  {(() => {
+                    const u = displayAtUsername(user.username);
+                    return u ? `@${u}` : 'Pas de nom d’utilisateur';
+                  })()}
                 </Text>
               </Group>
-              {user.telegram_id !== undefined &&
-                user.telegram_id !== null &&
-                user.telegram_id !== '' &&
-                Boolean(user.username) && (
-                  <Group justify="space-between">
-                    <Text size="sm">ID Telegram:</Text>
-                    <Text size="sm" fw={500}>
-                      {user.telegram_id}
-                    </Text>
-                  </Group>
-                )}
               <Group justify="space-between">
                 <Text size="sm">Email:</Text>
                 <Text size="sm" fw={500}>

@@ -10,7 +10,6 @@ import { vi } from 'vitest';
 const mockUsers: AdminUser[] = [
   {
     id: '1',
-    telegram_id: 123456789,
     username: 'testuser1',
     first_name: 'Test',
     last_name: 'User1',
@@ -23,7 +22,6 @@ const mockUsers: AdminUser[] = [
   },
   {
     id: '2',
-    telegram_id: 987654321,
     username: 'testuser2',
     first_name: 'Test',
     last_name: 'User2',
@@ -240,11 +238,10 @@ describe('UserListTable Accessibility Tests', () => {
     });
   });
 
-  it('affiche le libelle centralise quand seul telegram_id identifie la ligne (full_name vide)', () => {
-    const telegramOnly: AdminUser[] = [
+  it('affiche le libelle centralise sans Telegram quand full_name vide (repli id)', () => {
+    const minimalRow: AdminUser[] = [
       {
-        id: 'z9',
-        telegram_id: 'tg_list_only',
+        id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         username: undefined,
         first_name: undefined,
         last_name: undefined,
@@ -258,13 +255,14 @@ describe('UserListTable Accessibility Tests', () => {
     ];
     render(
       <UserListTable
-        users={telegramOnly}
+        users={minimalRow}
         onRoleChange={mockOnRoleChange}
         onRowClick={mockOnRowClick}
       />,
     );
-    expect(screen.getByText('User tg_list_only')).toBeInTheDocument();
+    // UUID sans tirets : 8 premiers caractères = aaaaaaaa
+    expect(screen.getByText('Utilisateur (aaaaaaaa…)')).toBeInTheDocument();
     const row = screen.getByTestId('user-row');
-    expect(row.getAttribute('aria-label')).toContain('User tg_list_only');
+    expect(row.getAttribute('aria-label')).toContain('Utilisateur (aaaaaaaa…)');
   });
 });

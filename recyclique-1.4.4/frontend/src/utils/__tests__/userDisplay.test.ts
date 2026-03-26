@@ -1,50 +1,54 @@
-import { describe, expect, it } from 'vitest'
-
+import { describe, it, expect } from 'vitest';
 import {
-  fullNameOrUsernameOrTelegramFallback,
-  usernameOrTelegramForAtHandle,
-} from '../userDisplay'
+  displayAtUsername,
+  fullNameOrUsernameDisplayFallback,
+} from '../userDisplay';
 
-describe('usernameOrTelegramForAtHandle', () => {
-  it('returns username first when present', () => {
-    expect(usernameOrTelegramForAtHandle('alice', 'tg_alpha')).toBe('alice')
-  })
+describe('displayAtUsername', () => {
+  it('retourne le username trimé', () => {
+    expect(displayAtUsername('  alice  ')).toBe('alice');
+  });
 
-  it('falls back to a numeric telegram id', () => {
-    expect(usernameOrTelegramForAtHandle(undefined, 123456789)).toBe('123456789')
-  })
+  it('retourne chaîne vide sans username', () => {
+    expect(displayAtUsername(undefined)).toBe('');
+    expect(displayAtUsername('')).toBe('');
+    expect(displayAtUsername('   ')).toBe('');
+  });
+});
 
-  it('falls back to a non numeric telegram id', () => {
-    expect(usernameOrTelegramForAtHandle(undefined, 'tg_alpha')).toBe('tg_alpha')
-  })
+describe('fullNameOrUsernameDisplayFallback', () => {
+  it('priorise prénom + nom', () => {
+    expect(
+      fullNameOrUsernameDisplayFallback('Alice', 'Martin', 'alice', 'uuid'),
+    ).toBe('Alice Martin');
+  });
 
-  it('returns an empty string when both values are absent', () => {
-    expect(usernameOrTelegramForAtHandle(undefined, undefined)).toBe('')
-  })
+  it('utilise le username seul', () => {
+    expect(
+      fullNameOrUsernameDisplayFallback(undefined, undefined, 'alice', 'uuid'),
+    ).toBe('alice');
+  });
 
-  it('keeps the previous falsy behavior for a zero telegram id', () => {
-    expect(usernameOrTelegramForAtHandle(undefined, 0)).toBe('')
-  })
-})
+  it('repli sur id utilisateur court sans nom ni username', () => {
+    expect(
+      fullNameOrUsernameDisplayFallback(
+        undefined,
+        undefined,
+        undefined,
+        '123e4567-e89b-12d3-a456-426614174000',
+      ),
+    ).toBe('Utilisateur (123e4567…)');
+  });
 
-describe('fullNameOrUsernameOrTelegramFallback', () => {
-  it('returns the full name when first and last name are present', () => {
-    expect(fullNameOrUsernameOrTelegramFallback('Alice', 'Martin', 'alice', 'tg_alpha')).toBe('Alice Martin')
-  })
+  it('accepte un seul prénom ou nom', () => {
+    expect(
+      fullNameOrUsernameDisplayFallback('Alice', undefined, 'alice', 'uuid'),
+    ).toBe('Alice');
+  });
 
-  it('falls back to username when no name is available', () => {
-    expect(fullNameOrUsernameOrTelegramFallback(undefined, undefined, 'alice', 'tg_alpha')).toBe('alice')
-  })
-
-  it('falls back to telegram id when username is absent', () => {
-    expect(fullNameOrUsernameOrTelegramFallback(undefined, undefined, undefined, 'tg_alpha')).toBe('User tg_alpha')
-  })
-
-  it('uses a partial name before username when available', () => {
-    expect(fullNameOrUsernameOrTelegramFallback('Alice', undefined, 'alice', 'tg_alpha')).toBe('Alice')
-  })
-
-  it('falls back to Bénévole when no identifier is available', () => {
-    expect(fullNameOrUsernameOrTelegramFallback(undefined, undefined, undefined, undefined)).toBe('Bénévole')
-  })
-})
+  it('sans rien : libellé générique', () => {
+    expect(
+      fullNameOrUsernameDisplayFallback(undefined, undefined, undefined, undefined),
+    ).toBe('Sans identifiant affichable');
+  });
+});

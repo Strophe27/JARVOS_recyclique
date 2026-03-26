@@ -14,7 +14,7 @@ import {
   AdminApi
 } from '../generated';
 import axiosClient from '../api/axiosClient';
-import { fullNameOrUsernameOrTelegramFallback } from '../utils/userDisplay';
+import { fullNameOrUsernameDisplayFallback } from '../utils/userDisplay';
 
 // Types locaux pour l'historique
 export interface HistoryEvent {
@@ -74,19 +74,18 @@ export type AdminUser = GeneratedAdminUser & {
 };
 
 // Helper pour convertir UserResponse en AdminUser
-// UserResponse (flux UsersApi) n'expose plus telegram_id en JSON (lot 9C) ; le champ reste optionnel côté UI (saisie, pending admin).
+// UserResponse (flux UsersApi) n'expose pas telegram_id en JSON (lot 9C) ; réponses admin idem (lot 10A).
 function convertToAdminUser(user: UserResponse): AdminUser {
   return {
     id: user.id,
-    telegram_id: undefined,
     username: user.username,
     first_name: user.first_name,
     last_name: user.last_name,
-    full_name: fullNameOrUsernameOrTelegramFallback(
+    full_name: fullNameOrUsernameDisplayFallback(
       user.first_name,
       user.last_name,
       user.username,
-      undefined,
+      user.id,
     ),
     email: (user as any).email ?? null,
     phone_number: (user as any).phone_number ?? null,
@@ -267,11 +266,17 @@ export const adminService = {
       // Convertir PendingUserResponse en AdminUser
       return pendingUsers.map((user) => ({
         id: user.id,
-        telegram_id: user.telegram_id,
         username: user.username,
         first_name: user.first_name,
         last_name: user.last_name,
-        full_name: user.full_name,
+        full_name:
+          user.full_name ||
+          fullNameOrUsernameDisplayFallback(
+            user.first_name,
+            user.last_name,
+            user.username,
+            user.id,
+          ),
         role: user.role,
         status: user.status,
         is_active: true, // Les utilisateurs en attente sont considérés comme actifs

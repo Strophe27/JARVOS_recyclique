@@ -15,8 +15,8 @@ import { AdminUser, UserRole } from '../../services/adminService';
 import { UserProfileTab } from './UserProfileTab';
 import { UserHistoryTab } from './UserHistoryTab';
 import {
-  fullNameOrUsernameOrTelegramFallback,
-  usernameOrTelegramForAtHandle,
+  displayAtUsername,
+  fullNameOrUsernameDisplayFallback,
 } from '../../utils/userDisplay';
 
 interface UserDetailViewProps {
@@ -91,12 +91,13 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
 
   const headerDisplayName =
     user.full_name ||
-    fullNameOrUsernameOrTelegramFallback(
+    fullNameOrUsernameDisplayFallback(
       user.first_name,
       user.last_name,
       user.username,
-      user.telegram_id,
+      user.id,
     );
+  const atUser = displayAtUsername(user.username);
   const avatarInitial = (headerDisplayName.trim().charAt(0) || 'U').toUpperCase();
 
   return (
@@ -112,7 +113,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
               {headerDisplayName}
             </Text>
             <Text size="sm" c="dimmed">
-              @{usernameOrTelegramForAtHandle(user.username, user.telegram_id)}
+              {atUser ? `@${atUser}` : 'Pas de nom d’utilisateur'}
             </Text>
             <Group gap="xs" mt="xs">
               <Badge color={getRoleColor(user.role)} variant="light">
