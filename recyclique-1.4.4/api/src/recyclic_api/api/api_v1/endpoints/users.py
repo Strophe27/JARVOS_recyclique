@@ -15,9 +15,8 @@ from recyclic_api.schemas.user import (
 )
 from recyclic_api.schemas.pin import PinSetRequest
 from recyclic_api.core.auth import require_role_strict, get_current_user, get_user_permissions
-from recyclic_api.core.exceptions import AuthenticationError, ConflictError
 from recyclic_api.core.security import hash_password
-from recyclic_api.services.telegram_link_service import TelegramLinkService
+from recyclic_api.services.telegram_link_service import TELEGRAM_LINK_DISABLED_DETAIL
 from recyclic_api.utils.rate_limit import conditional_rate_limit
 
 router = APIRouter()
@@ -254,34 +253,31 @@ async def delete_user(user_id: str, db: Session = Depends(get_db)):
 
 
 @conditional_rate_limit("5/minute")
-@router.post("/link-telegram", response_model=dict)
-async def link_telegram_account(link_request: LinkTelegramRequest, request: Request, db: Session = Depends(get_db)):
-    """Lier un compte Telegram à un compte utilisateur existant.
+@router.post(
+    "/link-telegram",
+    responses={
+        410: {
+            "description": "Fonctionnalité retirée — la liaison Telegram n'est plus proposée.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": TELEGRAM_LINK_DISABLED_DETAIL},
+                }
+            },
+        },
+    },
+)
+async def link_telegram_account(_body: LinkTelegramRequest, request: Request):
+    """Ancienne liaison compte Telegram — désactivée (410 Gone).
 
-    Cette route permet à un utilisateur existant de lier son compte Telegram
-    en fournissant ses identifiants web et son ID Telegram.
+    Le corps reste validé comme auparavant pour un contrat stable côté clients ;
+    aucune écriture en base n'est effectuée.
 
-    Limite de taux : 5 requêtes par minute pour éviter les attaques par force brute.
+    Limite de taux : 5 requêtes par minute.
     """
-    service = TelegramLinkService(db)
-    try:
-        _, message = service.link_telegram_account(
-            username=link_request.username,
-            password=link_request.password,
-            telegram_id=link_request.telegram_id,
-        )
-    except AuthenticationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(exc),
-        ) from exc
-    except ConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=exc.detail,
-        ) from exc
-
-    return {"message": message}
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=TELEGRAM_LINK_DISABLED_DETAIL,
+    )
 
 
 

@@ -1,12 +1,22 @@
+"""Service historique pour la liaison Telegram — flux désactivé côté API (410 Gone).
+
+Les helpers d'authentification / conflit restent pour cohérence avec le modèle User
+sans modifier le schéma DB ; seul ``link_telegram_account`` est neutralisé.
+"""
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 
-from recyclic_api.core.exceptions import AuthenticationError, ConflictError
+from recyclic_api.core.exceptions import TelegramLinkDisabledError
 from recyclic_api.core.security import verify_password
 from recyclic_api.models.user import User
 
+TELEGRAM_LINK_DISABLED_DETAIL = (
+    "La liaison de compte Telegram n'est plus disponible. Cette fonctionnalité a été retirée."
+)
+
+
 class TelegramLinkService:
-    """Service pour gérer la liaison des comptes Telegram aux comptes web."""
+    """Service pour la liaison Telegram (désactivée — utiliser la route HTTP documentée)."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -40,25 +50,8 @@ class TelegramLinkService:
         return query.first() is not None
 
     def link_telegram_account(self, username: str, password: str, telegram_id: str) -> Tuple[bool, str]:
-        """Lie un compte Telegram à un compte utilisateur existant.
+        """Ancienne liaison Telegram — désactivée (lever ``TelegramLinkDisabledError``).
 
-        Returns:
-            Tuple[bool, str]: (success, message)
+        Conservé pour tout appelant hors HTTP ; la route ``POST .../link-telegram`` renvoie 410.
         """
-        # Étape 1: Authentification
-        user = self.authenticate_user(username, password)
-        if not user:
-            raise AuthenticationError("Identifiants invalides")
-
-        # Étape 2: Vérifier le conflit de telegram_id
-        if self.check_telegram_id_conflict(telegram_id, exclude_user_id=str(user.id)):
-            raise ConflictError(
-                "Ce Telegram ID est déjà lié à un autre compte"
-            )
-
-        # Étape 3: Mettre à jour le telegram_id de l'utilisateur
-        user.telegram_id = telegram_id
-        self.db.commit()
-        self.db.refresh(user)
-
-        return True, "Compte Telegram lié avec succès"
+        raise TelegramLinkDisabledError(TELEGRAM_LINK_DISABLED_DETAIL)

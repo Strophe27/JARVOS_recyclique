@@ -37,3 +37,11 @@ class ConflictError(RecyclicException):
             super().__init__(detail)
         else:
             super().__init__(detail.get("detail", str(detail)))
+
+
+class TelegramLinkDisabledError(RecyclicException):
+    """La liaison de compte Telegram n'est plus proposée (flux retiré)."""
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__(detail)

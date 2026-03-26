@@ -105,7 +105,8 @@ class UserStatusUpdate(BaseModel):
     reason: Optional[str] = None
 
 class LinkTelegramRequest(BaseModel):
-    """Schéma pour la requête de liaison de compte Telegram."""
+    """Corps attendu par ``POST .../link-telegram`` (flux Telegram retiré — réponse 410 Gone)."""
+
     username: str
     password: str
     telegram_id: str
