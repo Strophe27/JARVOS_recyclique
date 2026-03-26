@@ -16,12 +16,9 @@ from recyclic_api.services.telegram_service import telegram_service
 async def test_service_no_http_when_channel_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "TELEGRAM_NOTIFICATIONS_ENABLED", False)
     with patch("recyclic_api.services.telegram_service.httpx.AsyncClient") as mock_client:
-        r1 = await telegram_service.send_user_approval_notification("1", "user")
-        r2 = await telegram_service.send_user_rejection_notification("1", "user")
-        r3 = await telegram_service.notify_admins_user_processed("admin", "target", "approved")
-        r4 = await telegram_service.notify_sync_failure("f", "r", "err")
+        ok = await telegram_service.notify_sync_failure("f", "r", "err")
     mock_client.assert_not_called()
-    assert all((r1, r2, r3, r4))
+    assert ok is True
 
 
 @pytest.mark.asyncio

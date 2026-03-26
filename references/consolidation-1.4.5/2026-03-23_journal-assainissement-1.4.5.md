@@ -3427,6 +3427,41 @@
 
 ---
 
+## Lot 2BH — Elagage du code mort dans `telegram_service`
+
+**Statut:** ferme avec reserves acceptees  
+**Theme:** reduire `telegram_service.py` au reliquat Telegram encore reellement utilise
+
+### Actions
+- Suppression de `send_user_approval_notification`, `send_user_rejection_notification` et `notify_admins_user_processed`.
+- Conservation de `notify_sync_failure` comme seul point d'entree encore utile cote application.
+- Realignement des tests cibles sur ce service reduit.
+- Mise a jour du script manuel `api/test_telegram_notifications.py` pour ne verifier que le flux encore vivant.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/services/telegram_service.py`
+- `recyclique-1.4.4/api/tests/test_outbound_bot_notifications_disabled.py`
+- `recyclique-1.4.4/api/tests/test_sync_service.py`
+- `recyclique-1.4.4/api/test_telegram_notifications.py`
+
+### Validation
+- Diagnostics IDE / lints sur les fichiers modifies.
+- Validation locale ciblee :
+  - `tests/test_outbound_bot_notifications_disabled.py`
+  - `tests/test_sync_service.py`
+- Resultat local :
+  - **11 tests passes**
+- QA finale seule : **OK**
+
+### Resultat
+- Le service Telegram ne contient plus de points d'entree morts issus des anciens flux admin.
+- Le reliquat Telegram actif est desormais encore plus resserre autour des alertes sync/anomalies.
+- Reserves acceptees :
+  - `notify_sync_failure` renvoie encore `True` quand le canal est desactive, pour rester no-op et non cassant
+  - un doublon de test hors `api/tests` existe toujours mais n'entre pas dans la suite pytest canonique
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -3462,6 +3497,7 @@
 - **Vague 5:** second lot final Telegram ferme sur la desactivation de `link-telegram`
 - **Vague 5:** troisieme lot final Telegram ferme sur les endpoints bot de depots
 - **Vague 5:** quatrieme lot final Telegram ferme sur la suppression des appels directs admin
+- **Vague 5:** cinquieme lot final Telegram ferme sur l'elagage du service Telegram
 - **Vague 6:** phase coherence frontend ouverte ; premier sous-lot fondations ferme
 - **Vague 6:** sous-lot routes/tests ferme
 - **Vague 6:** sous-lot convention HTTP / services ferme
@@ -3469,7 +3505,7 @@
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
 - **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`
-- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2I`, `3G`, `3H`
+- **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** poursuivre l'axe `admin` par le prochain sous-bloc coherent hors Telegram
 
