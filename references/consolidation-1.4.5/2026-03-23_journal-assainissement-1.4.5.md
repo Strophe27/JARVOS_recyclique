@@ -4221,6 +4221,30 @@ Schéma `forgotPasswordFormSchema` (`src/schemas/forgotPasswordForm.ts`) : email
 
 ---
 
+## Micro-lot FE-TG-10 — Réinitialisation mot de passe : règles métier en Zod
+
+### Theme
+Extraire la logique de `validatePassword` + contrôle de concordance des champs dans `resetPasswordFormSchema` (`src/schemas/resetPasswordForm.ts`) : même ordre que l’implémentation historique (discordance d’abord, puis exigences de complexité dans le même ordre), concaténation des messages avec « . » via `formatResetPasswordClientMessage`. `ResetPassword.tsx` consomme le schéma ; `noValidate` sur le formulaire pour laisser Zod décider en cohérence avec les tests existants (champs `required` conservés pour l’accessibilité / mobile).
+
+### Verification worktree
+- Branche `chore/v1.4.5-consolidation` ; worktree **propre** avant modification (après push `FE-TG-09`).
+
+### Fichiers touches
+- `recyclique-1.4.4/frontend/src/schemas/resetPasswordForm.ts` (nouveau)
+- `recyclique-1.4.4/frontend/src/pages/ResetPassword.tsx`
+- `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md`
+
+### Validation
+- `npx vitest run src/test/pages/ResetPassword.test.tsx` : **15 tests OK**
+- `npx eslint src/pages/ResetPassword.tsx src/schemas/resetPasswordForm.ts` : **0 probleme**
+- `generated/*` : **non modifie**
+
+### Resultat / mini-QA
+- Comportement aligné sur les tests (discordance, faiblesse de mot de passe, succès, token) ; pas de changement de copy métier.
+- Lot ferme ; **pret commit/push** si le diff reste limite aux fichiers ci-dessus + ce journal.
+
+---
+
 ## Etat courant
 
 - **Vague 1:** terminee
@@ -4281,12 +4305,14 @@ Schéma `forgotPasswordFormSchema` (`src/schemas/forgotPasswordForm.ts`) : email
 - **Vague 6:** micro-lot `FE-TG-08` ferme sur alignement colonne « Nom » + `aria-label` dans `UserListTable` avec le meme helper
 - **Vague 6 (paquet P2B formulaires):** micro-lot `FE-TG-03` ferme sur validation Zod de la page `Login` + schéma `schemas/loginForm.ts`
 - **Vague 6 (paquet P2B formulaires):** micro-lot `FE-TG-09` ferme sur validation Zod de `ForgotPassword` + schéma `schemas/forgotPasswordForm.ts`
+- **Vague 6 (paquet P2B formulaires):** micro-lot `FE-TG-10` ferme sur schéma Zod `resetPasswordForm` + refactor `ResetPassword.tsx` (fin de la fonction locale `validatePassword`)
 - **Vague 7:** extension backend tests auth/admin/refresh/logout fermee
 - **Structure Git:** `recyclique-1.4.4/` detache du depot imbrique ; index parent reecrit (fichiers reels)
-- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-03`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`, `FE-TG-07`, `FE-TG-08`, `FE-TG-09`
+- **Lots fermes:** `1A`, `1B`, `1C`, `1D`, `1E`, `1F`, `1G`, `1H`, `1I`, `2A`, `2B`, `2C`, `2D`, `2F`, `2G`, `2H`, `3A`, `3B`, `3C`, `3D`, `3E`, `3F`, `3I`, `4A`, `4B`, `4C`, `4D`, `4E`, `4F`, `4G`, `4H`, `4I`, `4J`, `4K`, `4L`, `4M`, `4N`, `4O`, `4P`, `4Q`, `4R`, `FE-TG-01`, `FE-TG-02`, `FE-TG-03`, `FE-TG-04`, `FE-TG-05`, `FE-TG-06`, `FE-TG-07`, `FE-TG-08`, `FE-TG-09`, `FE-TG-10`
 - **Lots fermes avec reserve:** `1J`, `1K`, `1L`, `1M`, `1N`, `1O`, `1P`, `1Q`, `1R`, `1S`, `1T`, `1U`, `1V`, `1W`, `1X`, `1Y`, `1Z`, `2AA`, `2AB`, `2AC`, `2AD`, `2AE`, `2AF`, `2AG`, `2AH`, `2AI`, `2AJ`, `2AK`, `2AL`, `2AN`, `2AP`, `2AQ`, `2AR`, `2AS`, `2AT`, `2AU`, `2AV`, `2AW`, `2AX`, `2AY`, `2AZ`, `2BA`, `2BB`, `2BC`, `2BD`, `2BE`, `2BF`, `2BG`, `2BH`, `2BI`, `2BJ`, `2BK`, `2BL`, `2BM`, `2BN`, `2I`, `3G`, `3H`
 - **Lots fermes:** ajout des lots `2AM` (realignement des tests `reception`) et `2AO` (reserve integration `sales`)
 - **Prochaine etape logique:** reliquats d'affichage session / header (`Header.jsx`, `AdminLayout.jsx`, greeting `Reception.tsx`) avec `fullNameOrUsernameOrTelegramFallback` ou equivalent — **risque moyen** (chemins auth multi-ecrans, tests a rebrancher) ; migration `UserListTable.test.tsx` Jest vers Vitest si on veut une suite « Nom » non regressive hors accessibilite
+- **Suite paquet P2B formulaires (apres flux auth public Zod):** ecrans `@mantine/form` (`GroupsReal.tsx`, `AuditLog.tsx`) ou `react-hook-form` (`UserProfileTab.tsx`, `UserHistoryTab.tsx`) — **risque moyen a eleve** (resolvers, tests disperses, melange UI) ; preparer une carte par fichier avant micro-lot
 
 ---
 

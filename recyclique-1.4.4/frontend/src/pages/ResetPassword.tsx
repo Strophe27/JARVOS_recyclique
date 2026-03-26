@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { formatResetPasswordClientMessage, resetPasswordFormSchema } from '../schemas/resetPasswordForm';
 
 export default function ResetPassword(): JSX.Element {
   const navigate = useNavigate();
@@ -23,46 +24,22 @@ export default function ResetPassword(): JSX.Element {
     }
   }, [searchParams, navigate]);
 
-  const validatePassword = (password: string): string[] => {
-    const errors: string[] = [];
-
-    if (password.length < 8) {
-      errors.push('Le mot de passe doit contenir au moins 8 caractères');
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push('Le mot de passe doit contenir au moins une majuscule');
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push('Le mot de passe doit contenir au moins une minuscule');
-    }
-    if (!/\d/.test(password)) {
-      errors.push('Le mot de passe doit contenir au moins un chiffre');
-    }
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      errors.push('Le mot de passe doit contenir au moins un caractère spécial');
-    }
-
-    return errors;
-  };
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError('');
 
-    // Validation côté client
-    if (newPassword !== confirmPassword) {
-      setValidationError('Les mots de passe ne correspondent pas');
-      return;
-    }
-
-    const passwordErrors = validatePassword(newPassword);
-    if (passwordErrors.length > 0) {
-      setValidationError(passwordErrors.join('. '));
+    const parsed = resetPasswordFormSchema.safeParse({
+      token,
+      newPassword,
+      confirmPassword,
+    });
+    if (!parsed.success) {
+      setValidationError(formatResetPasswordClientMessage(parsed.error));
       return;
     }
 
     try {
-      await resetPassword(token, newPassword);
+      await resetPassword(parsed.data.token, parsed.data.newPassword);
       setIsSuccess(true);
       // Rediriger vers login après 3 secondes
       setTimeout(() => {
@@ -94,7 +71,7 @@ export default function ResetPassword(): JSX.Element {
         Entrez votre nouveau mot de passe ci-dessous.
       </p>
 
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} noValidate>
         <label htmlFor="newPassword">Nouveau mot de passe</label>
         <input
           id="newPassword"
