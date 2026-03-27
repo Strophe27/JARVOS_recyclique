@@ -1,5 +1,6 @@
 import api from '../api/axiosClient';
 import type { AxiosInstance, AxiosResponse } from 'axios';
+import { cashSessionsService } from './cashSessionsService';
 import { receptionTicketsService } from './receptionTicketsService';
 
 // Health check
@@ -175,9 +176,7 @@ export const getCashSessionStats = async (dateFrom?: string, dateTo?: string): P
   const params: Record<string, any> = {};
   if (dateFrom) params.date_from = dateFrom;
   if (dateTo) params.date_to = dateTo;
-
-  const response: AxiosResponse = await api.get('/v1/cash-sessions/stats/summary', { params });
-  return response.data;
+  return cashSessionsService.getKPIs(params);
 };
 
 // Reception Statistics
@@ -283,9 +282,8 @@ export const getCashLiveStats = async (): Promise<any> => {
     date_from: startOfDay.toISOString(),
     date_to: endOfDay.toISOString()
   };
-  
-  const response: AxiosResponse = await api.get('/v1/cash-sessions/stats/summary', { params });
-  return response.data;
+
+  return cashSessionsService.getKPIs(params);
 };
 
 // Reception Categories
