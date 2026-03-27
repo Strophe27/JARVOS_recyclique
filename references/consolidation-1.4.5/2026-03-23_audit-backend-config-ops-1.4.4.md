@@ -31,7 +31,7 @@ Ce rapport synthetise les ecarts entre fichiers d'infra (compose, Dockerfile), s
 - **README racine:** port API indique `4433` alors que compose expose `8000` par defaut — erreur utilisateur frequente.
 - **Runtime local CPython 3.13 vs Docker 3.11** — comportements ou dependances binaires divergents.
 - **`run_tests.sh`:** bash / docker-compose v1; friction sous Windows ou Compose V2.
-- **`pytest.ini`:** filtre `not telegram` — exclusion fragile si les marqueurs ou noms de tests evoluent.
+- **`pytest.ini`:** filtre d'exclusion par expression sur marqueurs (suite dependant d'un service externe) — fragile si les marqueurs ou noms de tests evoluent.
 
 ### Bas
 

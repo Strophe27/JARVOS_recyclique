@@ -6,7 +6,7 @@ Branche de travail : `chore/v1.4.5-consolidation`
 
 ## Contexte
 
-Les micro-lots a faible risque autour de Telegram, des alignements `telegram_id` / affichage admin, des formulaires auth publics Zod et de la page `/telegram-auth` sont **journalises comme fermes** dans `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md` (lots `2BD`–`2BN`, `FE-TG-03`, `09`, `10`, `12`, etc.).
+Les micro-lots a faible risque (canal de notifications tiers, alignements schema utilisateur / affichage admin, formulaires auth publics Zod, route publique d'inscription et redirect historiques) sont **journalises comme fermes** dans `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md` (lots `2BD`–`2BN`, `FE-TG-03`, `09`, `10`, `12`, etc.).
 
 Ce document fige le **bilan de fin de paquet** : ce qui est clos, ce qui reste executable mais volontairement non pousse ici, et ce qui attend une decision ou un environnement.
 
@@ -20,14 +20,14 @@ Ce document fige le **bilan de fin de paquet** : ce qui est clos, ce qui reste e
 
 ## Ferme (extrait)
 
-- Neutralisation / elagage Telegram backend et dependances admin associees (`2BD`–`2BH`).
+- Neutralisation / elagage backend : notifications sortantes tiers et dependances admin associees (`2BD`–`2BH`).
 - **Gel contractuel** du dernier endpoint depots avec header `X-Bot-Token` : documente + test OpenAPI cible (`2BI`).
-- Alignements `telegram_id` et helpers d'affichage admin front (`2BJ`–`2BN`).
-- Cohérence frontend auth / utilisateurs / formulaires publics Zod ; `/telegram-auth` informative sans `link-telegram` (`FE-TG-01` … `FE-TG-12` selon journal).
+- Alignements champs identite tiers en base / API et helpers d'affichage admin front (`2BJ`–`2BN`).
+- Cohérence frontend auth / utilisateurs / formulaires publics Zod ; page publique d'auth historique redirigee vers inscription ; liaison API associee retirée (`FE-TG-01` … `FE-TG-12` selon journal).
 
 ## Executable mais a risque moyen ou plus (non execute dans ce paquet)
 
-- Greeting / session / header (`Header.jsx`, `AdminLayout.jsx`, `Reception.tsx`) avec le meme pattern que `fullNameOrUsernameOrTelegramFallback`.
+- Greeting / session / header (`Header.jsx`, `AdminLayout.jsx`, `Reception.tsx`) avec le meme pattern que le helper d'affichage nom / username / identifiant tiers dans `userDisplay.ts`.
 - Formulaires `@mantine/form` / `react-hook-form` hors flux Login / Forgot / Reset.
 - Migration de tests historiques (ex. Jest → Vitest sur certaines suites).
 

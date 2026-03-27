@@ -32,7 +32,7 @@ Colonnes: ID | Priorite | Zone | Action | Justification | Fichiers (indicatif)
 | TEST-01 | P1 | Backend tests | Isoler la DB (rollback, savepoints, cleanup apres commit) | Flakiness et pollution entre tests | conftest.py, tests/* |
 | TEST-02 | P1 | Backend tests | Eliminer collision username `inactive_user` entre tests | Echecs intermittents | tests/* |
 | TEST-03 | P1 | Backend tests | Revoir conftest (faux reportlab/openpyxl, mock log_audit) | Masque integrations reelles | conftest.py |
-| TEST-04 | P2 | Backend tests | Realigner pytest.ini, marqueurs, remplacer `not telegram` fragile | Exclusions implicites cassees | pytest.ini |
+| TEST-04 | P2 | Backend tests | Realigner pytest.ini, marqueurs, remplacer exclusion pytest fondee sur un mot-cle de nom de test fragile | Exclusions implicites cassees | pytest.ini |
 | TEST-05 | P2 | Backend tests | Reparer README tests / lien guide manquant | Onboarding | tests/README.md |
 | TEST-06 | P2 | Backend tests | Integrer pytest-cov en CI ou en script local | Visibilite couverture | CI, pytest.ini |
 | FE-01 | P1 | Frontend | Completer initializeAuth (user, permissions); traiter TODO | Session incomplete au refresh | auth init* |

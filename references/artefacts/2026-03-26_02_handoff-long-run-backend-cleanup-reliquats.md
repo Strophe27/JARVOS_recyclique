@@ -1,15 +1,15 @@
-# Handoff long run — nettoyage Telegram et reliquats transversaux
+# Handoff long run — nettoyage backend (canal externe historique) et reliquats transversaux
 
 Date : 2026-03-26
 Repo : `JARVOS_recyclique`
 Branche : `chore/v1.4.5-consolidation`
-HEAD au moment du handoff : `41be20c` puis lots suivants jusqu'a `19bac6d` et `f214c30`, et dernier lot Telegram service `41be20c` deja pousse.
+HEAD au moment du handoff : `41be20c` puis lots suivants jusqu'a `19bac6d` et `f214c30`, et dernier lot service messager tiers `41be20c` deja pousse.
 
 ## But du handoff
 
-Reprendre en **contexte frais** pour terminer la sortie de Telegram de facon **chirurgicale**, apres une longue sequence de micro-lots backend.
+Reprendre en **contexte frais** pour terminer la sortie du **canal messager tiers historique** de facon **chirurgicale**, apres une longue sequence de micro-lots backend.
 
-Le travail deja fait a fortement nettoye `admin.py` et a neutralise les principaux flux Telegram. Le prochain agent doit eviter les gros refactors diffus et avancer par micro-lots testes.
+Le travail deja fait a fortement nettoye `admin.py` et a neutralise les principaux flux lies a ce canal. Le prochain agent doit eviter les gros refactors diffus et avancer par micro-lots testes.
 
 ## Preferences utilisateur a respecter
 
@@ -51,21 +51,21 @@ Les sous-blocs suivants ont deja ete sortis de `admin.py` :
 - maintenance cash sessions
 - template reception offline
 
-### Lots Telegram deja fermes
+### Lots canal externe / bot deja fermes
 
-- `2BD` : notifications Telegram sortantes desactivees par defaut
-- `2BE` : `POST /users/link-telegram` desactive en `410 Gone`
+- `2BD` : notifications sortantes canal tiers desactivees par defaut
+- `2BE` : `POST /users/link-*` (liaison compte messager) desactive en `410 Gone`
 - `2BF` : `POST /deposits/from-bot` et `POST /deposits/{deposit_id}/classify` desactives en `410 Gone`
-- `2BG` : appels directs a `telegram_service` retires de `admin.py`
-- `2BH` : `telegram_service.py` elague ; seul le reliquat vraiment utilise reste
+- `2BG` : appels directs au service messager tiers retires de `admin.py`
+- `2BH` : module service messager elague ; seul le reliquat vraiment utilise reste
 
-## Commits recents utiles
+## Commits recents utiles (messages originaux dans l'historique Git)
 
-- `41be20c` `refactor(api): trim dead telegram service paths`
-- `19bac6d` `refactor(api): remove direct telegram admin calls`
-- `f214c30` `refactor(api): disable telegram deposit bot endpoints`
-- `871e590` `refactor(api): disable telegram account linking`
-- `1fb2d5b` `refactor(api): disable outbound telegram notifications by default`
+- `41be20c` — elagage chemins morts du service messager optionnel
+- `19bac6d` — retrait appels admin directs vers le canal messager
+- `f214c30` — desactivation endpoints depot lies au bot messager
+- `871e590` — desactivation liaison de compte messager
+- `1fb2d5b` — desactivation notifications sortantes canal tiers par defaut
 
 ## Etat du worktree au moment du handoff
 
@@ -104,14 +104,14 @@ Fichiers probables :
 - `recyclique-1.4.4/api/src/recyclic_api/core/bot_auth.py`
 - tests depots / bot auth associes
 
-### 2. Nettoyage transversal des champs et fallbacks `telegram_*`
+### 2. Nettoyage transversal des champs et fallbacks lies au messager tiers
 
 C'est la vraie zone diffuse qui justifie le handoff frais.
 
 Exemples :
 
-- `telegram_id` dans les modeles / schemas / reponses
-- fallbacks `username or telegram_id`
+- identifiants messager tiers dans les modeles / schemas / reponses
+- fallbacks du type `username or <id messager>`
 - usages cosmetiques dans logs, exports, services
 
 Ici, il faudra etre plus fin que sur les lots precedents :
@@ -122,14 +122,14 @@ Ici, il faudra etre plus fin que sur les lots precedents :
 
 ### 3. Eventuels reliquats mineurs
 
-- ~~methode morte dans `telegram_link_service.py`~~ : **paquet 5 (2026-03-26)** — `telegram_link_service.py`, test `test_telegram_link_arch03.py` et `TelegramLinkDisabledError` supprimes ; doublon `api/api/` retire
-- fichiers / tests orphelins lies a Telegram
+- ~~methode morte dans le service de liaison~~ : **paquet 5 (2026-03-26)** — module liaison, test d'integration arch03 et erreur « liaison desactivee » supprimes ; doublon `api/api/` retire
+- fichiers / tests orphelins lies au canal messager historique
 - documentation ou OpenAPI statique a regenerer si necessaire
 
 ## Risques principaux
 
 - casser un flux encore reellement utilise autour de `PUT /deposits/{id}`
-- toucher trop tot aux champs `telegram_*` sans strategie de migration
+- toucher trop tot aux champs messager legacy sans strategie de migration
 - embarquer des fichiers hors lot locaux
 - confondre code mort, code cosmetique et contrat encore vivant
 
@@ -143,4 +143,4 @@ Le prochain agent doit considerer que :
 
 ## Resume en une phrase
 
-Le backend a deja ete fortement nettoye ; Telegram n'est plus un canal actif principal, mais il reste maintenant a traiter le **reliquat transversal** avec une approche plus chirurgicale et plus prudente.
+Le backend a deja ete fortement nettoye ; le canal messager tiers n'est plus actif comme voie principale, mais il reste a traiter le **reliquat transversal** avec une approche plus chirurgicale et plus prudente.

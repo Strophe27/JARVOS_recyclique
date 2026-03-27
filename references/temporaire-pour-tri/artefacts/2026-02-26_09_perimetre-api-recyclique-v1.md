@@ -67,7 +67,7 @@
 | POST | `/v1/users` | RecyClique | Conservé v1 | Création (admin). |
 | PUT | `/v1/users/{user_id}` | RecyClique | Conservé v1 | — |
 | DELETE | `/v1/users/{user_id}` | RecyClique | Conservé v1 | — |
-| POST | `/v1/users/link-telegram` | RecyClique | Hors scope v1 ou placeholder | Bot désactivé ; à trancher produit. |
+| POST | Liaison compte utilisateur / identifiant tiers (route historique, retirée du contrat actif) | RecyClique | Retirée | Voir journal `references/consolidation-1.4.5/2026-03-23_journal-assainissement-1.4.5.md` et OpenAPI archive pour le chemin exact. |
 
 ---
 

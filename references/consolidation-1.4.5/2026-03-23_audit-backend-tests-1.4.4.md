@@ -23,7 +23,7 @@ Ce rapport decrit la fiabilite de la boucle de test backend: reproductibilite, i
 
 - **Collision possible du username `inactive_user`** entre deux tests — echecs intermittents selon l'ordre.
 - **`conftest.py` injecte de faux modules** `reportlab` / `openpyxl` et mock `log_audit` sous SQLite — masque des erreurs d'integration reelles.
-- **Tests infra mockent Redis; marqueurs pytest inutilises;** `addopts` avec `not telegram` fragile.
+- **Tests infra mockent Redis; marqueurs pytest inutilises;** `addopts` avec exclusion par marqueur sur une suite externe — fragile.
 - **README tests renvoie vers un guide absent** — onboarding des contributeurs degrade.
 
 ### Moyen
@@ -54,7 +54,7 @@ Ce rapport decrit la fiabilite de la boucle de test backend: reproductibilite, i
 1. **Corriger l'isolation DB:** rollback par test, savepoints, ou base / schema par worker; nettoyage systematique apres suites qui commitent.
 2. **Unifier l'environnement de test cible:** strategie documentee Postgres vs SQLite et limitations explicites.
 3. **Eliminer les collisions de donnees:** usernames uniques par test (uuid / suffixe) ou fixture scope strict.
-4. **Realigner `pytest.ini` et les marqueurs:** utiliser des marqueurs explicites (`telegram`, `integration`, etc.) au lieu d'exclusions par nom fragile.
+4. **Realigner `pytest.ini` et les marqueurs:** utiliser des marqueurs explicites (`integration`, `slow`, etc.) au lieu d'exclusions par nom fragile.
 5. **Reparer la documentation:** creer le guide reference ou corriger le lien README.
 6. **Integrer la couverture:** `pytest-cov` dans CI avec seuil progressif ou rapport au minimum.
 7. **Clarifier les fixtures:** nommage, factorisation, reduction des imports dupliques.

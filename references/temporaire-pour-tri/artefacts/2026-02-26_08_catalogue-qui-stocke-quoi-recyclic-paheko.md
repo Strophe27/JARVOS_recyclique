@@ -106,11 +106,11 @@
 
 ---
 
-### 2.10 Dépôts (bot / IA)
+### 2.10 Dépôts (intégration tierce historique / IA)
 
 | Entité | RecyClique | Paheko | Source de vérité | Remarque |
 |--------|------------|--------|------------------|-----------|
-| **Dépôts** (deposits, bot Telegram, classification) | Oui en 1.4.4. Table `deposits`. | Non. | **RecyClique.** | Bot désactivé en 1.4.4 ; hors scope ou placeholder v0.1 selon décision produit. |
+| **Dépôts** (deposits, ancien canal bot tiers désactivé, classification) | Oui en 1.4.4. Table `deposits`. | Non. | **RecyClique.** | Canal bot tiers désactivé en 1.4.4 ; hors scope ou placeholder v0.1 selon décision produit. |
 
 ---
 

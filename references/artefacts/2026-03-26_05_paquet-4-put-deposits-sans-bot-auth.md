@@ -5,7 +5,7 @@ Repo : `JARVOS_recyclique` / périmètre `recyclique-1.4.4/api`
 
 ## Décision produit
 
-Telegram / bot hors périmètre : plus d’auth dédiée bot sur la finalisation de dépôt.
+Canal messager tiers / rôle bot hors périmètre : plus d’auth dédiée bot sur la finalisation de dépôt.
 
 ## Contrat retenu
 
@@ -23,8 +23,10 @@ Telegram / bot hors périmètre : plus d’auth dédiée bot sur la finalisation
 ## Validations exécutées
 
 ```text
-pytest tests/test_deposit_validation_workflow.py tests/test_deposit_classification_integration.py tests/test_telegram_link_arch03.py -q
+pytest tests/test_deposit_validation_workflow.py tests/test_deposit_classification_integration.py tests/<integration_arch03>.py -q
 ```
+
+(Remplacer `<integration_arch03>` par le module d’intégration arch03 présent dans `tests/` au moment du lot — nom de fichier encore historique dans le dépôt.)
 
 Résultat : **13 passed** (warnings Pydantic existants).
 
@@ -32,8 +34,8 @@ Résultat : **13 passed** (warnings Pydantic existants).
 
 ## Réserve
 
-- `TELEGRAM_BOT_TOKEN` peut rester en config pour d’autres usages résiduels (notifications, etc.) ; plus utilisé pour `PUT /deposits/{id}`.
-- Champs modèle `telegram_*` et docs archi mentionnant Telegram : hors périmètre paquet 4.
+- Variables `*_BOT_TOKEN` en config peuvent rester pour d’autres usages résiduels (notifications, etc.) ; plus utilisées pour `PUT /deposits/{id}`.
+- Champs modèle liés au messager tiers et docs archi correspondantes : hors périmètre paquet 4.
 - Renforcer l’auth (JWT / rôle) sur `PUT /deposits/{id}` reste un chantier produit séparé si le déploiement n’est pas déjà isolé.
 
 ## Git

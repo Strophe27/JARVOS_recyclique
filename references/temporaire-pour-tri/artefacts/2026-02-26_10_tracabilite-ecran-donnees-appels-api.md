@@ -103,7 +103,7 @@ Pour chaque écran, les sous-sections suivantes sont renseignées :
 
 - **Route(s)** : `/signup`, `/inscription`
 - **Permissions** : aucune.
-- **Données affichées** : formulaire d'inscription (champs utilisateur). Optionnel : paramètre (ex. `telegram_id`).
+- **Données affichées** : formulaire d'inscription (champs utilisateur). Optionnel : query d'identifiant tiers hérité du schéma utilisateur (voir OpenAPI / modèles).
 - **Appels API au chargement** : aucun.
 - **Actions utilisateur → appels API** :
   - Soumission formulaire → **POST /v1/auth/signup** — body : champs inscription. Réponse : succès ou erreur ; workflow d'approbation admin (utilisateurs en attente).
