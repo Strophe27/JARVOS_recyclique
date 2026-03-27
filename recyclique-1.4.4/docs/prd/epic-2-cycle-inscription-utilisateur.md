@@ -2,22 +2,22 @@
 
 ## Objectif de l'Epic
 
-Permettre aux nouveaux bénévoles de s'inscrire sur la plateforme Recyclic via un workflow complet incluant le bot Telegram et l'interface web.
+Permettre aux nouveaux bénévoles de s'inscrire sur la plateforme Recyclic via un workflow complet centré sur l’interface web (rattachement automate messager : hors périmètre actif documenté).
 
 ## Description de l'Epic
 
-Cet epic couvre tout le processus d'inscription des utilisateurs, de la première interaction avec le bot Telegram jusqu'à la soumission du formulaire web et la création de la demande d'inscription en base de données.
+Cet epic couvre tout le processus d'inscription des utilisateurs, de la première interaction (y compris anciens canaux automate) jusqu'à la soumission du formulaire web et la création de la demande d'inscription en base de données.
 
 ## Stories
 
-### Story 2.1 : Bot Telegram + Interface Web d'Inscription ✅ TERMINÉE
+### Story 2.1 : Automate messager + interface web d'inscription ✅ TERMINÉE (historique)
 
-**Titre** : Workflow complet d'inscription via bot Telegram et interface web.
+**Titre** : Workflow complet d'inscription via automate messager et interface web.
 
-**Description** : Implémentation du workflow d'inscription complet permettant aux nouveaux utilisateurs de s'inscrire via le bot Telegram et un formulaire web responsive.
+**Description** : Implémentation du workflow d'inscription complet permettant aux nouveaux utilisateurs de s'inscrire via un automate messager (hors produit actif) et un formulaire web responsive.
 
 **Critères d'Acceptation :**
-- [x] Bot Telegram répond aux messages de nouveaux utilisateurs non autorisés
+- [x] L’automate messager répondait aux messages de nouveaux utilisateurs non autorisés (hors périmètre actif)
 - [x] Bot fournit lien vers formulaire d'inscription web
 - [x] Formulaire web collecte nom, prénom, contacts, ressourcerie
 - [x] Soumission formulaire crée demande d'inscription en BDD
@@ -27,7 +27,7 @@ Cet epic couvre tout le processus d'inscription des utilisateurs, de la premièr
 
 **Fonctionnalités Implémentées :**
 
-**Bot Telegram :**
+**Automate messager (historique) :**
 - Handler d'inscription avec messages personnalisés
 - Boutons inline pour redirection vers formulaire
 - Détection des utilisateurs non autorisés
@@ -59,7 +59,7 @@ Cet epic couvre tout le processus d'inscription des utilisateurs, de la premièr
 **Score de Conformité :** 90% ✅
 
 **Travail Accompli :**
-- Bot Telegram opérationnel avec gestion des nouveaux utilisateurs
+- Automate messager documenté comme opérationnel à l’époque de l’epic (hors compose par défaut aujourd’hui)
 - Interface web d'inscription complète et responsive
 - API backend robuste avec validation complète
 - Base de données configurée avec tous les schémas
@@ -78,7 +78,7 @@ Cet epic couvre tout le processus d'inscription des utilisateurs, de la premièr
 ## Documents Sources
 
 - `docs/story-1-2-detailed.md`
-- `docs/stories/1.2.bot-telegram-inscription.md`
+- Entrée d’index : Story 1.2 inscription (dossier `docs/archive/v1.2-and-earlier/`, fichier d’archive d’époque)
 - `bot/src/handlers/registration.py`
 - `frontend/src/pages/Registration.jsx`
 - `api/src/recyclic_api/api/api/api_v1/endpoints/registration_requests.py`

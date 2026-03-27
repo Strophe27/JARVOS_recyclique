@@ -1,8 +1,8 @@
-# Epic 4: Bot Telegram IA & Classification
+# Epic 4 : IA & classification des dépôts (PRD historique)
 
-> **Historique (2026-03-26)** : epic PRD fige a une epoque ou le bot Telegram etait central ; ne pas lire comme specification active. Gates QA associes retires ; etat courant : API et architecture actuelle.
+> **Historique (2026-03-26)** : epic PRD figé à une époque où un automate messager vocal était central ; ne pas lire comme spécification active. Gates QA associés retirés ; état courant : API et `docs/architecture-current/`.
 
-**Objectif :** Implémenter le cœur du système - le workflow vocal via Telegram avec classification automatique EEE. Les bénévoles peuvent enregistrer des dépôts par audio, l'IA classifie automatiquement, et l'utilisateur valide ou corrige. Délivre la valeur métier principale du projet.
+**Objectif (époque PRD) :** implémenter le workflow vocal via automate messager avec classification automatique EEE. Les bénévoles enregistrent des dépôts par audio, l'IA classifie, l'utilisateur valide ou corrige. Document d’archive ; parcours livrés aujourd’hui : voir architecture actuelle.
 
 ## Story 4.1: Commande /depot et Enregistrement Vocal
 As a volunteer at the depot,  
@@ -11,7 +11,7 @@ so that I can quickly register incoming items without typing.
 
 **Acceptance Criteria:**
 1. [x] Commande `/depot` active session d'enregistrement pour utilisateur autorisé
-2. [x] Bot accepte messages vocaux (formats supportés : ogg, mp3, wav)
+2. [x] L’automate accepte les messages vocaux (formats supportés : ogg, mp3, wav)
 3. [x] L'audio est sauvegardé dans un stockage de fichiers
 4. [x] Le chemin vers le fichier audio est enregistré en BDD avec un statut `pending_audio`
 5. [x] Timeout session après 5 minutes d'inactivité

@@ -24,7 +24,7 @@ Ce document définit les règles d'accès pour chaque route (page) de l'applicat
 | `/signup` | Inscription | **Public** | Page de création de compte. |
 | `/forgot-password` | Mot de passe oublié | **Public** | Processus de récupération de mot de passe. |
 | `/reset-password` | Réinitialiser le mot de passe | **Public** | Page cible du lien de réinitialisation. |
-| `/telegram-auth` | Authentification Telegram | **Public** | Page de liaison de compte Telegram. |
+| Page d’auth tiers (URL héritée non renommée) | Liaison compte (héritage) | **Public** | Parcours courant : authentification web. Voir `architecture-current/`. |
 | `/` | Dashboard Principal | **Utilisateur Connecté** | Page d'accueil après connexion. À définir (dashboard bénévole ou admin). |
 | `/profil` | Mon Profil | **Utilisateur Connecté** | Page de gestion de son propre profil. |
 | `/caisse` | Dashboard Caisse | Permission: `caisse.access` | Accès au module de caisse. |

@@ -4,13 +4,13 @@
 Établir les fondations techniques solides et la suite de tests robuste nécessaires au bon fonctionnement de la plateforme Recyclic.
 
 ## Epic 2: Cycle d'Inscription Utilisateur ✅ TERMINÉ
-Permettre aux nouveaux bénévoles de s'inscrire sur la plateforme Recyclic via un workflow complet incluant le bot Telegram et l'interface web.
+Permettre aux nouveaux bénévoles de s'inscrire sur la plateforme Recyclic via un workflow complet incluant l’interface web (anciens rattachements automate messager : hors produit actif).
 
 ## Epic 3: Gestion Administrative ✅ TERMINÉ
 Fournir une interface d'administration sécurisée pour gérer les utilisateurs, leurs rôles et leurs inscriptions, garantissant un contrôle d'accès adéquat.
 
 ## Epic 4: Bot IA & Classification ✅ TERMINÉ
-Implémenter le cœur du système - le workflow vocal via Telegram avec classification automatique EEE. Les bénévoles peuvent enregistrer des dépôts par audio, l'IA classifie automatiquement, et l'utilisateur valide ou corrige.
+Implémenter le cœur du système — workflow vocal via automate messager (PRD historique) avec classification automatique EEE. Référence exploitation actuelle : `docs/architecture-current/`.
 
 ## Epic 5: Interface Caisse & Workflow Vente
 Créer l'interface caisse responsive complète avec gestion des sessions, vente multi-modes, caisse physique et fonctionnement offline.

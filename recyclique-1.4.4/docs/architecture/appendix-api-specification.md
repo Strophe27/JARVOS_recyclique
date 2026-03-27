@@ -91,8 +91,9 @@ components:
         id:
           type: string
           format: uuid
-        telegram_id:
+        messenger_user_ref:
           type: string
+          nullable: true
         username:
           type: string
           nullable: true

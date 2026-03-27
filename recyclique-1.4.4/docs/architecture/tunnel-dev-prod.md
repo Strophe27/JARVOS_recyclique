@@ -1,6 +1,6 @@
 ## Tunnel Optionnel (DEV / PROD)
 
-Objectif: Exposer temporairement un service local via une URL publique HTTPS pour tests (ex: webhooks Telegram).
+Objectif: Exposer temporairement un service local via une URL publique HTTPS pour tests (ex: webhooks fournisseurs externes).
 
 ### Quand l’utiliser
 - DEV local sans accès public et besoin d’URL HTTPS (webhooks, callbacks).

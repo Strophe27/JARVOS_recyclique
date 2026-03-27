@@ -28,7 +28,7 @@ CREATE TABLE sites (
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    telegram_id VARCHAR UNIQUE NOT NULL,
+    messenger_user_ref VARCHAR UNIQUE,
     username VARCHAR,
     first_name VARCHAR,
     last_name VARCHAR,
@@ -91,7 +91,7 @@ CREATE TABLE sales (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_users_telegram_id ON users(telegram_id);
+CREATE INDEX idx_users_messenger_user_ref ON users(messenger_user_ref);
 CREATE INDEX idx_deposits_category_eee ON deposits(category_eee);
 CREATE INDEX idx_sales_category_eee ON sales(category_eee);
 
@@ -109,7 +109,4 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECU
 CREATE TRIGGER update_deposits_updated_at BEFORE UPDATE ON deposits FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_sales_updated_at BEFORE UPDATE ON sales FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_status_history_updated_at BEFORE UPDATE ON user_status_history FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-```
-TE TRIGGER update_deposits_updated_at BEFORE UPDATE ON deposits FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_sales_updated_at BEFORE UPDATE ON sales FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```

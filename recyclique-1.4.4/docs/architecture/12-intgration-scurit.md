@@ -2,7 +2,7 @@
 
 ### Mesures de Sécurité Existantes
 
-**Authentication:** Système Telegram existant + préparation email/password
+**Authentication:** authentification web (JWT, nom d’utilisateur / mot de passe) ; traces d’intégrations messageres héritées hors périmètre actif
 **Authorization:** Rôles utilisateurs (super-admin, admin) avec permissions granulares
 **Data Protection:** Chiffrement données sensibles, validation inputs stricte
 **Security Tools:** Audit logs, rate limiting, CORS configuré

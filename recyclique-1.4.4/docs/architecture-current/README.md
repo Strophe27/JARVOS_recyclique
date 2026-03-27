@@ -5,7 +5,7 @@ Ce dossier contient une **documentation d’architecture alignée sur l’état 
 ## Rôle de ce dossier
 
 - **État des lieux honnête** : services réellement déployés, stack actuelle, dette technique et écarts par rapport à une « architecture cible ».
-- **Aucune modification des autres docs** : le dossier `docs/export_doc_ecosystem/` reste inchangé ; il peut décrire une vision ou un export passé (ex. bot Telegram encore mentionné alors qu’il est désactivé).
+- **Aucune modification des autres docs** : le dossier `docs/export_doc_ecosystem/` reste inchangé ; il peut décrire une vision ou un export passé (ex. automate messager encore mentionné alors qu’il est désactivé).
 - **Source de vérité pour « aujourd’hui »** : `architecture-brownfield.md` décrit ce qui existe dans le code et dans Docker au moment de sa rédaction.
 
 ## Fichiers

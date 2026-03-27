@@ -11,7 +11,7 @@ Ce document liste les **fonctionnalités réellement livrées et opérationnelle
 ## 1. Périmètre et méthode
 
 - **Inclus** : ce qui est déployé (API + frontend) et couvert par des stories « Done » ou équivalent (Ready for Done, implémentation complète). L’**Epic B52 (v1.4.3)** est considéré comme **livré** : le code (paiements multiples, sale_date, édition du poids, éditeur item destination/prix, poids par session/panier) est présent en codebase et en production (version 1.4.4).
-- **Exclu** : le **bot Telegram** (service désactivé, code présent mais non déployé). Les fonctionnalités « Dépôts via app (IA) » dépendant uniquement du bot ne sont pas considérées comme actives.
+- **Exclu** : l’**automate messager** historique (service désactivé, code présent mais non déployé). Les fonctionnalités « Dépôts via app (IA) » dépendant uniquement de cet automate ne sont pas considérées comme actives.
 
 ---
 
@@ -26,11 +26,11 @@ Ce document liste les **fonctionnalités réellement livrées et opérationnelle
 | Mot de passe oublié | Demande par email (Brevo) | `POST /v1/auth/forgot-password`, page `/forgot-password` |
 | Réinitialisation mot de passe | Avec token reçu par email | `POST /v1/auth/reset-password`, page `/reset-password` |
 | Connexion par PIN | Pour caisse / tablette | `POST /v1/auth/pin` |
-| Liaison compte Telegram (héritage) | **Non active** : plus d’endpoint REST documenté pour cette liaison ; le service dédié a été retiré du code. La route `/telegram-auth` n’est pas un parcours utilisateur courant. | — |
+| Liaison compte tiers (héritage) | **Non active** : plus d’endpoint REST documenté pour cette liaison ; le service dédié a été retiré du code. La route d’auth messager historique en base de code n’est pas un parcours utilisateur courant. | — |
 | Profil utilisateur | Consultation et mise à jour (nom, prénom, etc.) | `GET/PUT /v1/users/me`, page `/profil` |
 | Changement mot de passe / PIN | Depuis le profil | `PUT /v1/users/me/password`, `PUT /v1/users/me/pin` |
 | Permissions utilisateur | Liste des permissions de l’utilisateur connecté | `GET /v1/users/me/permissions` |
-| Inscription (page dédiée) | Inscription avec paramètre optionnel (ex. `telegram_id`) | Page `/inscription` |
+| Inscription (page dédiée) | Inscription avec paramètres d’URL optionnels hérités (ancrage pré-remplissage) | Page `/inscription` |
 
 **Stories / épics concernés** : Epic 2 (Cycle d’inscription), Epic 3 (Gestion administrative), refonte IAM (B33).
 
@@ -230,8 +230,8 @@ Rapports envoyés par email à la clôture de caisse (configurable).
 
 ## 11. Ce qui n’est pas actif ou pas encore livré
 
-- **Bot Telegram** : service désactivé (docker-compose). Les endpoints « dépôts depuis le bot » et « classification » existent côté API mais ne sont pas utilisés en production sans le bot.
-- **Dépôts via app (IA) / vocal** : décrits dans la présentation comme « innovation clé » mais dépendants du bot ; à considérer comme non actifs tant que le bot n’est pas redéployé.
+- **Automate messager** : service désactivé (docker-compose). Les endpoints « dépôts depuis l’automate » et « classification » existent côté API mais ne sont pas utilisés en production sans ce service.
+- **Dépôts via app (IA) / vocal** : décrits dans la présentation comme « innovation clé » mais dépendants de l’automate ; à considérer comme non actifs tant que ce service n’est pas redéployé.
 - **Module éco-organismes (REP)** : en phase d’études / spécifications, pas de module livré dans l’application actuelle.
 
 **Note Epic B52 (v1.4.3)** : Les fonctionnalités B52-P1 à B52-P6 sont **implémentées en code et en production** (version 1.4.4) : paiements multiples, date réelle des tickets (`sale_date`), édition du poids (admin), éditeur d’item (destination + prix admin), poids par session et par panier. Les statuts des stories peuvent encore être « Ready for Review » côté BMAD ; le présent document reflète l’état du code et du déploiement.

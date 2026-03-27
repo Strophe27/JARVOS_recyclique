@@ -14,7 +14,7 @@ Ce document décrit les procédures de déploiement et de rollback pour la plate
 
 Le système de rollback repose sur le versionnement des images Docker :
 - Chaque déploiement génère un tag unique basé sur le SHA du commit Git (7 caractères)
-- Les images sont taguées avec la même version pour les services déployés (api, frontend) ; le conteneur Telegram bot a été retiré (2026-03).
+- Les images sont taguées avec la même version pour les services déployés (api, frontend) ; le conteneur automate messager a été retiré (2026-03).
 - Le script `rollback.sh` permet de revenir à une version précédente en quelques minutes
 
 ---
@@ -207,7 +207,7 @@ Le script enregistre automatiquement des métriques détaillées dans `logs/roll
 
 ### 5.2 Notifications automatiques
 
-Le script `scripts/rollback.sh` journalise sur la console et peut envoyer un **email** si `NOTIFICATION_EMAIL` est défini (pas de canal Telegram).
+Le script `scripts/rollback.sh` journalise sur la console et peut envoyer un **email** si `NOTIFICATION_EMAIL` est défini (pas de canal messager legacy).
 
 - **Succès / échec / annulation** : messages dans la sortie du script
 - **Email** : optionnel via `NOTIFICATION_EMAIL` et la commande `mail` sur l'hôte

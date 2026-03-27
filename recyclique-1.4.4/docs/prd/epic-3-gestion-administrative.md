@@ -44,8 +44,8 @@ Cet epic permet aux administrateurs de gérer efficacement les utilisateurs de l
 
 **Critères d'Acceptation :**
 - [x] Interface admin listant les demandes d'inscription en attente
-- [x] Boutons Approuver/Rejeter avec notification Telegram
-- [x] Utilisateur approuvé ajouté à whitelist Telegram active
+- [x] Boutons Approuver/Rejeter avec notification aux admins (canal historique)
+- [x] Utilisateur approuvé ajouté à la liste d’accès automate messager (hors périmètre actif)
 - [x] Notification automatique aux autres admins
 - [x] Logs audit complets (qui a validé qui et quand)
 

@@ -1,6 +1,6 @@
 # Project Brief: Recyclic
 
-> **Historique (2026-03-26)** : document de cadrage initial. Le canal Telegram / bot vocal n'est plus la reference produit active ; voir `docs/architecture-current/` et le journal de consolidation `references/consolidation-1.4.5/`.
+> **Historique (2026-03-26)** : document de cadrage initial. Le parcours « automate messager vocal » n’est plus la référence produit active ; voir `docs/architecture-current/` et le journal de consolidation `references/consolidation-1.4.5/`.
 
 **Author:** Analyst (Mary)  
 **Date:** 2025-09-09  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-**Recyclic** est une solution open source complète de gestion pour ressourceries, conçue spécifiquement pour les associations de réemploi. Le système intègre un bot Telegram intelligent avec IA pour l'enregistrement vocal des dépôts, une interface de caisse responsive, et des exports automatisés vers les partenaires réglementaires (Ecologic). La solution vise à remplacer les processus manuels actuels (Excel, papier) par un workflow numérique simple et conforme.
+**Recyclic** est une solution open source complète de gestion pour ressourceries, conçue spécifiquement pour les associations de réemploi. Le système intègre une interface de caisse responsive, des capacités d’IA pour la classification EEE selon les parcours actifs, et des exports automatisés vers les partenaires réglementaires (Ecologic). La solution vise à remplacer les processus manuels actuels (Excel, papier) par un workflow numérique simple et conforme.
 
 **Valeur clé :** Simplification drastique des tâches administratives tout en assurant la conformité réglementaire et la traçabilité des flux de déchets d'équipements électriques et électroniques (EEE).
 
@@ -43,7 +43,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 
 **Recyclic** propose une approche révolutionnaire basée sur l'**intelligence artificielle conversationnelle** et la **simplicité d'usage**. Le système orchestre trois composants principaux :
 
-1. **Bot Telegram IA** : Enregistrement vocal instantané des dépôts avec classification automatique EEE
+1. **Dépôts & IA** : enregistrement des dépôts (parcours web actifs) avec classification automatique EEE lorsque le flux le prévoit
 2. **Interface caisse web** : Vente simplifiée avec catégories obligatoires et exports temps réel
 3. **Moteur de synchronisation** : Exports automatiques vers partenaires (Ecologic, Infomaniak, Google Sheets)
 
@@ -57,7 +57,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 
 ### Why This Solution Will Succeed
 
-- **Adoption naturelle** : Telegram déjà utilisé, vocal plus rapide que saisie
+- **Adoption naturelle** : interfaces familières (web, messagerie personnelle déjà utilisée en associative), saisie guidée
 - **Validation terrain** : Co-conçu avec ressourceries actives
 - **Stack moderne et stable** : FastAPI + LangChain + SQLite/Postgres
 - **Communauté cible** : Mouvement open source aligné avec valeurs associatives
@@ -73,7 +73,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 
 **Current Behaviors :**
 - Saisie manuelle sur feuilles volantes puis ressaisie Excel
-- Utilisation basique de WhatsApp/Telegram personnel
+- Utilisation basique de messageries personnelles (WhatsApp, etc.)
 - Pesée manuelle avec balance analogique
 
 **Needs & Pain Points :**
@@ -123,7 +123,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 - **Satisfaction utilisateur** : >85% des opérateurs jugent l'outil "simple à utiliser"
 
 ### Key Performance Indicators (KPIs)
-- **Taux d'adoption** : % de dépôts saisis via bot vs total (objectif >80%)
+- **Taux d'adoption** : % de dépôts saisis via l’outil vs total (objectif >80%)
 - **Temps de réponse système** : <2 secondes pour classification IA
 - **Disponibilité** : >99% uptime du système central
 - **Synchronisation cloud** : >99% de succès des exports automatiques
@@ -133,11 +133,10 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 
 ### Core Features (Must Have)
 
-- **Bot Telegram avec IA conversationnelle :**
-  - Commande `/depot` avec enregistrement vocal
-  - Classification automatique EEE-1 à EEE-8 via Gemini 2.5 Flash + LangChain
-  - Validation humaine obligatoire (confirmation/correction)
-  - Whitelist des utilisateurs autorisés
+- **Classification IA (selon parcours déployés) :**
+  - Chaîne LangChain + Gemini 2.5 Flash pour transcription / classification lorsque applicable
+  - Validation humaine lorsque le flux le prévoit
+  - Contrôle d’accès utilisateurs (rôles, statuts)
   - Journalisation complète des actions
 
 - **Interface de caisse web responsive :**
@@ -156,7 +155,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
   - CSV format Ecologic (agrégation par catégorie EEE)
   - Upload automatique vers Infomaniak kDrive (WebDAV)
   - Synchronisation Google Sheets temps réel
-  - Notifications Telegram en cas d'échec
+  - Alertes opérateurs (email, tickets) en cas d’échec d’export ou de synchronisation
 
 - **Architecture technique :**
   - Backend FastAPI (Python) avec LangChain
@@ -179,7 +178,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 **Fonctionnel :**
 - Une ressourcerie pilote utilise le système en production pendant 1 mois
 - Export Ecologic trimestriel généré et accepté sans modification
-- 50+ dépôts traités via bot avec <10% de corrections manuelles
+- 50+ dépôts traités via l’outil avec <10% de corrections manuelles
 
 **Technique :**
 - Système stable sur VPS avec <1% de downtime
@@ -219,7 +218,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 ### Platform Requirements
 - **Target Platforms :** 
   - Web responsive (tablettes Android/iPad, PC Windows/Linux/Mac)
-  - Bot Telegram (natif mobile iOS/Android)
+  - PWA / navigateur mobile (iOS/Android)
   - Serveur Linux (Ubuntu 22.04 LTS recommandé)
 - **Browser Support :** Chrome/Firefox/Safari modernes (2 dernières versions)
 - **Performance Requirements :** 
@@ -231,18 +230,17 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 - **Frontend :** SPA légère (Svelte recommandé) ou HTMX pour simplicité
 - **Backend :** FastAPI (Python 3.11+) avec LangChain pour orchestration IA
 - **Database :** SQLite (développement/petits sites) → PostgreSQL (production/multi-sites)
-- **Bot Framework :** python-telegram-bot avec intégration LangChain
+- **Automates historiques :** code hérité non déployé par défaut (voir `architecture-current/`)
 - **IA/ML :** Gemini 2.5 Flash API (transcription + classification), fallback règles locales
 - **Hosting/Infrastructure :** Docker Compose, compatible VPS/serveur local
 
 ### Architecture Considerations
-- **Repository Structure :** Monorepo avec services séparés (api/, bot/, frontend/, docs/)
+- **Repository Structure :** Monorepo avec services séparés (api/, frontend/, docs/ ; ancien dossier automate hors compose par défaut)
 - **Service Architecture :** 
   - Microservices légers communicant via API REST
   - Queue Redis pour tâches asynchrones (exports, notifications)
   - Reverse proxy Nginx pour routage et SSL
 - **Integration Requirements :**
-  - Telegram Bot API
   - Google Sheets API v4
   - Infomaniak kDrive WebDAV
   - Gemini AI API avec gestion quotas
@@ -264,7 +262,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
   - Pas de budget formation approfondie
 
 ### Key Assumptions
-- Les ressourceries partenaires acceptent d'utiliser Telegram professionnel
+- Les ressourceries partenaires acceptent les outils numériques retenus (web, email)
 - API Gemini 2.5 Flash reste gratuite/accessible pour volumes MVP
 - Équipes disposent d'au moins 1 smartphone/tablette par poste
 - Connexion internet suffisante pour sync quotidienne (même si débit limité)
@@ -310,7 +308,7 @@ Les ressourceries françaises font face à des défis opérationnels critiques :
 
 **User Validation :**
 - 3 ressourceries partenaires confirment besoins terrain
-- Tests informels bot Telegram très positifs
+- Tests informels sur prototypes vocaux / IA très positifs (hors périmètre livré actuel)
 - Interface caisse responsive validée sur tablettes existantes
 
 ### B. Stakeholder Input

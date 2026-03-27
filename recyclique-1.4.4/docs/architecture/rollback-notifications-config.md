@@ -4,7 +4,7 @@
 **Date :** 2026-03-26  
 **Objectif :** Guide de configuration des notifications automatiques pour la procédure de rollback
 
-> **Changement produit (2026-03)** : les notifications **Telegram** (API rollback, sync, anomalies) ont été retirées. Le script `scripts/rollback.sh` journalise sur la console et peut envoyer un **email** si `NOTIFICATION_EMAIL` est défini.
+> **Changement produit (2026-03)** : les notifications via messagerie legacy (API rollback, sync, anomalies) ont été retirées. Le script `scripts/rollback.sh` journalise sur la console et peut envoyer un **email** si `NOTIFICATION_EMAIL` est défini.
 
 ---
 

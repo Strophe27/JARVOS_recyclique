@@ -4,27 +4,27 @@
 
 Ce document compile les problèmes les plus courants rencontrés avec le système Recyclic et leurs solutions. Il est organisé par composant pour faciliter la recherche.
 
-## Bot Telegram
+## Automate messager (historique)
 
-> Cette section decrit un parcours historique. Si vous travaillez sur l'exploitation courante, privilegiez d'abord les guides de l'interface web et de l'administration.
+> Cette section décrit un parcours historique. Si vous travaillez sur l'exploitation courante, privilégiez d'abord les guides de l'interface web et de l'administration.
 
 ### Problèmes de Connexion
 
-**Q : Le bot ne répond pas à mes commandes**
-- ✅ Vérifiez que vous avez démarré la conversation avec le bot
+**Q : L’automate ne répond pas à mes commandes**
+- ✅ Vérifiez que vous avez démarré la conversation avec l’automate (contexte archive)
 - ✅ Assurez-vous d'utiliser la commande exacte `/depot` (sensible à la casse)
 - ✅ Vérifiez votre connexion internet
-- 🔧 **Solution avancée** : Redémarrez l'application Telegram et réessayez
+- 🔧 **Solution avancée** : redémarrez l’application cliente messager utilisée à l’époque et réessayez
 
 **Q : "Bot non trouvé" lors de la recherche**
-- ✅ Le bot Telegram ne fait plus partie du parcours utilisateur actif
-- 📚 Utilisez plutot les guides de l'interface web et de l'administration
-- 📞 Contactez l'administrateur si vous avez besoin d'un contexte historique precis
+- ✅ L’automate messager ne fait plus partie du parcours utilisateur actif
+- 📚 Utilisez plutôt les guides de l'interface web et de l'administration
+- 📞 Contactez l'administrateur si vous avez besoin d'un contexte historique précis
 
 ### Problèmes d'Enregistrement Vocal
 
-**Q : Le bot ne reconnaît pas mes messages vocaux**
-- 🎤 Vérifiez que votre microphone est activé dans Telegram
+**Q : L’automate ne reconnaît pas mes messages vocaux**
+- 🎤 Vérifiez que votre microphone est activé dans l’application cliente
 - 📱 Approchez-vous du micro et parlez clairement
 - 🔇 Vérifiez que le mode silencieux n'est pas activé
 - **Test** : Envoyez un message vocal à un autre contact pour vérifier
@@ -234,7 +234,7 @@ Ce document compile les problèmes les plus courants rencontrés avec le systèm
 ## Ressources Supplémentaires
 
 ### Documentation Complète
-- Guide Bot Telegram : retire (2026-03-26) ; le canal n'est plus actif — voir `docs/architecture-current/`.
+- Ancien guide automate messager : retiré (2026-03-26) ; le canal n'est plus actif — voir `docs/architecture-current/`.
 - 📋 [Manuel Interface Caisse](./interface-caisse-manual.md)
 - 👥 [Guide Admin Dashboard](./admin-dashboard-guide.md)
 

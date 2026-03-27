@@ -80,8 +80,7 @@ BACKUP_RETENTION_DAYS=7
 
 # Notifications (optionnel)
 NOTIFICATION_EMAIL=admin@yourcompany.com
-NOTIFICATION_TELEGRAM_TOKEN=your_bot_token
-NOTIFICATION_TELEGRAM_CHAT_ID=your_chat_id
+NOTIFICATION_WEBHOOK_URL=
 ```
 
 ### Étape 2: Configuration du Stockage Externe
@@ -175,21 +174,12 @@ sudo dpkg-reconfigure postfix
 echo "Test" | mail -s "Test Recyclic" admin@yourcompany.com
 ```
 
-#### Notifications Telegram
+#### Notifications messageres (legacy, non recommandé)
+
+> **2026-03** : l’API Recyclic ne s’appuie plus sur d’anciennes variables d’alerte messageres pour les notifications sortantes. Préférer **email** (voir `docs/architecture/rollback-notifications-config.md`) ou votre outil de supervision.
 
 ```bash
-# 1. Créer un bot Telegram
-# - Envoyer /newbot à @BotFather
-# - Récupérer le token
-
-# 2. Obtenir le Chat ID
-# - Envoyer un message au bot
-# - Visiter: https://api.telegram.org/bot<TOKEN>/getUpdates
-# - Récupérer le chat_id
-
-# 3. Configurer les variables
-NOTIFICATION_TELEGRAM_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-NOTIFICATION_TELEGRAM_CHAT_ID=123456789
+# Ne pas introduire de variables d’alerte messageres sur les nouvelles stacks.
 ```
 
 ### Chiffrement des Sauvegardes

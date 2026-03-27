@@ -5,7 +5,7 @@
 **Frameworks**: React (Frontend), FastAPI (Backend)
 **Database**: PostgreSQL
 **Infrastructure**: Docker Compose, Redis, Nginx
-**External Dependencies**: Bot Telegram (désactivé), services de paiement potentiels
+**External Dependencies**: ancien service automate messager (hors déploiement par défaut), services de paiement potentiels
 
 ### Integration Approach
 **Database Integration Strategy**: Modifications mineures du schéma pour les cases à cocher catégories et champ notes - migrations incrémentales préservant la compatibilité

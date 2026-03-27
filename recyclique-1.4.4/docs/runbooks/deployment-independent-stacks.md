@@ -210,7 +210,7 @@ docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.produ
 # - api healthy
 # - frontend healthy
 # - postgres-backup (service de backup automatique)
-# (Le conteneur bot Telegram a été retiré du dépôt ; il n'existe plus dans compose prod.)
+# (Le conteneur automate messager a été retiré du dépôt ; il n'existe plus dans compose prod.)
 ```
 <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
 read_file
@@ -673,7 +673,7 @@ docker compose --profile prod exec -T postgres psql -U recyclic -d recyclic < ba
 - [ ] API accessible via `https://recyclic.jarvos.eu/api/health`
 - [ ] Frontend accessible via `https://recyclic.jarvos.eu`
 - [ ] Connexion utilisateur fonctionne
-- [ ] Bot Telegram répond aux commandes
+- [ ] Parcours web critiques (connexion, caisse) validés — automate messager hors périmètre compose
 - [ ] Logs sans erreurs critiques
 - [ ] Certificats SSL valides (Traefik)
 

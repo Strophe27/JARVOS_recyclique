@@ -1,6 +1,6 @@
-# Story 1.2: Bot Telegram Base & Inscription - Version Détaillée
+# Story 1.2 : Inscription via automate messager (spécification historique)
 
-> **Note historique (état actuel)** : le canal **bot Telegram** n’est plus un parcours utilisateur actif dans le produit. Ce document reste une spécification d’archive / de référence ; ne pas l’utiliser comme périmètre opérationnel ou livrable courant.
+> **Note historique (état actuel)** : le canal **automate messager tiers** décrit ici n’est plus un parcours utilisateur actif dans le produit. Ce document reste une spécification d’archive / de référence ; ne pas l’utiliser comme périmètre opérationnel ou livrable courant.
 
 **As a new volunteer,**  
 **I want to contact the Recyclic bot and get a registration link,**  
@@ -10,10 +10,10 @@
 
 ## Acceptance Criteria Détaillés
 
-### 1. Bot Telegram répond aux nouveaux utilisateurs non autorisés
+### 1. L’automate messager répond aux nouveaux utilisateurs non autorisés
 
 **Comportement :**
-- Détection automatique utilisateur non whitelisté via `telegram_id`
+- Détection automatique utilisateur non whitelisté via `messenger_user_ref`
 - Réponse immédiate (< 2 secondes) à tout message
 - Gestion des commandes et messages texte
 
@@ -44,7 +44,7 @@ Contacte un admin de ta ressourcerie ou envoie /help pour plus d'informations.
 
 ### 2. Formulaire web d'inscription
 
-**URL :** `https://[domain]/register?telegram_id={telegram_id}&username={username}`
+**URL :** `https://[domain]/register?messenger_user_ref={messenger_user_ref}&username={username}`
 
 **Champs du formulaire :**
 
@@ -69,8 +69,8 @@ Contacte un admin de ta ressourcerie ou envoie /help pour plus d'informations.
 ```sql
 CREATE TABLE registration_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    telegram_id BIGINT NOT NULL,
-    telegram_username VARCHAR(255),
+    messenger_user_ref BIGINT NOT NULL,
+    messenger_username VARCHAR(255),
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NOT NULL,
@@ -88,14 +88,14 @@ CREATE TABLE registration_requests (
 **Workflow de soumission :**
 1. Validation côté client (JavaScript)
 2. Validation côté serveur (Pydantic)
-3. Vérification unicité `telegram_id`
+3. Vérification unicité `messenger_user_ref`
 4. Création enregistrement BDD
 5. Notification immédiate aux admins
 6. Confirmation utilisateur
 
 ### 4. Notifications admins
 
-**Message Telegram aux admins :**
+**Message aux admins (canal historique) :**
 
 ```
 🔔 **Nouvelle demande d'inscription**
@@ -106,7 +106,7 @@ CREATE TABLE registration_requests (
 • Téléphone : {phone}
 • Ressourcerie : {site_name}
 • Fonction : {function}
-• Telegram : @{username} (ID: {telegram_id})
+• Compte messager : @{username} (ID: {messenger_user_ref})
 
 📝 **Message :**
 {message ou "Aucun message"}
@@ -124,7 +124,7 @@ CREATE TABLE registration_requests (
 ### 5. Gestion des erreurs détaillée
 
 #### 5.1 Utilisateur déjà inscrit
-**Détection :** `telegram_id` existe dans table `users` avec `is_active = true`
+**Détection :** `messenger_user_ref` existe dans table `users` avec `is_active = true`
 
 **Message :**
 ```
@@ -139,7 +139,7 @@ Si tu penses qu'il y a une erreur, contacte un admin.
 ```
 
 #### 5.2 Demande déjà en cours
-**Détection :** `telegram_id` existe dans `registration_requests` avec `status = 'pending'`
+**Détection :** `messenger_user_ref` existe dans `registration_requests` avec `status = 'pending'`
 
 **Message :**
 ```
@@ -156,7 +156,7 @@ Contacte un admin de ta ressourcerie.
 ```
 
 #### 5.3 Bot indisponible
-**Détection :** Erreur API Telegram ou timeout
+**Détection :** Erreur API du fournisseur messager ou timeout
 
 **Message de fallback :**
 ```
@@ -190,8 +190,8 @@ Réessaie dans quelques minutes ou contacte un admin directement.
 #### POST /api/v1/registration/request
 ```json
 {
-  "telegram_id": 123456789,
-  "telegram_username": "john_doe",
+  "messenger_user_ref": 123456789,
+  "messenger_username": "john_doe",
   "full_name": "John Doe",
   "email": "john@example.com",
   "phone": "06.12.34.56.78",
@@ -219,7 +219,7 @@ Réessaie dans quelques minutes ou contacte un admin directement.
 **Rôle :** Admin uniquement
 **Body :** `{"reason": "Raison du refus"}`
 
-### Bot Telegram Handlers
+### Handlers automate messager (archive)
 
 #### Handler nouveau message
 ```python
@@ -249,7 +249,7 @@ async def handle_inline_button(update: Update, context: ContextTypes.DEFAULT_TYP
 
 #### Index recommandés
 ```sql
-CREATE INDEX idx_registration_requests_telegram_id ON registration_requests(telegram_id);
+CREATE INDEX idx_registration_requests_messenger_user_ref ON registration_requests(messenger_user_ref);
 CREATE INDEX idx_registration_requests_status ON registration_requests(status);
 CREATE INDEX idx_registration_requests_site_id ON registration_requests(site_id);
 CREATE INDEX idx_registration_requests_created_at ON registration_requests(created_at);
@@ -261,7 +261,7 @@ CREATE INDEX idx_registration_requests_created_at ON registration_requests(creat
 CREATE OR REPLACE FUNCTION notify_new_registration()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Envoyer notification Telegram aux admins
+    -- Envoyer notification aux admins (canal historique)
     PERFORM pg_notify('new_registration', NEW.id::text);
     RETURN NEW;
 END;
@@ -277,7 +277,7 @@ CREATE TRIGGER trigger_new_registration
 
 ## Mockups et Wireframes
 
-### 1. Message Telegram (Nouvel utilisateur)
+### 1. Fil de conversation (mockup — nouvel utilisateur)
 ```
 ┌─────────────────────────────────────┐
 │ 🤖 Recyclic Bot                     │
@@ -382,7 +382,7 @@ CREATE TRIGGER trigger_new_registration
 - Validation des champs du formulaire
 - Gestion des erreurs de validation
 - Création des demandes en BDD
-- Envoi des notifications Telegram
+- Envoi des notifications aux admins
 
 ### Tests d'Intégration
 - Workflow complet : message bot → formulaire → notification admin
@@ -392,7 +392,7 @@ CREATE TRIGGER trigger_new_registration
 ### Tests E2E
 - Scénario complet avec utilisateur réel
 - Test sur différents appareils (mobile, desktop)
-- Validation des notifications Telegram
+- Validation des notifications administrateur
 
 ---
 
@@ -426,8 +426,8 @@ CREATE TRIGGER trigger_new_registration
 3. **Phase 3 :** Interface admin + tests complets
 
 ### Risques identifiés
-- **Rate limiting Telegram :** Implémenter queue Redis pour notifications
-- **Spam inscriptions :** Limiter 1 demande par telegram_id
+- **Rate limiting fournisseur messager :** Implémenter queue Redis pour notifications
+- **Spam inscriptions :** Limiter 1 demande par messenger_user_ref
 - **Sécurité formulaire :** Validation stricte + CSRF protection
 
 ### Métriques de succès
@@ -438,7 +438,7 @@ CREATE TRIGGER trigger_new_registration
 
 ## QA Results
 
-> **Lecture avec le bandeau historique (l.3–4)** : ce qui suit est une **archive de revue** (janvier 2025). Elle ne constitue pas une validation du bot Telegram comme livrable **courant** ni un statut produit actuel.
+> **Lecture avec le bandeau historique (l.3–4)** : ce qui suit est une **archive de revue** (janvier 2025). Elle ne constitue pas une validation de l’automate messager comme livrable **courant** ni un statut produit actuel.
 
 ### Review Date: 2025-01-09
 
@@ -446,7 +446,7 @@ CREATE TRIGGER trigger_new_registration
 
 ### Code Quality Assessment
 
-**Overall Assessment (historique) : GOOD** — Au moment de la revue, l’implémentation décrite pour la Story 1.2 (bot Telegram) était jugée solide sur le plan technique. **Depuis le retrait du canal bot du périmètre opérationnel**, cette évaluation ne s’applique plus au produit livré tel qu’il est utilisé aujourd’hui.
+**Overall Assessment (historique) : GOOD** — Au moment de la revue, l’implémentation décrite pour la Story 1.2 (automate messager) était jugée solide sur le plan technique. **Depuis le retrait du canal automate du périmètre opérationnel**, cette évaluation ne s’applique plus au produit livré tel qu’il est utilisé aujourd’hui.
 
 ### Refactoring Performed
 
@@ -470,12 +470,12 @@ CREATE TRIGGER trigger_new_registration
 - [x] Testé le workflow Bot → Formulaire → Notifications
 - [ ] Ajouter des tests d'intégration pour le workflow complet
 - [ ] Implémenter la validation côté client pour le formulaire
-- [ ] Ajouter des tests de charge pour les notifications Telegram
+- [ ] Ajouter des tests de charge pour les notifications administrateur
 - [ ] Documenter les cas d'erreur dans l'API
 
 ### Security Review
 
-**Status: PASS** - Aucune vulnérabilité critique identifiée. La validation des données est correctement implémentée côté serveur. Les tokens Telegram sont correctement gérés via les variables d'environnement.
+**Status: PASS** - Aucune vulnérabilité critique identifiée. La validation des données est correctement implémentée côté serveur. Les jetons du fournisseur messager sont correctement gérés via les variables d'environnement.
 
 ### Performance Considerations
 
@@ -491,4 +491,4 @@ CREATE TRIGGER trigger_new_registration
 
 ### Statut recommandé (aujourd’hui)
 
-**Non applicable comme « Ready for Done » livrable courant** — le bot Telegram n’est plus un parcours utilisateur actif ; ne pas inférer un statut « terminé / en production » pour le produit actuel à partir de cette section. Les améliorations listées ci-dessus restent des pistes d’archive si le périmètre bot était réactivé.
+**Non applicable comme « Ready for Done » livrable courant** — l’automate messager n’est plus un parcours utilisateur actif ; ne pas inférer un statut « terminé / en production » pour le produit actuel à partir de cette section. Les améliorations listées ci-dessus restent des pistes d’archive si ce périmètre était réactivé.

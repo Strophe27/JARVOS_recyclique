@@ -25,11 +25,11 @@ Cette checklist vous guide pas à pas pour prendre en main le système Recyclic.
 - [ ] La connexion internet est stable
 - [ ] J'ai identifié mon lieu de travail (site Recyclic)
 
-## Formation Bot Telegram 📱
+## Formation automate messager (historique)
 
-> Section conservee pour historique. Le parcours Telegram n'est plus le flux utilisateur actif a former en priorite.
+> Section conservée pour historique. Ce parcours n'est plus le flux utilisateur actif à former en priorité.
 
-### Ancien parcours Telegram (archive)
+### Ancien parcours (archive)
 - [ ] J'ai repere que l'ancien bot `@RecyclicBot` appartient a un flux historique
 - [ ] Je sais que les parcours actifs a privilegier sont l'interface web et les outils admin
 

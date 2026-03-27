@@ -7,7 +7,7 @@ Interface ultra-simplifiée "gros boutons" optimisée pour usage tablette par de
 - **Caisse :** Interface principale = 3-4 gros boutons maximum par écran
 - **Sessions :** Ouverture/fermeture claire avec identification opérateur intuitive
 - **Admin :** Petit bouton discret donnant accès au chatbot admin pour backoffice
-- **Chat Recyclic :** Telegram comme première interface (audio/image), évolution future vers webapp/app native
+- **Chat / saisie assistée :** privilégier l’interface web et la PWA ; évolution vers parcours natifs selon roadmap (`architecture-current/`)
 
 ## Core Screens and Views
 - **Écran ouverture session** : Invite pré-remplie + sélection opérateur

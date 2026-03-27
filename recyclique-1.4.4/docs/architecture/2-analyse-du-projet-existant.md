@@ -17,7 +17,7 @@
 - ✅ **Testing Infrastructure** : Suite de tests complète avec comptes de test dédiés
 - ❌ **UX/UI Guidelines** : À développer lors de la refonte (nécessaire pour v1.3.0)
 - ✅ **External API Documentation** : Pipeline Gemini pour classification (actuellement désactivé)
-- ✅ **Technical Debt Documentation** : Bot Telegram désactivé identifié comme dette technique
+- ✅ **Technical Debt Documentation** : ancien automate messager désactivé identifié comme dette technique
 
 ### Contraintes Identifiées
 
@@ -27,7 +27,7 @@
 - **Conformité Réglementaire** : Exports Ecologic obligatoires avec traçabilité complète
 - **Formation Utilisateur** : Interface intuitive pour utilisateurs non-techniques
 - **Performance Mobile** : Optimisations spécifiques pour tablettes tactiles
-- **Migration Auth** : Passage complexe de Telegram vers email/password
+- **Migration Auth** : passage complexe des anciens identifiants messagers vers nom d’utilisateur / mot de passe
 
 ---
-
+

@@ -10,7 +10,7 @@ RecyClique (précédemment Recyclic) est une application de recyclage multi-serv
 - API FastAPI Python (port 4433)
 - Base de données PostgreSQL
 - Service Redis
-- Bot Telegram (actuellement désactivé)
+- Ancien automate messager (hors compose / désactivé)
 - Interface de caisse pour gestion des tickets d'entrée/sortie
 
 ### Available Documentation Analysis

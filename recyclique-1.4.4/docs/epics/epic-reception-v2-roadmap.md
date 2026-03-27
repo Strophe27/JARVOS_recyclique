@@ -25,11 +25,11 @@ Ce document sert de backlog pour les fonctionnalités futures liées au module d
   - Envoyer l'image à un service d'analyse (modèle multimodal) pour suggérer automatiquement la catégorie, un titre, et potentiellement des attributs ou des risques.
   - L'utilisateur valide ou corrige la suggestion (workflow "Human-in-the-Loop").
 
-## Intégrations Externes et Bot
+## Intégrations externes et automates
 
 - **[P3] Balances Connectées :**
   - Étudier la faisabilité d'une intégration avec des balances connectées (USB/BLE) pour remplir automatiquement le champ "poids".
 
-- **[P4] Réévaluation du Bot Telegram :**
-  - Analyser si le workflow de saisie via le bot Telegram est toujours pertinent une fois l'application web en place et mature.
-  - Si oui, refactorer le bot pour qu'il utilise les nouvelles API et le nouveau modèle de données.
+- **[P4] Réévaluation d’un éventuel automate messager :**
+  - Analyser si un workflow de saisie via automate tiers reste pertinent une fois l'application web en place et mature.
+  - Si oui, le faire reposer sur les API et le modèle de données courants (pas de duplication de logique hors contrat API).

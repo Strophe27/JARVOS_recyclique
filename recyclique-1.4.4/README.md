@@ -7,7 +7,7 @@
 Digitaliser les processus des ressourceries pour réduire le temps administratif de 70% et assurer la conformité réglementaire Ecologic.
 
 ## ✨ Comment ça marche (Version Test)
-1. **Bot Telegram** : Enregistrement vocal des dépôts avec classification IA automatique
+1. **Dépôts & caisse (web)** : saisie des dépôts et ventes via l’interface responsive ; la classification IA reste disponible côté API selon les parcours actifs (voir `docs/architecture-current/`)
 2. **Interface caisse** : Vente simplifiée avec catégories EEE obligatoires  
 3. **Exports automatisés** : Synchronisation vers Ecologic et partenaires
 

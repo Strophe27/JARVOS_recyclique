@@ -237,7 +237,7 @@ Tous les endpoints sont préfixés par **`/v1`** (ex. `GET /v1/health`). En prod
 | GET | `/v1/admin/health/database` | Health check base de données |
 | GET | `/v1/admin/health/anomalies` | Anomalies détectées |
 | GET | `/v1/admin/health/scheduler` | Statut du scheduler (tâches planifiées) |
-| POST | `/v1/admin/health/test-notifications` | Test des notifications (Telegram, etc.) |
+| POST | `/v1/admin/health/test-notifications` | Test des notifications (canaux configurés côté API) |
 | GET | `/v1/admin/health-test` | Test simple de l’endpoint admin |
 | GET | `/v1/admin/transaction-logs` | Consultation des logs de transactions |
 | GET | `/v1/admin/audit-log` | Journal d’audit (actions sensibles) |

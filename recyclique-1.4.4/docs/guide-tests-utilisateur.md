@@ -38,8 +38,10 @@ Copiez le message d'erreur et transmettez-le pour analyse.
 Ouvrez un **nouveau terminal** et lancez la commande suivante pour créer votre compte administrateur :
 
 ```bash
-docker-compose exec api python -m recyclic_api.cli create-super-admin --telegram-id 123456789 --full-name "Admin Test"
+docker compose exec api sh /app/create_admin.sh admin_test mot_de_passe_securise
 ```
+
+(Remplacez `admin_test` / `mot_de_passe_securise` par les valeurs souhaitées — aligné sur le `README.md` racine du dossier livrable.)
 
 **✅ Résultat attendu :** Un message confirmant la création du super-admin.
 
@@ -47,7 +49,7 @@ docker-compose exec api python -m recyclic_api.cli create-super-admin --telegram
 
 ## 🔐 **Étape 3 : Tester l'Interface d'Administration**
 
-1.  **Connectez-vous :** Allez sur http://localhost:5173, naviguez vers la page de connexion admin et connectez-vous avec l'ID Telegram `123456789`.
+1.  **Connectez-vous :** Allez sur http://localhost:5173, ouvrez la page de connexion et connectez-vous avec le **nom d’utilisateur** et le **mot de passe** définis à l’étape 2.
 
 2.  **Gérez les Utilisateurs :** Allez dans la section de gestion des utilisateurs. Vous devriez voir votre propre compte. Si d'autres utilisateurs sont en attente, vous pouvez tester les fonctionnalités d'approbation et de rejet.
 

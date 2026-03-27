@@ -311,7 +311,7 @@ echo "Utilisateur: recyclic" >> "$RESTORE_LOG"
 
 ### Notification d'équipe
 
-Le canal Telegram pour ce type d'alerte a été retiré. Prévoir un **email**, un **ticket** ou un **message** manuel aux personnes concernées après restauration (les variables `TELEGRAM_*` ne sont plus utilisées par l'API Recyclic pour les notifications sortantes).
+Le canal messager legacy pour ce type d'alerte a été retiré. Prévoir un **email**, un **ticket** ou un **message** manuel aux personnes concernées après restauration (plus d’usage produit des anciennes variables d’alerte messagères côté API).
 
 ---
 

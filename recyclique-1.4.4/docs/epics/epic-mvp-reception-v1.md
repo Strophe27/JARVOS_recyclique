@@ -6,7 +6,7 @@ L'objectif de cet Epic est de développer un premier prototype fonctionnel (MVP)
 ## Epic Description
 
 **Existing System Context:**
-- **Current relevant functionality:** Le système actuel possède une logique de catégories rigide (Enums Python, chaînes de caractères) utilisée pour les ventes et les dépôts via un bot Telegram. Cette logique est fragmentée et non évolutive.
+- **Current relevant functionality:** Le système actuel possède une logique de catégories rigide (Enums Python, chaînes de caractères) utilisée pour les ventes et les dépôts (y compris via d’anciens canaux automate, hors référence produit active). Cette logique est fragmentée et non évolutive.
 - **Technology stack:** React (Frontend), FastAPI/Python (Backend), PostgreSQL (DB).
 - **Integration points:** Cet Epic va introduire de nouvelles tables dans la base de données et de nouvelles routes API. Il n'interférera pas directement avec la logique de caisse existante dans un premier temps, mais la remplacera à terme.
 

@@ -3,7 +3,7 @@
 ### Stratégie d'Intégration API
 
 **API Integration Strategy:** Extension additive des endpoints existants sans breaking changes
-**Authentication:** Authentification existante préservée (Telegram + future email/password)
+**Authentication:** Authentification existante préservée (JWT / nom d’utilisateur — anciens rattachements messagers hors référence active)
 **Versioning:** API versionnée (v1) maintenue, nouveaux endpoints en v1
 **Error Handling:** Patterns d'erreur existants étendus pour nouvelles fonctionnalités
 

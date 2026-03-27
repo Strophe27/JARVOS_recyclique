@@ -28,7 +28,7 @@ so that data is safely backed up and accessible to partners.
    - Configuration structure dossiers (exports/, backups/, audio/, logs/)
 2. Upload automatique Infomaniak kDrive via WebDAV
 3. Queue de retry avec backoff exponentiel en cas d'échec
-4. Notifications Telegram admins en cas d'échec sync >24h
+4. Alertes administrateurs (email, ticketing) en cas d'échec sync >24h
 5. Dashboard statut synchronisation (dernière sync, statut, erreurs)
 6. Configuration multi-comptes kDrive par ressourcerie
 
@@ -51,7 +51,7 @@ I want comprehensive user documentation and training materials,
 so that my team can use the system autonomously and efficiently.
 
 **Acceptance Criteria:**
-1. **Guide utilisateur Bot Telegram :**
+1. **Guide utilisateur (parcours historique automate messager) :**
    - Commandes disponibles (/depot, /help, /status)
    - Workflow enregistrement vocal avec captures écran
    - Gestion erreurs et validation/correction classifications
@@ -61,7 +61,7 @@ so that my team can use the system autonomously and efficiently.
    - Gestion erreurs et déverrouillages admin
 3. **Guide admin dashboard :**
    - Configuration multi-sites et personnalisation
-   - Gestion utilisateurs et whitelist Telegram
+   - Gestion utilisateurs et listes d’accès (héritage automate)
    - Exports et synchronisation cloud
 4. **Troubleshooting et FAQ :**
    - Résolution problèmes courants (mode offline, sync échecs)
@@ -76,9 +76,9 @@ I want proactive monitoring with intelligent notifications,
 so that I'm alerted to issues before they impact operations.
 
 **Acceptance Criteria:**
-1. Monitoring uptime API + bot Telegram avec alertes auto
+1. Monitoring uptime API avec alertes automatiques
 2. Détection anomalies : écarts caisse répétés, échecs sync, erreurs IA
-3. Notifications Telegram configurables par type d'événement
+3. Notifications opérateurs configurables par type d'événement (email, etc.)
 4. Dashboard santé système (performance IA, taux d'erreur, usage)
 5. Rapports automatiques hebdomadaires (KPIs, statistiques usage)
 6. Système de maintenance préventive avec recommandations

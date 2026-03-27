@@ -479,7 +479,7 @@ curl -f http://localhost:4444
 
 #### Test des Bots
 ```bash
-# Vérifier les webhooks Telegram
+# Vérifier les webhooks fournisseurs externes (si utilisés)
 curl -f http://localhost:8001/health
 
 # Tester l'envoi d'un message de test

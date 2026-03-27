@@ -169,7 +169,7 @@ Après un déploiement sur un environnement vierge, il est nécessaire de créer
 
 1. **Créer le Premier Utilisateur Admin**
    - Se connecter avec les credentials de super-admin (configurés via variables d'environnement)
-   - Ou utiliser le système d'inscription Telegram pour créer le premier compte, puis le promouvoir en admin via la base de données
+   - Ou utiliser un script / procédure d’administration documentée pour créer le premier compte, puis le promouvoir en admin via la base de données
 
 2. **Créer le Premier Site via l'Interface Admin**
    - Se connecter à l'interface d'administration : `https://[domaine]/admin/sites`

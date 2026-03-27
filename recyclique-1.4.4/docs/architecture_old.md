@@ -1,7 +1,7 @@
 # Recyclic Brownfield Enhancement Architecture
 
 > Note 2026-03-26 : document d'architecture conserve pour contexte historique.
-> Certaines sections decrivent encore une architecture centree sur un bot Telegram et des appels a `POST /deposits/{id}/classify`.
+> Certaines sections decrivent encore une architecture centree sur un automate messager tiers et des appels a `POST /deposits/{id}/classify`.
 > Ce document ne doit plus etre lu comme la reference du contrat runtime courant sans recoupement avec l'etat actuel du code et des routes actives.
 
 **Author:** Winston (Architect)  
@@ -20,7 +20,7 @@ Cette architecture brownfield maintient la compatibilité avec les systèmes exi
 ### Existing Project Analysis
 
 **Current Project State:**
-- **Primary Purpose:** Application de gestion pour ressourceries avec bot Telegram IA et interface caisse PWA
+- **Primary Purpose:** Application de gestion pour ressourceries avec interface caisse PWA et (historique) automate messager pour l’IA
 - **Current Tech Stack:** React + FastAPI + PostgreSQL + Docker + LangChain + Gemini
 - **Architecture Style:** Microservices containerisés avec communication REST
 - **Deployment Method:** Docker Compose sur VPS (local ou distant)
@@ -92,7 +92,7 @@ Cette architecture brownfield maintient la compatibilité avec les systèmes exi
 
 ### Technical Summary
 
-Recyclic implémente une architecture microservices containerisée Docker avec FastAPI comme backbone API, un bot Telegram intelligent utilisant LangChain + Gemini pour la classification IA, et une PWA responsive pour l'interface caisse. Le système est conçu pour un déploiement flexible (VPS distant ou serveur local) avec mode offline robuste et synchronisation cloud automatique. L'architecture privilégie la simplicité opérationnelle pour les associations tout en assurant la conformité réglementaire via des exports automatisés Ecologic.
+Recyclic implémente une architecture microservices containerisée Docker avec FastAPI comme backbone API, des capacités LangChain + Gemini pour la classification IA (historiquement branchées sur un automate messager), et une PWA responsive pour l'interface caisse. Le système est conçu pour un déploiement flexible (VPS distant ou serveur local) avec mode offline robuste et synchronisation cloud automatique. L'architecture privilégie la simplicité opérationnelle pour les associations tout en assurant la conformité réglementaire via des exports automatisés Ecologic.
 
 ### Platform and Infrastructure Choice
 
@@ -111,13 +111,13 @@ Recyclic implémente une architecture microservices containerisée Docker avec F
 ```mermaid
 graph TB
     subgraph "User Access"
-        U1[👤 Bénévole Telegram]
+        U1[👤 Bénévole (automate messager)]
         U2[💻 Caissier iPad/PC]
         U3[👔 Admin Dashboard]
     end
     
     subgraph "Docker Compose Stack"
-        TG[🤖 Bot Telegram Service]
+        TG[🤖 Service automate messager]
         API[⚡ FastAPI Backend]
         WEB[🌐 PWA Frontend]
         NGINX[🔀 Nginx Reverse Proxy]
@@ -166,13 +166,13 @@ graph TB
 ### Core Data Models
 
 #### User Model
-**Purpose:** Gestion des utilisateurs autorisés avec authentification Telegram
+**Purpose:** Gestion des utilisateurs autorisés (héritage : rattachement messager tiers)
 **Integration:** Central to all operations
 
 ```typescript
 interface User {
   id: string;
-  telegram_id: number;
+  messenger_user_ref?: string;
   full_name: string;
   email?: string;
   role: 'super-admin' | 'admin' | 'operator' | 'viewer';
@@ -325,19 +325,19 @@ interface Site {
 
 ### Core Components
 
-#### Bot Telegram Service
-**Responsibility:** Gestion des interactions Telegram avec transcription audio et classification IA
+#### Service automate messager (historique)
+**Responsibility:** Gestion des interactions messageres avec transcription audio et classification IA
 **Integration Points:** FastAPI Backend, Redis Queue, AI Pipeline
 
 **Key Interfaces:**
-- POST /webhook/telegram - Réception messages Telegram
+- POST /webhook/… — réception messages fournisseur tiers (schéma historique)
 - WebSocket /ai/classify - Classification temps réel
 
 **Dependencies:**
 - **Existing Components:** FastAPI Backend, PostgreSQL
 - **New Components:** None (architecture preserved)
 
-**Technology Stack:** Python + python-telegram-bot + LangChain + asyncio
+**Technology Stack:** Python + client HTTP messager tiers + LangChain + asyncio
 
 #### FastAPI Backend
 **Responsibility:** API REST centrale, orchestration services, persistence données
@@ -404,16 +404,16 @@ interface Site {
 
 ### API Integration Strategy
 **API Integration Strategy:** RESTful avec OpenAPI 3.0 standard  
-**Authentication:** JWT Bearer tokens + Telegram native auth  
+**Authentication:** JWT Bearer tokens + (historique) auth native fournisseur messager  
 **Versioning:** Semantic versioning avec préfixe /api/v1
 
 ### Core API Endpoints
 
-#### Authentication
+#### Authentication (schéma historique)
 ```yaml
-/api/v1/auth/telegram:
+/api/v1/auth/messenger-legacy:
   post:
-    summary: Authentification via Telegram
+    summary: Authentification via fournisseur messager (héritage, non référence active)
     requestBody:
       required: true
       content:
@@ -421,7 +421,7 @@ interface Site {
           schema:
             type: object
             properties:
-              telegram_id: { type: number }
+              messenger_user_ref: { type: string }
               auth_hash: { type: string }
 ```
 
@@ -541,12 +541,12 @@ interface Site {
 
 ## Core Workflows
 
-### Workflow Classification Dépôt via Bot
+### Workflow classification dépôt via automate (historique)
 
 ```mermaid
 sequenceDiagram
     participant U as Bénévole
-    participant TG as Bot Telegram
+    participant TG as Automate messager
     participant API as FastAPI
     participant AI as AI Pipeline
     participant DB as PostgreSQL
@@ -629,7 +629,7 @@ recyclic/
 ├── apps/
 │   ├── web/                   # Frontend PWA
 │   ├── api/                   # Backend FastAPI
-│   └── bot/                   # Telegram Bot
+│   └── bot/                   # Automate messager (historique)
 ├── packages/
 │   ├── shared/                # Types partagés
 │   └── ui/                    # Composants UI
@@ -699,7 +699,7 @@ services:
   bot:
     build: ./apps/bot
     environment:
-      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - MESSENGER_BOT_TOKEN=${MESSENGER_BOT_TOKEN}
       
   web:
     build: ./apps/web
@@ -723,7 +723,7 @@ services:
 
 **Authentication Security:**
 - JWT tokens with 24h expiration
-- Telegram native authentication
+- (Historique) authentification via fournisseur messager
 - Role-based access control (super-admin, admin, operator, viewer)
 
 **Data Protection:**
@@ -789,7 +789,7 @@ Frontend Unit Tests     Backend Unit Tests
 - Coverage target: 80% minimum
 
 **Critical Test Scenarios:**
-- Authentication flow (Telegram + JWT)
+- Authentication flow (JWT ; héritage messager hors périmètre actif)
 - Deposit classification workflow
 - Cash register offline/online sync
 - Admin user management

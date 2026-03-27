@@ -12,7 +12,7 @@
 
 ### [Epic Tech-Debt: Refonte de l'Authentification](./epic-auth-refactoring.md)
 
-**Objectif :** Remplacer le système d'authentification basé sur l'ID Telegram par un système standard et sécurisé basé sur un couple **Nom d'utilisateur/Mot de passe**,
+**Objectif :** Remplacer l’ancien rattachement par identifiant messager tiers par un système standard et sécurisé basé sur un couple **Nom d'utilisateur/Mot de passe**,
 
 ### [Epic Tech-Debt: Refonte de l'Authentification - Stories Suivantes](./epic-auth-refactoring-suite.md)
 
@@ -74,7 +74,7 @@ Refonte et Amélioration Avancée du Service de Reconnaissance Vocale et Visuell
 
 **Author:** Sally (UX Expert)
 
-### [Story 1.2: Bot Telegram Base & Inscription - Version Détaillée](./story-1-2-detailed.md)
+### [Story 1.2 : Inscription via automate messager (historique)](./story-1-2-detailed.md)
 
 **As a new volunteer,**
 
@@ -186,7 +186,7 @@ Ce document est une annexe au document d'architecture principal et fournit la sp
 
 ### [Tunnel Optionnel (DEV / PROD)](./architecture/tunnel-dev-prod.md)
 
-Objectif: Exposer temporairement un service local via une URL publique HTTPS pour tests (ex: webhooks Telegram).
+Objectif: Exposer temporairement un service local via une URL publique HTTPS pour tests (ex: webhooks fournisseurs externes).
 
 ## architecture.old
 
@@ -204,7 +204,7 @@ Objectif: Exposer temporairement un service local via une URL publique HTTPS pou
 
 ### [Components](./architecture.old/components.md)
 
-## Bot Telegram Service
+## Ancien service automate messager (référence `architecture.old`)
 
 ### [Core Workflows](./architecture.old/core-workflows.md)
 
@@ -504,7 +504,7 @@ Objectif: Exposer temporairement un service local via une URL publique HTTPS pou
 
 **ID:** STORY-TECH-DEBT-REMOVE-CASHIER
 
-### [Story (Dette Technique): Suppression du Code Mort du Bot Telegram](./archive/future-versions/story-tech-debt-b36-bot-cleanup.md)
+### [Story (Dette Technique): Suppression du code mort de l’automate messager](./archive/future-versions/story-tech-debt-b36-bot-cleanup.md)
 
 **ID:** STORY-TECH-DEBT-B36-BOT-CLEANUP
 
@@ -828,7 +828,7 @@ Objectif: Exposer temporairement un service local via une URL publique HTTPS pou
 
 ## Contexte
 
-### [Story 1.2: Bot Telegram Base & Inscription](./archive/v1.2-and-earlier/story-1.2-bot-telegram-inscription.md)
+### [Story 1.2: Base automate messager & inscription (archive — fichier story-1.2 sous ./archive/v1.2-and-earlier/)](./archive/v1.2-and-earlier/)
 
 ## Status
 
@@ -1108,7 +1108,7 @@ Objectif: Exposer temporairement un service local via une URL publique HTTPS pou
 
 - **Statut**: Done
 
-### [Story: API pour la Liaison de Compte Telegram Existant](./archive/v1.2-and-earlier/story-be-link-telegram-account.md)
+### [Story: API pour la liaison de compte messager existant (archive — voir ./archive/v1.2-and-earlier/)](./archive/v1.2-and-earlier/)
 
 **User Story**
 
@@ -1120,7 +1120,7 @@ Objectif: Exposer temporairement un service local via une URL publique HTTPS pou
 
 **Statut: Terminé**
 
-### [Story: FE - Logique de Liaison de Compte Telegram](./archive/v1.2-and-earlier/story-fe-link-account-logic.md)
+### [Story: FE - Logique de liaison de compte messager (archive)](./archive/v1.2-and-earlier/story-fe-link-account-logic.md)
 
 **User Story**
 
@@ -1136,9 +1136,9 @@ Objectif: Exposer temporairement un service local via une URL publique HTTPS pou
 
 **Story ID:** CLEANUP.1
 
-### [Tâche (Technique): Investigation du Bouton d'Inscription Telegram](./archive/future-versions/archive/task-b01-p4-tech-telegram-button-investigation.md)
+### [Tâche (Technique): Investigation du bouton d'inscription messager (archive — task-b01-p4 sous ./archive/future-versions/archive/)](./archive/future-versions/archive/)
 
-**ID:** TASK-TECH-TELEGRAM-BUTTON
+**ID:** TASK-B01-P4-MESSAGER-BUTTON
 
 ### [User Story](./archive/v1.2-and-earlier/story-3.3-ticket-temps-reel.md)
 
@@ -1384,7 +1384,7 @@ Ce document est un état des lieux de l'ensemble des stories présentes dans le 
 
 - **Statut**: Done
 
-### [Bug: Le bot utilise un token Telegram invalide](./backup-pre-cleanup/archive/bug-bot-telegram-token-config.md)
+### [Bug: jeton automate messager invalide (archive — bug-bot-token sous ./backup-pre-cleanup/archive/)](./backup-pre-cleanup/archive/)
 
 - **Statut**: Done
 
@@ -1516,7 +1516,7 @@ Ce document est un état des lieux de l'ensemble des stories présentes dans le 
 
 **ID:** STORY-TECH-DEBT-B36-TEST-SUITE-FIX
 
-### [Story (Dette Technique): Suppression du Code Mort du Bot Telegram](./backup-pre-cleanup/story-tech-debt-b36-bot-cleanup.md)
+### [Story (Dette Technique): Suppression du code mort de l’automate messager](./backup-pre-cleanup/story-tech-debt-b36-bot-cleanup.md)
 
 **ID:** STORY-TECH-DEBT-B36-BOT-CLEANUP
 
@@ -1696,7 +1696,7 @@ Ce document est un état des lieux de l'ensemble des stories présentes dans le 
 
 **User Story**
 
-### [Story: FE - Page de Choix d'Authentification Telegram](./backup-pre-cleanup/story-fe-auth-choice-page.md)
+### [Story: FE - Page de choix d'authentification messager (archive)](./backup-pre-cleanup/story-fe-auth-choice-page.md)
 
 **User Story**
 
@@ -1724,9 +1724,9 @@ Ce document est un état des lieux de l'ensemble des stories présentes dans le 
 
 **User Story**
 
-### [Tâche (Technique): Investigation du Bouton d'Inscription Telegram](./backup-pre-cleanup/archive/task-b01-p4-tech-telegram-button-investigation.md)
+### [Tâche (Technique): Investigation du bouton d'inscription messager (archive — task-b01-p4 sous ./backup-pre-cleanup/archive/)](./backup-pre-cleanup/archive/)
 
-**ID:** TASK-TECH-TELEGRAM-BUTTON
+**ID:** TASK-B01-P4-MESSAGER-BUTTON
 
 ### [User Story (Correctif Technique): Correction du Proxy Uvicorn pour HTTPS](./backup-pre-cleanup/story-b18-p0-correction-proxy-uvicorn.md)
 
@@ -1958,9 +1958,9 @@ Cette spécification définit l'expérience utilisateur, l'architecture d'inform
 
 **Auteur:** Équipe de Développement
 
-### Guide Bot Telegram (retire)
+### Ancien guide utilisateur automate messager (retiré)
 
-Le guide utilisateur `guides/bot-telegram-guide.md` a ete retire (2026-03-26) : le canal bot n'est plus documente comme actif. Voir `architecture-current/` et la FAQ.
+Le guide utilisateur dédié à l’automate messager a été retiré (2026-03-26) : ce canal n'est plus documenté comme actif. Voir `architecture-current/` et la FAQ.
 
 ### [Manuel Utilisateur - Interface de Caisse Recyclic](./guides/interface-caisse-manual.md)
 
@@ -2200,9 +2200,9 @@ status: Done
 
 ## Objectif de l'Epic
 
-### [Epic 4: Bot Telegram IA & Classification](./prd/epic-4-bot-telegram-ia-classification.md)
+### [Epic 4 : IA & classification des dépôts (PRD historique)](./prd/epic-4-ia-classification-depots-historique.md)
 
-**Objectif :** Implémenter le cœur du système - le workflow vocal via Telegram avec classification automatique EEE. Les bénévoles peuvent enregistrer des dépôts par audio, l'IA classifie automatiquement, et l'utilisateur valide ou corrige. Délivre la valeur métier principale d...
+**Objectif (époque PRD) :** workflow vocal via automate messager avec classification automatique EEE. Document figé ; parcours actifs : voir `architecture-current/`. Délivre la valeur métier principale d...
 
 ### [Epic 4: Exports & Synchronisation Cloud](./prd/epic-6-exports-synchronisation-cloud.md)
 
@@ -2502,7 +2502,7 @@ Fichier `qa/gates/4.4-documentation-utilisateur.md` retire en consolidation 2026
 
 - **Statut**: Done
 
-### [Bug: Le bot utilise un token Telegram invalide](./stories/to-review/archive/bug-bot-telegram-token-config.md)
+### [Bug: jeton automate messager invalide (archive — bug-bot-token sous ./stories/to-review/archive/)](./stories/to-review/archive/)
 
 - **Statut**: Done
 
@@ -2702,7 +2702,7 @@ Fichier `qa/gates/4.4-documentation-utilisateur.md` retire en consolidation 2026
 
 **User Story**
 
-### [Story: FE - Page de Choix d'Authentification Telegram](./stories/to-review/story-fe-auth-choice-page.md)
+### [Story: FE - Page de choix d'authentification messager (archive)](./stories/to-review/story-fe-auth-choice-page.md)
 
 **User Story**
 
@@ -2846,9 +2846,9 @@ Ce document est une annexe au document d'architecture principal et fournit la sp
 
 ## Objectif de l'Epic
 
-### [Epic 4: Bot Telegram IA & Classification](./v1.3.0-active/prd/epic-4-bot-telegram-ia-classification.md)
+### [Epic 4 : IA & classification (copie v1.3.0-active, archive — epic-4 IA sous ./v1.3.0-active/prd/)](./v1.3.0-active/prd/)
 
-**Objectif :** Implémenter le cœur du système - le workflow vocal via Telegram avec classification automatique EEE. Les bénévoles peuvent enregistrer des dépôts par audio, l'IA classifie automatiquement, et l'utilisateur valide ou corrige. Délivre la valeur métier principale d...
+**Objectif (époque PRD) :** workflow vocal via automate messager avec classification automatique EEE. Copie d’archive ; référence produit actuelle : `architecture-current/`. Délivre la valeur métier principale d...
 
 ### [Epic 4: Exports & Synchronisation Cloud](./v1.3.0-active/prd/epic-6-exports-synchronisation-cloud.md)
 
@@ -2932,7 +2932,7 @@ Ce document est une annexe au document d'architecture principal et fournit la sp
 
 ### [Tunnel Optionnel (DEV / PROD)](./v1.3.0-active/architecture/tunnel-dev-prod.md)
 
-Objectif: Exposer temporairement un service local via une URL publique HTTPS pour tests (ex: webhooks Telegram).
+Objectif: Exposer temporairement un service local via une URL publique HTTPS pour tests (ex: webhooks fournisseurs externes).
 
 ### [User Impact Analysis](./v1.3.0-active/prd/user-impact-analysis.md)
 

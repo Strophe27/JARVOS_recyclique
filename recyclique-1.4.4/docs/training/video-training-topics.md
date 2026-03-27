@@ -11,10 +11,10 @@ Cette liste présente les sujets recommandés pour des vidéos de formation cour
 - **"Découverte de l'interface"** (3 min) - Tour rapide des fonctionnalités principales
 - **"Sécurité de base"** (2 min) - Bonnes pratiques de sécurité
 
-### Bot Telegram
-- **"Enregistrer un dépôt"** (3 min) - Démonstration complète du workflow `/depot`
-- **"Corriger une classification"** (2 min) - Comment utiliser le bouton corriger
-- **"Consulter ses statistiques"** (2 min) - Utilisation des commandes `/stats` et `/mesdepots`
+### Dépôts (parcours web / historique automate)
+- **"Enregistrer un dépôt"** (3 min) - Démonstration du flux actif dans l’interface web
+- **"Corriger une classification"** (2 min) - Parcours de correction côté UI
+- **"Consulter ses statistiques"** (2 min) - Tableaux et exports disponibles
 
 ### Interface de Caisse
 - **"Ouvrir une session"** (2 min) - Procédure d'ouverture de caisse
@@ -70,7 +70,7 @@ Cette liste présente les sujets recommandés pour des vidéos de formation cour
 
 ### Pour les Caissiers
 - Priorité haute : Vidéos sur l'interface de caisse et la gestion des erreurs
-- Priorité moyenne : Vidéos sur le bot Telegram
+- Priorité moyenne : Vidéos sur la réception / dépôts web
 - Priorité basse : Vidéos d'administration
 
 ### Pour les Administrateurs
@@ -78,8 +78,8 @@ Cette liste présente les sujets recommandés pour des vidéos de formation cour
 - Priorité moyenne : Vidéos sur les rapports et les exports
 - Priorité basse : Vidéos sur l'interface de caisse
 
-### Pour les Bénévoles (Bot Telegram)
-- Priorité haute : Vidéos sur le bot Telegram
+### Pour les Bénévoles (terrain)
+- Priorité haute : Vidéos sur la saisie dépôts / réception web
 - Priorité moyenne : Vidéos sur la gestion des erreurs
 - Priorité basse : Vidéos techniques avancées
 

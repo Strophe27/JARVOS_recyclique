@@ -15,8 +15,8 @@
 ## 1. Résumé exécutif
 
 - **Stack en production de fait** : Backend FastAPI (Python 3.11+), frontend React/Vite/TypeScript (PWA), PostgreSQL 15, Redis 7, Docker Compose. En staging/production exposée : **Traefik** (pas Nginx) comme reverse proxy / terminaison TLS.
-- **Services Docker actifs** (d’après `docker-compose.yml`) : `postgres`, `redis`, `api`, `api-migrations`, `frontend`. L’ancien service **bot** Telegram a été retiré du dépôt (paquet assainissement 1.4.5, 2026-03-26) ; des endpoints API liés à Telegram peuvent subsister jusqu’à un lot ultérieur.
-- **Points d’attention** : Plusieurs documents (dont `docs/export_doc_ecosystem/`) décrivent encore le bot Telegram et parfois Nginx ; ce document reflète uniquement l’état réel des services et du déploiement.
+- **Services Docker actifs** (d’après `docker-compose.yml`) : `postgres`, `redis`, `api`, `api-migrations`, `frontend`. L’ancien service **automate messager** a été retiré du dépôt (paquet assainissement 1.4.5, 2026-03-26) ; des endpoints API liés à cet automate peuvent subsister jusqu’à un lot ultérieur.
+- **Points d’attention** : Plusieurs documents (dont `docs/export_doc_ecosystem/`) décrivent encore l’automate messager et parfois Nginx ; ce document reflète uniquement l’état réel des services et du déploiement.
 
 ---
 
@@ -148,7 +148,7 @@ Modèles principaux (côté API) : User, UserStatusHistory, Deposit, Sale, CashS
 
 ## 8. Dette technique et écarts documentaires
 
-- **Bot Telegram** : désactivé au niveau Docker (STORY-B36-P3). La doc dans `docs/export_doc_ecosystem/` (et éventuellement `docs/architecture/`) parle encore du bot comme composant actif ; **ce document considère le bot comme hors périmètre opérationnel**.
+- **Automate messager** : désactivé au niveau Docker (STORY-B36-P3). La doc dans `docs/export_doc_ecosystem/` (et éventuellement `docs/architecture/`) parle encore du bot comme composant actif ; **ce document considère l’automate comme hors périmètre opérationnel**.
 - **Nginx vs Traefik** : certains documents mentionnent un « reverse proxy Nginx ». En réalité, en dev il n’y a pas de Nginx dans le compose ; en staging/prod c’est **Traefik** qui assure le routage et le TLS.
 - **Règle Cursor** `.cursor/rules/docker-complete.mdc` : peut encore lister le bot et bot-webhook parmi les services principaux ; à aligner avec ce brownfield si vous vous basez sur cette doc.
 - **kDrive** : toujours présent dans le code (scheduler, sync_service). La stratégie métier a pivoté vers les rapports par email ; à traiter comme legacy ou à désactiver explicitement selon la cible.
