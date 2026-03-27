@@ -9,7 +9,10 @@ import pytest
 from fastapi.testclient import TestClient
 from jsonschema import validate, ValidationError
 
+from recyclic_api.core.config import settings
 from recyclic_api.main import app
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 def validate_with_resolver(instance, schema, openapi_schema):
     """Valide une instance contre un schéma OpenAPI avec résolution des références."""
@@ -50,18 +53,18 @@ class TestOpenAPIValidation:
 
     def test_health_endpoint_schema_validation(self, client, openapi_schema):
         """Test de validation du schéma pour l'endpoint de santé."""
-        response = client.get("/api/v1/health/")
+        response = client.get(f"{_V1}/health/")
         
         assert response.status_code == 200
         data = response.json()
         
         # Validation du schéma OpenAPI de la réponse
-        health_schema = openapi_schema["paths"]["/api/v1/health/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+        health_schema = openapi_schema["paths"][f"{_V1}/health/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
         validate_with_resolver(data, health_schema, openapi_schema)
 
     def test_users_endpoint_schema_validation(self, client, openapi_schema):
         """Test de validation du schéma pour l'endpoint des utilisateurs."""
-        response = client.get("/api/v1/users/")
+        response = client.get(f"{_V1}/users/")
         
         # L'endpoint peut retourner 200, 401 ou 403 selon l'authentification
         assert response.status_code in [200, 401, 403]
@@ -69,7 +72,7 @@ class TestOpenAPIValidation:
         
         # Validation du schéma OpenAPI de la réponse
         if response.status_code == 200:
-            users_schema = openapi_schema["paths"]["/api/v1/users/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+            users_schema = openapi_schema["paths"][f"{_V1}/users/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
             validate_with_resolver(data, users_schema, openapi_schema)
         else:
             # Pour les erreurs, valider la structure standard FastAPI
@@ -77,7 +80,7 @@ class TestOpenAPIValidation:
 
     def test_cash_sessions_endpoint_schema_validation(self, client, openapi_schema):
         """Test de validation du schéma pour l'endpoint des sessions de caisse."""
-        response = client.get("/api/v1/cash-sessions/")
+        response = client.get(f"{_V1}/cash-sessions/")
         
         # L'endpoint peut retourner 200, 401 ou 403 selon l'authentification
         assert response.status_code in [200, 401, 403]
@@ -85,7 +88,7 @@ class TestOpenAPIValidation:
         
         # Validation du schéma OpenAPI de la réponse
         if response.status_code == 200:
-            cash_sessions_schema = openapi_schema["paths"]["/api/v1/cash-sessions/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+            cash_sessions_schema = openapi_schema["paths"][f"{_V1}/cash-sessions/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
             validate_with_resolver(data, cash_sessions_schema, openapi_schema)
         else:
             # Pour les erreurs, valider la structure standard FastAPI
@@ -94,7 +97,7 @@ class TestOpenAPIValidation:
     def test_error_response_schema_validation(self, client, openapi_schema):
         """Test de validation du schéma pour les réponses d'erreur."""
         # Tester un endpoint inexistant pour générer une erreur 404
-        response = client.get("/api/v1/nonexistent/")
+        response = client.get(f"{_V1}/nonexistent/")
         
         assert response.status_code == 404
         data = response.json()
@@ -112,9 +115,9 @@ class TestOpenAPIValidation:
         assert "schemas" in openapi_schema["components"]
         
         # Vérifier que les endpoints principaux sont définis
-        assert "/api/v1/health/" in openapi_schema["paths"]
-        assert "/api/v1/users/" in openapi_schema["paths"]
-        assert "/api/v1/cash-sessions/" in openapi_schema["paths"]
+        assert f"{_V1}/health/" in openapi_schema["paths"]
+        assert f"{_V1}/users/" in openapi_schema["paths"]
+        assert f"{_V1}/cash-sessions/" in openapi_schema["paths"]
 
     def test_schema_references_resolution(self, openapi_schema):
         """Test de validation que les références $ref peuvent être résolues."""
