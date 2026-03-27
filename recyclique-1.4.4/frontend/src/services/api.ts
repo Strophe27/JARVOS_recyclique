@@ -1,5 +1,6 @@
 import api from '../api/axiosClient';
 import type { AxiosInstance, AxiosResponse } from 'axios';
+import { receptionTicketsService } from './receptionTicketsService';
 
 // Health check
 export const getHealth = async (): Promise<any> => {
@@ -162,15 +163,11 @@ export const deleteCashRegister = async (id: string): Promise<void> => {
 
 // Reception Tickets
 export const getReceptionTickets = async (page: number = 1, perPage: number = 10): Promise<any> => {
-  const response: AxiosResponse = await api.get('/v1/reception/tickets', {
-    params: { page, per_page: perPage }
-  });
-  return response.data;
+  return receptionTicketsService.list({ page, per_page: perPage });
 };
 
 export const getReceptionTicketDetail = async (ticketId: string): Promise<any> => {
-  const response: AxiosResponse = await api.get(`/v1/reception/tickets/${ticketId}`);
-  return response.data;
+  return receptionTicketsService.getDetail(ticketId);
 };
 
 // Cash Session Statistics
