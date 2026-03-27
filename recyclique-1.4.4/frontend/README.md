@@ -59,7 +59,7 @@ npm run codegen
 #### Workflow de developpement
 
 1. **Modification de l'API backend** : quand l'API backend est modifiee
-2. **Generation du fichier OpenAPI** : le backend genere automatiquement `../api/openapi.json`
+2. **Generation de la spec OpenAPI** : `npm run codegen` lit actuellement `../openapi.json` (soit `recyclique-1.4.4/openapi.json`)
 3. **Generation du code frontend** : executer `npm run codegen`
 4. **Utilisation des nouveaux types** : les types et l'API sont automatiquement mis a jour
 
@@ -76,14 +76,13 @@ src/generated/
 
 ```typescript
 // Import des types
-import { UserResponse, UserRole, UserStatus } from '../generated';
+import { UserResponse } from '../generated';
 
-// Import de l'API
+// Import d'une classe API générée
 import { UsersApi } from '../generated';
 
-// Utilisation
-const users = await UsersApi.getUsers();
-const user = await UsersApi.getUserById('123');
+// Les noms de méthodes dépendent des operationId OpenAPI.
+const api = new UsersApi();
 ```
 
 #### Avantages

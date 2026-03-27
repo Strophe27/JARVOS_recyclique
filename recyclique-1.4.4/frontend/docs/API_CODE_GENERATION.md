@@ -1,13 +1,13 @@
 ## Codegen API (Frontend)
 
-Après toute modification d'`openapi.json` ou intégration du client, exécuter:
+Après toute modification de la spec OpenAPI utilisée par le frontend, exécuter:
 
 ```bash
 npm run codegen
 ```
 
 Prérequis:
-- `VITE_API_URL` défini dans `.env` ou `.env.local` (ex: `http://localhost:8000`).
+- `npm run codegen` lit actuellement `recyclique-1.4.4/openapi.json` via `frontend/scripts/generate-api.cjs`.
 - Le client généré importe l'instance centralisée `src/api/axiosClient` et ne crée pas d'instance axios propre.
 
 Sortie:
@@ -42,8 +42,8 @@ Le backend FastAPI génère automatiquement un fichier `openapi.json` contenant 
 
 ### 2. Script de Génération
 
-Le script `scripts/generate-api.js` :
-- Lit le fichier `openapi.json`
+Le script `scripts/generate-api.cjs` :
+- Lit `recyclique-1.4.4/openapi.json`
 - Génère les types TypeScript correspondants
 - Crée le client API avec méthodes typées
 - Met à jour les fichiers dans `src/generated/`
@@ -54,13 +54,13 @@ Les composants et services importent les types et l'API générés :
 
 ```typescript
 // Import des types
-import { UserResponse, UserRole, UserStatus } from '../generated';
+import { UserResponse } from '../generated';
 
-// Import de l'API
+// Import d'une classe API générée
 import { UsersApi } from '../generated';
 
-// Utilisation typée
-const users: UserResponse[] = await UsersApi.getUsers();
+// Les noms de méthodes suivent les operationId OpenAPI.
+const api = new UsersApi();
 ```
 
 ## Fichiers Générés
@@ -133,8 +133,8 @@ const users: User[] = response.data;
 // Types générés automatiquement
 import { UserResponse, UsersApi } from '../generated';
 
-// Appels API typés
-const users: UserResponse[] = await UsersApi.getUsers();
+// Utiliser les classes générées; les noms de méthodes dépendent des operationId.
+const api = new UsersApi();
 ```
 
 ## Avantages
@@ -185,8 +185,8 @@ export interface AdminUser extends UserResponse {
 // Vérifier la compatibilité des versions
 import { ApiClient } from '../generated';
 
-// Utiliser les types pour la validation
-const user: UserResponse = await UsersApi.getUserById('123');
+// Utiliser les types générés sans supposer un nom de méthode fixe.
+const client = ApiClient;
 ```
 
 ## Dépannage
@@ -195,7 +195,7 @@ const user: UserResponse = await UsersApi.getUserById('123');
 
 1. **Erreurs de compilation après génération**
    - Vérifier que l'API backend fonctionne
-   - Régénérer le fichier `openapi.json`
+   - Régénérer puis resynchroniser le fichier `recyclique-1.4.4/openapi.json`
    - Exécuter `npm run codegen`
 
 2. **Types manquants**
@@ -211,11 +211,8 @@ const user: UserResponse = await UsersApi.getUserById('123');
 ### Logs de Débogage
 
 ```bash
-# Génération avec logs détaillés
-npm run codegen -- --verbose
-
-# Vérifier le fichier OpenAPI
-cat ../api/openapi.json | jq '.info'
+# Vérifier la spec lue par le codegen
+jq '.info' ../openapi.json
 
 # Vérifier les types générés
 ls -la src/generated/

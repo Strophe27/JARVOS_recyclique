@@ -2,6 +2,7 @@
 
 /**
  * Script de génération de l'API TypeScript à partir de la spécification OpenAPI
+ * Source lue par `npm run codegen`: `recyclique-1.4.4/openapi.json`.
  */
 
 const fs = require('fs');
@@ -68,7 +69,7 @@ function generateTypes(openApiSpec) {
   const content = [
     `/**`,
     ` * Types générés automatiquement à partir de la spécification OpenAPI`,
-    ` * Source: ../api/openapi.json`,
+    ` * Source spec: recyclique-1.4.4/openapi.json`,
     ` * Généré le: ${new Date().toISOString()}`,
     ` */`,
     ``,
@@ -217,7 +218,7 @@ function generateApiClient(openApiSpec) {
   const content = [
     `/**`,
     ` * Client API généré automatiquement à partir de la spécification OpenAPI`,
-    ` * Source: ../api/openapi.json`,
+    ` * Source spec: recyclique-1.4.4/openapi.json`,
     ` * Généré le: ${new Date().toISOString()}`,
     ` */`,
     ``,
@@ -304,7 +305,7 @@ function generateIndex() {
   const content = [
     `/**`,
     ` * Point d'entrée pour les types et l'API générés`,
-    ` * Source: ../api/openapi.json`,
+    ` * Source spec: recyclique-1.4.4/openapi.json`,
     ` * Généré le: ${new Date().toISOString()}`,
     ` */`,
     ``,

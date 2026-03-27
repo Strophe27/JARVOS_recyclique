@@ -1,7 +1,7 @@
 /**
  * Point d'entrée pour les types et l'API générés
- * Source: ../api/openapi.json
- * Généré le: 2026-03-26T23:34:25.126Z
+ * Source spec: recyclique-1.4.4/openapi.json
+ * Généré le: 2026-03-27T13:02:00.710Z
  */
 
 // Export des types

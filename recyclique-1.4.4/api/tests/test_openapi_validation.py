@@ -2,7 +2,7 @@
 Tests de validation OpenAPI pour les endpoints de l'API Recyclic.
 
 Ces tests valident que les réponses de l'API respectent exactement
-la spécification OpenAPI définie dans openapi.json.
+la spécification OpenAPI générée dynamiquement par `app.openapi()`.
 """
 
 import pytest

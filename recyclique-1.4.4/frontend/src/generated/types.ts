@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
- * Source: ../api/openapi.json
- * Généré le: 2026-03-26T23:34:25.113Z
+ * Source spec: recyclique-1.4.4/openapi.json
+ * Généré le: 2026-03-27T13:02:00.705Z
  */
 
 // ============================================================================
