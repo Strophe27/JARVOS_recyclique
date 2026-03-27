@@ -12,8 +12,11 @@ from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.config import settings
+
 # Configuration pour les tests E2E
 ADMIN_TOKEN = "test_admin_token"  # Token de test pour l'admin
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 class TestPendingValidationE2E:
@@ -28,14 +31,14 @@ class TestPendingValidationE2E:
 
     def test_health_check(self, client: TestClient):
         """Test de base pour vérifier que l'API fonctionne"""
-        response = client.get("/api/v1/health")
+        response = client.get(f"{_V1}/health")
         assert response.status_code == 200
         print("✅ API accessible")
 
     def test_openapi_spec_includes_pending_endpoints(self, client: TestClient):
         """Test que les nouveaux endpoints sont dans l'OpenAPI"""
         try:
-            response = client.get("/api/v1/openapi.json", timeout=5)
+            response = client.get(f"{_V1}/openapi.json", timeout=5)
             assert response.status_code == 200
             
             spec = response.json()
@@ -43,9 +46,9 @@ class TestPendingValidationE2E:
             
             # Vérifier la présence des nouveaux endpoints
             required_endpoints = [
-                '/admin/users/pending',
-                '/admin/users/{user_id}/approve',
-                '/admin/users/{user_id}/reject'
+                f'{_V1}/admin/users/pending',
+                f'{_V1}/admin/users/{{user_id}}/approve',
+                f'{_V1}/admin/users/{{user_id}}/reject'
             ]
             
             for endpoint in required_endpoints:
@@ -59,7 +62,7 @@ class TestPendingValidationE2E:
         """Test que les endpoints pending nécessitent une authentification"""
         try:
             # Test sans authentification
-            response = client.get("/api/v1/admin/users/pending", timeout=5)
+            response = client.get(f"{_V1}/admin/users/pending", timeout=5)
             assert response.status_code in [401, 403], f"Statut inattendu: {response.status_code}"
             print("✅ Endpoints protégés par authentification")
             
@@ -74,7 +77,7 @@ class TestPendingValidationE2E:
             
             # Test de l'endpoint pending (doit retourner 401/403 sans vrai token)
             response = client.get(
-                "/api/v1/admin/users/pending", 
+                f"{_V1}/admin/users/pending", 
                 headers=headers, 
                 timeout=5
             )
@@ -94,7 +97,7 @@ class TestPendingValidationE2E:
             
             # Test de l'endpoint approve (doit retourner 401/403 sans vrai token)
             response = client.post(
-                f"/api/v1/admin/users/{fake_user_id}/approve",
+                f"{_V1}/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={"message": "Test message"},
                 timeout=5
@@ -115,7 +118,7 @@ class TestPendingValidationE2E:
             
             # Test de l'endpoint reject (doit retourner 401/403 sans vrai token)
             response = client.post(
-                f"/api/v1/admin/users/{fake_user_id}/reject",
+                f"{_V1}/admin/users/{fake_user_id}/reject",
                 headers=headers,
                 json={"reason": "Test reason"},
                 timeout=5
@@ -139,7 +142,7 @@ class TestPendingValidationE2E:
             
             # Test avec Content-Type correct
             response = client.post(
-                f"/api/v1/admin/users/{fake_user_id}/approve",
+                f"{_V1}/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={"message": "Test message"},
                 timeout=5
@@ -163,7 +166,7 @@ class TestPendingValidationE2E:
             
             # Test avec Content-Type incorrect
             response = client.post(
-                f"/api/v1/admin/users/{fake_user_id}/approve",
+                f"{_V1}/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 data="Test message",
                 timeout=5
@@ -187,7 +190,7 @@ class TestPendingValidationE2E:
             
             # Test avec JSON malformé
             response = client.post(
-                f"/api/v1/admin/users/{fake_user_id}/approve",
+                f"{_V1}/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 data="{ invalid json }",
                 timeout=5
@@ -211,7 +214,7 @@ class TestPendingValidationE2E:
             
             # Test avec données manquantes
             response = client.post(
-                f"/api/v1/admin/users/{fake_user_id}/approve",
+                f"{_V1}/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={},  # Pas de message
                 timeout=5
@@ -243,7 +246,7 @@ class TestPendingValidationE2E:
             
             for invalid_id in invalid_user_ids:
                 response = client.post(
-                    f"/api/v1/admin/users/{invalid_id}/approve",
+                    f"{_V1}/admin/users/{invalid_id}/approve",
                     headers=headers,
                     json={"message": "Test"},
                     timeout=5
@@ -265,7 +268,7 @@ class TestPendingValidationE2E:
             
             # Test de l'endpoint pending
             response = client.get(
-                "/api/v1/admin/users/pending",
+                f"{_V1}/admin/users/pending",
                 headers=headers,
                 timeout=5
             )
@@ -290,7 +293,7 @@ class TestPendingValidationE2E:
             
             # Test d'un endpoint qui devrait retourner une erreur
             response = client.post(
-                f"/api/v1/admin/users/{fake_user_id}/approve",
+                f"{_V1}/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={"message": "Test"},
                 timeout=5
@@ -318,7 +321,7 @@ class TestPendingValidationE2E:
             start_time = time.time()
             
             response = client.get(
-                "/api/v1/admin/users/pending",
+                f"{_V1}/admin/users/pending",
                 headers=headers,
                 timeout=10
             )
@@ -343,7 +346,7 @@ class TestPendingValidationE2E:
             
             # Test de preflight CORS
             response = client.options(
-                "/api/v1/admin/users/pending",
+                f"{_V1}/admin/users/pending",
                 headers=headers,
                 timeout=5
             )
@@ -367,7 +370,7 @@ class TestPendingValidationE2E:
     def test_endpoints_security_headers(self, client: TestClient):
         """Test des en-têtes de sécurité"""
         try:
-            response = client.get("/api/v1/admin/users/pending", timeout=5)
+            response = client.get(f"{_V1}/admin/users/pending", timeout=5)
             
             # Vérifier les en-têtes de sécurité
             security_headers = [
@@ -393,7 +396,7 @@ def run_e2e_tests():
     
     # Vérifier que l'API est accessible
     try:
-        response = client.get("/api/v1/health", timeout=5)
+        response = client.get(f"{_V1}/health", timeout=5)
         if response.status_code != 200:
             print("❌ L'API n'est pas accessible. Vérifiez que Docker est démarré.")
             return False
