@@ -31,6 +31,9 @@ Les rapports datés **2026-03-23** décrivent un audit brownfield de la base act
 - **`2026-03-23_audit-backend-data-1.4.4.md`** — Audit des modèles, migrations, accès aux données et cohérence SQLAlchemy/Alembic.
   _(Charger si : tu touches aux modèles, migrations, repositories ou à la stabilité des données.)_
 
+- **`2026-03-27_note-decision-db-migrations-legacy-1.4.5.md`** — Note de décision pour la phase finale DB/migrations: Alembic comme source de vérité, statut de `create_schema.py`, héritages legacy à inventorier et préchecks avant chantier dédié.
+  _(Charger si : tu dois lancer ou cadrer le chantier DB/migrations legacy sans le mélanger aux lots runtime.)_
+
 - **`2026-03-23_audit-backend-config-ops-1.4.4.md`** — Audit des dépendances, scripts, Docker, settings et cohérence d'exécution backend.
   _(Charger si : tu travailles sur l'environnement, le packaging, l'exécution locale/CI ou la configuration.)_
 
