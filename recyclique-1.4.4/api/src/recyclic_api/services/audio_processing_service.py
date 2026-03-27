@@ -230,19 +230,5 @@ audio_processing_service = AudioProcessingService()
 
 
 async def process_deposit_audio(audio_file_path: str) -> Dict[str, Any]:
-    """
-    Convenience function to process deposit audio files.
-
-    Args:
-        audio_file_path: Path to the audio file
-
-    Returns:
-        Processing results dictionary
-    """
+    """Compatibility helper used by older integrations and tests."""
     return await audio_processing_service.process_audio_file(audio_file_path)
-async def process_deposit_audio(audio_file_path: str) -> dict:
-    """Compatibility helper used by older integration tests.
-    Processes an audio file and returns classification results.
-    """
-    service = AudioProcessingService()
-    return await service.process_audio_file(audio_file_path)
