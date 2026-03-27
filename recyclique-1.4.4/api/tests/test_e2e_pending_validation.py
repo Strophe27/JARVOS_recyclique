@@ -3,6 +3,9 @@ Tests end-to-end pour la validation des inscriptions
 Story 3.3 - API et Interface pour la Validation des Inscriptions
 """
 
+import sys
+from pathlib import Path
+
 import pytest
 import uuid
 import asyncio
@@ -11,6 +14,10 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+
+_SRC = Path(__file__).resolve().parent.parent / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 from recyclic_api.core.config import settings
 
@@ -388,28 +395,5 @@ class TestPendingValidationE2E:
         except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-
-def run_e2e_tests():
-    """Fonction utilitaire pour exécuter les tests E2E"""
-    print("🧪 Exécution des tests end-to-end pour la validation des inscriptions")
-    print("=" * 70)
-    
-    # Vérifier que l'API est accessible
-    try:
-        response = client.get(f"{_V1}/health", timeout=5)
-        if response.status_code != 200:
-            print("❌ L'API n'est pas accessible. Vérifiez que Docker est démarré.")
-            return False
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Impossible de se connecter à l'API: {e}")
-        return False
-    
-    print("✅ API accessible, exécution des tests...")
-    return True
-
-
 if __name__ == "__main__":
-    if run_e2e_tests():
-        pytest.main([__file__, "-v", "--tb=short"])
-    else:
-        print("❌ Tests E2E non exécutés - API non accessible")
+    raise SystemExit(pytest.main([__file__, "-v", "--tb=short"]))
