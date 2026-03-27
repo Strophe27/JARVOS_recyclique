@@ -15,7 +15,7 @@ describe('Registration Workflow Integration', () => {
     vi.clearAllMocks()
   })
 
-  it('should complete registration and POST payload without telegram_id', async () => {
+  it('should complete registration and POST payload (champs publics uniquement)', async () => {
     vi.mocked(api.post).mockResolvedValue(mockApiResponses.registrationSuccess)
     render(<Registration />)
 

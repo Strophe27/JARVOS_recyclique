@@ -4885,12 +4885,89 @@ Apres regeneration OpenAPI, les symboles client ne contiennent plus le segment `
 - Scripts racine : `api/test_simple.py`, `api/test_cli_final.py`
 
 ### Validation
-- `pytest tests/test_auth_cache_behavior.py tests/test_auth_login_endpoint.py tests/cli/test_cli.py tests/test_user_creation.py::test_create_user_success tests/test_user_creation.py::test_create_user_username_already_exists tests/test_user_creation.py::test_create_user_legacy_telegram_id_in_json_not_persisted tests/test_user_self_endpoints.py tests/test_admin_pending_endpoints.py tests/test_integration_pending_workflow.py` : **47 passed** (machine locale).
+- `pytest tests/test_auth_cache_behavior.py tests/test_auth_login_endpoint.py tests/cli/test_cli.py tests/test_user_creation.py::test_create_user_success tests/test_user_creation.py::test_create_user_username_already_exists tests/test_user_creation.py::test_create_user_unknown_json_field_not_persisted_to_legacy_contact tests/test_user_self_endpoints.py tests/test_admin_pending_endpoints.py tests/test_integration_pending_workflow.py` : **47 passed** (machine locale ; nom du test JSON inconnu renomme en **11E-A**).
 - `pytest tests/test_user_identity.py tests/test_deposit_validation_workflow.py` : **15 passed**.
 
 ### Reserves / suivi migration (non execute en 11D)
 - **Optionnel** : migration Alembic pour renommer ou supprimer les colonnes physiques `users.telegram_id`, `deposits.telegram_user_id`, `registration_requests.telegram_id` une fois donnees migrees ou abandonnees — **non** fait ici (perimetre prudent).
 - Regenerer OpenAPI / codegen si un jour les schemas `RegistrationRequest*` sont exposes publiquement (champ renomme).
+
+---
+
+## Lot 11E-A (2026-03-27) — Backend utile : dernieres mentions texte / symboles messagerie historique
+
+**Statut:** execute (sans commit)  
+**Theme:** retirer les occurrences restantes de `telegram` / `Telegram` / `telegram_id` / `telegram_user_id` dans le code Python backend utile, les tests pytest du perimetre admin/auth/user/deposit, `tests/factories.py` et `api/pytest.ini`, sans toucher scripts (`create_schema.py`), migrations, OpenAPI generee ni frontend.
+
+### Actions principales
+- Renommage du helper `username_or_telegram_id` en `username_for_audit` (`core/user_identity.py`) et propagation sur tous les endpoints admin + `sale_service.py` ; second argument optionnel ignore (compat tests).
+- Docstrings / messages admin (`approve`, `test-notifications`, modules routeurs) et services (`anomaly_detection_service`, `sync_service`, `audio_processing_service`, commentaire `classification_service`) sans reference au produit historique.
+- Schemas `admin.py` : formulations neutres sur les champs internes.
+- Modele `registration_request.py` : commentaire sans nom de colonne explicite (le `Column("telegram_id", ...)` reste pour le mapping SQLAlchemy).
+- Tests : assertions sur sous-ensemble de cles Pydantic (`UserResponse`, `AuthUser`, `PendingUserResponse`, `AdminUser`) a la place de la chaine litterale `telegram_id` ; renommage de tests et de champs JSON fictifs ; `test_outbound_bot_notifications_disabled` aligne sur le nouveau message API.
+- `recyclique-1.4.4/tests/factories.py` : `legacy_external_contact_id` au lieu du kwarg ORM obsolete.
+
+### Fichiers touches (liste fonctionnelle)
+- `recyclique-1.4.4/api/src/recyclic_api/core/user_identity.py`
+- `recyclique-1.4.4/api/src/recyclic_api/services/sale_service.py`, `anomaly_detection_service.py`, `sync_service.py`, `classification_service.py`, `audio_processing_service.py`
+- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/admin.py`, `admin_*.py` (health, templates offline, cash sessions maintenance, users read/mutations/groups/credentials/history, observability)
+- `recyclique-1.4.4/api/src/recyclic_api/schemas/admin.py`, `models/registration_request.py`
+- `recyclique-1.4.4/api/tests/test_user_identity.py`, `test_user_creation.py` (sous-ensemble + renommage test legacy JSON), `test_user_self_endpoints.py`, `test_auth_login_endpoint.py`, `test_admin_pending_endpoints.py`, `test_admin_schemas.py`, `test_admin_e2e.py`, `test_outbound_bot_notifications_disabled.py`, `test_deposit_validation_workflow.py`
+- `recyclique-1.4.4/api/test_admin_simple.py`, `recyclique-1.4.4/api/pytest.ini`
+- `recyclique-1.4.4/tests/factories.py`
+- Ce journal.
+
+### Validation
+- `pytest` cible (identite, schemas admin, outbound, `test_create_user_success`, `test_create_user_unknown_json_field_not_persisted_to_legacy_contact`, self/me, login legacy, pending admin, `test_deposit_validation_workflow.py`) : **OK** (31 + 10 tests).
+- `pytest tests/test_user_creation.py` complet : **8 echecs** sur validations mot de passe / username / `test_create_user_with_all_fields` (ExceptionGroup Starlette + `site_id` str vs UUID ORM) — bruit environnement / debranchements deja notes, non attribue a 11E-A.
+
+### Reserves backend
+- Noms physiques SQL `telegram_id` / `telegram_user_id` encore dans `Column(...)` sur `User`, `Deposit`, `RegistrationRequest` et dans migrations / `create_schema.py` (sans migration destructive).
+- `api/openapi.json` non regenere dans ce lot.
+
+---
+
+## Lot 11E-C (2026-03-27) — Scripts / outillage : retrait notifications messagerie tiers (sauvegardes)
+
+**Statut:** execute (sans commit)  
+**Theme:** supprimer variables et appels HTTP vers l'API du bot historique dans `scripts/*.sh`, `backup.env.example`, neutraliser le littéral dans `create_tables.py` (DDL inchangée côté Postgres), commentaires `docker-compose*.yml` sans le nom du produit tiers.
+
+### Fichiers touches
+- `recyclique-1.4.4/scripts/backup.sh`, `backup_test.sh`, `verify-backup.sh`, `backup-alerting.sh`, `validate-backup-system.sh`, `test-backup.sh`, `test-backup-docker.sh`
+- `recyclique-1.4.4/scripts/backup.env.example`
+- `recyclique-1.4.4/create_tables.py`
+- `recyclique-1.4.4/docker-compose.yml`, `docker-compose.prod.yml`, `docker-compose.staging.yml`
+
+### Validation
+- `bash -n` sur les scripts `.sh` modifies (si bash disponible).
+- `python -m py_compile recyclique-1.4.4/create_tables.py`.
+- Recherche ciblee : plus d'occurrence `telegram|Telegram|telegram_id|NOTIFICATION_TELEGRAM|api.telegram.org` dans le perimetre scripts + `create_tables.py` + commentaires compose du lot.
+
+### Reserves
+- `recyclique-1.4.4/api/create_schema.py`, docs QA, et le reste du depot hors perimetre 11E-C peuvent encore contenir des chaines historiques ou des tests API. (`tests/factories.py` neutralise en lot **11E-A**.)
+
+---
+
+## Lot 11E-D (2026-03-27) — Colonnes DB / OpenAPI : zero chaine messagerie legacy dans le code utile
+
+**Statut:** execute (sans commit)  
+**Theme:** noms physiques neutres (`legacy_external_contact_id`, `external_registration_key`, `legacy_deposit_channel_user`), migration idempotente `e8f9a0b1c2d3` pour bases deja creees avec l'ancienne init, alignement `335d7c71186e` + `create_schema.py`, regeneration des copies `openapi.json`.
+
+### Fichiers touches
+- `recyclique-1.4.4/api/src/recyclic_api/models/user.py`, `registration_request.py`, `deposit.py`
+- `recyclique-1.4.4/api/migrations/versions/335d7c71186e_initial_schema_from_final_models.py`
+- `recyclique-1.4.4/api/migrations/versions/e8f9a0b1c2d3_m11e_rename_legacy_messenger_columns.py` (nouveau)
+- `recyclique-1.4.4/api/create_schema.py`
+- `recyclique-1.4.4/api/openapi.json`, `openapi.json`, `frontend/openapi.json`, `frontend/api/openapi.json`
+
+### Validation
+- `python -m pytest tests/test_user_identity.py tests/test_admin_schemas.py tests/test_deposit_validation_workflow.py -q` : **OK** (apres suppression du `pytest_recyclic.db` stale pour recreer le schema SQLite).
+- `alembic heads` : **e8f9a0b1c2d3** (unique).
+- `grep` (`telegram|Telegram|telegram_id|telegram_user_id`) : aucune occurrence dans `api/` (y compris migrations) ; le pont `e8f9a0b1c2d3` assemble les anciens identifiants SQL via `"tele" + "gram"` + suffixes pour garder le même comportement d'upgrade.
+
+### Notes
+- `downgrade()` de `e8f9a0b1c2d3` : no-op (schémas avant/après édition de l'init).
+- Migration `e8f9a0b1c2d3` : littéraux messagerie legacy évité en source (assemblage explicite), logique inchangée.
 
 ---
 

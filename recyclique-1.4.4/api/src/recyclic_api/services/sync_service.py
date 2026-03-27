@@ -173,7 +173,7 @@ class KDriveSyncService:
         remote_path: str,
         error: Exception | None,
     ) -> None:
-        """Journalise l'échec sync kDrive (canal Telegram / HTTP sortant retiré)."""
+        """Journalise l'échec sync kDrive (aucun canal de notification sortante)."""
         logger.warning(
             "kDrive upload failed after retries — no external alert channel (file=%s remote=%s err=%s)",
             local_file,

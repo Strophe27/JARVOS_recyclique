@@ -15,7 +15,7 @@ def UserFactory(**overrides) -> User:
         "role": UserRole.USER,
         "status": UserStatus.PENDING,
         "is_active": True,
-        "telegram_id": "100000000",  # numeric string to allow int() cast
+        "legacy_external_contact_id": "100000000",  # numeric string for legacy VARCHAR column
         "first_name": None,
         "last_name": None,
         "site_id": None,

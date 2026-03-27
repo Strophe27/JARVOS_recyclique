@@ -25,10 +25,10 @@ def test_admin_user_schema():
     assert admin_user.id == "123e4567-e89b-12d3-a456-426614174000"
     assert admin_user.role == UserRole.USER
     assert admin_user.status == UserStatus.APPROVED
-    assert "telegram_id" not in admin_user.model_dump()
+    assert set(admin_user.model_dump().keys()) <= set(AdminUser.model_fields)
 
 
-def test_pending_user_response_schema_no_telegram_id():
+def test_pending_user_response_schema_keys_match_model():
     row = PendingUserResponse(
         id="123e4567-e89b-12d3-a456-426614174000",
         username="pending_u",
@@ -39,7 +39,7 @@ def test_pending_user_response_schema_no_telegram_id():
         status=UserStatus.PENDING,
         created_at=datetime.now(),
     )
-    assert "telegram_id" not in row.model_dump()
+    assert set(row.model_dump().keys()) <= set(PendingUserResponse.model_fields)
 
 def test_user_role_update_schema():
     """Test du schéma UserRoleUpdate"""

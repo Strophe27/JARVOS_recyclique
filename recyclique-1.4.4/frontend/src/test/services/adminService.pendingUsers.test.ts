@@ -22,7 +22,7 @@ describe('AdminService pending users', () => {
     vi.clearAllMocks()
   })
 
-  it('mappe les utilisateurs en attente sans exposer telegram_id côté AdminUser', async () => {
+  it('mappe les utilisateurs en attente sans identifiant messager tiers côté AdminUser', async () => {
     mockPendingUsersApi.mockResolvedValue([
       {
         id: 'pending-1',

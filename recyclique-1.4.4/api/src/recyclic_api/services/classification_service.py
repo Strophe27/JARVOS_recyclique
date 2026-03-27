@@ -316,7 +316,7 @@ Si la confiance est >= 0.7, "alternatives" peut être null.
     #         # Configure recognition
     #         audio = speech.RecognitionAudio(content=content)
     #         config = speech.RecognitionConfig(
-    #             encoding=speech.RecognitionConfig.AudioEncoding.OGG_OPUS,  # Telegram audio format
+    #             encoding=speech.RecognitionConfig.AudioEncoding.OGG_OPUS,  # Opus / messages vocaux
     #             sample_rate_hertz=16000,
     #             language_code="fr-FR",  # French language
     #             alternative_language_codes=["en-US"],  # English fallback

@@ -52,9 +52,13 @@ describe('Registration Page', () => {
     expect(lastNameInput).toHaveValue('Doe')
   })
 
-  it('should ignore legacy telegram_id query param (no field)', () => {
-    renderWithRouter(<Registration />, '/inscription?telegram_id=123456789')
-    expect(screen.queryByLabelText(/telegram/i)).not.toBeInTheDocument()
+  it('should ignore unknown legacy query param (formulaire inchangé)', () => {
+    renderWithRouter(<Registration />, '/inscription?legacy_ext_uid=123456789')
+    expect(screen.getByLabelText(/^identifiant$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/prénom/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/nom de famille/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^téléphone$/i)).toBeInTheDocument()
   })
 
   it('should submit form with correct data', async () => {

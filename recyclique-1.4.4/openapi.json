@@ -4279,7 +4279,7 @@
           "admin"
         ],
         "summary": "Approuver un utilisateur (Admin)",
-        "description": "Approuve un utilisateur en attente (sans notification sortante Telegram)",
+        "description": "Approuve un utilisateur en attente (sans notification sortante externe)",
         "operationId": "approve_user_v1_admin_users__user_id__approve_post",
         "security": [
           {
@@ -4395,7 +4395,7 @@
           "admin"
         ],
         "summary": "Test des notifications (retiré)",
-        "description": "Ne déclenche plus d'envoi. Le test de notification sortante via Telegram / bot a été retiré du périmètre administrateur (cohérent avec le retrait du canal sortant).",
+        "description": "Ne déclenche plus d'envoi. Le test de notification sortante via canal automatisé a été retiré du périmètre administrateur (cohérent avec le retrait du canal sortant).",
         "operationId": "test_notifications_v1_admin_health_test_notifications_post",
         "responses": {
           "200": {
@@ -10691,7 +10691,7 @@
           "updated_at"
         ],
         "title": "AdminUser",
-        "description": "Schéma pour les utilisateurs dans l'interface d'administration (réponse JSON sans telegram_id)."
+        "description": "Schéma pour les utilisateurs dans l'interface d'administration (champs internes exclus)."
       },
       "AlertThresholds-Input": {
         "properties": {
@@ -15442,7 +15442,7 @@
           "created_at"
         ],
         "title": "PendingUserResponse",
-        "description": "Réponse utilisateurs en attente (sans telegram_id)."
+        "description": "Réponse utilisateurs en attente (champs internes exclus)."
       },
       "PermissionCreate": {
         "properties": {
@@ -17810,7 +17810,7 @@
           "updated_at"
         ],
         "title": "UserResponse",
-        "description": "Réponse API utilisateur (liste, détail, /me, création) : sans telegram_id."
+        "description": "Réponse API utilisateur (liste, détail, /me, création) : champs internes exclus."
       },
       "UserRole": {
         "type": "string",

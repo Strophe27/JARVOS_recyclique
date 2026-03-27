@@ -103,7 +103,7 @@ def upgrade() -> None:
     sa.Column('email', sa.String(), nullable=True),
     sa.Column('hashed_password', sa.String(), nullable=False),
     sa.Column('hashed_pin', sa.String(), nullable=True),
-    sa.Column('telegram_id', sa.String(), nullable=True),
+    sa.Column('legacy_external_contact_id', sa.String(), nullable=True),
     sa.Column('first_name', sa.String(), nullable=True),
     sa.Column('last_name', sa.String(), nullable=True),
     sa.Column('phone_number', sa.String(), nullable=True),
@@ -119,7 +119,7 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_users_telegram_id'), 'users', ['telegram_id'], unique=False)
+    op.create_index(op.f('ix_users_legacy_external_contact_id'), 'users', ['legacy_external_contact_id'], unique=False)
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('admin_settings',
     sa.Column('id', sa.UUID(), nullable=False),
@@ -169,7 +169,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('site_id', sa.UUID(), nullable=True),
-    sa.Column('telegram_user_id', sa.String(), nullable=True),
+    sa.Column('legacy_deposit_channel_user', sa.String(), nullable=True),
     sa.Column('audio_file_path', sa.String(), nullable=True),
     sa.Column('status', sa.Enum('PENDING_AUDIO', 'AUDIO_PROCESSING', 'PENDING_VALIDATION', 'CLASSIFICATION_FAILED', 'CLASSIFIED', 'VALIDATED', 'COMPLETED', name='depositstatus'), nullable=False),
     sa.Column('category', sa.Enum('SMALL_APPLIANCE', 'LARGE_APPLIANCE', 'IT_EQUIPMENT', 'LIGHTING', 'TOOLS', 'TOYS', 'MEDICAL_DEVICES', 'MONITORING_CONTROL', 'AUTOMATIC_DISPENSERS', 'OTHER', name='eeecategory'), nullable=True),
@@ -206,7 +206,7 @@ def upgrade() -> None:
     )
     op.create_table('registration_requests',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('telegram_id', sa.String(), nullable=False),
+    sa.Column('external_registration_key', sa.String(), nullable=False),
     sa.Column('username', sa.String(), nullable=True),
     sa.Column('first_name', sa.String(), nullable=True),
     sa.Column('last_name', sa.String(), nullable=True),
@@ -223,7 +223,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['site_id'], ['sites.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_registration_requests_telegram_id'), 'registration_requests', ['telegram_id'], unique=False)
+    op.create_index(op.f('ix_registration_requests_external_registration_key'), 'registration_requests', ['external_registration_key'], unique=False)
     op.create_table('user_groups',
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('group_id', sa.UUID(), nullable=False),
@@ -327,7 +327,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_user_status_history_changed_by_admin_id'), table_name='user_status_history')
     op.drop_table('user_status_history')
     op.drop_table('user_groups')
-    op.drop_index(op.f('ix_registration_requests_telegram_id'), table_name='registration_requests')
+    op.drop_index(op.f('ix_registration_requests_external_registration_key'), table_name='registration_requests')
     op.drop_table('registration_requests')
     op.drop_table('poste_reception')
     op.drop_table('group_permissions')
@@ -343,7 +343,7 @@ def downgrade() -> None:
     op.drop_table('audit_logs')
     op.drop_table('admin_settings')
     op.drop_index(op.f('ix_users_username'), table_name='users')
-    op.drop_index(op.f('ix_users_telegram_id'), table_name='users')
+    op.drop_index(op.f('ix_users_legacy_external_contact_id'), table_name='users')
     op.drop_table('users')
     op.drop_table('sync_logs')
     op.drop_table('sites')

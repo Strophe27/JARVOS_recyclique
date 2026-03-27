@@ -26,10 +26,8 @@ POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_DB="${POSTGRES_DB:-recyclic}"
 POSTGRES_USER="${POSTGRES_USER:-recyclic}"
 
-# Variables pour les notifications
+# Variables pour les notifications (e-mail uniquement)
 NOTIFICATION_EMAIL="${NOTIFICATION_EMAIL:-}"
-NOTIFICATION_TELEGRAM_TOKEN="${NOTIFICATION_TELEGRAM_TOKEN:-}"
-NOTIFICATION_TELEGRAM_CHAT_ID="${NOTIFICATION_TELEGRAM_CHAT_ID:-}"
 
 # Fonctions utilitaires
 log() {
@@ -59,21 +57,6 @@ send_notification() {
     if [ -n "$NOTIFICATION_EMAIL" ] && command -v mail >/dev/null 2>&1; then
         local subject="[Recyclic Backup Verification] $(if [ "$is_error" = "true" ]; then echo "ÉCHEC"; else echo "INFO"; fi)"
         echo "$message" | mail -s "$subject" "$NOTIFICATION_EMAIL" || true
-    fi
-
-    # Notification Telegram (si configurée)
-    if [ -n "$NOTIFICATION_TELEGRAM_TOKEN" ] && [ -n "$NOTIFICATION_TELEGRAM_CHAT_ID" ]; then
-        local emoji="✅"
-        if [ "$is_error" = "true" ]; then
-            emoji="❌"
-        elif [ "$is_error" = "false" ]; then
-            emoji="⚠️"
-        fi
-
-        curl -s -X POST "https://api.telegram.org/bot${NOTIFICATION_TELEGRAM_TOKEN}/sendMessage" \
-            -d "chat_id=${NOTIFICATION_TELEGRAM_CHAT_ID}" \
-            -d "text=${emoji} [Recyclic Backup Verification] $message" \
-            -d "parse_mode=HTML" >/dev/null 2>&1 || true
     fi
 }
 

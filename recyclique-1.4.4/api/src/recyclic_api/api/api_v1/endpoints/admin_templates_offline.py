@@ -1,5 +1,5 @@
 """
-Endpoints admin : template CSV réception offline (sans Telegram).
+Endpoints admin : template CSV réception offline.
 """
 
 from __future__ import annotations

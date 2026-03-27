@@ -1,16 +1,15 @@
 """Identifiants utilisateur pour journaux / audit (logique pure, sans ORM).
 
-Le nom ``username_or_telegram_id`` est historique ; un refactor d'import global
-(admin) est volontairement évité — le second argument reste ignoré.
+Libellé court : **username** non vide après ``strip`` uniquement. Un second argument
+optionnel reste accepté pour compatibilité d'appel historique et est **ignoré**.
 """
 
 
-def username_or_telegram_id(username: str | None, _telegram_id: str | None) -> str | None:
+def username_for_audit(username: str | None, _ignored_legacy_contact: str | None = None) -> str | None:
     """
     Chaîne d'audit / libellé court : **username** non vide après ``strip`` uniquement.
 
-    Le second argument reste pour la compatibilité d'appel historique et est **ignoré**
-    (ne plus servir de pseudo de secours dans les journaux).
+    Le second argument est **ignoré** (plus de repli sur un identifiant externe hérité).
     """
     if username is None:
         return None

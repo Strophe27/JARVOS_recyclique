@@ -264,7 +264,7 @@ class TestDepositValidationWorkflow:
 
 
 def test_openapi_has_no_x_bot_token_header(openapi_schema):
-    """Le contrat OpenAPI ne doit plus référencer l'en-tête bot (produit Telegram retiré)."""
+    """Le contrat OpenAPI ne doit plus référencer l'en-tête bot (intégration bot retirée)."""
     paths = openapi_schema["paths"]
     for path, path_item in paths.items():
         for method, operation in path_item.items():

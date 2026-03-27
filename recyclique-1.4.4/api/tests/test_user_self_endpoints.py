@@ -12,15 +12,15 @@ def _auth_headers_for(user_id: str):
 
 
 class TestUserSelfEndpoints:
-    def test_get_me_omits_telegram_id_even_when_set_in_db(self, client, db_session):
-        """GET /users/me ne doit pas exposer telegram_id (contrat UserResponse) ; la valeur reste en base."""
-        telegram_handle = "tg_me_alpha_42"
-        username = f"user_me_tg_{uuid4().hex[:12]}"
+    def test_get_me_json_matches_user_response_when_legacy_contact_set_in_db(self, client, db_session):
+        """GET /users/me : corps JSON aligné sur UserResponse ; identifiant externe hérité reste en base uniquement."""
+        legacy_contact_value = "legacy_me_alpha_42"
+        username = f"user_me_legacy_{uuid4().hex[:12]}"
         user = User(
             id=uuid4(),
             username=username,
             hashed_password=hash_password("StrongP@ssw0rd"),
-            legacy_external_contact_id=telegram_handle,
+            legacy_external_contact_id=legacy_contact_value,
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
             is_active=True,
@@ -34,9 +34,9 @@ class TestUserSelfEndpoints:
         assert resp.status_code == 200, resp.text
         data = resp.json()
         UserResponse.model_validate(data)
-        assert "telegram_id" not in data
+        assert set(data.keys()) <= set(UserResponse.model_fields)
         db_session.refresh(user)
-        assert user.legacy_external_contact_id == telegram_handle
+        assert user.legacy_external_contact_id == legacy_contact_value
 
     def test_update_me(self, client, db_session):
         user = User(

@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class AudioProcessingService:
     """
-    Service for processing audio files from Telegram deposits using LangChain.
+    Service for processing audio files attached to deposits using LangChain.
 
     This service follows the LangChain architecture with separate components:
     - Audio transcription (speech-to-text)

@@ -15,7 +15,7 @@ from recyclic_api.main import app
 _V1 = settings.API_V1_STR.rstrip("/")
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
-from recyclic_api.schemas.auth import LoginResponse
+from recyclic_api.schemas.auth import AuthUser, LoginResponse
 
 
 class TestAuthLoginEndpoint:
@@ -70,15 +70,17 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
 
-    def test_login_success_user_with_telegram_in_db_omits_telegram_in_auth_payload(self, client: TestClient, db_engine, db_session: Session):
-        """Le contrat login (AuthUser) n'expose plus telegram_id même si la ligne user en base en a un."""
-        username = f"testuser_tg_alpha_{uuid.uuid4().hex}"
-        telegram_handle = "tg_login_alpha_42"
+    def test_login_success_auth_user_payload_excludes_internal_fields_when_legacy_in_db(
+        self, client: TestClient, db_engine, db_session: Session
+    ):
+        """Le contrat login (AuthUser) n'inclut que les champs du schéma même si la ligne user a un contact externe hérité."""
+        username = f"testuser_legacy_alpha_{uuid.uuid4().hex}"
+        legacy_contact_value = "legacy_login_alpha_42"
         hashed_password = hash_password("testpassword123")
         test_user = User(
             username=username,
             hashed_password=hashed_password,
-            legacy_external_contact_id=telegram_handle,
+            legacy_external_contact_id=legacy_contact_value,
             role=UserRole.USER,
             status=UserStatus.APPROVED,
             is_active=True,
@@ -95,7 +97,7 @@ class TestAuthLoginEndpoint:
         assert response.status_code == 200, response.text
         data = response.json()
         LoginResponse(**data)
-        assert "telegram_id" not in data["user"]
+        assert set(data["user"].keys()) <= set(AuthUser.model_fields)
 
     def test_login_failure_invalid_username(self, client: TestClient, db_engine, db_session: Session):
         """Test d'échec de connexion avec un nom d'utilisateur invalide"""

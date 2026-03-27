@@ -21,7 +21,7 @@ from slowapi import Limiter
 from recyclic_api.core.audit import log_admin_access
 from recyclic_api.core.auth import require_admin_role_strict
 from recyclic_api.core.database import get_db
-from recyclic_api.core.user_identity import username_or_telegram_id
+from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.core.logging import TRANSACTION_LOG_FILE
 from recyclic_api.models.user import User
 from recyclic_api.schemas.email_log import EmailLogListResponse
@@ -327,9 +327,7 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                 f"Audit log accessed by admin {current_user.id}",
                 extra={
                     "admin_user_id": str(current_user.id),
-                    "admin_username": username_or_telegram_id(
-                        current_user.username, None
-                    ),
+                    "admin_username": username_for_audit(current_user.username),
                     "action": "audit_log_access",
                     "filters": {
                         "action_type": action_type,
@@ -399,9 +397,7 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(
-                    current_user.username, None
-                ),
+                username=username_for_audit(current_user.username),
                 endpoint="get_email_logs",
                 success=True,
                 db=db,

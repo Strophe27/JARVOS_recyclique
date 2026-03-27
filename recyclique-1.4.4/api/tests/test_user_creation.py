@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.config import settings
+from recyclic_api.schemas.user import UserResponse
 
 _USERS_ROOT = f"{settings.API_V1_STR.rstrip('/')}/users/"
 
@@ -33,7 +34,7 @@ def test_create_user_success(client: TestClient, db_session: Session):
     assert data["role"] == "user"
     assert data["status"] == "pending"
     assert data["is_active"] is True
-    assert "telegram_id" not in data
+    assert set(data.keys()) <= set(UserResponse.model_fields)
     assert "hashed_password" not in data  # Le mot de passe ne doit pas être dans la réponse
 
     # Vérifier que l'utilisateur existe en base
@@ -305,20 +306,20 @@ def test_create_user_with_all_fields(client: TestClient, db_session: Session):
     assert str(user.site_id) == "550e8400-e29b-41d4-a716-446655440000"
 
 
-def test_create_user_legacy_telegram_id_in_json_not_persisted(client: TestClient, db_session: Session):
-    """Champ telegram_id absent du schéma : le JSON client est ignoré par Pydantic, pas d'écriture en base."""
+def test_create_user_unknown_json_field_not_persisted_to_legacy_contact(client: TestClient, db_session: Session):
+    """Champ inconnu absent du schéma : le JSON client est ignoré par Pydantic, pas d'écriture en base."""
     response = client.post(
         _USERS_ROOT,
         json={
-            "username": "no_tg_from_body",
+            "username": "no_extra_from_body",
             "password": "SecurePass123!",
             "role": "user",
             "status": "pending",
             "is_active": True,
-            "telegram_id": "should_not_apply",
+            "client_only_unknown_field": "should_not_apply",
         },
     )
     assert response.status_code == 200
-    user = db_session.query(User).filter(User.username == "no_tg_from_body").first()
+    user = db_session.query(User).filter(User.username == "no_extra_from_body").first()
     assert user is not None
     assert user.legacy_external_contact_id is None

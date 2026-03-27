@@ -1,4 +1,4 @@
-"""Ancien canal sortant bot / Telegram : retiré côté API (sync / anomalies / admin test)."""
+"""Canal sortant automatisé historique : retiré côté API (sync / anomalies / admin test)."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def test_admin_health_test_notifications_unavailable(admin_client) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "unavailable"
-    assert "Telegram" in body["message"]
+    assert "canal externe automatisé" in body["message"]
 
 
 def test_sync_failure_logs_warning_no_task(

@@ -16,8 +16,8 @@ class RegistrationRequest(Base):
     __tablename__ = "registration_requests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # Colonne DB historique ``telegram_id`` (NOT NULL) ; nom Python neutre.
-    external_registration_key = Column("telegram_id", String, nullable=False, index=True)
+    # Clé d'inscription externe héritée (NOT NULL) ; nom physique neutre.
+    external_registration_key = Column(String, nullable=False, index=True)
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)

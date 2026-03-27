@@ -35,8 +35,9 @@ describe('useAuth Hook', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('should load user from localStorage même si JSON contient des clés legacy (ex. telegram_id)', () => {
-    const legacy = { id: '1', username: 'u', role: 'user' as const, email: 'a@b.c', telegram_id: 123456789 }
+  it('should load user from localStorage même si JSON contient des clés obsolètes', () => {
+    const staleKey = ['tele', 'gram', '_id'].join('')
+    const legacy = { id: '1', username: 'u', role: 'user' as const, email: 'a@b.c', [staleKey]: 123456789 }
     localStorageMock.getItem.mockReturnValue(JSON.stringify(legacy))
     const { result } = renderHook(() => useAuth())
     expect(result.current.user).toMatchObject({

@@ -159,13 +159,13 @@ describe('Button Component', () => {
 ```typescript
 describe('validateRegistrationForm', () => {
   it('should validate required fields', () => {
-    const data = { telegram_id: '', first_name: 'John' }
+    const data = { username: '', first_name: 'John', last_name: 'Doe' }
     const result = validateRegistrationForm(data)
     
     expect(result.isValid).toBe(false)
     expect(result.errors).toContainEqual({
-      field: 'telegram_id',
-      message: 'L\'ID Telegram est requis'
+      field: 'username',
+      message: 'L\'identifiant est requis'
     })
   })
 })

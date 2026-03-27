@@ -33,10 +33,8 @@ BACKUP_REMOTE_USER="${BACKUP_REMOTE_USER:-}"
 BACKUP_REMOTE_PATH="${BACKUP_REMOTE_PATH:-/backups/recyclic}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
 
-# Notification (optionnelle)
+# Notification (optionnelle, e-mail uniquement)
 NOTIFICATION_EMAIL="${NOTIFICATION_EMAIL:-}"
-NOTIFICATION_TELEGRAM_TOKEN="${NOTIFICATION_TELEGRAM_TOKEN:-}"
-NOTIFICATION_TELEGRAM_CHAT_ID="${NOTIFICATION_TELEGRAM_CHAT_ID:-}"
 
 # Fonctions utilitaires
 log() {
@@ -56,19 +54,6 @@ send_notification() {
     if [ -n "$NOTIFICATION_EMAIL" ] && command -v mail >/dev/null 2>&1; then
         local subject="[Recyclic Backup] $(if [ "$is_error" = "true" ]; then echo "ÉCHEC"; else echo "SUCCÈS"; fi)"
         echo "$message" | mail -s "$subject" "$NOTIFICATION_EMAIL" || true
-    fi
-    
-    # Notification Telegram (si configurée)
-    if [ -n "$NOTIFICATION_TELEGRAM_TOKEN" ] && [ -n "$NOTIFICATION_TELEGRAM_CHAT_ID" ]; then
-        local emoji="✅"
-        if [ "$is_error" = "true" ]; then
-            emoji="❌"
-        fi
-        
-        curl -s -X POST "https://api.telegram.org/bot${NOTIFICATION_TELEGRAM_TOKEN}/sendMessage" \
-            -d "chat_id=${NOTIFICATION_TELEGRAM_CHAT_ID}" \
-            -d "text=${emoji} [Recyclic Backup] $message" \
-            -d "parse_mode=HTML" >/dev/null 2>&1 || true
     fi
 }
 

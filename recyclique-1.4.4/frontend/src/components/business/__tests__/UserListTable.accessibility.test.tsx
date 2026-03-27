@@ -238,7 +238,7 @@ describe('UserListTable Accessibility Tests', () => {
     });
   });
 
-  it('affiche le libelle centralise sans Telegram quand full_name vide (repli id)', () => {
+  it('affiche le libellé centralisé avec repli id quand full_name vide', () => {
     const minimalRow: AdminUser[] = [
       {
         id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',

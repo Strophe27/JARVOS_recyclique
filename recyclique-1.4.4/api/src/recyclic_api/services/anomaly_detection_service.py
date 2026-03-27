@@ -449,7 +449,7 @@ class AnomalyDetectionService:
 
     async def send_anomaly_notifications(self, anomalies: Dict[str, Any]) -> bool:
         """
-        Enregistre un résumé des anomalies (canal Telegram / HTTP sortant retiré).
+        Enregistre un résumé des anomalies (aucun canal HTTP de notification sortante).
 
         Args:
             anomalies: Résultats de la détection d'anomalies

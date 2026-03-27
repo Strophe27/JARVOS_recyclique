@@ -2,19 +2,19 @@
 
 import pytest
 
-from recyclic_api.core.user_identity import username_or_telegram_id
+from recyclic_api.core.user_identity import username_for_audit
 
 
 @pytest.mark.no_db
 @pytest.mark.parametrize(
-    "username,telegram_id,expected",
+    "username,ignored_legacy_contact,expected",
     [
         ("alice", "123", "alice"),
-        ("", "tg42", None),
+        ("", "ext42", None),
         (None, "999", None),
         (None, None, None),
         ("  bob  ", "x", "bob"),
     ],
 )
-def test_username_or_telegram_id_username_only_no_telegram_fallback(username, telegram_id, expected):
-    assert username_or_telegram_id(username, telegram_id) == expected
+def test_username_for_audit_username_only_no_legacy_fallback(username, ignored_legacy_contact, expected):
+    assert username_for_audit(username, ignored_legacy_contact) == expected

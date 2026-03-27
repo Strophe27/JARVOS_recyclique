@@ -123,7 +123,7 @@ class TestAdminE2E:
         for user_data in data:
             try:
                 validated_user = AdminUser(**user_data)
-                assert "telegram_id" not in user_data
+                assert set(user_data.keys()) <= set(AdminUser.model_fields)
                 # Vérifications supplémentaires sur le contenu
                 assert validated_user.id is not None
                 assert validated_user.role in [role.value for role in UserRole]
@@ -149,7 +149,7 @@ class TestAdminE2E:
         for user_data in data:
             try:
                 validated_user = AdminUser(**user_data)
-                assert "telegram_id" not in user_data
+                assert set(user_data.keys()) <= set(AdminUser.model_fields)
                 # Vérifier que tous les utilisateurs retournés ont le rôle "user"
                 assert validated_user.role == UserRole.USER
                 assert validated_user.id is not None
@@ -173,7 +173,7 @@ class TestAdminE2E:
         for user_data in data:
             try:
                 validated_user = AdminUser(**user_data)
-                assert "telegram_id" not in user_data
+                assert set(user_data.keys()) <= set(AdminUser.model_fields)
                 assert validated_user.status in [UserStatus.APPROVED, UserStatus.ACTIVE]
                 assert validated_user.id is not None
                 assert validated_user.role in [role.value for role in UserRole]

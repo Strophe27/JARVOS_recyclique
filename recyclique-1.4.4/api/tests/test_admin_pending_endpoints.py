@@ -12,6 +12,7 @@ from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import create_access_token
 from recyclic_api.core.config import settings
+from recyclic_api.schemas.admin import PendingUserResponse
 from tests.factories import UserFactory
 
 _ADMIN_USERS = f"{settings.API_V1_STR.rstrip('/')}/admin/users"
@@ -38,14 +39,16 @@ class TestPendingUsersEndpoints:
         assert isinstance(data, list)
         assert len(data) == 1
         assert data[0]['status'] == UserStatus.PENDING.value
-        assert "telegram_id" not in data[0]
+        assert set(data[0].keys()) <= set(PendingUserResponse.model_fields)
         assert data[0]["id"] == str(u_pending.id)
 
-    def test_get_pending_users_omits_telegram_id_when_set_in_db(self, admin_client: TestClient, db_session: Session):
-        """La réponse pending n'expose pas telegram_id même si renseigné en base."""
+    def test_get_pending_users_json_matches_schema_when_legacy_contact_in_db(
+        self, admin_client: TestClient, db_session: Session
+    ):
+        """La réponse pending reste alignée sur PendingUserResponse même si un contact externe hérité est en base."""
         pending_user = UserFactory(
             status=UserStatus.PENDING,
-            legacy_external_contact_id="tg_pending_alpha",
+            legacy_external_contact_id="legacy_pending_alpha",
         )
         db_session.add(pending_user)
         db_session.commit()
@@ -56,9 +59,9 @@ class TestPendingUsersEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
-        assert "telegram_id" not in data[0]
+        assert set(data[0].keys()) <= set(PendingUserResponse.model_fields)
         db_session.refresh(pending_user)
-        assert pending_user.legacy_external_contact_id == "tg_pending_alpha"
+        assert pending_user.legacy_external_contact_id == "legacy_pending_alpha"
 
     def test_get_pending_users_empty_list_returns_empty(self, admin_client: TestClient, db_session: Session):
         """Teste que la récupération des utilisateurs en attente retourne une liste vide s'il n'y en a pas."""

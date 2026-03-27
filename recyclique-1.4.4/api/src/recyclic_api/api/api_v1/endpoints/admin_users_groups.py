@@ -1,7 +1,7 @@
 """
 Endpoints admin : assignation des groupes utilisateur (PUT /users/{id}/groups).
 
-Hors Telegram et hors credentials.
+Hors credentials (groupes uniquement).
 Préfixe routeur : /admin.
 """
 
@@ -13,7 +13,7 @@ from slowapi import Limiter
 
 from recyclic_api.core.audit import log_admin_access, log_role_change
 from recyclic_api.core.auth import require_admin_role
-from recyclic_api.core.user_identity import username_or_telegram_id
+from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.core.database import get_db
 from recyclic_api.models.user import User
 from recyclic_api.schemas.admin import AdminResponse
@@ -41,7 +41,7 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
             # Log de l'accès admin
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint="/admin/users/{user_id}/groups",
                 success=True,
             )
@@ -60,7 +60,7 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
                 # Log de l'échec
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, None),
+                    username=username_for_audit(current_user.username),
                     endpoint="/admin/users/{user_id}/groups",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -105,9 +105,9 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
             # Log de la modification des groupes
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=username_or_telegram_id(current_user.username, None) or "",
+                admin_username=username_for_audit(current_user.username) or "",
                 target_user_id=str(user.id),
-                target_username=username_or_telegram_id(user.username, None),
+                target_username=username_for_audit(user.username),
                 old_role=f"groups={previous_group_names}",
                 new_role=f"groups={[g.name for g in existing_groups]}",
                 success=True,
@@ -120,7 +120,7 @@ def register_admin_users_groups_routes(router: APIRouter, limiter: Limiter) -> N
                 else user.first_name or user.last_name
             )
             group_names = [group.name for group in existing_groups]
-            display = full_name or username_or_telegram_id(user.username, None)
+            display = full_name or username_for_audit(user.username)
             msg = (
                 f"Groupes de l'utilisateur {display} mis à jour avec succès"
                 if display

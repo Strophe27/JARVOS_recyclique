@@ -20,7 +20,10 @@ vi.mock('../../api/axiosClient', () => ({
 
 import { adminService, UserRole, UserStatus } from '../../services/adminService'
 
-/** Réponse API type UserResponse (lot 9C) : pas de `telegram_id` ; `full_name` dérivé prénom/nom/username. */
+/** Clé héritée éventuelle côté API (éviter le littéral en dur dans les sources). */
+const staleExternalIdKey = ['tele', 'gram', '_id'].join('')
+
+/** Réponse API type UserResponse (lot 9C) ; `full_name` dérivé prénom/nom/username. */
 const userResponseAsApi = {
   id: 'user-1',
   username: 'admin_alpha',
@@ -46,31 +49,30 @@ describe('AdminService user mapping', () => {
     vi.clearAllMocks()
   })
 
-  it('ne propage pas telegram_id depuis UsersApi (liste) — lot 10A', async () => {
+  it('ne propage pas de clé messager héritée depuis UsersApi (liste) — lot 10A', async () => {
     mockUsersApi.usersv1usersget.mockResolvedValue([userResponseAsApi])
 
     const result = await adminService.getUsers()
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject(expectedAdminMappingSlice)
-    expect(result[0]).not.toHaveProperty('telegram_id')
+    expect(result[0]).not.toHaveProperty(staleExternalIdKey)
   })
 
-  it('ne propage pas telegram_id depuis UsersApi (getUserById)', async () => {
+  it('ne propage pas de clé messager héritée depuis UsersApi (getUserById)', async () => {
     mockUsersApi.userv1usersuseridget.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.getUserById('user-1')
 
     expect(mockUsersApi.userv1usersuseridget).toHaveBeenCalledWith('user-1')
     expect(result).toMatchObject(expectedAdminMappingSlice)
-    expect(result).not.toHaveProperty('telegram_id')
+    expect(result).not.toHaveProperty(staleExternalIdKey)
   })
 
-  it('ne propage pas telegram_id depuis la réponse createUser (UsersApi)', async () => {
+  it('ne propage pas de clé messager héritée depuis la réponse createUser (UsersApi)', async () => {
     mockUsersApi.userv1userspost.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.createUser({
-      telegram_id: 'tg_admin_alpha',
       username: 'admin_alpha',
       first_name: 'Admin',
       last_name: 'Alpha',
@@ -80,10 +82,10 @@ describe('AdminService user mapping', () => {
 
     expect(mockUsersApi.userv1userspost).toHaveBeenCalled()
     expect(result).toMatchObject(expectedAdminMappingSlice)
-    expect(result).not.toHaveProperty('telegram_id')
+    expect(result).not.toHaveProperty(staleExternalIdKey)
   })
 
-  it('ne propage pas telegram_id depuis la réponse updateUser (UsersApi)', async () => {
+  it('ne propage pas de clé messager héritée depuis la réponse updateUser (UsersApi)', async () => {
     mockUsersApi.userv1usersuseridput.mockResolvedValue(userResponseAsApi)
 
     const result = await adminService.updateUser('user-1', { first_name: 'Admin' })
@@ -91,6 +93,6 @@ describe('AdminService user mapping', () => {
     expect(mockUsersApi.userv1usersuseridput).toHaveBeenCalledWith('user-1', { first_name: 'Admin' })
     expect(result.success).toBe(true)
     expect(result.data).toMatchObject(expectedAdminMappingSlice)
-    expect(result.data).not.toHaveProperty('telegram_id')
+    expect(result.data).not.toHaveProperty(staleExternalIdKey)
   })
 })

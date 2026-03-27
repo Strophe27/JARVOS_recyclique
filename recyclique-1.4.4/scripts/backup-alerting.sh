@@ -26,10 +26,8 @@ ALERT_BACKUP_AGE_WARNING="${ALERT_BACKUP_AGE_WARNING:-6}"    # heures
 ALERT_DISK_SPACE_CRITICAL="${ALERT_DISK_SPACE_CRITICAL:-1048576}"  # KB (1GB)
 ALERT_DISK_SPACE_WARNING="${ALERT_DISK_SPACE_WARNING:-5242880}"    # KB (5GB)
 
-# Variables de notification (héritées de backup.sh)
+# Variables de notification (héritées de backup.sh, e-mail uniquement)
 NOTIFICATION_EMAIL="${NOTIFICATION_EMAIL:-}"
-NOTIFICATION_TELEGRAM_TOKEN="${NOTIFICATION_TELEGRAM_TOKEN:-}"
-NOTIFICATION_TELEGRAM_CHAT_ID="${NOTIFICATION_TELEGRAM_CHAT_ID:-}"
 
 # Fonctions utilitaires
 log() {
@@ -54,14 +52,6 @@ send_notification() {
     if [ -n "$NOTIFICATION_EMAIL" ] && command -v mail >/dev/null 2>&1; then
         local subject="[Recyclic Backup $priority] $(date '+%Y-%m-%d %H:%M')"
         echo "$message" | mail -s "$subject" "$NOTIFICATION_EMAIL" || log "Échec envoi email"
-    fi
-
-    # Notification Telegram
-    if [ -n "$NOTIFICATION_TELEGRAM_TOKEN" ] && [ -n "$NOTIFICATION_TELEGRAM_CHAT_ID" ]; then
-        curl -s -X POST "https://api.telegram.org/bot${NOTIFICATION_TELEGRAM_TOKEN}/sendMessage" \
-            -d "chat_id=${NOTIFICATION_TELEGRAM_CHAT_ID}" \
-            -d "text=${emoji} [Recyclic Backup] $message" \
-            -d "parse_mode=HTML" >/dev/null 2>&1 || log "Échec envoi Telegram"
     fi
 
     # Log dans syslog si disponible

@@ -70,13 +70,15 @@ describe('Public Routes Integration Tests', () => {
     })
 
     it('should render registration page with legacy query params without authentication', async () => {
-      renderAppWithRoute('/inscription?telegram_id=123456789')
+      renderAppWithRoute('/inscription?legacy_ext_uid=123456789')
 
       await waitFor(() => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      expect(screen.queryByLabelText(/telegram/i)).not.toBeInTheDocument()
+      expect(screen.getByLabelText(/^identifiant$/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/prénom/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/nom de famille/i)).toBeInTheDocument()
     })
 
     it('should not redirect to login page when accessing registration route', async () => {
@@ -163,14 +165,15 @@ describe('Public Routes Integration Tests', () => {
       expect(screen.getByRole('button', { name: /envoyer la demande/i })).toBeInTheDocument()
     })
 
-    it('should load registration with query string without binding telegram_id to a field', async () => {
-      renderAppWithRoute('/inscription?telegram_id=987654321&ref=telegram')
+    it('should load registration with query string without binding unknown params to a field', async () => {
+      renderAppWithRoute('/inscription?legacy_ext_uid=987654321&ref=portal')
 
       await waitFor(() => {
         expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
-      expect(screen.queryByLabelText(/telegram/i)).not.toBeInTheDocument()
+      expect(screen.getByLabelText(/^identifiant$/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument()
     })
   })
 })

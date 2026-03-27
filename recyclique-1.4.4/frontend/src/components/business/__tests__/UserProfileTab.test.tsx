@@ -60,7 +60,7 @@ describe('UserProfileTab', () => {
     expect(screen.getByText('Oui')).toBeInTheDocument();
   });
 
-  it('sans username : pas de @ Telegram, libellé explicite', () => {
+  it('sans username : pas de préfixe @, libellé explicite', () => {
     renderWithProvider(
       <UserProfileTab
         user={{
@@ -71,7 +71,7 @@ describe('UserProfileTab', () => {
     );
 
     expect(screen.getByText('Pas de nom d’utilisateur')).toBeInTheDocument();
-    expect(screen.queryByText('ID Telegram:')).not.toBeInTheDocument();
+    expect(screen.queryByText(/@testuser/)).not.toBeInTheDocument();
   });
 
   it('affiche le bouton de modification', () => {

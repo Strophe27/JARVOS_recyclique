@@ -86,7 +86,7 @@ services:
       - "traefik.http.services.recyclic-api-prod.loadbalancer.server.port=8000"
     restart: unless-stopped
 
-  # Ancien service Telegram bot retire (paquet assainissement 1.4.5, 2026-03-26).
+  # Emplacement laissé vide : ancien bot de notification tiers retiré (assainissement 1.4.5, 2026-03-26).
 
   # Service dédié pour les migrations Alembic
   api-migrations:

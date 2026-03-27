@@ -46,12 +46,12 @@ def main():
             );
         """))
 
-        # Create users table
+        # Create users table (aligné modèles M11E : colonne legacy optionnelle, non exposée API)
         print("Creating users table...")
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS users (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                telegram_id VARCHAR UNIQUE NOT NULL,
+                legacy_external_contact_id VARCHAR,
                 username VARCHAR,
                 first_name VARCHAR,
                 last_name VARCHAR,
@@ -92,9 +92,9 @@ def main():
             END $$;
         """))
         
-        # Create index
         conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users(telegram_id);
+            CREATE INDEX IF NOT EXISTS ix_users_legacy_external_contact_id
+            ON users(legacy_external_contact_id);
         """))
         
         conn.commit()

@@ -18,11 +18,14 @@ test.describe('Public Registration Route', () => {
     await expect(page).not.toHaveURL('**/login');
   });
 
-  test('legacy telegram_id query param does not surface a Telegram field', async ({ page }) => {
-    await page.goto('/inscription?telegram_id=123456789');
+  test('paramètre de requête inconnu ne ajoute pas de champ au formulaire', async ({ page }) => {
+    await page.goto('/inscription?legacy_ext_uid=123456789');
     await expect(page.locator('h1')).toContainText('📝 Inscription RecyClique');
     await expect(page.getByLabel('Identifiant')).toBeVisible();
-    await expect(page.getByLabel(/telegram/i)).toHaveCount(0);
+    await expect(page.getByLabel(/Prénom/i)).toBeVisible();
+    await expect(page.getByLabel(/Nom de famille/i)).toBeVisible();
+    await expect(page.getByLabel(/^Email$/i)).toBeVisible();
+    await expect(page.getByLabel(/^Téléphone$/i)).toBeVisible();
   });
 
   test('should not redirect to login when accessing registration', async ({ page }) => {

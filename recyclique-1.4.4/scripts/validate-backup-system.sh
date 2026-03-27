@@ -207,17 +207,6 @@ test_external_storage() {
 test_notifications() {
     log "=== Tests de Notifications ==="
     
-    if [ -n "${NOTIFICATION_TELEGRAM_TOKEN:-}" ] && [ -n "${NOTIFICATION_TELEGRAM_CHAT_ID:-}" ]; then
-        # Tester l'API Telegram
-        if curl -s "https://api.telegram.org/bot${NOTIFICATION_TELEGRAM_TOKEN}/getMe" | grep -q "ok.*true"; then
-            success "Token Telegram valide"
-        else
-            error "Token Telegram invalide"
-        fi
-    else
-        warn "Notifications Telegram non configurées"
-    fi
-    
     if [ -n "${NOTIFICATION_EMAIL:-}" ]; then
         if command -v mail >/dev/null 2>&1; then
             success "Système de mail configuré"

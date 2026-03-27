@@ -1,7 +1,7 @@
 """
 Endpoints admin : credentials utilisateur (reset e-mail, forçage mot de passe, reset PIN).
 
-Hors Telegram et hors approve/reject. Préfixe routeur : /admin.
+Hors approve/reject (gérés dans `admin`) : reset mot de passe / PIN. Préfixe routeur : /admin.
 """
 
 import logging
@@ -16,7 +16,7 @@ from slowapi import Limiter
 from recyclic_api.core.audit import AuditActionType, log_admin_access, log_audit, log_role_change
 from recyclic_api.core.auth import require_admin_role, require_admin_role_strict, send_reset_password_email
 from recyclic_api.core.database import get_db
-from recyclic_api.core.user_identity import username_or_telegram_id
+from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.schemas.admin import AdminResponse, ForcePasswordRequest
@@ -63,8 +63,8 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
 
             await send_reset_password_email(user.email, db)
 
-            target_u = username_or_telegram_id(user.username, None)
-            admin_u = username_or_telegram_id(current_user.username, None)
+            target_u = username_for_audit(user.username)
+            admin_u = username_for_audit(current_user.username)
             log_audit(
                 action_type=AuditActionType.PASSWORD_RESET,
                 actor=current_user,
@@ -119,7 +119,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
 
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint=f"/admin/users/{user_id}/force-password",
                 success=True,
             )
@@ -136,7 +136,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             if not target_user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, None),
+                    username=username_for_audit(current_user.username),
                     endpoint=f"/admin/users/{user_id}/force-password",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -172,9 +172,9 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=username_or_telegram_id(current_user.username, None) or "",
+                admin_username=username_for_audit(current_user.username) or "",
                 target_user_id=str(target_user.id),
-                target_username=username_or_telegram_id(target_user.username, None),
+                target_username=username_for_audit(target_user.username),
                 old_role="password_forced",
                 new_role="new_password_set_by_super_admin",
                 success=True,
@@ -194,8 +194,8 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             db.add(password_force_history)
             db.commit()
 
-            target_u = username_or_telegram_id(target_user.username, None)
-            admin_u = username_or_telegram_id(current_user.username, None)
+            target_u = username_for_audit(target_user.username)
+            admin_u = username_for_audit(current_user.username)
             log_audit(
                 action_type=AuditActionType.PASSWORD_FORCED,
                 actor=current_user,
@@ -243,7 +243,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
         except Exception as e:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint=f"/admin/users/{user_id}/force-password",
                 success=False,
                 error_message=str(e),
@@ -270,7 +270,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint=f"/admin/users/{user_id}/reset-pin",
                 success=True,
             )
@@ -287,7 +287,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             if not target_user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, None),
+                    username=username_for_audit(current_user.username),
                     endpoint=f"/admin/users/{user_id}/reset-pin",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -300,8 +300,8 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
             target_user.hashed_pin = None
             db.commit()
 
-            target_u = username_or_telegram_id(target_user.username, None)
-            admin_u = username_or_telegram_id(current_user.username, None)
+            target_u = username_for_audit(target_user.username)
+            admin_u = username_for_audit(current_user.username)
             log_audit(
                 action_type=AuditActionType.PIN_RESET,
                 actor=current_user,
@@ -352,7 +352,7 @@ def register_admin_users_credentials_routes(router: APIRouter, limiter: Limiter)
         except Exception as e:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint=f"/admin/users/{user_id}/reset-pin",
                 success=False,
                 error_message=str(e),

@@ -30,8 +30,8 @@ class User(Base):
     email = Column(String, unique=False, nullable=True)
     hashed_password = Column(String, nullable=False)
     hashed_pin = Column(String, nullable=True)
-    # Colonne DB historique ; ne pas exposer via API ni cache (nom Python neutre).
-    legacy_external_contact_id = Column("telegram_id", String, unique=False, nullable=True, index=True)
+    # Colonne DB historique ; ne pas exposer via API ni cache (nom physique neutre).
+    legacy_external_contact_id = Column(String, unique=False, nullable=True, index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     # Profile enrichment fields (all optional)

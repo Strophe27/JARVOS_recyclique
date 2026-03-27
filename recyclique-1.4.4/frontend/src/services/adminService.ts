@@ -72,8 +72,7 @@ export type AdminUser = GeneratedAdminUser & {
   availability?: string | null;
 };
 
-// Helper pour convertir UserResponse en AdminUser
-// UserResponse n'expose pas telegram_id (lots 9C / 10A / 11B).
+// Helper pour convertir UserResponse en AdminUser (mapping lots 9C / 10A / 11B).
 function convertToAdminUser(user: UserResponse): AdminUser {
   return {
     id: user.id,

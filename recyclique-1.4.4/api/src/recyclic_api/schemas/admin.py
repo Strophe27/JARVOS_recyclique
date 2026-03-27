@@ -5,7 +5,7 @@ from uuid import UUID
 from recyclic_api.models.user import UserRole, UserStatus
 
 class AdminUser(BaseModel):
-    """Schéma pour les utilisateurs dans l'interface d'administration (réponse JSON sans telegram_id)."""
+    """Schéma pour les utilisateurs dans l'interface d'administration (champs internes exclus)."""
     id: Union[str, UUID]
     username: Optional[str] = None
     first_name: Optional[str] = None
@@ -64,7 +64,7 @@ class AdminErrorResponse(BaseModel):
     success: bool = False
 
 class PendingUserResponse(BaseModel):
-    """Réponse utilisateurs en attente (sans telegram_id)."""
+    """Réponse utilisateurs en attente (champs internes exclus)."""
     id: Union[str, UUID]
     username: Optional[str] = None
     first_name: Optional[str] = None

@@ -172,18 +172,10 @@ test_restore() {
 test_notifications() {
     log "Test des notifications..."
     
-    # Simuler une notification de succès
-    if [ -n "${NOTIFICATION_TELEGRAM_TOKEN:-}" ] && [ -n "${NOTIFICATION_TELEGRAM_CHAT_ID:-}" ]; then
-        curl -s -X POST "https://api.telegram.org/bot${NOTIFICATION_TELEGRAM_TOKEN}/sendMessage" \
-            -d "chat_id=${NOTIFICATION_TELEGRAM_CHAT_ID}" \
-            -d "text=🧪 [TEST DOCKER] Sauvegarde Recyclic testée avec succès" \
-            -d "parse_mode=HTML" >/dev/null 2>&1 && {
-            success "Notification de test envoyée"
-        } || {
-            warn "Impossible d'envoyer la notification de test"
-        }
+    if [ -n "${NOTIFICATION_EMAIL:-}" ] && command -v mail >/dev/null 2>&1; then
+        log "Canal notification : e-mail (NOTIFICATION_EMAIL défini, binaire mail présent)"
     else
-        log "ℹ️ Notifications non configurées (optionnel)"
+        log "Notifications e-mail non configurées (optionnel : NOTIFICATION_EMAIL + mail)"
     fi
 }
 

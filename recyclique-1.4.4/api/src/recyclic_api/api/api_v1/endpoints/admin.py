@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_admin_role, require_admin_role_strict
-from recyclic_api.core.user_identity import username_or_telegram_id
+from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.core.audit import log_role_change, log_admin_access
 from recyclic_api.models.user import User, UserStatus
 from recyclic_api.schemas.admin import (
@@ -50,7 +50,7 @@ register_admin_templates_offline_routes(router, limiter)
 
 
 def _user_display_label(user: User) -> str | None:
-    """Prénom/nom ou username (strip) ; pas de repli sur telegram_id."""
+    """Prénom/nom ou username (strip) ; pas de repli sur identifiant externe hérité."""
     full_name = (
         f"{user.first_name} {user.last_name}"
         if user.first_name and user.last_name
@@ -64,7 +64,7 @@ def _user_display_label(user: User) -> str | None:
     "/users/{user_id}/approve",
     response_model=AdminResponse,
     summary="Approuver un utilisateur (Admin)",
-    description="Approuve un utilisateur en attente (sans notification sortante Telegram)"
+    description="Approuve un utilisateur en attente (sans notification sortante externe)"
 )
 async def approve_user(
     user_id: str,
@@ -77,7 +77,7 @@ async def approve_user(
         # Log de l'acc├¿s admin
         log_admin_access(
             user_id=str(current_user.id),
-            username=username_or_telegram_id(current_user.username, None),
+            username=username_for_audit(current_user.username),
             endpoint="/admin/users/{user_id}/approve",
             success=True
         )
@@ -112,9 +112,9 @@ async def approve_user(
         # Log de l'approbation
         log_role_change(
             admin_user_id=str(current_user.id),
-            admin_username=username_or_telegram_id(current_user.username, None),
+            admin_username=username_for_audit(current_user.username),
             target_user_id=str(user.id),
-            target_username=username_or_telegram_id(user.username, None),
+            target_username=username_for_audit(user.username),
             old_role="pending",
             new_role="approved",
             success=True,
@@ -160,7 +160,7 @@ async def reject_user(
         # Log de l'acc├¿s admin
         log_admin_access(
             user_id=str(current_user.id),
-            username=username_or_telegram_id(current_user.username, None),
+            username=username_for_audit(current_user.username),
             endpoint="/admin/users/{user_id}/reject",
             success=True
         )
@@ -195,9 +195,9 @@ async def reject_user(
         # Log du rejet
         log_role_change(
             admin_user_id=str(current_user.id),
-            admin_username=username_or_telegram_id(current_user.username, None),
+            admin_username=username_for_audit(current_user.username),
             target_user_id=str(user.id),
-            target_username=username_or_telegram_id(user.username, None),
+            target_username=username_for_audit(user.username),
             old_role="pending",
             new_role="rejected",
             success=True,
@@ -233,7 +233,7 @@ async def reject_user(
     "/health/test-notifications",
     summary="Test des notifications (retiré)",
     description=(
-        "Ne déclenche plus d'envoi. Le test de notification sortante via Telegram / bot a été retiré "
+        "Ne déclenche plus d'envoi. Le test de notification sortante via canal automatisé a été retiré "
         "du périmètre administrateur (cohérent avec le retrait du canal sortant)."
     ),
 )
@@ -244,12 +244,12 @@ async def test_notifications(
 ):
     """Ancien envoi de test vers le bot — désactivé ; réponse informative uniquement."""
     logger.info(
-        "POST /admin/health/test-notifications : aucun envoi (canal Telegram / bot retiré pour ce flux admin)"
+        "POST /admin/health/test-notifications : aucun envoi (canal automatisé retiré pour ce flux admin)"
     )
     return {
         "status": "unavailable",
         "message": (
-            "Ce point de terminaison ne déclenche plus d'envoi vers le bot Telegram. "
+            "Ce point de terminaison ne déclenche plus d'envoi vers un canal externe automatisé. "
             "Les tests de notification sortante admin ont été retirés du périmètre API."
         ),
     }

@@ -1,7 +1,7 @@
 """
 Endpoints admin : maintenance des sessions caisse (sessions différées bloquées, doublons).
 
-Sans Telegram. Enregistré sur le routeur ``/admin`` via ``register_admin_cash_sessions_maintenance_routes``.
+Maintenance sessions caisse. Enregistré sur le routeur ``/admin`` via ``register_admin_cash_sessions_maintenance_routes``.
 """
 
 from __future__ import annotations

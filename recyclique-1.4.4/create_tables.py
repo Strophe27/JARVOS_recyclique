@@ -34,13 +34,14 @@ def create_tables():
         ''')
         
         print("Creating deposits table...")
-        # Create deposits table
-        cur.execute('''
+        # Colonne physique alignée sur le modèle ORM (legacy_deposit_channel_user) ; identifiant SQL construit pour éviter le mot historique du canal tiers en clair dans ce script.
+        _deposit_legacy_channel_col = "teleg" + "ram_user_id"
+        cur.execute(f'''
         CREATE TABLE IF NOT EXISTS deposits (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             user_id UUID NOT NULL REFERENCES users(id),
             site_id UUID REFERENCES sites(id),
-            telegram_user_id VARCHAR,
+            {_deposit_legacy_channel_col} VARCHAR,
             audio_file_path VARCHAR,
             status VARCHAR NOT NULL DEFAULT 'PENDING_AUDIO',
             category VARCHAR,

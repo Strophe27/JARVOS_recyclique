@@ -1,4 +1,4 @@
-/** Nom d'utilisateur pour affichage @handle (sans repli Telegram). */
+/** Nom d'utilisateur pour affichage @handle (chaîne vide si absent). */
 export function displayAtUsername(username?: string | null): string {
   const s = username?.trim();
   return s || '';

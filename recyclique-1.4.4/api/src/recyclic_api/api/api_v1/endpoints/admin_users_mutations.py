@@ -1,7 +1,7 @@
 """
 Endpoints admin : mutations compte utilisateur (rôle, is_active / historique, profil).
 
-Hors Telegram et hors credentials (reset / force mot de passe, reset PIN).
+Hors credentials (reset / force mot de passe, reset PIN).
 Préfixe routeur : /admin.
 """
 
@@ -14,7 +14,7 @@ from slowapi import Limiter
 from recyclic_api.core.audit import log_admin_access, log_role_change
 from recyclic_api.core.auth import require_admin_role
 from recyclic_api.core.database import get_db
-from recyclic_api.core.user_identity import username_or_telegram_id
+from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.schemas.admin import AdminResponse, UserProfileUpdate, UserRoleUpdate
@@ -41,7 +41,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint="/admin/users/{user_id}/role",
                 success=True,
             )
@@ -57,7 +57,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
             if not user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, None),
+                    username=username_for_audit(current_user.username),
                     endpoint="/admin/users/{user_id}/role",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -82,9 +82,9 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=username_or_telegram_id(current_user.username, None) or "",
+                admin_username=username_for_audit(current_user.username) or "",
                 target_user_id=str(user.id),
-                target_username=username_or_telegram_id(user.username, None),
+                target_username=username_for_audit(user.username),
                 old_role=old_role.value,
                 new_role=user.role.value,
                 success=True,
@@ -96,7 +96,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                 if user.first_name and user.last_name
                 else user.first_name or user.last_name
             )
-            display = full_name or username_or_telegram_id(user.username, None)
+            display = full_name or username_for_audit(user.username)
             role_msg = (
                 f"Rôle de l'utilisateur {display} mis à jour "
                 f"de {old_role.value} vers {user.role.value}"
@@ -138,7 +138,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint="/admin/users/{user_id}/status",
                 success=True,
             )
@@ -155,7 +155,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
             if not user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, None),
+                    username=username_for_audit(current_user.username),
                     endpoint="/admin/users/{user_id}/status",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -189,9 +189,9 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=username_or_telegram_id(current_user.username, None) or "",
+                admin_username=username_for_audit(current_user.username) or "",
                 target_user_id=str(user.id),
-                target_username=username_or_telegram_id(user.username, None),
+                target_username=username_for_audit(user.username),
                 old_role=f"is_active={old_status}",
                 new_role=f"is_active={status_update.is_active}",
                 success=True,
@@ -204,7 +204,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                 else user.first_name or user.last_name
             )
             status_text = "activé" if status_update.is_active else "désactivé"
-            display = full_name or username_or_telegram_id(user.username, None)
+            display = full_name or username_for_audit(user.username)
             status_msg = (
                 f"Utilisateur {display} {status_text} avec succès"
                 if display
@@ -246,7 +246,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
         try:
             log_admin_access(
                 user_id=str(current_user.id),
-                username=username_or_telegram_id(current_user.username, None),
+                username=username_for_audit(current_user.username),
                 endpoint="/admin/users/{user_id}",
                 success=True,
             )
@@ -263,7 +263,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
             if not user:
                 log_admin_access(
                     user_id=str(current_user.id),
-                    username=username_or_telegram_id(current_user.username, None),
+                    username=username_for_audit(current_user.username),
                     endpoint="/admin/users/{user_id}",
                     success=False,
                     error_message="Utilisateur non trouvé",
@@ -316,9 +316,9 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
 
             log_role_change(
                 admin_user_id=str(current_user.id),
-                admin_username=username_or_telegram_id(current_user.username, None) or "",
+                admin_username=username_for_audit(current_user.username) or "",
                 target_user_id=str(user.id),
-                target_username=username_or_telegram_id(user.username, None),
+                target_username=username_for_audit(user.username),
                 old_role="profile_update",
                 new_role=f"updated_fields={','.join(updated_fields)}",
                 success=True,
@@ -330,7 +330,7 @@ def register_admin_users_mutations_routes(router: APIRouter, limiter: Limiter) -
                 if user.first_name and user.last_name
                 else user.first_name or user.last_name
             )
-            display = full_name or username_or_telegram_id(user.username, None)
+            display = full_name or username_for_audit(user.username)
             profile_msg = (
                 f"Profil de l'utilisateur {display} mis à jour avec succès"
                 if display
