@@ -485,7 +485,8 @@ class ReceptionService:
         poids_sortie = Decimal(0)   # is_exit=true
         
         for ligne in ticket.lignes:
-            poids = ligne.poids_kg
+            raw = ligne.poids_kg
+            poids = Decimal(0) if raw is None else Decimal(str(raw))
             total_poids += poids
             
             if ligne.is_exit:

@@ -28,6 +28,30 @@ def test_paginated_total_pages_matches_router_formula():
     assert paginated_total_pages(100, 50) == 2
 
 
+def test_map_ticket_to_summary_response_when_benevole_relation_missing():
+    """Import / restauration : benevole_user_id sans ligne users → relationship None."""
+    tid = uuid4()
+    ticket = SimpleNamespace(
+        id=tid,
+        poste_id=uuid4(),
+        benevole=None,
+        created_at=datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        closed_at=None,
+        status="opened",
+        lignes=[],
+    )
+    service = MagicMock()
+    service._calculate_ticket_totals.return_value = (
+        0,
+        Decimal("0"),
+        Decimal("0"),
+        Decimal("0"),
+        Decimal("0"),
+    )
+    row = map_ticket_to_summary_response(service, ticket)
+    assert row.benevole_username == "Utilisateur inconnu"
+
+
 def test_map_ticket_to_summary_response_fallback_benevole_and_totals():
     tid = uuid4()
     poste_id = uuid4()

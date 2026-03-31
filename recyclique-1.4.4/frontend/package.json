@@ -29,9 +29,9 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
     "@eslint/js": "^9.35.0",
     "@openapitools/openapi-generator-cli": "^2.7.0",
+    "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.2",
@@ -39,6 +39,7 @@
     "@typescript-eslint/parser": "^8.43.0",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/coverage-v8": "^1.0.4",
+    "baseline-browser-mapping": "^2.10.12",
     "eslint": "^9.35.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -56,7 +57,8 @@
     "test:run": "vitest run",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
-    "codegen": "node scripts/generate-api.cjs"
+    "codegen": "node scripts/generate-api.cjs",
+    "refresh:browser-data": "npx --yes update-browserslist-db@latest && npm install baseline-browser-mapping@latest -D"
   },
   "browserslist": {
     "production": [

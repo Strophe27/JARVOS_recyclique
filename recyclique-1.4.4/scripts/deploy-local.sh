@@ -8,8 +8,11 @@ cd "$ROOT_DIR"
 
 # Créer le répertoire backups avec les bonnes permissions (pour le volume monté)
 mkdir -p ./backups
-chown -R 1000:1000 ./backups || sudo chown -R 1000:1000 ./backups
-chmod 755 ./backups
+# Linux : UID 1000 pour le conteneur Postgres. Sous Git Bash / Windows, chown échoue souvent : ne pas bloquer le déploiement.
+if ! chown -R 1000:1000 ./backups 2>/dev/null && ! sudo chown -R 1000:1000 ./backups 2>/dev/null; then
+  echo "⚠️  chown backups ignoré (souvent normal sous Windows) — poursuite du déploiement."
+fi
+chmod 755 ./backups 2>/dev/null || true
 
 bash ./scripts/prepare-build-meta.sh
 

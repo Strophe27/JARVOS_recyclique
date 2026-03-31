@@ -26,6 +26,18 @@ def paginated_total_pages(total: int, per_page: int) -> int:
     return (total + per_page - 1) // per_page
 
 
+def benevole_username_or_fallback(benevole) -> str:
+    """
+    Nom d’affichage du bénévole pour les listes / détails réception.
+
+    Tolère ``benevole is None`` (ticket avec ``benevole_user_id`` orphelin après import ou restauration).
+    """
+    if benevole is None:
+        return "Utilisateur inconnu"
+    name = getattr(benevole, "username", None)
+    return name if name else "Utilisateur inconnu"
+
+
 def map_ticket_to_summary_response(
     service: ReceptionService,
     ticket: TicketDepot,
@@ -36,7 +48,7 @@ def map_ticket_to_summary_response(
     return TicketSummaryResponse(
         id=str(ticket.id),
         poste_id=str(ticket.poste_id),
-        benevole_username=ticket.benevole.username or "Utilisateur inconnu",
+        benevole_username=benevole_username_or_fallback(ticket.benevole),
         created_at=ticket.created_at,
         closed_at=ticket.closed_at,
         status=ticket.status,
@@ -71,7 +83,7 @@ def map_ligne_depot_to_report_response(ligne: LigneDepot) -> LigneDepotReportRes
         id=str(ligne.id),
         ticket_id=str(ligne.ticket_id),
         poste_id=str(ligne.ticket.poste_id),
-        benevole_username=ligne.ticket.benevole.username or "Utilisateur inconnu",
+        benevole_username=benevole_username_or_fallback(ligne.ticket.benevole),
         category_label=ligne.category.name if ligne.category else "Catégorie inconnue",  # Story B48-P5
         poids_kg=ligne.poids_kg,
         destination=ligne.destination,

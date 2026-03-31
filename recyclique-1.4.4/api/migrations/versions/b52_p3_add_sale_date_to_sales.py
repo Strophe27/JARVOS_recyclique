@@ -23,8 +23,12 @@ depends_on = None
 
 def upgrade() -> None:
     # Story B52-P3: Ajouter colonne sale_date TIMESTAMP WITH TIME ZONE NULL à la table sales
-    op.add_column('sales', sa.Column('sale_date', TIMESTAMP(timezone=True), nullable=True))
-    
+    # Idempotent : bases restaurées / volumes réutilisés peuvent déjà avoir la colonne sans revision enregistrée.
+    bind = op.get_bind()
+    existing = {c["name"] for c in sa.inspect(bind).get_columns("sales")}
+    if "sale_date" not in existing:
+        op.add_column("sales", sa.Column("sale_date", TIMESTAMP(timezone=True), nullable=True))
+
     # Story B52-P3: Remplir sale_date = created_at pour toutes les ventes existantes
     # Cela garantit que les données existantes ont une valeur pour sale_date
     op.execute("""

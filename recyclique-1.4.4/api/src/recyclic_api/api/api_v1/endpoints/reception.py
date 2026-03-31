@@ -22,6 +22,7 @@ from recyclic_api.application.reception_ticket_export_presentation import (
     render_reception_ticket_csv_bytes,
 )
 from recyclic_api.application.reception_lists_presentation import (
+    benevole_username_or_fallback,
     build_ligne_depot_list_response,
     build_ticket_list_response,
 )
@@ -475,7 +476,7 @@ def get_ticket_detail(
     return TicketDetailResponse(
         id=str(ticket.id),
         poste_id=str(ticket.poste_id),
-        benevole_username=ticket.benevole.username or "Utilisateur inconnu",
+        benevole_username=benevole_username_or_fallback(ticket.benevole),
         created_at=ticket.created_at,
         closed_at=ticket.closed_at,
         status=ticket.status,

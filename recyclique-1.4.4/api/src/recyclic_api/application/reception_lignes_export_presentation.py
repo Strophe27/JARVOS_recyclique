@@ -12,6 +12,8 @@ import io
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Iterable, Optional
 
+from recyclic_api.application.reception_lists_presentation import benevole_username_or_fallback
+
 if TYPE_CHECKING:
     from recyclic_api.models.ligne_depot import LigneDepot
 
@@ -67,7 +69,7 @@ def render_lignes_depot_export_csv(lignes: Iterable[LigneDepot]) -> str:
                 str(ligne.id),
                 str(ligne.ticket_id),
                 str(ligne.ticket.poste_id),
-                ligne.ticket.benevole.username or "Utilisateur inconnu",
+                benevole_username_or_fallback(ligne.ticket.benevole),
                 ligne.category.name if ligne.category else "Catégorie inconnue",  # Story B48-P5: Nom court/rapide
                 str(ligne.poids_kg),
                 ligne.destination.value if ligne.destination else "",
