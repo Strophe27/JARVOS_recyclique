@@ -4,6 +4,8 @@ Matiere de travail sur la migration Paheko / RecyClique : guides, presentations,
 
 > Charger si : session sur integration Paheko, vision plateforme, decla eco-organismes, ou historique decisions RecyClique.
 
+**Voir aussi (2026-03-31) :** croiser avec le **backlog technique** et les audits code dans [consolidation-1.4.5/](../consolidation-1.4.5/) ; synthese transversale des dossiers `references/` : [artefacts/2026-03-31_02_audit-references-00-synthese-globale.md](../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md).
+
 ---
 
 ## Sous-dossier audits/

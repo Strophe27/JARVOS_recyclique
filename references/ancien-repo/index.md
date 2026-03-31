@@ -1,6 +1,8 @@
 # Index — Documentation brownfield RecyClique 1.4.4
 
-**Usage :** Point d'entrée pour l'analyse **référentielle** du repo source en vue de la migration vers **JARVOS Recyclique v0.1.0** (nouveau backend). Cette doc ne sert pas au développement continu de la branche 1.4.4.
+**Usage :** Point d'entrée pour l'analyse **référentielle** du repo source Recyclique 1.4.4 (document-project, checklist import). **Onboarding clone et workflow :** voir **[README.md](./README.md)**.
+
+**Note (2026-03-31) :** le depot actif de developpement est **`recyclique-1.4.4/`** (evolution incrementale). La formule « migration vers v0.1.0 / nouveau backend » reste une **piste d'architecture** a reconcilier avec le pivot documente dans `references/ou-on-en-est.md` et le pack **audit references** (`references/artefacts/2026-03-31_02_audit-references-00-synthese-globale.md`).
 
 ---
 

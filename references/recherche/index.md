@@ -1,8 +1,8 @@
 # Index — references/recherche/
 
-Prompts et reponses de recherche externe (Perplexity, Claude.ai, GPT, etc.).
+Prompts et réponses de recherche externe (Perplexity, Claude.ai, GPT, etc.) et **rapports de recherche technique BMAD** (workflow `bmad-technical-research`, fichier unique lorsqu’il n’y a pas de paire prompt/réponse).
 
-**Convention** (ordre : date → titre court → IA → type) : `YYYY-MM-DD_titre-court_[IA-name]_prompt.md` / `YYYY-MM-DD_titre-court_[IA-name]_reponse.md`.
+**Convention** (ordre : date → titre court → IA → type) : `YYYY-MM-DD_titre-court_[IA-name]_prompt.md` / `YYYY-MM-DD_titre-court_[IA-name]_reponse.md` ; pour un livrable BMAD seul : `YYYY-MM-DD_titre-court_bmad_recherche.md`.
 
 **Contexte pour IA** : `contexte-pour-recherche-externe.md` — à joindre ou coller en début de recherche (Perplexity, Claude, etc.) pour aligner les réponses sur le projet. Mettre à jour quand décisions ou phase changent.
 
@@ -14,6 +14,7 @@ Prompts et reponses de recherche externe (Perplexity, Claude.ai, GPT, etc.).
 
 | Fichier | Sujet / usage |
 |---------|----------------|
+| **2026-02-25_affichage-dynamique-peintre-extension-points_bmad_recherche.md** | **Recherche technique BMAD** : extension points / stubs v1 pour affichage dynamique, écrans configurables (v2+), service Peintre (JARVOS Mini). Copie canonique sous `references/recherche/` ; copie d’archive BMAD : `_bmad-output/archive/.../planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md`. |
 | contexte-pour-recherche-externe.md | Contexte projet pour recherches externes (joindre en début de session) |
 | 2026-02-24_frameworks-modules-python_perplexity_prompt.md | Frameworks modules/plugins Python — prompt Perplexity Pro |
 | 2026-02-24_frameworks-modules-python_perplexity_reponse-1.md | Réponse 1 : Pluggy, Stevedore, entry points ; reco entry points puis Stevedore |
@@ -32,3 +33,14 @@ Prompts et reponses de recherche externe (Perplexity, Claude.ai, GPT, etc.).
 | 2026-02-24_api-paheko-caisse_perplexity_reponse.md | Réponse Perplexity API caisse Paheko (endpoints, modèles, sessions) |
 | 2026-02-24_extension-saisie-poids-paheko_perplexity_reponse.md | Réponse Perplexity extension Saisie au poids Paheko |
 | 2026-02-24_auth-sso-paheko-app-externe_perplexity_reponse.md | Réponse Perplexity auth/SSO Paheko avec app externe FastAPI |
+
+---
+
+## Fichiers sur disque hors tableau (non « recherche externe »)
+
+Artefacts d’outil / sauvegarde présents dans ce dossier mais **non listés** ci-dessus (à déplacer vers un dossier backup ou `_depot/` si on veut un `recherche/` strictement conventionnel) :
+
+| Fichier / dossier | Nature |
+|-------------------|--------|
+| `normalize_typographic_chars_2026-03-16_23-30-07.log` | Log du script normalize-typographic-chars |
+| `normalize_typographic_backup_2026-03-16_23-30-07/index.md` | Copie de sauvegarde d’un ancien index |

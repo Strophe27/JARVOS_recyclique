@@ -48,3 +48,5 @@ Pour analyser le code : utiliser `repo/` comme point d'entree. Structure selon l
 
 **Instance dev locale** : procedure Docker standalone dans **dev-tampon/paheko/** (racine projet ; dossier `dev-tampon/` gitignore, donc non versionné — la procedure n'est disponible qu'en local tant que le tampon existe). Voir [dev-tampon/paheko/README.md](../../dev-tampon/paheko/README.md).
 
+**Voir aussi (2026-03-31) :** audit transversal `references/` — [../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md](../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md).
+

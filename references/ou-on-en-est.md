@@ -1,8 +1,20 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-02-26
+Mis a jour : 2026-03-31
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
+
+## Bascule BMAD (2026-03-31)
+
+Les sorties BMAD **actives** (`_bmad-output/planning-artifacts/`, `_bmad-output/implementation-artifacts/`) ont été **réinitialisées** pour repartir sur une nouvelle ligne (évolution incrémentale depuis `recyclique-1.4.4` stabilisé, sans le récit « refonte complète » comme plan directeur).
+
+**Archive complète** de l’ancienne chaîne (brief, PRD, architecture, epics, sprint-status, recherche, sous-dossiers) : `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`. Explications : [_bmad-output/README.md](../_bmad-output/README.md).
+
+Dans les sections historiques ci-dessous, les chemins `_bmad-output/planning-artifacts/...` et `implementation-artifacts/...` désignent le **contenu désormais archivé** (même arborescence relative sous ce dossier d’archive).
+
+**Raccourci pour ouvrir les fichiers :** préfixe d’archive  
+`_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`  
+(ex. le PRD archivé : `.../planning-artifacts/prd.md`). Les dossiers **actifs** `planning-artifacts/` et `implementation-artifacts/` à la racine de `_bmad-output/` sont vides (`.gitkeep`) jusqu’aux prochains workflows BMAD.
 
 ## Etat actuel
 

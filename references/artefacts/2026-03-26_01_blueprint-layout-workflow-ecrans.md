@@ -77,7 +77,7 @@ type ScreenDefinition = {
 
 - **Peintre** : positionne comme **organe d'affichage** — Recyclique rend selon un flux de config / theme / zones ; la source peut rester locale puis etre **remplacee ou enrichie** par un service JARVOS (Nano) quand il existera.
 - **Nano** : peut produire des propositions de layout ou de densite d'UI ; elles passent par le **meme contrat** que l'API/CLI (pas de contournement ad hoc).
-- **Alignement doc existante** : FR26, stubs **LayoutConfigService** et **VisualProvider**, recherche `_bmad-output/planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md`. Le blueprint ci-dessus complete ces stubs avec la dimension **handles + pilotage machine**.
+- **Alignement doc existante** : FR26, stubs **LayoutConfigService** et **VisualProvider**, recherche technique : [references/recherche/2026-02-25_affichage-dynamique-peintre-extension-points_bmad_recherche.md](../recherche/2026-02-25_affichage-dynamique-peintre-extension-points_bmad_recherche.md) (copie BMAD archivée : `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md`). Le blueprint ci-dessus complete ces stubs avec la dimension **handles + pilotage machine**.
 
 ---
 

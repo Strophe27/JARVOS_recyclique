@@ -24,6 +24,12 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-03-31_06_porte-entree-agent-bmad-vierge.md` | Liste ordonnee des fichiers a charger pour un agent BMAD vierge (brainstorm, analyse) : etat, audit references, idees, recherches, pieges ancien PRD. |
+| `2026-03-31_05_qa-pass-bmad-references-indexes.md` | QA post-reset BMAD + audit references : checks disque, liens, correctifs appliques (liens audit, besoins-terrains, raccourci archive BMAD, note README). |
+| `2026-03-31_04_audit-references-02-ancien-vision-paheko-tri-racine.md` | Audit references (p.3/3) : ancien-repo, vision-projet, paheko, temporaire-pour-tri, racine, depot, vrac, ecosysteme, idees-kanban (index Kanban : resync skill). |
+| `2026-03-31_03_audit-references-01-zones-principales.md` | Audit references (p.2/3) : artefacts, recherche, consolidation-1.4.5, migration-paeco. |
+| `2026-03-31_02_audit-references-00-synthese-globale.md` | Audit references (p.1/3) : synthese orchestrateur, carte des zones, tensions narratives, index modifies, prochaines etapes. |
+| `2026-03-31_01_handoff-nettoyage-stabilisation-recyclique-1.4.4.md` | Handoff chantier nettoyage / qualite / stabilisation sur `recyclique-1.4.4` : OpenAPI & tests, facades frontend, code mort, etude DB/migrations locale ; commits listes ; limites et suites logiques. |
 | `2026-03-26_07_paquet-7-frontend-suppression-page-auth-publique.md` | Paquet 7 (frontend) : retrait page d'auth publique historique + test unitaire ; `App.jsx` sans entrée `publicRoutes` pour ce chemin, redirection vers `/inscription` (query conservée) ; intégration `public-routes` réalignée ; pas de commit. |
 | `2026-03-26_06_paquet-6-notifications-sortantes-canal-retire.md` | Paquet 6 : retrait service de notifications sortantes tiers, variables d'env associées dans `config` + exemples, sync/anomalies en logs seuls, `rollback.sh` aligné, docs/scripts alignés ; tests cibles OK ; pas de commit. |
 | `2026-03-26_05_paquet-4-put-deposits-sans-bot-auth.md` | Paquet 4 : retrait `get_bot_token_dependency` / `X-Bot-Token` sur `PUT /v1/deposits/{id}` ; suppression `bot_auth.py` et `test_bot_auth_simple.py` ; OpenAPI + tests workflow dépôts réalignés ; pas de commit. |
