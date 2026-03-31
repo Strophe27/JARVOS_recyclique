@@ -4971,6 +4971,14 @@ Apres regeneration OpenAPI, les symboles client ne contiennent plus le segment `
 
 ---
 
+## Chantier DB / préchecks (2026-03-27) — Documentation consolidation
+
+**Statut:** documentaire (aucune migration ni changement `recyclique-1.4.4/` dans cette passe QA).  
+**Livrables :** `2026-03-27_chantier-db-legacy-decision-execution-1.4.5.md` (préchecks, blocage `alembic current`, décision no-go) ; révision mineure post-QA (chemin plan Cursor, instantané `git status`, § dump, CI `alembic-check.yml`, handoff multi-doc).  
+**Bloquant opérationnel inchangé :** `alembic current` + inspection SQL sur la base cible réelle, après secrets valides.
+
+---
+
 ## Regle de mise a jour
 
 Pour les prochains runs, ce journal doit etre **complete apres chaque lot ferme**, idealement avec:

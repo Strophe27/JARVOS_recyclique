@@ -34,6 +34,21 @@ Les rapports datés **2026-03-23** décrivent un audit brownfield de la base act
 - **`2026-03-27_note-decision-db-migrations-legacy-1.4.5.md`** — Note de décision pour la phase finale DB/migrations: Alembic comme source de vérité, statut de `create_schema.py`, héritages legacy à inventorier et préchecks avant chantier dédié.
   _(Charger si : tu dois lancer ou cadrer le chantier DB/migrations legacy sans le mélanger aux lots runtime.)_
 
+- **`2026-03-27_chantier-db-legacy-cartographie-matrice-1.4.5.md`** — Cartographie Alembic head `e8f9a0b1c2d3`, écarts vs modèles et vs `create_schema.py` / scripts parallèles, inventaire legacy classé, matrice de décision, séquence d'exécution, préchecks et rollback. **Session d'analyse :** code + `alembic heads` ; **état physique BDD** : cible générique non lue à la rédaction ; **instance Docker locale** ensuite documentée dans **prechecks-base-reelle**.
+  _(Charger si : exécution ou reprise du chantier DB legacy, handoff agent, ou préparation migrations après préchecks base réelle.)_
+
+- **`2026-03-27_chantier-db-legacy-decision-execution-1.4.5.md`** — **Préchecks + décision d'exécution (historique) :** blocage **accès hôte** (`alembic current` / SQL) sans secrets valides ou avec mot de passe erroné ; décision **aucune migration** tant que l'état physique n'est pas lu. **Pour constats effectifs sur stack Docker locale** (`current`, enums, DDL) : **`2026-03-27_chantier-db-legacy-prechecks-base-reelle-1.4.5.md`**. **Type :** synthèse exécution / blocage + renvoi terrain.
+  _(Charger si : go/no-go migrations, reprise après obtention d'une URL BDD valide, ou audit « où en est la base ».)_
+
+- **`2026-03-27_chantier-db-legacy-prechecks-base-reelle-1.4.5.md`** — **Préchecks terrain sur base Docker locale :** `alembic heads` = `e8f9a0b1c2d3` (dépôt) ; `alembic current` = `a7b3c9d2014f` ; enums `userrole` / `userstatus` conformes ; absence FK `users.site_id` et colonnes messagerie encore `telegram_*` / `telegram_user_id` ; **verdict en retard** (2 révisions : `d4e5f6a7b8c1`, `e8f9a0b1c2d3`) ; alerte image `api-migrations` sans rebuild. **Type :** constat réel + recommandation (backup puis upgrade), lecture seule.
+  _(Charger si : alignement BDD vs Alembic, préparation `upgrade head`, ou piège image Docker migrations.)_
+
+- **`2026-03-27_chantier-db-legacy-execution-controlee-1.4.5.md`** — **Exécution contrôlée sur base Docker locale :** backup `pg_dump` effectué, correction du point bloquant `api-migrations` via montage du dossier `api/migrations`, `alembic upgrade head` exécuté avec application de `d4e5f6a7b8c1` puis `e8f9a0b1c2d3`, contrôles post-run (`alembic current`, `alembic_version`, FK `users.site_id`, colonnes renommées, enums) **tous conformes**. **Type :** rapport final d'exécution / succès.
+  _(Charger si : tu veux la preuve d'exécution, le résultat final réel de la migration locale, ou le protocole exact à rejouer sur un autre environnement.)_
+
+- **`2026-03-27_validation-docker-local-installation-1.4.5.md`** — **Fiabilisation installation locale Docker :** inventaire des projets Compose sur la machine (`recyclic` historique, `recyclic-local` vs `recyclique-144` partageant le même `docker-compose.yml`), conflits de ports et volumes, relecture `alembic_version` sur la stack active, fragilités (`api-migrations`, `.env`), **protocole** build / up / migrations / smoke, **sans** déploiement ni modification Compose dans la session. **Type :** cartographie hôte + guide d'exécution locale ; décision garder/supprimer stacks à trancher avec l'exploitant.
+  _(Charger si : validation Docker Desktop, choix de stack locale, handoff avant `compose up` ou nettoyage de projets.)_
+
 - **`2026-03-23_audit-backend-config-ops-1.4.4.md`** — Audit des dépendances, scripts, Docker, settings et cohérence d'exécution backend.
   _(Charger si : tu travailles sur l'environnement, le packaging, l'exécution locale/CI ou la configuration.)_
 
