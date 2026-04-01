@@ -376,6 +376,8 @@ Types de flows prévus :
 
 En Phase 0 : seuls les types `wizard` et `tabbed` sont implémentés. Les flows sont rendus par un composant `<FlowRenderer>` qui lit la FlowDefinition et gère l'état courant (step actif, historique de navigation, validation). Le flow `cashflow` est la priorité terrain pour RecyClique V2 — son parcours clavier (scan → Tab → prix → Entrée → paiement) doit être fluide sans souris.
 
+**Alignement implémentation (éviter l'ambiguïté « Phase 0 » vs priorité caisse) :** tant que le discriminant JSON `type: "cashflow"` n'est pas pris en charge comme tel par le runtime, le parcours caisse / réception peut être décrit avec la **même** `FlowDefinition` en `wizard` ou `tabbed`, enrichi de raccourcis et de conventions clavier. L'introduction explicite du type `cashflow` dans le schéma (même pipeline, pas de second moteur) est une **décision de livraison** à tracer (story ou ADR courte) — en parallèle des jalons sprint / epics qui portent sur le **comportement** du parcours, pas sur l'étiquette de type seule.
+
 En Phase 2-3 : les flows sont composables par un éditeur nodal (type React Flow) qui produit du JSON FlowDefinition. L'agent Peintre_mini pourra aussi générer des flows adaptatifs (onboarding personnalisé, parcours guidés contextuels). Les statecharts (XState) deviennent un backend possible pour les flows complexes avec états parallèles et guards sophistiqués.
 
 **Principe architectural :** l'éditeur nodal (futur) ne contient pas de logique — il produit et modifie des FlowDefinitions JSON. Le runtime exécute ces FlowDefinitions. La séparation éditeur/runtime est non négociable, exactement comme la séparation Peintre-agent (compositeur) / Peintre-nano (moteur).

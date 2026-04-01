@@ -22,9 +22,9 @@ ideas_generated: []
 questions_generated_imported: 98
 context_file: ''
 continuation_source_session: '_bmad-output/brainstorming/brainstorming-session-2026-03-31-153334.md'
-progressive_flow_phase: 2
-current_technique: 'Mind Mapping'
-current_technique_status: 'in_progress'
+progressive_flow_phase: 4
+current_technique: 'Decision Tree Mapping'
+current_technique_status: 'completed'
 session_continued: true
 continuation_date: '2026-03-31'
 ---
@@ -636,6 +636,356 @@ continuation_date: '2026-03-31'
     - contrats `Peintre` / `CREOS` ;
     - contextes / permissions / securite d usage ;
     - sync / zone tampon / articulation `Paheko`.
+
+---
+
+## Phase 3 — First Principles Thinking (demarrage)
+
+### Reduction aux principes irreductibles
+
+#### Principe 1 — Le terrain ne doit jamais dependre d une elegance technique
+
+- Si la v2 est belle, modulaire et composee mais qu elle fragilise la caisse, la reception, la cloture ou la compta, alors elle a echoue.
+- Donc :
+  - le critere premier n est pas la sophistication de `Peintre_nano` ;
+  - c est la **fiabilite terrain + justesse comptable + resilience**.
+
+#### Principe 2 — `Peintre_nano` est un moteur integral, mais pas complet fonctionnellement
+
+- Toute l UI v2 passe par `Peintre_nano`.
+- Mais `Peintre_nano` n a pas besoin d embarquer des le depart toutes ses capacites futures.
+- Donc :
+  - **couverture UI totale** ;
+  - **profondeur fonctionnelle limitee au minimum credible**.
+
+#### Principe 3 — La modularite n existe que si la chaine complete existe
+
+- Un module n est pas "modulaire" parce qu il a un ecran.
+- Il l est seulement si existent ensemble :
+  - contrat metier ;
+  - recepteur backend ;
+  - contrat UI ;
+  - recepteur frontend ;
+  - permissions / contexte ;
+  - fallback / audit.
+- Donc :
+  - la modularite doit etre prouvee **de bout en bout** ;
+  - pas seulement annoncee.
+
+#### Principe 4 — Les contextes sont plus fondamentaux que les ecrans
+
+- `site`, `caisse`, `session`, `poste de reception`, `role`, `PIN`, permissions :
+  - ce sont eux qui determinent ce qui peut exister a l ecran.
+- Donc :
+  - si le contexte est faux ou ambigu, l affichage correct n a plus de sens ;
+  - la stabilisation des contextes est plus fondamentale que la sophistication des widgets.
+
+#### Principe 5 — La donnee v2 doit etre operable et reinterpret able
+
+- La v2 ne sert pas seulement a executer les operations du jour.
+- Elle doit laisser une trace exploitable pour :
+  - audit ;
+  - rejeu ;
+  - analyse ;
+  - corrélation ;
+  - evolution future.
+- Donc :
+  - l historique, les mappings, les changements de statut et les flux ne sont pas des details ;
+  - ils font partie du coeur.
+
+#### Principe 6 — Le financier et la matiere sont deux flux distincts, pas deux vues d un meme flux
+
+- Le flux financier a pour autorite comptable `Paheko`.
+- Le flux matiere a pour verite principale `Recyclique`.
+- Donc :
+  - la v2 doit articuler ces deux flux sans les confondre ;
+  - et elle doit pouvoir les croiser analytiquement sans perdre leur logique propre.
+
+#### Principe 7 — Le socle doit etre prouve en petit avant d etre prouve en grand
+
+- Un grand module metier ne doit pas servir a inventer toute l architecture.
+- Donc :
+  - `bandeau live` peut servir de premier test de chaine modulaire ;
+  - `cashflow` et `reception flow` servent de preuves terrain critiques ;
+  - `eco-organismes` vient ensuite comme premier grand module validateur.
+
+### Lecture de facilitation
+
+- Si ces principes sont vrais, alors beaucoup de debats secondaires tombent d eux-memes.
+- Par exemple :
+  - la personnalisation riche devient secondaire ;
+  - l editeur convivial de flows devient secondaire ;
+  - le vrai sujet devient : **socle de contexte + contrats + donnees + runtime robuste**.
+
+### Points a verifier avec Strophe
+
+1. Le vrai coeur de v2 est-il bien : **fiabilite terrain + compta + modularite de bout en bout**, plutot que richesse fonctionnelle immediate ?
+2. Le contexte (`site/caisse/session/poste/role`) est-il bien plus fondamental que l ecran lui-meme ?
+3. Le premier test de modularite doit-il bien etre **petit mais complet** (`bandeau live`) avant un gros module metier ?
+4. La donnee v2 doit-elle etre pensee des le depart pour **rejeu + analyse + historicisation**, pas seulement pour execution ?
+
+### Validation utilisateur
+
+- Strophe valide **oui a tout** sur les 4 points ci-dessus.
+- Consequence de facilitation :
+  - le coeur du raisonnement en **First Principles Thinking** est considere comme **confirme** ;
+  - la suite naturelle devient la mise en **arbre de decisions** :
+    - ce qui est prerequis dur ;
+    - ce qui peut se faire en parallele ;
+    - ce qui est volontairement differe ;
+    - et quels choix de sequence reduisent le plus le risque systemique.
+
+---
+
+## Phase 4 — Decision Tree Mapping (demarrage)
+
+### Question racine
+
+- **Quel ordre de decisions et de chantiers maximise la probabilite d une v2 production-ready sans sur-architecture ni angle mort systemique ?**
+
+### Arbre de decisions — niveau 1
+
+#### Noeud A — Commencer par le visible (UI / Peintre d abord)
+
+- **Avantage**
+  - impression de progression rapide ;
+  - materialisation rapide de la nouvelle v2.
+- **Risque**
+  - dessiner un moteur ou des flows sur :
+    - un modele de donnees faux ;
+    - des contextes incomplets ;
+    - une articulation Paheko mal fixee.
+- **Lecture**
+  - trop risque comme point d entree principal.
+
+#### Noeud B — Commencer par le noyau de verite et de contraintes
+
+- **Contenu**
+  - audit backend / API / donnees ;
+  - retro-engineering Paheko ;
+  - spec contextes multi-sites / multi-caisses / postes ;
+  - clarification flux financier / flux matiere ;
+  - noyau d historique et de rejeu.
+- **Avantage**
+  - reduit le risque de rework massif ;
+  - fixe ce que le runtime UI devra respecter.
+- **Risque**
+  - impression de lenteur si aucun demonstrateur visible ne suit rapidement.
+- **Lecture**
+  - c est le meilleur point d entree, a condition d enchainer vite avec un premier test visible.
+
+### Arbre de decisions — niveau 2
+
+#### Si **B** est choisi, quel premier demonstrateur ?
+
+##### B1 — Premier demonstrateur = `bandeau live`
+
+- **Effet**
+  - teste la chaine modulaire complete a faible masse metier.
+- **Valide**
+  - backend modulaire minimal ;
+  - contrat UI ;
+  - runtime `Peintre_nano` ;
+  - fallback ;
+  - eventuelle mini config admin.
+- **Limite**
+  - ne prouve pas a lui seul la robustesse des flows terrain critiques.
+
+##### B2 — Premier demonstrateur = `cashflow` / `reception flow`
+
+- **Effet**
+  - teste directement les parcours terrain critiques.
+- **Valide**
+  - contexte ;
+  - raccourcis ;
+  - flows ;
+  - blocage / fallback ;
+  - articulation metier.
+- **Limite**
+  - plus lourd comme premier chantier ;
+  - risque de surcharger le socle avant d avoir une petite preuve modulaire simple.
+
+##### B3 — Strategie retenue
+
+- **Ordre prefere**
+  1. petit module pilote `bandeau live`
+  2. preuves terrain `cashflow` + `reception flow`
+  3. premier grand module metier `eco-organismes`
+
+### Arbre de decisions — niveau 3
+
+#### Avant `eco-organismes`, que faut-il avoir valide ?
+
+- **Obligatoire**
+  - noyau donnees / historique suffisamment fiable ;
+  - articulation `Paheko` suffisamment comprise ;
+  - contextes et permissions stables ;
+  - `CREOS` minimal stable ;
+  - runtime `Peintre_nano` minimal reel ;
+  - chaine modulaire prouvee en petit ;
+  - flows terrain critiques prouves.
+- **Sinon**
+  - `eco-organismes` devient un chantier qui invente lui-meme ses propres socles ;
+  - ce qui augmente fortement le risque de dette structurelle.
+
+### Arbre de decisions — niveau 4
+
+#### Qu est-ce qui part reellement en parallele sans chaos ?
+
+- **Peut partir en parallele une fois le noyau cadre**
+  - config admin simple ;
+  - details de certains widgets ;
+  - premiers travaux sur `adherents` ;
+  - preparation documentaire / OSS ;
+  - certains mappings super-admin.
+- **Ne doit pas partir trop tot**
+  - edition riche ;
+  - personnalisation avancee ;
+  - editeur convivial de flows ;
+  - pilotage agentique riche ;
+  - interfaces analytiques avancees.
+
+### Arbre de decisions — niveau 5
+
+#### Quel est le chemin qui minimise le risque systemique ?
+
+1. **Verifier le noyau**
+   - backend / API / donnees / Paheko / contextes.
+2. **Figer les contrats minimaux**
+   - `CREOS` / manifests / erreurs / flows minimaux.
+3. **Construire le runtime minimal**
+   - `Peintre_nano` reel, mais sobre.
+4. **Prouver la chaine sur un petit module**
+   - `bandeau live`.
+5. **Prouver les flows terrain**
+   - `cashflow` ;
+   - `reception flow`.
+6. **Engager le premier grand module metier**
+   - `eco-organismes`.
+7. **Ouvrir les chantiers paralleles**
+   - `adherents` ;
+   - config admin simple ;
+   - autres modules.
+
+### Decision de facilitation provisoire
+
+- Le chemin recommande n est **pas** :
+  - "grand module d abord" ;
+  - ni "UI brillante d abord" ;
+  - ni "tout refondre avant de montrer quoi que ce soit".
+- Le chemin recommande est :
+  - **noyau vrai** -> **contrats minimaux** -> **runtime minimal** -> **petite preuve modulaire** -> **preuves terrain critiques** -> **grand module metier**.
+
+### Validation utilisateur sur la sequence
+
+- La sequence ci-dessus est retenue comme :
+  - une **preference forte**, mais **revisable** si les audits ou constats reels imposent autre chose.
+- Si l audit backend / API / donnees contredit le plan actuel :
+  - il faut **arbitrer au cas par cas** ;
+  - soit en corrigeant le plan ;
+  - soit en trouvant une solution acceptable ;
+  - mais sans s obstiner dogmatiquement sur le plan initial.
+- Si `bandeau live` echoue a prouver la chaine :
+  - il faut **corriger la chaine avant d aller plus loin**.
+
+---
+
+## Cloture de session — synthese exploitable
+
+### Statut global
+
+- Le parcours de brainstorming est considere comme **termine** :
+  - **Phase 1** — Question Storming : close
+  - **Phase 2** — Mind Mapping : consolidee
+  - **Phase 3** — First Principles Thinking : validee
+  - **Phase 4** — Decision Tree Mapping : fermee a un niveau exploitable
+
+### Decisions structurantes confirmees
+
+- `Recyclique` = noyau metier, contrats backend, contexte, resilience, sync.
+- `Paheko` = autorite comptable officielle du flux financier.
+- `Peintre_nano` = moteur integral d affichage de toute l UI v2.
+- `CREOS` = grammaire commune minimale des declarations UI.
+- Toute l UI v2 passe par `Peintre_nano`, mais avec un **profil de capacites minimal** au depart.
+- La modularite n est consideree comme reelle que si la **chaine complete** existe :
+  - backend ;
+  - contrats ;
+  - runtime frontend ;
+  - permissions / contextes ;
+  - fallback / audit.
+- La priorite absolue reste :
+  - **fiabilite terrain** ;
+  - **justesse comptable** ;
+  - **resilience** ;
+  - **zero fuite de contexte**.
+
+### Invariants de conception
+
+- Le contexte (`site`, `caisse`, `session`, `poste de reception`, `role`, `PIN`) est plus fondamental que l ecran.
+- Les permissions sont calculees par `Recyclique`, puis appliquees par `Peintre_nano`.
+- En cas de doute, d ambiguite ou de changement de contexte :
+  - rechargement / recalcul explicite ;
+  - revalidation si necessaire ;
+  - la securite metier / comptable gagne sur la fluidite.
+- Les contrats invalides, widgets non rendables ou flows incomplets doivent produire :
+  - fallback visible ou blocage selon criticite ;
+  - journalisation ;
+  - retour d information exploitable.
+
+### Donnees et flux
+
+- La v2 doit articuler **deux flux distincts** :
+  - **flux financier** :
+    - `Paheko` = verite comptable finale ;
+    - `Recyclique` = terrain + zone tampon + synchronisation.
+  - **flux matiere** :
+    - `Recyclique` = verite principale.
+- La donnee v2 doit etre pensee des le depart pour :
+  - execution ;
+  - historicisation ;
+  - rejeu ;
+  - analyse ;
+  - correlations futures.
+- Les mappings sensibles doivent etre configurables **seulement en super-admin**, avec une forte traçabilite.
+
+### Sequence recommandee
+
+1. Audit backend / API / donnees.
+2. Retro-engineering Paheko sur donnees reelles.
+3. Spec contextes multi-sites / multi-caisses / postes.
+4. Figer `CREOS` minimal et les contrats UI minimaux.
+5. Construire le runtime minimal `Peintre_nano`.
+6. Prouver la chaine modulaire sur **`bandeau live`**.
+7. Prouver les flows terrain critiques :
+   - `cashflow`
+   - `reception flow`
+8. Engager le premier grand module metier :
+   - `eco-organismes`
+9. Ouvrir ensuite les chantiers paralleles :
+   - config admin simple ;
+   - `adherents` / vie associative minimale ;
+   - autres modules.
+
+### Ce qui est volontairement differe
+
+- edition admin riche ;
+- editeur convivial de flows ;
+- personnalisation avancee ;
+- pilotage agentique riche ;
+- interfaces analytiques avancees.
+
+### Point d attention final
+
+- La sequence retenue est une **preference forte**, pas un dogme.
+- Si les audits ou constats reels contredisent le plan, il faut arbitrer au cas par cas.
+- Si `bandeau live` ne prouve pas la chaine, il faut corriger la chaine avant de poursuivre.
+
+### Sortie utile pour la suite BMAD
+
+- Cette session fournit maintenant une base assez solide pour produire :
+  - soit une **decision directrice v2** ;
+  - soit le prochain artefact BMAD de cadrage / brief ;
+  - soit un plan d etudes priorisees avant architecture active.
 
 ### Branche D — Architecture et migration brownfield
 

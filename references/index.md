@@ -73,6 +73,9 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`paheko/`** — Guide et référence Paheko : clone, doc officielle (Fossil). Code source dans **paheko/repo/** (gitignore). Détail : **paheko/index.md**.
   _(Charger : intégration Paheko, analyse API/extensions ou croisement avec migration-paeco.)_
 
+- **`peintre/`** — Travail et synthèses sur JARVOS Peintre (pipeline nano → macro, layout, commandes, widgets) ; complète **recherche/** (allers-retours IA externes) sans la remplacer. Détail : **peintre/index.md**.
+  _(Charger : cadrage Peintre, macro affichage / agents, alignement `peintre-nano/` avec la vision long terme.)_
+
 - **`vision-projet/`** — Matière pour la vision projet (Brief, roadmap, présentations, contexte RAG/JARVOS nano-mini). Détail : **vision-projet/index.md**.
   _(Charger : vision projet, Brief BMAD, ou contexte « où on va ».)_
 

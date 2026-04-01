@@ -1,6 +1,6 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-03-31
+Mis a jour : 2026-04-01
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
 
@@ -10,11 +10,11 @@ Les sorties BMAD **actives** (`_bmad-output/planning-artifacts/`, `_bmad-output/
 
 **Archive complète** de l’ancienne chaîne (brief, PRD, architecture, epics, sprint-status, recherche, sous-dossiers) : `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`. Explications : [_bmad-output/README.md](../_bmad-output/README.md).
 
-Dans les sections historiques ci-dessous, les chemins `_bmad-output/planning-artifacts/...` et `implementation-artifacts/...` désignent le **contenu désormais archivé** (même arborescence relative sous ce dossier d’archive).
+Dans les sections historiques **datées d’avant le 2026-03-31**, lorsqu’un journal cite `_bmad-output/planning-artifacts/...` ou `implementation-artifacts/...` **sans** préfixe d’archive, entendre la copie sous `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/` (même arborescence relative).
 
 **Raccourci pour ouvrir les fichiers :** préfixe d’archive  
 `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`  
-(ex. le PRD archivé : `.../planning-artifacts/prd.md`). Les dossiers **actifs** `planning-artifacts/` et `implementation-artifacts/` à la racine de `_bmad-output/` sont vides (`.gitkeep`) jusqu’aux prochains workflows BMAD.
+(ex. le PRD archivé : `.../planning-artifacts/prd.md`). Les dossiers **actifs** `planning-artifacts/` et `implementation-artifacts/` sous `_bmad-output/` portent la chaîne courante (ex. `epics.md`, `sprint-status.yaml`) ; l’archive ci-dessus conserve l’ancienne ligne 1.4.4.
 
 ## Etat actuel
 
@@ -36,10 +36,17 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 
 ## Derniere session
 
+2026-04-01 — Sprint Planning (BMAD) relancé sur `epics.md` v2.
+
+Réalisé :
+- **Sprint Status** : `_bmad-output/implementation-artifacts/sprint-status.yaml` régénéré. Inventaire : **10 epics**, **75 stories**, **10** rétrospectives ; statuts par défaut `backlog` / `optional` (aucun fichier story `{story-key}.md` à la racine de `implementation-artifacts` pour l’instant). Deux clés corrigées à la main après génération automatique : `1-2-…-api-existante-…` (éviter `lapi` pour *l’API*) et `5-5-…-ui-transverse` (éviter `lui` pour *l’UI*). Prochaine étape : Create Story → Dev Story → Code Review.
+
+---
+
 2026-02-26 — Sprint Planning complété (workflow BMAD).
 
 Réalisé :
-- **Sprint Status** : `_bmad-output/implementation-artifacts/sprint-status.yaml` généré à partir de `epics.md`. Inventaire : 8 epics, 22 stories, 8 rétrospectives ; tous les éléments en `backlog` (aucun fichier story dans implementation-artifacts pour l’instant). Prochaine étape : lancer le cycle Create Story → Dev Story → Code Review (ou Check Implementation Readiness si pas encore fait).
+- **Sprint Status** (ancienne chaîne, désormais obsolète pour le pilotage v2) : voir archive ; l’inventaire d’alors était 8 epics, 22 stories.
 
 ---
 

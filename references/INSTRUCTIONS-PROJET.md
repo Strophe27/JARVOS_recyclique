@@ -15,6 +15,7 @@
 | `ancien-repo/` | Guide et clone local du repo Recyclique 1.4.4 (`repo/` gitignore) + doc brownfield |
 | `migration-paeco/` | Guides Paheko/RecyClique, TODO, CR, decla eco-organismes |
 | `paheko/` | Guide et clone local du code source Paheko (`repo/` gitignore) — reference pour integration |
+| `peintre/` | Travail et synthese sur JARVOS Peintre (nano → macro, DSL layout, orchestration UI) ; pas les prompts/reponses Perplexity (voir `recherche/`) |
 | `vision-projet/` | Matière pour vision projet (Brief, roadmap, présentations, contexte RAG / JARVOS nano-mini) |
 | `_depot/` | Dépôt de fichiers en attente de ventilation vers les bons dossiers |
 | `dumps/` | Dumps BDD sensibles (Paheko, Recyclic prod) pour analyse locale — gitignore |
@@ -60,7 +61,7 @@ Emplacement : `references/recherche/`. Mettre a jour `references/recherche/index
 
 **Index principal** (`references/index.md`) : a jour quand un sous-dossier est ajoute ou supprime, ou quand le role d'un dossier change. Ne pas y lister le contenu de chaque dossier — le detail est dans chaque `references/<dossier>/index.md`.
 
-**Index par dossier** (`references/artefacts/index.md`, `references/recherche/index.md`, `references/ecosysteme/index.md`, `references/migration-paeco/index.md`, `references/vision-projet/index.md`, `references/ancien-repo/index.md`, `references/paheko/index.md`) : mettre a jour a chaque ajout (ou theme significatif) dans ce dossier. Une ligne ou une entree par fichier ou par groupe.
+**Index par dossier** (`references/artefacts/index.md`, `references/recherche/index.md`, `references/peintre/index.md`, `references/ecosysteme/index.md`, `references/migration-paeco/index.md`, `references/vision-projet/index.md`, `references/ancien-repo/index.md`, `references/paheko/index.md`) : mettre a jour a chaque ajout (ou theme significatif) dans ce dossier. Une ligne ou une entree par fichier ou par groupe.
 
 **Format d'une entree dans l'index** :
 

@@ -1,0 +1,2237 @@
+---
+stepsCompleted: [1, 2, 3, 4]
+inputDocuments:
+  - _bmad-output/planning-artifacts/prd.md
+  - _bmad-output/planning-artifacts/architecture/index.md
+  - _bmad-output/planning-artifacts/architecture/navigation-structure-contract.md
+  - _bmad-output/planning-artifacts/product-brief-JARVOS_recyclique-2026-03-31.md
+  - references/vision-projet/2026-03-31_decision-directrice-v2.md
+  - references/vision-projet/2026-03-31_peintre-nano-concept-architectural.md
+  - .cursor/plans/cadrage-v2-global_c2cc7c6d.plan.md
+  - .cursor/plans/separation-peintre-recyclique_4777808d.plan.md
+  - .cursor/plans/profil-creos-minimal_6cf1006d.plan.md
+  - _bmad-output/brainstorming/brainstorming-session-2026-03-31-195824.md
+---
+
+# JARVOS_recyclique - Epic Breakdown
+
+## Overview
+
+Ce document sert de support au workflow `bmad-create-epics-and-stories` pour `JARVOS_recyclique`.
+
+Etat BMAD actuel :
+- etape 1 preparee : inventaire des exigences extrait et consolide ;
+- etape 2 preparee et structure d'epics approuvee en premiere passe ;
+- en cas d'ecart entre documents, la source de verite reste `prd.md`, puis l'architecture active decoupee en sous-documents et les documents de cadrage explicitement listes en frontmatter.
+- etape 3 preparee : les stories detaillees ont ete generees pour les 10 epics ;
+- etape 4 preparee : validation finale effectuee sur la couverture, les dependances, la granularite des stories et la coherence inter-epics ;
+- le workflow `bmad-create-epics-and-stories` est considere comme complet ; `epics.md` est pret pour la suite du flux BMAD.
+
+## Requirements Inventory
+
+### Functional Requirements
+
+FR1: La v2 repart des logiques metier critiques de `recyclique-1.4.4` (brownfield), sans refonte from scratch comme hypothese de depart.
+FR2: Les flux terrain prioritaires `cashflow` et `reception flow` conservent les memes bases metier que la base existante.
+FR3: `Recyclique` porte les workflows terrain, la logique metier, les contrats backend, le calcul des permissions et des contextes, la resilience operationnelle, la zone tampon de synchronisation, la verite principale du flux matiere, l'historique exploitable et les manifests `CREOS` de ses modules metier.
+FR4: `Paheko` porte la verite comptable officielle du flux financier, les classifications et contraintes comptables sur son perimetre, et l'autorite finale pour la comptabilite.
+FR5: L'integration avec `Paheko` suit une approche API-first ; un plugin minimal n'est autorise que si l'API officielle ne couvre pas le besoin ; l'ecriture SQL transactionnelle n'est pas le chemin nominal.
+FR6: `Peintre_nano` porte le shell UI, le registre de modules, les slots, le catalogue de widgets, le rendu de flows declaratifs, les raccourcis et actions declaratives, les fallbacks visuels et l'application des droits et contextes pour l'affichage.
+FR7: `Peintre_nano` ne connait pas le metier `Recyclique` et consomme uniquement les manifests `CREOS` et les informations de contexte/permissions fournies par `Recyclique`.
+FR8: L'adaptateur de canal web assure le rendu concret du shell, des slots et des widgets, les fallbacks visuels et les comportements d'affichage lies au canal, sans remonter de logique metier dans `Peintre_nano`.
+FR9: `CREOS` fournit la grammaire commune des manifests, actions, widgets, flows et etats minimaux, ainsi que la base contractuelle partagee entre `Recyclique` et `Peintre_nano`.
+FR10: Toute l'UI v2 passe par `Peintre_nano`.
+FR11: Le systeme stabilise et utilise les contextes minimaux `site`, `caisse`, `session`, `poste de reception`, `role`, `groupe`, `permissions` et `PIN`.
+FR12: En cas d'ambiguite ou d'incompletude du contexte, le systeme applique rechargement ou recalcul explicite, mode degrade ou restreint explicite, et revalidation si necessaire ; la securite prime sur la fluidite.
+FR13: Lors d'un changement de contexte sensible, l'ensemble du contexte est recharge ou recalcule explicitement.
+FR14: Chaque role possede une cle technique stable et un libelle personnalisable par ressourcerie ; les groupes servent a regrouper les utilisateurs pour l'affectation de permissions ; un utilisateur peut appartenir a plusieurs groupes.
+FR15: En v2, le calcul des droits est additif : les permissions effectives sont l'union des permissions accordees par les roles et groupes associes.
+FR16: Les libelles affiches dans l'UI ne font jamais foi pour la securite ; seules les cles techniques et les permissions calculees par `Recyclique` font autorite.
+FR17: Un module n'est considere comme modulaire a l'etat final que si la chaine complete existe : contrat metier, recepteur backend, contrat UI, runtime frontend, permissions et contexte, fallback, audit et feedback.
+FR18: Face a des contrats invalides, widgets non rendables ou flows incomplets, le systeme produit un fallback visible ou un blocage selon la criticite, une journalisation, un retour d'information exploitable, et la possibilite de correction et de nouvelle tentative.
+FR19: Pour les elements critiques terrain, le systeme fournit un fallback explicite lorsque la securite metier reste garantie, et un blocage clair lorsque la securite metier ou comptable n'est plus garantie.
+FR20: Aucune vue, widget ou slot ne doit laisser fuiter des donnees d'un site, d'une caisse ou d'un operateur vers un autre contexte.
+FR21: Les vues globales admin ou super-admin imposent une selection explicite du contexte ou du perimetre, une tracabilite de l'acces et du perimetre consulte, l'absence de cache silencieux inter-contexte et l'impossibilite d'executer une action sensible hors du contexte explicitement valide.
+FR22: La donnee v2 supporte l'execution quotidienne, l'historicisation, le rejeu, l'analyse et les correlations futures, avec tracabilite des mappings sensibles et de leurs changements.
+FR23: Les donnees terrain sont enregistrees d'abord dans `Recyclique` ; la synchronisation vers `Paheko` peut etre reportee ; seules certaines actions critiques finales peuvent etre bloquees si la sync n'est pas a jour.
+FR24: Tout ecart persistant de sync entre dans un etat explicite parmi `a_reessayer`, `en_quarantaine`, `resolu`, `rejete`.
+FR25: Le passage en quarantaine est obligatoire en cas d'echec persistant, d'incoherence comptable detectee ou d'absence de correspondance comptable requise.
+FR26: La levee de quarantaine est tracee et reservee a un responsable de ressourcerie ou un super-admin selon le workflow retenu.
+FR27: Toute levee de quarantaine ou resolution manuelle laisse une trace d'audit avec auteur, date, contexte et motif.
+FR28: Le support doit pouvoir s'appuyer sur un identifiant de correlation inter-systemes pour suivre un flux de bout en bout.
+FR29: `Recyclique` est autorite pour le flux matiere : poids, quantites, categories, sous-categories, classifications officielles pour les declarations, avec mappings eco-organismes.
+FR30: La v2 articule le flux financier et le flux matiere sans les confondre et permet fonctionnement quotidien, reconciliation, historique, futures lectures analytiques et declarations eco-organismes.
+FR31: Chaque ressourcerie peut adapter la terminologie et la structure des roles a son fonctionnement.
+FR32: Le systeme permet des roles definissables par ressourcerie, des libelles personnalisables et des groupes simples pour l'affectation des permissions.
+FR33: Chaque role et chaque groupe possede une cle technique stable distincte du libelle affiche.
+FR34: `Recyclique` calcule les droits a partir de roles definis par la ressourcerie, pas uniquement d'un jeu predefini.
+FR35: Les libelles personnalises sont propages dans l'UI via les contextes de rendu `Peintre_nano`.
+FR36: L'isolation multi-sites s'applique aussi aux roles et groupes.
+FR37: `Peintre_nano` fournit en capacites minimales v2 : shell, slots nommes, widgets avec contrat de props, activation/desactivation de modules, contrats d'affichage, actions et raccourcis declaratifs, flows simples, fallback, journalisation et gestion des droits/contextes au rendu.
+FR38: Les modules metier obligatoires en v2 sont `cashflow`, `reception flow`, `bandeau live`, `declaration eco-organismes`, `adherents / vie associative minimale`, `synchronisation Paheko`, `integration HelloAsso` et `config admin simple`.
+FR39: La v2 livre un contrat de synchronisation couvrant au minimum sessions de caisse et cloture, ecritures comptables, politique de reconciliation, granularite du push, idempotence et retry, gestion des rejets, reprise apres incident et statut final d'une operation cote `Recyclique` et cote `Paheko`.
+FR40: La hierarchie technique d'integration `Paheko` est : API officielle en priorite, plugin minimal si besoin, SQL reserve a l'analyse, au controle ou a l'administration.
+FR41: La v2 supporte la granularite `ressourcerie -> site -> caisse -> session -> poste de reception` avec verrouillage des regles d'isolation, habilitations, comportement multi-caisses, identifiants, numerotation, horodatage, evenements de cloture et mapping vers les emplacements `Paheko`.
+FR42: Si la correspondance site/caisse/emplacement `Paheko` est absente ou invalide, l'operation terrain reste enregistree dans `Recyclique`, l'etat non syncable est visible, et aucune ecriture silencieuse de substitution n'est autorisee.
+FR43: Le schema de deploiement cible est une instance `Paheko` par ressourcerie, avec projection de plusieurs sites et caisses `Recyclique` dans le modele `Paheko`.
+FR44: La config admin simple permet activation/desactivation, ordre de certains blocs, variantes simples d'affichage et aide ou overlay de raccourcis ; les reglages sensibles restent reserves au niveau super-admin/expert avec forte tracabilite.
+FR45: Les manifests et contributions UI supportes en v2 sont versionnes et livres avec le build comme source primaire ; la configuration runtime n'agit que sur activation, ordre, variantes simples et parametres prevus.
+FR46: L'integration `HelloAsso` minimum v2 permet d'ingerer ou rapprocher les informations utiles au parcours adherents / vie associative minimale, d'eviter les doublons silencieux, de journaliser les echecs et de permettre une reprise manuelle encadree.
+FR47: Le niveau exact d'integration `HelloAsso` en v2 est tranche par une etude d'architecture comparant au minimum l'API directe `HelloAsso` et l'usage ou l'adaptation du plugin existant cote `Paheko`, en privilegiant simplicite, maintenabilite et compatibilite avec les parcours adherents et la gouvernance `Recyclique` / `Paheko`.
+FR48: Le produit supporte le profil `CREOS` minimal avec objets obligatoires `ModuleManifest`, `SlotDefinition`, `WidgetDeclaration` et `ModuleAction`.
+FR49: Le produit supporte les regles minimales `ModulePermissions` et `SlotConstraints`.
+FR50: Le produit supporte les etats minimaux `ACTIVE`, `INACTIVE` et `ERROR`.
+FR51: Le produit supporte les evenements minimaux `ModuleActivatedEvent`, `ModuleDeactivatedEvent` et `SlotContentChangedEvent`.
+FR52: Le produit supporte les commandes minimales `ACTIVATE_MODULE`, `DEACTIVATE_MODULE` et `REGISTER_WIDGET`.
+FR53: `Recyclique` publie la structure informationnelle commanditaire via des contrats versionnes comprenant au minimum `NavigationManifest`, `PageManifest` et `ContextEnvelope` derive du backend ; `Peintre_nano` charge, valide, fusionne selon des regles deterministes, puis rend ces contrats sans en devenir l'auteur metier.
+FR54: Les routes symboliques, actions, pages et contrats UI restent traces a une source versionnee coherente avec les contrats backend ; `Peintre_nano` ne resout les routes actives, la navigation et la composition de page qu'a partir de cette source commanditaire, sans jamais inventer une route metier, une entree de navigation ou une structure metier absente du contrat ; toute collision ou incoherence non arbitree est detectee et rejetee avant activation.
+FR55: Le parcours `cashflow` couvre scan ou recherche produit, saisie prix, mode de paiement et emission ticket, avec fluidite clavier, contexte garanti, blocage si contexte incomplet, validations metier et comptables avant cloture, journalisation complete et persistance locale si `Paheko` est indisponible.
+FR56: Le `reception flow` couvre contexte garanti, categorisation, pesee, qualification, journalisation des entrees, lien avec le flux matiere et gestion des fallbacks et blocages sur les memes principes que le `cashflow`.
+FR57: La cloture de session ou de caisse couvre controle des totaux, reconciliation avec la zone tampon, declenchement de la sync vers `Paheko` si besoin, blocage possible sur ecart critique et journalisation/historisation.
+FR58: Le `bandeau live` est le premier module qui doit prouver la chaine complete contrat backend -> manifest `CREOS` -> registre `Peintre_nano` -> slot -> rendu -> fallback, avec activation/desactivation via config admin.
+FR59: Le module `declaration eco-organismes` reste agnostique des categories boutique, utilise des categories internes libres avec mapping vers les categories officielles par eco-organisme, croise flux matiere et flux financier, conserve la tracabilite du mapping, permet une lecture par periode et perimetre, et impose la configurabilite des mappings au niveau super-admin.
+FR60: Le module `adherents / vie associative minimale` couvre creation et consultation des adherents, suivi minimum de l'etat d'adhesion, rapprochement minimum avec `HelloAsso`, droits et contextes coherents avec le modele roles/groupes.
+FR61: En cas de widget non rendable, le systeme produit un fallback visible et une journalisation.
+FR62: En cas de module non critique en echec, l'erreur est isolee et le reste de l'ecran reste intact.
+FR63: En cas de flow invalide ou incomplet, le systeme bloque le flow concerne, revient a un mode simple si possible et fournit un feedback explicite.
+FR64: En cas de contexte ambigu ou incomplet, le systeme passe en mode restreint ou degrade explicite sans supposition silencieuse.
+FR65: Une action sensible impose un controle supplementaire de type confirmation, PIN ou revalidation de role.
+FR66: Si la sync `Paheko` est indisponible, l'enregistrement se fait dans `Recyclique` avec retry ulterieur sans blocage terrain par defaut.
+FR67: En cas d'ecart de sync persistant, le systeme signale l'ecart, passe en quarantaine et impose une resolution tracee par un role habilite.
+FR68: En cas de conflit entre securite et fluidite, la securite l'emporte.
+FR69: Le systeme permet le blocage selectif des actions critiques finales uniquement lorsque la securite metier ou comptable n'est plus garantissable autrement.
+FR70: Les cas nominaux de cloture et d'ecart critique produisent des statuts explicites attendus, incluant autorisation locale avec sync differee, blocage et quarantaine, ou autorisation reservee aux roles habilites avec audit.
+FR71: La politique minimale PIN v2 impose un PIN distinct des autres secrets, jamais en clair dans les logs, usages traces, blocage temporaire apres plusieurs erreurs, parametres editables par super-admin, exposition possible via un editeur integre leger cote super-admin, et reinitialisation reservee a un role habilite.
+FR72: L'authentification et les permissions sont sous autorite `Recyclique` ; l'affichage dans `Peintre_nano` ne vaut jamais autorisation effective et toute action sensible est revalidee cote `Recyclique`.
+FR73: Avant implementation large des modules v2, la gouvernance contractuelle est consideree comme close : emplacement canonique des schemas defini, regles de versionnement `OpenAPI`/`CREOS` fixees, politique de breaking changes explicite, schemas minimaux publies et validation CI minimale en place.
+
+### NonFunctional Requirements
+
+NFR1: Les donnees sont toujours enregistrees dans `Recyclique`, meme si `Paheko` est indisponible.
+NFR2: Une zone tampon durable avec retry et reprise apres incident soutient la synchronisation.
+NFR3: Le terrain continue de fonctionner sans dependre d'une disponibilite externe immediate.
+NFR4: Zero fuite de contexte entre sites, caisses, sessions et operateurs.
+NFR5: Les manifests `CREOS` sont livres avec le build comme source primaire.
+NFR6: Les actions sensibles sont journalisees avec resultat, auteur, moment et contexte.
+NFR7: Les fallbacks, blocages et degradations sont journalises.
+NFR8: Les erreurs et retours de feedback restent exploitables pour support et administration.
+NFR9: Les flux sensibles et comptables restent comprehensibles et rejouables apres coup.
+NFR10: Les journaux critiques incluent au minimum `correlation_id`, identifiants de contexte, identifiant operateur, type d'operation, etat, motif d'echec ou de blocage, avec masquage des donnees sensibles inutiles.
+NFR11: Le `cashflow` reste fluide au clavier, sans latence perceptible sur scan, saisie et paiement.
+NFR12: Le shell `Peintre_nano` n'introduit pas de penalite de rendu visible sur les flows terrain critiques.
+NFR13: La v2 peut fonctionner avec un bundle commun ; le lazy loading par module est reporte a une phase ulterieure.
+NFR14: L'installation est documentee et reproductible sur l'environnement cible.
+NFR15: Le socle reste lisible et suffisamment propre pour une ouverture communautaire.
+NFR16: Le coeur du produit ne depend pas d'un service proprietaire pour fonctionner.
+NFR17: La matrice des environnements officiellement supportes est publiee avant release candidate v2.
+NFR18: Une seule installation officielle est supportee en v2, sur `Debian`, environnement de reference du projet.
+NFR19: Le modele de donnees supporte l'articulation des flux financier et matiere.
+NFR20: L'historisation est suffisante pour rejeu, analyse et correlations futures.
+NFR21: Les donnees restent exploitables au niveau des totaux et des operations detaillees.
+NFR22: Les mappings sensibles super-admin sont historises.
+NFR23: La base de donnees reste assez propre pour de futurs usages analytiques.
+NFR24: Les manifests `CREOS` suivent un versionnement `SemVer` aligne avec les conventions `JARVOS`.
+NFR25: `OpenAPI` est versionne separement mais de maniere coordonnee avec `CREOS`.
+NFR26: Chaque manifest expose explicitement un numero de compatibilite avec l'API et la version `Peintre_nano`.
+NFR27: La politique de signalement et de propagation des breaking changes est definie pour ne pas casser le rendu sur les instances deployees.
+NFR28: Un manifest valide en schema ne doit pas casser le rendu React ; cela doit etre verifie par outillage et CI.
+
+### Additional Requirements
+
+AR1: Starter technique a noter pour le socle frontend : `Peintre_nano` est un frontend v2 greenfield initialise en `React + TypeScript + Vite`, dans le meme depot, tandis que le backend reste brownfield.
+AR2: `CSS Grid` est obligatoire comme moteur global de layout du frontend v2.
+AR3: Les choix de details de styling restent d'implementation, mais l'usage transitoire de `Mantine` et le role exact de `Zustand` doivent etre tranches explicitement et ne pas etre herites implicitement.
+AR4: Le packaging initial de `Peintre_nano` reste interne au depot ; l'extraction future vers un repo dedie doit etre preparee sans etre un prerequis immediat.
+AR5: La separation logique `api / frontend` est ciblee ; une coexistence ancien front / nouveau front n'est toleree qu'a titre transitoire avec criteres d'extinction explicites.
+AR6: L'environnement officiel cible est `Debian`, avec un coeur open source sans dependance proprietaire pour le fonctionnement nominal.
+AR7: La stack cible articule `recyclique`, `peintre-nano`, `paheko`, `postgres` et `redis`, avec `Paheko` present dans la stack de deploiement de reference.
+AR8: `Paheko` est integre uniquement cote backend, avec une specification explicite de mapping metier `Recyclique <-> Paheko`.
+AR9: Une matrice `operation metier -> API officielle / plugin minimal / SQL hors flux transactionnel / hors scope` ainsi qu'une liste des manques API reels doivent etre produites avant tout arbitrage plugin significatif.
+AR10: `HelloAsso` est dans le perimetre v2 mais ne doit pas bloquer l'installation minimale du coeur ; les secrets et connecteurs doivent etre cadres explicitement.
+AR11: Le backend cible repose sur `FastAPI`, `SQLAlchemy 2.x` et `Alembic`, avec outbox durable `PostgreSQL` pour la sync `at-least-once` et handlers idempotents ; cette concretisation architecturale precise le PRD, dans lequel un mecanisme de queue/outbox interne n'etait donne qu'a titre d'exemple.
+AR12: `Redis` reste auxiliaire et n'est jamais l'autorite durable ni la source de verite metier.
+AR13: L'ordre d'implementation impose un lot de socle v2 (`Peintre_nano`, contrats, codegen, runtime minimal, auth/session cliente) puis la preuve `bandeau live` comme premier slice vertical contractuel avant l'extension aux gros flows.
+AR14: La migration des ecrans n'intervient qu'apres stabilisation minimale des contrats backend et des contextes de rendu du domaine.
+AR15: Une couche d'adaptation `Mantine` peut servir a la migration mais ne doit pas devenir une dependance structurelle durable des nouveaux composants metier.
+AR16: Les sessions web v2 ciblent un mode `same-origin` avec cookies securises `httpOnly`, rotation geree cote backend, et protection `CSRF` si des cookies sont utilises pour les mutations.
+AR17: Les logs structures et le header canonique `X-Correlation-ID` doivent etre propages sur les flux critiques.
+AR18: Les workflows CI minimums couvrent `recyclique`, `peintre-nano`, les contrats et l'e2e, avec lint/tests, generation + diff `OpenAPI`, validation des schemas/manifests `CREOS` et smoke tests de rendu des modules critiques.
+AR19: `Recyclique` est le writer canonique du schema `OpenAPI` ; le chemin de generation est unique, versionne et non edite a la main.
+AR20: La chaine `Recyclique -> OpenAPI -> contrats generes -> codegen frontend` doit etre couverte tres tot dans le backlog.
+AR21: Les contrats JSON backend restent en `snake_case`, les dates en `ISO 8601`, et l'enveloppe d'erreur doit rester stable avec `code`, `detail`, `retryable`, `state` et `correlation_id`.
+AR22: Les routes brownfield sont gelees jusqu'a strategie de transition explicite ; les nouvelles surfaces v2 suivent des conventions versionnees.
+AR23: `Recyclique` reste l'autorite d'authentification, permissions, contextes et validations sensibles ; l'UI ne fait jamais foi, et `Peintre_nano` doit consommer un adaptateur auth/session explicite sans logique metier implicite.
+AR24: Les mutations sensibles doivent supporter un mecanisme de type `Idempotency-Key`, et le step-up security (`PIN`, confirmation, revalidation) doit etre cadre par domaine.
+AR25: Le rate limiting cote backend doit etre maintenu sur les surfaces sensibles.
+AR26: `Zustand` est limite a de l'etat UI ephemere/local et ne doit jamais devenir la verite des permissions, contextes, sync ou flows metier.
+AR27: `OpenAPI` couvre les contrats backend, DTO, erreurs et actions ; `CREOS` couvre manifests UI, slots, widgets et flows, sans dupliquer la verite metier.
+AR28: Un mecanisme partage d'enums et d'identifiants entre `OpenAPI` et `CREOS` doit etre concretise dans les stories de socle.
+AR29: La source reviewable `CREOS` vit dans `contracts/creos/` ; `peintre-nano/src/generated/` reste une copie derivee, jamais une seconde source de verite.
+AR30: Un registre unique de routes `Peintre_nano` fusionne les contributions modules ; les manifests peuvent declarer des routes candidates, mais les collisions provoquent un echec de validation sauf arbitrage documente.
+AR31: Les widgets doivent exposer des props serialisables et un contrat verifiable avant activation.
+AR32: Les echecs de manifest ou de contrat doivent etre visibles et non silencieux.
+AR33: Les integrations externes hors `Paheko` et `HelloAsso`, notamment email, passent egalement par le backend `Recyclique` et non par des integrations directes du frontend.
+AR34: Les objets `PageTemplate`, `ZoneRole` et `LayoutComposition` peuvent etre prepares conceptuellement en v2 mais ne doivent pas devenir des prerequis generaux du socle minimal.
+AR35: Les niveaux de test couvrent unitaire, contrat, integration et e2e ; les violations de patterns doivent etre traitees comme des violations d'architecture.
+AR36: Les dependances encore a formaliser ou verifier pour la mise en oeuvre incluent : audit backend/API/donnees, retro-engineering `Paheko`, specification multi-contextes, formalisation des schemas `CREOS`, contrat socle de sync, pipeline de validation des contrats et strategie de coexistence/migration brownfield.
+AR37: Les stories devront aussi couvrir les gates de validation produit menant a la beta interne et a la v2 vendable, afin que les criteres de sortie du PRD soient traçables dans le backlog.
+AR38: Les sujets explicitement hors scope initial ou non prerequis v2 ne doivent pas reapparaitre implicitement dans le backlog de socle, notamment personnalisation riche, editeur convivial de flows, pilotage agentique riche, interfaces analytiques avancees, bus `CREOS` obligatoire et chargement dynamique de manifests tiers hors build.
+AR39: La hierarchie de verite doit etre explicite et respectee : `OpenAPI` > `ContextEnvelope` > `NavigationManifest` > `PageManifest` > `UserRuntimePrefs`.
+AR40: La Story 0 du socle `Peintre_nano` doit poser explicitement les quatre artefacts minimaux `NavigationManifest`, `PageManifest`, `ContextEnvelope` et `UserRuntimePrefs`.
+AR41: `Peintre_nano` reste moteur d'affichage/runtime agnostique et n'est jamais auteur metier de la navigation, des pages ou de la structure informationnelle.
+AR42: Le schema canonique de `ContextEnvelope` vit dans `OpenAPI`, tandis que son instance runtime est resolue et consommee au frontend sans devenir une seconde source de verite.
+AR43: `UserRuntimePrefs` reste local par defaut, hors verite metier, hors calcul de permissions/navigation, avec persistence backend seulement via endpoint explicite dedie.
+AR44: Le `bandeau live` doit pouvoir tenir compte des horaires d'ouverture reels, des caisses a ouvertures decalees et des cas particuliers, afin de ne pas afficher un etat d'exploitation trompeur.
+
+### UX Design Requirements
+
+UX-DR1: L'interface doit rendre visible en permanence le contexte actif utile a l'operation en cours, au minimum `site`, `caisse`, `session`, `poste`, et tout etat de contexte bloquant ou restreignant l'action.
+UX-DR2: Aucun changement de contexte sensible ne doit etre implicite ; toute bascule de `site`, `caisse`, `session` ou poste doit etre explicite, perceptible, et suivie d'un rechargement ou recalcul visible si necessaire.
+UX-DR3: L'affichage structurel et les autorisations visibles doivent rester coherents avec l'intersection entre les manifests commanditaires (`NavigationManifest`, `PageManifest`) et le `ContextEnvelope` serveur ; `UserRuntimePrefs` ne peut ajuster que la presentation locale a l'interieur de ce perimetre, sans creer de route, page, permission ou visibilite metier supplementaire.
+UX-DR4: Toute entree de navigation, page ou action indisponible pour cause de contexte ou de permissions doit suivre une regle UX uniforme : les entrees structurelles de navigation sont masquees par defaut si elles ne sont pas accessibles, tandis que les actions contextuelles d'un ecran deja visible sont affichees comme indisponibles lorsqu'un feedback explicatif est utile ; aucune page fantome, aucun trou silencieux de navigation.
+UX-DR5: Les flows terrain critiques `cashflow` et `reception` doivent privilegier une interaction rapide, lisible et robuste au clavier, avec un nombre d'etapes limite, des zones d'action evidentes, et des retours immediats apres saisie ou validation.
+UX-DR6: Les operations terrain frequentes ou urgentes doivent rester atteignables en peu d'actions, notamment les cas remontes du terrain comme ticket en attente, remboursement, don sans article, adhesion asso et actions sociales dediees, sous reserve des arbitrages metier et comptables du backlog.
+UX-DR7: Toute action sensible ou irreversible doit exposer une confirmation, un controle supplementaire ou un blocage explicite adapte au domaine (`PIN`, confirmation, revalidation, refus motive), sans ambiguite pour l'operatrice.
+UX-DR8: Les erreurs, fallbacks, degradations et blocages doivent etre visibles, comprehensibles et distincts selon leur nature : erreur locale, contrat invalide, contexte invalide, sync differee, quarantaine, rejet ou indisponibilite externe. L'UX doit s'appuyer sur les champs contractuels stables (`code`, `detail`, `retryable`, `state`, `correlation_id`) pour afficher des statuts coherents et exploitables.
+UX-DR9: Lorsqu'une operation est acceptee localement mais non encore synchronisee avec `Paheko`, l'interface doit le signaler clairement sans alarmer inutilement le terrain, en distinguant l'enregistrement local, le retry ulterieur et les cas de blocage reel.
+UX-DR10: Un widget, module ou manifest en echec ne doit pas degrader silencieusement l'ensemble de l'ecran ; l'UX doit isoler l'erreur si possible, afficher un fallback visible, et conserver le reste de l'ecran utilisable hors cas critiques.
+UX-DR11: Les vues transverses `dashboard`, `bandeau live`, pages admin et super-admin doivent aider a comprendre rapidement l'etat d'exploitation, les alertes utiles, le perimetre consulte et les consequences des reglages sensibles, sans surcharger l'ecran de detail technique.
+UX-DR12: Les reglages locaux de `UserRuntimePrefs` peuvent ajuster la densite, l'ouverture de panneaux, les raccourcis personnels ou l'onboarding, mais ne doivent jamais modifier la navigation structurelle, les permissions, le sens metier d'un ecran ou les validations backend.
+UX-DR13: Les ecrans de parametres sensibles et d'ACL doivent expliciter qui peut agir, sur quel perimetre, et avec quel impact ; une fonctionnalite sensible ne doit pas etre parametree sans visibilite sur son scope role/utilisateur/contexte.
+UX-DR14: Les modules critiques doivent rester lisibles et operables dans des conditions terrain imparfaites, avec etats de chargement explicites, absence de penalite visuelle excessive due au runtime compose, et priorite constante a la comprehension de l'action en cours.
+UX-DR15: Le `bandeau live` doit presenter un etat d'exploitation coherent avec les horaires d'ouverture reels, les cas de caisses a ouvertures decalees et les cas particuliers ; l'UX ne doit pas laisser croire qu'une caisse est active "du jour" si sa fenetre d'ouverture parametree ne la rend pas effectivement ouverte.
+UX-DR16: Les ecrans de correction de vente ou d'action sensible reservee a des roles eleves doivent rendre visible qu'une modification a eu lieu sous controle, avec au minimum un indicateur explicite sur l'operation corrigee et un acces reserve aux roles habilites a un resume exploitable du type de correction, de son auteur et de son horodatage.
+
+### UX Coverage Map
+
+UX-DR1: Epic 2, Epic 5, Epic 6, Epic 7 - Visibilite du contexte actif sur les ecrans transverses et flows critiques.
+UX-DR2: Epic 2, Epic 5, Epic 6, Epic 7 - Changement de contexte sensible explicite et visible.
+UX-DR3: Epic 3, Epic 5 - Coherence entre manifests commanditaires, `ContextEnvelope` et presentation runtime locale.
+UX-DR4: Epic 3, Epic 5, Epic 6, Epic 7 - Politique uniforme de visibilite ou indisponibilite des entrees et actions.
+UX-DR5: Epic 6, Epic 7 - Flows terrain rapides, lisibles et robustes au clavier.
+UX-DR6: Epic 6, Epic 9 - Accessibilite operationnelle des cas terrain frequents sous arbitrage backlog.
+UX-DR7: Epic 2, Epic 6, Epic 8 - Feedback explicite sur confirmations, blocages et controles sensibles.
+UX-DR8: Epic 4, Epic 6, Epic 7, Epic 8 - Taxonomie visible des erreurs, fallbacks, degradations et blocages.
+UX-DR9: Epic 6, Epic 8 - Distinction claire entre enregistrement local, sync differee et blocage reel.
+UX-DR10: Epic 4, Epic 5, Epic 6, Epic 7 - Isolation d'erreur et fallback visible sans degradation silencieuse globale.
+UX-DR11: Epic 4, Epic 5, Epic 9 - Lisibilite des vues transverses, live et admin sans surcharge.
+UX-DR12: Epic 3, Epic 5 - `UserRuntimePrefs` borne a la personnalisation locale non metier.
+UX-DR13: Epic 5, Epic 9 - Lisibilite du perimetre et de l'impact des parametres sensibles et ACL.
+UX-DR14: Epic 3, Epic 6, Epic 7 - Operabilite terrain en conditions imparfaites et chargements explicites.
+UX-DR15: Epic 4 - Cohherence UX du `bandeau live` avec les horaires d'ouverture reels, ouvertures decalees et cas particuliers.
+UX-DR16: Epic 2, Epic 6 - Visibilite minimale des corrections sensibles sous controle et des traces associees.
+
+### FR Coverage Map
+
+FR1: Epic 2 - Backend brownfield stabilise comme noyau v2.
+FR2: Epic 6 et Epic 7 - Flows terrain prioritaires `cashflow` et `reception flow` portes dans la v2.
+FR3: Epic 2 - Autorite metier, contrats, permissions, contextes et resilience cote `Recyclique`.
+FR4: Epic 8 - Articulation comptable officielle avec `Paheko`.
+FR5: Epic 1 - Prerequis d'integration `Paheko` et arbitrages API/plugin/SQL.
+FR6: Epic 3 - Runtime `Peintre_nano` et capacites coeur du moteur UI.
+FR7: Epic 3 - Frontiere claire entre metier `Recyclique` et moteur UI.
+FR8: Epic 3 - Adaptateur de canal web et rendu concret.
+FR9: Epic 3 - Grammaire `CREOS` minimale partagee.
+FR10: Epic 3, Epic 4, Epic 5, Epic 6, Epic 7, Epic 8, Epic 9 - Toute l'UI v2 passe par `Peintre_nano`, du socle aux ecrans et modules livres.
+FR11: Epic 1 et Epic 2 - Stabilisation puis mise en oeuvre des contextes minimaux et de leur modele.
+FR12: Epic 2 - Politique de recalcul, mode degrade et securite prioritaire.
+FR13: Epic 2 - Rechargement explicite des changements de contexte sensibles.
+FR14: Epic 2 - Modele roles/groupes/libelles personnalisables.
+FR15: Epic 2 - Calcul additif des droits.
+FR16: Epic 2 - Autorite des cles techniques et permissions calculees.
+FR17: Epic 4 - Definition de la chaine modulaire complete a prouver.
+FR18: Epic 4 - Fallback, blocage, journalisation et correction des contrats invalides.
+FR19: Epic 4 - Regles de fallback ou blocage sur les elements critiques.
+FR20: Epic 1 et Epic 2 - Zero fuite de contexte entre sites, caisses et operateurs, du cadrage a l'implementation.
+FR21: Epic 5 - Vues globales admin/super-admin sous contraintes de contexte et de tracabilite.
+FR22: Epic 1 et Epic 2 - Donnee exploitable, historisation, rejeu et tracabilite des mappings sensibles, du modele a la persistance operationnelle.
+FR23: Epic 2 - Persistance locale d'abord et sync reportable.
+FR24: Epic 8 - Etats explicites de synchronisation.
+FR25: Epic 8 - Regles de quarantaine.
+FR26: Epic 8 - Workflow de levee de quarantaine trace.
+FR27: Epic 8 - Audit des resolutions manuelles.
+FR28: Epic 8 - Correlation inter-systemes pour support et suivi.
+FR29: Epic 7 - Verite `Recyclique` sur le flux matiere.
+FR30: Epic 6, Epic 7, Epic 8, Epic 9 - Articulation exploitable des flux financier et matiere entre flows terrain, sync comptable et modules metier complementaires.
+FR31: Epic 2 - Structure de roles adaptable par ressourcerie.
+FR32: Epic 2 - Roles definissables, groupes simples et libelles personnalises.
+FR33: Epic 2 - Cles techniques stables pour roles et groupes.
+FR34: Epic 2 - Calcul des droits a partir de roles definis localement.
+FR35: Epic 5 - Propagation des libelles personnalises dans l'UI recomposee.
+FR36: Epic 1 - Isolation multi-sites appliquee aussi aux roles et groupes.
+FR37: Epic 3 - Capacites minimales v2 du moteur `Peintre_nano`.
+FR38: Epic 4, Epic 6, Epic 7, Epic 8, Epic 9, Epic 10 - Modules obligatoires v2 repartis entre preuve modulaire, flows critiques, sync, modules complementaires et validation finale de readiness.
+FR39: Epic 8 - Contrat de synchronisation et reconciliation complet.
+FR40: Epic 1 - Hierarchie technique d'integration `Paheko`.
+FR41: Epic 1 - Validite de la structure multi-sites / multi-caisses / multi-postes et mappings associes.
+FR42: Epic 8 - Gestion des correspondances `Paheko` absentes ou invalides.
+FR43: Epic 8 - Schema de deploiement cible par ressourcerie.
+FR44: Epic 9 - Config admin simple comme capacite v2 livrable.
+FR45: Epic 3 - Versionnement et livraison build-time des manifests UI.
+FR46: Epic 9 - Integration minimum `HelloAsso`.
+FR47: Epic 9 - Etude d'architecture et arbitrage d'integration `HelloAsso`.
+FR48: Epic 3 - Objets obligatoires du profil `CREOS` minimal.
+FR49: Epic 3 - Regles minimales `CREOS`.
+FR50: Epic 3 - Etats minimaux `CREOS`.
+FR51: Epic 3 - Evenements minimaux `CREOS`.
+FR52: Epic 3 - Commandes minimales `CREOS`.
+FR53: Epic 2 et Epic 3 - Publication backend des artefacts commanditaires et consommation/runtime cote `Peintre_nano`.
+FR54: Epic 1 et Epic 3 - Source versionnee unique, hierarchie de verite et gouvernance du routage.
+FR55: Epic 6 - Parcours cashflow cible.
+FR56: Epic 7 - Parcours reception cible.
+FR57: Epic 6 et Epic 8 - Cloture de session cote caisse avec articulation vers la sync et la reconciliation comptable.
+FR58: Epic 4 - `Bandeau live` comme premiere preuve verticale, avec activation/desactivation admin minimale a ce stade avant convergence ulterieure avec la `config admin simple` d'Epic 9.
+FR59: Epic 9 - Module declaration eco-organismes avec mappings configurables et traces.
+FR60: Epic 9 - Module adherents / vie associative minimale.
+FR61: Epic 4 - Fallback visible pour widget non rendable.
+FR62: Epic 4 - Isolation d'erreur pour module non critique.
+FR63: Epic 4 - Blocage et mode simple sur flow invalide.
+FR64: Epic 2 - Mode restreint explicite sur contexte ambigu ou incomplet.
+FR65: Epic 2 - Step-up security pour actions sensibles.
+FR66: Epic 8 - Non-blocage terrain par defaut si sync indisponible.
+FR67: Epic 8 - Quarantaine et resolution tracee.
+FR68: Epic 2 - Priorite de la securite sur la fluidite.
+FR69: Epic 8 - Blocage selectif des actions critiques finales.
+FR70: Epic 8 - Statuts explicites de cloture et d'ecart critique.
+FR71: Epic 2 - Politique PIN v2 et son administration.
+FR72: Epic 2 - Revalidation serveur de toute action sensible.
+FR73: Epic 1 et Epic 10 - Exigence scindee en deux jalons : fermeture des prerequis de gouvernance contractuelle en Epic 1, puis mise en place effective des validations CI minimales en Epic 10.
+
+### NFR Coverage Map
+
+NFR1: Epic 2 et Epic 8 - Persistance locale `Recyclique` et resilience de synchronisation.
+NFR2: Epic 2 et Epic 8 - Zone tampon, retry et reprise apres incident.
+NFR3: Epic 2, Epic 6 et Epic 7 - Terrain utilisable sans dependance externe immediate sur les flows critiques.
+NFR4: Epic 1 et Epic 2 - Zero fuite de contexte et validite du modele multi-contextes.
+NFR5: Epic 3 - Manifests `CREOS` livres avec le build comme source primaire.
+NFR6: Epic 2 et Epic 8 - Journalisation des actions sensibles et resolutions manuelles.
+NFR7: Epic 4, Epic 6, Epic 7, Epic 8 - Journalisation des fallbacks, blocages et degradations.
+NFR8: Epic 4, Epic 8, Epic 10 - Retours exploitables pour support et administration.
+NFR9: Epic 8 - Rejeu et comprehensibilite des flux comptables sensibles.
+NFR10: Epic 2 et Epic 8 - Schema minimal des journaux critiques et correlation inter-systemes.
+NFR11: Epic 6 - Fluidite clavier de la caisse.
+NFR12: Epic 3, Epic 5, Epic 6, Epic 7 - Absence de penalite de rendu visible du shell `Peintre_nano`.
+NFR13: Epic 3 - Bundle commun acceptable au demarrage.
+NFR14: Epic 10 - Installation documentee et reproductible.
+NFR15: Epic 10 - Socle lisible et propre pour ouverture communautaire.
+NFR16: Epic 10 - Absence de dependance proprietaire au coeur du produit.
+NFR17: Epic 10 - Matrice d'environnements officiellement supportes.
+NFR18: Epic 10 - Support officiel `Debian`.
+NFR19: Epic 1 et Epic 8 - Modele de donnees articulant flux financier et flux matiere.
+NFR20: Epic 1 et Epic 2 - Historicisation suffisante pour rejeu, analyse et correlations futures.
+NFR21: Epic 6, Epic 7, Epic 8, Epic 10 - Exploitabilite des donnees au grain des totaux et des operations detaillees.
+NFR22: Epic 1, Epic 2, Epic 9 - Historisation des mappings sensibles super-admin.
+NFR23: Epic 1 et Epic 10 - Base assez propre pour usages analytiques futurs.
+NFR24: Epic 1 et Epic 3 - Versionnement `SemVer` des manifests `CREOS`.
+NFR25: Epic 1 et Epic 3 - Coordination du versionnement `OpenAPI` / `CREOS`.
+NFR26: Epic 3 - Compatibilite explicite manifest/API/`Peintre_nano`.
+NFR27: Epic 1 et Epic 10 - Politique de breaking changes et propagation de compatibilite.
+NFR28: Epic 3 et Epic 10 - Validation outillee qu'un manifest valide ne casse pas le rendu React.
+
+### Additional Requirements Coverage Map
+
+AR1: Epic 3 - Bootstrap `Peintre_nano` en `React + TypeScript + Vite`.
+AR2: Epic 3 et Epic 5 - `CSS Grid` comme moteur global de layout.
+AR3: Epic 3 - Decisions explicites sur styling, `Mantine` et `Zustand`.
+AR4: Epic 3 - Packaging interne initial de `Peintre_nano`.
+AR5: Epic 3 et Epic 5 - Coexistence ancien front / nouveau front avec criteres d'extinction.
+AR6: Epic 10 - Environnement officiel `Debian` et coeur open source.
+AR7: Epic 8 et Epic 10 - Stack cible complete incluant `Paheko`.
+AR8: Epic 1 et Epic 8 - Integration `Paheko` uniquement cote backend avec specification de mapping.
+AR9: Epic 1 - Matrice operation -> API/plugin/SQL/hors scope et liste des gaps API.
+AR10: Epic 9 - `HelloAsso` non bloquant pour l'installation minimale.
+AR11: Epic 2 et Epic 8 - Outbox durable `PostgreSQL`, sync `at-least-once`, handlers idempotents.
+AR12: Epic 2 et Epic 8 - `Redis` auxiliaire seulement.
+AR13: Epic 3, Epic 4, Epic 5, Epic 6, Epic 7 - Ordre d'implementation socle -> preuve modulaire -> recomposition transverse -> gros flows.
+AR14: Epic 5, Epic 6, Epic 7 - Migration des ecrans apres stabilisation minimale des contrats et contextes.
+AR15: Epic 3 et Epic 5 - `Mantine` comme couche d'adaptation transitoire.
+AR16: Epic 2 et Epic 3 - Sessions same-origin, cookies `httpOnly`, rotation backend, `CSRF`.
+AR17: Epic 2, Epic 8, Epic 10 - Logs structures et `X-Correlation-ID`.
+AR18: Epic 10 - Workflows CI minimums.
+AR19: Epic 1 et Epic 2 - `Recyclique` writer canonique du schema `OpenAPI`.
+AR20: Epic 3 et Epic 10 - Chaine `OpenAPI` -> codegen frontend couverte tres tot puis outillee.
+AR21: Epic 2 et Epic 3 - Conventions JSON, dates et enveloppe d'erreur.
+AR22: Epic 3 et Epic 5 - Gouvernance de transition des routes brownfield/v2.
+AR23: Epic 2 et Epic 3 - Autorite auth/permissions `Recyclique` et adaptateur auth/session explicite cote `Peintre_nano`.
+AR24: Epic 2, Epic 6, Epic 8 - `Idempotency-Key` et step-up security par domaine.
+AR25: Epic 2 - Rate limiting sur surfaces sensibles.
+AR26: Epic 3 - `Zustand` limite a l'etat UI ephemere.
+AR27: Epic 1 et Epic 3 - Separation nette des contrats `OpenAPI` et `CREOS`.
+AR28: Epic 1 et Epic 3 - Mecanisme partage d'enums et d'identifiants.
+AR29: Epic 3 - Source reviewable `CREOS` et copie derivee seulement dans `src/generated`.
+AR30: Epic 3 - Registre unique de routes `Peintre_nano` et rejection des collisions.
+AR31: Epic 3 et Epic 5 - Widgets serialisables et contrats verifiables.
+AR32: Epic 4 et Epic 5 - Echecs de manifest/contrat visibles et non silencieux.
+AR33: Epic 5, Epic 9, Epic 10 - Integrations externes, notamment email, via backend `Recyclique`.
+AR34: Epic 3 - `PageTemplate`, `ZoneRole`, `LayoutComposition` prepares mais non prerequis du socle minimal.
+AR35: Epic 10 - Couverture unitaire, contrat, integration, e2e et enforcement des patterns d'architecture.
+AR36: Epic 1 - Dependances encore a formaliser ou verifier avant implementation large.
+AR37: Epic 10 - Gates beta interne et v2 vendable traçables dans le backlog.
+AR38: Epic 3, Epic 5, Epic 10 - Hors-scope v2 a ne pas reinjecter implicitement dans le backlog de socle.
+AR39: Epic 1 et Epic 3 - Hierarchie de verite explicite entre `OpenAPI`, `ContextEnvelope`, `NavigationManifest`, `PageManifest` et `UserRuntimePrefs`.
+AR40: Epic 3 - Story 0 centree sur les quatre artefacts minimaux du socle `Peintre_nano`.
+AR41: Epic 3 et Epic 5 - `Peintre_nano` borne a son role de runtime d'affichage agnostique.
+AR42: Epic 2 et Epic 3 - `ContextEnvelope` canonique dans `OpenAPI`, puis consomme cote runtime sans seconde verite.
+AR43: Epic 3 - `UserRuntimePrefs` borne a la personnalisation locale hors permissions/navigation.
+AR44: Epic 4 avec prerequis Epic 1 et Epic 2 - `Bandeau live` coherent avec horaires reels, ouvertures decalees et cas particuliers.
+
+## Epic List
+
+### Epic 1: Fermer les prerequis structurants et valider le modele de donnees multi-contextes
+L'equipe peut verrouiller les inconnues critiques du projet avant implementation large, avec livrables explicites : audit backend/API/donnees, retro `Paheko`, spec multi-contextes, validite des structures de donnees multi-sites/multi-caisses/multi-postes, continuite et integrite des donnees brownfield, contrat de sync/reconciliation, gouvernance `OpenAPI` / `CREOS`, hierarchie de verite, source canonique de `ContextEnvelope`, et formalisation des signaux de contexte/exploitation necessaires aux vues live (horaires reels, ouvertures decalees, cas particuliers) ainsi que la matrice d'arbitrage API/plugin/SQL.
+Pour `FR73`, cet epic ferme le cadrage, les schemas minimaux et la gouvernance ; la mise en place effective des validations CI minimales se termine ensuite en Epic 10.
+**FRs covered:** FR5, FR11, FR20, FR22, FR36, FR40, FR41, FR54, FR73 (jalon gouvernance)
+
+### Epic 2: Poser le socle backend brownfield v2
+L'equipe peut stabiliser `Recyclique` comme noyau d'autorite v2 pour l'authentification, les contextes, les permissions, la securite sensible, la persistance terrain, l'audit et les invariants metier, afin de fournir un backend fiable aux futurs modules. Cet epic porte aussi l'exposition backend minimale necessaire aux vues live et slices verticaux initiaux, notamment les signaux et contrats permettant au `bandeau live` de refleter les horaires reels, ouvertures decalees et cas particuliers formalises en Epic 1.
+**FRs covered:** FR1, FR3, FR11, FR12, FR13, FR14, FR15, FR16, FR20, FR22, FR23, FR31, FR32, FR33, FR34, FR53, FR64, FR65, FR68, FR71, FR72
+
+### Epic 3: Poser le socle frontend greenfield `Peintre_nano`
+L'equipe peut mettre en service un runtime UI v2 minimal mais reel, avec `Peintre_nano`, `CREOS`, registre de routes, widgets, slots, contrat de rendu et adaptateur auth/session, afin que toute l'UI v2 puisse ensuite etre recomposee sur une base propre. Cet epic inclut explicitement la Story 0 de socle autour de quatre artefacts minimaux (`NavigationManifest`, `PageManifest`, `ContextEnvelope`, `UserRuntimePrefs`), une preuve d'affichage initiale (page blanche de shell, grille visible, premiers widgets/catalogue simples, rendu via manifest minimal, fallbacks visuels), et le respect strict du bornage commanditaire/runtime. L'affichage effectif doit rester l'intersection deterministe du contrat commanditaire, du `ContextEnvelope` serveur et des `UserRuntimePrefs` non metier.
+**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR37, FR45, FR48, FR49, FR50, FR51, FR52, FR53, FR54
+
+### Epic 4: Prouver la chaine modulaire complete avec `bandeau live`
+L'equipe peut prouver en vrai la chaine complete backend -> contrat -> manifest -> runtime -> rendu -> fallback, afin de valider le socle modulaire avant de migrer les flows critiques et les autres modules. Cette preuve inclut un `bandeau live` dont l'etat d'exploitation reste coherent avec les horaires reels, les ouvertures decalees et les cas particuliers, sur la base des prerequis de contrats et de contexte poses par Epics 1 et 2, ainsi qu'un mecanisme minimal d'activation/desactivation admin du module avant que la `config admin simple` complete soit livree plus largement par Epic 9.
+Dans cet epic, `FR38` n'est couvert que pour le volet `bandeau live` en tant que premier module obligatoire et preuve de chaine, pas pour l'ensemble des modules obligatoires de la v2.
+**FRs covered:** FR10, FR17, FR18, FR19, FR38, FR58, FR61, FR62, FR63
+
+### Epic 5: Recomposer le shell, le dashboard et l'administration existants dans `Peintre_nano`
+Les utilisatrices et responsables peuvent retrouver les pages transverses de `Recyclique` dans une UI composee `Peintre_nano` : shell global, navigation, dashboard, pages admin, listings, cartes, statistiques et points d'entree vers les autres ecrans, avec respect du contexte, des contraintes de rendu en `CSS Grid`, du blueprint `workflow explicite -> PageManifest / navigation contractuelle -> layout`, et du principe que la navigation/structure metier viennent de `Recyclique` via contrats commanditaires.
+**FRs covered:** FR10, FR21, FR35
+
+### Epic 6: Rendre la caisse v2 exploitable et enrichie par les besoins terrain
+Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow`, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`.
+**FRs covered:** FR2, FR10, FR30, FR38, FR55, FR57
+
+### Epic 7: Rendre la reception v2 exploitable dans la nouvelle chaine UI
+Les operatrices peuvent utiliser la reception dans `Peintre_nano` avec ses ecrans, workflows explicites, definitions d'ecrans, saisies et contextualisation metier, en respectant les contraintes du flux matiere et l'architecture modulaire retenue.
+**FRs covered:** FR2, FR10, FR29, FR30, FR38, FR56
+
+### Epic 8: Fiabiliser l'articulation comptable reelle avec `Paheko`
+Les responsables peuvent synchroniser, suivre, corriger et reconcilier les operations entre `Recyclique` et `Paheko`, avec etats explicites, quarantaine, blocages selectifs, correlation inter-systemes et schema de deploiement cible.
+**FRs covered:** FR4, FR10, FR24, FR25, FR26, FR27, FR28, FR30, FR38, FR39, FR42, FR43, FR57, FR66, FR67, FR69, FR70
+
+### Epic 9: Livrer les modules metier complementaires v2
+Les responsables et super-admins peuvent utiliser les modules metier complementaires attendus pour une v2 credible : declaration eco-organismes, adherents / vie associative minimale, integration `HelloAsso` et config admin simple, avec arbitrage `HelloAsso` explicite avant implementation large du connecteur.
+**FRs covered:** FR10, FR30, FR38, FR44, FR46, FR47, FR59, FR60
+
+### Epic 10: Industrialiser, valider et rendre la v2 deployable
+L'equipe peut verifier, tester, observer, deployer et qualifier la v2 jusqu'aux gates de beta interne et de version vendable, sans laisser les contraintes de qualite, CI, observabilite, installabilite et readiness des modules obligatoires hors backlog.
+**FRs covered:** FR10, FR38, FR73 (jalon CI/readiness)
+**NFR/AR cles:** NFR14, NFR15, NFR16, NFR17, NFR18, NFR27, NFR28, AR18, AR35, AR37
+
+## Module Obligatoire Map
+
+- `bandeau live` -> Epic 4
+- `cashflow` -> Epic 6
+- `reception flow` -> Epic 7
+- `synchronisation Paheko` -> Epic 8
+- `declaration eco-organismes` -> Epic 9
+- `adherents / vie associative minimale` -> Epic 9
+- `integration HelloAsso` -> Epic 9
+- `config admin simple` -> Epic 9
+- `validation readiness / deployabilite des modules obligatoires` -> Epic 10
+
+## Epic Sequencing Notes
+
+Ordre de construction recommande :
+
+1. Epic 1 ferme les prerequis structurants et la validite des structures de donnees.
+2. Epic 2 pose le socle backend brownfield.
+3. Epic 3 pose le socle frontend greenfield `Peintre_nano`, avec un jalon d'affichage initial : shell vide, grille visible, widgets simples de catalogue, manifest minimal et fallbacks de rendu.
+4. Epic 4 prouve la chaine modulaire avec `bandeau live`.
+5. Epic 5 recompose le shell, le dashboard et les pages admin/transverses.
+6. Epic 6 porte la caisse v2, avec cloture locale exploitable et point de raccord clair vers Epic 8.
+7. Epic 7 porte la reception v2 avec workflow explicite et definitions d'ecrans.
+8. Epic 8 branche et fiabilise la sync/reconciliation comptable reelle avec `Paheko`.
+9. Epic 9 livre les modules metier complementaires v2.
+10. Epic 10 ferme la validation, l'industrialisation et les gates de sortie.
+
+Regles de dependance :
+
+- Epic 6 et Epic 7 ne doivent pas dependre de stories futures du meme epic ; ils peuvent demarrer sur une cloture locale exploitable et une sync differee ou encadree tant que le contrat de synchronisation est deja pose au niveau documentaire par Epic 1, sans attendre la livraison complete des stories d'Epic 8.
+- La Story 0 d'Epic 3 ne demarre qu'une fois disponibles au minimum : schema `OpenAPI` initial du `ContextEnvelope`, publication commanditaire minimale des manifests et conventions de validation/merge fermees par Epics 1 et 2.
+- Epic 4 peut s'appuyer sur un toggle admin minimal borne au slice `bandeau live` pour satisfaire FR58 ; la `config admin simple` generalisee et reusable reste, elle, dans le perimetre principal d'Epic 9.
+- Epic 8 ne doit pas re-definir les contextes, l'auth ou le runtime UI ; il s'appuie sur Epics 1 a 4.
+- Epic 9 ne doit pas lancer l'implementation `HelloAsso` large avant la story d'arbitrage prevue par FR47.
+- Epic 10 porte principalement des NFRs, ARs et gates de sortie ; il couvre notamment CI, installabilite, matrice d'environnements supportes, observabilite, validation de readiness des modules obligatoires et criteres de beta interne / v2 vendable ; il ne doit pas devenir un fourre-tout pour du metier non planifie ailleurs.
+
+Jalon d'affichage initial a prevoir dans Epic 3 :
+
+- page blanche chargee dans le shell `Peintre_nano` avec grille visible et zones nommees ;
+- premiers widgets de catalogue local, par exemple `TextBlock`, `Card`, `KpiCard`, `ListBlock` ou equivalent ;
+- affichage de ces widgets dans la grille a partir d'une configuration/manifeste minimal ;
+- fallback visible pour slot vide, widget inconnu ou manifest invalide ;
+- page de demonstration ou bac a sable d'affichage permettant de verifier progressivement le rendu avant l'injection des vrais modules metier.
+
+## Epic 1: Fermer les prerequis structurants et valider le modele de donnees multi-contextes
+
+L'equipe peut verrouiller les inconnues critiques du projet avant implementation large, avec livrables explicites : audit backend/API/donnees, retro `Paheko`, spec multi-contextes, validite des structures de donnees multi-sites/multi-caisses/multi-postes, continuite et integrite des donnees brownfield, contrat de sync/reconciliation, gouvernance `OpenAPI` / `CREOS`, hierarchie de verite, source canonique de `ContextEnvelope`, et formalisation des signaux de contexte/exploitation necessaires aux vues live (horaires reels, ouvertures decalees, cas particuliers) ainsi que la matrice d'arbitrage API/plugin/SQL.
+
+### Story 1.1: Cadrer la surface de travail v2 et le mode de reference Paheko
+
+As a core developer,
+I want a documented and approved working surface for local development and tests,
+So that the team can implement v2 against a stable reference without ambiguity between `Paheko` runtime, Docker services, and extracted SQLite artifacts.
+
+**Acceptance Criteria:**
+
+**Given** the project needs a practical baseline for dev, test, and architecture validation
+**When** the team reviews the local execution options around `Paheko`
+**Then** the story produces a decision note that states which setup is the default reference for day-to-day work between a live `Paheko` service in Docker, a local standalone instance, or a recovered SQLite-only reference
+**And** the note explains the intended use of each option for development, integration testing, reverse engineering, and troubleshooting
+
+**Given** a chosen reference mode for `Paheko`
+**When** the working surface is documented
+**Then** the required services, minimum startup sequence, expected data sources, and ownership of test data are explicitly listed
+**And** the document states what is in scope for local implementation before full end-to-end sync is available
+
+**Given** the project will need repeatable tests and programming sessions
+**When** the working surface is approved
+**Then** it defines a default path that future stories can rely on without reopening the environment decision
+**And** any remaining alternative setups are marked as optional, transitional, or analysis-only
+
+### Story 1.2: Auditer le brownfield backend, l'API existante et les donnees critiques
+
+As a technical lead,
+I want a focused brownfield audit of backend, API, and critical data structures,
+So that v2 can reuse what is stable and isolate what must be refactored before contract-driven implementation starts.
+
+**Acceptance Criteria:**
+
+**Given** `recyclique-1.4.4` remains the brownfield baseline for critical business logic
+**When** the audit is completed
+**Then** it identifies the current entry points, domains, data structures, and flows relevant to `cashflow`, `reception`, auth, permissions, context, and sync
+**And** it distinguishes reusable assets, fragile areas, and blocking unknowns
+
+**Given** future frontend and contract work must not depend on unstable internals
+**When** the audit findings are written
+**Then** they highlight which existing backend surfaces are safe to expose or adapt first
+**And** they list the areas where DTOs or contracts must be stabilized before large UI migration begins
+
+**Given** Epic 1 should reduce implementation risk rather than restate the whole codebase
+**When** the audit report is finalized
+**Then** it contains a prioritized issue list with concrete consequences for Epics 2, 3, 6, 7, and 8
+**And** it avoids broad technical inventory with no decision value
+
+### Story 1.3: Specifier le modele multi-contextes et les invariants d'autorisation v2
+
+As a backend and product team,
+I want a canonical v2 specification for contexts, roles, groups, permissions, and sensitive revalidation,
+So that all future epics share the same security and isolation model.
+
+**Acceptance Criteria:**
+
+**Given** v2 depends on strict isolation between sites, caisses, sessions, postes, and operators
+**When** the multi-context specification is published
+**Then** it defines the minimal canonical entities and fields for `site`, `caisse`, `session`, `poste de reception`, `role`, `groupe`, `permissions`, and `PIN`
+**And** it states the zero-leakage invariants and context-switch rules that future implementations must preserve
+
+**Given** permissions in v2 are additive and computed by `Recyclique`
+**When** the authorization model is described
+**Then** the story formalizes stable technical keys, customizable labels, multi-group membership, and backend authority over effective permissions
+**And** it states that UI labels never act as security truth
+
+**Given** sensitive actions require stronger guarantees than display-level filtering
+**When** the security rules are finalized
+**Then** they define the minimum step-up behaviors for confirmation, PIN, or role revalidation
+**And** they specify when the system must block, degrade, or force explicit recalculation of context
+
+### Story 1.4: Fermer la gouvernance contractuelle `OpenAPI` / `CREOS` / `ContextEnvelope`
+
+As a platform architect,
+I want the contract governance for backend data and UI composition to be explicit and reviewable,
+So that Epic 2 and Epic 3 can build on one hierarchy of truth instead of inventing parallel models.
+
+**Acceptance Criteria:**
+
+**Given** the project uses both `OpenAPI` and `CREOS`
+**When** the governance rules are documented
+**Then** the story states the authoritative owner, canonical location, and usage boundary for `OpenAPI`, `ContextEnvelope`, `NavigationManifest`, `PageManifest`, and `UserRuntimePrefs`
+**And** it formalizes the truth hierarchy already assumed by the architecture
+
+**Given** future agents and developers will generate, validate, and consume these artifacts
+**When** the contract governance is closed
+**Then** the story defines versioning expectations, drift detection expectations, and the rule that generated frontend artifacts are derived copies, never a second source of truth
+**And** it specifies how shared enums, identifiers, and permission keys flow from backend contracts to UI contracts
+
+**Given** `Peintre_nano` must not become author of business structure
+**When** the runtime responsibilities are specified
+**Then** the story confirms that runtime resolution may validate, merge, filter, reject, and render contracts
+**And** it forbids runtime creation of business routes, permissions, or pages absent from commanditaire contracts
+
+### Story 1.5: Definir le contrat minimal de synchronisation et reconciliation avec `Paheko`
+
+As a product and integration team,
+I want a minimal but explicit sync and reconciliation contract between `Recyclique` and `Paheko`,
+So that terrain-first workflows can proceed safely before full accounting integration is implemented.
+
+**Acceptance Criteria:**
+
+**Given** terrain operations are recorded in `Recyclique` first and synced later when needed
+**When** the sync contract is formalized
+**Then** it defines the minimum lifecycle of a synchronized operation, including local recording, retry, quarantine, resolution, rejection, and final accounting state
+**And** it specifies the role of durable outbox, idempotency, and correlation identifiers
+
+**Given** some critical actions may eventually be blocked on accounting guarantees
+**When** the reconciliation rules are documented
+**Then** the story distinguishes non-blocking local acceptance, selective blocking of critical final actions, and manual resolution workflows
+**And** it defines the minimum audit trail required for quarantine lifts and manual corrections
+
+**Given** Epics 6 and 7 must not wait for Epic 8 to invent core sync semantics
+**When** this story is approved
+**Then** later stories can rely on a stable documentary sync contract
+**And** they can implement local closure and deferred sync without redefining business accounting states
+
+### Story 1.6: Produire la matrice d'integration `Paheko` et les gaps API reels
+
+As a technical decision maker,
+I want a clear operation-by-operation matrix for `Paheko` integration choices,
+So that the project can prefer official APIs and only justify plugin or SQL usage when truly necessary.
+
+**Acceptance Criteria:**
+
+**Given** the product follows an API-first strategy for `Paheko`
+**When** the integration matrix is produced
+**Then** each major business operation is classified as covered by official API, requiring a minimal plugin, limited to SQL analysis/admin usage, or out of v2 scope
+**And** unsupported assumptions are excluded from the default path
+
+**Given** integration complexity can drift if not constrained early
+**When** the matrix is reviewed
+**Then** it includes a concrete list of real API gaps and unknowns that still need validation
+**And** each gap is tied to a product consequence or backlog consequence
+
+**Given** plugin usage is allowed only by exception
+**When** a need for plugin extension is identified
+**Then** the story requires an explicit rationale showing why the official API is insufficient
+**And** it prevents SQL transactional writes from becoming the nominal implementation path
+
+### Story 1.7: Formaliser les signaux d'exploitation pour `bandeau live` et les premiers slices
+
+As a module and frontend team,
+I want the operational signals needed by `bandeau live` and early slices to be defined before implementation,
+So that Epic 4 can prove the modular chain with real business context instead of guessed display logic.
+
+**Acceptance Criteria:**
+
+**Given** the first vertical proof depends on live operational context
+**When** the required signals are specified
+**Then** the story defines the minimum data needed to represent opening hours, delayed openings, exceptional cases, sync state, and context visibility for `bandeau live`
+**And** it identifies which signals come from backend authority versus local runtime presentation
+
+**Given** `bandeau live` must remain coherent with real operations
+**When** edge cases are listed
+**Then** the specification covers caisses ouvertes plus tard, atypical openings, unavailable external state, and explicit degraded modes
+**And** it avoids any silent assumption that a caisse is active only because it exists on the day
+
+**Given** Epic 4 should validate the modular chain without reopening architecture debates
+**When** this story is completed
+**Then** the first slice can consume a documented contract for operational signals
+**And** later modules reuse the same rules for visibility, fallback, and traceability where relevant
+
+## Epic 2: Poser le socle backend brownfield v2
+
+L'equipe peut stabiliser `Recyclique` comme noyau d'autorite v2 pour l'authentification, les contextes, les permissions, la securite sensible, la persistance terrain, l'audit et les invariants metier, afin de fournir un backend fiable aux futurs modules. Cet epic porte aussi l'exposition backend minimale necessaire aux vues live et slices verticaux initiaux, notamment les signaux et contrats permettant au `bandeau live` de refleter les horaires reels, ouvertures decalees et cas particuliers formalises en Epic 1.
+
+### Story 2.1: Poser le socle de session web v2 et l'autorite d'authentification backend
+
+As a frontend and backend team,
+I want `Recyclique` to expose the v2 session/auth foundation under backend authority,
+So that all future UI work can rely on a secure and stable authentication model without moving security logic into `Peintre_nano`.
+
+**Acceptance Criteria:**
+
+**Given** v2 authentication remains under `Recyclique` authority
+**When** the session foundation is implemented
+**Then** the backend provides the minimal endpoints and middleware needed for authenticated same-origin web sessions
+**And** session transport follows the chosen secure cookie strategy with backend-managed lifecycle
+
+**Given** old and new frontend surfaces may temporarily coexist
+**When** the auth foundation is documented and exposed
+**Then** it supports the transition model without duplicating the source of truth for authentication
+**And** it avoids pushing credential or authorization decisions into frontend runtime state
+
+**Given** future stories will depend on a stable auth base
+**When** this story is completed
+**Then** Epic 3 can consume a clear auth/session contract
+**And** later business stories do not need to redefine login/session ownership
+
+### Story 2.2: Implementer le `ContextEnvelope` backend minimal et le recalcul explicite de contexte
+
+As a composed UI runtime,
+I want `Recyclique` to expose a canonical `ContextEnvelope` and explicit context refresh behavior,
+So that the frontend can render only what is valid for the active site, caisse, session, poste, and operator.
+
+**Acceptance Criteria:**
+
+**Given** the v2 truth hierarchy requires backend-owned context
+**When** the minimal `ContextEnvelope` contract is implemented
+**Then** it exposes the canonical context fields, calculated permissions, and UI-relevant state agreed in Epic 1
+**And** its schema is published through the governed backend contract path
+
+**Given** sensitive context changes must never be implicit
+**When** site, caisse, session, or poste changes
+**Then** the backend supports explicit reload or recalculation of the active context
+**And** incomplete or ambiguous context yields an explicit restricted or degraded state rather than a silent guess
+
+**Given** future UI composition depends on safe context resolution
+**When** this story is delivered
+**Then** Epic 3 and Epic 5 can consume one authoritative context payload
+**And** later epics do not need to invent parallel frontend context models
+
+### Story 2.3: Mettre en place le calcul additif des roles, groupes et permissions effectives
+
+As a product administrator and security model owner,
+I want `Recyclique` to compute effective permissions from roles, groups, and context,
+So that authorization remains stable, explainable, and adaptable per ressourcerie.
+
+**Acceptance Criteria:**
+
+**Given** v2 uses configurable roles and simple groups per ressourcerie
+**When** the authorization model is implemented
+**Then** each role and group uses a stable technical key distinct from the displayed label
+**And** a user can belong to multiple groups without breaking permission calculation
+
+**Given** the permission model is additive in v2
+**When** effective permissions are calculated
+**Then** the backend computes the union of permissions granted by assigned roles and groups within the active perimeter
+**And** the resulting permission keys are the only authorization truth exposed to the UI
+
+**Given** labels may be customized locally
+**When** labels and keys are exposed in backend responses
+**Then** the implementation keeps labels non-authoritative for security decisions
+**And** it preserves isolation across sites and administrative scopes
+
+### Story 2.4: Encadrer les actions sensibles avec step-up security, PIN et idempotence
+
+As a security-sensitive business system,
+I want `Recyclique` to enforce step-up rules for sensitive actions,
+So that critical operations remain safe even if the UI is bypassed, retried, or misused.
+
+**Acceptance Criteria:**
+
+**Given** some operations require stronger guarantees than basic authenticated access
+**When** a sensitive mutation is executed
+**Then** the backend enforces the configured step-up rule such as confirmation, PIN, or role revalidation
+**And** the decision is made server-side even if the UI already filtered the action
+
+**Given** replay and double-submission risks exist on sensitive flows
+**When** protected mutations are processed
+**Then** they support an idempotency or request-trace mechanism suitable for audit and duplicate protection
+**And** failure or refusal states are returned with stable backend semantics usable by the future UI
+
+**Given** PIN is part of the minimal v2 model
+**When** PIN-backed actions are handled
+**Then** PIN usage is traceable, never logged in clear text, and governed by backend-configurable rules
+**And** repeated failure handling follows the security policy defined for v2
+
+### Story 2.5: Stabiliser la persistance terrain locale, l'audit et les journaux critiques
+
+As a terrain-first platform,
+I want local operations to remain durably recorded in `Recyclique` with usable audit trails,
+So that business activity continues even when downstream integrations are delayed or unavailable.
+
+**Acceptance Criteria:**
+
+**Given** terrain workflows record data in `Recyclique` before accounting synchronization
+**When** the persistence foundation is stabilized
+**Then** local business operations can be durably stored without requiring immediate external confirmation
+**And** the implementation preserves the future ability to replay, analyze, and correlate critical events
+
+**Given** support and supervision require readable traces
+**When** critical actions, degradations, and sensitive events are logged
+**Then** the logs include at minimum context identifiers, actor identity, operation type, outcome state, and correlation information
+**And** sensitive data is masked where it is not operationally required
+
+**Given** future sync and correction workflows depend on trustworthy history
+**When** this story is completed
+**Then** later stories can rely on a backend audit baseline rather than inventing local logging ad hoc
+**And** Epic 8 can build on explicit persisted states instead of implicit behavior
+
+### Story 2.6: Exposer les premiers contrats backend versionnes pour les slices v2
+
+As a contract-driven frontend team,
+I want `Recyclique` to expose the first versioned backend contracts needed by the v2 runtime,
+So that `Peintre_nano` can consume generated types and business-safe payloads early.
+
+**Acceptance Criteria:**
+
+**Given** the backend is the writer canonique of `OpenAPI`
+**When** the first v2 contract surfaces are stabilized
+**Then** the backend publishes versioned schemas for the minimal auth/session, `ContextEnvelope`, error envelope, and early operational states needed by the frontend
+**And** those schemas follow the agreed naming, date, and error-shape conventions
+
+**Given** frontend codegen must use one outilled source
+**When** the contract output is generated
+**Then** it flows through the governed artifact path rather than ad hoc handwritten DTO copies
+**And** breaking or drifting contract changes become detectable by later CI work
+
+**Given** Epic 3 depends on a real backend contract base
+**When** this story is accepted
+**Then** the frontend epic can start from real generated inputs instead of speculative mock structures
+**And** future slices remain anchored to backend-owned semantics
+
+### Story 2.7: Fournir les signaux backend minimaux pour `bandeau live`
+
+As a first vertical slice team,
+I want `Recyclique` to expose the operational backend signals required by `bandeau live`,
+So that Epic 4 can prove the chain on real backend-owned information rather than UI assumptions.
+
+**Acceptance Criteria:**
+
+**Given** `bandeau live` must reflect actual operational state
+**When** the backend live signal surface is implemented
+**Then** it exposes the minimum agreed indicators for opening hours, delayed openings, exceptional cases, context validity, and relevant sync state
+**And** the payload distinguishes authoritative business state from presentational concerns
+
+**Given** the live module should stay honest in degraded situations
+**When** required data is missing, stale, or ambiguous
+**Then** the backend returns an explicit status that allows visible fallback or restricted display
+**And** it avoids silent interpretation that could mislead operators about caisse activity
+
+**Given** Epic 4 is only a proof slice and not a full monitoring suite
+**When** this story is delivered
+**Then** the backend surface stays minimal and sufficient for the first module proof
+**And** it does not absorb unrelated admin or dashboard requirements that belong to later epics
+
+## Epic 3: Poser le socle frontend greenfield `Peintre_nano`
+
+L'equipe peut mettre en service un runtime UI v2 minimal mais reel, avec `Peintre_nano`, `CREOS`, registre de routes, widgets, slots, contrat de rendu et adaptateur auth/session, afin que toute l'UI v2 puisse ensuite etre recomposee sur une base propre. Cet epic inclut explicitement la Story 0 de socle autour de quatre artefacts minimaux (`NavigationManifest`, `PageManifest`, `ContextEnvelope`, `UserRuntimePrefs`), une preuve d'affichage initiale (page blanche de shell, grille visible, premiers widgets/catalogue simples, rendu via manifest minimal, fallbacks visuels), et le respect strict du bornage commanditaire/runtime. L'affichage effectif doit rester l'intersection deterministe du contrat commanditaire, du `ContextEnvelope` serveur et des `UserRuntimePrefs` non metier.
+
+### Story 3.0: Initialiser `Peintre_nano` et ses quatre artefacts minimaux
+
+As a frontend platform team,
+I want a runnable `Peintre_nano` foundation with the four minimal artifacts wired conceptually,
+So that the v2 frontend starts from a real runtime base rather than scattered prototypes.
+
+**Acceptance Criteria:**
+
+**Given** `Peintre_nano` is the new frontend v2
+**When** the frontend foundation is initialized
+**Then** the repository contains a runnable `React` + `TypeScript` + `Vite` app structure aligned with the agreed project boundaries
+**And** the app clearly separates app shell, routing, auth, context, layouts, runtime, validation, registry, widgets, slots, and generated contract consumption areas
+
+**Given** the socle v2 distinguishes four minimal artifacts
+**When** Story 3.0 is completed
+**Then** the frontend foundation is explicitly organized around `NavigationManifest`, `PageManifest`, `ContextEnvelope`, and `UserRuntimePrefs`
+**And** each artifact has a defined ownership and runtime responsibility consistent with the agreed truth hierarchy
+
+**Given** this story is the entry point for all later UI work
+**When** the initial frontend base is accepted
+**Then** future stories can extend one coherent runtime instead of creating competing shell experiments
+**And** no business route, permission, or structure is hardcoded as a replacement for commanditaire contracts
+
+### Story 3.1: Mettre en place le shell initial et le layout `CSS Grid`
+
+As a frontend runtime,
+I want a minimal shell and layout system based on `CSS Grid`,
+So that pages can be composed in named zones before business modules are migrated.
+
+**Acceptance Criteria:**
+
+**Given** `CSS Grid` is mandatory for the v2 layout engine
+**When** the shell foundation is implemented
+**Then** the app renders a visible root shell with named layout regions and a deterministic grid-based page structure
+**And** the shell is usable before any real business module is plugged in
+
+**Given** the first milestone must prove actual rendering, not only file scaffolding
+**When** the shell starts successfully
+**Then** it displays a blank or demo page with visible layout zones that make future slot composition inspectable
+**And** it avoids introducing business logic hidden inside the shell
+
+**Given** later epics will reuse the same composition surface
+**When** this story is completed
+**Then** Epic 4 and Epic 5 can build on one shell contract
+**And** migration work does not need to reinvent page framing per domain
+
+### Story 3.2: Implementer le chargement et la validation minimale des manifests de navigation et de page
+
+As a contract-driven UI engine,
+I want `Peintre_nano` to load and validate `NavigationManifest` and `PageManifest`,
+So that navigation and page composition come from reviewable contracts instead of ad hoc frontend code.
+
+**Acceptance Criteria:**
+
+**Given** `recyclique` remains author of structural business information
+**When** manifest loading is implemented
+**Then** the frontend consumes `NavigationManifest` and `PageManifest` as external commanditaire inputs
+**And** route or page structure is not invented locally outside these contracts
+
+**Given** runtime resolution must remain deterministic and reject incoherence
+**When** manifests are validated
+**Then** collisions on `route_key`, `path`, `page_key`, or shortcuts are detected before activation
+**And** unresolved page links, unknown widgets, or structurally invalid manifests trigger explicit rejection behavior
+
+**Given** contract safety matters before UI richness
+**When** this story is delivered
+**Then** the loader favors traceable validation and clear errors over permissive silent fallback
+**And** later stories can plug real contracts into a governed runtime path
+
+### Story 3.3: Implementer le registre minimal de widgets, slots et rendu declaratif
+
+As a modular UI platform,
+I want a minimal registry for widgets and slots with declarative rendering,
+So that page manifests can render a first catalogue of safe UI blocks.
+
+**Acceptance Criteria:**
+
+**Given** the v2 runtime depends on slots and widget declarations
+**When** the minimal registry is implemented
+**Then** the frontend can resolve known widget types into renderable components within named slots
+**And** widget props are handled through a contract-compatible, serializable interface
+
+**Given** the initial milestone should prove real composition
+**When** a minimal manifest is rendered
+**Then** at least a small starter catalogue such as text, card, KPI, or list-like blocks can be displayed in the grid shell
+**And** this first catalogue is clearly runtime infrastructure, not hidden business UI
+
+**Given** future modules must plug into a common mechanism
+**When** the registry story is complete
+**Then** Epic 4 can register `bandeau live` through the same declarative path
+**And** later domain modules avoid bespoke rendering pipelines
+
+### Story 3.4: Integrer l'adaptateur auth/session et la resolution par `ContextEnvelope`
+
+As a secure frontend runtime,
+I want `Peintre_nano` to consume backend auth/session state and `ContextEnvelope`,
+So that visible navigation and rendered pages stay aligned with backend-owned permissions and context.
+
+**Acceptance Criteria:**
+
+**Given** backend auth and context are authoritative
+**When** the frontend auth/context adapter is implemented
+**Then** `Peintre_nano` consumes session state and `ContextEnvelope` from backend-owned contracts
+**And** it does not promote local runtime state to a second source of truth for permissions or active context
+
+**Given** effective rendering is the intersection of commanditaire contracts and active backend context
+**When** a page is resolved
+**Then** inaccessible navigation entries are filtered according to backend permission and context signals
+**And** no business page is rendered when required context or permissions are missing
+
+**Given** context can become ambiguous or incomplete
+**When** the runtime receives restricted or degraded backend context
+**Then** the frontend reflects that explicit state instead of guessing a valid business configuration
+**And** it preserves the security-first rule defined in the PRD
+
+### Story 3.5: Borner `UserRuntimePrefs` a la personnalisation locale non metier
+
+As a user experience runtime,
+I want local runtime preferences to personalize presentation without altering business truth,
+So that users gain comfort without compromising permissions, routes, or domain meaning.
+
+**Acceptance Criteria:**
+
+**Given** `UserRuntimePrefs` belongs to frontend runtime only
+**When** local preferences are implemented
+**Then** they support allowed concerns such as density, panel state, onboarding, or shortcut overrides
+**And** they remain local by default unless an explicit dedicated backend endpoint is designed later
+
+**Given** local preferences must never become an authorization bypass
+**When** preferences are applied during rendering
+**Then** they cannot create a route, reveal a hidden business page, or grant extra visibility beyond commanditaire contracts and backend context
+**And** the runtime enforces this limitation structurally
+
+**Given** future UI polish will build on this layer
+**When** this story is completed
+**Then** Epic 5 and later epics can reuse a safe personalization mechanism
+**And** they do not need to invent ad hoc UI preference stores with unclear authority
+
+### Story 3.6: Rendre visibles les fallbacks et rejets de runtime
+
+As a resilient UI engine,
+I want invalid contracts, unknown widgets, and missing composition inputs to fail visibly,
+So that operators and developers can distinguish degraded UI from valid business state.
+
+**Acceptance Criteria:**
+
+**Given** contract and rendering failures are expected during early assembly
+**When** a manifest, route, slot, or widget cannot be resolved
+**Then** the runtime shows an explicit visible fallback or blocking state according to the configured severity
+**And** the failure is not silently swallowed into an apparently normal page
+
+**Given** support and debugging will depend on readable runtime behavior
+**When** a fallback or rejection occurs
+**Then** the runtime emits enough structured information for logs, diagnostics, or future admin tooling
+**And** the displayed feedback stays understandable without leaking irrelevant technical details to operators
+
+**Given** the modular chain must be proven safely before business migration
+**When** this story is accepted
+**Then** Epic 4 can validate success and failure paths on the same runtime base
+**And** later modules inherit a defensive rendering posture by default
+
+### Story 3.7: Produire la page de demonstration du runtime compose
+
+As a development team,
+I want a demo page that exercises the minimal runtime composition chain,
+So that the frontend foundation can be inspected and validated before real business modules are injected.
+
+**Acceptance Criteria:**
+
+**Given** the initial milestone must prove the composed frontend in practice
+**When** the demo page is delivered
+**Then** it renders through the real shell, manifest loading path, widget registry, and context-aware resolution path
+**And** it demonstrates at least one nominal render path and one visible fallback path
+
+**Given** this page is meant to validate the runtime rather than ship business value directly
+**When** the demo scope is defined
+**Then** it remains a controlled sandbox or demonstration route and not a hidden business screen
+**And** it can be used to verify progressive improvements before domain migration begins
+
+**Given** Epic 4 depends on a proven base rather than only theoretical contracts
+**When** this story is completed
+**Then** the project has a concrete runtime proof prior to the first real module slice
+**And** the `bandeau live` epic can focus on the module chain itself instead of debugging the entire shell from scratch
+
+## Epic 4: Prouver la chaine modulaire complete avec `bandeau live`
+
+L'equipe peut prouver en vrai la chaine complete backend -> contrat -> manifest -> runtime -> rendu -> fallback, afin de valider le socle modulaire avant de migrer les flows critiques et les autres modules. Cette preuve inclut un `bandeau live` dont l'etat d'exploitation reste coherent avec les horaires reels, les ouvertures decalees et les cas particuliers, sur la base des prerequis de contrats et de contexte poses par Epics 1 et 2, ainsi qu'un mecanisme minimal d'activation/desactivation admin du module avant que la `config admin simple` complete soit livree plus largement par Epic 9.
+
+### Story 4.1: Publier le contrat et les manifests minimaux du module `bandeau live`
+
+As a commanditaire-driven module system,
+I want `bandeau live` to have explicit backend and UI contracts,
+So that the first vertical slice proves a real module chain instead of a hardcoded demo widget.
+
+**Acceptance Criteria:**
+
+**Given** `bandeau live` is the first mandatory module proof in v2
+**When** its minimal slice is defined
+**Then** the project publishes the minimal backend contract, `NavigationManifest`, and `PageManifest` entries required to place the module in a real composed page
+**And** these artifacts remain consistent with the established truth hierarchy and commanditaire ownership
+
+**Given** the module must stay minimal at this stage
+**When** its contracts are reviewed
+**Then** they cover only the data and composition needs required for the live banner proof
+**And** they do not absorb unrelated dashboard, admin, or generalized settings scope
+
+**Given** the modular chain depends on reviewable artifacts
+**When** this story is accepted
+**Then** Epic 4 has a contract-level anchor for nominal and failing scenarios
+**And** later modules can follow the same vertical pattern
+
+### Story 4.2: Implementer le widget `bandeau live` dans le registre `Peintre_nano`
+
+As a composed UI runtime,
+I want `bandeau live` to be registered and rendered through the standard widget mechanism,
+So that the first module proves that business-facing UI can plug into the shared runtime without bypassing it.
+
+**Acceptance Criteria:**
+
+**Given** Epic 3 already provides the registry, slots, and shell base
+**When** the `bandeau live` widget is introduced
+**Then** it is registered through the standard runtime registry and rendered from manifest-driven composition
+**And** it does not rely on a one-off rendering path outside the shared runtime
+
+**Given** the module displays operational state rather than static text
+**When** the widget receives valid contract-backed data
+**Then** it renders a visible banner state coherent with the provided business signals
+**And** the displayed content remains bounded to the active context and permitted visibility
+
+**Given** this is the first real module plugged into the socle
+**When** the story is completed
+**Then** the project has a reusable reference for how future domain widgets integrate with the runtime
+**And** the proof remains small enough to debug without dragging in full dashboard complexity
+
+### Story 4.3: Brancher la source backend reelle et les cas d'ouverture decalee
+
+As an operator-facing live module,
+I want `bandeau live` to consume the real backend-owned operational signals,
+So that the displayed state reflects opening hours, delayed openings, and exceptional cases honestly.
+
+**Acceptance Criteria:**
+
+**Given** the backend exposes the minimal live signal surface from Epic 2
+**When** `bandeau live` consumes that source
+**Then** the module renders from real backend-provided operational state rather than guessed frontend logic
+**And** its displayed status remains consistent with the active context and current permissions
+
+**Given** the terrain explicitly needs support for delayed openings and special cases
+**When** the live state is evaluated
+**Then** the module can distinguish normal openings, delayed openings, and exceptional operating cases without reducing everything to "caisse du jour"
+**And** it avoids presenting a misleading active state when the configured opening window does not justify it
+
+**Given** external or contextual data may be incomplete
+**When** the backend returns degraded or ambiguous live information
+**Then** the module surfaces a constrained or degraded state rather than silently inventing certainty
+**And** the operator can tell that the displayed state is limited
+
+### Story 4.4: Rendre visibles les fallbacks et rejets du slice `bandeau live`
+
+As a resilient module chain,
+I want the `bandeau live` slice to demonstrate explicit failure behavior,
+So that the first vertical proof validates both success paths and defensive runtime behavior.
+
+**Acceptance Criteria:**
+
+**Given** contracts, manifests, widgets, or backend signals can fail during integration
+**When** the `bandeau live` slice encounters an invalid contract, unknown widget state, or unresolved composition input
+**Then** the runtime produces a visible fallback or rejection according to the established severity rules
+**And** the rest of the screen remains intact whenever the failure is non-critical
+
+**Given** the system should not hide uncertainty on a live operational surface
+**When** the module cannot safely render trusted state
+**Then** it presents understandable degraded feedback instead of a falsely healthy banner
+**And** the failure path is traceable for support and development
+
+**Given** Epic 4 is a proof epic
+**When** this story is completed
+**Then** the slice demonstrates both nominal rendering and defended failure behavior end to end
+**And** the team gains a concrete reference before migrating heavier modules
+
+### Story 4.5: Ajouter un toggle admin minimal borne au module `bandeau live`
+
+As a responsible administrator,
+I want a minimal activation toggle for `bandeau live`,
+So that the first module can be enabled or disabled safely before the broader admin configuration system exists.
+
+**Acceptance Criteria:**
+
+**Given** Epic 4 needs a minimal admin activation path for the first module
+**When** the toggle mechanism is implemented
+**Then** an administrator can explicitly enable or disable the `bandeau live` slice through a bounded configuration path
+**And** that mechanism is limited to the needs of this module proof rather than becoming the full reusable admin-config framework
+
+**Given** module activation impacts visible UI composition
+**When** the toggle state changes
+**Then** the runtime reflects activation or deactivation through the governed manifest and rendering path
+**And** the change remains traceable and understandable for future support
+
+**Given** general admin configuration belongs later in Epic 9
+**When** this story is reviewed
+**Then** its scope stays explicitly narrow and transitional
+**And** it does not absorb generalized ordering, feature matrix, or broad settings management concerns
+
+### Story 4.6: Valider la chaine complete `backend -> contrat -> manifest -> runtime -> rendu -> fallback`
+
+As a delivery team,
+I want to validate the complete `bandeau live` chain in one end-to-end proof,
+So that the project can move to heavier flows with confidence that the modular architecture works in practice.
+
+**Acceptance Criteria:**
+
+**Given** the first real module slice is assembled
+**When** the end-to-end proof is executed
+**Then** the team can verify the full chain from backend signal production to contract publication, manifest interpretation, widget rendering, and fallback behavior
+**And** the proof identifies any remaining architectural drift before Epic 5, 6, and 7 begin consuming the same pattern
+
+**Given** the proof should be actionable rather than aspirational
+**When** validation is documented
+**Then** it records what nominal path succeeded, what failure paths were exercised, and what constraints remain known for subsequent module migrations
+**And** it confirms that the slice still respects context isolation and backend authority rules
+
+**Given** Epic 4 is meant to de-risk the roadmap
+**When** this story is completed
+**Then** the team has a reusable reference slice for future module implementation
+**And** the roadmap can proceed without reopening the core modular viability question
+
+## Epic 5: Recomposer le shell, le dashboard et l'administration existants dans `Peintre_nano`
+
+Les utilisatrices et responsables peuvent retrouver les pages transverses de `Recyclique` dans une UI composee `Peintre_nano` : shell global, navigation, dashboard, pages admin, listings, cartes, statistiques et points d'entree vers les autres ecrans, avec respect du contexte, des contraintes de rendu en `CSS Grid`, du blueprint `workflow explicite -> PageManifest / navigation contractuelle -> layout`, et du principe que la navigation/structure metier viennent de `Recyclique` via contrats commanditaires.
+
+### Story 5.1: Recomposer la navigation transverse commanditaire dans `Peintre_nano`
+
+As a daily user,
+I want the main application navigation to be served through the composed v2 shell,
+So that I can reach the transverse areas of `Recyclique` through a UI governed by backend-owned structure.
+
+**Acceptance Criteria:**
+
+**Given** the v2 shell already supports manifest-driven navigation
+**When** the transverse navigation is migrated
+**Then** the primary navigation, route hierarchy, and structural shortcuts are rendered from commanditaire contracts inside `Peintre_nano`
+**And** the frontend does not recreate business navigation structure outside the governed manifest path
+
+**Given** visible navigation depends on backend permissions and active context
+**When** entries are resolved for a user
+**Then** inaccessible structural entries are hidden or filtered according to the agreed UX policy
+**And** no ghost route or silent hole appears in place of missing business structure
+
+**Given** this epic focuses on transverse recomposition
+**When** the navigation migration is completed
+**Then** it provides stable access to dashboard and admin entry points
+**And** it does not absorb the detailed business workflows that belong to later epics
+
+### Story 5.2: Recomposer le dashboard transverse dans la nouvelle chaine UI
+
+As an operator or manager,
+I want the dashboard to exist in the composed v2 runtime,
+So that I can read the main transverse operational information from the new shell before the full business migration is complete.
+
+**Acceptance Criteria:**
+
+**Given** Epic 4 proved the first vertical module slice
+**When** the dashboard is recomposed
+**Then** it is rendered through the same contract-driven shell, layout, and widget composition mechanisms
+**And** it remains bounded to transverse information rather than embedding full domain workflows
+
+**Given** the dashboard must stay coherent with the active perimeter
+**When** it is displayed
+**Then** its visible content reflects the selected context and backend permissions
+**And** cross-site or cross-caisse leakage is prevented by the same context rules as the rest of the runtime
+
+**Given** this dashboard is part of migration, not a separate architecture
+**When** the story is delivered
+**Then** it reuses the shared runtime, shared error handling, and shared fallback rules
+**And** it does not create a parallel dashboard stack outside `Peintre_nano`
+
+### Story 5.3: Migrer un premier lot cible de listings et vues de consultation transverses
+
+As a responsible user,
+I want a first target batch of transverse listings and consultation pages to be reachable in `Peintre_nano`,
+So that the v2 shell becomes practically useful sans essayer de migrer tous les ecrans transverses en une seule story.
+
+**Story Preparation Gate:** avant execution, nommer explicitement dans la story ou le ticket d'implementation les `2 a 4` routes / `PageManifest` exacts choisis pour ce lot.
+
+**Acceptance Criteria:**
+
+**Given** several current screens are transverse rather than domain-flow specific
+**When** a first migration batch is selected
+**Then** the story nomme un ensemble borne de listings et vues de consultation a migrer via le runtime compose
+**And** ce premier lot reste borne a un maximum de 2 a 4 routes ou `PageManifest` nommes pour une seule iteration
+
+**Given** this epic must not swallow domain-specific flow implementations
+**When** page boundaries are defined
+**Then** cashier workflow details stay out of scope for Epic 5
+**And** reception workflow specifics remain reserved for Epic 7
+
+**Given** these pages often act as hubs for other areas
+**When** they are rendered
+**Then** they provide clear entry points toward future modules and flows without pretending those flows are already migrated
+**And** unavailable downstream paths follow the agreed visibility or unavailable-action rules
+
+### Story 5.4: Migrer un premier lot cible de pages admin transverses
+
+As a responsible administrator,
+I want a first bounded batch of transverse admin pages to be reachable in `Peintre_nano`,
+So that the v2 shell gains real admin value without turning one story into a full admin migration program.
+
+**Story Preparation Gate:** avant execution, nommer explicitement dans la story ou le ticket d'implementation les `2 a 3` pages / `PageManifest` admin exacts choisis pour ce lot.
+
+**Acceptance Criteria:**
+
+**Given** transverse admin pages are part of the shared shell value
+**When** an admin migration batch is implemented
+**Then** the story targets an explicit bounded set of admin pages rather than an open-ended list
+**And** ce premier lot reste borne a un maximum de 2 a 3 pages ou `PageManifest` admin pour une seule iteration
+
+**Given** this epic must not swallow domain-specific flow implementations
+**When** page boundaries are defined
+**Then** cashier workflow details stay out of scope for Epic 5
+**And** reception workflow specifics remain reserved for Epic 7
+
+**Given** these admin pages often control access to other areas
+**When** they are rendered
+**Then** they remain consistent with backend-owned permissions and active context
+**And** they do not create a parallel admin stack outside the shared runtime
+
+### Story 5.5: Integrer les libelles personnalises et la visibilite contextuelle dans l'UI transverse
+
+As a ressourcerie-specific user,
+I want the transverse UI to reflect local labels and contextual visibility rules,
+So that the recomposed shell feels aligned with the local organization without changing security truth.
+
+**Acceptance Criteria:**
+
+**Given** role and structure labels may be customized per ressourcerie
+**When** the transverse shell and pages are rendered
+**Then** the UI can display backend-provided labels and naming variants where appropriate
+**And** those labels remain presentation-only and never replace stable technical authorization keys
+
+**Given** some screens and actions depend on context or permissions
+**When** the transverse UI resolves what to show
+**Then** it follows the agreed policy between hidden structural navigation and disabled contextual actions with explicit feedback when needed
+**And** the visible experience stays coherent with the active `ContextEnvelope`
+
+**Given** Epic 5 carries part of the UX coherence burden for the new shell
+**When** this story is completed
+**Then** future epics can inherit one stable rule set for labels and visibility behavior
+**And** they do not need to redefine local terminology handling screen by screen
+
+### Story 5.6: Poser les templates et layouts reutilisables des pages transverses
+
+As a frontend composition team,
+I want reusable transverse page templates and layout conventions,
+So that dashboard, admin, listings, and consultation pages share one coherent composition model.
+
+**Acceptance Criteria:**
+
+**Given** the shell and grid engine already exist
+**When** transverse page templates are formalized
+**Then** the project defines reusable layout patterns for common transverse screens such as dashboard, listing, detail, and admin-style pages
+**And** those patterns stay compatible with manifest-driven composition and `CSS Grid`
+
+**Given** migration should reduce structural duplication
+**When** new transverse pages are added to the runtime
+**Then** they can reuse shared layout conventions instead of ad hoc per-page composition
+**And** this reuse does not blur the separation between template infrastructure and business widget content
+
+**Given** later epics will migrate richer screens
+**When** this story is completed
+**Then** the project has a stable transverse layout language inside `Peintre_nano`
+**And** future domains can build on it without inheriting dashboard-specific hacks
+
+### Story 5.7: Gerer les etats vides, chargements et erreurs sur les pages transverses
+
+As a user of the new shell,
+I want transverse pages to remain readable in loading, empty, and error states,
+So that the migrated shell is usable before the whole product is fully stabilized.
+
+**Acceptance Criteria:**
+
+**Given** migration will temporarily expose partial data and uneven backend readiness
+**When** a transverse page loads, has no data, or encounters an error
+**Then** the page presents explicit loading, empty, or error states consistent with the shared runtime rules
+**And** those states remain distinguishable from valid business content
+
+**Given** some failures should be isolated rather than collapse the whole shell
+**When** a non-critical transverse block fails
+**Then** the local area can degrade visibly while the rest of the screen stays usable
+**And** the resulting behavior remains traceable and supportable
+
+**Given** Epic 5 prepares practical day-to-day usage of the shell
+**When** this story is delivered
+**Then** transverse pages become meaningfully operable even before all modules are feature-complete
+**And** the migration does not rely on silent happy-path assumptions
+
+### Story 5.8: Valider la coherence transverse du shell recompose
+
+As a product delivery team,
+I want a transverse validation pass on the recomposed shell, dashboard, and admin surfaces,
+So that the project can move to flow-heavy epics with a stable shared UI spine.
+
+**Acceptance Criteria:**
+
+**Given** Epic 5 recomposes the shared surfaces used across the product
+**When** the validation pass is executed
+**Then** it confirms that navigation, dashboard, admin pages, and transverse layouts all respect commanditaire ownership, context isolation, and shared runtime rules
+**And** any remaining migration gaps are documented as explicit follow-up constraints rather than hidden drift
+
+**Given** later epics will rely on these transverse entry points
+**When** this story is completed
+**Then** Epics 6, 7, 8, and 9 can plug into a stable shell and access pattern
+**And** the roadmap no longer depends on the old frontend as the primary transverse spine
+
+**Given** this validation should not become a second implementation epic
+**When** scope is reviewed
+**Then** the story remains focused on coherence, operability, and known constraints
+**And** it does not absorb domain backlog that belongs elsewhere
+
+## Epic 6: Rendre la caisse v2 exploitable et enrichie par les besoins terrain
+
+Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow`, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`.
+
+### Story 6.1: Mettre en service le parcours nominal de caisse v2 dans `Peintre_nano`
+
+As a cash register operator,
+I want to complete a normal sale in the new caisse v2,
+So that the new UI becomes operational for day-to-day cashflow work.
+
+**Acceptance Criteria:**
+
+**Given** the caisse flow is one of the two critical brownfield priorities
+**When** the nominal cashflow path is migrated
+**Then** an operator can reach the caisse screen in `Peintre_nano` and complete the core sequence from product scan or lookup to price capture, payment choice, and ticket issuance
+**And** the sequence stays grounded in backend-owned business rules rather than frontend-only logic
+
+**Given** caisse work must remain fast and robust
+**When** the nominal flow is used
+**Then** the interaction is optimized for keyboard-first operation with immediate feedback on scan, input, and validation
+**And** the runtime does not introduce visible friction that would make the flow impractical on terrain
+
+**Given** the new caisse should not depend on full sync completion to exist
+**When** the nominal path is completed
+**Then** the sale can be locally recorded in `Recyclique`
+**And** the UI exposes the local outcome clearly without pretending accounting sync is already finalized
+
+### Story 6.2: Garantir le contexte caisse et les blocages de securite metier
+
+As a caisse operator,
+I want the caisse flow to refuse ambiguous or invalid operating context,
+So that I do not perform sales in the wrong site, caisse, session, or permission perimeter.
+
+**Acceptance Criteria:**
+
+**Given** the caisse is a critical terrain flow
+**When** a user enters or resumes the caisse screen
+**Then** the flow verifies the active site, caisse, session, poste, and permissions required for operation
+**And** missing or ambiguous context produces an explicit restricted or blocked state instead of a silent guess
+
+**Given** the UI can show only what backend authority allows
+**When** a user lacks a required permission or valid perimeter
+**Then** the caisse flow blocks or restricts the sensitive action through backend-backed authorization semantics
+**And** the feedback remains understandable for operators
+
+**Given** security must win over fluidity when the two conflict
+**When** context integrity cannot be guaranteed
+**Then** the caisse flow does not proceed as if conditions were valid
+**And** any degradation path remains explicit and traceable
+
+### Story 6.3: Ajouter le parcours `ticket en attente`
+
+As a caisse operator,
+I want to place a ticket on hold and resume it later,
+So that the new caisse supports a common real-life interruption pattern without losing the active sale.
+
+**Acceptance Criteria:**
+
+**Given** ticket interruption is a field-requested caisse need
+**When** the hold flow is implemented
+**Then** an operator can place the current sale in an explicit waiting state and resume it later in a controlled way
+**And** the resulting behavior stays coherent with caisse context and local persistence rules
+
+**Given** a held ticket still belongs to the caisse business flow
+**When** it is resumed or abandoned according to allowed rules
+**Then** the UI and backend keep the operation understandable and traceable
+**And** the story does not require full accounting reconciliation to be useful
+
+**Given** Epic 6 should stay sequential and implementable
+**When** this story is completed
+**Then** the nominal caisse remains usable independently
+**And** later variants can build on it without bundling all edge cases in one delivery
+
+### Story 6.4: Ajouter le parcours `remboursement` sous controle
+
+As a responsible caisse user,
+I want a controlled refund path in the new caisse,
+So that legitimate reversal cases can be handled without inventing ad hoc workarounds.
+
+**Acceptance Criteria:**
+
+**Given** refund is a sensitive terrain request
+**When** the refund flow is introduced
+**Then** it is exposed as an explicit dedicated path rather than a hidden caisse trick
+**And** the resulting action stays coherent with permission, traceability, and downstream accounting expectations
+
+**Given** refunds are more sensitive than nominal sales
+**When** an operator attempts a refund
+**Then** the flow applies the required authorization and visible business controls for that operation
+**And** the UI makes clear that the action is a reversal case, not a normal sale
+
+**Given** Epic 8 owns full accounting articulation
+**When** this story is delivered
+**Then** the refund path remains locally operable within the rules already documented
+**And** any final accounting consequences remain aligned with the later sync/reconciliation epic
+
+### Story 6.5: Ajouter les encaissements specifiques sans article et adhesion association
+
+As a caisse operator,
+I want to record donation-without-article and association-membership payment flows,
+So that the new caisse supports the main non-standard encashment cases raised by the terrain.
+
+**Acceptance Criteria:**
+
+**Given** some real caisse operations do not pass through a normal article sale
+**When** the dedicated special encashment paths are implemented
+**Then** the caisse supports at least donation without article and association membership payment as explicit business flows
+**And** these flows remain understandable to the operator without being hidden inside the nominal sale path
+
+**Given** these cases have downstream accounting or membership implications
+**When** they are recorded
+**Then** the story keeps the local caisse operation coherent with the documented sync and member-workflow boundaries
+**And** it does not move `adherents` ownership or full accounting logic into Epic 6
+
+**Given** Epic 6 should remain incrementally shippable
+**When** this story is completed
+**Then** the caisse gains meaningful real-world coverage beyond nominal sales
+**And** other terrain variants can still be added separately
+
+### Story 6.6: Ajouter les boutons d'actions sociales dedies
+
+As a caisse operator,
+I want dedicated social-action encashment buttons,
+So that social or solidarity-related caisse operations are visible and operable without being disguised as generic sales.
+
+**Acceptance Criteria:**
+
+**Given** the terrain backlog requests explicit social-action caisse entries
+**When** these dedicated buttons are introduced
+**Then** the UI exposes named actions for the targeted social-use cases selected for the first delivery batch
+**And** those entries remain understandable as dedicated business intents rather than generic custom hacks
+
+**Given** these actions can have downstream accounting consequences
+**When** they are recorded in caisse
+**Then** the local flow remains explicit and traceable
+**And** any broader accounting classification or reconciliation implications remain aligned with later stories and epics
+
+**Given** this capability should not turn into an unlimited button factory in one story
+**When** the scope is reviewed
+**Then** the first delivery is bounded to an explicit initial set of social-action cases
+**And** later additions can follow the same pattern incrementally
+
+### Story 6.7: Mettre en place la cloture locale exploitable de caisse
+
+As a responsible caisse user,
+I want to close a caisse session locally with usable totals and status,
+So that terrain operations can end cleanly before full accounting reconciliation is performed.
+
+**Acceptance Criteria:**
+
+**Given** Epic 6 must stop short of full accounting integration
+**When** a caisse session is closed
+**Then** the system performs local closure checks, computes the relevant totals, and records a clear local outcome in `Recyclique`
+**And** the resulting state is explicit enough to serve as a handoff toward later sync and reconciliation work
+
+**Given** some closure situations may be sensitive or inconsistent
+**When** a critical discrepancy is detected
+**Then** the closure flow exposes a clear blocked, degraded, or locally accepted state according to the documented rules
+**And** it does not fake a clean accounting conclusion when such a conclusion is not actually guaranteed
+
+**Given** Epic 8 will handle full real articulation with `Paheko`
+**When** this story is delivered
+**Then** closure remains locally exploitable without redefining the full sync or quarantine logic
+**And** the UI makes the relay toward later reconciliation understandable
+
+### Story 6.8: Gerer un premier perimetre borne de corrections sensibles et l'audit des ventes modifiees
+
+As a super-admin or responsible user,
+I want to correct certain caisse entries under controlled conditions,
+So that obvious input errors can be fixed without losing accountability.
+
+**Story Preparation Gate:** avant execution, figer une liste fermee de corrections autorisees pour ce lot, par exemple `date seule`, `detail de vente borne`, ou autre sous-ensemble explicite ; ne jamais demarrer cette story avec un perimetre implicite.
+
+**Acceptance Criteria:**
+
+**Given** the field explicitly needs controlled correction of sale date or sale details
+**When** a privileged correction path is introduced
+**Then** only the authorized role or perimeter can trigger the correction capability
+**And** le premier lot reste borne a une liste fermee de corrections autorisees, definie avant implementation pour cette story
+
+**Given** post-hoc sale correction is sensitive even when legally allowed in this context
+**When** a correction is performed
+**Then** the system records who changed what, when, and from which prior value
+**And** the resulting trace is usable for internal review or dispute handling
+
+**Given** correction capability must not become a general hidden bypass
+**When** the story is completed
+**Then** the correction path remains narrow, auditable, and role-gated
+**And** it does not weaken the default caisse immutability posture for ordinary users nor open a generic edition de vente sans bornes
+
+### Story 6.9: Rendre la caisse defensive face aux erreurs, fallbacks et sync differee
+
+As a caisse operator,
+I want the new caisse to remain understandable when something fails or sync is delayed,
+So that I can continue terrain work without confusion about what has actually been recorded.
+
+**Acceptance Criteria:**
+
+**Given** the caisse must survive partial failures and delayed downstream integration
+**When** an operation is locally accepted but not yet synchronized
+**Then** the UI distinguishes local recording, pending follow-up, and real blocking conditions
+**And** it does not alarm operators unnecessarily when the documented default is deferred sync
+
+**Given** invalid flows, missing contracts, or degraded context may occur
+**When** the caisse encounters a non-nominal condition
+**Then** it presents explicit fallback, error, or blocked states consistent with the shared runtime rules
+**And** the operator can understand whether the issue is local, contextual, or downstream
+
+**Given** supportability matters on a critical terrain flow
+**When** these degraded states occur
+**Then** the flow remains traceable and operationally interpretable
+**And** the screen avoids silent success signals when the underlying state is uncertain
+
+### Story 6.10: Valider l'exploitabilite terrain de la caisse v2
+
+As a delivery team,
+I want a validation pass focused on practical caisse operability,
+So that Epic 6 confirms the new caisse is genuinely usable before broader rollout and before full accounting hardening in Epic 8.
+
+**Acceptance Criteria:**
+
+**Given** the caisse is one of the most critical terrain workflows
+**When** the validation pass is executed
+**Then** it confirms that nominal sale flow, context enforcement, closure, error handling, and key terrain variants behave coherently in the new UI
+**And** it documents any remaining known gaps without hiding them behind optimistic readiness claims
+
+**Given** Epic 6 should hand off cleanly into Epic 8 rather than duplicate it
+**When** the caisse validation is reviewed
+**Then** it clearly separates what is already operational locally from what still depends on full accounting articulation with `Paheko`
+**And** it preserves the documented relay between local closure and later reconciliation
+
+**Given** this epic is about exploitability, not final perfection
+**When** the story is completed
+**Then** the team has a caisse v2 baseline fit for continued iteration
+**And** later work can harden accounting integration without reopening the basic viability of the new caisse
+
+## Epic 7: Rendre la reception v2 exploitable dans la nouvelle chaine UI
+
+Les operatrices peuvent utiliser la reception dans `Peintre_nano` avec ses ecrans, workflows explicites, definitions d'ecrans, saisies et contextualisation metier, en respectant les contraintes du flux matiere et l'architecture modulaire retenue.
+
+### Story 7.1: Mettre en service le parcours nominal de reception v2
+
+As a reception operator,
+I want to register a standard reception flow in the new UI,
+So that the v2 reception becomes usable for everyday material intake work.
+
+**Acceptance Criteria:**
+
+**Given** reception is one of the two critical brownfield flows to preserve
+**When** the nominal reception flow is migrated
+**Then** an operator can open the reception screen in `Peintre_nano` and complete the core intake sequence through explicit steps
+**And** the sequence remains backed by `Recyclique` business authority rather than frontend-only assumptions
+
+**Given** reception work depends on clarity more than ornamental UI
+**When** the nominal flow is used
+**Then** each step of the intake remains explicit, understandable, and consistent with the active operating context
+**And** the UI supports practical terrain use without relying on hidden transitions
+
+**Given** the new reception should be operable before wider module expansion
+**When** this story is delivered
+**Then** the project has a usable baseline reception path in the new runtime
+**And** later enhancements can extend it without redefining the core flow
+
+### Story 7.2: Garantir le contexte reception et les blocages metier associes
+
+As a reception operator,
+I want the reception flow to require a valid working context,
+So that incoming material is never recorded under the wrong site, poste, or permission perimeter.
+
+**Acceptance Criteria:**
+
+**Given** reception data belongs to the authoritative material flow
+**When** a user enters or resumes the reception flow
+**Then** the system verifies the active site, poste de reception, and required permissions before allowing intake actions
+**And** incomplete or ambiguous context yields an explicit restricted or blocked mode
+
+**Given** the new UI must stay aligned with backend-owned context truth
+**When** permission or context requirements are not met
+**Then** the flow restricts or blocks the sensitive step through backend-backed semantics
+**And** the operator receives feedback that makes the reason understandable
+
+**Given** security and traceability override convenience on critical flows
+**When** context validity cannot be guaranteed
+**Then** the reception flow does not silently continue
+**And** any degraded path remains explicit and supportable
+
+### Story 7.3: Integrer la categorisation, la pesee et la qualification du flux matiere
+
+As a reception operator,
+I want to capture the key material characteristics during reception,
+So that `Recyclique` remains the reliable source of truth for quantities, categories, and related intake information.
+
+**Acceptance Criteria:**
+
+**Given** `Recyclique` is authoritative for the material flow
+**When** reception data is entered
+**Then** the flow supports the capture of material categorization, weight or quantity-related information, and intake qualification needed by the business process
+**And** those data points are stored in a way that preserves future reporting and declaration usefulness
+
+**Given** category structures can influence later eco-organisme declarations
+**When** categorization choices are handled
+**Then** the flow records the business-relevant internal categorization without confusing it with later accounting or declaration processing
+**And** the UI keeps the operator focused on intake rather than downstream administrative logic
+
+**Given** reception screens must remain practical on terrain
+**When** this story is implemented
+**Then** the data capture sequence stays explicit and operable
+**And** it does not collapse into an over-generalized form that hides the workflow logic
+
+### Story 7.4: Journaliser les entrees reception et assurer leur exploitabilite historique
+
+As a responsible operator or manager,
+I want reception entries to be durably recorded with useful traceability,
+So that the material flow remains understandable, auditable, and reusable later.
+
+**Acceptance Criteria:**
+
+**Given** the product must support history, replay, and later analysis
+**When** a reception entry is validated
+**Then** the intake is durably recorded in `Recyclique` with the context and business details needed for future interpretation
+**And** the resulting trace is suitable for later material-flow reading and correlation
+
+**Given** reception is part of the operational history, not only a transient screen
+**When** entries are stored
+**Then** they remain attributable to the relevant context and operator perimeter
+**And** they preserve the integrity required for future reconciliation with other business views
+
+**Given** Epic 7 is not the declaration epic itself
+**When** this story is reviewed
+**Then** it keeps the focus on trustworthy reception history
+**And** it does not absorb the broader eco-organisme reporting features reserved for Epic 9
+
+### Story 7.5: Rendre la reception defensive face aux erreurs, contrats incomplets et degradations
+
+As a reception operator,
+I want the reception flow to remain understandable when something is missing or invalid,
+So that I can distinguish a valid intake, a degraded mode, and a blocked operation.
+
+**Acceptance Criteria:**
+
+**Given** critical terrain flows must not fail silently
+**When** the reception flow encounters invalid contracts, unresolved inputs, or incomplete context
+**Then** it presents explicit fallback, degraded, or blocked states according to the shared runtime and business rules
+**And** it avoids pretending the intake has been safely recorded when that is not true
+
+**Given** some reception problems may still allow partial continuation while others must stop the flow
+**When** a non-nominal condition occurs
+**Then** the UI distinguishes what can still proceed safely from what requires a hard stop
+**And** the resulting operator feedback remains practical rather than overly technical
+
+**Given** later support and quality checks will depend on readable behavior
+**When** these defensive states occur
+**Then** the flow remains traceable and operationally interpretable
+**And** the same defensive stance can be reused in future domain modules
+
+### Story 7.6: Valider l'exploitabilite terrain de la reception v2
+
+As a delivery team,
+I want a focused validation pass on the new reception flow,
+So that Epic 7 confirms reception is genuinely usable in the new chain before broader rollout.
+
+**Acceptance Criteria:**
+
+**Given** reception is a priority terrain workflow
+**When** the validation pass is executed
+**Then** it confirms that nominal intake, context enforcement, qualification capture, and defensive non-nominal behavior all operate coherently in the new UI
+**And** it identifies remaining gaps as explicit follow-up work rather than hidden assumptions
+
+**Given** Epic 7 should stay centered on the material intake flow
+**When** the validation findings are reviewed
+**Then** they keep a clean boundary with Epic 6 cashflow specifics, Epic 8 accounting articulation, and Epic 9 declaration/reporting scope
+**And** they preserve reception as a reusable reference for later material-flow extensions
+
+**Given** this epic is about operational viability
+**When** the story is completed
+**Then** the team has a reception v2 baseline fit for continued iteration
+**And** later work can enrich analytics or declarations without reopening the core viability of the new reception flow
+
+## Epic 8: Fiabiliser l'articulation comptable reelle avec `Paheko`
+
+Les responsables peuvent synchroniser, suivre, corriger et reconcilier les operations entre `Recyclique` et `Paheko`, avec etats explicites, quarantaine, blocages selectifs, correlation inter-systemes et schema de deploiement cible.
+
+### Story 8.1: Implementer un premier slice syncable de bout en bout `Recyclique -> Paheko`
+
+As a finance-integrated business platform,
+I want a first concrete syncable operation to travel end to end from `Recyclique` to `Paheko`,
+So that the durable synchronization architecture is proven on a real slice before broader expansion.
+
+**Acceptance Criteria:**
+
+**Given** `Recyclique` records operations first and syncs later
+**When** the first real sync slice is implemented
+**Then** the backend processes at least one explicitly chosen syncable operation through the durable outbox and synchronization path defined by the architecture
+**And** the pipeline remains consistent with at-least-once delivery and backend-owned accounting handoff rules
+
+**Given** the sync path must be operational rather than conceptual
+**When** that chosen operation is emitted
+**Then** the system can carry it from local persistence to a concrete `Paheko` integration attempt
+**And** the resulting state becomes explicitly observable in `Recyclique`
+
+**Given** Epic 8 should build on Epics 6 and 7 rather than replace them
+**When** this story is completed
+**Then** the project proves the real synchronization backbone on one bounded slice
+**And** later stories can extend the coverage without redefining the terrain flows themselves
+
+### Story 8.2: Gerer l'idempotence, les retries et les statuts explicites de sync
+
+As a resilient integration system,
+I want synchronization attempts to be repeatable and stateful,
+So that retries, duplicates, and partial failures do not corrupt accounting interpretation.
+
+**Acceptance Criteria:**
+
+**Given** sync attempts may fail, be retried, or be replayed
+**When** the synchronization state machine is implemented
+**Then** each operation exposes explicit backend states such as `a_reessayer`, `en_quarantaine`, `resolu`, and `rejete`
+**And** these states are usable by support, administration, and the future UI without relying on free-form messages only
+
+**Given** the integration must resist duplicate emission or repeated processing
+**When** the same operation is retried or replayed
+**Then** idempotency rules prevent accidental double-accounting effects
+**And** the resulting state stays intelligible from the point of view of `Recyclique`
+
+**Given** sync is deferred by default when possible
+**When** a retryable failure occurs
+**Then** the system preserves terrain continuity while recording a clear downstream follow-up state
+**And** it avoids falsely presenting the operation as finally reconciled
+
+### Story 8.3: Gerer les correspondances `site` / `caisse` / emplacements `Paheko`
+
+As a responsible administrator,
+I want accounting mappings between `Recyclique` and `Paheko` to be explicit and validated,
+So that synchronization never writes into an invalid or silent fallback destination.
+
+**Story Preparation Gate:** avant execution, nommer explicitement le premier slice de mapping vise pour cette story : contexte `site` / `caisse` concerne, type d'operation syncable vise, et destination `Paheko` ciblee.
+
+**Acceptance Criteria:**
+
+**Given** the deployment model maps several `Recyclique` contexts into one `Paheko` perimeter per ressourcerie
+**When** mapping rules are implemented
+**Then** the first delivery batch covers an explicit bounded mapping set between `site`, `caisse`, and the target `Paheko` destination needed for the chosen sync slice
+**And** those mappings are treated as explicit configuration truth rather than guessed runtime behavior
+
+**Given** a required mapping may be missing or invalid
+**When** a syncable operation reaches the integration layer without a valid correspondence
+**Then** the operation remains recorded in `Recyclique`
+**And** the system surfaces an explicit non-syncable or failed-sync state rather than emitting a silent substitute write
+
+**Given** these mappings are operationally sensitive
+**When** they are reviewed or changed
+**Then** their role in later support and reconciliation remains understandable
+**And** the implementation preserves the future ability to audit their effects and extend the mapping matrix in later stories if needed
+
+### Story 8.4: Encadrer la quarantaine et la resolution manuelle des ecarts persistants
+
+As a responsible ressourcerie manager or super-admin,
+I want persistent sync discrepancies to enter controlled quarantine and manual resolution workflows,
+So that accounting issues are contained, traceable, and never silently ignored.
+
+**Acceptance Criteria:**
+
+**Given** some discrepancies cannot be solved by retry alone
+**When** a persistent failure, accounting inconsistency, or missing required correspondence is detected
+**Then** the affected operation enters an explicit quarantine state
+**And** the transition into quarantine is traceable with enough context for follow-up
+
+**Given** quarantine lifts and manual fixes are sensitive operations
+**When** a responsible user resolves or lifts a quarantined case
+**Then** the action is restricted to the authorized perimeter and records author, date, context, and reason
+**And** the resulting state transition remains visible for later review
+
+**Given** Epic 8 must make supportable accounting integration possible
+**When** this story is completed
+**Then** persistent sync issues are handled as governed business cases rather than ad hoc troubleshooting
+**And** the project gains a clear operational lane for exceptions
+
+### Story 8.5: Mettre en place le suivi et la correlation inter-systemes des operations
+
+As a support and supervision team,
+I want synchronized operations to be traceable across `Recyclique` and `Paheko`,
+So that issues can be followed end to end without guesswork.
+
+**Acceptance Criteria:**
+
+**Given** support must understand a flow across systems
+**When** an operation is emitted, retried, quarantined, or resolved
+**Then** the relevant records expose a correlation identifier and enough contextual metadata to follow the path end to end
+**And** this trace remains consistent across the important lifecycle stages
+
+**Given** accounting and terrain views can diverge temporarily
+**When** a responsible user investigates a sync issue
+**Then** the system provides a clear way to relate local terrain history to downstream accounting integration attempts
+**And** that relationship does not depend on fragile manual reconstruction
+
+**Given** Epic 8 should improve operability, not just backend mechanics
+**When** this story is completed
+**Then** support and future admin screens gain a reliable observability baseline
+**And** later reporting work can reuse the same correlation semantics
+
+### Story 8.6: Gerer le blocage selectif des actions critiques finales
+
+As a responsible business system,
+I want only truly critical final actions to be blockable on accounting guarantees,
+So that terrain continuity is preserved by default while unsafe finalization remains preventable.
+
+**Acceptance Criteria:**
+
+**Given** the product principle is terrain-first with deferred sync by default
+**When** a business action is evaluated against accounting guarantees
+**Then** the system blocks only the critical final actions explicitly designated by the sync policy
+**And** ordinary terrain recording is not globally frozen by downstream integration trouble
+
+**Given** some closure or finalization outcomes may no longer be safely guaranteeable
+**When** the required accounting condition is not met
+**Then** the affected action yields a clear blocked or constrained state
+**And** the user-facing semantics remain distinct from the states of locally accepted but not yet reconciled operations
+
+**Given** Epic 6 already introduced local closure semantics
+**When** this story is implemented
+**Then** it completes the handoff by defining when local sufficiency ends and real accounting gating begins
+**And** it does not rewrite the nominal caisse flow itself
+
+### Story 8.7: Valider la reconciliation reelle avec `Paheko`
+
+As a delivery and finance-integrity team,
+I want a validation pass on the real synchronization and reconciliation behavior,
+So that the project can trust the accounting articulation before wider deployment.
+
+**Acceptance Criteria:**
+
+**Given** Epic 8 exists to make the accounting articulation real
+**When** the reconciliation validation is executed
+**Then** it confirms that nominal sync, retry, quarantine, mapping failure, and selective blocking behaviors all operate according to the documented contract
+**And** it identifies remaining gaps as explicit integration constraints rather than hidden assumptions
+
+**Given** the product distinguishes material-flow truth from accounting truth
+**When** the validation findings are reviewed
+**Then** they preserve the authority split between `Recyclique` and `Paheko`
+**And** they do not collapse the two systems into one false source of truth
+
+**Given** later epics will build admin and complementary modules on top of this backbone
+**When** this story is completed
+**Then** the project has a credible accounting integration baseline
+**And** future work can extend supervision and business modules without reopening the core sync viability question
+
+## Epic 9: Livrer les modules metier complementaires v2
+
+Les responsables et super-admins peuvent utiliser les modules metier complementaires attendus pour une v2 credible : declaration eco-organismes, adherents / vie associative minimale, integration `HelloAsso` et config admin simple, avec arbitrage `HelloAsso` explicite avant implementation large du connecteur.
+Ordre recommande dans cet epic : poser d'abord la gouvernance des mappings sensibles avant la consommation declarative a grande echelle, puis avancer sequentiellement sur `adherents`, arbitrage `HelloAsso`, integration minimale `HelloAsso`, `config admin simple`, ACL minimales, et validation finale.
+
+### Story 9.1: Livrer le module `declaration eco-organismes`
+
+As a responsible ressourcerie user,
+I want to prepare eco-organisme declarations from trustworthy internal business data,
+So that the product supports a credible material-and-financial reporting use case in v2.
+
+**Acceptance Criteria:**
+
+**Given** declarations depend on the articulation of material and financial flows
+**When** the `declaration eco-organismes` module is implemented
+**Then** it can read the relevant period and perimeter from `Recyclique` data and present declaration-oriented outputs through the v2 module chain
+**And** the module stays rooted in backend-owned business truth rather than ad hoc spreadsheet-like reconstruction
+
+**Given** internal categories differ from official declaration categories
+**When** declaration data is prepared
+**Then** the module uses internal categorization with explicit mappings toward eco-organisme reporting categories according to the governed mapping model defined in Story 9.2
+**And** it preserves traceability of the mapping used
+
+**Given** this module is complementary but still sensitive
+**When** it is delivered
+**Then** it follows the same runtime, permission, context, fallback, and audit expectations as the rest of the modular system
+**And** it does not collapse declaration logic into generic admin pages
+
+### Story 9.2: Gerer les mappings sensibles et leur gouvernance super-admin
+
+As a super-admin,
+I want eco-organisme mappings and similar sensitive module settings to be explicitly governable,
+So that high-impact configuration changes stay controlled, visible, and historically understandable.
+
+**Acceptance Criteria:**
+
+**Given** declaration mappings are operationally sensitive
+**When** mapping governance is implemented
+**Then** only authorized users can create, modify, or validate those sensitive mappings
+**And** the affected scope and consequences remain understandable at configuration time
+
+**Given** sensitive mappings may evolve over time
+**When** a mapping is changed
+**Then** the system keeps enough history to understand which mapping revision influenced later outputs
+**And** the resulting configuration remains auditable rather than opaque
+
+**Given** Epic 9 includes super-admin capabilities without replacing the whole product governance model
+**When** this story is completed
+**Then** the module gains the minimum super-admin control needed for credible declarations
+**And** later industrialization can extend governance without reopening the basic sensitivity model
+
+### Story 9.3: Livrer le module `adherents / vie associative minimale`
+
+As a responsible user,
+I want a minimal member-management capability in v2,
+So that the product supports association membership workflows beyond caisse and reception.
+
+**Acceptance Criteria:**
+
+**Given** v2 includes a minimal `adherents / vie associative` scope
+**When** the module is implemented
+**Then** authorized users can create and consult member records and read the minimum membership state needed by the product
+**And** the module is exposed through the same commanditaire/runtime modular chain as other v2 modules
+
+**Given** this scope is intentionally minimal
+**When** the module boundaries are reviewed
+**Then** it focuses on core member lifecycle needs rather than broad CRM ambitions
+**And** any richer association-management ideas remain outside the minimal v2 contract unless explicitly added later
+
+**Given** member-related actions still depend on context and permissions
+**When** the module is used
+**Then** the visible screens and actions remain consistent with backend-owned authorization and active perimeter
+**And** the module does not leak cross-site or cross-role information
+
+### Story 9.4: Arbitrer le niveau d'integration `HelloAsso` avant implementation large
+
+As a product and architecture team,
+I want an explicit decision on the `HelloAsso` integration approach,
+So that the project does not commit to a connector strategy before comparing the realistic options.
+
+**Acceptance Criteria:**
+
+**Given** the exact `HelloAsso` integration level is still an architecture-backed choice
+**When** the arbitration story is completed
+**Then** the project compares at minimum direct `HelloAsso` API integration and reuse or adaptation of the existing `Paheko` plugin path
+**And** the decision criteria include simplicity, maintainability, and fit with the member workflow perimeter
+
+**Given** Epic 9 must not launch a wide connector build on assumption alone
+**When** the arbitration is documented
+**Then** one preferred approach is selected or one clear blocking unknown is recorded
+**And** the project avoids accidental implementation drift before this decision is explicit
+
+**Given** this story protects the backlog from premature integration work
+**When** it is accepted
+**Then** later connector implementation can proceed from an agreed direction
+**And** the epic preserves the rule that no broad `HelloAsso` rollout starts before the arbitration exists
+
+### Story 9.5: Integrer le minimum utile de `HelloAsso` au parcours adherents
+
+As a responsible association user,
+I want the product to consume or reconcile useful `HelloAsso` information,
+So that membership-related workflows remain coherent without forcing manual duplicate handling everywhere.
+
+**Acceptance Criteria:**
+
+**Given** the arbitration for `HelloAsso` has already been completed
+**When** the minimum viable connector is implemented
+**Then** the product can ingest, reconcile, or expose the relevant `HelloAsso` information needed by the minimal member workflow
+**And** the resulting behavior remains consistent with the chosen integration strategy
+
+**Given** external membership data can create ambiguity or duplicates
+**When** imported or reconciled `HelloAsso` data is handled
+**Then** the system avoids silent duplicate creation and surfaces failures or ambiguities explicitly
+**And** the user retains a controlled path for manual follow-up when necessary
+
+**Given** `HelloAsso` is complementary and should not block the core product
+**When** the connector is delivered
+**Then** the minimal member workflow remains usable even if the external integration is temporarily degraded
+**And** the overall product does not become dependent on `HelloAsso` for nominal local operation
+
+### Story 9.6: Livrer la `config admin simple` pour modules et reglages simples
+
+As a super-admin or responsible administrator,
+I want a simple configuration surface for modules et reglages de faible complexite,
+So that the product gains pilotage simple sans transformer cette story en refonte complete des ACL.
+
+**Acceptance Criteria:**
+
+**Given** v2 includes a simple admin configuration capability
+**When** the admin-config module is delivered
+**Then** authorized users can manage the intended simple settings scope such as activation, order, selected variants, or other explicitly allowed module-level controls
+**And** this surface stays bounded to the simple-admin perimeter rather than becoming a full expert control plane
+
+**Given** some settings are more sensitive than others
+**When** the configuration UI is used
+**Then** the screen makes clear who can act, on which perimeter, and with what effect
+**And** changes to sensitive settings remain traceable enough for later supervision
+
+### Story 9.7: Livrer les ACL minimales de fonctionnalites sensibles
+
+As a super-admin or responsible administrator,
+I want minimum ACL steering for targeted sensitive capabilities,
+So that the riskiest functions can be piloted by role or by user without waiting for a broader governance overhaul.
+
+**Acceptance Criteria:**
+
+**Given** the field explicitly needs ACL steering of sensitive capabilities
+**When** feature access settings are exposed
+**Then** the system supports minimum ACL control over targeted sensitive functions by role or user where the product scope requires it
+**And** those controls remain consistent with backend authority over effective permissions
+
+**Given** this ACL scope is intentionally minimal
+**When** the story boundaries are reviewed
+**Then** it targets an explicit bounded set of sensitive capabilities rather than every future feature in the product
+**And** it does not turn the story into a full authorization redesign
+
+**Given** sensitive access changes have operational impact
+**When** ACL settings are changed
+**Then** the affected perimeter and intended effect remain understandable to the administrator
+**And** the resulting changes stay traceable enough for later supervision
+
+### Story 9.8: Valider la coherence des modules complementaires v2
+
+As a delivery team,
+I want a validation pass on the complementary modules epic,
+So that the product can claim a credible v2 perimeter beyond the core terrain flows.
+
+**Acceptance Criteria:**
+
+**Given** Epic 9 groups several complementary but strategic modules
+**When** the validation pass is executed
+**Then** it confirms that eco-organisme declarations, minimal member workflows, `HelloAsso` integration, simple admin configuration, and minimum ACL steering all respect the shared modular chain and permission/context model
+**And** the findings distinguish delivered capability from known deferred scope
+
+**Given** these modules extend credibility more than they anchor the whole architecture
+**When** the epic is reviewed
+**Then** validation keeps their boundaries clean with Epics 5, 8, and 10
+**And** it avoids converting complementary scope into a hidden catch-all backlog
+
+**Given** the project needs a believable v2 package
+**When** this story is completed
+**Then** the roadmap gains a coherent set of complementary modules around the core flows
+**And** the product perimeter reads as intentional rather than accidental
+
+## Epic 10: Industrialiser, valider et rendre la v2 deployable
+
+L'equipe peut verifier, tester, observer, deployer et qualifier la v2 jusqu'aux gates de beta interne et de version vendable, sans laisser les contraintes de qualite, CI, observabilite, installabilite et readiness des modules obligatoires hors backlog.
+
+### Story 10.1: Outiller la CI minimale pour `recyclique`, `peintre-nano` et les contrats
+
+As a delivery platform team,
+I want a minimal but enforceable CI pipeline,
+So that quality and contract governance stop depending on manual discipline alone.
+
+**Acceptance Criteria:**
+
+**Given** the architecture requires executable governance
+**When** the CI baseline is implemented
+**Then** the project runs at least the agreed checks for backend, frontend, and contract validation in an automated pipeline
+**And** the result becomes the shared baseline for future delivery confidence
+
+**Given** the project depends on governed contract evolution
+**When** the CI pipeline evaluates contract-related changes
+**Then** it can validate the expected artifact generation and schema-level integrity for the relevant surfaces
+**And** it makes contract drift visible before deployment
+
+**Given** Epic 10 should industrialize rather than restate feature work
+**When** this story is completed
+**Then** the product gains a repeatable quality gate
+**And** later stories can build on one delivery backbone instead of ad hoc scripts only
+
+### Story 10.2: Verifier la chaine `OpenAPI -> artefacts generes -> consommation frontend`
+
+As a contract-driven product team,
+I want the generated contract chain to be testable and reviewable end to end,
+So that backend and frontend stay aligned as the product evolves.
+
+**Acceptance Criteria:**
+
+**Given** the backend is the writer canonique of `OpenAPI`
+**When** the contract generation path is exercised
+**Then** the project can verify the canonical flow from backend-owned schema to generated artifacts to frontend consumption inputs
+**And** the process avoids hidden handwritten copies becoming de facto sources of truth
+
+**Given** the product depends on shared enums, identifiers, and stable DTO semantics
+**When** the contract chain is validated
+**Then** inconsistencies become detectable before they break composed UI behavior
+**And** the resulting review surface remains understandable for maintainers
+
+**Given** several earlier epics rely on this chain implicitly
+**When** this story is completed
+**Then** the roadmap gains concrete assurance that contract-driven development is really functioning
+**And** future module work does not need to re-prove this backbone story by story
+
+### Story 10.3: Valider les manifests `CREOS` et les parcours de rendu critiques
+
+As a modular UI platform,
+I want `CREOS` artifacts and critical rendering paths to be verified automatically,
+So that valid-looking manifests do not silently break the runtime.
+
+**Acceptance Criteria:**
+
+**Given** modular composition is central to the v2 architecture
+**When** manifest validation is industrialized
+**Then** the project verifies the schemas and structural constraints of supported `CREOS` artifacts before activation or delivery
+**And** invalid artifacts are surfaced as real delivery issues rather than runtime surprises only
+
+**Given** a schema-valid artifact can still break rendered behavior
+**When** critical render paths are tested
+**Then** the product exercises smoke-level rendering checks for the shared runtime and key mandatory modules
+**And** the resulting failures remain actionable for maintainers
+
+**Given** Epic 10 must support real deployability
+**When** this story is delivered
+**Then** the modular system gains an enforceable reliability layer
+**And** future module additions inherit a higher readiness bar by default
+
+### Story 10.4: Poser la couverture de tests ciblee sur un premier noyau de parcours critiques
+
+As a quality-focused delivery team,
+I want targeted automated coverage for an explicit premier noyau de parcours critiques,
+So that regressions on the product spine are detected early without trying to automate the entire backlog at once.
+
+**Story Preparation Gate:** avant execution, enumerer explicitement les 4 cibles minimales du lot de tests : `1` parcours module chain, `1` parcours nominal caisse, `1` parcours nominal reception, `1` parcours sync-sensitive.
+
+**Acceptance Criteria:**
+
+**Given** the product has several critical layers and flows
+**When** the first automated test baseline is defined and implemented
+**Then** the story names an explicit bounded set of critical paths and risk points to cover across backend behavior, contract boundaries, integration points, and end-to-end smoke paths
+**And** the selected tests stay focused on real regression risk rather than ceremonial completeness
+
+**Given** mandatory modules and core terrain flows matter more than peripheral polish
+**When** test priorities are chosen
+**Then** readiness checks include first the module chain, one bounded nominal caisse path, one bounded nominal reception path, and one bounded sync-sensitive path at the right depth for their risk
+**And** the test suite remains maintainable for a solo dev context
+
+**Given** Epic 10 should raise confidence, not noise
+**When** this story is completed
+**Then** the product gains a practical automated confidence floor
+**And** later improvements can expand coverage from a meaningful baseline
+
+### Story 10.5: Rendre l'observabilite et le support exploitables en environnement reel
+
+As a support and operations team,
+I want production-relevant observability on the critical flows,
+So that incidents and degraded states remain diagnosable after deployment.
+
+**Acceptance Criteria:**
+
+**Given** the product depends on context, sync, and modular runtime behavior
+**When** observability is industrialized
+**Then** critical flows expose structured logs, correlation semantics, and health-relevant signals sufficient for operational troubleshooting
+**And** those signals remain aligned with the architecture decisions already taken
+
+**Given** the system must remain understandable after failures, retries, and degraded modes
+**When** an operational issue occurs
+**Then** support can inspect a usable trail across the important backend and runtime steps
+**And** the project avoids relying on opaque or purely local debugging habits
+
+**Given** observability is part of deployability, not a bonus
+**When** this story is completed
+**Then** the product gains a realistic operations baseline for beta use
+**And** later support tooling can build on the same semantics
+
+### Story 10.6: Documenter l'installation, la stack cible et l'environnement officiellement supporte
+
+As a future deployer or adopting ressourcerie,
+I want the product installation and runtime stack to be documented and reproducible,
+So that v2 can actually be installed and evaluated outside the author’s head.
+
+**Acceptance Criteria:**
+
+**Given** v2 targets a specific deployment reference stack
+**When** installation and deployment documentation is prepared
+**Then** it describes the supported environment, the expected services, and the minimum setup path needed to run the product stack coherently
+**And** that path remains aligned with the agreed deployment structure including `recyclique`, `peintre-nano`, `paheko`, `postgres`, and `redis`
+
+**Given** the project explicitly targets `Debian` as the official reference environment
+**When** support boundaries are documented
+**Then** the documentation states what is officially supported versus merely possible
+**And** it avoids suggesting that every environment is equally supported
+
+**Given** installation credibility matters for adoption
+**When** this story is completed
+**Then** the product gains a reproducible baseline for internal beta and future adopters
+**And** deployability becomes a documented product property rather than an implicit one
+
+### Story 10.7: Definir et verifier les gates de beta interne et de v2 vendable
+
+As a product owner and delivery team,
+I want explicit release-readiness gates,
+So that "beta interne" and "v2 vendable" mean something concrete and traceable in the backlog.
+
+**Acceptance Criteria:**
+
+**Given** the roadmap should end in explicit quality decisions rather than intuition
+**When** the release gates are defined
+**Then** the project documents the minimum conditions for internal beta and for a sellable v2 release
+**And** those conditions refer to real product qualities such as module readiness, deployability, operability, contract stability, and critical-flow confidence
+
+**Given** readiness must reflect the mandatory module map
+**When** gate checks are reviewed
+**Then** the product can state which mandatory modules are considered ready, partially ready, or still blocking
+**And** the release decision remains tied to explicit evidence rather than optimism
+
+**Given** Epic 10 is the final quality and deployability epic
+**When** this story is completed
+**Then** the project has a usable definition of "ready enough" at each release threshold
+**And** the v2 scope can be communicated with much less ambiguity
+
+### Story 10.8: Valider la readiness globale de la v2
+
+As a final delivery checkpoint,
+I want a global readiness validation across the full v2 backlog,
+So that the project ends the epic sequence with an explicit go/no-go picture rather than a pile of partially trusted assumptions.
+
+**Acceptance Criteria:**
+
+**Given** all earlier epics contribute different parts of product readiness
+**When** the final readiness pass is executed
+**Then** it assesses the state of critical flows, mandatory modules, contracts, observability, test baseline, installation path, and release gates together
+**And** it records the main remaining risks in a form usable for decision-making
+
+**Given** Epic 10 must not become a dumping ground for uncategorized feature work
+**When** the final validation is reviewed
+**Then** it remains focused on verification, qualification, and explicit residual risk
+**And** it does not quietly absorb missing product features that belong to prior epics
+
+**Given** the product needs a trustworthy closing point for the planning sequence
+**When** this story is completed
+**Then** the roadmap gains an explicit final readiness statement
+**And** the next phase can begin from a known quality posture rather than a guessed one
+

@@ -1,0 +1,155 @@
+# generated: 2026-04-01T15:39:08
+# last_updated: 2026-04-01 (revise cles 1-2, 5-5 — elisions FR)
+# project: JARVOS_recyclique
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file exists at {story_location}/{story-key}.md (root of story_location; not a stories/ subfolder)
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# CLES STORIES (titres FR / apostrophes) :
+# - Les cles ci-dessous sont derivees des titres dans epics.md (kebab-case). Ce n'est pas le sujet des
+#   apostrophes typographiques dans les fichiers Markdown du depot.
+# - Les elisions (l', d', ...) peuvent produire des slugs ambigus si on genere a la main sans precaution
+#   (ex. l'UI -> "lui", l'API -> "lapi"). Les cles de CE fichier font foi pour les noms de fichiers story
+#   ({story-key}.md a la racine de story_location). En cas de regeneration automatique, verifier et ajuster.
+
+generated: "2026-04-01"
+last_updated: "2026-04-01"
+project: JARVOS_recyclique
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: backlog
+  1-1-cadrer-la-surface-de-travail-v2-et-le-mode-de-reference-paheko: backlog
+  1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques: backlog
+  1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2: backlog
+  1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope: backlog
+  1-5-definir-le-contrat-minimal-de-synchronisation-et-reconciliation-avec-paheko: backlog
+  1-6-produire-la-matrice-dintegration-paheko-et-les-gaps-api-reels: backlog
+  1-7-formaliser-les-signaux-dexploitation-pour-bandeau-live-et-les-premiers-slices: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-poser-le-socle-de-session-web-v2-et-lautorite-dauthentification-backend: backlog
+  2-2-implementer-le-contextenvelope-backend-minimal-et-le-recalcul-explicite-de-contexte: backlog
+  2-3-mettre-en-place-le-calcul-additif-des-roles-groupes-et-permissions-effectives: backlog
+  2-4-encadrer-les-actions-sensibles-avec-step-up-security-pin-et-idempotence: backlog
+  2-5-stabiliser-la-persistance-terrain-locale-laudit-et-les-journaux-critiques: backlog
+  2-6-exposer-les-premiers-contrats-backend-versionnes-pour-les-slices-v2: backlog
+  2-7-fournir-les-signaux-backend-minimaux-pour-bandeau-live: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux: backlog
+  3-1-mettre-en-place-le-shell-initial-et-le-layout-css-grid: backlog
+  3-2-implementer-le-chargement-et-la-validation-minimale-des-manifests-de-navigation-et-de-page: backlog
+  3-3-implementer-le-registre-minimal-de-widgets-slots-et-rendu-declaratif: backlog
+  3-4-integrer-ladaptateur-authsession-et-la-resolution-par-contextenvelope: backlog
+  3-5-borner-userruntimeprefs-a-la-personnalisation-locale-non-metier: backlog
+  3-6-rendre-visibles-les-fallbacks-et-rejets-de-runtime: backlog
+  3-7-produire-la-page-de-demonstration-du-runtime-compose: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-publier-le-contrat-et-les-manifests-minimaux-du-module-bandeau-live: backlog
+  4-2-implementer-le-widget-bandeau-live-dans-le-registre-peintre-nano: backlog
+  4-3-brancher-la-source-backend-reelle-et-les-cas-douverture-decalee: backlog
+  4-4-rendre-visibles-les-fallbacks-et-rejets-du-slice-bandeau-live: backlog
+  4-5-ajouter-un-toggle-admin-minimal-borne-au-module-bandeau-live: backlog
+  4-6-valider-la-chaine-complete-backend-contrat-manifest-runtime-rendu-fallback: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-recomposer-la-navigation-transverse-commanditaire-dans-peintre-nano: backlog
+  5-2-recomposer-le-dashboard-transverse-dans-la-nouvelle-chaine-ui: backlog
+  5-3-migrer-un-premier-lot-cible-de-listings-et-vues-de-consultation-transverses: backlog
+  5-4-migrer-un-premier-lot-cible-de-pages-admin-transverses: backlog
+  5-5-integrer-les-libelles-personnalises-et-la-visibilite-contextuelle-dans-ui-transverse: backlog
+  5-6-poser-les-templates-et-layouts-reutilisables-des-pages-transverses: backlog
+  5-7-gerer-les-etats-vides-chargements-et-erreurs-sur-les-pages-transverses: backlog
+  5-8-valider-la-coherence-transverse-du-shell-recompose: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-mettre-en-service-le-parcours-nominal-de-caisse-v2-dans-peintre-nano: backlog
+  6-2-garantir-le-contexte-caisse-et-les-blocages-de-securite-metier: backlog
+  6-3-ajouter-le-parcours-ticket-en-attente: backlog
+  6-4-ajouter-le-parcours-remboursement-sous-controle: backlog
+  6-5-ajouter-les-encaissements-specifiques-sans-article-et-adhesion-association: backlog
+  6-6-ajouter-les-boutons-dactions-sociales-dedies: backlog
+  6-7-mettre-en-place-la-cloture-locale-exploitable-de-caisse: backlog
+  6-8-gerer-un-premier-perimetre-borne-de-corrections-sensibles-et-laudit-des-ventes-modifiees: backlog
+  6-9-rendre-la-caisse-defensive-face-aux-erreurs-fallbacks-et-sync-differee: backlog
+  6-10-valider-lexploitabilite-terrain-de-la-caisse-v2: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-mettre-en-service-le-parcours-nominal-de-reception-v2: backlog
+  7-2-garantir-le-contexte-reception-et-les-blocages-metier-associes: backlog
+  7-3-integrer-la-categorisation-la-pesee-et-la-qualification-du-flux-matiere: backlog
+  7-4-journaliser-les-entrees-reception-et-assurer-leur-exploitabilite-historique: backlog
+  7-5-rendre-la-reception-defensive-face-aux-erreurs-contrats-incomplets-et-degradations: backlog
+  7-6-valider-lexploitabilite-terrain-de-la-reception-v2: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko: backlog
+  8-2-gerer-lidempotence-les-retries-et-les-statuts-explicites-de-sync: backlog
+  8-3-gerer-les-correspondances-site-caisse-emplacements-paheko: backlog
+  8-4-encadrer-la-quarantaine-et-la-resolution-manuelle-des-ecarts-persistants: backlog
+  8-5-mettre-en-place-le-suivi-et-la-correlation-inter-systemes-des-operations: backlog
+  8-6-gerer-le-blocage-selectif-des-actions-critiques-finales: backlog
+  8-7-valider-la-reconciliation-reelle-avec-paheko: backlog
+  epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-livrer-le-module-declaration-eco-organismes: backlog
+  9-2-gerer-les-mappings-sensibles-et-leur-gouvernance-super-admin: backlog
+  9-3-livrer-le-module-adherents-vie-associative-minimale: backlog
+  9-4-arbitrer-le-niveau-dintegration-helloasso-avant-implementation-large: backlog
+  9-5-integrer-le-minimum-utile-de-helloasso-au-parcours-adherents: backlog
+  9-6-livrer-la-config-admin-simple-pour-modules-et-reglages-simples: backlog
+  9-7-livrer-les-acl-minimales-de-fonctionnalites-sensibles: backlog
+  9-8-valider-la-coherence-des-modules-complementaires-v2: backlog
+  epic-9-retrospective: optional
+
+  epic-10: backlog
+  10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: backlog
+  10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
+  10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: backlog
+  10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: backlog
+  10-5-rendre-lobservabilite-et-le-support-exploitables-en-environnement-reel: backlog
+  10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte: backlog
+  10-7-definir-et-verifier-les-gates-de-beta-interne-et-de-v2-vendable: backlog
+  10-8-valider-la-readiness-globale-de-la-v2: backlog
+  epic-10-retrospective: optional
