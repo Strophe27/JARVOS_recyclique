@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jarvos/recyclique/creos/widget-data-states",
+  "title": "Codes etat donnees widget (vocabulaire CREOS)",
+  "description": "Enum des codes **CREOS** pour la couche donnees widget (DATA_*). Distinct du type TypeScript `WidgetDataState<T>` qui utilise typiquement `status: 'loading' | 'loaded' | 'error' | 'empty' | 'stale'` — mapping documente PRD §10.1. Distinct aussi des etats de cycle de vie module (ACTIVE, INACTIVE, ERROR). Reference : references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md",
+  "type": "string",
+  "enum": [
+    "DATA_LOADING",
+    "DATA_LOADED",
+    "DATA_ERROR",
+    "DATA_EMPTY",
+    "DATA_STALE"
+  ]
+}

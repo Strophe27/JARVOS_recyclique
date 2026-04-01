@@ -1,0 +1,8 @@
+# Schemas JSON CREOS
+
+| Fichier | Role |
+|---------|------|
+| `widget-declaration.schema.json` | Declaration de widget + `data_contract` optionnel. La racine de l'objet widget autorise encore des champs additionnels (`additionalProperties: true`) pour absorber l'evolution du profil CREOS sans casser les manifests existants ; durcir en `false` quand le corpus de champs sera fige. |
+| `widget-data-states.schema.json` | Codes **CREOS** `DATA_*` (donnees widget). Distinct du type TS `WidgetDataState<T>` (`status` en minuscules) — voir PRD §10.1. |
+
+**CI recommandee (Epic 10)** : lorsque `contracts/openapi/recyclique-api.yaml` contient des `paths` non vides, verifier que chaque `data_contract.operation_id` reference dans les manifests reviewables existe comme `operationId` dans l'OpenAPI.

@@ -65,7 +65,7 @@
 - Tests de contrats, integration et e2e dans des emplacements dedies par couche.
 - Les overrides runtime ne doivent jamais masquer silencieusement un manifest versionne.
 - Les assets et configurations ont un proprietaire explicite (`Peintre_nano`, module, domaine), jamais un depot global sans responsabilite.
-- Les composants de transition `Mantine` restent confines a une couche d'adaptation ou de migration ; ils ne deviennent pas la structure racine de `Peintre_nano`.
+- Les composants de transition `Mantine` restent confines a une couche d'adaptation ou de migration ; ils ne deviennent pas la structure racine de `Peintre_nano`. Cadrage detaille et interdits stack : **ADR P1** `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md`.
 
 ## Format Patterns
 
@@ -184,6 +184,22 @@
 - Continuer a faire des investissements structurants dans l'ancien frontend "en attendant".
 - Multiplier des mappers `snake_case` -> `camelCase` locaux selon les composants.
 - Laisser un flow critique fonctionner sur une combinaison de flags UI sans definition de flow explicite.
+
+## Jalons de durcissement (a declencher manuellement)
+
+Ces actions ne sont pas des taches de sprint ordinaires : ce sont des **seuils** a verifier periodiquement (release, beta, fin d'epic critique). Quand le seuil est atteint, **creer une story** pour executer le durcissement et mettre a jour ce tableau si la regle change.
+
+**Clarification — hooks de domaine et `operation_id` :** les `operation_id` stables vivent dans les **manifests** (`data_contract`). Les **hooks** sont du **code d'implementation** : en Phase 0 ils peuvent appeler le client avec un chemin explicite ; en Phase 1+ avec codegen, l'appel devient genere (ex. `apiClient.operations.getMemberById()`). Le **manifest** ne change pas entre les deux modes. Cela reste aligne sur l'instruction contrats donnees dans `references/peintre/` — pas de contradiction a corriger dans ce fichier.
+
+**Jalon futur — CI `source` ↔ tags OpenAPI :** quand le depot contient au moins **3 manifests reels** et que `recyclique-api.yaml` a ses **tags stabilises**, ajouter une regle CI qui verifie que chaque `data_contract.source` dans un manifest correspond a un **tag existant** dans l'OpenAPI. **Ne pas implementer avant ce seuil** pour eviter la sur-specification.
+
+| Jalon | Seuil de declenchement | Action |
+|-------|------------------------|--------|
+| Verrouiller `additionalProperties` racine `WidgetDeclaration` | Profil CREOS widget v2 fige (apres stabilisation bandeau + caisse) ou beta interne | Passer la racine du schema `contracts/creos/schemas/widget-declaration.schema.json` en `additionalProperties: false` ; ajouter un motif `x-*` pour extensions experimentales si besoin |
+| CI `source` ↔ tags OpenAPI | Au moins 3 manifests reels + tags OpenAPI stabilises | Regle CI : chaque `data_contract.source` reference dans un manifest reviewable mappe a un tag OpenAPI existant (voir paragraphe ci-dessus) |
+| CI `operation_id` ↔ OpenAPI | `recyclique-api.yaml` non vide + au moins 1 manifest consommant un `operation_id` | Règle CI : chaque `data_contract.operation_id` dans un manifest correspond a un `operationId` dans l'OpenAPI du meme snapshot — **Story 10.3** (`epics.md`) couvre deja ce cas : verifier a l'implementation que le script/gate inclut bien tous les manifests reviewables |
+| Codegen types TS depuis OpenAPI | `recyclique-api.yaml` stable avec au moins **5 endpoints** documentes | Remplacer les types manuels dans `peintre-nano/src/api/types.ts` (ou equivalent) par des types generes ; mettre a jour le script de build / CI |
+| Verrouiller les `operationId` comme contrat stable | Apres **Convergence 2** (bandeau live valide bout-en-bout) | Les `operationId` deviennent un **contrat versionne** : tout renommage ou suppression exige une migration des manifests qui les referencent et une entree dans la politique de breaking changes |
 
 ## Step 6 Status
 

@@ -23,6 +23,8 @@ current_technique: 'Question Storming'
 current_technique_status: 'in_progress'
 ---
 
+> **Note (2026-04-01)** : session **complementaire** du meme jour (phase amont de la session 19h58). Pour le pivot **Peintre_nano / CREOS**, la sequence d'execution et les invariants UI, se reporter a `brainstorming-session-2026-03-31-195824.md`, au **PRD** SS12.2, et au pipeline `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md`.
+
 # Brainstorming Session Results
 
 **Session:** Reprise avec Strophe

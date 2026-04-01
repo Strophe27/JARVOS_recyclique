@@ -112,7 +112,7 @@ npm create vite@latest peintre-nano -- --template react-ts
 ```
 
 Commande a adapter a la structure cible du depot, idealement dans le dossier dedie `peintre-nano/` plutot qu'en nouveau projet autonome a la racine.
-Ce bootstrap ne suffit pas a lui seul : la phase de scaffold doit aussi fixer explicitement l'alignement ou la divergence vis-a-vis des briques frontend existantes (`Mantine`, `Zustand`).
+Ce bootstrap ne suffit pas a lui seul : la phase de scaffold doit aussi materialiser **ADR P1** (`references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md`) — `tokens.css`, CSS Modules, Mantine v8, interdits listes dans l'ADR — et le role limite de `Zustand` (etat UI local) si retenu.
 
 **Architectural Decisions Provided by Starter:**
 
@@ -121,10 +121,10 @@ Ce bootstrap ne suffit pas a lui seul : la phase de scaffold doit aussi fixer ex
 - conservation du backend `FastAPI` comme socle serveur/metier de reference.
 
 **Styling Solution:**
-- le starter ne decide pas la peau CSS finale ;
-- la decision structurante est deja prise ailleurs : `CSS Grid` comme moteur de layout global de `Peintre_nano` ;
-- le choix Tailwind / CSS Modules / autre reste une decision d'implementation, pas d'architecture.
-- pour la phase de migration, une decision explicite doit etre prise avant reproduction massive des ecrans : soit reutiliser provisoirement `Mantine` comme kit de widgets/adaptation, soit definir un autre kit UI cible avec regles claires de transition.
+- le starter `react-ts` ne fixe pas la peau CSS : le scaffold doit ajouter **CSS Modules** + fichier **`tokens.css`** (variables de design) conformement a **ADR P1** ;
+- `CSS Grid` reste le moteur de layout global de `Peintre_nano` (decision architecture) ;
+- **Tailwind**, CSS-in-JS runtime et fichier utilitaires global sont **hors scope** pour `Peintre_nano` (voir ADR P1) ;
+- **Mantine 8.x** : bibliotheque de composants cible, avec couche d'adaptation sous `migration/mantine-adapters/` pour le code de migration brownfield.
 
 **Build Tooling:**
 - `Vite` reste le meilleur scaffold cible pour un frontend interne moderne ;
@@ -184,7 +184,7 @@ Pour l'etape suivante, les decisions deja acquises sont :
 - `CREOS` minimal documentaire ;
 - `CSS Grid` comme moteur de layout global.
 
-Restent a trancher plus finement dans les decisions architecturales :
+Restent a trancher plus finement dans les decisions architecturales (hors **P1/P2** deja fermes par l'ADR Peintre) :
 - la strategie concrete de contrats `OpenAPI` / `CREOS` ;
 - les regles de coexistence runtime et de sortie de l'ancien frontend ;
 - la gouvernance de versionnement et des breaking changes ;

@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Recyclique API v2
+  version: 0.0.0-draft
+  description: |
+    Fichier OpenAPI reviewable (draft) — **Piste B**.
+    `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
+    alimenter ce document (ou le remplacer) sans edition manuelle des chemins d'implementation.
+    Chaque operation expose un `operationId` **stable** ; les manifests CREOS referencent
+    ces identifiants via `data_contract.operation_id` (voir instruction contrats donnees).
+servers:
+  - url: /api
+    description: Prefixe nominal v2 (ajuster selon deploiement)
+# Gate CI (Epic 10) : lorsque ce fichier contient des operations, verifier que chaque
+# data_contract.operation_id des manifests CREOS reviewables a un operationId ici.
+paths: {}
+components: {}

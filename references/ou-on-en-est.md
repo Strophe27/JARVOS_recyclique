@@ -41,6 +41,12 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 Réalisé :
 - **Sprint Status** : `_bmad-output/implementation-artifacts/sprint-status.yaml` régénéré. Inventaire : **10 epics**, **75 stories**, **10** rétrospectives ; statuts par défaut `backlog` / `optional` (aucun fichier story `{story-key}.md` à la racine de `implementation-artifacts` pour l’instant). Deux clés corrigées à la main après génération automatique : `1-2-…-api-existante-…` (éviter `lapi` pour *l’API*) et `5-5-…-ui-transverse` (éviter `lui` pour *l’UI*). Prochaine étape : Create Story → Dev Story → Code Review.
 
+**Correct Course (même jour, post-approbation)** — alignement **P1/P2** ADR Peintre ↔ BMAD ; puis **correctifs QA** (PRD §7.1 / P2, **AR45**, Story 9.6, addendum readiness, note « Prochaine étape ») :
+- **PRD** : section « Stack Peintre_nano (figée) » + liens ADR / instruction ; frontmatter enrichi.
+- **Architecture active** : `core-architectural-decisions.md`, `starter-template-evaluation.md`, `implementation-patterns-consistency-rules.md`, `project-structure-boundaries.md` ; bannière **P1/P2** sur `archive/architecture.md`.
+- **Epics** : AR3, AR15 et lignes de traçabilité epic mises à jour.
+- **Sprint Change Proposal** : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-01.md` — implémentation documentaire marquée faite ; **à faire** : re-run `check implementation readiness` quand tu veux rafraîchir le rapport.
+
 ---
 
 2026-02-26 — Sprint Planning complété (workflow BMAD).
@@ -192,6 +198,8 @@ Ordre qui a ete suivi ; 1re passe cloturee (2026-02-25).
 5. **Restant Kanban** — nouvelles UI, module store, Le Fil, module correspondance, README, etc.
 
 ## Prochaine etape
+
+> **Note (2026-04-01)** : la ligne directrice **v2 brownfield** vit dans `_bmad-output/planning-artifacts/` (PRD, `epics.md`, `sprint-status.yaml`). Les étapes 1–3 ci-dessous sont l’historique **février 2026** ; l’état courant est dans **Dernière session** (sprint planning v2, Correct Course, alignement ADR P1/P2). Enchaînement logique aujourd’hui : **Create Story** (fichiers `.md` par clé) → **Dev Story** → **Code Review** ; optionnel : re-run **check implementation readiness** pour régénérer le rapport (un addendum 2026-04-01 documente déjà l’alignement ADR dans `implementation-readiness-report-2026-04-01.md`).
 
 1. **Create Epics and Stories** (`/bmad-bmm-create-epics-and-stories`, agent PM John) : découper le PRD et l'architecture en épics et stories (fichier `epics.md`). Workflow en 4 étapes avec tours de réflexion et validation.
 2. **Check Implementation Readiness** (`/bmad-bmm-check-implementation-readiness`, agent Architect Winston) : valider la cohérence PRD / UX / Architecture / Épics & Stories avant le sprint.

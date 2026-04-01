@@ -34,6 +34,7 @@
     - [Process Patterns](./implementation-patterns-consistency-rules.md#process-patterns)
     - [Enforcement Guidelines](./implementation-patterns-consistency-rules.md#enforcement-guidelines)
     - [Pattern Examples](./implementation-patterns-consistency-rules.md#pattern-examples)
+    - [Jalons de durcissement (a declencher manuellement)](./implementation-patterns-consistency-rules.md#jalons-de-durcissement-a-declencher-manuellement)
     - [Step 6 Status](./implementation-patterns-consistency-rules.md#step-6-status)
   - [Project Structure & Boundaries](./project-structure-boundaries.md)
     - [Structural Decision Update](./project-structure-boundaries.md#structural-decision-update)

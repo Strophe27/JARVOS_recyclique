@@ -98,6 +98,12 @@ La hierarchie de verite est la suivante :
 - une logique metier imperative locale ;
 - une navigation non declaree dans `NavigationManifest`.
 
+### Extension `data_contract` sur `WidgetDeclaration`
+
+- **Role** : lier un widget aux donnees metier via la surface `OpenAPI` sans dupliquer la verite metier dans `CREOS`.
+- **Champ cle** : `operation_id` — doit correspondre a un **`operationId` stable** dans `contracts/openapi/recyclique-api.yaml` (ou equivalent reviewable).
+- **Detail** : `references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md` ; schema JSON : `contracts/creos/schemas/widget-declaration.schema.json`.
+
 ### `ContextEnvelope`
 
 **Role**
@@ -116,7 +122,8 @@ La hierarchie de verite est la suivante :
 - contexte operateur actif ;
 - permissions calculees ;
 - etats de contexte utiles au rendu ;
-- marqueurs de contexte indispensables aux flows critiques.
+- marqueurs de contexte indispensables aux flows critiques ;
+- regles de **fraicheur** consommables par le runtime : le frontend applique une convention de **peremption** (ex. `MAX_CONTEXT_AGE_MS` cote provider UI) pour marquer les donnees contextuelles comme **stale** et declencher recalcul / rechargement ou **blocage** des actions sensibles lorsque le contrat widget declare `data_contract.critical: true`.
 
 **Must not define**
 - une preference d'affichage purement locale ;
@@ -240,6 +247,7 @@ fallback:
 
 ```yaml
 context_id: ctx-2026-04-01-001
+built_at: "2026-04-01T14:30:00Z"
 user_id: usr-001
 site_id: site-rennes
 cash_register_id: cr-01
@@ -260,6 +268,7 @@ sync_state:
 ```
 
 Note :
+- `built_at` (ISO 8601) : horodatage **autoritatif** de construction de l'enveloppe ; le frontend compare a `MAX_CONTEXT_AGE_MS` (ou politique equivalente) pour marquer le contexte / les donnees dependantes comme **stale** ; le schema OpenAPI du `ContextEnvelope` doit inclure ce champ (ou equivalent nomme dans le contrat, avec regle de mapping documentee).
 - `ui_flags` sont des garde-fous d'affichage fournis par le backend autoritatif ;
 - ils ne remplacent ni les permissions, ni les manifests, ni les preferences runtime utilisateur.
 
@@ -292,6 +301,8 @@ presentation:
 - l'arbitrage des collisions releve du commanditaire et de la validation CI ; a defaut d'arbitrage explicite, le rejet est dur avant activation ;
 - journaliser tout rejet de manifest, collision ou incoherence de contexte ;
 - laisser le commanditaire maitre du sens metier, et garder a `Peintre_nano` seulement la resolution runtime, le layout et l'experience.
+
+**Regle securite (complement PRD / core-architectural-decisions)** : l'UI peut bloquer ou degrader l'affichage sur contexte **stale** ; les **mutations sensibles** restent toutefois **soumises a la revalidation backend** — `Peintre_nano` ne fait jamais foi ; un client modifie ne doit pas pouvoir contourner une exigence de fraicheur ou de contexte que le backend impose.
 
 ## Validation Rules
 

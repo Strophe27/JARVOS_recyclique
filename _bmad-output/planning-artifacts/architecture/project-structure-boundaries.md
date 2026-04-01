@@ -20,6 +20,24 @@ Decision de stack de deploiement :
 - son code source de reference peut rester hors coeur du repo produit actif ;
 - mais son service doit etre branche explicitement dans l'architecture Docker/deploiement et dans les frontieres d'integration.
 
+## Organisation de developpement parallele (Piste A / Piste B)
+
+Decision d'execution (Correct Course + cadrage co-architecte 2026-04-01) :
+
+- **Piste A — `Peintre_nano` (frontend / moteur UI)** : peut progresser **sans dependance au backend reel** en s'appuyant sur **donnees mockées**, types derives ou stubs, client API centralise pret, `ContextEnvelope` **cote UI** (provider, convention de fraicheur `MAX_CONTEXT_AGE_MS`), validation des manifests CREOS, feature toggles, `FlowRenderer`, raccourcis. Les hooks de domaine consomment des mocks jusqu'a la **Convergence 1**.
+
+- **Piste B — `Recyclique` (backend)** : progresse en **autonomie** : audit API 1.4.4, stabilisation donnees, OpenAPI draft, `ContextEnvelope` construit et valide cote serveur, sync/quarantaine, matrice de permissions par endpoint. Livrable contractuel reviewable : `contracts/openapi/recyclique-api.yaml` avec **`operationId` stables**.
+
+**Points de convergence** (jalons produit, alignes sur la sequence de la decision directrice, pas sur les « phases Peintre » du concept architectural — celles-ci decrivent la **maturite du moteur** sur plusieurs versions, pas un calendrier sprint) :
+
+1. **Convergence 1 — contrat d'interface** : OpenAPI draft + spec `ContextEnvelope` backend ; le frontend **genere les types**, branche les hooks sur le **client reel** (sans changer les composants widgets).
+2. **Convergence 2 — bandeau live** : premiere preuve **bout-en-bout** (backend reel, manifest, slot `shell.bandeau.live`, polling, fallback, `correlation_id`). **Gate** : si cette chaine ne tient pas, corriger avant d'elargir (decision directrice).
+3. **Convergence 3 — flows terrain critiques** : caisse et reception avec donnees reelles, raccourcis, widgets `critical: true` / blocage `DATA_STALE` ou sensibles, visibilite sync comptable.
+
+Apres validation du bandeau (Convergence 2), les pistes peuvent **re-diverger** (enrichissement flows UI vs. sync et integrations backend).
+
+**Liaison manifest OpenAPI** : les widgets portent optionnellement `data_contract.operation_id` qui **doit** correspondre a un `operationId` du fichier OpenAPI reviewable — voir `references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md`.
+
 ## Complete Project Directory Structure
 ```text
 JARVOS_recyclique/
@@ -45,6 +63,7 @@ JARVOS_recyclique/
 │       └── ci-e2e.yml
 ├── contracts/
 │   ├── openapi/
+│   │   ├── recyclique-api.yaml      # draft reviewable — writer Recyclique ; operationId stables (Piste B)
 │   │   ├── source/
 │   │   ├── generated/
 │   │   └── diff-baseline/
@@ -91,7 +110,7 @@ JARVOS_recyclique/
 │   │   │   ├── adherents/
 │   │   │   └── admin-config/
 │   │   ├── migration/
-│   │   │   ├── mantine-adapters/
+│   │   │   ├── mantine-adapters/   # P1 ADR : couche adaptation Mantine v8 ; pas socle de composition Peintre_nano — references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md
 │   │   │   ├── legacy-screen-parity/
 │   │   │   └── ui-bridges/
 │   │   ├── runtime-overrides/
@@ -217,7 +236,7 @@ JARVOS_recyclique/
 - Il reste l'autorite de verite sur auth, permissions, contextes, sync, historique, audit et integrations.
 
 **API Boundaries:**
-- `recyclique/` expose la surface backend versionnee via `OpenAPI`.
+- `recyclique/` expose la surface backend versionnee via `OpenAPI` ; le fichier reviewable nominal est `contracts/openapi/recyclique-api.yaml`, **aligne** sur la sortie `contracts/openapi/generated/` par le pipeline CI (voir `core-architectural-decisions.md` — chaine unique, pas d'edition manuelle parallele au code).
 - Les routes historiques peuvent coexister pendant la transition, mais les nouvelles surfaces v2 doivent suivre la gouvernance contractuelle fixee dans ce document.
 - Les integrations externes (`Paheko`, `HelloAsso`, email) restent derriere le backend, jamais branchees directement au frontend.
 - `recyclique/` reste aussi le commanditaire de la structure informationnelle de `Recyclique` v2 : pages disponibles, navigation, arborescence de routes, raccourcis structurels, contraintes de contexte et permissions associees.
@@ -233,7 +252,7 @@ JARVOS_recyclique/
 - `PostgreSQL` reste la source de verite transactionnelle de `recyclique`.
 - `Redis` reste une couche technique auxiliaire, jamais une autorite metier.
 - `contracts/creos/` est la source reviewable canonique des schemas et manifests ; le backend les sert, les resolve ou les met en cache, mais ne cree pas une seconde source concurrente.
-- `contracts/openapi/generated/` est la reference CI des artefacts generes ; `peintre-nano/src/generated/` n'est qu'une copie/consommation derivee alimentee par la chaine d'outillage.
+- `contracts/openapi/generated/` est la reference CI des artefacts generes (diff / gate) ; `recyclique-api.yaml` en est le miroir reviewable du **meme** snapshot ; `peintre-nano/src/generated/` n'est qu'une copie/consommation derivee alimentee par la chaine d'outillage.
 - Les contrats de navigation et de structure informationnelle font partie des artefacts commanditaires reviewables ; `Peintre_nano` peut les interpreter et les completer uniquement par des etats runtime non metier (preferences UI, cache de presentation, etats de chargement, onboarding), mais pas en redefinir seul le sens metier.
 - Le `ContextEnvelope` est fourni par `recyclique` via les contrats de donnees backend ; les preferences purement runtime utilisateur restent cote `Peintre_nano` dans un espace non autoritatif.
 - Le schema canonique de `ContextEnvelope` releve de `OpenAPI` ; `UserRuntimePrefs` reste local par defaut, sauf endpoint backend explicite dedie et non autoritatif sur le metier.

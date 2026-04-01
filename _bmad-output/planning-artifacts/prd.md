@@ -7,6 +7,12 @@ inputDocuments:
   - .cursor/plans/separation-peintre-recyclique_4777808d.plan.md
   - .cursor/plans/profil-creos-minimal_6cf1006d.plan.md
   - references/vision-projet/2026-03-31_peintre-nano-concept-architectural.md
+  - references/peintre/index.md
+  - references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md
+  - references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md
+  - references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md
+  - references/peintre/2026-04-01_instruction-cursor-p1-p2.md
+  - references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md
   - _bmad-output/brainstorming/brainstorming-session-2026-03-31-195824.md
 workflowType: 'prd'
 source_of_truth: references/vision-projet/2026-03-31_decision-directrice-v2.md
@@ -17,7 +23,19 @@ source_of_truth: references/vision-projet/2026-03-31_decision-directrice-v2.md
 **Auteur :** Strophe  
 **Date :** 2026-03-31  
 **Source de verite de cadrage :** `references/vision-projet/2026-03-31_decision-directrice-v2.md`  
-**Statut :** Actif — base pour architecture et epics
+**Statut :** Actif — base pour architecture et epics  
+**Documentation de travail Peintre (pipeline, extraits, index) :** `references/peintre/index.md` — alignee PRD ; en cas d'ecart, ce PRD et l'architecture BMAD font foi.
+
+### Stack Peintre_nano (figée)
+
+Les decisions **P1** (stack CSS / styling) et **P2** (stockage des surcharges de configuration admin) sont **fermees**. Sources d'autorite :
+
+- **ADR** : `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md`
+- **Instruction agents (code, CI, garde-fous)** : `references/peintre/2026-04-01_instruction-cursor-p1-p2.md`
+
+En cas d'ecart avec d'anciens extraits, briefs ou archives, **l'ADR et cette instruction priment** sur le reste de la documentation Peintre pour P1 et P2.
+
+**Priorite de resolution :** pour **P1** et **P2** uniquement, en cas d'ecart entre le **corps** de ce PRD et l'ADR, **l'ADR fait foi** (le present PRD et l'architecture BMAD restent la reference pour le reste du perimetre v2).
 
 ---
 
@@ -74,6 +92,8 @@ La reussite ne se mesure pas a la richesse fonctionnelle immediate ni a la sophi
 - la verite principale du **flux matiere** ;
 - l'historique exploitable pour rejeu, audit et analyse ;
 - les manifests CREOS de ses modules metier.
+
+Les declarations de widget **CREOS** peuvent inclure un champ optionnel **`data_contract`** qui lie le widget a une operation backend via un **`operation_id`** OpenAPI stable, une strategie de `refresh`, et un flag `critical` pour le blocage en cas de donnees perimees — specification : `references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md` ; schema : `contracts/creos/schemas/widget-declaration.schema.json`.
 
 ### 3.2 Paheko
 
@@ -391,7 +411,9 @@ Ce n'est **pas** un grand panneau admin metier. C'est un pilotage minimal du she
 - variantes simples d'affichage ;
 - aide ou overlay de raccourcis.
 
-Les mappings sensibles et reglages critiques restent reserves au niveau **super-admin/expert**, avec forte tracabilite. Supports possibles : fichiers structures (TOML, YAML, JSON) ou base de donnees, avec ouverture future a une assistance admin plus riche.
+**Persistance de cette couche (P2, ADR)** : les reglages qui relevent du paragraphe ci-dessus (activation, ordre, variantes simples, parametres prevus par le build dans le perimetre « admin simple ») sont stockes en **PostgreSQL** comme **surcharges** fusionnees de maniere deterministe avec les **valeurs par defaut** des manifests livres au build — voir l'ADR P2 dans le bloc « Stack Peintre_nano ». **Pas de fichier JSON sur disque en production** pour cette configuration dynamique ; la **tracabilite** des changements (auteur, date, motif) suit la decision directrice.
+
+Les **mappings sensibles** et **reglages critiques** (hors perimetre « admin simple » ci-dessus) restent reserves au niveau **super-admin/expert**, avec forte tracabilite. Supports possibles : fichiers structures (TOML, YAML, JSON) ou base de donnees, selon le domaine, avec ouverture future a une assistance admin plus riche — **sans contredire** P2 pour ce qui est deja couvert par la config admin simple versionnee.
 
 **Modele de deploiement des manifests et contributions UI en v2 :**
 
@@ -606,6 +628,11 @@ Exigences :
 | Sync Paheko indisponible | Enregistrement dans Recyclique, retry ulterieur, pas de blocage terrain par defaut |
 | Ecart de sync persistant | Signalement, passage en quarantaine, resolution tracee par un role habilite |
 | Conflit securite vs fluidite | **La securite gagne** |
+| Donnees widget en cours / chargees / erreur / vide / perimees (`WidgetDataState`) | Composants de presentation dedies (`WidgetSkeleton`, erreur, vide) ; si le manifest declare `data_contract.critical: true`, l'etat **perime** (`DATA_STALE`) peut **bloquer** les actions sensibles (ex. paiement caisse) en coherence avec la securite > fluidite — vocabulaire : `contracts/creos/schemas/widget-data-states.schema.json` |
+
+**Note de compatibilite avec la matrice ci-dessus :** les lignes existantes (widget non rendable, module non critique, flow invalide, etc.) restent valides pour la **composition** et le **runtime CREOS** ; la ligne ajoutee couvre la **couche donnees metier** par widget, orthogonale aux etats de cycle de vie module (`ACTIVE` / `INACTIVE` / `ERROR`).
+
+**Lexique runtime :** en **TypeScript**, l'etat courant d'un hook peut utiliser `status: 'stale' | 'loading' | …` ; le vocabulaire **CREOS** / schema `widget-data-states.schema.json` utilise les codes **`DATA_STALE`**, **`DATA_LOADING`**, etc. Le mapping **1:1** (`stale` ↔ `DATA_STALE`, etc.) est impose dans la couche d'adaptation widget — pas deux semantiques paralleles sans pont documente.
 
 ### 10.2 Actions critiques finales pouvant etre bloquees
 
@@ -732,11 +759,12 @@ L'ordre suivant minimise le risque systemique et doit etre respecte comme prefer
 | 5 | Gouvernance contractuelle + schemas CREOS formels | Grammaire machine stable pour manifests et compatibilite |
 | 6 | Runtime minimal Peintre_nano | Moteur de composition reel |
 | 7 | Preuve chaine modulaire sur `bandeau live` | Chaine complete backend → manifest → registre → slot → rendu → fallback |
-| 8 | Preuves terrain critiques : `cashflow` + `reception flow` | Robustesse terrain, contexte, raccourcis, flows, blocage/fallback |
-| 9 | Premier grand module metier : `eco-organismes` | Validation du socle sur un domaine metier complet |
-| 10 | Chantiers paralleles : `adherents`, config admin simple, HelloAsso, autres | Couverture fonctionnelle v2 |
+| 8 | Recomposition transverse shell, navigation, dashboard, admin (**epic-5**, sprint) | Prerequis UI entre bandeau live et parcours terrain lourds ; aligne `epics.md` et `sprint-status.yaml` |
+| 9 | Preuves terrain critiques : `cashflow` + `reception flow` | Robustesse terrain, contexte, raccourcis, flows, blocage/fallback |
+| 10 | Premier grand module metier : `eco-organismes` | Validation du socle sur un domaine metier complet |
+| 11 | Chantiers paralleles : `adherents`, config admin simple, HelloAsso, autres | Couverture fonctionnelle v2 |
 
-**Regle :** si `bandeau live` ne prouve pas la chaine modulaire, corriger la chaine avant d'aller plus loin. Si un audit contredit le plan, arbitrer au cas par cas.
+**Regle :** si `bandeau live` ne prouve pas la chaine modulaire, corriger la chaine avant d'aller plus loin. L'etape **8** explicite le jalon **epic-5** absent de certaines sequences courtes de brainstorming mais presente dans le plan d'execution. Si un audit contredit le plan, arbitrer au cas par cas.
 
 ### 12.3 Dependances entre chantiers
 
@@ -803,7 +831,7 @@ Regle de preemption : en cas de conflit entre un choix UI/contrat et un invarian
 
 ### 14.1 Source de verite des schemas
 
-A definir : un emplacement canonique unique pour les schemas JSON (manifests CREOS, contrats OpenAPI).
+Emplacement canonique des artefacts reviewables : repertoire `contracts/` a la racine du depot — `contracts/openapi/recyclique-api.yaml`, `contracts/creos/schemas/` (voir architecture BMAD et `contracts/README.md`). Les chemins historiques sous `_bmad-output` ne remplacent pas cette source pour le code et la CI cible.
 
 ### 14.2 Versionnement
 

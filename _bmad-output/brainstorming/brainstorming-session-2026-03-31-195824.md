@@ -29,6 +29,8 @@ session_continued: true
 continuation_date: '2026-03-31'
 ---
 
+> **Note execution (2026-04-01)** : les syntheses **courtes** de sequence en fin de session sont des extraits de travail. L'ordre d'execution et les jalons **font foi** dans `_bmad-output/implementation-artifacts/sprint-status.yaml`, `_bmad-output/planning-artifacts/epics.md` (notamment **epic-5** — recomposition transverse entre bandeau live et parcours caisse / reception), le **PRD** SS12.2 (etape 8), et `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md` SS12.
+
 # Brainstorming Session Results
 
 **Session:** Reprise propre pour agent vierge

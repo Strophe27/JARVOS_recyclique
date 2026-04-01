@@ -18,6 +18,7 @@ Prompts et réponses de recherche externe (Perplexity, Claude.ai, GPT, etc.) et 
 | **2026-03-31_brique-nano-peintre-modularite-json-ui_perplexity_reponse.md** | **Perplexity** : brique « nano » Peintre / RecyClique — choix de framework de modularité (micro-frontends, slots, SDUI, DivKit, JSON UI) et trajectoire. |
 | **2026-03-31_peintre-jarvos-grille-templates-ui-auto-optimisable_perplexity_reponse.md** | **Perplexity** : Peintre / JARVOS — grilles, templates, paramètres DSL pour une UI auto-optimisable (patterns F/Z, CSS Grid, design tokens, métriques). |
 | **2026-03-31_peintre-nano-workflows-navigation-raccourcis-declaratifs_perplexity_reponse.md** | **Perplexity** : Peintre_nano — patterns déclaratifs pour workflows UI, navigation, raccourcis (FSM/statecharts, XState, routage, command palette, hotkeys). |
+| **2026-03-31_peintre-nano-p1-stack-css-styling_perplexity_reponse.md** | **Perplexity** : trancher **P1** — stack CSS / styling pour Peintre_nano (React/Vite, brownfield) : Tailwind vs CSS Modules vs CSS-in-JS vs Mantine ; tableau comparatif, reco (fichier = brief mission + réponse). |
 | contexte-pour-recherche-externe.md | Contexte projet pour recherches externes (joindre en début de session) |
 | 2026-02-24_frameworks-modules-python_perplexity_prompt.md | Frameworks modules/plugins Python — prompt Perplexity Pro |
 | 2026-02-24_frameworks-modules-python_perplexity_reponse-1.md | Réponse 1 : Pluggy, Stevedore, entry points ; reco entry points puis Stevedore |

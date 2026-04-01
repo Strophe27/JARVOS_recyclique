@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jarvos/recyclique/creos/widget-declaration",
+  "title": "WidgetDeclaration",
+  "description": "Profil minimal CREOS — declaration de widget avec extension optionnelle data_contract (2026-04-01). Le corps exact des champs obligatoires hors data_contract reste aligne sur le PRD / epics ; ce schema formalise l'extension et les champs de base usuels. Racine : additionalProperties true volontaire (evolution CREOS) — voir contracts/creos/schemas/README.md.",
+  "type": "object",
+  "required": ["type", "component"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "Cle stable du type de widget dans le catalogue CREOS"
+    },
+    "component": {
+      "type": "string",
+      "description": "Nom du composant React resolvable par le registre"
+    },
+    "meta_props": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "props_schema": {
+      "type": "object",
+      "description": "Sous-schema JSON Schema des props exposees au manifest (fragment volontairement libre ; restreindre en CI si besoin)"
+    },
+    "data_contract": {
+      "type": "object",
+      "description": "Contrat de donnees : liaison vers OpenAPI via operation_id stable",
+      "required": ["source", "operation_id", "endpoint_hint", "refresh"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Domaine metier ; convention recommandee : aligne sur les tags OpenAPI (ex. tag `members` -> prefixe documentaire `recyclique.members` dans les exemples) — formaliser en CI si validation automatique"
+        },
+        "operation_id": {
+          "type": "string",
+          "description": "operationId OpenAPI stable — reference par le client API et les hooks"
+        },
+        "endpoint_hint": {
+          "type": "string",
+          "description": "Chemin REST indicatif pour humains ; non consomme comme verite par le code"
+        },
+        "params_from_props": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "params_from_context": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "refresh": {
+          "type": "string",
+          "enum": ["on_mount", "polling", "realtime", "manual"]
+        },
+        "polling_interval_s": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "critical": {
+          "type": "boolean",
+          "description": "Si true, l'etat DATA_STALE peut bloquer des actions sensibles (ex. paiement caisse)"
+        },
+        "secondary_sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "operation_id", "endpoint_hint"],
+            "properties": {
+              "source": { "type": "string" },
+              "operation_id": { "type": "string" },
+              "endpoint_hint": { "type": "string" },
+              "params_from_props": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "params_from_context": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "refresh": { "const": "polling" } },
+            "required": ["refresh"]
+          },
+          "then": { "required": ["polling_interval_s"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

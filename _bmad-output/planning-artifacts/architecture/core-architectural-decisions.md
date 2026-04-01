@@ -17,13 +17,12 @@
 - Le frontend historique reste deployable de maniere transitoire uniquement comme support de continuite terrain, jamais comme socle d'architecture cible.
 - La coexistence v1/v2 doit etre bornee par routes/domaines/feature flags et par des criteres d'extinction explicites.
 - Les schemas `CREOS` et les manifests supportes par la v2 sont versionnes dans le repo et valides en CI ; la base ne porte que des overrides scopes et tracables (activation, ordre, variantes, parametres autorises), jamais une seconde source de verite libre.
-- `Mantine` et `Zustand` ne sont pas reconduits par inertie :
-  - `Mantine` est autorise provisoirement comme couche de widgets/adaptation pour accelerer la migration des ecrans, mais aucun nouveau composant metier structurant ne doit dependre durablement de lui hors de cette couche de transition ;
-  - `Zustand` ne doit etre utilise dans `Peintre_nano` que pour de l'etat UI ephemere ou runtime local ; il est exclu comme source de verite metier, permissions, contextes ou machine d'etat transverse des flows.
+- Stack CSS / composants riches `Peintre_nano` : decision **fermee** (**ADR P1**, `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md`) — **CSS Modules** pour le scoping, **design tokens** en variables CSS dans `tokens.css`, **Mantine v8** comme bibliotheque de composants (theming aligne sur les tokens) ; **interdits** : Tailwind, CSS-in-JS runtime, fichier utilitaires global, valeurs magiques hors tokens. Mantine est integree au catalogue ; le DSL `CREOS` ne nomme pas Mantine. La migration brownfield passe par une couche d'adaptation (`migration/mantine-adapters/`) ; aucun composant metier racine ne depend durablement de Mantine hors de cette couche.
+- `Zustand` : uniquement pour etat UI ephemere ou runtime local ; exclu comme source de verite metier, permissions, contextes ou machine d'etat transverse des flows (voir aussi section Frontend).
 - La gouvernance des breaking changes doit etre explicite avant migration large : versionnement des contrats, visibilite des changements, et compatibilite minimale entre backend, `Peintre_nano` et modules.
 
 **Deferred Decisions (Post-socle v2):**
-- adoption ou non d'un nouveau design system complet remplacant `Mantine` ;
+- evaluation eventuelle d'un design system complet remplacant ou encapsulant differemment `Mantine` une fois le socle stabilise (Mantine v8 reste le choix fige pour la phase courante — ADR P1) ;
 - `container queries`, `subgrid`, variants avances et auto-adaptation poussee ;
 - editeur graphique de layout/flows ;
 - composition assistee par IA (`Peintre_mini`) ;
@@ -52,6 +51,7 @@
 
 - Settings / manifests :
   - Decision : les schemas `CREOS` et manifests supportes en v2 sont versionnes dans le repo et valides par CI ; la base ou la configuration runtime ne peut porter que des overrides scopes et traçables relies a un identifiant/revision de manifest.
+  - Decision **P2 (ADR)** : la configuration admin (modules actifs/inactifs, ordre de blocs, variantes simples, feature toggles dynamiques) est stockee en **PostgreSQL** (table dediee pour surcharges) ; defaults dans les manifests build ; pas de fichier JSON sur disque en production pour cette config dynamique ; traçabilite auteur/date. Voir `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md`.
   - Rationale : proteger la coherence `OpenAPI` / `CREOS` / runtime, la reproductibilite des deploiements et l'absence de double verite.
 
 ## Authentication & Security
@@ -84,8 +84,14 @@
 
 - Contrat frontend :
   - Decision : generation de types et clients frontend a partir de `OpenAPI` par un chemin outille unique valide en CI.
-  - Decision : l'application backend `recyclique` reste le writer canonique du schema `OpenAPI`, puis la generation publie l'artefact reviewable dans `contracts/openapi/generated/`, reference unique de CI et de codegen frontend.
+  - Decision : **Chaine OpenAPI unique (pas de double edition manuelle)** — ordre normatif :
+    1. Le code `recyclique` (FastAPI + outillage) est la **seule** source executable de verite des operations.
+    2. La CI genere / exporte l'artefact dans `contracts/openapi/generated/` ; c'est la **reference de diff** et de non-regression (comparaison entre commits).
+    3. `contracts/openapi/recyclique-api.yaml` est le **fichier reviewable** pour humains, outils et liens documentaires : il doit etre **produit par le meme pipeline** (copie ou re-export du meme snapshot que `generated/`, au choix d'outillage documente) — **interdit** de le maintenir a la main en parallele du code comme seconde definition des endpoints.
+    4. Le codegen `peintre-nano` consomme **exactement** ce snapshot (yaml reviewable ou chemin `generated/` explicite dans le script de build, un seul chemin par repo documente dans Epic 10 / CI).
+  - Decision : chaque operation expose un `operationId` **stable**, reference par les manifests CREOS via `data_contract.operation_id` — voir `project-structure-boundaries.md` (Piste A/B) et `navigation-structure-contract.md`.
   - Decision : le schema canonique de `ContextEnvelope` vit dans `OpenAPI` comme contrat backend versionne ; toute representation secondaire eventuelle doit en etre derivee, jamais redefinie parallelement.
+  - Decision (securite / donnees perimees) : le blocage UI lorsque `data_contract.critical: true` et donnees **stale** est **necessaire mais non suffisant** ; les **mutations sensibles** (paiement, cloture, ecritures comptables, actions irreversibles) doivent etre **revalidees cote `recyclique`** avec contexte / jeton / horodatage autoritatif : le backend **refuse** la mutation si le contexte est incoherent, perime ou non revalidable, **independamment** de l'etat affiche par `Peintre_nano`.
   - Rationale : eviter la derive DTO "a la main" et rendre le drift contractuel visible.
 
 - Contrat UI :
@@ -130,15 +136,15 @@
   - Decision : `CSS Grid` obligatoire pour `Peintre_nano` et les templates de page.
   - Rationale : prerequis structurel pour templates, zones nommees, compositions futures et edition graphique.
 
-- Kit UI de transition :
-  - Decision provisoire : reutilisation de `Mantine 8.x` autorisee pendant la phase de migration si cela accelere la recopie des ecrans, mais sans le laisser dicter l'architecture de `Peintre_nano`.
+- Kit UI `Peintre_nano` (**ADR P1 — fermee**) :
+  - `Mantine 8.x` comme bibliotheque de composants integree au catalogue ; point d'entree migration via `migration/mantine-adapters/` ; le cœur de composition (shell, registre, slots, `FlowRenderer`) reste independant du kit.
   - Version de paysage verifiee : `Mantine 8.3.18` stable recente.
-  - Rationale : reduire le cout de migration sans confondre kit de composants et socle architectural.
+  - Rationale : ADR P1 ; pas de Tailwind, pas de CSS-in-JS runtime, tokens dans `tokens.css`.
 
 - State management :
-  - Decision provisoire : pas de reconduction automatique de `Zustand` comme standard de `Peintre_nano` ; usage cible uniquement si besoin runtime identifie.
+  - `Zustand` : pas d'imposition par heritage ; usage uniquement si besoin runtime identifie, limite a l'etat UI ephemere/local (AR26 / epics).
   - Version de paysage verifiee : `Zustand 5.0.12` stable recente.
-  - Rationale : eviter d'heriter par inertie d'un modele de state global inapproprie au frontend compose.
+  - Rationale : eviter un state global inapproprie au frontend compose.
 
 - Coexistence old/new front :
   - Decision : coexistence temporaire explicite sous une meme origine logique, avec routage maitre cote frontend v2/proxy et bascule par routes/domaines/feature flags ; les routes servies comme v2 doivent passer par `Peintre_nano`.
@@ -157,6 +163,10 @@
 - Premier jalon UI :
   - Decision : prouver `Peintre_nano` avec `bandeau live` avant les gros flows.
   - Rationale : validation de la chaine modulaire complete a cout limite.
+
+- Flows declaratives (`CREOS`) :
+  - Decision : les parcours decrits par les `FlowDefinition` dans les manifests sont interpretes au runtime par le composant **`FlowRenderer`** au sein de `Peintre_nano` (meme nom que le PRD SS8 et le concept `references/vision-projet/2026-03-31_peintre-nano-concept-architectural.md`).
+  - Rationale : aligner vocabulaire architecture, PRD, vision et notes `references/peintre/` sans ambiguite sur le consommateur runtime des definitions declaratives.
 
 ## Infrastructure & Deployment
 
@@ -217,6 +227,7 @@ Pour l'etape suivante, les decisions deja acquises sont :
 - outbox durable et sync `at-least-once` avec handlers idempotents ;
 - `OpenAPI` + `CREOS` comme surfaces contractuelles distinctes et gouvernees ;
 - `Peintre_nano` `React` + `TypeScript` + `Vite` avec `CSS Grid` ;
+- **P1/P2 Peintre** : stack CSS (CSS Modules + `tokens.css` + Mantine v8) et surcharges admin en PostgreSQL — ADR `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md` ;
 - coexistence old/new front sous controle de `Peintre_nano`/proxy et extinction progressive de l'ancien frontend.
 
 Restent a transformer en patterns d'implementation :

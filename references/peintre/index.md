@@ -18,13 +18,15 @@
 
 | Fichier | Rôle |
 |---------|------|
-| **2026-04-01_pipeline-presentation-workflow-invariants.md** | Pipeline nano → macro **consolidé** : règle de divergence PRD ; contexte / premier rendu ; draft→validé→rendu + menaces dynamiques ; **annexe miroir PRD §10.1** + §10.2–10.3 ; ADR orchestration ; a11y par phases ; **§12 aligné epics** (3→4→5→6–7→8→9) + `sprint-status.yaml` ; **§2 ter** pont concept vision + Phase 0 vs document dynamique. Passes QA + sous-agents **2026-04-01**. |
-| **2026-04-01_fondations-concept-peintre-nano-extraits.md** | **Extraction opérationnelle** du concept architectural Peintre_nano (vision 2026-03-31) : Influx CREOS, `ModuleManifest`, mapping BMAD (§5 document Phase 0 vs Phase 1+), phases SDUI ↔ pipeline, flows (§7 pont `cashflow` / sprint), meta-props, zone roles, `PageTemplate`, nommage, slots shell, templates layout, handles mini, Piral, P1–P13, frameworks — sans remplacer le document vision ni le PRD. |
+| **2026-04-01_adr-p1-p2-stack-css-et-config-admin.md** | **ADR acceptée** — fermeture **P1** (CSS Modules + `tokens.css` + Mantine v8 ciblée, interdits Tailwind / CSS-in-JS runtime / utilitaires globaux) et **P2** (surcharges admin en **PostgreSQL** + fusion déterministe avec manifests build). **Source d’autorité** pour l’implémentation et les mises à jour BMAD. |
+| **2026-04-01_instruction-cursor-p1-p2.md** | **Instructions agents Cursor** : intégration P1/P2 dans le code et les artefacts ; patterns de dossiers ; checklist QA ; **ne pas réécrire** le concept / pipeline / extraits datés — l’ADR se superpose. |
+| **2026-04-01_pipeline-presentation-workflow-invariants.md** | Pipeline nano → macro **consolidé** (cadrage antérieur au verrou P1/P2) : règle de divergence PRD ; **§16** et concept §7 peuvent encore mentionner P1–P13 comme *historique* — **P1 et P2 sont clos par l’ADR** ci-dessus ; **§12** epics + pont `cashflow` ; etc. |
+| **2026-04-01_fondations-concept-peintre-nano-extraits.md** | **Extraction opérationnelle** du concept (dont checklist **P3–P13** encore ouvertes dans la vision tant que non tranchées). |
 
 ---
 
 ## Liens utiles (hors dossier)
 
 - Architecture active : `_bmad-output/planning-artifacts/architecture/` (dont `navigation-structure-contract.md`, `core-architectural-decisions.md`).
-- Recherches externes consolidées : `references/recherche/` — fichiers `2026-03-31_*peintre*_perplexity_reponse.md`.
+- Recherches externes consolidées : `references/recherche/` — dont `2026-03-31_peintre-nano-p1-stack-css-styling_perplexity_reponse.md` (base de la décision **P1** dans l’ADR) et les autres `2026-03-31_*peintre*_perplexity_reponse.md`.
 - Vision projet / concept : `references/vision-projet/` (ex. `2026-03-31_peintre-nano-concept-architectural.md` si présent).

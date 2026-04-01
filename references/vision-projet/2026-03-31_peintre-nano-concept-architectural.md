@@ -2,6 +2,7 @@
 
 **Statut** : Concept architectural validé — à intégrer au backlog RecyClique V2  
 **Date** : 2026-03-31  
+**Dernière retouche** : 2026-04-01 — §3.1 (*Flows*), paragraphe *Alignement implémentation* (pont caisse / `wizard`–`tabbed` / type `cashflow` ; alignement sprint / pipeline `references/peintre/`).  
 **Auteurs** : Strophe (architecte), Claude Opus (co-architecte)  
 **Sources** : Session brainstorming RecyClique V2, recherche Perplexity Pro (frameworks SDUI/micro-frontends + grilles/templates/UI auto-optimisable), documentation JARVOS existante  
 **Références** : peintre-mini-grammaire-visuelle.md, cartouches-metiers-applicatives.md, contrat-influx-cinq-champs-creos.md, 03_Modules_Operationnels.md §4
@@ -784,12 +785,23 @@ Pour préserver cette option : ne pas coupler les slots à des détails d'implé
 
 ### Documents JARVOS connexes
 
-- `peintre-mini-grammaire-visuelle.md` — Concept de la grammaire visuelle (WidgetJarvos, S-DUI)
-- `contrat-influx-cinq-champs-creos.md` — Structure des cinq champs CREOS (référence pour les manifests)
-- `cartouches-metiers-applicatives.md` — Manifest de cartouche (convergence avec manifest Peintre)
-- `registre-vocabulaire-creos.md` — Registre vocabulaire (les types de widgets y seront ajoutés)
-- `VISION-ET-ATTENTES-PEINTRE-MINI.md` — Vision de Peintre_mini (objectifs fonctionnels, régulation)
-- `le-port-gateway.md` — Le Port comme adaptateur de canal (en aval de Peintre)
+**Audit dépôt (2026-04-01)** — recherche exhaustive des noms ci-dessous : **aucun** de ces fichiers n’est présent dans ce repo sous ces intitulés. La liste reste une **bibliographie historique** ; le tableau indique où trouver l’équivalent ou le matériau de substitution.
+
+| Référence historique | Statut | Redirection dans ce repo |
+|----------------------|--------|-------------------------|
+| `peintre-mini-grammaire-visuelle.md` | Absent | Grammaire / SDUI : sections ci-dessus (§5 Peintre_mini) ; `references/peintre/` |
+| `contrat-influx-cinq-champs-creos.md` | Absent | Influx CREOS : `references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md` §3–4 ; PRD §8 |
+| `cartouches-metiers-applicatives.md` | Absent | Projection cartouches : `references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md` §18 ; §4.3 vision |
+| `registre-vocabulaire-creos.md` | Absent | Vocabulaire CREOS : PRD §8 ; cible `contracts/creos/` (architecture) |
+| `VISION-ET-ATTENTES-PEINTRE-MINI.md` | Absent | Hors noyau / Peintre_mini : PRD §7.2 ; vision §5–6 |
+| `le-port-gateway.md` | Absent | Adaptateur de canal : PRD §3.5, §8.8 ; architecture navigation |
+| `03_Modules_Operationnels.md` §4 | Absent | Découpage modules : `epics.md`, PRD (exigences modules) |
+
+**Matériau Peintre consolidé (ce dépôt) :**
+
+- `references/peintre/index.md`
+- `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md`
+- `references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md`
 
 ---
 

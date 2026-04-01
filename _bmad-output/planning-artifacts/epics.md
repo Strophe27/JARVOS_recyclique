@@ -11,6 +11,12 @@ inputDocuments:
   - .cursor/plans/separation-peintre-recyclique_4777808d.plan.md
   - .cursor/plans/profil-creos-minimal_6cf1006d.plan.md
   - _bmad-output/brainstorming/brainstorming-session-2026-03-31-195824.md
+  - references/peintre/index.md
+  - references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md
+  - references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md
+  - references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md
+  - references/peintre/2026-04-01_instruction-cursor-p1-p2.md
+  - references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md
 ---
 
 # JARVOS_recyclique - Epic Breakdown
@@ -26,6 +32,13 @@ Etat BMAD actuel :
 - etape 3 preparee : les stories detaillees ont ete generees pour les 10 epics ;
 - etape 4 preparee : validation finale effectuee sur la couverture, les dependances, la granularite des stories et la coherence inter-epics ;
 - le workflow `bmad-create-epics-and-stories` est considere comme complet ; `epics.md` est pret pour la suite du flux BMAD.
+
+### Developpement parallele Piste A / Piste B (cadrage 2026-04-01)
+
+- **Piste A** (`Peintre_nano`) : socle UI, registre, slots, `FlowRenderer`, raccourcis, validation CREOS, toggles, hooks de domaine et `ContextEnvelope` **peuvent** s'implementer d'abord avec **mocks** et types/stubs — **sans** exiger des endpoints backend reels pour les stories de composition pure (Epic 3, partie « moteur »).
+- **Piste B** (`Recyclique`) : audit API/donnees, OpenAPI, construction serveur du `ContextEnvelope`, sync, permissions — livrable reviewable `contracts/openapi/recyclique-api.yaml` avec `operationId` stables.
+- **Convergence 1** : types generes depuis OpenAPI + hooks reels ; **Convergence 2** : **bandeau live** bout-en-bout (gate decision directrice) ; **Convergence 3** : flows caisse / reception critiques avec donnees reelles, `data_contract.critical` / blocage `DATA_STALE` ou sensibles.
+- Les **phases Peintre** (0–3) du concept architectural decrivent la **maturite du moteur** sur plusieurs versions ; le **backlog et sprint-status** suivent la **sequence 1–9** de la decision directrice v2, pas ces phases comme calendrier sprint.
 
 ## Requirements Inventory
 
@@ -140,7 +153,7 @@ NFR28: Un manifest valide en schema ne doit pas casser le rendu React ; cela doi
 
 AR1: Starter technique a noter pour le socle frontend : `Peintre_nano` est un frontend v2 greenfield initialise en `React + TypeScript + Vite`, dans le meme depot, tandis que le backend reste brownfield.
 AR2: `CSS Grid` est obligatoire comme moteur global de layout du frontend v2.
-AR3: Les choix de details de styling restent d'implementation, mais l'usage transitoire de `Mantine` et le role exact de `Zustand` doivent etre tranches explicitement et ne pas etre herites implicitement.
+AR3: La stack CSS/styling de `Peintre_nano` est **fermee** (**ADR P1**) : CSS Modules, `tokens.css`, Mantine v8 comme bibliotheque de composants ; interdits et details dans `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md` et `references/peintre/2026-04-01_instruction-cursor-p1-p2.md`. Le role de `Zustand` reste limite a l'etat UI ephemere/local (AR26).
 AR4: Le packaging initial de `Peintre_nano` reste interne au depot ; l'extraction future vers un repo dedie doit etre preparee sans etre un prerequis immediat.
 AR5: La separation logique `api / frontend` est ciblee ; une coexistence ancien front / nouveau front n'est toleree qu'a titre transitoire avec criteres d'extinction explicites.
 AR6: L'environnement officiel cible est `Debian`, avec un coeur open source sans dependance proprietaire pour le fonctionnement nominal.
@@ -152,7 +165,7 @@ AR11: Le backend cible repose sur `FastAPI`, `SQLAlchemy 2.x` et `Alembic`, avec
 AR12: `Redis` reste auxiliaire et n'est jamais l'autorite durable ni la source de verite metier.
 AR13: L'ordre d'implementation impose un lot de socle v2 (`Peintre_nano`, contrats, codegen, runtime minimal, auth/session cliente) puis la preuve `bandeau live` comme premier slice vertical contractuel avant l'extension aux gros flows.
 AR14: La migration des ecrans n'intervient qu'apres stabilisation minimale des contrats backend et des contextes de rendu du domaine.
-AR15: Une couche d'adaptation `Mantine` peut servir a la migration mais ne doit pas devenir une dependance structurelle durable des nouveaux composants metier.
+AR15: Les composants `Mantine` restent confines a une couche d'adaptation / migration (`migration/mantine-adapters/`) ; ils ne deviennent pas la structure racine de `Peintre_nano` ni ne portent la logique metier. Cadrage : ADR P1.
 AR16: Les sessions web v2 ciblent un mode `same-origin` avec cookies securises `httpOnly`, rotation geree cote backend, et protection `CSRF` si des cookies sont utilises pour les mutations.
 AR17: Les logs structures et le header canonique `X-Correlation-ID` doivent etre propages sur les flux critiques.
 AR18: Les workflows CI minimums couvrent `recyclique`, `peintre-nano`, les contrats et l'e2e, avec lint/tests, generation + diff `OpenAPI`, validation des schemas/manifests `CREOS` et smoke tests de rendu des modules critiques.
@@ -182,6 +195,8 @@ AR41: `Peintre_nano` reste moteur d'affichage/runtime agnostique et n'est jamais
 AR42: Le schema canonique de `ContextEnvelope` vit dans `OpenAPI`, tandis que son instance runtime est resolue et consommee au frontend sans devenir une seconde source de verite.
 AR43: `UserRuntimePrefs` reste local par defaut, hors verite metier, hors calcul de permissions/navigation, avec persistence backend seulement via endpoint explicite dedie.
 AR44: Le `bandeau live` doit pouvoir tenir compte des horaires d'ouverture reels, des caisses a ouvertures decalees et des cas particuliers, afin de ne pas afficher un etat d'exploitation trompeur.
+AR45: La persistance des **surcharges** de **configuration admin simple** (activation/desactivation modules ou blocs, ordre, variantes simples, parametres prevus par le build dans ce perimetre) est en **PostgreSQL** (**ADR P2**) ; fusion deterministe avec les defaults des manifests build ; pas de fichier JSON sur disque en **production** pour cette couche ; tracabilite auteur/date/motif. Reference : `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md` et instruction associee. Hors ce perimetre, les reglages super-admin/expert suivent le PRD (fichiers structures ou base selon domaine).
+AR46: **Developpement parallele** Piste A (`Peintre_nano`, mocks autorises pour le moteur UI jusqu'a Convergence 1) et Piste B (`Recyclique`, OpenAPI + backend autonome) avec **jalons de convergence** documentes dans `architecture/project-structure-boundaries.md` et le Sprint Change Proposal 2026-04-01 ; extension manifest **`data_contract`** et liaison **`operation_id`** ↔ OpenAPI selon `references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md` et `contracts/creos/schemas/`.
 
 ### UX Design Requirements
 
@@ -332,7 +347,7 @@ NFR28: Epic 3 et Epic 10 - Validation outillee qu'un manifest valide ne casse pa
 
 AR1: Epic 3 - Bootstrap `Peintre_nano` en `React + TypeScript + Vite`.
 AR2: Epic 3 et Epic 5 - `CSS Grid` comme moteur global de layout.
-AR3: Epic 3 - Decisions explicites sur styling, `Mantine` et `Zustand`.
+AR3: Epic 3 - Implementation sous **ADR P1** (CSS Modules, tokens, Mantine v8) ; `Zustand` selon AR26.
 AR4: Epic 3 - Packaging interne initial de `Peintre_nano`.
 AR5: Epic 3 et Epic 5 - Coexistence ancien front / nouveau front avec criteres d'extinction.
 AR6: Epic 10 - Environnement officiel `Debian` et coeur open source.
@@ -344,7 +359,7 @@ AR11: Epic 2 et Epic 8 - Outbox durable `PostgreSQL`, sync `at-least-once`, hand
 AR12: Epic 2 et Epic 8 - `Redis` auxiliaire seulement.
 AR13: Epic 3, Epic 4, Epic 5, Epic 6, Epic 7 - Ordre d'implementation socle -> preuve modulaire -> recomposition transverse -> gros flows.
 AR14: Epic 5, Epic 6, Epic 7 - Migration des ecrans apres stabilisation minimale des contrats et contextes.
-AR15: Epic 3 et Epic 5 - `Mantine` comme couche d'adaptation transitoire.
+AR15: Epic 3 et Epic 5 - Couche d'adaptation Mantine conforme **ADR P1** (pas racine composition).
 AR16: Epic 2 et Epic 3 - Sessions same-origin, cookies `httpOnly`, rotation backend, `CSRF`.
 AR17: Epic 2, Epic 8, Epic 10 - Logs structures et `X-Correlation-ID`.
 AR18: Epic 10 - Workflows CI minimums.
@@ -374,24 +389,26 @@ AR41: Epic 3 et Epic 5 - `Peintre_nano` borne a son role de runtime d'affichage 
 AR42: Epic 2 et Epic 3 - `ContextEnvelope` canonique dans `OpenAPI`, puis consomme cote runtime sans seconde verite.
 AR43: Epic 3 - `UserRuntimePrefs` borne a la personnalisation locale hors permissions/navigation.
 AR44: Epic 4 avec prerequis Epic 1 et Epic 2 - `Bandeau live` coherent avec horaires reels, ouvertures decalees et cas particuliers.
+AR45: Epic 9 (Story 9.6) et Epic 2 (API / persistance) - Surcharges config admin simple en PostgreSQL, fusion manifests build, tracabilite (**ADR P2**).
+AR46: Voir **formulation complete** dans l'inventaire **Additional Requirements** (paragraphe AR46) ; **mapping epics** : 1, 2, 3, 4, 6, 7.
 
 ## Epic List
 
 ### Epic 1: Fermer les prerequis structurants et valider le modele de donnees multi-contextes
-L'equipe peut verrouiller les inconnues critiques du projet avant implementation large, avec livrables explicites : audit backend/API/donnees, retro `Paheko`, spec multi-contextes, validite des structures de donnees multi-sites/multi-caisses/multi-postes, continuite et integrite des donnees brownfield, contrat de sync/reconciliation, gouvernance `OpenAPI` / `CREOS`, hierarchie de verite, source canonique de `ContextEnvelope`, et formalisation des signaux de contexte/exploitation necessaires aux vues live (horaires reels, ouvertures decalees, cas particuliers) ainsi que la matrice d'arbitrage API/plugin/SQL.
+**Piste B.** L'equipe peut verrouiller les inconnues critiques du projet avant implementation large, avec livrables explicites : audit backend/API/donnees, retro `Paheko`, spec multi-contextes, validite des structures de donnees multi-sites/multi-caisses/multi-postes, continuite et integrite des donnees brownfield, contrat de sync/reconciliation, gouvernance `OpenAPI` / `CREOS`, hierarchie de verite, source canonique de `ContextEnvelope`, et formalisation des signaux de contexte/exploitation necessaires aux vues live (horaires reels, ouvertures decalees, cas particuliers) ainsi que la matrice d'arbitrage API/plugin/SQL. Inclut la **formalisation du fichier reviewable** `contracts/openapi/recyclique-api.yaml` (draft, `operationId` stables) en coherence avec la Story 1.4.
 Pour `FR73`, cet epic ferme le cadrage, les schemas minimaux et la gouvernance ; la mise en place effective des validations CI minimales se termine ensuite en Epic 10.
 **FRs covered:** FR5, FR11, FR20, FR22, FR36, FR40, FR41, FR54, FR73 (jalon gouvernance)
 
 ### Epic 2: Poser le socle backend brownfield v2
-L'equipe peut stabiliser `Recyclique` comme noyau d'autorite v2 pour l'authentification, les contextes, les permissions, la securite sensible, la persistance terrain, l'audit et les invariants metier, afin de fournir un backend fiable aux futurs modules. Cet epic porte aussi l'exposition backend minimale necessaire aux vues live et slices verticaux initiaux, notamment les signaux et contrats permettant au `bandeau live` de refleter les horaires reels, ouvertures decalees et cas particuliers formalises en Epic 1.
+**Piste B.** L'equipe peut stabiliser `Recyclique` comme noyau d'autorite v2 pour l'authentification, les contextes, les permissions, la securite sensible, la persistance terrain, l'audit et les invariants metier, afin de fournir un backend fiable aux futurs modules. Cet epic porte aussi l'exposition backend minimale necessaire aux vues live et slices verticaux initiaux, notamment les signaux et contrats permettant au `bandeau live` de refleter les horaires reels, ouvertures decalees et cas particuliers formalises en Epic 1.
 **FRs covered:** FR1, FR3, FR11, FR12, FR13, FR14, FR15, FR16, FR20, FR22, FR23, FR31, FR32, FR33, FR34, FR53, FR64, FR65, FR68, FR71, FR72
 
 ### Epic 3: Poser le socle frontend greenfield `Peintre_nano`
-L'equipe peut mettre en service un runtime UI v2 minimal mais reel, avec `Peintre_nano`, `CREOS`, registre de routes, widgets, slots, contrat de rendu et adaptateur auth/session, afin que toute l'UI v2 puisse ensuite etre recomposee sur une base propre. Cet epic inclut explicitement la Story 0 de socle autour de quatre artefacts minimaux (`NavigationManifest`, `PageManifest`, `ContextEnvelope`, `UserRuntimePrefs`), une preuve d'affichage initiale (page blanche de shell, grille visible, premiers widgets/catalogue simples, rendu via manifest minimal, fallbacks visuels), et le respect strict du bornage commanditaire/runtime. L'affichage effectif doit rester l'intersection deterministe du contrat commanditaire, du `ContextEnvelope` serveur et des `UserRuntimePrefs` non metier.
+**Piste A** — le moteur UI et la composition peuvent etre valides avec **donnees mockées** et **stubs** de `ContextEnvelope` / session tant que la **Convergence 1** n'est pas livree ; aucune story de cet epic n'exige des **endpoints metier reels** pour la seule preuve du registre, des slots, du shell, des fallbacks ou des manifests minimaux. L'equipe peut mettre en service un runtime UI v2 minimal mais reel, avec `Peintre_nano`, `CREOS`, registre de routes, widgets, slots, contrat de rendu et adaptateur auth/session, afin que toute l'UI v2 puisse ensuite etre recomposee sur une base propre. Cet epic inclut explicitement la Story 0 de socle autour de quatre artefacts minimaux (`NavigationManifest`, `PageManifest`, `ContextEnvelope`, `UserRuntimePrefs`), une preuve d'affichage initiale (page blanche de shell, grille visible, premiers widgets/catalogue simples, rendu via manifest minimal, fallbacks visuels), et le respect strict du bornage commanditaire/runtime. L'affichage effectif doit rester l'intersection deterministe du contrat commanditaire, du `ContextEnvelope` (reel ou **mock coherent** avant convergence) et des `UserRuntimePrefs` non metier.
 **FRs covered:** FR6, FR7, FR8, FR9, FR10, FR37, FR45, FR48, FR49, FR50, FR51, FR52, FR53, FR54
 
 ### Epic 4: Prouver la chaine modulaire complete avec `bandeau live`
-L'equipe peut prouver en vrai la chaine complete backend -> contrat -> manifest -> runtime -> rendu -> fallback, afin de valider le socle modulaire avant de migrer les flows critiques et les autres modules. Cette preuve inclut un `bandeau live` dont l'etat d'exploitation reste coherent avec les horaires reels, les ouvertures decalees et les cas particuliers, sur la base des prerequis de contrats et de contexte poses par Epics 1 et 2, ainsi qu'un mecanisme minimal d'activation/desactivation admin du module avant que la `config admin simple` complete soit livree plus largement par Epic 9.
+**Convergence A + B — jalon 2** (= **Convergence 2** dans l'Overview ; meme gate) (apres **Convergence 1** contrat/interface). L'equipe peut prouver en vrai la chaine complete backend -> contrat -> manifest -> runtime -> rendu -> fallback, afin de valider le socle modulaire avant de migrer les flows critiques et les autres modules. Cette preuve inclut un `bandeau live` dont l'etat d'exploitation reste coherent avec les horaires reels, les ouvertures decalees et les cas particuliers, sur la base des prerequis de contrats et de contexte poses par Epics 1 et 2, ainsi qu'un mecanisme minimal d'activation/desactivation admin du module avant que la `config admin simple` complete soit livree plus largement par Epic 9. **Gate decision directrice** : tant que ce slice ne prouve pas la chaine (y compris polling, fallback endpoint, `correlation_id`), ne pas elargir aux gros flows.
 Dans cet epic, `FR38` n'est couvert que pour le volet `bandeau live` en tant que premier module obligatoire et preuve de chaine, pas pour l'ensemble des modules obligatoires de la v2.
 **FRs covered:** FR10, FR17, FR18, FR19, FR38, FR58, FR61, FR62, FR63
 
@@ -400,11 +417,11 @@ Les utilisatrices et responsables peuvent retrouver les pages transverses de `Re
 **FRs covered:** FR10, FR21, FR35
 
 ### Epic 6: Rendre la caisse v2 exploitable et enrichie par les besoins terrain
-Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow`, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`.
+**Convergence 3 (flows critiques).** Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow` via `FlowRenderer` / flows declaratifs, raccourcis clavier terrain, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`. Les widgets caisse sensibles (ex. ticket courant / paiement) peuvent declarer `data_contract.critical: true` : l'etat **DATA_STALE** ou incoherence contractuelle **bloque** les actions sensibles conformement au PRD §10 et a l'instruction contrats donnees.
 **FRs covered:** FR2, FR10, FR30, FR38, FR55, FR57
 
 ### Epic 7: Rendre la reception v2 exploitable dans la nouvelle chaine UI
-Les operatrices peuvent utiliser la reception dans `Peintre_nano` avec ses ecrans, workflows explicites, definitions d'ecrans, saisies et contextualisation metier, en respectant les contraintes du flux matiere et l'architecture modulaire retenue.
+**Convergence 3 (flows critiques).** Les operatrices peuvent utiliser la reception dans `Peintre_nano` avec ses ecrans, workflows explicites, definitions d'ecrans, saisies et contextualisation metier, en respectant les contraintes du flux matiere et l'architecture modulaire retenue — memes principes **donnees reelles**, raccourcis, fallbacks visibles et `data_contract` / etats `WidgetDataState` que pour la caisse lorsque pertinent.
 **FRs covered:** FR2, FR10, FR29, FR30, FR38, FR56
 
 ### Epic 8: Fiabiliser l'articulation comptable reelle avec `Paheko`
@@ -414,6 +431,7 @@ Les responsables peuvent synchroniser, suivre, corriger et reconcilier les opera
 ### Epic 9: Livrer les modules metier complementaires v2
 Les responsables et super-admins peuvent utiliser les modules metier complementaires attendus pour une v2 credible : declaration eco-organismes, adherents / vie associative minimale, integration `HelloAsso` et config admin simple, avec arbitrage `HelloAsso` explicite avant implementation large du connecteur.
 **FRs covered:** FR10, FR30, FR38, FR44, FR46, FR47, FR59, FR60
+**NFR/AR cles:** AR45 (persistance surcharges config admin simple, **ADR P2** ; prerequis backend Epic 2 / `PostgreSQL`)
 
 ### Epic 10: Industrialiser, valider et rendre la v2 deployable
 L'equipe peut verifier, tester, observer, deployer et qualifier la v2 jusqu'aux gates de beta interne et de version vendable, sans laisser les contraintes de qualite, CI, observabilite, installabilite et readiness des modules obligatoires hors backlog.
@@ -450,7 +468,7 @@ Ordre de construction recommande :
 Regles de dependance :
 
 - Epic 6 et Epic 7 ne doivent pas dependre de stories futures du meme epic ; ils peuvent demarrer sur une cloture locale exploitable et une sync differee ou encadree tant que le contrat de synchronisation est deja pose au niveau documentaire par Epic 1, sans attendre la livraison complete des stories d'Epic 8.
-- La Story 0 d'Epic 3 ne demarre qu'une fois disponibles au minimum : schema `OpenAPI` initial du `ContextEnvelope`, publication commanditaire minimale des manifests et conventions de validation/merge fermees par Epics 1 et 2.
+- La Story 0 d'Epic 3 peut demarrer en **Piste A** avec **stubs** de types / manifests locaux et `ContextEnvelope` **mock** coherent ; pour l'**integration reelle** (hooks sur API, contexte serveur autoritatif), viser la **Convergence 1** : schema `OpenAPI` draft (`recyclique-api.yaml`), `ContextEnvelope` dans OpenAPI, et conventions de validation/merge fermees par Epics 1 et 2.
 - Epic 4 peut s'appuyer sur un toggle admin minimal borne au slice `bandeau live` pour satisfaire FR58 ; la `config admin simple` generalisee et reusable reste, elle, dans le perimetre principal d'Epic 9.
 - Epic 8 ne doit pas re-definir les contextes, l'auth ou le runtime UI ; il s'appuie sur Epics 1 a 4.
 - Epic 9 ne doit pas lancer l'implementation `HelloAsso` large avant la story d'arbitrage prevue par FR47.
@@ -554,6 +572,11 @@ So that Epic 2 and Epic 3 can build on one hierarchy of truth instead of inventi
 **When** the contract governance is closed
 **Then** the story defines versioning expectations, drift detection expectations, and the rule that generated frontend artifacts are derived copies, never a second source of truth
 **And** it specifies how shared enums, identifiers, and permission keys flow from backend contracts to UI contracts
+
+**Given** les manifests widgets peuvent declarer un `data_contract` lie a l'API
+**When** la gouvernance est fermee
+**Then** le projet designe le fichier reviewable `contracts/openapi/recyclique-api.yaml` comme **source reviewable** de la surface v2 (draft evolutif, writer `Recyclique`) et impose des **`operationId` stables** sur les operations exposees, references par `data_contract.operation_id`
+**And** les schemas CREOS incluent l'extension documentee dans `contracts/creos/schemas/widget-declaration.schema.json`
 
 **Given** `Peintre_nano` must not become author of business structure
 **When** the runtime responsibilities are specified
@@ -796,7 +819,7 @@ So that Epic 4 can prove the chain on real backend-owned information rather than
 
 ## Epic 3: Poser le socle frontend greenfield `Peintre_nano`
 
-L'equipe peut mettre en service un runtime UI v2 minimal mais reel, avec `Peintre_nano`, `CREOS`, registre de routes, widgets, slots, contrat de rendu et adaptateur auth/session, afin que toute l'UI v2 puisse ensuite etre recomposee sur une base propre. Cet epic inclut explicitement la Story 0 de socle autour de quatre artefacts minimaux (`NavigationManifest`, `PageManifest`, `ContextEnvelope`, `UserRuntimePrefs`), une preuve d'affichage initiale (page blanche de shell, grille visible, premiers widgets/catalogue simples, rendu via manifest minimal, fallbacks visuels), et le respect strict du bornage commanditaire/runtime. L'affichage effectif doit rester l'intersection deterministe du contrat commanditaire, du `ContextEnvelope` serveur et des `UserRuntimePrefs` non metier.
+L'equipe peut mettre en service un runtime UI v2 minimal mais reel, avec `Peintre_nano`, `CREOS`, registre de routes, widgets, slots, contrat de rendu et adaptateur auth/session, afin que toute l'UI v2 puisse ensuite etre recomposee sur une base propre. Cet epic inclut explicitement la Story 0 de socle autour de quatre artefacts minimaux (`NavigationManifest`, `PageManifest`, `ContextEnvelope`, `UserRuntimePrefs`), une preuve d'affichage initiale (page blanche de shell, grille visible, premiers widgets/catalogue simples, rendu via manifest minimal, fallbacks visuels), et le respect strict du bornage commanditaire/runtime. L'affichage effectif doit rester l'intersection deterministe du contrat commanditaire, du **`ContextEnvelope` d'autorite backend** (ou **mock / stub structurellement aligne** sur le schema OpenAPI avant **Convergence 1**, comme en Story 3.4) et des `UserRuntimePrefs` non metier.
 
 ### Story 3.0: Initialiser `Peintre_nano` et ses quatre artefacts minimaux
 
@@ -903,6 +926,11 @@ So that visible navigation and rendered pages stay aligned with backend-owned pe
 **Then** `Peintre_nano` consumes session state and `ContextEnvelope` from backend-owned contracts
 **And** it does not promote local runtime state to a second source of truth for permissions or active context
 
+**Given** la **Piste A** peut valider l'adaptateur avec un **mock** de session et d'enveloppe conforme aux types attendus
+**When** la **Convergence 1** n'est pas encore livree
+**Then** les tests et la demo peuvent utiliser des mocks tout en preservant la forme contractuelle (y compris convention de fraicheur `MAX_CONTEXT_AGE_MS` cote UI)
+**And** le basculement vers les reponses reelles du backend ne necessite pas de reecrire les composants widgets, seulement les hooks / client API
+
 **Given** effective rendering is the intersection of commanditaire contracts and active backend context
 **When** a page is resolved
 **Then** inaccessible navigation entries are filtered according to backend permission and context signals
@@ -984,7 +1012,7 @@ So that the frontend foundation can be inspected and validated before real busin
 
 ## Epic 4: Prouver la chaine modulaire complete avec `bandeau live`
 
-L'equipe peut prouver en vrai la chaine complete backend -> contrat -> manifest -> runtime -> rendu -> fallback, afin de valider le socle modulaire avant de migrer les flows critiques et les autres modules. Cette preuve inclut un `bandeau live` dont l'etat d'exploitation reste coherent avec les horaires reels, les ouvertures decalees et les cas particuliers, sur la base des prerequis de contrats et de contexte poses par Epics 1 et 2, ainsi qu'un mecanisme minimal d'activation/desactivation admin du module avant que la `config admin simple` complete soit livree plus largement par Epic 9.
+**Convergence 2** — meme objectif que le libelle **Convergence A + B — jalon 2** dans l'Epic List. L'equipe peut prouver en vrai la chaine complete backend -> contrat -> manifest -> runtime -> rendu -> fallback, afin de valider le socle modulaire avant de migrer les flows critiques et les autres modules. Cette preuve inclut un `bandeau live` dont l'etat d'exploitation reste coherent avec les horaires reels, les ouvertures decalees et les cas particuliers, sur la base des prerequis de contrats et de contexte poses par Epics 1 et 2, ainsi qu'un mecanisme minimal d'activation/desactivation admin du module avant que la `config admin simple` complete soit livree plus largement par Epic 9.
 
 ### Story 4.1: Publier le contrat et les manifests minimaux du module `bandeau live`
 
@@ -1055,6 +1083,11 @@ So that the displayed state reflects opening hours, delayed openings, and except
 **Then** the module surfaces a constrained or degraded state rather than silently inventing certainty
 **And** the operator can tell that the displayed state is limited
 
+**Given** le gate **Convergence 2** / decision directrice exige une preuve **bout-en-bout** verifiable
+**When** le widget `bandeau live` declare un `data_contract` avec `refresh: polling`
+**Then** le client applique le rafraichissement selon `polling_interval_s` (ou valeur par defaut documentee si le manifest borne le slice) et les requetes vers l'`operation_id` du bandeau incluent le header canonique **`X-Correlation-ID`**, avec **journalisation** cote backend sur le flux live
+**And** une erreur HTTP / timeout / payload invalide sur cet endpoint produit le **fallback visible** (Story 4.4) sans masquer l'echec
+
 ### Story 4.4: Rendre visibles les fallbacks et rejets du slice `bandeau live`
 
 As a resilient module chain,
@@ -1113,6 +1146,11 @@ So that the project can move to heavier flows with confidence that the modular a
 **When** the end-to-end proof is executed
 **Then** the team can verify the full chain from backend signal production to contract publication, manifest interpretation, widget rendering, and fallback behavior
 **And** the proof identifies any remaining architectural drift before Epic 5, 6, and 7 begin consuming the same pattern
+
+**Given** le gate produit exige une preuve **observable** et non seulement conceptuelle
+**When** la validation documentee est revue
+**Then** la preuve inclut explicitement : au moins un cycle de **polling** reussi pour le bandeau, la presence de **`X-Correlation-ID`** (ou trace equivalente) sur les appels live verifies, et un scenario **nominal** plus un scenario **echec endpoint** avec fallback visible
+**And** les resultats sont enregistres (courte trace dans le ticket / story ou doc d'epic) pour satisfaire la decision directrice « corriger la chaine avant d'aller plus loin »
 
 **Given** the proof should be actionable rather than aspirational
 **When** validation is documented
@@ -1318,7 +1356,7 @@ So that the project can move to flow-heavy epics with a stable shared UI spine.
 
 ## Epic 6: Rendre la caisse v2 exploitable et enrichie par les besoins terrain
 
-Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow`, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`.
+**Convergence 3 (flows critiques)** — voir aussi l'**Epic List** pour le detail. Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow` via `FlowRenderer` / flows declaratifs, raccourcis clavier terrain, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`. Au moins un widget de **ticket courant** (ou equivalent metier) **doit** declarer `data_contract.critical: true` ; l'etat **DATA_STALE** et les echecs de donnees critiques **bloquent** le paiement cote UI **et** sont **revalides** cote backend (PRD §10, architecture).
 
 ### Story 6.1: Mettre en service le parcours nominal de caisse v2 dans `Peintre_nano`
 
@@ -1342,6 +1380,11 @@ So that the new UI becomes operational for day-to-day cashflow work.
 **When** the nominal path is completed
 **Then** the sale can be locally recorded in `Recyclique`
 **And** the UI exposes the local outcome clearly without pretending accounting sync is already finalized
+
+**Given** le parcours caisse s'appuie sur des flows declaratifs et le clavier terrain
+**When** le parcours nominal est en service
+**Then** au moins un flow critique (wizard ou tabbed) est pilote via `FlowRenderer` avec une sequence clavier exploitable (ex. scan, tabulation, validation)
+**And** au moins un widget **ticket courant** (ou equivalent nomme dans le manifest du slice) **expose** `data_contract.critical: true` et le blocage UI sur **DATA_STALE** / donnees incoherentes **avant** paiement est demontre par test ; le backend **refuse** la mutation de paiement si le contexte ou les preconditions ne sont pas revalides
 
 ### Story 6.2: Garantir le contexte caisse et les blocages de securite metier
 
@@ -1528,6 +1571,11 @@ So that I can continue terrain work without confusion about what has actually be
 **When** these degraded states occur
 **Then** the flow remains traceable and operationally interpretable
 **And** the screen avoids silent success signals when the underlying state is uncertain
+
+**Given** un widget caisse declare `data_contract.critical: true` (ex. ticket courant / encaissement)
+**When** les donnees passees en **DATA_STALE** ou l'endpoint de donnees critique echoue
+**Then** les actions sensibles (paiement, validation finale) sont **bloquees** avec feedback explicite, en coherence avec le PRD §10.1 et les etats `WidgetDataState`
+**And** le comportement est aligne sur la matrice fallback / securite > fluidite
 
 ### Story 6.10: Valider l'exploitabilite terrain de la caisse v2
 
@@ -1999,6 +2047,11 @@ So that the product gains pilotage simple sans transformer cette story en refont
 **Then** the screen makes clear who can act, on which perimeter, and with what effect
 **And** changes to sensitive settings remain traceable enough for later supervision
 
+**Given** the **ADR P2** governs persistence of the simple-admin perimeter
+**When** surcharges are stored and merged at runtime
+**Then** durable storage for this perimeter uses **PostgreSQL** (dedicated model/table) with **deterministic merge** over manifest defaults from the build, not a JSON file on disk in **production**
+**And** changes record **author**, **timestamp**, and **reason** where the product requires traceability for supervision
+
 ### Story 9.7: Livrer les ACL minimales de fonctionnalites sensibles
 
 As a super-admin or responsible administrator,
@@ -2095,6 +2148,11 @@ So that backend and frontend stay aligned as the product evolves.
 **Then** the roadmap gains concrete assurance that contract-driven development is really functioning
 **And** future module work does not need to re-prove this backbone story by story
 
+**Given** la chaine documentee dans `core-architectural-decisions.md` (generated + `recyclique-api.yaml` + codegen)
+**When** la story est acceptee
+**Then** le pipeline CI ou la documentation d'equipe demontre qu'il n'existe **qu'un** snapshot OpenAPI par build (pas deux definitions manuelles divergentes) et que `contracts/openapi/recyclique-api.yaml` reste **aligne** sur `contracts/openapi/generated/`
+**And** le chemin consomme par `peintre-nano` codegen est nomme explicitement
+
 ### Story 10.3: Valider les manifests `CREOS` et les parcours de rendu critiques
 
 As a modular UI platform,
@@ -2107,6 +2165,11 @@ So that valid-looking manifests do not silently break the runtime.
 **When** manifest validation is industrialized
 **Then** the project verifies the schemas and structural constraints of supported `CREOS` artifacts before activation or delivery
 **And** invalid artifacts are surfaced as real delivery issues rather than runtime surprises only
+
+**Given** les widgets peuvent declarer `data_contract.operation_id`
+**When** l'OpenAPI reviewable contient des operations
+**Then** la CI (ou script de validation) verifie que chaque `operation_id` reference par un manifest reviewable existe comme `operationId` dans l'OpenAPI du meme snapshot
+**And** l'echec bloque ou avertit selon la politique de gate definie pour la release
 
 **Given** a schema-valid artifact can still break rendered behavior
 **When** critical render paths are tested

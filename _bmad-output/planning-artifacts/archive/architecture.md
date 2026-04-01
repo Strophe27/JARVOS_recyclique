@@ -18,6 +18,12 @@ user_name: 'Strophe'
 date: '2026-04-01'
 ---
 
+> **ARCHIVE — copie historique.** Ne pas utiliser comme source d'implementation ni de verite active. La documentation d'architecture a jour est dans `_bmad-output/planning-artifacts/architecture/` (voir `index.md` et les sous-documents). Cette copie a ete conservee pour historique de workflow BMAD ; toute divergence avec le dossier actif doit se regler en faveur du dossier **non** archive.
+>
+> **P1 / P2 Peintre_nano :** toute formulation « provisoire » ou « Tailwind / CSS Modules / autre » dans le corps de cette archive est **supersede** pour la stack CSS/styling et la config admin par l'ADR `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md` (2026-04-01).
+>
+> **Autres mentions « provisoires »** (ex. `Zustand`, coexistence runtime) dans le corps ci-dessous sont **historiques** ; la verite active est dans `_bmad-output/planning-artifacts/architecture/` (shards), pas dans cette copie archivee.
+
 # Architecture Decision Document
 
 _Ce document se construit de maniere collaborative, etape par etape. Les sections sont ajoutees au fil des decisions architecturales._

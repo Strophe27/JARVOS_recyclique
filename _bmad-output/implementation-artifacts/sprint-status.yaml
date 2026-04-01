@@ -40,6 +40,12 @@
 # - Les elisions (l', d', ...) peuvent produire des slugs ambigus si on genere a la main sans precaution
 #   (ex. l'UI -> "lui", l'API -> "lapi"). Les cles de CE fichier font foi pour les noms de fichiers story
 #   ({story-key}.md a la racine de story_location). En cas de regeneration automatique, verifier et ajuster.
+#
+# Pistes paralleles (Correct Course 2026-04-01) — repere de planification (non normatif pour l'outil) :
+#   Piste A — Peintre_nano (mocks jusqu'a Convergence 1) : epic-3 ; stories 4-x apres jalons contrat + backend reel pour le slice.
+#   Piste B — Recyclique backend : epic-1, epic-2 ; livrable OpenAPI reviewable contracts/openapi/recyclique-api.yaml.
+#   Convergence 1 : contrat interface + hooks reels. Convergence 2 (GATE) : epic-4 bandeau live bout-en-bout.
+#   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
 
 generated: "2026-04-01"
 last_updated: "2026-04-01"

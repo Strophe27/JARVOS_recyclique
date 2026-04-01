@@ -1,7 +1,7 @@
 # Peintre — pipeline présentation, workflow et invariants (nano → macro)
 
 **Date :** 2026-04-01  
-**Mis à jour :** 2026-04-01 — intégration **forte** du concept vision Peintre_nano (`references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md`) ; passes QA documentaire + sous-agents ; **passe finale** (QA adversariale, alignement `sprint-status.yaml`, miroir PRD §10.1) ; **correctifs QA** (pont `cashflow` / Phase 0, document fusionné Phase 0 vs Phase 1+).  
+**Mis à jour :** 2026-04-01 — intégration concept vision ; **QA multi-agents** (carto repo, cohérence inter-docs, alignement BMAD, adversarial) ; correctifs **§2** renvoi §2 bis, **§12** epic-6/7 + epic-1/2, **§15** checklist **(b)**, **§16** libellé miroir **PRD §10.1**.  
 **Statut :** artefact de travail — à faire évoluer avec les sessions ; ne supplante pas le PRD ni l’architecture BMAD. **Grammaire détaillée** (CREOS Influx, slots, flows, phases SDUI) : fichier d’**extraits** ci-dessus + document vision complet.  
 **Règle de divergence :** en cas d’écart entre ce fichier et le **PRD** ou l’**architecture BMAD** actifs, **PRD / architecture font foi** ; mettre à jour cet artefact.
 
@@ -25,6 +25,8 @@
 ---
 
 ## 2. Hiérarchie de vérité (rappel — avant le pipeline graphique)
+
+Les types **`ModuleManifest`** et contributions CREOS du PRD §8 ne sont pas absents du modèle : ils se **mapent** aux manifests ci-dessous — voir **§2 bis** avant d’implémenter.
 
 Alignement `navigation-structure-contract.md` / architecture :
 
@@ -52,7 +54,7 @@ Le document **`references/vision-projet/2026-03-31_peintre-nano-concept-architec
 
 **Lecture recommandée :** `references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md` — tables et mapping **vision ↔ BMAD** (Navigation / Page / document validé) sans dupliquer le roman du concept.
 
-**Alignement sans contradiction :** la vision fixe la **Phase 0** comme manifests **statiques** et remplissage des slots par **code / imports TypeScript**, **sans JSON dynamique** de composition pour l’ossature. Le **§3** ci-dessous (document validé, draft sandbox, fusion build/runtime) s’applique **pleinement** dès l’introduction de composition **admin / LLM / runtime** (Phase 1+ du concept) ; en Phase 0, les **mêmes** schémas et vocabulaire fermé peuvent valider le **build** sans activer de pipeline « chaud » de recomposition. **Flows caisse** : pont `cashflow` / `wizard`–`tabbed` — **extraits §7** et vision §3.1 (flows).
+**Alignement sans contradiction :** la vision fixe la **Phase 0** comme manifests **statiques** et remplissage des slots par **code / imports TypeScript**, **sans JSON dynamique** de composition pour l’ossature. Le **§3** ci-dessous (document validé, draft sandbox, fusion build/runtime) s’applique **pleinement** dès l’introduction de composition **admin / LLM / runtime** (Phase 1+ du concept) ; en Phase 0, les **mêmes** schémas et vocabulaire fermé peuvent valider le **build** sans activer de pipeline « chaud » de recomposition. **Flows caisse** : pont `cashflow` / `wizard`–`tabbed` — **extraits §7** et vision **§3.1, sous-section « Flows »** (niveau `####` sous *Les trois composants*).
 
 ---
 
@@ -62,7 +64,7 @@ Le document **`references/vision-projet/2026-03-31_peintre-nano-concept-architec
 
 - **Phase 0 (concept vision, ossature)** : pas de **pilotage à chaud** du graphe UI par JSON externe — manifests **fichiers**, contributions via **registre + imports** ; le cycle brouillon → validé ci-dessous concerne surtout les parcours **dynamiques** à partir de **Phase 1+** (mini-DSL admin, puis agent). Voir **§2 ter** et `2026-04-01_fondations-concept-peintre-nano-extraits.md` §6.
 - **Source** : le **`PageManifest`** (et contributions modules résolues via registre) fournit la base ; un **document dynamique** (admin, LLM) est une **surcouche** ou un **remplacement** de fragment **uniquement** après validation.
-- **Artefact** : **obligatoire** : un document (ou fusion déterministe) **validé** qui porte **à la fois** le **DSL de layout** et l’**arbre de widgets** (et références aux flows) — pas deux pipelines parallèles non reliés. Les exceptions doivent être **listées** dans une ADR.
+- **Artefact** : **obligatoire** au sens **architectural** : le rendu repose sur **une** fusion déterministe **DSL de layout** + **arbre de widgets** (+ références flows) — pas deux pipelines parallèles non reliés. **Phase 1+** : souvent matérialisée par un **document sérialisé validé** (§3). **Phase 0** : la fusion est la **résolution build** (manifests, `PageManifest`, registre, imports) jusqu’au rendu — **sans** exiger un fichier JSON dynamique de composition ; détail : **extraits §5**. Les exceptions au modèle unique doivent être **listées** dans une ADR.
 - **Cycle brouillon → rendu** (LLM, admin) : états **draft / preview** **isolés** : pas d’exécution de **`commandId`** ni d’effet métier tant que le document n’est pas **validé** ; la preview est **sandbox** ou lecture seule selon le risque.
 - **Enchaînement rendu** : **widgets** et **zones** sont positionnés par le `LayoutRenderer` / arbre ; les **flows** déclaratifs s’exécutent dans ce cadre via `FlowRenderer` (pas une iframe logique séparée sans contrat).
 - **Échec de validation** (schéma ou vocabulaire) : **rejet** du document ou fragment ; **pas** de rendu partiel non contrôlé — avec **feedback** structuré (voir §6 et signalement CREOS).
@@ -232,9 +234,9 @@ La **chaîne complète** (backend, contrats, runtime, permissions, **fallback, a
 
 **Séquence de preuve** (brainstorm clôture `195824` — **jalons conceptuels** ; **le plan d’exécution** est dans `_bmad-output/implementation-artifacts/sprint-status.yaml` et les epics) :
 
-1. **`bandeau live`** — premier jalon **technique** de chaîne bout-en-bout UI : contrat backend **données live** + manifest CREOS + registre + slot + rendu + fallback (PRD §9.4, `navigation-structure-contract` slice bandeau). Si échec : **corriger la chaîne avant d’aller plus loin**. Dans le sprint : **epic-3** (socle Peintre) puis **epic-4** (module bandeau).
+1. **`bandeau live`** — premier jalon **technique** de chaîne bout-en-bout UI : contrat backend **données live** + manifest CREOS + registre + slot + rendu + fallback (PRD §9.4, `navigation-structure-contract` slice bandeau). Si échec : **corriger la chaîne avant d’aller plus loin**. Dans le sprint : après les prérequis **epic-1 / epic-2** si le plan les exige, **epic-3** (socle Peintre) puis **epic-4** (module bandeau).
 2. **Recomposition transverse** — entre bandeau et parcours métier lourds, le sprint prévoit **epic-5** (navigation / dashboard transverse, templates transverses, etc.) : ce n’est pas un « oubli » du §12 ; c’est du **prérequis UI** entre preuve modulaire et caisse/réception.
-3. **Flows terrain critiques** : **`cashflow`**, **`reception flow`** — **epics-6 et 7** ; preuve que le socle tient les parcours sensibles. **Type `cashflow` vs Phase 0** : le jalon sprint exige un **parcours** caisse / réception **fluide** (raccourcis, étapes, `FlowRenderer`), pas nécessairement la valeur de schéma `type: "cashflow"` dès le premier incrément — voir **`references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md` §7** (options a/b + ADR / story) et le paragraphe ajouté dans le document vision §3.1 (flows).
+3. **Flows terrain critiques** : **`cashflow`**, **`reception flow`** — **epic-6** et **epic-7** ; preuve que le socle tient les parcours sensibles. **Type `cashflow` vs Phase 0** : le jalon sprint exige un **parcours** caisse / réception **fluide** (raccourcis, étapes, `FlowRenderer`), pas nécessairement la valeur de schéma `type: "cashflow"` dès le premier incrément — voir **`references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md` §7** (options a/b + ADR / story) et le paragraphe *Alignement implémentation* dans la vision **§3.1, sous-section « Flows »**.
 4. **Sync Paheko** — **epic-8** : articulation terrain / compta, idempotence, quarantaine ; le rendu Peintre doit **exposer** les états utiles (PRD, matrice §10.1) **sans** dupliquer la vérité comptable.
 5. **Premier grand module métier** : **`déclaration éco-organismes`** — **epic-9** ; puis **adhérents**, **HelloAsso** (arbitrage), **config admin simple**, etc.
 
@@ -268,7 +270,7 @@ Ce document ne remplace pas le **sprint plan**.
 
 ## 15. Suite possible (hors périmètre de ce fichier)
 
-- ADR courte (ou story d’épique) : **discriminant `type: "cashflow"`** dans le schéma vs **approximation `wizard` / `tabbed`** pour les jalons caisse / réception — voir **§12** point 3 et **extraits §7**.
+- ADR courte (ou story d’épique) : **discriminant `type: "cashflow"`** dans le schéma vs **approximation `wizard` / `tabbed`** pour les jalons caisse / réception — voir **§12** point 3 et **extraits §7**. **Checklist option (b)** (preuve « repo consomme le schéma ») : JSON Schema à jour + **`FlowRenderer`** + au moins **une fixture** manifest en CI — sinon rester sur **(a)** jusqu’à alignement.
 - ADR : **fusion build / runtime** pour documents de présentation (précédence, merge).
 - ADR : **orchestration v2** — « reducer only » vs librairie statechart ; alignement taxonomie d’événements.
 - ADR courte « surfaces + presets » (noms de champs, liaison `UserRuntimePrefs`, source canonique).
@@ -276,3 +278,28 @@ Ce document ne remplace pas le **sprint plan**.
 - Jeux de tests : manifest invalide, widget inconnu, flow incomplet — vérifier fallback, isolation, traces, **corrélation** observabilité.
 - **Tests automatisés** dans la chaîne build (CI) : bloquer régression de schémas et de rendu contractuel en complément du runtime.
 - **Maintenance annexe §6.1** : si le PRD §10.1 change, mettre à jour le miroir ou retirer l’annexe pour éviter dérive.
+
+---
+
+## 16. Déclarations closes et seules ouvertures
+
+**Closes dans la documentation** (réponses figées ici et dans les fichiers liés) :
+
+- **Un seul pipeline** de présentation (validation → `LayoutRenderer` / `WidgetTreeRenderer` / `FlowRenderer`) ; pas de seconde voie LLM → React ad hoc.
+- **Hiérarchie de vérité** et **règle de divergence** : PRD + architecture BMAD > ce fichier > interprétations informelles.
+- **Phase 0** : pas de graphe UI en JSON **piloté à chaud** pour l’ossature ; manifests statiques + registre + imports TS ; schémas / CI quand ils existent (**extraits §6**).
+- **Phase 1+** : document dynamique **validé**, draft sandbox, menaces et allowlist comme au **§3**.
+- **« Document fusionné »** : en Phase 1+ = artefact validé unique ; en Phase 0 = **équivalent build** sans JSON dynamique de composition (**extraits §5**).
+- **Caisse / réception** : le jalon sprint = **comportement** du parcours ; **deux options valides** — `wizard` / `tabbed` + raccourcis ou `type: "cashflow"` natif — **une** validation et **une** orchestration de commandes ; pas de contradiction avec « wizard + tabbed seuls en Phase 0 » si le tranché est explicite (**extraits §7**, vision §3.1 **Flows**).
+- **Critère pour choisir (a) vs (b)** au moment des épiques caisse / réception : **si** le repo consomme déjà le schéma (JSON Schema / `FlowRenderer` / validation CI / manifests) pour **`type: "cashflow"`** — alors **(b)** dès que c’est **actionnable** (pas de dette bloquante). **Sinon** **(a)** (`wizard` / `tabbed` + raccourcis) jusqu’à ce que la chaîne soit prête ; l’**ordre des livrables** (ce qui est mergé avant) **décide**, pas une préférence abstraite.
+
+**Ouvertures volontaires** (pas de réponse dans le repo tant qu’une équipe ne tranche pas) :
+
+| Sujet | Où agir |
+|-------|---------|
+| Application concrète du critère **(a)/(b)** (état réel du repo + ordre des merges au jour J) | **§15** première puce — ADR courte ou story d’épique (une phrase suffit si le contexte est clair) |
+| **P1–P13** et recommandations associées | `references/vision-projet/2026-03-31_peintre-nano-concept-architectural.md` §7 |
+| **ADR** fusion build/runtime, orchestration statechart, surfaces + presets | **§15** |
+| **Annexe pipeline §6.1** (miroir **PRD §10.1**) | Resynchroniser si `prd.md` §10.1 évolue (**§15** dernière puce) |
+
+Aucune autre assertion « en suspens » n’a été laissée implicite dans le périmètre **pipeline + extraits + pont vision** : ce qui relève du **code** ou du **sprint actif** se lit dans `sprint-status.yaml` / `epics.md` et peut diverger par décision PO (déjà noté **§12**).

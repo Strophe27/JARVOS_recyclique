@@ -1,7 +1,7 @@
 # Peintre — extraits opérationnels du concept architectural (nano)
 
 **Date :** 2026-04-01  
-**Mis à jour :** 2026-04-01 — QA : clarification **document fusionné** Phase 0 vs Phase 1+ (§5) ; pont **`cashflow`** / wizard-tabbed / sprint (§7) ; document vision §3.1 aligné.  
+**Mis à jour :** 2026-04-01 — §7 : règle **(a)/(b)** = schéma `cashflow` **consommable** par le repo + ordre des livrables (voir pipeline **§16**).  
 **Source canonique :** `references/vision-projet/2026-03-31_peintre-nano-concept-architectural.md` (concept validé backlog RecyClique V2, auteurs Strophe + co-architecte).  
 **Rôle de ce fichier :** matière **extraite et restructurée** pour les sessions **cadrage / implémentation** dans `references/peintre/` — tables, conventions, phases, vocabulaire CREOS, sans remplacer le document vision (ni le PRD / l’architecture BMAD).
 
@@ -109,6 +109,8 @@ Le **pipeline** impose validation / allowlist / draft sandbox dès qu’il y a *
 | `decision` | Branchements | Phase 2–3 |
 
 **Caisse (`cashflow`) et « seuls wizard / tabbed en Phase 0 » (vision) :** pas de contradiction avec les **jalons sprint** (pipeline §12) si l’on tranche **explicitement** en story ou **ADR courte** : **(a)** parcours caisse / réception modélisé d’abord comme `wizard` ou `tabbed` + raccourcis / `FlowRenderer` (même `FlowDefinition`, comportement clavier riche) ; **(b)** ou extension **précoce** du runtime pour `type: "cashflow"` comme variante dédiée (toujours **un** pipeline de validation et de commandes). Les deux options restent conformes au principe **un seul** chemin de rendu (pas de second pipeline ad hoc).
+
+**Règle de choix (exécution) :** préférer **(b)** si, **à ce moment-là**, le repo **consomme** déjà le schéma (`FlowRenderer`, JSON Schema, CI, manifests) pour `cashflow` — sinon **(a)** jusqu’à ce que ce soit le cas ; ça dépend de **l’ordre** des merges / épiques. Détail figé : pipeline **§16**. Renvoi vision : **§3.1**, titre *Les trois composants*, sous-section **`#### Flows`** (paragraphe *Alignement implémentation*).
 
 **Principe non négociable :** un futur éditeur nodal **ne contient pas** la logique runtime — il produit / modifie des `FlowDefinition` JSON ; le runtime les exécute (même séparation qu’agent vs moteur).
 
@@ -249,7 +251,7 @@ Concepts alignés pilets / extension slots ; `Slot` ≈ extension slot Piral ; `
 
 ## 21. Roadmap implémentation (condensé vision §6)
 
-- **Phase 0 :** package `peintre-nano`, `ModuleRegistry`, `<Slot>`, `<FlowRenderer>`, raccourcis, types TS ; 2–3 manifests RecyClique ; shell minimal ; au moins un flow (caisse ou inscription).  
+- **Phase 0 :** package `peintre-nano`, `ModuleRegistry`, `<Slot>`, `<FlowRenderer>`, raccourcis, types TS ; 2–3 manifests RecyClique ; shell minimal ; au moins un flow (caisse ou inscription) — le parcours **caisse** peut être en `wizard` / `tabbed` tant que `type: "cashflow"` n’est pas au schéma (**extraits §7**).  
 - **Phase 1 :** JSON Schema manifest ; doc slots ; vocabulaire widgets initial ; panel super-admin modules.  
 - **Phase 2 :** mini-DSL dashboard, renderer générique JSON, prototype éditeur nodal, évaluation XState.  
 - **Phase 3 :** bus / API agent, gate, expérimentation DivKit.
@@ -289,7 +291,7 @@ Piral (patron), Open edX FPF (slots), DivKit (Phase 3 SDUI), Module Federation (
 ## 24. Références croisées
 
 - **Concept complet :** `references/vision-projet/2026-03-31_peintre-nano-concept-architectural.md`  
-- **Pipeline + invariants :** `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md`  
+- **Pipeline + invariants + fermeture QA :** `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md` (**§16** = déclarations closes vs seules ouvertures)  
 - **PRD / architecture / sprint :** mêmes entrées que le fichier pipeline §14
 
 ---
