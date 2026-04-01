@@ -16,6 +16,8 @@ Dans les sections historiques **datées d’avant le 2026-03-31**, lorsqu’un j
 `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`  
 (ex. le PRD archivé : `.../planning-artifacts/prd.md`). Les dossiers **actifs** `planning-artifacts/` et `implementation-artifacts/` sous `_bmad-output/` portent la chaîne courante (ex. `epics.md`, `sprint-status.yaml`) ; l’archive ci-dessus conserve l’ancienne ligne 1.4.4.
 
+**Pilotage d’exécution v2** — Abstract canonique : voir l’entrée **guide-pilotage-v2** dans [references/index.md](index.md). Fichier : [_bmad-output/planning-artifacts/guide-pilotage-v2.md](../_bmad-output/planning-artifacts/guide-pilotage-v2.md). Le journal **daté** ci-dessous reste la trace des sessions ; les **cases jalons** se maintiennent dans le guide aux grands événements (convergences, fin d’epic majeur).
+
 ## Etat actuel
 
 Projet JARVOS Recyclique v0.1.0 initialise. **Analyse brownfield 1.4.4 disponible** dans `references/ancien-repo/`. **Analyse brownfield Paheko faite** : extensions (plugins/modules), API HTTP, gestion des fichiers et upload, WebDAV — voir [references/paheko/analyse-brownfield-paheko.md](paheko/analyse-brownfield-paheko.md) (index : [references/paheko/index.md](paheko/index.md)). Workflow Git en place. Aucun code source encore.
@@ -35,6 +37,10 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 **Architecture complétée** (2026-02-26) : `_bmad-output/planning-artifacts/architecture.md` — décisions techniques, patterns, structure projet, validation ; statut READY FOR IMPLEMENTATION. Points à trancher en v0.1 : [checklist 2026-02-26_03](artefacts/2026-02-26_03_checklist-v0.1-architecture.md).
 
 ## Derniere session
+
+2026-04-01 — **Correctifs post-QA** (guide pilotage) : note chemins dans [_bmad-output/README.md](../_bmad-output/README.md) (actif vs archive) ; renvoi [`guide-pilotage-v2`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) en tête d’[Epic 3](../_bmad-output/planning-artifacts/epics.md) ; harmonisation français / accents dans le guide et le bloc « Voir aussi » des *Epic Sequencing Notes*.
+
+2026-04-01 — **Guide de pilotage v2** : ajout de [_bmad-output/planning-artifacts/guide-pilotage-v2.md](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) (deux récits, jalons, carte documentaire, frictions, prompt superviseur) ; entrée dans [references/index.md](index.md), pointeur dans ce fichier, [_bmad-output/README.md](../_bmad-output/README.md), [architecture/index.md](../_bmad-output/planning-artifacts/architecture/index.md), renvois dans [epics.md](../_bmad-output/planning-artifacts/epics.md) et [prd.md](../_bmad-output/planning-artifacts/prd.md) §12.
 
 2026-04-01 — Sprint Planning (BMAD) relancé sur `epics.md` v2.
 

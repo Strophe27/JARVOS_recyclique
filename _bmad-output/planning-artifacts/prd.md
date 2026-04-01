@@ -748,6 +748,8 @@ L'ordre suivant minimise le risque systemique et doit etre respecte comme prefer
 | 8 | Architecture modulaire + socle UI transverse | A produire |
 | 9 | PRD actif + architecture active sans ambiguite majeure | Ce document + architecture a venir |
 
+**Guide operationnel d'execution** : pour suivre en parallele les **deux rythmes** possibles (sequence structurante ci-dessus vs Pistes A/B dans les epics), les **jalons** a cocher et la **cartographie** des livrables documentaires (audits, donnees, tests), voir [`guide-pilotage-v2.md`](guide-pilotage-v2.md) — sans dupliquer les tableaux de cette section.
+
 ### 12.2 Sequence de validation produit
 
 | # | Etape | Ce qu'elle prouve |

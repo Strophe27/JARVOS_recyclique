@@ -27,6 +27,9 @@
 - **`idees-kanban/`** — Kanban d’idées (un fichier par idée, stades a-conceptualiser, a-rechercher, a-creuser, a-faire, archive). Vue globale : **idees-kanban/index.md**. Gestion : skill **idees-kanban** (`.cursor/skills/idees-kanban/`). *Ne pas éditer l’index Kanban à la main.*
   _(Charger si : Strophe donne une idée à noter, note / transition / archivage, ou session d’idéation / priorisation.)_
 
+- **`guide-pilotage-v2.md`** (BMAD) — [_bmad-output/planning-artifacts/guide-pilotage-v2.md](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) : document maître d’**exécution** v2 — réconciliation des deux récits de rythme (séquence PRD / décision directrice vs Pistes A/B et convergences), **jalons à cocher** (Convergence 1–3, Epics 1–10) synchronisés aux grands jalons avec `sprint-status.yaml` pour le grain fin, **carte des emplacements** pour audits, données, rapports de tests et handoffs, frictions connues, **prompt type** agent superviseur, lien **correct course**. Ne remplace pas le PRD ni l’index `references/` pour le détail métier.
+  _(Charger si : pilotage multi-chantiers, agent superviseur, reprise après branches ou écrans multiples, besoin de savoir où ranger un livrable documentaire.)_
+
 ---
 
 ## Conventions et règles
@@ -98,4 +101,4 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`doc/`** — Communication publique : modes d’emploi, présentations (financeurs, partenaires), supports à partager. Index : **doc/index.md**.
   _(Utiliser pour tout document destiné à être publié ou partagé en l’état.)_
 
-- **`_bmad-output/`** — Sorties BMAD actives (`planning-artifacts/`, `implementation-artifacts/`) + **README** ; archive pivot : **`_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`**.
+- **`_bmad-output/`** — Sorties BMAD actives (`planning-artifacts/`, `implementation-artifacts/`) + **README** ; archive pivot : **`_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`**. Pilotage d’exécution v2 : **`planning-artifacts/guide-pilotage-v2.md`** (abstract sous **État et suivi** ci-dessus).

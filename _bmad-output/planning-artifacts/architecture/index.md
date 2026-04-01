@@ -1,5 +1,9 @@
 # Architecture Decision Document
 
+## Pilotage exécution v2 (document transversal)
+
+- **[guide-pilotage-v2.md](../guide-pilotage-v2.md)** — Document maître d’exécution : réconciliation séquence PRD / décision directrice et **Pistes A/B** ; jalons Convergence 1–3 et Epics 1–10 (cases à cocher aux grands jalons) ; **où ranger** audits, schémas BDD, handoffs, rapports de tests ; frictions ; prompt type agent superviseur ; **correct course**. Abstract canonique : [references/index.md](../../../references/index.md) (État et suivi).
+
 ## Table of Contents
 
 - [Architecture Decision Document](#table-of-contents)

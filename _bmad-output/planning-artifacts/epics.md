@@ -482,6 +482,8 @@ Jalon d'affichage initial a prevoir dans Epic 3 :
 - fallback visible pour slot vide, widget inconnu ou manifest invalide ;
 - page de demonstration ou bac a sable d'affichage permettant de verifier progressivement le rendu avant l'injection des vrais modules metier.
 
+**Voir aussi — pilotage d'exécution :** [`guide-pilotage-v2.md`](guide-pilotage-v2.md) réconcilie la **préférence séquentielle** (décision directrice / PRD §12) avec les **Pistes A/B** et les **Convergences** ; cases à cocher aux **jalons** (grain fin dans `implementation-artifacts/sprint-status.yaml`) ; carte des emplacements pour audits, données et rapports de tests.
+
 ## Epic 1: Fermer les prerequis structurants et valider le modele de donnees multi-contextes
 
 L'equipe peut verrouiller les inconnues critiques du projet avant implementation large, avec livrables explicites : audit backend/API/donnees, retro `Paheko`, spec multi-contextes, validite des structures de donnees multi-sites/multi-caisses/multi-postes, continuite et integrite des donnees brownfield, contrat de sync/reconciliation, gouvernance `OpenAPI` / `CREOS`, hierarchie de verite, source canonique de `ContextEnvelope`, et formalisation des signaux de contexte/exploitation necessaires aux vues live (horaires reels, ouvertures decalees, cas particuliers) ainsi que la matrice d'arbitrage API/plugin/SQL.
@@ -818,6 +820,8 @@ So that Epic 4 can prove the chain on real backend-owned information rather than
 **And** it does not absorb unrelated admin or dashboard requirements that belong to later epics
 
 ## Epic 3: Poser le socle frontend greenfield `Peintre_nano`
+
+**Voir aussi — pilotage d'exécution :** [`guide-pilotage-v2.md`](guide-pilotage-v2.md) (deux récits de rythme, convergences, jalons, carte documentaire) — complément au bloc **Epic Sequencing Notes** plus haut dans ce fichier.
 
 L'equipe peut mettre en service un runtime UI v2 minimal mais reel, avec `Peintre_nano`, `CREOS`, registre de routes, widgets, slots, contrat de rendu et adaptateur auth/session, afin que toute l'UI v2 puisse ensuite etre recomposee sur une base propre. Cet epic inclut explicitement la Story 0 de socle autour de quatre artefacts minimaux (`NavigationManifest`, `PageManifest`, `ContextEnvelope`, `UserRuntimePrefs`), une preuve d'affichage initiale (page blanche de shell, grille visible, premiers widgets/catalogue simples, rendu via manifest minimal, fallbacks visuels), et le respect strict du bornage commanditaire/runtime. L'affichage effectif doit rester l'intersection deterministe du contrat commanditaire, du **`ContextEnvelope` d'autorite backend** (ou **mock / stub structurellement aligne** sur le schema OpenAPI avant **Convergence 1**, comme en Story 3.4) et des `UserRuntimePrefs` non metier.
 
