@@ -1,5 +1,14 @@
 ---
-stepsCompleted: [1]
+stepsCompleted:
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
+workflowType: prd
+workflow: edit
+classification:
+  domain: logiciel-metier-terrain-compta-oss
+  projectType: web_app
+  complexity: medium
 inputDocuments:
   - _bmad-output/planning-artifacts/product-brief-JARVOS_recyclique-2026-03-31.md
   - references/vision-projet/2026-03-31_decision-directrice-v2.md
@@ -14,14 +23,23 @@ inputDocuments:
   - references/peintre/2026-04-01_instruction-cursor-p1-p2.md
   - references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md
   - _bmad-output/brainstorming/brainstorming-session-2026-03-31-195824.md
-workflowType: 'prd'
 source_of_truth: references/vision-projet/2026-03-31_decision-directrice-v2.md
+validationReportUsed: _bmad-output/planning-artifacts/prd-validation-report-2026-04-01-post-edit.md
+priorValidationReport: _bmad-output/planning-artifacts/prd-validation-report-2026-04-01.md
+document_date: '2026-03-31'
+lastEdited: '2026-04-01'
+editHistory:
+  - date: '2026-04-01'
+    changes: 'Post-validation BMAD — frontmatter classification, note decisions perimetre/contrats, index trace FR/NFR vers epics, synthese UX canal web, cadre mesures perf sans nouveaux seuils.'
+  - date: '2026-04-01'
+    changes: 'Post-QA2 — validationReport chain (post-edit + prior), complexity medium, §17/§16/HelloAsso, §14.3 renvoi §16.3-FR73-NFR27, §11.5 hors Debian, §10.1/§10.2 preuve mapping et extension liste actions critiques ; QA finale typo livrables §17.'
 ---
 
 # PRD — JARVOS Recyclique v2
 
 **Auteur :** Strophe  
-**Date :** 2026-03-31  
+**Date de redaction initiale :** 2026-03-31  
+**Derniere revision documentaire :** 2026-04-01 (alignement validation BMAD + corrections QA2)  
 **Source de verite de cadrage :** `references/vision-projet/2026-03-31_decision-directrice-v2.md`  
 **Statut :** Actif — base pour architecture et epics  
 **Documentation de travail Peintre (pipeline, extraits, index) :** `references/peintre/index.md` — alignee PRD ; en cas d'ecart, ce PRD et l'architecture BMAD font foi.
@@ -36,6 +54,8 @@ Les decisions **P1** (stack CSS / styling) et **P2** (stockage des surcharges de
 En cas d'ecart avec d'anciens extraits, briefs ou archives, **l'ADR et cette instruction priment** sur le reste de la documentation Peintre pour P1 et P2.
 
 **Priorite de resolution :** pour **P1** et **P2** uniquement, en cas d'ecart entre le **corps** de ce PRD et l'ADR, **l'ADR fait foi** (le present PRD et l'architecture BMAD restent la reference pour le reste du perimetre v2).
+
+**Decisions de perimetre et contrats (lecture WHAT/HOW) :** les choix explicitement nommes dans ce PRD — canal web et adaptateur **React**, surfaces **OpenAPI** / manifests **CREOS JSON**, persistance **PostgreSQL** pour la config admin simple (**P2**), environnement **Debian**, references **TypeScript** pour le pont semantique widget / etats CREOS — sont des **decisions de perimetre, de gouvernance contractuelle ou brownfield** alignees sur l'architecture BMAD active (`_bmad-output/planning-artifacts/architecture/`) et les ADR Peintre. Ils ne remplacent pas les specs d'implementation detaillees (stories, code, CI).
 
 ---
 
@@ -320,6 +340,16 @@ Chaque ressourcerie doit pouvoir adapter la terminologie et la structure de role
 - editeur graphique de roles ;
 - workflows d'approbation par role.
 
+### 6.4 Exigences UX (canal web, synthese)
+
+Cette section formalise le volet **UX / UI** attendu pour un PRD type **web_app** BMAD, sans dupliquer les invariants deja poses (contexte avant ecran, zero fuite, matrice fallback SS 10, SS 3.5 adaptateur canal).
+
+- **Shell et navigation :** parcours coherents du login aux flows terrain ; la structure informationnelle et la composition d'ecran restent **commandees par Recyclique** et rendues par **Peintre_nano** (SS 3, SS 7, SS 8.8).
+- **Canal web :** comportements **responsive** et **multi-poste** pris en charge par l'adaptateur de canal (SS 3.5) dans les limites du perimetre v2 (pas de personnalisation riche ni d'interfaces analytiques avancees hors scope).
+- **Feedback utilisateur :** etats charges / vides / erreurs / degrades **visibles et explicites** sur les flows critiques ; alignement avec la matrice SS 10 et les etats donnees widget (`WidgetDataState`, SS 10.1).
+- **Securite percue :** l'UI peut masquer ou guider, mais **ne substitue pas** l'autorisation backend (SS 11.2) ; labels et libelles personnalises **ne font pas foi** pour la securite (SS 4.1, SS 6.3).
+- **Ameliorations UX terrain :** autorisees lorsqu'elles sont **evidentes, sures** et sans risque metier ou comptable (SS 2.3).
+
 ---
 
 ## 7. Perimetre fonctionnel v2
@@ -355,6 +385,8 @@ Toute l'UI v2 passe par Peintre_nano, du login au dernier ecran. Ce qui est phas
 | Synchronisation Paheko | Obligatoire | Articulation terrain/compta |
 | Integration HelloAsso | Obligatoire | Capacite confirmee dans le brief |
 | Config admin simple | Obligatoire (v2 vendable) | Pilotage minimal du shell et des modules |
+
+**Lecture du statut « Obligatoire » dans ce tableau :** il impose de livrer le **minimum v2** decrit dans les sous-sections du perimetre (parcours ou capacites utilisables, reprises manuelles encadrees lorsque le PRD les prevoit). Il **n'exige pas** une automatisation maximale lorsqu'une sous-section renvoie explicitement a une **etude ou un livrable d'architecture** pour fixer le niveau exact — cas **HelloAsso** : le **Scope minimum HelloAsso** (SS 7.1) et l'etude de cadrage (deux voies API / plugin Paheko) definissent l'ampleur **sans** contredire l'obligation de couvrir le parcours adherents a ce minimum.
 
 #### Synchronisation Paheko
 
@@ -634,6 +666,8 @@ Exigences :
 
 **Lexique runtime :** en **TypeScript**, l'etat courant d'un hook peut utiliser `status: 'stale' | 'loading' | …` ; le vocabulaire **CREOS** / schema `widget-data-states.schema.json` utilise les codes **`DATA_STALE`**, **`DATA_LOADING`**, etc. Le mapping **1:1** (`stale` ↔ `DATA_STALE`, etc.) est impose dans la couche d'adaptation widget — pas deux semantiques paralleles sans pont documente.
 
+**Preuve et non-regression :** la coherence du mapping hook / codes CREOS doit etre verifiable par **revue de code** et, en **CI**, par les controles prevus sur les contrats et le rendu des manifests (**§ 14.4–14.5** ; **NFR28** dans `epics.md`) — objectif : eviter deux vocabulaires paralleles sans pont explicite.
+
 ### 10.2 Actions critiques finales pouvant etre bloquees
 
 - cloture comptable definitive ;
@@ -642,7 +676,7 @@ Exigences :
 - operation finale necessitant une correspondance site/caisse/emplacement Paheko valide ;
 - validation finale d'un ecart ou d'une reprise manuelle de sync.
 
-Le blocage selectif s'applique uniquement quand la securite metier/comptable n'est plus garantissable autrement.
+Le blocage selectif s'applique uniquement quand la securite metier/comptable n'est plus garantissable autrement. Pour les **nouveaux** types d'operations sensibles hors liste, la matrice produit / architecture peut **etendre** la liste tout en conservant ce principe.
 
 ### 10.3 Cas nominaux de cloture et d'ecart critique
 
@@ -706,6 +740,8 @@ Le blocage selectif s'applique uniquement quand la securite metier/comptable n'e
 - Le shell Peintre_nano ne doit pas introduire de penalite de rendu visible sur les flows terrain critiques.
 - Bundle commun en v2 (lazy loading par module reporte a la phase suivante).
 
+**Cadre de mesure (sans seuils chiffres imposes par ce PRD) :** les cibles qualitatives ci-dessus restent la reference produit. Les **seuils quantitatifs** (ex. percentiles de latence, echantillons de tests, criteres d'acceptation instrumentes) seront **fixes dans le plan de tests performance et l'observabilite** en coherence avec l'architecture, **sans contredire** ces exigences ni introduire de metriques contradictoires avec le perimetre brownfield existant.
+
 ### 11.5 Installabilite et open source
 
 - Installation documentee et reproductible sur environnement cible.
@@ -719,6 +755,8 @@ Le blocage selectif s'applique uniquement quand la securite metier/comptable n'e
 - l'environnement cible officiel est **Debian** ;
 - c'est aussi l'environnement de reference utilise pour le projet lui-meme ;
 - les autres environnements peuvent etre explores plus tard, mais ne font pas partie du support officiel v2.
+
+**Posture communautaire :** les installations sur d'autres OS (ex. derivés Debian/Ubuntu, conteneurs) peuvent etre **best-effort** par la communaute mais restent **hors support officiel** et hors **matrice publiee** (§ 11.5, gates § 13) tant qu'aucune extension explicite du perimetre supporte n'est decidee.
 
 ### 11.6 Donnees
 
@@ -843,8 +881,8 @@ Emplacement canonique des artefacts reviewables : repertoire `contracts/` a la r
 
 ### 14.3 Breaking changes
 
-- Politique de signalement a definir.
-- Propagation vers les instances deployees (OSS et cloud) sans briser le rendu.
+- **Politique de signalement et de gestion** : a **produire** en coherence avec **§ 16.3**, la **Definition of done** (**§ 14.5**) et l'exigence **FR73** / **NFR27** dans `epics.md` — le PRD pose l'exigence ; le detail operationnel est livre avec la gouvernance contractuelle.
+- **Propagation** vers les instances deployees (OSS et cloud) sans briser le rendu, une fois la politique ci-dessus fixee.
 
 ### 14.4 Validation CI
 
@@ -902,12 +940,12 @@ A confirmer ou reviser : recours a Redis Streams ou mecanisme equivalent pour la
 
 ## 17. Statut des questions produit
 
-Il ne reste plus de question produit bloquante ouverte dans ce PRD.
+Il ne reste plus de **lacune redactionnelle** ni de **question produit bloquante non cadrée** dans les sections de ce document : les sujets encore ouverts (ex. **niveau exact HelloAsso**, **sync** concrete, **politique breaking changes**) sont **deja renvoyes** aux paragraphes de perimetre (SS 7, SS 14–16) et aux **livrables d'architecture**.
 
-Les points encore a produire pour la suite relevent maintenant :
+Les points encore a **produire** pour passer a l'implementation relevent :
 
-- de l'architecture ;
-- des specs techniques derivees ;
+- de l'architecture et des specs techniques derivees ;
+- des **verrous § 16** (contrat sync, multi-contextes, gouvernance contractuelle incluant breaking changes, schemas CREOS, mecanisme de sync) ;
 - et du choix de mise en oeuvre concret des settings, du stockage de configuration et des mecanismes de synchronisation.
 
 ---
@@ -938,3 +976,25 @@ Aucune contradiction bloquante n'a ete detectee entre les sources actives sur le
 | `Reception flow` | Parcours reception de marchandise |
 | `Bandeau live` | Module d'affichage temps reel servant de preuve modulaire |
 | `Config admin simple` | Pilotage minimal du shell et des modules (activation, ordre, variantes) |
+
+---
+
+## Annexe C — Index de tracabilite des exigences (renvoi epics)
+
+Les **identifiants stables** des exigences fonctionnelles **FR1 a FR73** et non fonctionnelles **NFR1 a NFR28** sont definis dans l'inventaire du fichier **`_bmad-output/planning-artifacts/epics.md`** (sections *Functional Requirements* et *NonFunctional Requirements*). Ce PRD en est la source narrative ; l'inventaire epics fait foi pour les **ID machine** et le decoupage story.
+
+| Zone thematique dans ce PRD | ID stables (epics.md) |
+|-----------------------------|------------------------|
+| SS 2 Vision, SS 2.3 brownfield, SS 3 Repartition des roles | FR1 a FR10 |
+| SS 4 Invariants non negociables | FR11 a FR22 |
+| SS 5 Double flux | FR23 a FR30 |
+| SS 6 Utilisateurs, roles, labels, groupes | FR31 a FR36 |
+| SS 7 Perimetre fonctionnel v2 (modules, sync, multi-sites, admin, HelloAsso) | FR37 a FR47 |
+| SS 8 Profil CREOS, SS 8.8 Emission / consommation | FR48 a FR54 |
+| SS 9 Parcours et flows critiques | FR55 a FR60 |
+| SS 10 Matrice fallback / blocage / donnees widget | FR61 a FR70 |
+| SS 11.2 Securite, SS 11.3 Tracabilite (exigences fonctionnelles associees) | FR71, FR72 |
+| SS 14.5 Definition of done contractuelle | FR73 |
+| SS 11 Exigences non fonctionnelles (synthese) | NFR1 a NFR28 |
+
+**Usage pour les stories :** chaque story peut pointer vers une **plage de sections PRD** (ex. SS 9.1 + SS 10.x) et vers les **FR/NFR** correspondants dans `epics.md`, comme recommande par le rapport de validation du PRD.
