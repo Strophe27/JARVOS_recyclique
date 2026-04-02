@@ -12,6 +12,7 @@
 
 - **Epic Runner** : garder une **fenêtre de chat légère** sur un epic cible ; choisir la prochaine story (règle §15.3) ; déléguer le détail à un **Story Runner** (Task ou session dédiée) ; proposer fin d'epic (rétro, correct course).
 - **Story Runner** : exécuter le **graphe story** documenté ici (CS → VS → DS → gates → QA → CR) avec **plafonds** de boucle et sorties explicites ; respecter les **noms de skills Cursor** du recueil §4.1 / §4.2.
+- **Story Runner — orchestration** : en pratique Cursor, le Story Runner doit se comporter comme **parent orchestrateur** : **un Task (sous-agent) par étape** correspondant à un skill BMAD (create-story create/validate, dev-story, qa-generate-e2e-tests, code-review), en **transmettant** le brief reçu à chaque enfant ; **ne pas** absorber tout le workflow dans un seul contexte sauf **Plan B** (spawn impossible → NEEDS_HITL). Détail : `.cursor/agents/bmad-story-runner.md` § Rôle parent.
 
 **Limite plateforme (Cursor)** : enchaîner plusieurs **Task** ou **Task dans Task** n'est **pas** garanti selon version / mode. Les séquences ci-dessous sont une **discipline documentée** ; si un spawn échoue, appliquer le **plan B** (session unique, chat principal, **NEEDS_HITL**) — aligné recueil **§15.1**.
 

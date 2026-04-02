@@ -48,7 +48,7 @@
 #   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
 
 generated: "2026-04-01"
-last_updated: "2026-04-01"
+last_updated: "2026-04-02"
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
@@ -75,8 +75,8 @@ development_status:
   2-7-fournir-les-signaux-backend-minimaux-pour-bandeau-live: backlog
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux: backlog
+  epic-3: in-progress
+  3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux: done
   3-1-mettre-en-place-le-shell-initial-et-le-layout-css-grid: backlog
   3-2-implementer-le-chargement-et-la-validation-minimale-des-manifests-de-navigation-et-de-page: backlog
   3-3-implementer-le-registre-minimal-de-widgets-slots-et-rendu-declaratif: backlog

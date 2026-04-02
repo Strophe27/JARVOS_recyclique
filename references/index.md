@@ -46,6 +46,9 @@
 - **Subagent @git-specialist** — Expert Git du projet. Workflow et limites : voir `procedure-git-cursor.md`. Fichier : `.cursor/agents/git-specialist.md`.
   _(Charger si : délégation d’opérations Git à l’agent spécialisé.)_
 
+- **Subagent @qa2-orchestrator** — Entrée **orchestrateur** pour le skill personnel **qa2-agent** (QA délégué : planner YAML puis workers Task). Force un **premier `Task`** qui incarne le **parent** au lieu d’enchaîner toute la chaîne dans le chat (utile avec petits modèles). Fichier : `.cursor/agents/qa2-orchestrator.md`. Skills (deux dossiers distincts) : `~/.cursor/skills/qa2-agent/` et `~/.cursor/skills/qa-agent/` (Windows : `%USERPROFILE%\.cursor\skills\qa2-agent` et `…\qa-agent`).
+  _(Charger si : `/qa2-agent`, QA multi-passes, ou besoin de planificateur puis N sous-QA.)_
+
 ---
 
 ## Sous-dossiers

@@ -1,0 +1,40 @@
+/**
+ * Tokens P1 — variables CSS globales (pas de « utilities.css » : seulement fondations).
+ * Les composants applicatifs préfèrent CSS Modules + variables ici pour couleurs / espacements.
+ */
+:root {
+  --pn-color-bg: #f8f9fa;
+  --pn-color-surface: #ffffff;
+  --pn-color-text: #212529;
+  --pn-color-text-muted: #868e96;
+  --pn-color-accent: #228be6;
+  --pn-color-border: #dee2e6;
+
+  --pn-space-xs: 0.25rem;
+  --pn-space-sm: 0.5rem;
+  --pn-space-md: 1rem;
+  --pn-space-lg: 1.5rem;
+  --pn-space-xl: 2rem;
+
+  --pn-radius-sm: 4px;
+  --pn-radius-md: 8px;
+
+  --pn-font-size-sm: 0.95rem;
+  --pn-list-indent: 1.25rem;
+
+  --pn-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --pn-font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--pn-font-sans);
+  color: var(--pn-color-text);
+  background: var(--pn-color-bg);
+}

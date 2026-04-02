@@ -1,6 +1,6 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-04-01
+Mis a jour : 2026-04-02
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
 
@@ -37,6 +37,8 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 **Architecture complétée** (2026-02-26) : `_bmad-output/planning-artifacts/architecture.md` — décisions techniques, patterns, structure projet, validation ; statut READY FOR IMPLEMENTATION. Points à trancher en v0.1 : [checklist 2026-02-26_03](artefacts/2026-02-26_03_checklist-v0.1-architecture.md).
 
 ## Derniere session
+
+2026-04-02 — **Epic 3 / Story 3.0 clôturée** : socle `peintre-nano/` (Vite, React, TS strict, Mantine P1), quatre artefacts typés + `conceptual-artifacts.stub.ts`, tests Vitest, script `npm run lint` (`tsc -b`) ; passage QA2 (5 passes) et correctifs P1 (layout CSS Modules, tokens, smoke). `sprint-status.yaml` : clé `3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux` → **done** ; epic-3 → **in-progress** (suite 3.1+). Story et check-list de clôture : [_bmad-output/implementation-artifacts/3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux.md](../_bmad-output/implementation-artifacts/3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux.md). **Rien d’autre n’est attendu sur 3.0** avant d’ouvrir la story 3.1.
 
 2026-04-01 — **Correctifs post-QA** (guide pilotage) : note chemins dans [_bmad-output/README.md](../_bmad-output/README.md) (actif vs archive) ; renvoi [`guide-pilotage-v2`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) en tête d’[Epic 3](../_bmad-output/planning-artifacts/epics.md) ; harmonisation français / accents dans le guide et le bloc « Voir aussi » des *Epic Sequencing Notes*.
 
