@@ -1,0 +1,22 @@
+/* Bac à sable runtime : CSS Modules + tokens (ADR P1) — pas de layout shell Mantine. */
+.sandboxBanner {
+  box-sizing: border-box;
+  padding: var(--pn-space-sm) var(--pn-space-md);
+  border: 1px dashed var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+  background: color-mix(in srgb, var(--pn-color-surface) 85%, var(--pn-color-border));
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text-muted);
+}
+
+.sandboxTitle {
+  margin: 0 0 var(--pn-space-xs);
+  font-size: var(--pn-font-size-sm);
+  font-weight: 600;
+  color: var(--pn-color-text);
+}
+
+.sandboxHint {
+  margin: 0;
+  line-height: 1.45;
+}

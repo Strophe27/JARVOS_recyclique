@@ -10,7 +10,12 @@ Frontend Recyclique v2 — React, TypeScript, Vite, Mantine v8 (P1), CSS Modules
 | `npm run build` | Vérification TypeScript + build production |
 | `npm run lint` | Vérification projet TypeScript (`tsc -b`, sans Vite) |
 | `npm run preview` | Prévisualisation du build |
-| `npm run test` | Vitest (unitaires minimaux) |
+| `npm run test` | Vitest (unitaires + suites sous `tests/`) |
+
+## Tests
+
+- **Unitaires** : `tests/unit/`.
+- **Dossier `tests/e2e/`** : nom historique BMAD ; exécution **Vitest + jsdom + Testing Library** (pas Playwright / pas navigateur réel). Voir `tests/e2e/README.md` pour la portée et les limites.
 
 ## Arborescence
 

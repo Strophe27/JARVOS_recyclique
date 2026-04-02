@@ -22,6 +22,7 @@ describe('conceptual-artifacts.stub (TRUTH_STACK_STUB_FOR_TESTS)', () => {
 
   it('prefs runtime restent des valeurs par défaut non métier', () => {
     expect(TRUTH_STACK_STUB_FOR_TESTS.prefs.uiDensity).toBe('comfortable');
+    expect(TRUTH_STACK_STUB_FOR_TESTS.prefs.sidebarPanelOpen).toBe(true);
     expect(TRUTH_STACK_STUB_FOR_TESTS.prefs.onboardingCompleted).toBe(false);
   });
 });

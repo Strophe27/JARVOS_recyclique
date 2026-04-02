@@ -1,0 +1,79 @@
+/**
+ * Shell racine — CSS Grid + zones nommées (header, nav, main, aside, footer).
+ * Extensible pour futurs slots / manifests ; pas de Stack / Group Mantine pour la structure spatiale (P1).
+ */
+.root {
+  display: grid;
+  box-sizing: border-box;
+  min-height: 100%;
+  width: 100%;
+  padding: var(--pn-space-md);
+  gap: var(--pn-space-md);
+  grid-template-columns:
+    minmax(var(--pn-shell-nav-min), var(--pn-shell-nav-max))
+    1fr
+    minmax(var(--pn-shell-aside-min), var(--pn-shell-aside-max));
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    'header header header'
+    'nav main aside'
+    'footer footer footer';
+  background: var(--pn-color-bg);
+}
+
+.header {
+  grid-area: header;
+}
+
+.nav {
+  grid-area: nav;
+}
+
+.main {
+  grid-area: main;
+  min-height: 0;
+}
+
+.aside {
+  grid-area: aside;
+}
+
+.footer {
+  grid-area: footer;
+}
+
+/* Zones de démo : visibilité pour inspection / tests (tokens uniquement) */
+.zone {
+  margin: 0;
+  padding: var(--pn-space-sm) var(--pn-space-md);
+  background: var(--pn-color-surface);
+  border: 1px solid var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+  color: var(--pn-color-text-muted);
+  font-size: var(--pn-font-size-sm);
+}
+
+.zoneLabel {
+  font-weight: 600;
+  color: var(--pn-color-text);
+}
+
+/* Densité UI locale (UserRuntimePrefs) — tokens uniquement */
+.root[data-pn-ui-density='compact'] {
+  padding: var(--pn-space-sm);
+  gap: var(--pn-space-sm);
+}
+
+.root[data-pn-ui-density='compact'] .zone {
+  padding: var(--pn-space-xs) var(--pn-space-sm);
+}
+
+.root[data-pn-sidebar-panel='closed'] .aside {
+  max-width: 0;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  opacity: 0;
+  pointer-events: none;
+}

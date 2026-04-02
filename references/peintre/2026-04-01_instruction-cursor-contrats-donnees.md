@@ -17,6 +17,8 @@ Ce document pose les **trois conventions manquantes** pour que les deux pistes d
 
 **Note d'extension :** le champ `data_contract` introduit ci-dessous est une **extension** du schéma `WidgetDeclaration` CREOS, introduite par cette instruction. Il n'existe pas dans le PRD initial ni dans le concept architectural du 2026-03-31. L'agent BMAD doit le propager dans `contracts/creos/schemas/widget-declaration.schema.json` lors de la prochaine mise à jour de ce schéma.
 
+**Chemins dans les exemples de code :** les commentaires du type `// src/peintre-nano/...` ou imports `../../peintre-nano/...` sont **indicatifs**. Le répertoire réel du package est **`peintre-nano/`** à la racine du dépôt ; mapper vers `peintre-nano/src/...` selon `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md`.
+
 ---
 
 ## 1. Convention 1 — `data_contract` dans les manifests widgets
@@ -880,7 +882,9 @@ export interface ContextEnvelope {
 export const MAX_CONTEXT_AGE_MS = 5 * 60 * 1000;
 ```
 
-**Règle d'or :** si `site` est `null`, l'application est en mode restreint — le shell s'affiche mais aucun widget métier ne rend de données. Le slot affiche un état explicite ("Sélectionnez un site"). Pas de supposition silencieuse. De même, si `Date.now() - built_at > MAX_CONTEXT_AGE_MS`, le shell force un rechargement du contexte avant d'autoriser des actions métier — la sécurité gagne (PRD §10.1).
+**Alignement champ temporel (`built_at` / `issuedAt`) :** dans ce document et les checklists, `built_at` désigne l’horodatage d’émission de l’enveloppe de contexte. Dans le code **`peintre-nano`** (stub Piste A), le champ correspondant est **`issuedAt`** sur `ContextEnvelopeStub` (`src/types/context-envelope.ts`) et dans `context-envelope-freshness.ts`. À l’unification OpenAPI, viser **un seul nom** canonique côté contrat généré ; jusqu’alors traiter les deux noms comme **équivalents sémantiques**.
+
+**Règle d'or :** si `site` est `null`, l'application est en mode restreint — le shell s'affiche mais aucun widget métier ne rend de données. Le slot affiche un état explicite ("Sélectionnez un site"). Pas de supposition silencieuse. De même, si `Date.now() - built_at > MAX_CONTEXT_AGE_MS` (ou l’équivalent avec `issuedAt` côté UI), le shell force un rechargement du contexte avant d'autoriser des actions métier — la sécurité gagne (PRD §10.1).
 
 ---
 

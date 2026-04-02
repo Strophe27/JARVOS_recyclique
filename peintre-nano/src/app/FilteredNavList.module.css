@@ -1,0 +1,30 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-2, 0.5rem);
+}
+
+.subList {
+  list-style: none;
+  margin: var(--pn-space-2, 0.5rem) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1, 0.25rem);
+}
+
+.item {
+  margin: 0;
+}
+
+.label {
+  font-size: var(--pn-font-size-sm, 0.875rem);
+  color: var(--pn-color-text, inherit);
+}
+
+.empty {
+  padding: var(--pn-space-2, 0.5rem) 0;
+}

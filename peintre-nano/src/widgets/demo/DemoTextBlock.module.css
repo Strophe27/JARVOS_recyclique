@@ -1,0 +1,17 @@
+.root {
+  margin: 0;
+  padding: var(--pn-space-sm) 0;
+}
+
+.title {
+  margin: 0 0 var(--pn-space-sm);
+  font-size: var(--pn-font-size-sm);
+  font-weight: 600;
+  color: var(--pn-color-text);
+}
+
+.body {
+  margin: 0;
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text-muted);
+}

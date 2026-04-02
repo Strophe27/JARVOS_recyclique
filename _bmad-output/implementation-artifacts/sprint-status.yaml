@@ -1,5 +1,5 @@
 # generated: 2026-04-01T15:39:08
-# last_updated: 2026-04-01 (revise cles 1-2, 5-5 — elisions FR)
+# last_updated: 2026-04-02 (story 1-2 review — DS audit brownfield)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -48,16 +48,16 @@
 #   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
 
 generated: "2026-04-01"
-last_updated: "2026-04-02"
+last_updated: "2026-04-02" # story 1-2 review ; story 1-1 done ; stories 3-x done
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  epic-1: backlog
-  1-1-cadrer-la-surface-de-travail-v2-et-le-mode-de-reference-paheko: backlog
-  1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques: backlog
+  epic-1: in-progress
+  1-1-cadrer-la-surface-de-travail-v2-et-le-mode-de-reference-paheko: done
+  1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques: done
   1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2: backlog
   1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope: backlog
   1-5-definir-le-contrat-minimal-de-synchronisation-et-reconciliation-avec-paheko: backlog
@@ -75,16 +75,16 @@ development_status:
   2-7-fournir-les-signaux-backend-minimaux-pour-bandeau-live: backlog
   epic-2-retrospective: optional
 
-  epic-3: in-progress
+  epic-3: done
   3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux: done
-  3-1-mettre-en-place-le-shell-initial-et-le-layout-css-grid: backlog
-  3-2-implementer-le-chargement-et-la-validation-minimale-des-manifests-de-navigation-et-de-page: backlog
-  3-3-implementer-le-registre-minimal-de-widgets-slots-et-rendu-declaratif: backlog
-  3-4-integrer-ladaptateur-authsession-et-la-resolution-par-contextenvelope: backlog
-  3-5-borner-userruntimeprefs-a-la-personnalisation-locale-non-metier: backlog
-  3-6-rendre-visibles-les-fallbacks-et-rejets-de-runtime: backlog
-  3-7-produire-la-page-de-demonstration-du-runtime-compose: backlog
-  epic-3-retrospective: optional
+  3-1-mettre-en-place-le-shell-initial-et-le-layout-css-grid: done
+  3-2-implementer-le-chargement-et-la-validation-minimale-des-manifests-de-navigation-et-de-page: done
+  3-3-implementer-le-registre-minimal-de-widgets-slots-et-rendu-declaratif: done
+  3-4-integrer-ladaptateur-authsession-et-la-resolution-par-contextenvelope: done
+  3-5-borner-userruntimeprefs-a-la-personnalisation-locale-non-metier: done
+  3-6-rendre-visibles-les-fallbacks-et-rejets-de-runtime: done
+  3-7-produire-la-page-de-demonstration-du-runtime-compose: done
+  epic-3-retrospective: done
 
   epic-4: backlog
   4-1-publier-le-contrat-et-les-manifests-minimaux-du-module-bandeau-live: backlog

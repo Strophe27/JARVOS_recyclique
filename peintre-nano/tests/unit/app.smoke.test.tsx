@@ -41,9 +41,10 @@ describe('App (smoke UI)', () => {
         <App />
       </RootProviders>,
     );
-    // StrictMode double-render : plusieurs instances dans le document — cibler la première cohérente avec le shell.
+    // StrictMode double-render : cibler la zone main du premier shell.
     const main = screen.getAllByTestId('peintre-nano-shell')[0];
-    const list = within(main).getByRole('list');
+    expect(within(main).getByTestId('manifest-bundle-ok')).toBeTruthy();
+    const list = within(main).getByTestId('four-artifacts-list');
     expect(list.querySelectorAll('li').length).toBe(4);
     expect(within(main).getByText('ContextEnvelope')).toBeTruthy();
     expect(within(main).getByText('NavigationManifest')).toBeTruthy();

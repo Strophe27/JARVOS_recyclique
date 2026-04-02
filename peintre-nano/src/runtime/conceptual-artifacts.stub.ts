@@ -10,10 +10,12 @@ export const TRUTH_STACK_STUB_FOR_TESTS: PeintreTruthStack = {
     siteId: null,
     activeRegisterId: null,
     permissions: { permissionKeys: [] },
+    issuedAt: 0,
+    runtimeStatus: 'ok',
   },
   navigation: { version: 'stub-0', entries: [] },
   page: { version: 'stub-0', pageKey: 'stub', slots: [] },
-  prefs: { uiDensity: 'comfortable', onboardingCompleted: false },
+  prefs: { uiDensity: 'comfortable', sidebarPanelOpen: true, onboardingCompleted: false },
 };
 
 void TRUTH_STACK_STUB_FOR_TESTS;

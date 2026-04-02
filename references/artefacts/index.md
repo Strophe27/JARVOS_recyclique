@@ -24,6 +24,8 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` | Epic 1.2 : audit brownfield **recyclique-1.4.4** — cartographie domaines (cashflow, reception, auth, permissions, contexte, sync), matrice reutilisable / fragile / bloquant, surfaces stables vs DTO a stabiliser, backlog P0–P2 avec consequences Epics 2,3,6,7,8 ; croisement `contracts/` sans rediger OpenAPI ; sources versionnees (repo clone non present localement signale). |
+| `2026-04-02_01_surface-travail-v2-mode-reference-paheko.md` | Epic 1.1 : note de decision — mode Paheko **par defaut** (Docker service vivant), alternatives (optionnel / transitoire / analyse seulement), services, sequence de demarrage, donnees, propriete des jeux de test, perimetre avant sync e2e ; verrou pour stories Epic 1 suivantes. |
 | `2026-03-31_06_porte-entree-agent-bmad-vierge.md` | Liste ordonnee des fichiers a charger pour un agent BMAD vierge (brainstorm, analyse) : etat, audit references, idees, recherches, pieges ancien PRD. |
 | `2026-03-31_05_qa-pass-bmad-references-indexes.md` | QA post-reset BMAD + audit references : checks disque, liens, correctifs appliques (liens audit, besoins-terrains, raccourci archive BMAD, note README). |
 | `2026-03-31_04_audit-references-02-ancien-vision-paheko-tri-racine.md` | Audit references (p.3/3) : ancien-repo, vision-projet, paheko, temporaire-pour-tri, racine, depot, vrac, ecosysteme, idees-kanban (index Kanban : resync skill). |

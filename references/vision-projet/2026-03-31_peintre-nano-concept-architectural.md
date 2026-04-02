@@ -7,6 +7,8 @@
 **Sources** : Session brainstorming RecyClique V2, recherche Perplexity Pro (frameworks SDUI/micro-frontends + grilles/templates/UI auto-optimisable), documentation JARVOS existante  
 **Références** : peintre-mini-grammaire-visuelle.md, cartouches-metiers-applicatives.md, contrat-influx-cinq-champs-creos.md, 03_Modules_Operationnels.md §4
 
+**Primauté implémentation (2026-04-01, postérieure à ce concept)** : les décisions **P1** (stack CSS : **CSS Modules** + fichier `tokens.css` + **Mantine v8** ; **pas** de Tailwind CSS en production pour `peintre-nano`) et **P2** (persistance config admin simple en **PostgreSQL**, pas fichier JSON disque en prod) sont **fermées** par l’ADR `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md` et `references/peintre/2026-04-01_instruction-cursor-p1-p2.md`. La **§7 Décisions ouvertes** (tableau P1–P13) conserve la **genèse** du document ; pour code, backlog BMAD et agents Cursor, **l’ADR et les instructions peintre priment** sur toute formulation du présent fichier qui suggérerait encore Tailwind ou P1/P2 « à décider ».
+
 ---
 
 ## 1. Identité et position
@@ -395,6 +397,8 @@ Tailwind CSS, s'il est utilisé, n'est **pas une alternative** à CSS Grid — c
 
 Décision de Phase 0 : le shell RecyClique V2 utilise CSS Grid pour la structure globale (zones nommées). Flexbox reste autorisé à l'intérieur des widgets pour leur layout interne. Le choix du framework CSS (Tailwind, CSS Modules, etc.) est indépendant de cette décision.
 
+**Implémentation `peintre-nano` (fermé 2026-04-01) :** le package **`peintre-nano/`** n’utilise **pas** Tailwind ; la stack CSS est **CSS Modules** + `tokens.css` + Mantine v8 (voir encadré **Primauté implémentation** en tête de ce document et l’ADR `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md`). Le paragraphe ci-dessus reste valable pour la **compréhension** de Grid vs utilitaires, pas comme option ouverte pour ce socle.
+
 #### Meta-props standard des widgets
 
 Chaque widget, en plus de ses `props_schema` métier, expose des **meta-props** qui décrivent son comportement dans la grille :
@@ -735,6 +739,8 @@ Pour préserver cette option : ne pas coupler les slots à des détails d'implé
 ---
 
 ## 7. Décisions ouvertes
+
+> **À lire avec la primauté 2026-04-01** (encadré en tête de document) : les lignes **P1** et **P2** du tableau reflètent l’état **au 2026-03-31** ; elles ne constituent **pas** une invitation à rouvrir la stack CSS ou le stockage admin sans nouvelle ADR.
 
 | # | Sujet | Options | Recommandation | Quand |
 |---|-------|---------|---------------|-------|

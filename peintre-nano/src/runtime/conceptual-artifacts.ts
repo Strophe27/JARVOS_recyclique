@@ -2,6 +2,9 @@
  * Câblage conceptuel des quatre artefacts : types + documentation de la hiérarchie.
  * Aucune route, permission ou page métier ne doit être codée ici comme substitut aux contrats commanditaires.
  *
+ * Hiérarchie de vérité (rappel) : autorité backend / OpenAPI et **ContextEnvelope** → **NavigationManifest** →
+ * **PageManifest** → **UserRuntimePrefs** (dernier maillon : présentation locale uniquement).
+ *
  * Le stub typé pour tests / compilation est dans `conceptual-artifacts.stub.ts` (ne pas l'utiliser comme vérité runtime).
  */
 import type { ContextEnvelopeStub } from '../types/context-envelope';

@@ -1,0 +1,6 @@
+.root {
+  padding: var(--pn-space-md, 1rem);
+  border: 1px solid var(--pn-color-border, #dee2e6);
+  border-radius: var(--pn-radius-sm, 4px);
+  background: var(--pn-color-surface-muted, #f8f9fa);
+}

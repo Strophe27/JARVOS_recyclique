@@ -1,0 +1,31 @@
+{
+  "version": "1",
+  "page_key": "demo-home",
+  "required_permission_keys": ["demo.permission.view-home"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Démo composition",
+        "body": "Blocs déclaratifs (infra runtime, préfixe demo.*)."
+      }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "demo.kpi",
+      "widget_props": { "label": "Indicateur démo", "value": 42 }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "demo.card",
+      "widget_props": { "title": "Carte", "body": "Contenu mock issu du manifest." }
+    },
+    {
+      "slot_id": "aside",
+      "widget_type": "demo.list.simple",
+      "widget_props": { "items": ["Entrée A", "Entrée B", "Entrée C"] }
+    }
+  ]
+}

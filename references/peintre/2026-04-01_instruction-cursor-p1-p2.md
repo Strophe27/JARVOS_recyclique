@@ -12,6 +12,10 @@ Les décisions ouvertes **P1** (stack CSS / styling) et **P2** (stockage config 
 
 **Règle :** ne pas modifier les documents de cadrage datés (concept 2026-03-31, pipeline 2026-04-01, extraits 2026-04-01, décision directrice 2026-03-31). L'ADR empile la décision par-dessus. Les artefacts BMAD (architecture, epics, stories) intègrent les choix quand ils sont créés ou mis à jour.
 
+### Arborescence canonique sur le dépôt
+
+Le schéma `src/` → `peintre-nano/` → `shell/`, `registry/`, etc. dans la section **Patterns concrets** ci-dessous est **pédagogique** (dossiers logiques). Sur le monorepo JARVOS_recyclique, le package frontend vit sous **`peintre-nano/`** à la racine du repo (`peintre-nano/src/app/`, `peintre-nano/src/runtime/`, …) comme dans `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md`. **Ne pas** créer une arborescence `src/peintre-nano/` à la racine du dépôt en croyant suivre ce document.
+
 ---
 
 ## Décisions à intégrer
