@@ -7,6 +7,10 @@ export default defineConfig({
     // Défaut node : les fichiers sous tests/e2e/ qui touchent le DOM doivent déclarer
     // `// @vitest-environment jsdom` en tête (voir tests/e2e/README.md).
     environment: 'node',
-    include: ['tests/unit/**/*.{test.ts,test.tsx}', 'tests/e2e/**/*.{test.ts,test.tsx}'],
+    include: [
+      'tests/unit/**/*.{test.ts,test.tsx}',
+      'tests/e2e/**/*.{test.ts,test.tsx}',
+      'tests/contract/**/*.{test.ts,test.tsx}',
+    ],
   },
 });

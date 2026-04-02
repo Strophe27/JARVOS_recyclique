@@ -1,5 +1,5 @@
 # generated: 2026-04-01T15:39:08
-# last_updated: 2026-04-02 (story 1-2 review — DS audit brownfield)
+# last_updated: 2026-04-02 (story 1-7 done ; epic-1 done apres CS-VS-DS-QA-CR ; signaux exploitation bandeau)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -48,21 +48,21 @@
 #   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
 
 generated: "2026-04-01"
-last_updated: "2026-04-02" # story 1-2 review ; story 1-1 done ; stories 3-x done
+last_updated: "2026-04-02" # epic-1 done ; stories 1-1..1-7 done ; stories 3-x done
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  epic-1: in-progress
+  epic-1: done
   1-1-cadrer-la-surface-de-travail-v2-et-le-mode-de-reference-paheko: done
   1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques: done
-  1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2: backlog
-  1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope: backlog
-  1-5-definir-le-contrat-minimal-de-synchronisation-et-reconciliation-avec-paheko: backlog
-  1-6-produire-la-matrice-dintegration-paheko-et-les-gaps-api-reels: backlog
-  1-7-formaliser-les-signaux-dexploitation-pour-bandeau-live-et-les-premiers-slices: backlog
+  1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2: done
+  1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope: done
+  1-5-definir-le-contrat-minimal-de-synchronisation-et-reconciliation-avec-paheko: done
+  1-6-produire-la-matrice-dintegration-paheko-et-les-gaps-api-reels: done
+  1-7-formaliser-les-signaux-dexploitation-pour-bandeau-live-et-les-premiers-slices: done
   epic-1-retrospective: optional
 
   epic-2: backlog

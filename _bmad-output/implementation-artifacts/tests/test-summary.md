@@ -4,8 +4,18 @@
 
 **Story 1.2 (doc-only, audit brownfield) :** pas de tests API/E2E applicables ; synthèse QA documentaire → [`1-2-audit-brownfield-doc-qa-summary.md`](./1-2-audit-brownfield-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = checklist revue + grille AC ↔ sections du rapport).
 
+**Story 1.3 (doc-only, spec multi-contextes / autorisation v2) :** pas de tests API/E2E applicables au livrable markdown ; synthèse QA documentaire → [`1-3-spec-multi-contextes-doc-qa-summary.md`](./1-3-spec-multi-contextes-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ §2–§8 + table de traçabilité en tête du spec).
+
+**Story 1.4 (contrats + gouvernance OpenAPI / CREOS / ContextEnvelope) :** pas d’E2E produit ni d’API exécutable dans le périmètre ; synthèse QA + **tests contrat** (parse YAML / JSON repo) → [`1-4-gouvernance-contractuelle-doc-qa-summary.md`](./1-4-gouvernance-contractuelle-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact + 4 tests Vitest sous `peintre-nano/tests/contract/`).
+
+**Story 1.5 (contrat minimal sync / réconciliation Paheko, doc-only) :** pas d’E2E ni d’API métier ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-5-contrat-sync-paheko-doc-qa-summary.md`](./1-5-contrat-sync-paheko-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact + 4 tests Vitest `contrat-sync-paheko-1-5-artefact.test.ts` ; OpenAPI `correlation_id` non exigé tant que schémas d’erreur absents).
+
+**Story 1.6 (matrice intégration Paheko + gaps API, doc-only) :** pas d’E2E ni d’API métier ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-6-matrice-paheko-doc-qa-summary.md`](./1-6-matrice-paheko-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact + 7 tests Vitest `matrice-paheko-1-6-artefact.test.ts` ; HITL = validation métier matrice / gaps).
+
+**Story 1.7 (signaux exploitation bandeau live / premiers slices, doc-only + brouillon OpenAPI) :** pas d’E2E produit ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-7-signaux-exploitation-doc-qa-summary.md`](./1-7-signaux-exploitation-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact `2026-04-02_07_*.md` + 5 tests Vitest `signaux-exploitation-bandeau-1-7-artefact.test.ts` + **9** tests `recyclique-openapi-governance.test.ts` dont schémas Story 1.7 et **503** `live-snapshot`) ; HITL = signaux minimums, autorité backend vs local, cas limites, pas d’inférence « caisse active ».
+
 **Stories documentées :** 3.1–3.3 (shell, manifests, widgets), 3.4 (auth / enveloppe), 3.5 (`UserRuntimePrefs`), **3.6** (fallbacks / rejets runtime visibles, `reportRuntimeFallback`, `data-runtime-*`), **3.7** (page démo runtime composé, `RuntimeDemoApp`, pipeline manifest + registre + enveloppe).  
-**Dernier passage QA e2e :** story **3.7** — 2026-04-02.  
+**Dernier passage QA e2e / contrat :** stories **1.4**–**1.7** (contrat / artefacts doc) + **3.7** (e2e jsdom) — 2026-04-02.  
 **Package :** `peintre-nano/`  
 **Commande de vérification :** `npm run test` (racine du package)
 
@@ -14,6 +24,15 @@
 ### Tests API
 
 - Non applicable (pas d’API HTTP dédiée dans le périmètre actuel).
+
+### Tests contrat (Vitest, environnement node)
+
+| Fichier | Rôle |
+|--------|------|
+| `peintre-nano/tests/contract/recyclique-openapi-governance.test.ts` | Stories **1.4** / **1.7** : `recyclique-api.yaml` (OpenAPI 3.1, `recyclique_contractGovernance_ping`, `recyclique_exploitation_getLiveSnapshot`, réponse **503** `live-snapshot`, schémas `SyncStateCore` / `ExploitationLiveSnapshot` / `ExploitationContextIds`, unicité `operationId`) ; schéma CREOS `widget-declaration` (`data_contract.operation_id`). |
+| `peintre-nano/tests/contract/contrat-sync-paheko-1-5-artefact.test.ts` | Story **1.5** : artéfact pivot sync/réconciliation (traçabilité AC, cycle de vie, outbox, corrélation, FR23/FR25, AR39, renvoi 1.6, HITL). |
+| `peintre-nano/tests/contract/matrice-paheko-1-6-artefact.test.ts` | Story **1.6** : matrice Paheko + gaps (traçabilité AC, §2 classifications, §4, §5 FR5/FR40/AR9, rationales plugin, références preuves). |
+| `peintre-nano/tests/contract/signaux-exploitation-bandeau-1-7-artefact.test.ts` | Story **1.7** : artefact signaux F1–F6, cas limites, FR24, Epic 4 / 2.7, HITL. |
 
 ### Tests E2E (Vitest + Testing Library + jsdom)
 
@@ -42,7 +61,7 @@
 
 ## Résultat d’exécution
 
-- `npm run test` dans `peintre-nano/` : **succès** — **74 tests**, **19 fichiers** — passage sous-agent Task `bmad-qa-generate-e2e-tests` story **3.7** (2026-04-02).
+- `npm run test` dans `peintre-nano/` : **succès** — **100 tests**, **23 fichiers** — dernier enrichissement : story **1.7** QA (+4 tests OpenAPI : 503, `SyncStateCore`, `ExploitationLiveSnapshot`, `ExploitationContextIds` dans `recyclique-openapi-governance.test.ts` ; synthèse `1-7-signaux-exploitation-doc-qa-summary.md`) — 2026-04-02.
 
 ## Suite possible
 
