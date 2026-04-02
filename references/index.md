@@ -1,6 +1,6 @@
 # Index — JARVOS Recyclique v0.1.0
 
-**Ligne directrice (2026-03-31) :** évolution **incrémentale** à partir du code **`recyclique-1.4.4`** stabilisé et nettoyé ; pas de réécriture « from scratch » comme plan conducteur. Les sorties BMAD actives ont été réinitialisées ; l’historique PRD/epics est sous `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`. Solo dev : Strophe. BMAD 6.0.3.
+**Ligne directrice (2026-03-31) :** évolution **incrémentale** à partir du code **`recyclique-1.4.4`** stabilisé et nettoyé ; pas de réécriture « from scratch » comme plan conducteur. Les sorties BMAD actives ont été réinitialisées ; l’historique PRD/epics est sous `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`. Solo dev : Strophe. **Module BMM** : version **installateur 6.2.1** (voir `_bmad/bmm/config.yaml`) — ne pas se fier à d'éventuelles mentions d'une version BMAD plus ancienne dans les archives ou résumés datés.
 
 **Audit du dossier `references/` (2026-03-31) :** pack en trois volets — [synthèse globale](artefacts/2026-03-31_02_audit-references-00-synthese-globale.md), [zones principales](artefacts/2026-03-31_03_audit-references-01-zones-principales.md), [ancien-repo / vision / paheko / tri / racine](artefacts/2026-03-31_04_audit-references-02-ancien-vision-paheko-tri-racine.md). À utiliser pour tri, reclassement et mise à jour des index.
 
@@ -69,6 +69,9 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 
 - **`ancien-repo/`** — Instructions git clone + analyse brownfield Recyclique 1.4.4. `repo/` gitignore. Sortie **document-project** : **ancien-repo/index.md** et docs associées. Point d’entrée dossier : **ancien-repo/README.md**.
   _(Charger : historique, analyse brownfield, checklist import depuis 1.4.4.)_
+
+- **`automatisation-bmad/`** — Recueil technique pour **orchestrer** le cycle BMAD dans Cursor (chemins, `sprint-status`, **mapping colonne CSV → skills Cursor**, anytime vs phase 4, HITL, graphe minimal, **§15 cadre : pas d'exécution automatique headless**). Spec runners : **automatisation-bmad/epic-story-runner-spec.md** ; agents **`.cursor/agents/bmad-epic-runner.md`** / **`bmad-story-runner.md`** ; skill **`bmad-epic-runner`**. Index : **automatisation-bmad/index.md**.
+  _(Charger : skill orchestrateur, pipeline story par story, gates tests/CI, contrat d'exécution au-dessus de BMAD.)_
 
 - **`migration-paeco/`** — Guides Paheko/RecyClique, TODO, comptes-rendus, décla éco-organismes. Croiser avec **consolidation-1.4.5/** pour le code. Détail : **migration-paeco/index.md**.
   _(Charger : intégration Paheko, décla éco-organismes, historique décisions.)_
