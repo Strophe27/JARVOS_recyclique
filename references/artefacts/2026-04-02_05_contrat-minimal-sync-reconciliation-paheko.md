@@ -1,13 +1,40 @@
 # Contrat minimal — synchronisation et réconciliation Recyclique ↔ Paheko
 
 **Date :** 2026-04-02  
+**Dernière mise à jour :** 2026-04-02 — **HITL terrain (Strophe)** : résumé « langage plancher » ; lexique §0 ; alignement **bénévole** (pas « opérateur ») avec **Story 1.3** ; **§5.3** complété (blocages *finales critiques* = **cas par cas** + Paheko = référence comptable) ; **§6** : rôles **FR26–FR27** (responsable ressourcerie, admin local, super-admin) et exemple **qui / quoi / quand** ; liens artefacts **01–04**. **Révision intégrale (même jour) :** correction renvoi §7→**§9**/1.6 (évitait confusion avec §8 AR39) ; typo « épique »→PRD ; §5.4 aligné §6 ; §10 statut validé.
+
 **Story BMAD :** Epic 1 — `1-5-definir-le-contrat-minimal-de-synchronisation-et-reconciliation-avec-paheko`  
 **Piste :** B (prérequis Recyclique / Paheko).  
 **Périmètre :** sémantique **documentaire** et invariants stables pour Epics 6, 7 et 8 — **sans** implémenter outbox, workers ni journal d'audit complet (voir stories Epic 2 et Epic 8).
 
-**Documents liés :** `2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` (Story 1.4, AR39), `contracts/README.md`, `contracts/openapi/recyclique-api.yaml`, `_bmad-output/planning-artifacts/epics.md` (FR23–FR25, FR39, AR8, AR11, AR17, AR21, AR24), `references/paheko/index.md`, `references/migration-paeco/index.md`.
+**Documents liés (Stories 1.1–1.4 — à jour avec ta relecture) :**
+
+| Artefact | Rôle pour la sync |
+|----------|-------------------|
+| `2026-04-02_01_surface-travail-v2-mode-reference-paheko.md` | Où vit Paheko en dev / comment on teste — cadre pour intégration sans tout mélanger avec l'existant 1.4.4. |
+| `2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` | Ce que le backend actuel fait / fragile — utile pour ne pas promettre dans ce contrat ce que l'existant ne porte pas. |
+| `2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` | **Bénévole** vs **admin** ; PIN ; step-up ; **qui** peut débloquer quoi — base pour §6 ci-dessous. |
+| `2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` | Erreurs JSON, `correlation_id`, OpenAPI reviewable — aligné §4. |
+
+**Compléments :** `contracts/README.md`, `contracts/openapi/recyclique-api.yaml`, `_bmad-output/planning-artifacts/epics.md` (FR23–FR25, FR39, AR8, AR11, AR17, AR21, AR24), `references/paheko/index.md`, `references/migration-paeco/index.md`.
 
 **Suite documentaire :** Story **1.6** — matrice opération → API Paheko réelle et liste des gaps.
+
+---
+
+## 0. Lire d'abord — en bref
+
+**Ce que dit ce document (sans jargon).** Recyclique enregistre le **terrain** en premier. Ensuite le système **essaie** d'envoyer vers Paheko (compta). Si ça coince, il y a des **états nommés** (réessayer, quarantaine, résolu, rejeté) pour que tout le monde parle la même langue. Rien ici ne remplace une **décision métier** sur *chaque* bouton critique : ça viendra au **fil des epics** caisse / réception / sync, avec **Paheko** comme référence **comptable**.
+
+**Pourquoi les Epics 6–7 peuvent s'appuyer dessus sans tout refaire.** Les **mots** et **états** de ce fichier sont volontairement **stables** : les stories caisse et réception **ajoutent** écrans et règles détaillées ; elles ne doivent **pas** réinventer une autre définition de « quarantaine » ou « résolu » sans **changement de version** du contrat (voir §2.3).
+
+**Lexique (rappel).**
+
+| Terme | En une phrase |
+|-------|----------------|
+| **Outbox durable** | Une **liste en base de données** (PostgreSQL) où l'on enregistre « ce qu'il faudra envoyer à Paheko » **au même moment** que la vente — comme une **file d'attente** qui ne disparaît pas si le serveur redémarre. |
+| **Idempotence** | Si le même message part **deux fois** par erreur, Paheko (ou Recyclique) **ne doit pas** comptabiliser deux fois la même chose — d'où des **clés** reconnues par le système. |
+| **Corrélation** | Un **numéro de dossier** (`correlation_id`, header `X-Correlation-ID`) pour suivre une opération dans les **logs** et les **erreurs** d'un bout à l'autre (support, debug). |
 
 ---
 
@@ -15,6 +42,7 @@
 
 | Bloc Given / When / Then (Story 1.5) | Sections qui répondent |
 |--------------------------------------|-------------------------|
+| Accès lecture rapide (pas d'AC formel — aide HITL) | §0 |
 | Cycle de vie minimal : enregistrement local, retry, quarantaine, résolution, rejet, état comptable final (sémantique Recyclique / Paheko, sans implémentation ici) ; rôle outbox durable, idempotence, corrélation (AR11, AR17, AR24) | §2, §3, §4 |
 | Distinction acceptation locale non bloquante, blocage sélectif des actions finales critiques, parcours résolution manuelle ; piste d'audit minimale levée quarantaine / corrections manuelles (qui, quoi, quand) | §5, §6 |
 | Contrat stable pour stories ultérieures ; clôture locale et sync différée sans redéfinir les états comptables métier (FR23–FR25, FR39) | §2, §5, §7, §8 |
@@ -40,7 +68,7 @@
 
 - Toute opération **terrain** (caisse, réception, etc.) est **acceptée et persistée dans Recyclique** en premier, conformément à **FR23**.
 - L'opération possède des identifiants **stables côté Recyclique** (clé métier / UUID logique) utilisables pour l'idempotence et la corrélation (voir §3–§4).
-- **Acceptation locale** : l'utilisateur peut poursuivre le travail courant tant que les **garde-fous métier** locaux sont respectés ; cela **ne** garantit **pas** que Paheko reflète déjà l'opération.
+- **Acceptation locale** : le **bénévole** (utilisateur terrain au sens **Story 1.3** / §1 bis) peut poursuivre le travail courant tant que les **garde-fous métier** locaux sont respectés ; cela **ne** garantit **pas** que Paheko reflète déjà l'opération.
 
 ### 2.2 Tentatives de livraison et retry
 
@@ -104,7 +132,7 @@
 ### 5.1 Terrain d'abord et sync reportable (FR23)
 
 - Les données terrain **ne** sont **pas** bloquées par défaut en l'absence de sync Paheko immédiate.
-- Le système **expose** (pour opérateur / support / admin) que la sync est **en retard**, **en erreur** ou **en quarantaine**, afin que la décision soit **informée**.
+- Le système **expose** (pour **bénévole** / support / **admin**) que la sync est **en retard**, **en erreur** ou **en quarantaine**, afin que la décision soit **informée**. (Vocabulaire terrain : **bénévole** — pas « opérateur » — aligné **Story 1.3**.)
 
 ### 5.2 Quarantaine obligatoire (FR25)
 
@@ -124,20 +152,31 @@ Le passage en **`en_quarantaine`** est **obligatoire** lorsque :
 
 **Epic 8** détaille la politique de **blocage sélectif** (Story 8.6) ; le présent contrat **impose** la distinction **fonctionnelle** : pas de « tout bloquer » sur un retard mineur, pas de « tout autoriser » si la quarantaine porte sur une **garantie comptable** explicite.
 
+**Cas des actions « finales critiques » (liste ouverte en Epic 1).** La ligne du tableau « **blocage sélectif** » ne peut pas nommer **tous** les écrans maintenant : les cas exacts (quelle clôture, quel export, quel seuil) seront **affinés au cas par cas** avec le métier dans Epics **6**, **7** et **8**, en gardant **Paheko** comme **autorité comptable** et le **bon sens produit** (ne pas bloquer le quotidien pour un détail ; ne pas laisser passer une action **irréversible** comptablement dangereuse). Tant que cette liste n'est pas figée dans une story ultérieure, le repère utile est : **distinction fonctionnelle** du tableau + **quarantaine** quand la chaîne vers Paheko n'est pas sûre.
+
 ### 5.4 Résolution et rejet (parcours manuel)
 
-- **Résolution** : action humaine (ou règle admin) pour corriger mapping, données, ou forcer une resynchronisation après correction Paheko / Recyclique ; transition vers **`resolu`** ou retour temporaire à **`a_reessayer`** selon processus défini en Epic 8.
+- **Résolution** : action humaine sous **profil habilité** (voir §6) ou règle d'automatisation **nommée** pour corriger mapping, données, ou forcer une resynchronisation après correction Paheko / Recyclique ; transition vers **`resolu`** ou retour temporaire à **`a_reessayer`** selon processus défini en Epic 8.
 - **Rejet** : décision documentée menant à **`rejete`** ; le système **ne** doit **pas** réessayer indéfiniment la même livraison sans changement de contexte.
 
 ---
 
 ## 6. Piste d'audit minimale (levée de quarantaine et corrections manuelles)
 
-**Objectif.** Traçabilité **qui, quoi, quand** pour les actions qui **déplacent** une opération hors de **`en_quarantaine`** ou qui **modifient** une décision de sync (forçage, rejet, correction de mapping).
+**Objectif.** Traçabilité **qui, quoi, quand** pour les actions qui **déplacent** une opération hors de **`en_quarantaine`** ou qui **modifient** une décision de sync (forçage, rejet, correction de mapping). Ce n'est **pas** de l'abstraction : c'est la promesse qu'on pourra **expliquer après coup** à un contrôle ou au support **quelle personne habilitée** a fait **quoi** sur **quel dossier** et **à quel moment**.
+
+**Ce que « qui / quoi / quand » veut dire concrètement.**
+
+- **Qui** — pas un fantôme : compte **authentifié** avec un **rôle** suffisant. Pour les actes **sensibles** (levée de quarantaine, correction de mapping, forçage de sync), le **PRD** (**FR26–FR27**) parle d'un **responsable de ressourcerie** ou d'un **super-admin** *selon le workflow retenu* ; le cadre des stories **1.1–1.4** complète avec **admin local** (périmètre site), **super-admin** (arbitrages larges, panel) — **aligné Story 1.3** (PIN, step-up). Le **bénévole** terrain n'est **pas** supposé lever seul une quarantaine **comptable** sans cette chaîne d'habilitation (détail d'écrans : Epic **2** / **8**).
+- **Quoi** — l'**identifiant** de l'opération Recyclique, l'**état avant / après**, une **raison** courte **obligatoire** (« mapping corrigé », « doublon reconnu », etc.), et le **correlation_id** si on en a un.
+- **Quand** — date/heure **ISO 8601** (même idée que partout ailleurs dans les contrats **1.4**).
+
+**Exemple fictif (à visée pédagogique).**  
+*« Le 2026-04-15 à 14:32, **compte super-admin** `marie.dupont` a passé l'opération `vente-abc-123` de `en_quarantaine` à `resolu` — raison : « mapping compte analytique corrigé côté Paheko » — `correlation_id` : `req-xyz-789`. »*
 
 **Minimum requis (contrat documentaire) :**
 
-- **Qui :** identité **authentifiée** (utilisateur admin / rôle support) ou **service** d'automatisation nommé ; pas d'action anonyme sur la levée.
+- **Qui :** identité **authentifiée** avec rôle **explicitement habilité** (p. ex. **responsable de ressourcerie**, **admin local**, **super-admin**, ou **service** d'automatisation **nommé** dans la spec d'exploitation) — pas d'action **anonyme** sur la levée ; cohérent avec **FR26–FR27** (PRD : levée de quarantaine tracée, résolution manuelle auditée).
 - **Quoi :** identifiant de **l'opération** Recyclique concernée, **ancien** et **nouvel** état (ou intention), **raison** courte obligatoire, lien vers **correlation_id** si disponible.
 - **Quand :** horodatage **ISO 8601** (**AR21**).
 
@@ -158,7 +197,7 @@ Pour **éviter** qu'Epics 6–7 attendent Epic 8 pour le **vocabulaire**, le con
 | Idempotence / retry | §3. |
 | Rejets | État **`rejete`** §2.3. |
 | Reprise après incident | Outbox durable §3.1 ; reprise des **`a_reessayer`** ; relecture des **`en_quarantaine`**. |
-| Statut final Recyclique / Paheko | **`resolu`** = alignement intentionnel clos ; côté Paheko, réalisation **conditionnée** aux capacités API réelles (voir §8). |
+| Statut final Recyclique / Paheko | **`resolu`** = alignement intentionnel clos ; côté Paheko, réalisation **conditionnée** aux capacités API réelles (voir **§9** et **Story 1.6** — pas la §8 ci-dessous, qui traite d'AR39 / intégration backend). |
 
 ---
 
@@ -192,15 +231,18 @@ Pour **éviter** qu'Epics 6–7 attendent Epic 8 pour le **vocabulaire**, le con
 
 ## 10. Validation humaine (HITL) — grille de relecture
 
-Un pair valide que le document couvre bien :
+**Validé terrain — 2026-04-02 (Strophe) :** relecture intégrale du §0 au §11 ; les cases ci-dessous sont **toutes cochées** comme critères satisfaits (preuve de **done** documentaire).
 
-- [ ] Cycle de vie : local → retry → quarantaine → résolution / rejet → état final.
-- [ ] Outbox durable, idempotence, corrélation (y compris erreurs AR21).
-- [ ] Distinction acceptation locale / blocage actions finales / résolution manuelle.
-- [ ] Audit minimal levée quarantaine et corrections manuelles (qui, quoi, quand).
-- [ ] Stabilité pour Epics 6–7–8 : états FR24 et vocabulaire **sans** redéfinition implicite dans les stories futures.
-- [ ] Alignement AR39 / OpenAPI reviewable / Story 1.4.
-- [ ] Aucune capacité Paheko **inventée** : hypothèses et gaps renvoyés à **1.6**.
+Un pair peut réutiliser la même grille pour une revue ultérieure ; état **2026-04-02** :
+
+- [x] Cycle de vie : local → retry → quarantaine → résolution / rejet → état final.
+- [x] Outbox durable, idempotence, corrélation (y compris erreurs AR21).
+- [x] Distinction acceptation locale / blocage **sélectif** des actions finales critiques / résolution manuelle — en acceptant que la **liste** des actions finales critiques soit **complétée au cas par cas** (§5.3).
+- [x] Vocabulaire terrain : **bénévole** (pas « opérateur ») cohérent avec **Story 1.3**.
+- [x] Audit minimal levée quarantaine et corrections : **qui** (profil habilité : **responsable ressourcerie** / admin local / super-admin / service nommé), **quoi**, **quand** — compréhensible sans jargon (§6).
+- [x] Stabilité pour Epics 6–7–8 : états FR24 et vocabulaire **sans** redéfinition implicite dans les stories futures.
+- [x] Alignement AR39 / OpenAPI reviewable / Story 1.4 ; cohérence **globale** avec artefacts **01–04** (pas de contradiction sur erreurs JSON, rôles, Paheko Docker par défaut).
+- [x] Aucune capacité Paheko **inventée** : hypothèses et gaps renvoyés à **1.6**.
 
 ---
 
