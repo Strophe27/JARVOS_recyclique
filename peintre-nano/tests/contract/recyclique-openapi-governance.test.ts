@@ -112,6 +112,7 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     const props = Object.keys(snap?.properties ?? {});
     expect(props).toEqual(
       expect.arrayContaining([
+        "daily_kpis_aggregate",
         "context",
         "effective_open_state",
         "cash_session_effectiveness",

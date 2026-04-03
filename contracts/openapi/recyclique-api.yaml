@@ -34,7 +34,8 @@ paths:
         - exploitation
       summary: Instantane signaux exploitation pour bandeau live (brouillon Story 1.7)
       description: |
-        Sémantique des champs : references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md.
+        Sémantique des champs : references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md (§1 bis périmètre v1 KPIs agrégés, §7 daily_kpis_aggregate).
+        Premier bandeau v2 : meme esprit que recyclique-1.4.4 (KPIs jour globaux, agrege multi-sites/caisses) ; familles F1-F6 optionnelles ou enrichissements ulterieurs.
         Implementation HTTP reelle, auth et persistance : Epic 2.7 / Epic 2.2 (ne pas dupliquer la semantique sync Story 1.5).
       parameters:
         - name: X-Correlation-ID
@@ -82,8 +83,16 @@ components:
       type: object
       description: |
         Agregat documentaire pour consommation bandeau live (Epic 4). Familles F1–F6 : artefact 2026-04-02_07.
+        Bloc daily_kpis_aggregate : premier palier aligne 1.4.4 (KPIs jour globaux) ; proprietes metier a figer en Epic 2.7.
         Absence vs null : voir artefact 1.7 section 6.
       properties:
+        daily_kpis_aggregate:
+          type: object
+          nullable: true
+          description: |
+            KPIs jour agreges (multi-sites, multi-caisses), meme esprit bandeau recyclique 1.4.4 — voir artefact 07 §1 bis.
+            Clefs et types (CA, volumes matieres, comptages ventes, etc.) : Epic 2.7 / analyse API existante ; snapshot JSON 1.4.4 : references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json (lecture seule, pas contrat v2).
+          additionalProperties: true
         context:
           $ref: "#/components/schemas/ExploitationContextIds"
         effective_open_state:

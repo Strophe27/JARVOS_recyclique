@@ -6,7 +6,7 @@ Artefacts **versionnes** partagés entre `recyclique` (backend) et `peintre-nano
 
 | Zone | Role |
 |------|------|
-| `openapi/` | Source de verite **reviewable** de l'API v2. Fichier canonique draft : `recyclique-api.yaml` (**writer Recyclique**, **Piste B**), `operationId` **stables** ; consommé en codegen / validation CI. Le sous-dossier `generated/` (types / clients) n'apparaît **que** lorsque le pipeline de codegen est branché ; son absence dans un clone ne signifie pas une erreur. |
+| `openapi/` | Source de verite **reviewable** de l'API v2. Fichier canonique draft : `recyclique-api.yaml` (**writer Recyclique**, **Piste B**), `operationId` **stables** ; consommé en codegen / validation CI. Brouillon **bandeau** : `GET /v2/exploitation/live-snapshot` (`recyclique_exploitation_getLiveSnapshot`), schéma `ExploitationLiveSnapshot` avec `daily_kpis_aggregate` (KPIs jour globaux v1, alignement **1.4.4**) — sémantique [`references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md`](../references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md). Le sous-dossier `generated/` (types / clients) n'apparaît **que** lorsque le pipeline de codegen est branché ; son absence dans un clone ne signifie pas une erreur. |
 | `creos/schemas/` | Schemas JSON **CREOS** (manifests, extensions widgets). Voir `creos/schemas/README.md`. |
 | Manifests **navigation / page** | **Démo / Epic 3 :** [`peintre-nano/public/manifests/`](../peintre-nano/public/manifests/), [`peintre-nano/src/fixtures/manifests/`](../peintre-nano/src/fixtures/manifests/). **Lots reviewables cible :** [`creos/manifests/`](creos/manifests/) (créer le dossier au **jalon promotion** — pivot §1 bis, typ. Epic 4 ou second consommateur). |
 

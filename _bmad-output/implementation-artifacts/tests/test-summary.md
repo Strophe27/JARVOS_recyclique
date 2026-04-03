@@ -12,7 +12,7 @@
 
 **Story 1.6 (matrice intégration Paheko + gaps API, doc-only) :** pas d’E2E ni d’API métier ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-6-matrice-paheko-doc-qa-summary.md`](./1-6-matrice-paheko-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact + 7 tests Vitest `matrice-paheko-1-6-artefact.test.ts` ; HITL = validation métier matrice / gaps).
 
-**Story 1.7 (signaux exploitation bandeau live / premiers slices, doc-only + brouillon OpenAPI) :** pas d’E2E produit ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-7-signaux-exploitation-doc-qa-summary.md`](./1-7-signaux-exploitation-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact `2026-04-02_07_*.md` + 5 tests Vitest `signaux-exploitation-bandeau-1-7-artefact.test.ts` + **9** tests `recyclique-openapi-governance.test.ts` dont schémas Story 1.7 et **503** `live-snapshot`) ; HITL = signaux minimums, autorité backend vs local, cas limites, pas d’inférence « caisse active ».
+**Story 1.7 (signaux exploitation bandeau live / premiers slices, doc-only + brouillon OpenAPI) :** pas d’E2E produit ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-7-signaux-exploitation-doc-qa-summary.md`](./1-7-signaux-exploitation-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact `2026-04-02_07_*.md` §1 bis v1 / **6** tests Vitest `signaux-exploitation-bandeau-1-7-artefact.test.ts` + **9** tests `recyclique-openapi-governance.test.ts` dont schémas Story 1.7, `daily_kpis_aggregate`, **503** `live-snapshot`) ; HITL = périmètre v1 KPIs globaux 1.4.4, F1–F6 enrichissements, cas limites, effectivité caisse si exposée.
 
 **Stories documentées :** 3.1–3.3 (shell, manifests, widgets), 3.4 (auth / enveloppe), 3.5 (`UserRuntimePrefs`), **3.6** (fallbacks / rejets runtime visibles, `reportRuntimeFallback`, `data-runtime-*`), **3.7** (page démo runtime composé, `RuntimeDemoApp`, pipeline manifest + registre + enveloppe).  
 **Dernier passage QA e2e / contrat :** stories **1.4**–**1.7** (contrat / artefacts doc) + **3.7** (e2e jsdom) — 2026-04-02.  
@@ -32,7 +32,7 @@
 | `peintre-nano/tests/contract/recyclique-openapi-governance.test.ts` | Stories **1.4** / **1.7** : `recyclique-api.yaml` (OpenAPI 3.1, `recyclique_contractGovernance_ping`, `recyclique_exploitation_getLiveSnapshot`, réponse **503** `live-snapshot`, schémas `SyncStateCore` / `ExploitationLiveSnapshot` / `ExploitationContextIds`, unicité `operationId`) ; schéma CREOS `widget-declaration` (`data_contract.operation_id`). |
 | `peintre-nano/tests/contract/contrat-sync-paheko-1-5-artefact.test.ts` | Story **1.5** : artéfact pivot sync/réconciliation (traçabilité AC, cycle de vie, outbox, corrélation, FR23/FR25, AR39, renvoi 1.6, HITL). |
 | `peintre-nano/tests/contract/matrice-paheko-1-6-artefact.test.ts` | Story **1.6** : matrice Paheko + gaps (traçabilité AC, §2 classifications, §4, §5 FR5/FR40/AR9, rationales plugin, références preuves). |
-| `peintre-nano/tests/contract/signaux-exploitation-bandeau-1-7-artefact.test.ts` | Story **1.7** : artefact signaux F1–F6, cas limites, FR24, Epic 4 / 2.7, HITL. |
+| `peintre-nano/tests/contract/signaux-exploitation-bandeau-1-7-artefact.test.ts` | Story **1.7** : artefact signaux F1–F6, §1 bis v1 KPIs / 1.4.4, cas limites, FR24, Epic 4 / 2.7, HITL. |
 
 ### Tests E2E (Vitest + Testing Library + jsdom)
 
@@ -61,7 +61,7 @@
 
 ## Résultat d’exécution
 
-- `npm run test` dans `peintre-nano/` : **succès** — **100 tests**, **23 fichiers** — dernier enrichissement : story **1.7** QA (+4 tests OpenAPI : 503, `SyncStateCore`, `ExploitationLiveSnapshot`, `ExploitationContextIds` dans `recyclique-openapi-governance.test.ts` ; synthèse `1-7-signaux-exploitation-doc-qa-summary.md`) — 2026-04-02.
+- `npm run test` dans `peintre-nano/` : **vérification ciblée Story 1.7** — `vitest run tests/contract/signaux-exploitation-bandeau-1-7-artefact.test.ts tests/contract/recyclique-openapi-governance.test.ts` → **15** tests **PASS** (§1 bis artefact, `daily_kpis_aggregate` OpenAPI) — 2026-04-02. *(Suite complète 23 fichiers : d’autres tests contract peuvent échouer si un artefact tiers a dérivé.)*
 
 ## Suite possible
 

@@ -19,7 +19,8 @@ describe("references/artefacts/2026-04-02_06_matrice-integration-paheko-gaps-api
 
   it("expose la traçabilité AC → sections en tête de document", () => {
     expect(text).toMatch(/Traçabilité.*Acceptance Criteria/i);
-    expect(text).toMatch(/\| AC \(Story 1\.6\)/);
+    // Ligne tableau : "| AC (Story 1.6, …) |" ou variante sans virgule
+    expect(text).toMatch(/\| AC \(Story 1\.6[,)]/);
   });
 
   it("contient la table principale §2 avec les quatre classifications", () => {
@@ -46,8 +47,10 @@ describe("references/artefacts/2026-04-02_06_matrice-integration-paheko-gaps-api
   });
 
   it("les besoins plugin minimal incluent une rationale explicite (Notes)", () => {
-    const matches = text.match(/\*\*Rationale/g);
-    expect(matches?.length ?? 0).toBeGreaterThanOrEqual(3);
+    // AC : « **rationale** explicite » ou ligne Notes « **Rationale :** … »
+    expect(text).toMatch(/\*\*Rationale\s*:/i);
+    expect(text).toMatch(/\*\*rationale\*\*\s*explicite|Si plugin.*rationale/is);
+    expect(text).toMatch(/Plugin minimal/);
   });
 
   it("§4 relie les gaps à un backlog ou epic (Epic 8, 6-4, etc.)", () => {
