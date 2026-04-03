@@ -1,6 +1,7 @@
 # Audit brownfield — backend Recyclique 1.4.4, API et données critiques
 
 **Date de livraison (artefact) :** 2026-04-02  
+**Dernière mise à jour (continuité) :** 2026-04-02 — recoupement **OpenAPI live** stack Docker **`recyclic-local`** (`recyclique-1.4.4`) vs inventaire versionné `references/ancien-repo/v1.4.4-liste-endpoints-api.md`.  
 **Story :** Epic 1 — `1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques`  
 **Baseline métier :** **recyclique-1.4.4** (logique critique de référence).  
 **Périmètre :** synthèse **actionnable** pour Piste B (stabilisation backend, préparation OpenAPI) — **sans** rédiger `contracts/openapi/recyclique-api.yaml` (Story 1.4) ni modifier le code applicatif v2.
@@ -18,6 +19,7 @@
 | Liste priorisée + conséquences Epics 2, 3, 6, 7, 8 | §7 |
 | Pas d'inventaire vain | Tout le document (renvois aux sources déjà versionnées) |
 | Croisement contrats repo (`contracts/`) | §8 |
+| Alignement inventaire markdown ↔ schéma OpenAPI **réel** | §1 bis |
 
 ---
 
@@ -34,7 +36,69 @@ Les **risques structurels** identifiés dans la consolidation **1.4.5** restent 
 3. **Epics 6 / 7** : mapper chaque étape de flow critique aux **endpoints et DTO** déjà nominaux dans la liste v1 ; isoler ce qui est **fragile** (admin monolithique, chemins de maintenance) derrière des contrats v2 réduits.
 4. **Epic 8 / Story 1.5** : traiter **sync / Paheko** comme **couche d'intégration** à concevoir (outbox, états) — ce n'est **pas** une surface REST « sync » unique lisible dans l'inventaire public `/v1` ; la **sync comptable réelle** est le chantier cible, pas le socle caisse/réception local.
 
-**Accès code source :** le clone actif **`references/ancien-repo/repo/`** n'est **pas présent** dans cet environnement de travail (0 fichier sous `repo/`). L'audit s'appuie sur la **documentation versionnée** (indices, consolidation, migration-paeco, liste endpoints). Pour validation au fichier près, réouvrir le dépôt `recyclique-1.4.4` selon `references/ancien-repo/README.md`.
+**Accès code source (réalité terrain, avril 2026) :**
+
+- **Arborescence de travail dans le dépôt JARVOS_recyclique :** dossier **`recyclique-1.4.4/`** (code et `docker-compose.yml` alignés sur la baseline 1.4.4).
+- **Stack Docker locale de référence :** projet Compose **`recyclic-local`**, fichier de config typique  
+  `JARVOS_recyclique/recyclique-1.4.4/docker-compose.yml` (conteneurs `recyclic-local-api-1`, `recyclic-local-frontend-1`, postgres, redis, migrations — noms observés sur l'environnement Strophe).
+- **Documentation brownfield versionnée :** `references/ancien-repo/` (dont **`v1.4.4-liste-endpoints-api.md`**, réconcilié avec l'OpenAPI live — voir §1 bis).
+- **Clone optionnel non versionné :** `references/ancien-repo/repo/` (gitignore, voir `references/ancien-repo/README.md`) ; peut être absent sur un clone nu — dans ce cas le dossier **`recyclique-1.4.4/`** fait foi pour le code.
+
+---
+
+## 1 bis. Contrôle de continuité — schéma OpenAPI live (`recyclic-local`)
+
+**Objectif :** vérifier que l'inventaire markdown utilisé pour l'audit (et la Story 1.2) **reflète** ce que l'application **expose réellement** dans le schéma OpenAPI, pour la continuité Piste B / future OpenAPI v2.
+
+**Quand :** 2026-04-02 (API et conteneurs **démarrés** localement).
+
+**URLs utiles :**
+
+- Interface : `http://localhost:8000/docs` (Swagger UI ; port selon mapping compose, **8000** sur la stack observée).
+- Export schéma : **`http://localhost:8000/v1/openapi.json`** — à privilégier pour une comparaison exhaustive (à la racine, `/openapi.json` peut répondre **404** si l'app ne monte le schéma qu'under `/v1`).
+
+**Méthode :** comparaison ensemble des couples **(méthode HTTP, chemin)** entre :
+
+1. le JSON `openapi.json` (clé `paths`, toutes les méthodes `get` / `post` / …) ;
+2. les lignes des tableaux de `references/ancien-repo/v1.4.4-liste-endpoints-api.md` (colonnes Méthode + Chemin).
+
+**Normalisation :** suppression du **slash final** sur les chemins pour équivalence FastAPI (`/v1/sites` ≡ `/v1/sites/`).
+
+**Chiffres (après normalisation) :**
+
+| Source | Opérations (méthode + chemin) |
+|--------|-------------------------------|
+| Tableaux `v1.4.4-liste-endpoints-api.md` (avant correction ciblée) | 193 |
+| `openapi.json` live | 196 |
+| **Uniquement dans l'OpenAPI live** (absents des tableaux tels qu'ils étaient rédigés avant réconciliation) | **8** |
+| **Uniquement dans le markdown** (absents du schéma live exporté) | **5** |
+
+**Liste exhaustive — présents dans l'OpenAPI live, absents de l'ancienne rédaction des tableaux :**
+
+| Méthode | Chemin | Commentaire |
+|---------|--------|-------------|
+| GET | `/` | Racine hors préfixe `/v1`. |
+| GET | `/health` | Santé hors montage `/v1` (complément de `GET /v1/health` documenté). |
+| GET | `/v1/monitoring/auth/metrics` | Métriques auth. |
+| GET | `/v1/monitoring/auth/metrics/prometheus` | Export Prometheus. |
+| POST | `/v1/monitoring/auth/metrics/reset` | Reset métriques auth. |
+| GET | `/v1/monitoring/sessions/metrics` | Métriques sessions. |
+| GET | `/v1/monitoring/sessions/metrics/prometheus` | Export Prometheus. |
+| POST | `/v1/monitoring/sessions/metrics/reset` | Reset métriques sessions. |
+
+**Liste exhaustive — figuraient dans le markdown avant correction, absents du schéma OpenAPI live exporté :**
+
+| Méthode | Chemin | Interprétation |
+|---------|--------|----------------|
+| GET | `/v1/admin/users/{user_id}` | Le live expose **PUT** `/v1/admin/users/{user_id}` et des **GET** sur des sous-ressources (`.../history`, etc.), **pas** de GET sur la ressource seule `{user_id}` dans l'export — le tableau listait une ligne ambiguë / obsolète. |
+| GET | `/v1/test-auth/test` | Non présent dans l'export (route de test retirée ou non enregistrée dans l'app courante). |
+| POST | `/v1/deposits/from-bot` | **Retiré** du périmètre HTTP dans la consolidation documentée (`references/artefacts/2026-03-26_04_paquet-3-suppression-routes-api-bot-historique.md` et suites). |
+| POST | `/v1/deposits/{deposit_id}/classify` | Idem (flux bot / classification HTTP historique). |
+| POST | `/v1/users/link-telegram` | Absent du schéma live exporté (à confirmer selon branche ; ne pas supposer côté contrat v2 sans `operationId` live). |
+
+**Conclusion :** l'audit brownfield (cartographie §3, priorités §5–§7) **reste valide** : le gros de l'inventaire `/v1/*` est **aligné** avec le runtime. Les écarts sont **localisés** (racine + monitoring auth/sessions, routes bot/Telegram retirées, détail admin user, test-auth). Le fichier **`v1.4.4-liste-endpoints-api.md`** et **`api-contracts-api.md`** ont été **mis à jour** dans le même mouvement pour refléter cette réalité et éviter de propager des lignes fantômes vers la Story 1.4 / OpenAPI v2. Une **copie figée** du JSON OpenAPI utilisé pour cette comparaison est archivée sous **`references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json`** (voir §9).
+
+**Recommandation process :** après toute évolution majeure du backend 1.4.x, refaire un export **`/v1/openapi.json`** et une **diff** méthode+chemin contre `v1.4.4-liste-endpoints-api.md` (script ou revue manuelle). Option : archiver une copie datée du JSON sous `references/artefacts/` si besoin de preuve d'époque (sans secrets).
 
 ---
 
@@ -187,7 +251,9 @@ Ces surfaces alimentent **Convergence 1** (Peintre ↔ backend réel) sans absor
 
 ## 9. Annexes — liens (pas de contenu sensible)
 
-- `references/ancien-repo/v1.4.4-liste-endpoints-api.md`  
+- `references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json` — **export OpenAPI archivé** (même contenu que l’appel live utilisé pour §1 bis, date de capture 2026-04-02)  
+- `references/ancien-repo/v1.4.4-liste-endpoints-api.md` (inventaire réconcilié avec OpenAPI live — voir §1 bis)  
+- `recyclique-1.4.4/docker-compose.yml` — stack Docker **`recyclic-local`** (référence locale)  
 - `references/consolidation-1.4.5/2026-03-23_synthese-audit-consolidation-1.4.5.md`  
 - `references/consolidation-1.4.5/2026-03-23_audit-backend-architecture-1.4.4.md`  
 - `references/consolidation-1.4.5/2026-03-23_audit-backend-data-1.4.4.md`  
@@ -199,4 +265,4 @@ Ces surfaces alimentent **Convergence 1** (Peintre ↔ backend réel) sans absor
 
 ---
 
-*Fin du rapport — prêt pour relecture HITL (critères story 1.2).*
+*Fin du rapport — §1 bis ajoute la preuve de continuité OpenAPI live ; relecture HITL (critères story 1.2) peut porter sur ce bloc en plus du reste.*

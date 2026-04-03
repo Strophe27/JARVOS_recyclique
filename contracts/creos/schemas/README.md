@@ -1,6 +1,6 @@
 # Schemas JSON CREOS
 
-**Gouvernance (Story 1.4)** : [`references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md`](../../../references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md) — périmètre CREOS, hiérarchie AR39, lien **`data_contract.operation_id`** ↔ **`operationId`** OpenAPI dans `contracts/openapi/recyclique-api.yaml`.
+**Gouvernance (Story 1.4)** : [`references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md`](../../../references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md) — périmètre CREOS, hiérarchie AR39, lien **`data_contract.operation_id`** ↔ **`operationId`** OpenAPI dans `contracts/openapi/recyclique-api.yaml`. Décisions terrain : **§0** (HITL), **§2.3** reviewable vs démo.
 
 | Fichier | Role |
 |---------|------|

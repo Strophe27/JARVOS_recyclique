@@ -2,7 +2,7 @@
 
 **Clé fichier (obligatoire) :** `1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope`  
 **Epic :** epic-1 — **Piste B** (contrats et prérequis backend) — **pas** confusion avec Peintre_nano / epic-3  
-**Statut :** review
+**Statut :** done
 
 <!-- Validation optionnelle : exécuter validate-create-story avant dev-story. -->
 
@@ -38,6 +38,8 @@ afin qu’**Epic 2** et **Epic 3** s’appuient sur **une seule hiérarchie de v
 
 Un pair valide que la doc couvre : **propriétaires** et **emplacements canoniques** ; **frontières** OpenAPI vs CREOS ; **hiérarchie de vérité** ; **versionnement / drift** ; **artefacts générés dérivés** ; **flux enums / clés permission** ; **`recyclique-api.yaml` + `operationId` stables** ; **extension widget-declaration CREOS** ; **runtime Peintre_nano borné** (pas auteur métier).
 
+**HITL complété (2026-04-02) — Strophe :** élicitations A–G enregistrées dans le pivot `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` (**§0**, **§1 bis**, **§2.3**, renforts **§3** et **§6**, **§8**). Révision `contracts/README.md` (lien §0 / §2.3).
+
 ## Tasks / Subtasks
 
 - [x] Rédiger le **document de gouvernance** (référence normative reviewable) couvrant les quatre blocs Given/When/Then ci-dessus — **table de traçabilité AC → sections** recommandée en tête ou en annexe.
@@ -66,7 +68,7 @@ Un pair valide que la doc couvre : **propriétaires** et **emplacements canoniqu
 |----------|----------------|-----------------------------------|
 | OpenAPI | Surface HTTP reviewable, `operationId` stables | `contracts/openapi/recyclique-api.yaml` |
 | ContextEnvelope | Instance runtime **backend** (projection autorisée côté UI) | Spécifié dans la doc + futurs schémas OpenAPI / impl. Epic 2 |
-| NavigationManifest, PageManifest | Contrats commanditaire composition / navigation | Exemples aujourd’hui `peintre-nano/public/manifests/`, `peintre-nano/src/fixtures/manifests/` ; futur `contracts/creos/manifests/` possible — **à trancher dans la doc** |
+| NavigationManifest, PageManifest | Contrats commanditaire composition / navigation | Démo : `peintre-nano/public/manifests/`, `peintre-nano/src/fixtures/manifests/` ; promotion reviewable : `contracts/creos/manifests/` — **tranché** dans le pivot **§1 bis** |
 | UserRuntimePrefs | Personnalisation locale **non métier** | Comportement runtime Peintre_nano (Story 3.5) — **dernier** dans AR39 |
 
 ### Intelligence story précédente (1.3)
@@ -103,16 +105,17 @@ _(aucun)_
 
 ### Completion Notes List
 
-- Document pivot `2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` : traçabilité AC, AR39, OpenAPI/CREOS, versionnement/drift, flux permissions aligné spec 1.3, runtime Peintre_nano borné.
+- Document pivot `2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` : traçabilité AC, AR39, OpenAPI/CREOS, versionnement/drift, flux permissions aligné spec 1.3, runtime Peintre_nano borné ; **mise à jour HITL** : §0 décisions terrain, §1 bis promotion manifests, §2.3 reviewable vs démo, §3 revue PR / CI merge, §8 extensions futures. **Révision cohérence** : ligne AC→§7 (données sensibles), définition **drift** en tête §3, pont **§2.2** (JSON Schema vs règles reviewable/démo).
 - `contracts/README.md` et `contracts/creos/schemas/README.md` : liens vers le pivot sans dupliquer la norme.
 - `recyclique-api.yaml` : opération illustrative `recyclique_contractGovernance_ping` + tag `governance` pour ancrer la règle des `operationId` stables.
 - **QA (phase BMAD)** : tests Vitest « contrat » sous `peintre-nano/tests/contract/` (OpenAPI + schéma widget) ; synthèse `_bmad-output/implementation-artifacts/tests/1-4-gouvernance-contractuelle-doc-qa-summary.md` ; `npm run test` dans `peintre-nano/` au vert après ajout.
 
 ### File List
 
-- `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` (créé)
+- `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` (créé ; **révisé** HITL 2026-04-02)
 - `references/artefacts/index.md` (modifié)
-- `contracts/README.md` (modifié)
+- `references/index.md` (modifié — pointeur gouvernance Epic 1.4)
+- `contracts/README.md` (modifié ; lien HITL §0 / §2.3 ; tableau manifests aligné §1 bis ; journal renommages `operationId` optionnel)
 - `contracts/creos/schemas/README.md` (modifié)
 - `contracts/openapi/recyclique-api.yaml` (modifié)
 - `peintre-nano/tests/contract/recyclique-openapi-governance.test.ts` (créé)
@@ -128,7 +131,5 @@ _(aucun)_
 
 - 2026-04-02 — DS : gouvernance contractuelle 1.4 livrée ; statut sprint → review.
 - 2026-04-02 — Post-CR : alignement Dev Agent Record (File List / Completion Notes) avec livrables QA et tests contrat.
-
----
-
-**Note de complétion (phase CS)** : analyse contexte moteur story — guide développeur / rédacteur doc créé ; statut **ready-for-dev**.
+- 2026-04-02 — HITL Strophe : intégration élicitations A–G dans le pivot §0–§8 ; `contracts/README.md` + `references/artefacts/index.md` ; story **done**.
+- 2026-04-02 — Révision cohérence : pivot (traçabilité §7, glossaire drift, pont schéma §2.2) ; `contracts/README.md` (chemin `creos/manifests/`, journal `operationId`) ; `references/index.md` (pointeur Epic 1.4) ; story sans note CS obsolète.

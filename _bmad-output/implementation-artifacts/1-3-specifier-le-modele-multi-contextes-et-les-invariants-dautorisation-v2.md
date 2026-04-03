@@ -2,7 +2,7 @@
 
 **Clé fichier (obligatoire) :** `1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2`  
 **Epic :** epic-1 — prérequis Piste B (backend, contrats, analyses, Paheko) — **pas** epic-3 Peintre_nano  
-**Statut :** review
+**Statut :** done
 
 <!-- Validation optionnelle : exécuter validate-create-story avant dev-story. -->
 
@@ -33,6 +33,19 @@ afin que **tous les epics futurs** partagent le **même modèle d’isolation et
 
 Un pair valide que la spec couvre bien : entités minimales (site, caisse, session, poste réception, rôle, groupe, permissions, PIN) ; invariants zéro fuite et règles de changement de contexte ; permissions additives calculées par Recyclique ; clés stables, libellés, multi-groupes, backend autorité ; **UI jamais vérité sécurité** ; step-up (confirmation, PIN, revalidation) et **quand** bloquer / dégrader / recalculer le contexte.
 
+#### Journal HITL (élicitations terrain)
+
+| Date | Bloc | Décision / réponse terrain | Fichier spec mis à jour |
+|------|------|----------------------------|-------------------------|
+| 2026-04-02 | A — isolation | **Opérateur = bénévole** (associations) : accréditation minimale ; pas d'autre site / caisse / session / poste / autre opérateur **sauf** habilitation explicite. **Administrateurs** peuvent franchir ces périmètres si leurs droits le permettent (ex. intervention sur un autre site). Toujours **autorité backend**. | `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` — §1 bis, §3.0 |
+| 2026-04-02 | B — visibilité / contexte perdu | **Toujours** geste **volontaire et visible** pour les changements de contexte métier. **Pas** de bascule « en arrière-plan » sans que la personne comprenne (voir §4.0 glossaire). Si le système est **perdu** : **par défaut bloquer** jusqu'à résolution ; **mode limité** seulement si c'est **clair** ce qui reste autorisé (sinon rester sur blocage). | Idem — §4.0 |
+| 2026-04-02 | C — libellés / multi-groupes | **C1** : d'accord — **serveur** fait foi, pas les libellés UI. **C2** : d'accord — **plusieurs groupes**, droits **cumulés** (additif). Vigilance : additif ne retire pas les droits d'un autre groupe ; config des groupes = responsabilité admin (voir §5.0 « éléphants »). | Idem — §5.0 |
+| 2026-04-02 | D — step-up / PIN | **Confirmation** : super-admin / fort impact ; édition tickets caisse & réception (données critiques) ; autres mutations critiques — liste exhaustive en Epic 2 / 1.4. **PIN** : ouverture / déverrouillage **sessions métier** (caisse, réception, futurs modules) ; distinct du mot de passe web — §6.0 D2. | Idem — §6.0 |
+| 2026-04-02 | D — recherche Perplexity | Réponse archivée : `references/recherche/2026-04-02_pin-ouverture-caisse-operateur-pos-rgpd_perplexity_reponse.md` ; index recherche + spec §6.0 + `references/artefacts/index.md`. | Idem |
+| 2026-04-02 | E — politique PIN | Adoption des **décisions produit** en spec §6.0 **E** : format (4 min / 6 recommandé sensibles), trivialités interdites, hash, lockout 3–5 essais → 5 min, escalade 10/jour → admin local, compteur UX, tableau reset (admin local, super-admin, soi-même + ancien PIN, jamais clair), PIN temporaire admin, **même mécanisme** caisse/réception avec **scopes** distincts. Impl. **Epic 2.4** / **FR71**. | Idem — §6.0 E, §2.8 |
+| 2026-04-02 | F (suite) — cycle PIN métier + paramètres | **Déconnexion explicite** du contexte PIN (bouton « quitter la caisse » / équivalent) ; **timeout** inactivité → retour écran PIN **visible** ; **reprise** par admin : PIN admin sur le poste (invalidation contexte bénévole + audit) **ou** déconnexion métier forcée puis nouveau PIN. **§4.3** : **panel super-admin** — durées, variantes (ex. quitter caisse avec/sans déco web), activation combinaisons reprise A/B, **tout optionnel** dans les **bornes** sécurité. **§2.8** : PIN = **compte utilisateur** (bénévole cas principal ; admin sur poste métier = même mécanisme). Panel admin distant : mot de passe / revalidation / MFA, pas confondu avec PIN caisse (§6.0 D2). | `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` — §2.8, §4.3, §6.0 D2, §6.3, §6.2 ; `references/artefacts/index.md` |
+| 2026-04-02 | G — extensions panel (spec §4.4) | Tableau **extensions** super-admin : paramètres dérivés **§6.0 E** (pause lockout, bornes essais, seuil journalier, trivialités, compteur UX) ; **caisse vs réception** ; **préavis** avant verrouillage ; périmètre **`degraded`** borné ; **TTL / déclencheurs** recalcul / fraîcheur `ContextEnvelope` ; **audit** (rétention, granularité) ; **matrice step-up** par familles une fois `operationId` (1.4 / Epic 2). Sous-section **non optionnalisable** : additif vs deny, AR39, libellés, zéro fuite. | Idem — **§4.4** ; `references/artefacts/index.md` |
+
 ## Tasks / Subtasks
 
 - [x] Rédiger le **document canonique** (livrable ci-dessous) en couvrant **explicitement** les trois blocs Given/When/Then (table de traçabilité AC → sections recommandée).
@@ -55,9 +68,9 @@ Un pair valide que la spec couvre bien : entités minimales (site, caisse, sessi
 
 ### Livrable canonique
 
-- **Fichier principal** : `references/artefacts/YYYY-MM-DD_NN_spec-multi-contextes-invariants-autorisation-v2.md`  
-  - `YYYY-MM-DD` = date de livraison ; `NN` = prochain numéro disponible ce jour sous `references/artefacts/` (01, 02, …).
-- **Index** : `references/artefacts/index.md` mis à jour.
+- **Fichier principal (livré)** : `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` — traçabilité **AC → sections** en tête du document ; **HITL A–G** intégrés (journal ci-dessus + spec §1 bis, §3.0, §4.0–§4.4, §5.0, §6.0–§6.3, §2.8).
+- **Index** : `references/artefacts/index.md` mis à jour ; recherche Perplexity (PIN / caisse) : `references/recherche/2026-04-02_pin-ouverture-caisse-operateur-pos-rgpd_perplexity_reponse.md` + `references/recherche/index.md`.
+- **Gouvernance contrats détaillée** : Story **1.4** — `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` (spec 1.3 = **quoi** métier ; 1.4 = **comment** reviewable).
 
 ### Intelligence story précédente (1.2)
 
@@ -107,14 +120,21 @@ _(aucun — livraison documentaire)_
 
 ### Completion Notes List
 
-- Artefact canonique `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` : traçabilité AC → sections, entités §2, invariants §3, bascules §4, permissions additives §5, step-up §6, AR39/AR19 §7, écarts stub Peintre_nano §8 ; aucune donnée sensible.
-- Index `references/artefacts/index.md` mis à jour ; `sprint-status.yaml` : story passée en `review`.
-- Tests automatisés : **N/A** (story documentaire, Dev Notes).
+- Artefact canonique `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` : traçabilité AC → §2–§8 ; **§6.0 D–E** (step-up, politique PIN), **§2.8**, **§4.3–§4.4** (panel super-admin + extensions), **§6.3** (cycle de vie PIN) ; **§1 bis** (opérateur = bénévole) ; aucune donnée sensible.
+- HITL journal **A–G** (2026-04-02) aligné spec + index artefacts ; réponse Perplexity archivée sous `references/recherche/` (index recherche à jour).
+- `sprint-status.yaml` : story **1-3** en **done**.
+- **QA documentaire** : `_bmad-output/implementation-artifacts/tests/1-3-spec-multi-contextes-doc-qa-summary.md` (**PASS**, `gates_skipped_with_hitl: true`) ; entrée dans `tests/test-summary.md`.
+- Tests automatisés produit : **N/A** (story documentaire).
 
 ### File List
 
-- `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` (créé)
+- `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` (créé ; révisions HITL 2026-04-02)
 - `references/artefacts/index.md` (modifié)
+- `references/recherche/2026-04-02_pin-ouverture-caisse-operateur-pos-rgpd_perplexity_reponse.md` (archivé — appui HITL D / §6.0)
+- `references/recherche/index.md` (modifié — entrée Perplexity + lien spec 03)
+- `_bmad-output/implementation-artifacts/tests/1-3-spec-multi-contextes-doc-qa-summary.md` (créé — synthèse QA doc)
+- `_bmad-output/implementation-artifacts/tests/test-summary.md` (modifié — ligne story 1.3)
+- `references/index.md` (modifié — pointeur Epic 1.3 à côté de 1.4)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (modifié)
 - `_bmad-output/implementation-artifacts/1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2.md` (modifié — story / Dev Agent Record / statut)
 
@@ -123,7 +143,6 @@ _(aucun — livraison documentaire)_
 | Date | Changement |
 |------|------------|
 | 2026-04-02 | DS : livraison spec multi-contextes v2, index artefacts, sprint `1-3` → `review`. |
-
----
-
-**Note create-story (CS) :** analyse contextuelle complétée — guide d’implémentation documentaire pour l’agent dev. **DS 2026-04-02 :** livrable canonique et index à jour ; sprint `1-3` en `review`.
+| 2026-04-02 | HITL **A–G** : intégrations successives dans spec (§1 bis, §3.0, §4.x, §5.0, §6.0–§6.3, §2.8) ; Perplexity archivée ; index artefacts + recherche ; statut story **done**. |
+| 2026-04-02 | QA documentaire : `1-3-spec-multi-contextes-doc-qa-summary.md` + `test-summary.md`. |
+| 2026-04-02 | Révision cohérence : Dev Notes (chemin livré, lien pivot 1.4), Completion Notes / File List / Change Log alignés sur HITL **A–G** et livrables réels ; `references/index.md` (pointeur Epic 1.3). |

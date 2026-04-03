@@ -2,7 +2,7 @@
 
 **Clé fichier (obligatoire) :** `1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques`  
 **Epic :** epic-1 — prérequis Piste B (backend, contrats, analyses, Paheko) — **pas** epic-3 Peintre_nano  
-**Statut :** review
+**Statut :** done
 
 <!-- Validation optionnelle : exécuter validate-create-story avant dev-story. -->
 
@@ -35,7 +35,8 @@ Le rapport est considéré comme **acceptable** si un pair confirme qu'il couvre
 
 ## Tasks / Subtasks
 
-- [x] Cartographier la baseline **`recyclique-1.4.4`** : où vit le code (clone local `references/ancien-repo/repo/`, consolidation, etc.) et quels documents existants déjà dans le dépôt **évitent de tout ré-inventorier**.
+- [x] Cartographier la baseline **`recyclique-1.4.4`** : code sous **`recyclique-1.4.4/`**, stack Docker **`recyclic-local`**, clone optionnel `references/ancien-repo/repo/`, consolidation, etc. ; documents existants **évitent de tout ré-inventorier**.
+- [x] **Continuité OpenAPI (2026-04-02) :** recoupement `GET/POST …` entre `/v1/openapi.json` (live) et `v1.4.4-liste-endpoints-api.md` ; mise à jour artefact §1 bis + inventaire + `api-contracts-api.md` + README/index `ancien-repo`.
 - [x] Produire le **rapport d'audit** (livrable canonique ci-dessous) avec les trois blocs Given/When/Then ci-dessus **explicitement** adressés (sections dédiées ou tableau de traçabilité AC → section).
 - [x] Pour chaque grand thème (**cashflow**, **réception**, **auth**, **permissions**, **contexte**, **sync**), documenter au minimum : **points d'entrée** (routes, contrôleurs, services, jobs), **modèle de données / tables** concernées, **flux** nominaux et **dépendances** (Paheko, fichiers, sessions).
 - [x] Classer chaque zone ou finding en **réutilisable** / **fragile** / **bloquant (inconnu ou risque majeur)** avec justification courte.
@@ -96,7 +97,7 @@ Le rapport est considéré comme **acceptable** si un pair confirme qu'il couvre
 ### Project Structure Notes
 
 - Rester aligné avec `guide-pilotage-v2.md` : emplacements canoniques (artefacts, consolidation) ; éviter l'analyse infinie — **livrer un rapport reviewable** à une date donnée.
-- Si le code 1.4.4 n'est pas présent localement (`repo/` absent), le rapport doit le **signaler** et s'appuyer sur la **documentation versionnée** (consolidation, migration-paeco, ancien-repo index) + **plan d'accès** au code pour compléter hors dépôt.
+- Le code **est** présent sous **`recyclique-1.4.4/`** dans JARVOS ; `repo/` gitignore reste optionnel. OpenAPI live : stack **`recyclic-local`**, export **`/v1/openapi.json`** (voir artefact §1 bis).
 
 ## References
 
@@ -119,22 +120,29 @@ Sous-agent Task — exécution **bmad-dev-story** (DS), story documentaire ; gat
 
 ### Debug Log References
 
-- Aucun incident bloquant ; clone `references/ancien-repo/repo/` absent dans l’environnement — signalé explicitement dans le rapport (plan d’accès via README ancien-repo).
+- Rapport initial : clone `references/ancien-repo/repo/` parfois absent — désormais **complété** par la réalité **`recyclique-1.4.4/`** + §1 bis (OpenAPI live). Continuité : diff markdown ↔ openapi documentée.
 
 ### Completion Notes List
 
-- Livrable canonique : `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` (traçabilité AC, six domaines, matrice, surfaces sûres, DTO, backlog P0–P2 × Epics 2/3/6/7/8, § contrats).
-- Index artefacts mis à jour ; aucune donnée sensible ajoutée ; pas de changement sous `peintre-nano/`.
-- Sprint : `1-2-…` passé à `review` dans `sprint-status.yaml`.
+- Livrable canonique : `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` (dont **§1 bis** alignement OpenAPI live `recyclic-local` vs inventaire) ; snapshot schéma : `references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json`.
+- Inventaire et contrats brownfield alignés : `references/ancien-repo/v1.4.4-liste-endpoints-api.md`, `api-contracts-api.md`, `references/ancien-repo/README.md`, `references/ancien-repo/index.md`.
+- Index artefacts : entrée `2026-04-02_02_…` rafraîchie ; **references/index.md** : entrée `ancien-repo/` pointe vers l’artefact §1 bis (continuité inventaire ↔ OpenAPI live).
+- Sprint : story `1-2-…` **done** (cohérent avec `sprint-status.yaml` ; en-tête YAML commenté pour la continuité OpenAPI 2026-04-02).
 
 ### File List
 
-- `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` (nouveau)
-- `references/artefacts/index.md` (entrée ajoutée)
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` (statut story 1-2 → review, commentaire last_updated)
-- `_bmad-output/implementation-artifacts/1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques.md` (coche tâches, record, statut)
+- `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` (créé puis enrichi §1 bis + §1 accès code)
+- `references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json` (archive OpenAPI live)
+- `references/artefacts/index.md` (entrée 02 + mise à jour libellé continuité)
+- `references/ancien-repo/v1.4.4-liste-endpoints-api.md` (réconciliation OpenAPI live)
+- `references/ancien-repo/api-contracts-api.md`
+- `references/ancien-repo/README.md`, `references/ancien-repo/index.md`
+- `references/index.md` (entrée dossier `ancien-repo/`, lien §1 bis)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (déjà `done` pour 1-2 ; commentaire continuité)
+- `_bmad-output/implementation-artifacts/1-2-auditer-le-brownfield-backend-api-existante-et-les-donnees-critiques.md` (tâches, record, statut `done`)
 
 ## Change Log
 
 - 2026-04-02 : Story créée (workflow bmad-create-story / CS) — contexte dev pour audit brownfield 1.2, statut `ready-for-dev`.
 - 2026-04-02 : Implémentation DS — rapport d’audit livré, index artefacts, sprint `review`, story `review`.
+- 2026-04-02 : Mise à jour **continuité** — §1 bis artefact (OpenAPI live), alignement `v1.4.4-liste-endpoints-api.md`, `api-contracts-api.md`, README/index `ancien-repo`, **references/index.md**, commentaire `sprint-status.yaml`, archive **`2026-04-02_08_openapi-…json`**, story `done`.

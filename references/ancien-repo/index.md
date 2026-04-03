@@ -23,7 +23,7 @@
 - [Modèles de données (part api)](./data-models-api.md)
 - [Schéma BDD Recyclic dev (tables/colonnes)](../dumps/schema-recyclic-dev.md) — extrait depuis BDD dev (dossier dumps gitignore)
 - [Inventaire composants UI (part frontend)](./component-inventory-frontend.md)
-- [Liste des endpoints API v1.4.4](./v1.4.4-liste-endpoints-api.md)
+- [Liste des endpoints API v1.4.4](./v1.4.4-liste-endpoints-api.md) — réconciliée avec OpenAPI live (`recyclic-local`, 2026-04-02) ; détail §1 bis dans `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md`
 - [Architecture brownfield (état actuel)](./architecture-brownfield.md)
 - [Fonctionnalités actuelles](./fonctionnalites-actuelles.md)
 - [README architecture current](./architecture-current-README.md)

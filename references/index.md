@@ -55,7 +55,7 @@
 
 Chaque dossier liste son contenu dans son propre **index** : `references/<dossier>/index.md`. Le détail ne figure pas ici.
 
-- **`artefacts/`** — Artefacts temporaires de handoff entre agents ; **audit références 2026-03-31** (`2026-03-31_0*_audit-references-*.md`). Sous-dossier `artefacts/archive/` pour artefacts historiques (ex. plan Git exécuté). Détail : **artefacts/index.md**.
+- **`artefacts/`** — Artefacts temporaires de handoff entre agents ; **audit références 2026-03-31** (`2026-03-31_0*_audit-references-*.md`). Sous-dossier `artefacts/archive/` pour artefacts historiques (ex. plan Git exécuté). Détail : **artefacts/index.md**. **Spec multi-contextes / authz v2 (Epic 1.3)** : [artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md](artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md) (traçabilité AC, §1 bis opérateur=bénévole, PIN §6). **Gouvernance contrats v2 (Epic 1.4, HITL terrain)** : [artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md](artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md) (**§0** décisions, **§2.3** reviewable vs démo).
   _(Charger : si un artefact est mentionné dans `ou-on-en-est.md`, pour l’audit références, ou selon le besoin de la session.)_
 
 - **`idees-kanban/`** — Kanban d’idées. Vue globale : **idees-kanban/index.md**. Gestion : skill idees-kanban.
@@ -70,7 +70,7 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`ecosysteme/`** — Références JARVOS_ecosysteme et JARVOS_fondations. Confidentiel. Gitignore. Détail : **ecosysteme/index.md**. Les documents écosystème sont **références** (liens, index), jamais **copies** ailleurs.
   _(Charger : sur demande explicite uniquement.)_
 
-- **`ancien-repo/`** — Instructions git clone + analyse brownfield Recyclique 1.4.4. `repo/` gitignore. Sortie **document-project** : **ancien-repo/index.md** et docs associées. Point d’entrée dossier : **ancien-repo/README.md**.
+- **`ancien-repo/`** — Instructions git clone + analyse brownfield Recyclique 1.4.4. `repo/` gitignore ; inventaire **v1.4.4-liste-endpoints-api.md** réconcilié avec OpenAPI live (`recyclic-local`, voir **artefacts/2026-04-02_02_…** §1 bis). Sortie **document-project** : **ancien-repo/index.md** et docs associées. Point d’entrée dossier : **ancien-repo/README.md**.
   _(Charger : historique, analyse brownfield, checklist import depuis 1.4.4.)_
 
 - **`automatisation-bmad/`** — Recueil technique pour **orchestrer** le cycle BMAD dans Cursor (chemins, `sprint-status`, **mapping colonne CSV → skills Cursor**, anytime vs phase 4, HITL, graphe minimal, **§15 cadre : pas d'exécution automatique headless**). Spec runners : **automatisation-bmad/epic-story-runner-spec.md** ; agents **`.cursor/agents/bmad-epic-runner.md`** / **`bmad-story-runner.md`** ; skill **`bmad-epic-runner`**. Index : **automatisation-bmad/index.md**.
