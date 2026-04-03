@@ -2,7 +2,9 @@
 
 **Usage :** Point d'entrée pour l'analyse **référentielle** du repo source Recyclique 1.4.4 (document-project, checklist import). **Onboarding clone et workflow :** voir **[README.md](./README.md)**.
 
-**Note (2026-03-31) :** le depot actif de developpement est **`recyclique-1.4.4/`** (evolution incrementale). La formule « migration vers v0.1.0 / nouveau backend » reste une **piste d'architecture** a reconcilier avec le pivot documente dans `references/ou-on-en-est.md` et le pack **audit references** (`references/artefacts/2026-03-31_02_audit-references-00-synthese-globale.md`).
+**Note (2026-03-31) :** le depot brownfield **1.4.x** reste ancré sous **`recyclique-1.4.4/`** (frontend, compose `recyclic-local`, docs historiques).
+
+**Note (2026-04-03, story 2.2b) :** le package FastAPI **`recyclic_api`** (Epic 2, gates pytest) est sous **`recyclique/api/`** à la racine du mono-repo ; le compose dans `recyclique-1.4.4/` construit l’image API via `../recyclique/api`. Voir `recyclique/README.md` et `recyclique-1.4.4/README.md`.
 
 ---
 

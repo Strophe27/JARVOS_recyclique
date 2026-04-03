@@ -85,10 +85,10 @@ setup_test_environment() {
     test_log "Setting up test environment..."
     
     # Créer des images de test
-    docker build -t recyclic-api:test-v1 -f api/Dockerfile . >/dev/null 2>&1
+    docker build -t recyclic-api:test-v1 -f ../recyclique/api/Dockerfile ../recyclique/api >/dev/null 2>&1
     docker build -t recyclic-frontend:test-v1 -f frontend/Dockerfile . >/dev/null 2>&1
     
-    docker build -t recyclic-api:test-v2 -f api/Dockerfile . >/dev/null 2>&1
+    docker build -t recyclic-api:test-v2 -f ../recyclique/api/Dockerfile ../recyclique/api >/dev/null 2>&1
     docker build -t recyclic-frontend:test-v2 -f frontend/Dockerfile . >/dev/null 2>&1
     
     # Créer un fichier .env de test

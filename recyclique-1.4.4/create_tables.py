@@ -7,8 +7,9 @@ import psycopg2
 import sys
 import os
 
-# Add the src directory to the path
-sys.path.append('api/src')
+# Add the src directory to the path (package vivant : mono-repo ../recyclique/api)
+_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "recyclique", "api", "src"))
+sys.path.insert(0, _root)
 
 from recyclic_api.core.config import settings
 

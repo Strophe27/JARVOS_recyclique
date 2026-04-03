@@ -1,0 +1,11 @@
+{
+  "name": "@jarvos/recyclique-openapi-contracts",
+  "private": true,
+  "description": "Codegen TypeScript depuis recyclique-api.yaml (Story 2.6)",
+  "scripts": {
+    "generate": "openapi-typescript recyclique-api.yaml -o generated/recyclique-api.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.4"
+  }
+}

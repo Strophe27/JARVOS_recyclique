@@ -12,6 +12,10 @@ Frontend Recyclique v2 — React, TypeScript, Vite, Mantine v8 (P1), CSS Modules
 | `npm run preview` | Prévisualisation du build |
 | `npm run test` | Vitest (unitaires + suites sous `tests/`) |
 
+## Types OpenAPI (backend / Peintre_nano)
+
+Source reviewable unique : `../contracts/openapi/recyclique-api.yaml`. Génération des types TS : depuis `../contracts/openapi/`, `npm install` puis `npm run generate` — sortie `../contracts/openapi/generated/recyclique-api.ts`. Importer ce fichier dans l’app (chemin relatif au monorepo) plutôt que recopier les DTO à la main ; détail dans `../contracts/README.md`.
+
 ## Tests
 
 - **Unitaires** : `tests/unit/`.

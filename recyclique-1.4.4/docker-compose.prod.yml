@@ -39,7 +39,7 @@ services:
   api:
     container_name: recyclic-prod-api
     build:
-      context: ./api
+      context: ../recyclique/api
       args:
         # Compose ne substitue pas de commande shell ici : utiliser un défaut semver ou
         # exporter APP_VERSION avant le build (ex. APP_VERSION="$(./scripts/get-version.sh)").
@@ -92,7 +92,7 @@ services:
   api-migrations:
     container_name: recyclic-prod-migrations
     build:
-      context: ./api
+      context: ../recyclique/api
       dockerfile: Dockerfile.migrations
     image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
     command: alembic upgrade head

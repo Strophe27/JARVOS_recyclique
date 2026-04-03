@@ -3,6 +3,8 @@
 **Version livrable :** 1.4.4 (arborescence `recyclique-1.4.4/`).  
 ⚠️ **Attention : Non Fonctionnel !**
 
+> **Backend actif (mono-repo JARVOS, story 2.2b, 2026-04-03)** : le package FastAPI **`recyclic_api`** ne réside plus sous `recyclique-1.4.4/api/`. Le code source, les tests, Alembic et `pyproject.toml` sont sous **`../recyclique/api/`** (chemins relatifs à ce dossier). Le `docker-compose.yml` ici **construit** toujours l’image API en pointant vers ce répertoire ; pour pytest et outillage Python, travailler depuis **`recyclique/api`**. Voir aussi `recyclique/README.md`.
+
 ## 🌱 Notre Mission
 Digitaliser les processus des ressourceries pour réduire le temps administratif de 70% et assurer la conformité réglementaire Ecologic.
 
@@ -13,7 +15,7 @@ Digitaliser les processus des ressourceries pour réduire le temps administratif
 
 ## Runtime Python (API)
 
-L’image Docker de l’API utilise **Python 3.11**. En développement local sans Docker, préférez **3.11.x** pour rester aligné avec le conteneur ; voir `api/README.md` et `requires-python` dans `api/pyproject.toml`.
+L’image Docker de l’API utilise **Python 3.11**. En développement local sans Docker, préférez **3.11.x** pour rester aligné avec le conteneur ; voir `../recyclique/api/README.md` et `requires-python` dans `../recyclique/api/pyproject.toml`.
 
 ## 🚀 Démarrage (Dev)
 
@@ -87,7 +89,7 @@ Ce projet est développé avec la **BMad Method** - une approche agile AI-driven
 
 ### Secrets Email (Brevo)
 
-1. Copier `env.example` vers `api/.env` et renseigner:
+1. Copier `env.example` (racine de `recyclique-1.4.4/`) vers `../recyclique/api/.env` et renseigner:
    - `BREVO_API_KEY` (dev: placeholder possible)
    - `BREVO_WEBHOOK_SECRET` (laisser vide en dev → signature ignorée)
    - `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS`

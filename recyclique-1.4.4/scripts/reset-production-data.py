@@ -317,8 +317,10 @@ class ProductionDataReset:
 def main():
     """Point d'entrée principal du script."""
     # Vérifier que nous sommes dans le bon répertoire
-    if not os.path.exists('api/src/recyclic_api'):
-        print("❌ Erreur: Ce script doit être exécuté depuis la racine du projet Recyclic")
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _api_pkg = os.path.join(_here, "..", "..", "recyclique", "api", "src", "recyclic_api")
+    if not os.path.exists(_api_pkg):
+        print("❌ Erreur: arborescence mono-repo attendue (recyclique/api/src/recyclic_api introuvable)")
         sys.exit(1)
     
     # Créer le répertoire de logs si nécessaire

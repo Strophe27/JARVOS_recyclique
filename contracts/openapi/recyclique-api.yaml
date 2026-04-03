@@ -1,13 +1,18 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.0.0-draft
+  version: 0.1.0-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
     alimenter ce document (ou le remplacer) sans edition manuelle des chemins d'implementation.
     Chaque operation expose un `operationId` **stable** ; les manifests CREOS referencent
     ces identifiants via `data_contract.operation_id` (voir instruction contrats donnees).
+
+    **Versionnement semver (draft)** : increment **minor** pour ajouts retro-compatibles
+    (nouveaux champs optionnels, nouvelles operations non breaking). Increment **major** ou
+    procedure **B4** (journal + refs manifests/tests) pour toute rupture de schéma public ou
+    renommage d'`operationId`. Voir `contracts/README.md` et pivot gouvernance §0.1 B4.
 servers:
   - url: /api
     description: Prefixe nominal v2 (ajuster selon deploiement)
@@ -40,6 +45,16 @@ paths:
                 $ref: "#/components/schemas/LoginResponseV2"
         "401":
           description: Identifiants invalides ou utilisateur inactif
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide (validation Pydantic)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/auth/logout:
     post:
       operationId: recyclique_auth_logout
@@ -53,6 +68,12 @@ paths:
       responses:
         "200":
           description: Déconnexion réussie
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/auth/refresh:
     post:
       operationId: recyclique_auth_refresh
@@ -76,10 +97,22 @@ paths:
                 $ref: "#/components/schemas/RefreshTokenResponseV2"
         "401":
           description: Refresh invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
         "403":
           description: Inactivité trop longue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
         "422":
           description: Refresh absent (corps et cookie)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/users/me/context:
     get:
       operationId: recyclique_users_getContextEnvelope
@@ -89,7 +122,8 @@ paths:
       summary: ContextEnvelope courant (autorité serveur)
       description: |
         Story 2.2 : agrégation site / caisse / session caisse / poste réception + `runtime_state` (`ok` | `degraded` | `forbidden`)
-        + `permission_keys` (sous-ensemble minimal ; union exhaustive rôles + groupes : Story 2.3).
+        + `permission_keys` : union exhaustive additive (rôles ADMIN/SUPER_ADMIN + groupes dans le périmètre
+        site actif ; voir Story 2.3), alignée sur `GET /v1/users/me/permissions`.
         Le client ne reconstruit pas l'enveloppe depuis des manifests ; il consomme cette réponse.
         Lecture toujours recalculée depuis la base (pas d'inférence silencieuse).
       security:
@@ -103,6 +137,10 @@ paths:
                 $ref: "#/components/schemas/ContextEnvelope"
         "401":
           description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/users/me/context/refresh:
     post:
       operationId: recyclique_users_refreshContextEnvelope
@@ -125,6 +163,133 @@ paths:
                 $ref: "#/components/schemas/ContextEnvelope"
         "401":
           description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/users/me/permissions:
+    get:
+      operationId: recyclique_users_getMyPermissions
+      tags:
+        - users
+      summary: Permissions effectives courantes (autorité serveur)
+      description: |
+        Liste des clés de permission (`permission_keys`) calculées comme pour `ContextEnvelope.permission_keys`
+        (même moteur additif Story 2.3 : union groupes dans le périmètre site + règles de rôle).
+        Le client n'invente pas de permissions ; consommation par Peintre_nano / UI en lecture seule.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Objet contenant la liste des clés (champ `permissions`)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - permissions
+                properties:
+                  permissions:
+                    type: array
+                    items:
+                      type: string
+                    description: Clés stables (ex. caisse.access), même jeu que ContextEnvelope.permission_keys pour la même session DB.
+                additionalProperties: false
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}/close:
+    post:
+      operationId: recyclique_cashSessions_closeSession
+      tags:
+        - cash-sessions
+      summary: Fermer une session de caisse (step-up PIN + idempotence)
+      description: |
+        Story 2.4 : mutation sensible — **preuve serveur** obligatoire via en-tête `X-Step-Up-Pin`
+        (jamais journalisée en clair). Idempotence optionnelle : `Idempotency-Key` + même corps →
+        réponse rejouée ; corps différent avec la même clé → **409** (`IDEMPOTENCY_KEY_CONFLICT`).
+        Corrélation : `X-Request-Id` (réponse reprend l’identifiant client ou un UUID serveur).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+          description: PIN opérateur (4 chiffres) — preuve step-up ; ne pas logger.
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Clé client pour éviter doubles effets (Redis, TTL 24h).
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Identifiant de corrélation ; renvoyé tel quel ou complété par le serveur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashSessionCloseBody"
+      responses:
+        "200":
+          description: Session fermée (ou session vide supprimée — corps `deleted`)
+        "400":
+          description: Erreur métier / validation fermeture
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Step-up PIN manquant, invalide, ou PIN non configuré — codes `STEP_UP_PIN_*`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit idempotence — `IDEMPOTENCY_KEY_CONFLICT`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v2/_contract-governance/ping:
     get:
       operationId: recyclique_contractGovernance_ping
@@ -148,6 +313,9 @@ paths:
         Sémantique des champs : references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md (§1 bis périmètre v1 KPIs agrégés, §7 daily_kpis_aggregate).
         Premier bandeau v2 : meme esprit que recyclique-1.4.4 (KPIs jour globaux, agrege multi-sites/caisses) ; familles F1-F6 optionnelles ou enrichissements ulterieurs.
         Implementation HTTP reelle, auth et persistance : Epic 2.7 / Epic 2.2 (ne pas dupliquer la semantique sync Story 1.5).
+        Auth : meme modele que `GET /v1/users/me/context` (Bearer et/ou cookie httpOnly) — acces exploitation, pas reserve admin seul.
+      security:
+        - bearerOrCookie: []
       parameters:
         - name: X-Correlation-ID
           in: header
@@ -161,8 +329,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExploitationLiveSnapshot"
+        "401":
+          description: Non authentifie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Credentials absents ou refuses (client strict / futur garde-fou)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
         "503":
           description: Source externe ou agregation indisponible — signal explicite (Story 1.7, Epic 2.7)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
 components:
   securitySchemes:
     bearerOrCookie:
@@ -172,6 +356,56 @@ components:
       description: |
         JWT d'accès. Alternative same-origin : cookie httpOnly `recyclique_access` (nom par défaut serveur), sans duplication de la logique d'autorisation côté client.
   schemas:
+    RecycliqueApiError:
+      type: object
+      description: |
+        Enveloppe d'erreur JSON stable (AR21). Propriétés en snake_case ; dates ailleurs en ISO 8601.
+        Le champ `correlation_id` reprend la valeur de corrélation (alignée sur `X-Request-Id`, Story 2.5).
+      required:
+        - code
+        - detail
+        - retryable
+        - correlation_id
+      properties:
+        code:
+          type: string
+          description: |
+            Code machine stable : soit dérivé du statut HTTP (UNAUTHORIZED, NOT_FOUND, …),
+            soit code métier explicite pour certaines 403/409/429 (ex. STEP_UP_PIN_REQUIRED,
+            IDEMPOTENCY_KEY_CONFLICT, STEP_UP_LOCKED).
+        detail:
+          description: |
+            Message texte (4xx/5xx hors validation) ou liste d'erreurs de validation (422 — équivalent
+            ancien corps FastAPI `detail` tableau).
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                additionalProperties: true
+        retryable:
+          type: boolean
+          description: Vrai si un nouvel essai peut réussir (ex. 429, 503).
+        state:
+          type: string
+          nullable: true
+          description: État opérationnel optionnel côté domaine ; `null` si non applicable.
+        correlation_id:
+          type: string
+          description: Identifiant pour corrélation support et logs (sans données sensibles).
+      additionalProperties: false
+    CashSessionCloseBody:
+      type: object
+      required:
+        - actual_amount
+      properties:
+        actual_amount:
+          type: number
+          minimum: 0
+        variance_comment:
+          type: string
+          nullable: true
+      additionalProperties: false
     LoginRequestV2:
       type: object
       required:
@@ -303,7 +537,9 @@ components:
           type: array
           items:
             type: string
-          description: Clés de permission effectives connues à l'instant `computed_at` (sous-ensemble Story 2.2).
+          description: |
+            Clés de permission effectives à l'instant `computed_at` (union additive Story 2.3 ;
+            aligné sur `GET /v1/users/me/permissions` pour le même utilisateur et session).
         computed_at:
           type: string
           format: date-time
@@ -331,22 +567,37 @@ components:
     ExploitationLiveSnapshot:
       type: object
       description: |
-        Agregat documentaire pour consommation bandeau live (Epic 4). Familles F1–F6 : artefact 2026-04-02_07.
-        Bloc daily_kpis_aggregate : premier palier aligne 1.4.4 (KPIs jour globaux) ; proprietes metier a figer en Epic 2.7.
-        Absence vs null : voir artefact 1.7 section 6.
+        **Contrat gelé (Story 2.6 — codegen / types partagés)** : présence des champs nommés ci-dessous,
+        types des enums `SyncStateCore` et `cash_session_effectiveness`, structure de `context` via
+        `ExploitationContextIds`, champ `observed_at` (date-time ISO 8601), et cohérence `sync_operational_summary`
+        quand l'objet est non null (sous-objet minimal `worst_state` + `source_reachable`).
+
+        **Complété Story 2.7 (sémantique HTTP + agrégats)** : `daily_kpis_aggregate` reprend les clés de
+        `UnifiedLiveStatsResponse` / `GET /v1/stats/live` (période `daily` côté impl) : `tickets_count`,
+        `last_ticket_amount`, `ca`, `donations`, `weight_out_sales`, `tickets_open`, `tickets_closed_24h`,
+        `items_received`, `weight_in`, `weight_out`, `period_start`, `period_end` (date-time ISO en JSON).
+        `effective_open_state` : codes stables `open`, `closed`, `unknown`, `not_applicable`, et pour F2
+        `delayed_open` / `delayed_close` lorsque `sites.configuration.opening_exception` le porte.
+        Runtime `forbidden` : `context` omis, `daily_kpis_aggregate` null, `sync_operational_summary` null,
+        `cash_session_effectiveness` = `unknown` (pas d'inference silencieuse UX-DR15).
+
+        Absence vs null : artefact 1.7 section 6.
       properties:
         daily_kpis_aggregate:
           type: object
           nullable: true
           description: |
             KPIs jour agreges (multi-sites, multi-caisses), meme esprit bandeau recyclique 1.4.4 — voir artefact 07 §1 bis.
-            Clefs et types (CA, volumes matieres, comptages ventes, etc.) : Epic 2.7 / analyse API existante ; snapshot JSON 1.4.4 : references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json (lecture seule, pas contrat v2).
+            Clefs figees Story 2.7 : alignement `UnifiedLiveStatsResponse` (meme moteur que `ReceptionLiveStatsService.get_unified_live_stats`, perimetre site quand `context.site_id` est connu). Snapshot JSON 1.4.4 : references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json (lecture seule, pas contrat v2).
           additionalProperties: true
         context:
           $ref: "#/components/schemas/ExploitationContextIds"
         effective_open_state:
           type: string
-          description: Verite metier fenetre d'ouverture effective au sens terrain (backend, famille F1/F3).
+          description: |
+            Verite metier fenetre d'ouverture effective au sens terrain (backend, famille F1/F3).
+            F2 (ouverture decalee / exception) : `delayed_open` / `delayed_close` lorsque la regle serveur
+            les calcule (ex. hint `sites.configuration.opening_exception`).
         cash_session_effectiveness:
           type: string
           description: |

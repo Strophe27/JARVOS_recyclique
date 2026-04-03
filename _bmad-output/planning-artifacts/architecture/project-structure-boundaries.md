@@ -216,6 +216,8 @@ JARVOS_recyclique/
     └── qa/
 ```
 
+**Implémentation réelle dans ce dépôt (story 2.2b, 2026-04-03) :** le backend versionné utilise **`recyclique/api/`** pour `pyproject.toml`, `src/recyclic_api/`, `tests/` et Alembic (léger écart avec le schéma ci-dessus où `pyproject.toml` apparaît à la racine de `recyclique/` — documenté dans `recyclique/README.md`).
+
 ## Architectural Boundaries
 
 **Frontend Boundary:**

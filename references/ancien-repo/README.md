@@ -42,7 +42,7 @@ dans **ce dossier** (`references/ancien-repo/`) : point d'entree **index.md**. C
 
 ## Alignement avec le code dans JARVOS_recyclique
 
-- Le dossier **`recyclique-1.4.4/`** (à la racine du dépôt JARVOS) est la copie de travail courante de la baseline 1.4.x ; la stack Docker Desktop **`recyclic-local`** pointe en général sur son `docker-compose.yml`.
+- Le dossier **`recyclique-1.4.4/`** (à la racine du dépôt JARVOS) est la copie de travail courante de la baseline 1.4.x (frontend, compose, etc.) ; la stack Docker Desktop **`recyclic-local`** pointe en général sur son `docker-compose.yml`. **Depuis 2026-04-03**, le code source Python de l’API vit sous **`recyclique/api/`** ; le compose 1.4.4 référence ce dossier pour les builds `api` / `api-migrations`.
 - L'inventaire **`v1.4.4-liste-endpoints-api.md`** est réconcilié périodiquement avec **`/v1/openapi.json`** (voir `references/artefacts/2026-04-02_02_...` §1 bis). Le sous-dossier **`repo/`** (clone gitignore) reste optionnel.
 
 ## Utilite pour JARVOS Recyclique

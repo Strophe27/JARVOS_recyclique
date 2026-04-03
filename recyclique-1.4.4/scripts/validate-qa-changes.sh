@@ -142,7 +142,7 @@ fi
 
 # 9. Vérification de la configuration
 echo "9. Vérification de la configuration..."
-if grep -q "LIVE_RECEPTION_STATS_ENABLED" api/src/recyclic_api/core/config.py; then
+if grep -q "LIVE_RECEPTION_STATS_ENABLED" ../recyclique/api/src/recyclic_api/core/config.py; then
     status "Feature flag présent dans la configuration"
 else
     error "Feature flag manquant dans la configuration"

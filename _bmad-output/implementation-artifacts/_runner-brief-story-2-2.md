@@ -25,7 +25,7 @@ skill_paths:
   code_review: "D:\\users\\Strophe\\Documents\\1-IA\\La Clique Qui Recycle\\JARVOS_recyclique\\.cursor\\skills\\bmad-code-review\\SKILL.md"
 mode_create_story: validate
 gates:
-  - cmd: "Set-Location 'D:\\users\\Strophe\\Documents\\1-IA\\La Clique Qui Recycle\\JARVOS_recyclique\\recyclique-1.4.4\\api'; $env:TESTING='true'; python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py tests/test_auth_logging.py tests/test_auth_inactive_user_middleware.py tests/test_auth_login_username_password.py tests/test_admin_user_status_endpoint.py tests/api/test_admin_user_management.py tests/test_refresh_token_service.py tests/test_refresh_token_endpoint.py tests/test_context_envelope.py -v --tb=short"
+  - cmd: "Set-Location 'D:\\users\\Strophe\\Documents\\1-IA\\La Clique Qui Recycle\\JARVOS_recyclique\\recyclique\\api'; $env:TESTING='true'; python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py tests/test_auth_logging.py tests/test_auth_inactive_user_middleware.py tests/test_auth_login_username_password.py tests/test_admin_user_status_endpoint.py tests/api/test_admin_user_management.py tests/test_refresh_token_service.py tests/test_refresh_token_endpoint.py tests/test_context_envelope.py -v --tb=short"
     timeout_sec: 600
 gates_skipped_with_hitl: false
 max_vs_loop: 3
@@ -49,9 +49,9 @@ Piste B / Epic 2 = implementation backend Recyclique (ContextEnvelope minimal, r
 
 Dependances Epic 1 (done) : spec multi-contextes `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` ; OpenAPI/CREOS ; `contracts/openapi/recyclique-api.yaml`.
 
-Decision backend Story 2.1 : code et gates dans `recyclique-1.4.4/api/` jusqu'a migration documentee vers dossier canonique `recyclique/` — voir `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md`.
+Decision backend : package vivant sous `recyclique/api/` (story 2.2b) — voir `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md`.
 
-References : `guide-pilotage-v2.md`, `project-structure-boundaries.md`, `contracts/README.md`, `contracts/creos/`, code sous `recyclique-1.4.4/api/`, `references/paheko/`, brownfield `references/ancien-repo/` si utile.
+References : `guide-pilotage-v2.md`, `project-structure-boundaries.md`, `contracts/README.md`, `contracts/creos/`, code sous `recyclique/api/`, `references/paheko/`, brownfield `references/ancien-repo/` si utile.
 
 Securite : pas de credentials dans les livrables ; ContextEnvelope = autorite serveur ; contexte ambigu = etat restreint/degrade explicite (AC story 2.2).
 

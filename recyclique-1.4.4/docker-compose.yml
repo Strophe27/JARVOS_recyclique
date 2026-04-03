@@ -33,7 +33,7 @@ services:
 
   api:
     build:
-      context: ./api
+      context: ../recyclique/api
       args:
         # Aligné sur le Dockerfile (défaut 1.4.4) ; surcharge via .env ou export APP_VERSION=…
         APP_VERSION: ${APP_VERSION:-1.4.4}
@@ -84,8 +84,8 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
-      - ./api/src:/app/src
-      - ./api/tests:/app/tests
+      - ../recyclique/api/src:/app/src
+      - ../recyclique/api/tests:/app/tests
       - ./backups:/backups
       - ./logs:/app/logs  # B48-P2: Volume pour les logs transactionnels
     depends_on:
@@ -107,7 +107,7 @@ services:
   # Service dédié pour les migrations Alembic avec configuration Docker optimisée
   api-migrations:
     build:
-      context: ./api
+      context: ../recyclique/api
       dockerfile: Dockerfile.migrations
     image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
     command: alembic upgrade head
@@ -140,11 +140,11 @@ services:
       - recyclic-network
     restart: "no"
 
-  # # Service dédié pour les tests (désactivé). Exécution : api/run_tests.sh ou
+  # # Service dédié pour les tests (désactivé). Exécution : recyclique/api/run_tests.sh ou
   # #   docker compose run --rm -e TESTING=true api bash -lc "cd /app && python -m pytest …"
   # api-tests:
   #   build:
-  #     context: ./api
+  #     context: ../recyclique/api
   #     dockerfile: Dockerfile.tests
   #   image: recyclic-api-tests:${API_TESTS_IMAGE_TAG:-latest}
   #   environment:
@@ -156,11 +156,11 @@ services:
   #     SECRET_KEY: ${SECRET_KEY}
   #   volumes:
   #     # Volumes pour éviter les rebuilds lors du développement
-  #     - ./api/src:/app/src:ro
-  #     - ./api/tests:/app/tests:ro
-  #     - ./api/migrations:/app/migrations
-  #     - ./api/alembic.ini:/app/alembic.ini:ro
-  #     - ./api/pytest.ini:/app/pytest.ini:ro
+  #     - ../recyclique/api/src:/app/src:ro
+  #     - ../recyclique/api/tests:/app/tests:ro
+  #     - ../recyclique/api/migrations:/app/migrations
+  #     - ../recyclique/api/alembic.ini:/app/alembic.ini:ro
+  #     - ../recyclique/api/pytest.ini:/app/pytest.ini:ro
   #   depends_on:
   #     postgres:
   #       condition: service_healthy

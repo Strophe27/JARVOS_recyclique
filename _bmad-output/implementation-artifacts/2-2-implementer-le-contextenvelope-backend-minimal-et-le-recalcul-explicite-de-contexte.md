@@ -56,7 +56,7 @@ Un pair valide : **autorité serveur** sur le contenu de l’enveloppe ; **pas d
   - [x] Étendre ou introduire dans `contracts/openapi/recyclique-api.yaml` le schéma **`ContextEnvelope`** (et sous-objets si nécessaire), en réutilisant / reliant `ExploitationContextIds` si pertinent — fichier YAML actuel : commentaire « ContextEnvelope lorsque exposé » sous `ExploitationContextIds`  
   - [x] Ajouter ou mettre à jour les **`operationId`** pour : émission / rafraîchissement de l’enveloppe (ex. `GET` dédié ou évolution contrôlée d’une route existante) — **sans casser** les références existantes sans politique **B4**
 
-- [x] **Implémenter le calcul serveur minimal** dans `recyclique-1.4.4/api/` (AC : #1–#3)  
+- [x] **Implémenter le calcul serveur minimal** dans `recyclique/api/` (AC : #1–#3)  
   - [x] Service ou couche dédiée (ex. sous `core/` ou `services/`) qui **agrège** contexte + indicateur d’état (`ok` / `degraded` / `forbidden`) + **placeholder ou jeu minimal** de `permissionKeys` si le calcul additif complet est reporté à **Story 2.3** — **expliciter** dans le code / story completion ce qui est **minimal** vs reporté  
   - [x] Respecter **Story 2.1** : résolution JWT **Bearer ou cookie** via `get_current_user` / `resolve_access_token` — pas de contournement auth
 
@@ -71,10 +71,10 @@ Un pair valide : **autorité serveur** sur le contenu de l’enveloppe ; **pas d
   - [x] Tests pytest ciblés (nouveau fichier ou extension) : enveloppe **cohérente** pour un utilisateur de test ; cas **degraded** / **forbidden** minimal ; pas de régression sur `/users/me` et permissions si routes modifiées
 
 - [x] **Gate qualité — sous-ensemble pytest aligné Story 2.1 / `run_tests.sh`** (AC : tous)  
-  - [x] Exécuter depuis `recyclique-1.4.4/api` :
+  - [x] Exécuter depuis `recyclique/api` :
 
 ```powershell
-Set-Location 'D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\recyclique-1.4.4\api'
+Set-Location 'D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\recyclique\api'
 $env:TESTING = 'true'
 python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py tests/test_auth_logging.py tests/test_auth_inactive_user_middleware.py tests/test_auth_login_username_password.py tests/test_admin_user_status_endpoint.py tests/api/test_admin_user_management.py tests/test_refresh_token_service.py tests/test_refresh_token_endpoint.py -v --tb=short
 ```
@@ -91,8 +91,8 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 ### Pack contexte (Story Runner — Epic 2)
 
 - **Dépendances Epic 1 (done)** : spec multi-contextes ; gouvernance OpenAPI / CREOS ; `contracts/openapi/recyclique-api.yaml` ; contrat sync / signaux (contexte adjacent).  
-- **Décision backend** : implémentation et gates dans **`recyclique-1.4.4/api/`** jusqu’à migration documentée vers `recyclique/` — [Source : `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md`].  
-- **Références** : `_bmad-output/planning-artifacts/guide-pilotage-v2.md` ; `architecture/project-structure-boundaries.md` ; `contracts/README.md` ; `contracts/creos/` ; code `recyclique-1.4.4/api/` ; `references/paheko/` ; `references/ancien-repo/` si utile.
+- **Décision backend** : package vivant sous **`recyclique/api/`** (story 2.2b) — [Source : `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md`].  
+- **Références** : `_bmad-output/planning-artifacts/guide-pilotage-v2.md` ; `architecture/project-structure-boundaries.md` ; `contracts/README.md` ; `contracts/creos/` ; code `recyclique/api/` ; `references/paheko/` ; `references/ancien-repo/` si utile.
 
 ### Périmètre et hors scope
 
@@ -108,7 +108,7 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 ### Stack et versions
 
-- **FastAPI**, **SQLAlchemy**, **pytest** sous `recyclique-1.4.4/api/tests/`. Rester aligné sur les dépendances du package API.
+- **FastAPI**, **SQLAlchemy**, **pytest** sous `recyclique/api/tests/`. Rester aligné sur les dépendances du package API.
 
 ### Cross-story (Epic 2)
 
@@ -120,7 +120,7 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 ### Project Structure Notes
 
-- **Backend actif** : `recyclique-1.4.4/api/` (même décision transitoire que 2.1).  
+- **Backend actif** : `recyclique/api/` (dossier canonique post–story 2.2b).  
 - **Contrat canonique** : `contracts/openapi/recyclique-api.yaml` — **writer** Recyclique (AR19).  
 - **Frontend** : `peintre-nano/` consomme ; **mocks** alignés schéma jusqu’à Convergence 1 — pas de duplication de vérité.
 
@@ -128,7 +128,7 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 - **Primauté** : `_bmad-output/planning-artifacts/epics.md` (Epic 2, Story 2.2) + `sprint-status.yaml` ; pack Epic 2 du Story Runner intégré en tête de fichier et en « Pack contexte ».
 - **Sprint** : clé `2-2-…` est en **`review`** — la mise à jour create-story *backlog → ready-for-dev* (workflow étape 6) **ne s’applique pas** tant que la story n’est pas replanifiée en backlog ; le fichier sert à la fois de **spec contexte dev** et de **trace d’implémentation**.
-- **Alignement gate CI / `run_tests.sh`** : le script `recyclique-1.4.4/api/run_tests.sh` (lot Story 2.1) **n’inclut pas** encore `tests/test_context_envelope.py`. Pour éviter une régression silencieuse sur le ContextEnvelope, **étendre** la liste pytest du script (et tout job qui le miroite) avec ce fichier — même périmètre que la commande PowerShell documentée ci-dessus.
+- **Alignement gate CI / `run_tests.sh`** : le script `recyclique/api/run_tests.sh` inclut `tests/test_context_envelope.py` (aligné gate Story Runner 2.2 / 2.2b).
 - **`project-context.md`** : aucun fichier `project-context.md` repéré à la racine du dépôt lors du passage CS (optionnel ; si créé plus tard, référencer ici le chemin).
 
 ### References
@@ -163,10 +163,10 @@ Composer (agent dev BMAD / Cursor)
 ### File List
 
 - `contracts/openapi/recyclique-api.yaml`
-- `recyclique-1.4.4/api/src/recyclic_api/schemas/context_envelope.py`
-- `recyclique-1.4.4/api/src/recyclic_api/services/context_envelope_service.py`
-- `recyclique-1.4.4/api/src/recyclic_api/api/api_v1/endpoints/users.py`
-- `recyclique-1.4.4/api/tests/test_context_envelope.py`
+- `recyclique/api/src/recyclic_api/schemas/context_envelope.py`
+- `recyclique/api/src/recyclic_api/services/context_envelope_service.py`
+- `recyclique/api/src/recyclic_api/api/api_v1/endpoints/users.py`
+- `recyclique/api/tests/test_context_envelope.py`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `_bmad-output/implementation-artifacts/2-2-implementer-le-contextenvelope-backend-minimal-et-le-recalcul-explicite-de-contexte.md`
 

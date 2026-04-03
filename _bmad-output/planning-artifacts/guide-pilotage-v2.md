@@ -66,7 +66,7 @@
 | Interop Paheko / éco-organismes | `references/migration-paeco/`, `references/paheko/` | Index de chaque dossier |
 | PRD, archi, epics, readiness, **ce guide** | `_bmad-output/planning-artifacts/` | `_bmad-output/README.md` ; archi : `planning-artifacts/architecture/index.md` |
 | Stories / sprint | `_bmad-output/implementation-artifacts/` | `sprint-status.yaml` |
-| **Tests (code)** | `recyclique-1.4.4/`, futur `recyclique/`, `peintre-nano/` | — |
+| **Tests (code)** | Backend API : **`recyclique/api/`** (gates Story Runner, pytest) ; stack Docker legacy : `recyclique-1.4.4/docker-compose.yml` (build context `../recyclique/api`) ; `peintre-nano/` | — |
 | **Rapports / stratégie de tests** (synthèse, pas le code) | Existant 1.4.4 : logique **consolidation** ; **v2 transversal** : fichiers datés dans `references/artefacts/` par défaut | **Dès le premier** rapport / stratégie test v2 : créer l'artefact **et** une entrée dans `references/artefacts/index.md` |
 
 ---
