@@ -30,8 +30,37 @@ logger = logging.getLogger(__name__)
 
 # Security scheme (don't auto-raise 403 so we can return 401)
 security = HTTPBearer(auto_error=False)
-# Strict variant that returns 403 when Authorization header is missing
-security_strict = HTTPBearer(auto_error=True)
+
+
+def resolve_access_token(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials],
+) -> Optional[str]:
+    """JWT access : en-tête Authorization Bearer prioritaire, sinon cookie httpOnly v2."""
+    if credentials is not None and getattr(credentials, "credentials", None):
+        return credentials.credentials
+    try:
+        return request.cookies.get(settings.WEB_SESSION_ACCESS_COOKIE_NAME)
+    except Exception:
+        return None
+
+
+async def require_bearer_or_cookie_credentials(
+    request: Request,
+    bearer: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> HTTPAuthorizationCredentials:
+    """Comportement « strict » : 403 si ni Bearer ni cookie d'accès."""
+    if bearer and bearer.credentials:
+        return bearer
+    raw = request.cookies.get(settings.WEB_SESSION_ACCESS_COOKIE_NAME)
+    if raw:
+        return HTTPAuthorizationCredentials(scheme="Bearer", credentials=raw)
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
 
 SAFE_CACHE_METHODS = {"GET", "HEAD", "OPTIONS"}
 USER_CACHE_TTL_SECONDS = 300
@@ -167,10 +196,10 @@ def should_use_cached_payload(request: Optional[Request]) -> bool:
 
 
 async def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
-    request: Request = None,
 ) -> Union[User, CachedUser]:
     """Return current user from JWT, using Redis cache for safe requests when possible."""
 
@@ -180,15 +209,18 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    token = resolve_access_token(request, credentials)
     try:
-        if credentials is None:
+        if not token:
             raise credentials_exception
-        payload = verify_token(credentials.credentials)
+        payload = verify_token(token)
         user_id: Optional[str] = payload.get("sub")
         if not user_id:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+    except HTTPException:
+        raise
     except Exception:
         raise credentials_exception
 
@@ -227,18 +259,17 @@ async def get_current_user(
 
 
 async def get_current_user_strict(
-    credentials: HTTPAuthorizationCredentials = Depends(security_strict),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(require_bearer_or_cookie_credentials),
     db: Session = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
-    request: Request = None,
 ) -> Union[User, CachedUser]:
-    """Variant that raises 403 on missing credentials (via security_strict)."""
-    # If we reached here, credentials is present (auto_error=True); delegate to normal validation
+    """403 si ni Bearer ni cookie d'accès ; sinon même validation que get_current_user."""
     return await get_current_user(
+        request=request,
         credentials=credentials,
         db=db,
         redis_client=redis_client,
-        request=request,
     )
 
 
@@ -326,6 +357,7 @@ def require_role_strict(required_role: Union[UserRole, str, List[UserRole]]):
 
 
 def require_admin_role(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
@@ -342,15 +374,20 @@ def require_admin_role(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    if credentials is None:
+    token = resolve_access_token(request, credentials)
+    if token is None:
         raise unauthenticated_exception
 
     try:
-        payload = verify_token(credentials.credentials)
+        payload = verify_token(token)
         user_id: Optional[str] = payload.get("sub")
         if not user_id:
             raise unauthenticated_exception
     except JWTError:
+        raise unauthenticated_exception
+    except HTTPException:
+        raise
+    except Exception:
         raise unauthenticated_exception
 
     try:
@@ -390,7 +427,7 @@ def require_super_admin_role():
 
 
 def require_admin_role_strict():
-    """Require admin or super-admin role using strict bearer (403 on missing header)."""
+    """Require admin or super-admin role ; 403 si ni Bearer ni cookie d'accès (via get_current_user_strict)."""
 
     def admin_checker(current_user: User = Depends(get_current_user_strict)) -> User:
         if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:

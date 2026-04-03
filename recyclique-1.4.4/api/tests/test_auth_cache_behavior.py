@@ -34,6 +34,7 @@ class NoDBSession:
 class DummyRequest:
     def __init__(self, method: str):
         self.method = method
+        self.cookies = {}
 
 
 class ResultWrapper:
@@ -85,10 +86,10 @@ async def test_get_current_user_returns_cached_user_for_safe_methods():
     redis_client.set(f"user_cache:{user_id}", _build_cached_payload(user_id))
 
     cached = await get_current_user(
+        request=DummyRequest(method="GET"),
         credentials=credentials,
         db=NoDBSession(),
         redis_client=redis_client,
-        request=DummyRequest(method="GET"),
     )
 
     assert isinstance(cached, CachedUser)
@@ -116,10 +117,10 @@ async def test_get_current_user_fetches_db_for_unsafe_methods():
 
     db_session = DummyDBSession(user=user)
     user_from_db = await get_current_user(
+        request=DummyRequest(method="POST"),
         credentials=credentials,
         db=db_session,
         redis_client=redis_client,
-        request=DummyRequest(method="POST"),
     )
 
     assert isinstance(user_from_db, User)

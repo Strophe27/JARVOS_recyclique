@@ -1,5 +1,6 @@
 ---
 name: bmad-story-runner
+model: composer-2-fast
 description: Orchestrateur parent BMAD pour une story — enchaîne CS → VS → DS → gates → QA → CR en spawant un sous-agent (Task) par étape skill ; transmet le brief reçu à chaque enfant. Plan B (tout dans le même contexte) uniquement si spawn impossible (NEEDS_HITL). Brief YAML spec §6.2.
 ---
 

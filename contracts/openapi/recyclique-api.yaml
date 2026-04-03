@@ -14,6 +14,117 @@ servers:
 # Gate CI (Epic 10) : lorsque ce fichier contient des operations, verifier que chaque
 # data_contract.operation_id des manifests CREOS reviewables a un operationId ici.
 paths:
+  /v1/auth/login:
+    post:
+      operationId: recyclique_auth_login
+      tags:
+        - auth
+      summary: Connexion mot de passe web (socle session v2)
+      description: |
+        Autorité backend exclusive (Epic 2.1). Réponse JSON inchangée pour clients legacy (access_token, refresh_token optionnel).
+        Si `use_web_session_cookies` est true : en plus du JSON, pose des cookies **httpOnly** (`recyclique_access`, `recyclique_refresh` par défaut — noms configurables côté serveur).
+        **Same-origin** recommandé ; `SameSite=Lax` par défaut. CSRF : politique projet / Story 2.4+ ; ne pas inférer la vérité contextuelle côté UI (Epic 3).
+        Le flux **PIN métier** reste sur `POST /v1/auth/pin` (distinct du mot de passe web, spec 1.3).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequestV2"
+      responses:
+        "200":
+          description: OK — peut inclure des en-têtes Set-Cookie si use_web_session_cookies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponseV2"
+        "401":
+          description: Identifiants invalides ou utilisateur inactif
+  /v1/auth/logout:
+    post:
+      operationId: recyclique_auth_logout
+      tags:
+        - auth
+      summary: Déconnexion (révoque sessions refresh côté serveur)
+      description: |
+        Nécessite un JWT valide (Bearer **ou** cookie d'accès v2). Révoque les refresh tokens persistés ; envoie `Set-Cookie` d’expiration pour les cookies de session web si présents.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Déconnexion réussie
+  /v1/auth/refresh:
+    post:
+      operationId: recyclique_auth_refresh
+      tags:
+        - auth
+      summary: Rotation access + refresh
+      description: |
+        Accepte le refresh token dans le corps **ou** le cookie httpOnly (transport web v2). Si le refresh provenait du cookie, la réponse 200 inclut de nouveaux Set-Cookie.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequestV2"
+      responses:
+        "200":
+          description: Nouveaux jetons
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshTokenResponseV2"
+        "401":
+          description: Refresh invalide ou expiré
+        "403":
+          description: Inactivité trop longue
+        "422":
+          description: Refresh absent (corps et cookie)
+  /v1/users/me/context:
+    get:
+      operationId: recyclique_users_getContextEnvelope
+      tags:
+        - users
+        - context
+      summary: ContextEnvelope courant (autorité serveur)
+      description: |
+        Story 2.2 : agrégation site / caisse / session caisse / poste réception + `runtime_state` (`ok` | `degraded` | `forbidden`)
+        + `permission_keys` (sous-ensemble minimal ; union exhaustive rôles + groupes : Story 2.3).
+        Le client ne reconstruit pas l'enveloppe depuis des manifests ; il consomme cette réponse.
+        Lecture toujours recalculée depuis la base (pas d'inférence silencieuse).
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Enveloppe de contexte
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContextEnvelope"
+        "401":
+          description: Non authentifié
+  /v1/users/me/context/refresh:
+    post:
+      operationId: recyclique_users_refreshContextEnvelope
+      tags:
+        - users
+        - context
+      summary: Rafraîchissement explicite du ContextEnvelope
+      description: |
+        Recalcul serveur après changement de site, caisse, session ou poste (spec 1.3 §4.2).
+        Même charge utile que `GET /v1/users/me/context` ; endpoint dédié pour que le client déclenche
+        explicitement un nouveau calcul sans supposer de mise à jour silencieuse.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Enveloppe recalculée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContextEnvelope"
+        "401":
+          description: Non authentifié
   /v2/_contract-governance/ping:
     get:
       operationId: recyclique_contractGovernance_ping
@@ -53,7 +164,105 @@ paths:
         "503":
           description: Source externe ou agregation indisponible — signal explicite (Story 1.7, Epic 2.7)
 components:
+  securitySchemes:
+    bearerOrCookie:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT d'accès. Alternative same-origin : cookie httpOnly `recyclique_access` (nom par défaut serveur), sans duplication de la logique d'autorisation côté client.
   schemas:
+    LoginRequestV2:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+        use_web_session_cookies:
+          type: boolean
+          default: false
+          description: Si true, pose les cookies httpOnly en plus du JSON (parcours web v2).
+      additionalProperties: false
+    AuthUserV2:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+          nullable: true
+        first_name:
+          type: string
+          nullable: true
+        last_name:
+          type: string
+          nullable: true
+        role:
+          type: string
+        status:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    LoginResponseV2:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - user
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+          nullable: true
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+          nullable: true
+        user:
+          $ref: "#/components/schemas/AuthUserV2"
+      additionalProperties: false
+    RefreshTokenRequestV2:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          nullable: true
+          description: Si absent, lecture du cookie httpOnly de refresh (même client same-origin).
+      additionalProperties: false
+    RefreshTokenResponseV2:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+      additionalProperties: false
     SyncStateCore:
       type: string
       description: |
@@ -64,6 +273,46 @@ components:
         - en_quarantaine
         - resolu
         - rejete
+    ContextRuntimeState:
+      type: string
+      description: |
+        État runtime UI pour le périmètre exploitation (spec 1.3 §4.2).
+        - ok : affectation site minimale cohérente avec les sessions ouvertes connues.
+        - degraded : contexte incomplet (ex. site non affecté) ou incohérent (ex. session caisse sur autre site) — pas d'expansion silencieuse des droits.
+        - forbidden : compte refusé pour l'exploitation ; pas d'ids exposés (`context` null).
+      enum:
+        - ok
+        - degraded
+        - forbidden
+    ContextEnvelope:
+      type: object
+      required:
+        - runtime_state
+        - permission_keys
+        - computed_at
+      description: |
+        Enveloppe canonique backend (AR39). Story 2.2 : minimal ; Story 2.3 enrichit le calcul de `permission_keys`.
+      properties:
+        runtime_state:
+          $ref: "#/components/schemas/ContextRuntimeState"
+        context:
+          allOf:
+            - $ref: "#/components/schemas/ExploitationContextIds"
+          nullable: true
+        permission_keys:
+          type: array
+          items:
+            type: string
+          description: Clés de permission effectives connues à l'instant `computed_at` (sous-ensemble Story 2.2).
+        computed_at:
+          type: string
+          format: date-time
+          description: Horodatage serveur autoritaire.
+        restriction_message:
+          type: string
+          nullable: true
+          description: Détail lisible pour `degraded` / `forbidden` (diagnostic UI, non normatif pour l'autorisation).
+      additionalProperties: false
     ExploitationContextIds:
       type: object
       description: Identifiants de contexte visibles (alignement Story 1.3, ContextEnvelope lorsque exposes au client).

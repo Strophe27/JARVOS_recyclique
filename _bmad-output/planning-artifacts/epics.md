@@ -658,6 +658,8 @@ So that Epic 4 can prove the modular chain with real business context instead of
 
 L'equipe peut stabiliser `Recyclique` comme noyau d'autorite v2 pour l'authentification, les contextes, les permissions, la securite sensible, la persistance terrain, l'audit et les invariants metier, afin de fournir un backend fiable aux futurs modules. Cet epic porte aussi l'exposition backend minimale necessaire aux vues live et slices verticaux initiaux, notamment les signaux et contrats permettant au `bandeau live` de refleter les horaires reels, ouvertures decalees et cas particuliers formalises en Epic 1.
 
+> **Exécution transitoire et migration (Correct Course 2026-04-03, approuvé) :** le développement backend Epic 2 peut résider sous `recyclique-1.4.4/api/` jusqu'à la clôture de la story **2.2b** (voir `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md`). La story **2.2b** aligne le dépôt sur le dossier canonique `recyclique/` à la racine du mono-repo (`_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md`). **Ordre d'exécution recommandé :** terminer **2.2**, exécuter **2.2b**, puis poursuivre **2.3** à **2.7** ; **2.2b** avant **2.6** est fortement conseillé pour les chemins de contrats et CI. Référence : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-03.md`.
+
 ### Story 2.1: Poser le socle de session web v2 et l'autorite d'authentification backend
 
 As a frontend and backend team,
@@ -703,6 +705,29 @@ So that the frontend can render only what is valid for the active site, caisse, 
 **When** this story is delivered
 **Then** Epic 3 and Epic 5 can consume one authoritative context payload
 **And** later epics do not need to invent parallel frontend context models
+
+### Story 2.2b: Migrer le package API vers le dossier canonique `recyclique/` (racine mono-repo)
+
+As a platform team,
+I want the live FastAPI package to live under the canonical `recyclique/` root path with CI, compose and Story Runner gates updated,
+So that there is a single authoritative backend location in the repo before contract-heavy stories (2.6+) and no long-term drift between brownfield path and architecture.
+
+**Acceptance Criteria:**
+
+**Given** the architecture names `recyclique/` at repo root as the nominal backend layout
+**When** the migration story is completed
+**Then** the application code, tests and tool configuration used for Epic 2 gates point to `recyclique/` (or documented symlinks only if explicitly justified)
+**And** `recyclique-1.4.4/api/` is no longer the active development root for new work (archived, README redirect, or equivalent)
+
+**Given** Docker and local dev flows depend on paths
+**When** compose and env docs are updated
+**Then** developers can run the API from the new location with the same or clearly migrated env vars
+**And** no duplicate mutable backend trees remain without an explicit decision note
+
+**Given** Epic Runner and briefs use absolute paths
+**When** this story closes
+**Then** default gate commands in Story Runner briefs for Epic 2 target the new `recyclique/` package root
+**And** `sprint-status.yaml` and this epic remain consistent with the story key `2-2b-migrer-le-backend-vers-recyclique-racine-mono-repo`
 
 ### Story 2.3: Mettre en place le calcul additif des roles, groupes et permissions effectives
 

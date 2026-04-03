@@ -75,6 +75,12 @@ class Settings(BaseSettings):
 
     # Reception Live Stats Feature Flag
     LIVE_RECEPTION_STATS_ENABLED: bool = True
+
+    # Session web v2 (Epic 2.1) — cookies httpOnly same-origin ; Bearer JSON inchangé par défaut
+    WEB_SESSION_ACCESS_COOKIE_NAME: str = "recyclique_access"
+    WEB_SESSION_REFRESH_COOKIE_NAME: str = "recyclique_refresh"
+    WEB_SESSION_COOKIE_PATH: str = "/"
+    WEB_SESSION_COOKIE_SAMESITE: str = "lax"
     
     model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

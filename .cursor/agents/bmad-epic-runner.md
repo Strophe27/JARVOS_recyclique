@@ -1,5 +1,6 @@
 ---
 name: bmad-epic-runner
+model: composer-2-fast
 description: Coordinateur BMAD pour un epic d'implémentation dans Cursor. Lit sprint-status et epics.md, choisit la prochaine story (ordre epics + YAML), délègue au Story Runner via Task. Pas d'exécution auto headless. Utiliser en début de session implémentation ou quand l'utilisateur veut enchaîner les stories d'un epic avec discipline BMAD.
 ---
 

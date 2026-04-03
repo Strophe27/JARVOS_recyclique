@@ -15,6 +15,8 @@ from recyclic_api.schemas.user import (
 from recyclic_api.schemas.pin import PinSetRequest
 from recyclic_api.core.auth import require_role_strict, get_current_user, get_user_permissions
 from recyclic_api.core.security import hash_password
+from recyclic_api.schemas.context_envelope import ContextEnvelopeResponse
+from recyclic_api.services.context_envelope_service import build_context_envelope
 
 router = APIRouter()
 
@@ -96,6 +98,27 @@ async def get_my_permissions(
     """Récupérer les permissions de l'utilisateur connecté."""
     permissions = get_user_permissions(current_user, db)
     return {"permissions": permissions}
+
+
+@router.get("/me/context", response_model=ContextEnvelopeResponse)
+async def get_my_context_envelope(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """ContextEnvelope autoritaire : agrégation site / caisse / session / poste + état runtime (Story 2.2)."""
+    return build_context_envelope(db, current_user.id)
+
+
+@router.post("/me/context/refresh", response_model=ContextEnvelopeResponse)
+async def refresh_my_context_envelope(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Recalcul explicite après changement de contexte métier (spec 1.3 §4.2).
+    Même logique que GET — point d'appel dédié pour éviter toute bascule implicite côté UI.
+    """
+    return build_context_envelope(db, current_user.id)
 
 
 @router.get("/active-operators", response_model=List[UserResponse])

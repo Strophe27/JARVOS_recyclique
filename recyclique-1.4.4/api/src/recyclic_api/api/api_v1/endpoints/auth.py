@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from slowapi import _rate_limit_exceeded_handler
@@ -20,7 +22,11 @@ from recyclic_api.schemas.pin import PinAuthRequest, PinAuthResponse
 from recyclic_api.utils.auth_metrics import auth_metrics
 from recyclic_api.core.uuid_validation import validate_and_convert_uuid
 from recyclic_api.utils.password_reset_email import send_password_reset_email_safe
-from recyclic_api.core.config import get_effective_frontend_url
+from recyclic_api.core.config import get_effective_frontend_url, settings
+from recyclic_api.core.web_session_cookies import (
+    attach_web_session_cookies,
+    clear_web_session_cookies,
+)
 from recyclic_api.services.activity_service import ActivityService
 from recyclic_api.services.refresh_token_service import RefreshTokenService
 from recyclic_api.core.security import get_token_expiration_minutes
@@ -293,14 +299,27 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
         logger.debug(f"AuthUser créé avec succès pour user_id={user.id}")
 
         # Créer LoginResponse
-        response = LoginResponse(
+        body = LoginResponse(
             access_token=token,
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=expires_in,
             user=auth_user,
         )
-        return response
+        json_response = JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=jsonable_encoder(body),
+        )
+        if payload.use_web_session_cookies:
+            refresh_max_age = refresh_service._get_refresh_token_max_hours() * 3600
+            attach_web_session_cookies(
+                json_response,
+                access_token=token,
+                refresh_token=refresh_token,
+                access_max_age_seconds=expires_in,
+                refresh_max_age_seconds=refresh_max_age,
+            )
+        return json_response
 
     except Exception as e:
         logger.error(
@@ -622,6 +641,9 @@ async def logout(
 
     logger.info('User %s (ID: %s) logged out from IP: %s', current_user.username, current_user.id, client_ip)
 
+    logout_body = LogoutResponse(message='Deconnexion reussie')
+    json_response = JSONResponse(content=jsonable_encoder(logout_body))
+
     # Enregistrer la deconnexion dans login_history
     try:
         logout_entry = LoginHistory(
@@ -638,6 +660,8 @@ async def logout(
         logger.warning("Impossible d'enregistrer la deconnexion dans login_history: %s", exc)
         db.rollback()
 
+    clear_web_session_cookies(json_response)
+
     # Nettoyer l'activite temps reel
     try:
         ActivityService().clear_user_activity(str(current_user.id))
@@ -645,7 +669,7 @@ async def logout(
     except Exception as exc:
         logger.warning("Erreur lors de la suppression de l'activite Redis: %s", exc)
 
-    return LogoutResponse(message='Deconnexion reussie')
+    return json_response
 
 
 @router.post(
@@ -750,10 +774,24 @@ async def refresh_token(
 
     refresh_service = RefreshTokenService(db)
 
+    body_tok = (payload.refresh_token or "").strip() or None
+    cookie_tok = request.cookies.get(settings.WEB_SESSION_REFRESH_COOKIE_NAME)
+    cookie_tok = (cookie_tok or "").strip() or None
+    used_cookie_transport = False
+    effective_refresh = body_tok
+    if not effective_refresh:
+        effective_refresh = cookie_tok
+        used_cookie_transport = bool(effective_refresh)
+    if not effective_refresh:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Refresh token requis",
+        )
+
     try:
         # Valider et faire la rotation du refresh token
         new_session, new_refresh_token = refresh_service.validate_and_rotate(
-            refresh_token=payload.refresh_token,
+            refresh_token=effective_refresh,
             ip_address=client_ip,
             user_agent=user_agent,
         )
@@ -804,12 +842,24 @@ async def refresh_token(
 
         logger.info(f"Refresh token réussi pour user_id={new_session.user_id}")
 
-        return RefreshTokenResponse(
+        refresh_body = RefreshTokenResponse(
             access_token=new_access_token,
             refresh_token=new_refresh_token,
             token_type="bearer",
             expires_in=expires_in,
         )
+        if used_cookie_transport:
+            refresh_max_age = refresh_service._get_refresh_token_max_hours() * 3600
+            jr = JSONResponse(content=jsonable_encoder(refresh_body))
+            attach_web_session_cookies(
+                jr,
+                access_token=new_access_token,
+                refresh_token=new_refresh_token,
+                access_max_age_seconds=expires_in,
+                refresh_max_age_seconds=refresh_max_age,
+            )
+            return jr
+        return refresh_body
 
     except ValueError as e:
         error_message = str(e)

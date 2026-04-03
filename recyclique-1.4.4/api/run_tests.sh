@@ -30,7 +30,8 @@ docker-compose run --rm -e TESTING=true -e ENVIRONMENT=test api bash -lc "\
     tests/test_admin_user_status_endpoint.py \
     tests/api/test_admin_user_management.py \
     tests/test_refresh_token_service.py \
-    tests/test_refresh_token_endpoint.py"
+    tests/test_refresh_token_endpoint.py \
+    tests/test_context_envelope.py"
 
 echo "✅ Tests terminés (lot pilote TEST-01 + TEST-02 admin, aligné conftest)."
 echo ""

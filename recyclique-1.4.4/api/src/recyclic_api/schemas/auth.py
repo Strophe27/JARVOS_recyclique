@@ -9,6 +9,13 @@ class LoginRequest(BaseModel):
 
     username: str = Field(..., description="Nom d'utilisateur")
     password: str = Field(..., description="Mot de passe")
+    use_web_session_cookies: bool = Field(
+        default=False,
+        description=(
+            "Si true : en plus du JSON habituel, pose les cookies httpOnly "
+            "(access + refresh) pour le parcours same-origin v2. Ne pas utiliser pour clients purement JSON / mobile."
+        ),
+    )
 
 
 class SignupRequest(BaseModel):
@@ -87,7 +94,13 @@ class LogoutResponse(BaseModel):
 class RefreshTokenRequest(BaseModel):
     """Schéma de requête pour le refresh token."""
 
-    refresh_token: str = Field(..., description="Refresh token à utiliser pour obtenir un nouveau access token")
+    refresh_token: str | None = Field(
+        default=None,
+        description=(
+            "Refresh token opaque. Si absent, lecture du cookie httpOnly "
+            f"(nom configurable côté serveur, défaut côté client : voir OpenAPI / config backend)."
+        ),
+    )
 
 
 class RefreshTokenResponse(BaseModel):

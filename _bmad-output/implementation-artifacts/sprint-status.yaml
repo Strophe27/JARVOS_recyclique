@@ -1,5 +1,5 @@
 # generated: 2026-04-01T15:39:08
-# last_updated: 2026-04-02 (epic-1-retrospective done)
+# last_updated: 2026-04-03 (story 2.2 done apres CR + gate pytest)
 # project: JARVOS_recyclique
 # project_key: NOKEY
 # tracking_system: file-system
@@ -48,7 +48,7 @@
 #   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
 
 generated: "2026-04-01"
-last_updated: "2026-04-02" # epic-1 done ; epic-1-retrospective done ; stories 3-x done
+last_updated: "2026-04-03" # epic-2 ; story 2.2 done
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
@@ -65,9 +65,10 @@ development_status:
   1-7-formaliser-les-signaux-dexploitation-pour-bandeau-live-et-les-premiers-slices: done
   epic-1-retrospective: done
 
-  epic-2: backlog
-  2-1-poser-le-socle-de-session-web-v2-et-lautorite-dauthentification-backend: backlog
-  2-2-implementer-le-contextenvelope-backend-minimal-et-le-recalcul-explicite-de-contexte: backlog
+  epic-2: in-progress
+  2-1-poser-le-socle-de-session-web-v2-et-lautorite-dauthentification-backend: done
+  2-2-implementer-le-contextenvelope-backend-minimal-et-le-recalcul-explicite-de-contexte: done
+  2-2b-migrer-le-backend-vers-recyclique-racine-mono-repo: backlog
   2-3-mettre-en-place-le-calcul-additif-des-roles-groupes-et-permissions-effectives: backlog
   2-4-encadrer-les-actions-sensibles-avec-step-up-security-pin-et-idempotence: backlog
   2-5-stabiliser-la-persistance-terrain-locale-laudit-et-les-journaux-critiques: backlog

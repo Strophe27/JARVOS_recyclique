@@ -1,69 +1,55 @@
-# Synthèse — tests automatisés (QA E2E)
+# Synthèse automatisation des tests — Story 2.1
 
-**Story 1.1 (doc-only, Piste B) :** pas de tests packagés ; synthèse QA équivalente → [`1-1-surface-travail-v2-doc-qa-summary.md`](./1-1-surface-travail-v2-doc-qa-summary.md) (**PASS** 2026-04-02, skill `bmad-qa-generate-e2e-tests`).
+**Story** : `2-1-poser-le-socle-de-session-web-v2-et-lautorite-dauthentification-backend`  
+**Date** : 2026-04-03  
+**Cadre** : `bmad-qa-generate-e2e-tests` (API pytest, pas d’UI E2E pour ce périmètre).
 
-**Story 1.2 (doc-only, audit brownfield) :** pas de tests API/E2E applicables ; synthèse QA documentaire → [`1-2-audit-brownfield-doc-qa-summary.md`](./1-2-audit-brownfield-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = checklist revue + grille AC ↔ sections du rapport).
+## Tests générés / complétés
 
-**Story 1.3 (doc-only, spec multi-contextes / autorisation v2) :** pas de tests API/E2E applicables au livrable markdown ; synthèse QA documentaire → [`1-3-spec-multi-contextes-doc-qa-summary.md`](./1-3-spec-multi-contextes-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ §2–§8 + table de traçabilité en tête du spec).
-
-**Story 1.4 (contrats + gouvernance OpenAPI / CREOS / ContextEnvelope) :** pas d’E2E produit ni d’API exécutable dans le périmètre ; synthèse QA + **tests contrat** (parse YAML / JSON repo) → [`1-4-gouvernance-contractuelle-doc-qa-summary.md`](./1-4-gouvernance-contractuelle-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact + 4 tests Vitest sous `peintre-nano/tests/contract/`).
-
-**Story 1.5 (contrat minimal sync / réconciliation Paheko, doc-only) :** pas d’E2E ni d’API métier ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-5-contrat-sync-paheko-doc-qa-summary.md`](./1-5-contrat-sync-paheko-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact + 4 tests Vitest `contrat-sync-paheko-1-5-artefact.test.ts` ; OpenAPI `correlation_id` non exigé tant que schémas d’erreur absents).
-
-**Story 1.6 (matrice intégration Paheko + gaps API, doc-only) :** pas d’E2E ni d’API métier ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-6-matrice-paheko-doc-qa-summary.md`](./1-6-matrice-paheko-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact + 7 tests Vitest `matrice-paheko-1-6-artefact.test.ts` ; HITL = validation métier matrice / gaps).
-
-**Story 1.7 (signaux exploitation bandeau live / premiers slices, doc-only + brouillon OpenAPI) :** pas d’E2E produit ; synthèse QA **N/A doc-only** + **checks** reproductibles → [`1-7-signaux-exploitation-doc-qa-summary.md`](./1-7-signaux-exploitation-doc-qa-summary.md) (**PASS** 2026-04-02, `gates_skipped_with_hitl: true` ; preuve = grille AC ↔ artefact `2026-04-02_07_*.md` §1 bis v1 / **6** tests Vitest `signaux-exploitation-bandeau-1-7-artefact.test.ts` + **9** tests `recyclique-openapi-governance.test.ts` dont schémas Story 1.7, `daily_kpis_aggregate`, **503** `live-snapshot`) ; HITL = périmètre v1 KPIs globaux 1.4.4, F1–F6 enrichissements, cas limites, effectivité caisse si exposée.
-
-**Stories documentées :** 3.1–3.3 (shell, manifests, widgets), 3.4 (auth / enveloppe), 3.5 (`UserRuntimePrefs`), **3.6** (fallbacks / rejets runtime visibles, `reportRuntimeFallback`, `data-runtime-*`), **3.7** (page démo runtime composé, `RuntimeDemoApp`, pipeline manifest + registre + enveloppe).  
-**Dernier passage QA e2e / contrat :** stories **1.4**–**1.7** (contrat / artefacts doc) + **3.7** (e2e jsdom) — 2026-04-02.  
-**Package :** `peintre-nano/`  
-**Commande de vérification :** `npm run test` (racine du package)
-
-## Tests générés ou étendus
-
-### Tests API
-
-- Non applicable (pas d’API HTTP dédiée dans le périmètre actuel).
-
-### Tests contrat (Vitest, environnement node)
+### Tests API (pytest)
 
 | Fichier | Rôle |
-|--------|------|
-| `peintre-nano/tests/contract/recyclique-openapi-governance.test.ts` | Stories **1.4** / **1.7** : `recyclique-api.yaml` (OpenAPI 3.1, `recyclique_contractGovernance_ping`, `recyclique_exploitation_getLiveSnapshot`, réponse **503** `live-snapshot`, schémas `SyncStateCore` / `ExploitationLiveSnapshot` / `ExploitationContextIds`, unicité `operationId`) ; schéma CREOS `widget-declaration` (`data_contract.operation_id`). |
-| `peintre-nano/tests/contract/contrat-sync-paheko-1-5-artefact.test.ts` | Story **1.5** : artéfact pivot sync/réconciliation (traçabilité AC, cycle de vie, outbox, corrélation, FR23/FR25, AR39, renvoi 1.6, HITL). |
-| `peintre-nano/tests/contract/matrice-paheko-1-6-artefact.test.ts` | Story **1.6** : matrice Paheko + gaps (traçabilité AC, §2 classifications, §4, §5 FR5/FR40/AR9, rationales plugin, références preuves). |
-| `peintre-nano/tests/contract/signaux-exploitation-bandeau-1-7-artefact.test.ts` | Story **1.7** : artefact signaux F1–F6, §1 bis v1 KPIs / 1.4.4, cas limites, FR24, Epic 4 / 2.7, HITL. |
+|---------|------|
+| `recyclique-1.4.4/api/tests/test_web_session_v2_cookies.py` | Session web v2 : cookies httpOnly, cookie vs Bearer, logout, strict admin, refresh vide, PIN sans cookies, login legacy sans cookies ; refresh cookie + rotation (skip si Redis absent). |
 
-### Tests E2E (Vitest + Testing Library + jsdom)
+### Lot gate story (régression inchangé, exécuté avec le fichier ci-dessus)
 
-| Fichier | Rôle |
-|--------|------|
-| `peintre-nano/tests/e2e/app-shell.e2e.test.tsx` | Story 3.1 : shell, zones, titre. |
-| `peintre-nano/tests/e2e/manifest-bundle.e2e.test.tsx` | Stories 3.2 / **3.6** : lot valide ; rejets **blocked** (collision `route_key`, `NAV_PAGE_LINK_UNRESOLVED`, `UNKNOWN_WIDGET_TYPE` dans l’allowlist bundle) → `ManifestErrorBanner`, `data-runtime-severity="blocked"`, espion `reportRuntimeFallback` (`state: manifest_bundle_invalid`). |
-| `peintre-nano/tests/e2e/widget-declarative-rendering.e2e.test.tsx` | Stories 3.3 / **3.6** : widgets démo ; slot non mappé ; **widget inconnu au rendu** → `widget-resolve-error`, `data-runtime-severity="degraded"`, espion `reportRuntimeFallback` (`state: widget_resolve_failed`). |
-| `peintre-nano/tests/e2e/auth-context-envelope.e2e.test.tsx` | Stories 3.4 / **3.6** : nominal + blocages ; contexte périmé → `reportRuntimeFallback` + `data-runtime-severity` sur `page-access-blocked`. |
-| `peintre-nano/tests/e2e/user-runtime-prefs.e2e.test.tsx` | Story 3.5 : densité UI sans révéler la nav admin. |
-| `peintre-nano/tests/e2e/runtime-demo-compose.e2e.test.tsx` | Story **3.7** : chemin nominal (`runtime-demo-root`, widget manifest) ; fallback widget non enregistré (`widget-resolve-error`, `reportRuntimeFallback`) ; fallback garde page (`page-access-blocked`, `reportRuntimeFallback`). |
+- `tests/test_infrastructure.py`
+- `tests/test_auth_login_endpoint.py`
+- `tests/test_auth_logging.py`
+- `tests/test_auth_inactive_user_middleware.py`
+- `tests/test_auth_login_username_password.py`
+- `tests/test_admin_user_status_endpoint.py`
+- `tests/api/test_admin_user_management.py`
+- `tests/test_refresh_token_service.py`
+- `tests/test_refresh_token_endpoint.py`
+- `tests/test_auth_cache_behavior.py`
 
-### Tests unitaires (story 3.6)
+## Couverture (indicative)
 
-| Fichier | Rôle |
-|--------|------|
-| `peintre-nano/tests/unit/runtime-rejection-reporting.test.tsx` | `loadManifestBundle` rejeté, widget inconnu (`PageRenderer`), `PageAccessBlocked` → UI + `reportRuntimeFallback`. |
-
-## Couverture (indicatif)
-
-- **Rejets manifest (bundle) :** e2e + unitaires — visibilité UI, sévérité **blocked**, reporting structuré.
-- **Widget inconnu (zone dégradée) :** e2e + unitaires — **degraded**, pas d’écran vide sans signal.
-- **Accès page / enveloppe :** e2e auth + unitaires `resolve-page-access`, etc.
-- **Auth / ContextEnvelope :** chemins nominal et refus (voir tableau ci-dessus).
-- **Démo runtime composé (3.7) :** e2e dédié — bac à sable + deux fallbacks visibles avec espion `reportRuntimeFallback` (aligné AC story).
+- **Transport session v2** : login avec `use_web_session_cookies`, accès route protégée via cookie, priorité Bearer sur cookie invalide, absence de cookies en mode legacy, effacement post-logout.
+- **Cohabitation** : `/auth/pin` ne pose pas les cookies de session web.
+- **Erreurs** : refresh sans token corps ni cookie → 422 ; route `require_admin_role_strict` sans credentials → 403.
+- **Refresh par cookie** : happy path sous Redis (skip si indisponible).
 
 ## Résultat d’exécution
 
-- `npm run test` dans `peintre-nano/` : **vérification ciblée Story 1.7** — `vitest run tests/contract/signaux-exploitation-bandeau-1-7-artefact.test.ts tests/contract/recyclique-openapi-governance.test.ts` → **15** tests **PASS** (§1 bis artefact, `daily_kpis_aggregate` OpenAPI) — 2026-04-02. *(Suite complète 23 fichiers : d’autres tests contract peuvent échouer si un artefact tiers a dérivé.)*
+```text
+85 passed, 5 skipped (Redis / refresh), ~3m40 — exit 0
+```
 
-## Suite possible
+Commande (depuis `recyclique-1.4.4/api`) :
 
-- Brancher CI sur `peintre-nano` si ce n’est pas déjà fait.
-- Playwright / navigateur réel : hors périmètre actuel (jsdom + Testing Library).
+```powershell
+$env:TESTING = 'true'
+python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py tests/test_auth_logging.py tests/test_auth_inactive_user_middleware.py tests/test_auth_login_username_password.py tests/test_admin_user_status_endpoint.py tests/api/test_admin_user_management.py tests/test_refresh_token_service.py tests/test_refresh_token_endpoint.py tests/test_auth_cache_behavior.py tests/test_web_session_v2_cookies.py -v --tb=short
+```
+
+## Prochaines étapes
+
+- Enchaîner **CR** (code review) côté Story Runner.
+- CI : réutiliser la même commande ou le job pytest du dépôt.
+
+## E2E UI
+
+Non applicable pour cette story (socle backend uniquement ; le frontend Epic 3 consommera le contrat).
