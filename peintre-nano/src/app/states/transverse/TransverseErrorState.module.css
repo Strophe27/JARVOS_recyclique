@@ -1,0 +1,22 @@
+.root {
+  margin: 0;
+  padding: var(--pn-space-md);
+  border: 1px solid var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+  background: #fff5f5;
+  border-color: #fab1a0;
+}
+
+.message {
+  margin: 0;
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text);
+}
+
+.code {
+  display: block;
+  margin-top: var(--pn-space-xs);
+  font-family: var(--pn-font-mono);
+  font-size: 0.85rem;
+  color: var(--pn-color-text-muted);
+}

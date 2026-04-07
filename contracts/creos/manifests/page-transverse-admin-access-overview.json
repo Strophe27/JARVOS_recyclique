@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-access-overview",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.access.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Admin transverse — accès et visibilité",
+        "body": "Vue de cadrage transverse : ce qui est affiché dans la navigation et sur les écrans dépend des permissions déclarées dans les manifests CREOS et de leur présence dans le ContextEnvelope servi par le backend."
+      }
+    },
+    {
+      "slot_id": "admin.access.scope",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Périmètre de cette page",
+        "body": "Textes et blocs de composition uniquement. Aucune gestion fine des rôles métier, aucune matrice ACL ni édition de droits : réservé à l'autorité backend et aux contrats futurs (Epic 9) lorsque les operation_id et enveloppes le permettront."
+      }
+    },
+    {
+      "slot_id": "admin.access.not-matrix",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Ce que nous ne faisons pas ici",
+        "body": "Pas de recalcul des droits effectifs côté UI ; pas de simulation de politique d'accès. Le hub `/admin` relie les autres vues admin transverses du lot ; la caisse (Epic 6), la réception (Epic 7) et la sync Paheko (Epic 8) restent hors scope."
+      }
+    },
+    {
+      "slot_id": "admin.access.data-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Données accès / permissions (gap documenté)",
+        "body": "Aucun widget data_contract : les listes d'utilisateurs, rôles ou journaux d'audit suivront des operation_id résolus dans contracts/openapi/recyclique-api.yaml ; jusqu'alors, composition en demo.text.block uniquement."
+      }
+    }
+  ]
+}

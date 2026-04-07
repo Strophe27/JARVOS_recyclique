@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -8,6 +8,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    fs: {
+      // Docker dev mounts CREOS contracts outside `/app`; keep served manifests reachable.
+      allow: [searchForWorkspaceRoot(process.cwd()), '/contracts'],
+    },
     proxy: {
       // Keep the browser on the same origin in local Docker dev.
       '/api': {

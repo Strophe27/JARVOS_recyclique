@@ -44,7 +44,7 @@
 - [ ] **Epic 2** — Socle backend brownfield v2 (auth, contexte, permissions, persistance, signaux bandeau).
 - [ ] **Epic 3** — Socle Peintre_nano (shell, slots, validation CREOS, mocks permis avant C1).
 - [x] **Epic 4** — Preuve chaîne modulaire **bandeau live**.
-- [ ] **Epic 5** — Shell, dashboard, admin transverses dans Peintre.
+- [x] **Epic 5** — Shell, dashboard, admin transverses dans Peintre.
 - [ ] **Epic 6** — Caisse v2 exploitable.
 - [ ] **Epic 7** — Réception v2 exploitable.
 - [ ] **Epic 8** — Articulation comptable réelle Paheko.

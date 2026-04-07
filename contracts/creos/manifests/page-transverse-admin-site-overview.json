@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-site-overview",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.site.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Admin transverse — site et périmètre",
+        "body": "Hub léger transverse pour le site actif : rappels de périmètre et de cohérence avec le ContextEnvelope ; pas de configuration métier détaillée inventée dans le front."
+      }
+    },
+    {
+      "slot_id": "admin.site.scope",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Périmètre de cette page",
+        "body": "Cadrage et liens honnêtes vers le reste du shell sous contrat. Les réglages sensibles et la correspondance inter-systèmes suivront les slices backend et OpenAPI dédiés."
+      }
+    },
+    {
+      "slot_id": "admin.site.not-sync",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Hors scope explicite",
+        "body": "Pas de synchronisation Paheko (Epic 8), pas de catalogue de modules complémentaires détaillé (Epic 9), pas de parcours caisse (Epic 6) ni réception (Epic 7) dans cet écran."
+      }
+    },
+    {
+      "slot_id": "admin.site.data-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Données site (gap documenté)",
+        "body": "Aucun widget data_contract : paramètres site, cartographie des périmètres et états de déploiement suivront des operation_id dans contracts/openapi/recyclique-api.yaml ; rendu actuel limité aux blocs de présentation allowlistés."
+      }
+    }
+  ]
+}

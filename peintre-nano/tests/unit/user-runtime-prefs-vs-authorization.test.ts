@@ -8,6 +8,7 @@ import {
   DEFAULT_USER_RUNTIME_PREFS,
   type UserRuntimePrefs,
 } from '../../src/types/user-runtime-prefs';
+import { resolveNavEntryDisplayLabel } from '../../src/runtime/resolve-nav-entry-display-label';
 
 /**
  * Les prefs ne sont pas des paramètres de `filterNavigation` / `resolvePageAccess`.
@@ -67,5 +68,16 @@ describe('UserRuntimePrefs vs autorisation (story 3.5)', () => {
     const a2 = resolvePageAccess(page, envelope);
     expect(a1).toEqual(a2);
     expect(a1).toEqual({ allowed: true });
+  });
+
+  it('resolveNavEntryDisplayLabel : ne prend pas UserRuntimePrefs (story 5.5)', () => {
+    void prefsA;
+    void prefsB;
+    const entry = { id: 'root-home', routeKey: 'home', labelKey: 'nav.brand' };
+    const env = {
+      ...envelope,
+      presentationLabels: { 'nav.brand': 'Ma ressourcerie' } as const,
+    };
+    expect(resolveNavEntryDisplayLabel(entry, env)).toBe('Ma ressourcerie');
   });
 });

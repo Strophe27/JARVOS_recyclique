@@ -142,6 +142,35 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     expect(ctx?.properties?.site_id).toBeDefined();
     expect(ctx?.properties?.cash_register_id).toBeDefined();
   });
+
+  it("définit ContextEnvelope.presentation_labels (Story 5.5, présentation additive)", () => {
+    const components = doc.components as {
+      schemas?: Record<
+        string,
+        { properties?: Record<string, { type?: string; nullable?: boolean; additionalProperties?: unknown }> }
+      >;
+    };
+    const ce = components.schemas?.ContextEnvelope;
+    const pl = ce?.properties?.presentation_labels;
+    expect(pl).toBeDefined();
+    expect(pl?.type).toBe("object");
+    expect(pl?.nullable).toBe(true);
+    expect(pl?.additionalProperties).toEqual({ type: "string" });
+  });
+
+  it("définit ContextEnvelope.restriction_message nullable (Story 5.5, diagnostic UI non normatif)", () => {
+    const components = doc.components as {
+      schemas?: Record<
+        string,
+        { properties?: Record<string, { type?: string; nullable?: boolean }> }
+      >;
+    };
+    const ce = components.schemas?.ContextEnvelope;
+    const rm = ce?.properties?.restriction_message;
+    expect(rm).toBeDefined();
+    expect(rm?.type).toBe("string");
+    expect(rm?.nullable).toBe(true);
+  });
 });
 
 describe("contracts/creos/schemas/widget-declaration.schema.json", () => {

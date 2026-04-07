@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "page_key": "transverse-consultation-don",
+  "required_permission_keys": ["transverse.consultation.hub.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "consultation.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Consultation transverse — fiche-type don",
+        "body": "Placeholder pour une future fiche don : composition déclarative uniquement, sans logique métier Recyclique côté front."
+      }
+    },
+    {
+      "slot_id": "consultation.context",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Accès",
+        "body": "Cohérent avec le filtrage navigation (visibility CREOS) et resolvePageAccess : les clés transverse.consultation.hub.view doivent figurer dans l'enveloppe."
+      }
+    },
+    {
+      "slot_id": "consultation.not-migrated",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Réception et autres flows",
+        "body": "La qualification réception complète, la caisse, la sync et les modules complémentaires ne sont pas livrés sur cet écran (Epic 6 à 9). Mention honnête uniquement — pas d'action simulée vers ces parcours."
+      }
+    },
+    {
+      "slot_id": "consultation.data-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Contenu data (gap documenté)",
+        "body": "En attente d'operation_id et de réponses backend ; ce slice documente l'écart comme pour le dashboard et les listings."
+      }
+    }
+  ]
+}

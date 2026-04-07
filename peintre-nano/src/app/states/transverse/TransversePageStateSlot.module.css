@@ -1,0 +1,22 @@
+/**
+ * Slot d’état transverse : en nominal, zone réservée mais non intrusive (sr-only).
+ * Quand un état explicite est affiché, le bloc redevient visible sous l’en-tête de page.
+ */
+.slotNominal {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.slotActive {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0 0 var(--pn-space-sm);
+}

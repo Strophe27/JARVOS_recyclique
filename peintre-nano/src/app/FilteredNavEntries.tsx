@@ -1,17 +1,21 @@
 import { useEffect } from 'react';
+import type { ContextEnvelopeStub } from '../types/context-envelope';
 import type { NavigationEntry } from '../types/navigation-manifest';
+import { resolveNavEntryDisplayLabel } from '../runtime/resolve-nav-entry-display-label';
 import { reportRuntimeFallback } from '../runtime/report-runtime-fallback';
 import classes from './FilteredNavEntries.module.css';
 
 export type FilteredNavEntriesProps = {
   readonly entries: readonly NavigationEntry[];
+  /** Enveloppe active : libellés présentation (`presentationLabels`) + cohérence avec les stories 5.1–5.4. */
+  readonly envelope: ContextEnvelopeStub;
   readonly selectedEntryId?: string;
   readonly onSelectEntry?: (entry: NavigationEntry) => void;
 };
 
 type NavSubtreeProps = FilteredNavEntriesProps;
 
-function NavSubtree({ entries, selectedEntryId, onSelectEntry }: NavSubtreeProps) {
+function NavSubtree({ entries, envelope, selectedEntryId, onSelectEntry }: NavSubtreeProps) {
   return (
     <ul className={classes.list}>
       {entries.map((e) => (
@@ -28,13 +32,18 @@ function NavSubtree({ entries, selectedEntryId, onSelectEntry }: NavSubtreeProps
               aria-current={selectedEntryId === e.id ? 'true' : undefined}
               onClick={() => onSelectEntry(e)}
             >
-              {e.labelKey ?? e.routeKey}
+              {resolveNavEntryDisplayLabel(e, envelope)}
             </button>
           ) : (
-            <span className={classes.label}>{e.labelKey ?? e.routeKey}</span>
+            <span className={classes.label}>{resolveNavEntryDisplayLabel(e, envelope)}</span>
           )}
           {e.children?.length ? (
-            <NavSubtree entries={e.children} selectedEntryId={selectedEntryId} onSelectEntry={onSelectEntry} />
+            <NavSubtree
+              entries={e.children}
+              envelope={envelope}
+              selectedEntryId={selectedEntryId}
+              onSelectEntry={onSelectEntry}
+            />
           ) : null}
         </li>
       ))}
@@ -65,13 +74,13 @@ function FilteredNavEmpty() {
 }
 
 /** Navigation issue du manifest, déjà filtrée par `filterNavigation` (runtime). */
-export function FilteredNavEntries({ entries, selectedEntryId, onSelectEntry }: FilteredNavEntriesProps) {
+export function FilteredNavEntries({ entries, envelope, selectedEntryId, onSelectEntry }: FilteredNavEntriesProps) {
   if (!entries.length) {
     return <FilteredNavEmpty />;
   }
   return (
     <div className={classes.root} data-testid="filtered-nav-entries">
-      <NavSubtree entries={entries} selectedEntryId={selectedEntryId} onSelectEntry={onSelectEntry} />
+      <NavSubtree entries={entries} envelope={envelope} selectedEntryId={selectedEntryId} onSelectEntry={onSelectEntry} />
     </div>
   );
 }

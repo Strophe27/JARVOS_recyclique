@@ -1,0 +1,25 @@
+/**
+ * Grille hub transverse : en-tête de page pleine largeur, corps en 2 colonnes.
+ * Tokens uniquement (ADR P1).
+ */
+.shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-md);
+}
+
+.pageHeader {
+  margin: 0;
+  width: 100%;
+}
+
+.bodyGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pn-space-md);
+}
+
+.bodyGridTrailFull > :last-child {
+  grid-column: 1 / -1;
+}

@@ -144,6 +144,7 @@ services:
       - ./peintre-nano/src:/app/src
       - ./peintre-nano/public:/app/public
       - ./peintre-nano/tests:/app/tests
+      - ./contracts:/contracts
       - ./peintre-nano/package.json:/app/package.json
       - ./peintre-nano/package-lock.json:/app/package-lock.json
       - ./peintre-nano/vite.config.ts:/app/vite.config.ts

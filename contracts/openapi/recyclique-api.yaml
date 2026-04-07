@@ -589,6 +589,8 @@ components:
         - computed_at
       description: |
         Enveloppe canonique backend (AR39). Story 2.2 : minimal ; Story 2.3 enrichit le calcul de `permission_keys`.
+        Story 5.5 : `presentation_labels` (optionnel) porte uniquement de la présentation pour résoudre des `label_key` CREOS ;
+        ne remplace ni permissions, ni routes, ni `page_key`. Rétrocompat : champs optionnels, clients existants ignorables.
       properties:
         runtime_state:
           $ref: "#/components/schemas/ContextRuntimeState"
@@ -611,6 +613,14 @@ components:
           type: string
           nullable: true
           description: Détail lisible pour `degraded` / `forbidden` (diagnostic UI, non normatif pour l'autorisation).
+        presentation_labels:
+          type: object
+          nullable: true
+          description: |
+            Map `label_key` (declare dans les manifests CREOS, ex. navigation) vers libelle affichable UTF-8.
+            Presentation uniquement : le runtime n'utilise pas ce champ pour autoriser ou masquer des entrees.
+          additionalProperties:
+            type: string
       additionalProperties: false
     ExploitationContextIds:
       type: object

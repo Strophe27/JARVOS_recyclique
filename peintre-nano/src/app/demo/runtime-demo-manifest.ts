@@ -1,15 +1,42 @@
 /**
  * Lot de manifests pour la démo runtime (story 3.7).
  *
- * Source de vérité : JSON sous `src/fixtures/manifests/valid/` (importés ici).
+ * Source de vérité démo isolée : JSON sous `src/fixtures/manifests/valid/` (importés ici).
  * `public/manifests/` est une copie pour vérification manuelle via fetch — tenir les deux alignés.
  *
- * Story 4.6b : `runtimeServedManifestLoadResult` fusionne ce lot avec les manifests Epic 4
- * (`src/fixtures/contracts-creos/`, alignés sur `contracts/creos/manifests/`) pour l’app servie.
+ * Story 5.1 : `runtimeServedManifestLoadResult` charge le bundle **commanditaire** sous
+ * `contracts/creos/manifests/` (`navigation-transverse-served.json` + pages associées). La navigation
+ * servie n’est plus assemblée par concaténation locale de fixtures + slice : un seul NavigationManifest
+ * reviewable, aligné Convergence 2 / Epic 4 (entrée bandeau incluse).
+ *
+ * Story 5.2 : page transverse sous contrat `page-transverse-dashboard.json` (`page_key` `transverse-dashboard`),
+ * référencée par `navigation-transverse-served.json` pour `/dashboard`.
+ *
+ * Story 5.3 : quatre PageManifest transverses (listings + consultation) sous `contracts/creos/manifests/`,
+ * référencés par `navigation-transverse-served.json`.
+ *
+ * Story 5.4 : lot admin transverse (`page-transverse-admin-placeholder` enrichi + access + site).
+ *
+ * Story 5.5 : `label_key` transverses préfixés `nav.transverse.*` ; libellés affichés via `ContextEnvelopeStub.presentationLabels`
+ * (aligné OpenAPI `presentation_labels`) dans `FilteredNavEntries`.
+ *
+ * Story 5.6 : gabarits transverses (`templates/transverse/`) appliqués via `wrapUnmappedSlotContent` dans
+ * `buildPageManifestRegions` depuis `RuntimeDemoApp` — grilles CSS + `data-testid`, sans changement de sémantique manifeste.
  */
-import navigationBandeauLiveSlice from '../../fixtures/contracts-creos/navigation-bandeau-live-slice.json';
-import pageBandeauLiveSandbox from '../../fixtures/contracts-creos/page-bandeau-live-sandbox.json';
-import widgetsCatalogBandeauLive from '../../fixtures/contracts-creos/widgets-catalog-bandeau-live.json';
+import navigationTransverseServed from '../../../../contracts/creos/manifests/navigation-transverse-served.json';
+import pageBandeauLiveSandbox from '../../../../contracts/creos/manifests/page-bandeau-live-sandbox.json';
+import pageDemoGuardedPage from '../../../../contracts/creos/manifests/page-demo-guarded-page.json';
+import pageDemoHome from '../../../../contracts/creos/manifests/page-demo-home.json';
+import pageDemoUnknownWidget from '../../../../contracts/creos/manifests/page-demo-unknown-widget.json';
+import pageTransverseAdminAccessOverview from '../../../../contracts/creos/manifests/page-transverse-admin-access-overview.json';
+import pageTransverseAdminPlaceholder from '../../../../contracts/creos/manifests/page-transverse-admin-placeholder.json';
+import pageTransverseAdminSiteOverview from '../../../../contracts/creos/manifests/page-transverse-admin-site-overview.json';
+import pageTransverseConsultationArticle from '../../../../contracts/creos/manifests/page-transverse-consultation-article.json';
+import pageTransverseConsultationDon from '../../../../contracts/creos/manifests/page-transverse-consultation-don.json';
+import pageTransverseDashboard from '../../../../contracts/creos/manifests/page-transverse-dashboard.json';
+import pageTransverseListingArticles from '../../../../contracts/creos/manifests/page-transverse-listing-articles.json';
+import pageTransverseListingDons from '../../../../contracts/creos/manifests/page-transverse-listing-dons.json';
+import widgetsCatalogBandeauLive from '../../../../contracts/creos/manifests/widgets-catalog-bandeau-live.json';
 import validNavigationFixture from '../../fixtures/manifests/valid/navigation.json';
 import validPageGuardedFixture from '../../fixtures/manifests/valid/page-guarded.json';
 import validPageHomeFixture from '../../fixtures/manifests/valid/page-home.json';
@@ -76,32 +103,43 @@ function pageBandeauLiveSandboxWithLiveSource(): Record<string, unknown> {
   };
 }
 
-const mergedNavigationForServedApp = {
-  version: '1',
-  entries: [...validNavigationFixture.entries, ...navigationBandeauLiveSlice.entries],
-};
-
 /**
- * Bundle chargé par `RuntimeDemoApp` en application servie : démo Epic 3 + slice bandeau live Epic 4 (reviewables).
+ * Bundle chargé par `RuntimeDemoApp` en application servie : contrats CREOS reviewables (story 5.1).
  */
 export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadManifestBundle({
-  navigationJson: JSON.stringify(mergedNavigationForServedApp),
+  navigationJson: JSON.stringify(navigationTransverseServed),
   pageManifestsJson: [
-    JSON.stringify(validPageHomeFixture),
-    JSON.stringify(validPageUnknownWidgetFixture),
-    JSON.stringify(validPageGuardedFixture),
+    JSON.stringify(pageDemoHome),
+    JSON.stringify(pageDemoUnknownWidget),
+    JSON.stringify(pageDemoGuardedPage),
     JSON.stringify(pageBandeauLiveSandboxWithLiveSource()),
+    JSON.stringify(pageTransverseDashboard),
+    JSON.stringify(pageTransverseAdminPlaceholder),
+    JSON.stringify(pageTransverseAdminAccessOverview),
+    JSON.stringify(pageTransverseAdminSiteOverview),
+    JSON.stringify(pageTransverseListingArticles),
+    JSON.stringify(pageTransverseListingDons),
+    JSON.stringify(pageTransverseConsultationArticle),
+    JSON.stringify(pageTransverseConsultationDon),
   ],
   allowedWidgetTypes: demoAllowedWidgetTypes(),
   sourceLabels: {
-    navigation: 'fixtures/navigation.json + contracts/creos/navigation-bandeau-live-slice.json',
+    navigation: 'contracts/creos/manifests/navigation-transverse-served.json',
     page: (i) =>
       (
         [
-          'fixtures/.../page-home.json',
-          'fixtures/.../page-unknown-widget.json',
-          'fixtures/.../page-guarded.json',
-          'contracts/creos/page-bandeau-live-sandbox.json (use_live_source)',
+          'contracts/creos/manifests/page-demo-home.json',
+          'contracts/creos/manifests/page-demo-unknown-widget.json',
+          'contracts/creos/manifests/page-demo-guarded-page.json',
+          'contracts/creos/manifests/page-bandeau-live-sandbox.json (use_live_source)',
+          'contracts/creos/manifests/page-transverse-dashboard.json',
+          'contracts/creos/manifests/page-transverse-admin-placeholder.json',
+          'contracts/creos/manifests/page-transverse-admin-access-overview.json',
+          'contracts/creos/manifests/page-transverse-admin-site-overview.json',
+          'contracts/creos/manifests/page-transverse-listing-articles.json',
+          'contracts/creos/manifests/page-transverse-listing-dons.json',
+          'contracts/creos/manifests/page-transverse-consultation-article.json',
+          'contracts/creos/manifests/page-transverse-consultation-don.json',
         ] as const
       )[i] ?? `page[${i}]`,
   },

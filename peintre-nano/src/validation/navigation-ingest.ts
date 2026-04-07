@@ -1,4 +1,4 @@
-import type { NavigationEntry, NavigationManifest } from '../types/navigation-manifest';
+import type { NavigationEntry, NavigationEntryVisibility, NavigationManifest } from '../types/navigation-manifest';
 import { deepMapKeysToCamelCase } from './key-normalize';
 import { manifestErr, type ManifestValidationIssue } from './manifest-validation-types';
 
@@ -33,6 +33,72 @@ function readOptionalPermissionKeys(
   });
   if (issues.length) return { issues };
   return { keys, issues: [] };
+}
+
+function readStringArrayField(
+  raw: unknown,
+  fieldPath: string,
+): { arr?: string[]; issues: ManifestValidationIssue[] } {
+  const issues: ManifestValidationIssue[] = [];
+  if (raw === undefined) return { issues: [] };
+  if (!Array.isArray(raw)) {
+    issues.push(
+      manifestErr('MANIFEST_STRUCTURE_INVALID', `${fieldPath} doit être un tableau de chaînes`, { path: fieldPath }),
+    );
+    return { issues };
+  }
+  const out: string[] = [];
+  raw.forEach((item, i) => {
+    if (!isNonEmptyString(item)) {
+      issues.push(
+        manifestErr('MANIFEST_STRUCTURE_INVALID', `${fieldPath}[${i}] doit être une chaîne non vide`, {
+          path: fieldPath,
+        }),
+      );
+    } else {
+      out.push(item);
+    }
+  });
+  if (issues.length) return { issues };
+  return { arr: out, issues: [] };
+}
+
+function readOptionalVisibility(
+  o: Record<string, unknown>,
+  path: string,
+): { visibility?: NavigationEntryVisibility; issues: ManifestValidationIssue[] } {
+  const issues: ManifestValidationIssue[] = [];
+  const raw = o.visibility;
+  if (raw === undefined) return { issues: [] };
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    issues.push(
+      manifestErr('MANIFEST_STRUCTURE_INVALID', `visibility doit être un objet à ${path}`, { path }),
+    );
+    return { issues };
+  }
+  const v = raw as Record<string, unknown>;
+  const pa = readStringArrayField(v.permissionAny, `${path}.visibility.permissionAny`);
+  const ca = readStringArrayField(v.contextsAll, `${path}.visibility.contextsAll`);
+  const cy = readStringArrayField(v.contextsAny, `${path}.visibility.contextsAny`);
+  issues.push(...pa.issues, ...ca.issues, ...cy.issues);
+  if (issues.length) return { issues };
+
+  const permissionAny = pa.arr;
+  const contextsAll = ca.arr;
+  const contextsAny = cy.arr;
+
+  const hasAny =
+    (permissionAny?.length ?? 0) > 0 || (contextsAll?.length ?? 0) > 0 || (contextsAny?.length ?? 0) > 0;
+  if (!hasAny) {
+    return { issues: [] };
+  }
+
+  const visibility: NavigationEntryVisibility = {
+    ...(permissionAny?.length ? { permissionAny } : {}),
+    ...(contextsAll?.length ? { contextsAll } : {}),
+    ...(contextsAny?.length ? { contextsAny } : {}),
+  };
+  return { visibility, issues: [] };
 }
 
 function readNavigationEntry(raw: unknown, path: string): { entry?: NavigationEntry; issues: ManifestValidationIssue[] } {
@@ -72,6 +138,8 @@ function readNavigationEntry(raw: unknown, path: string): { entry?: NavigationEn
   issues.push(...childIssues);
   const perm = readOptionalPermissionKeys(o, path);
   issues.push(...perm.issues);
+  const vis = readOptionalVisibility(o, path);
+  issues.push(...vis.issues);
   if (issues.length) return { issues };
 
   const entry: NavigationEntry = {
@@ -82,6 +150,7 @@ function readNavigationEntry(raw: unknown, path: string): { entry?: NavigationEn
     ...(isNonEmptyString(o.shortcutId) ? { shortcutId: o.shortcutId } : {}),
     ...(isNonEmptyString(o.labelKey) ? { labelKey: o.labelKey } : {}),
     ...(perm.keys !== undefined && perm.keys.length ? { requiredPermissionKeys: perm.keys } : {}),
+    ...(vis.visibility !== undefined && Object.keys(vis.visibility).length ? { visibility: vis.visibility } : {}),
     ...(children !== undefined ? { children } : {}),
   };
   return { entry, issues: [] };

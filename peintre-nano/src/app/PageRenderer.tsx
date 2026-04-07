@@ -5,6 +5,14 @@ import { reportRuntimeFallback } from '../runtime/report-runtime-fallback';
 import type { PageManifest, PageSlotPlacement } from '../types/page-manifest';
 import classes from './PageRenderer.module.css';
 
+export type BuildPageManifestRegionsOptions = {
+  /**
+   * Enveloppe optionnelle du contenu des slots non mappés (ex. gabarits transverses sous `main`).
+   * Reste purement présentationnelle ; le manifeste et le registre de widgets ne changent pas.
+   */
+  readonly wrapUnmappedSlotContent?: (children: ReactNode) => ReactNode;
+};
+
 type WidgetResolveFallbackProps = {
   readonly widgetType: string;
   readonly errorCode: string;
@@ -93,7 +101,10 @@ function renderPlacements(list: readonly PageSlotPlacement[]): ReactNode {
 /**
  * À partir d’un PageManifest validé, produit les nœuds React par région du shell.
  */
-export function buildPageManifestRegions(page: PageManifest): PageManifestRegions {
+export function buildPageManifestRegions(
+  page: PageManifest,
+  options?: BuildPageManifestRegionsOptions,
+): PageManifestRegions {
   const buckets: Record<ShellSlotRegionId | 'unmapped', PageSlotPlacement[]> = {
     header: [],
     nav: [],
@@ -140,9 +151,13 @@ export function buildPageManifestRegions(page: PageManifest): PageManifestRegion
   }
   if (buckets.unmapped.length) {
     const count = buckets.unmapped.length;
+    const rawUnmapped = renderPlacements(buckets.unmapped);
+    const wrappedUnmapped = options?.wrapUnmappedSlotContent
+      ? options.wrapUnmappedSlotContent(rawUnmapped)
+      : rawUnmapped;
     mainParts.push(
       <UnmappedSlotsRegion key="unmapped" placementCount={count}>
-        {renderPlacements(buckets.unmapped)}
+        {wrappedUnmapped}
       </UnmappedSlotsRegion>,
     );
   }

@@ -1,0 +1,48 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-placeholder",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Admin transverse — hub",
+        "body": "Point d'entrée admin transverse sous contrat CREOS : composition déclarative uniquement, sans logique métier ni matrice de permissions côté Peintre_nano."
+      }
+    },
+    {
+      "slot_id": "admin.overview",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Périmètre actif",
+        "body": "L'accès aux écrans et la navigation visible dépendent du ContextEnvelope et des permissions servies par le backend ; la UI applique le manifeste (required_permission_keys, visibility) sans recalculer les droits."
+      }
+    },
+    {
+      "slot_id": "admin.subpages",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Sous-pages de ce lot",
+        "body": "Chemins contractuels servis par le même NavigationManifest : accès et visibilité — `/admin/access` ; site et périmètre — `/admin/site`. Ouvrez-les via la navigation latérale."
+      }
+    },
+    {
+      "slot_id": "admin.boundaries",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Hors périmètre (rappel)",
+        "body": "La caisse (Epic 6), la réception terrain (Epic 7), la synchronisation Paheko (Epic 8) et la configuration admin étendue / ACL détaillées (Epic 9) ne sont pas livrées ici — uniquement des hubs de composition transverse."
+      }
+    },
+    {
+      "slot_id": "admin.data-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Données admin (gap documenté)",
+        "body": "Aucun widget data_contract sur ce slice : tableaux de bord et réglages détaillés suivront quand les operation_id OpenAPI et les réponses backend seront prêts ; le rendu reste sur des widgets de présentation allowlistés."
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "page_key": "transverse-listing-dons",
+  "required_permission_keys": ["transverse.listings.hub.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "listing.hub.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Listing transverse — dons (entrée)",
+        "body": "Hub de consultation des dons en entrée : même principe qu'un catalogue transverse. Pas de parcours réception complet (Epic 7) ni de qualification matière dans ce périmètre Epic 5."
+      }
+    },
+    {
+      "slot_id": "listing.hub.context",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Accès et périmètre",
+        "body": "Visibilité alignée sur le ContextEnvelope et les permissions émises par le backend ; le runtime applique le manifeste sans dériver une autorisation parallèle."
+      }
+    },
+    {
+      "slot_id": "listing.hub.not-migrated",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Parcours non livrés dans ce hub",
+        "body": "Caisse (Epic 6), bordereau et flux réception riches (Epic 7), sync (Epic 8), modules (Epic 9) : non migrés ici. Liens métier simulés interdits ; le dashboard et l'admin transverse restent les entrées contractuelles déjà présentes dans la nav."
+      }
+    },
+    {
+      "slot_id": "listing.hub.data-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Données liste (gap documenté)",
+        "body": "Pas de widget data tant qu'aucun operation_id liste dons n'est publié et résolu dans l'OpenAPI officielle ; slot de présentation uniquement."
+      }
+    }
+  ]
+}

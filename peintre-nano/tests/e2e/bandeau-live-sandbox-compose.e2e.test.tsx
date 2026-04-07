@@ -307,8 +307,11 @@ describe('E2E — bac à sable bandeau live (Story 4.2)', () => {
       expect(fetchMock).toHaveBeenCalled();
     });
     const main = screen.getByTestId('e2e-bandeau-live-main');
+    await waitFor(() => {
+      const bandeau = within(main).getByTestId('widget-bandeau-live');
+      expect(bandeau.getAttribute('data-bandeau-state')).toBe('module_disabled');
+    });
     const bandeau = within(main).getByTestId('widget-bandeau-live');
-    expect(bandeau.getAttribute('data-bandeau-state')).toBe('module_disabled');
     expect(bandeau.getAttribute('data-runtime-code')).toBe('BANDEAU_LIVE_MODULE_DISABLED');
     expect(within(bandeau).getByText(/désactivé pour ce site/i)).toBeTruthy();
     expect(

@@ -322,7 +322,11 @@ export interface components {
          * @enum {string}
          */
         ContextRuntimeState: "ok" | "degraded" | "forbidden";
-        /** @description Enveloppe canonique backend (AR39). Story 2.2 : minimal ; Story 2.3 enrichit le calcul de `permission_keys`. */
+        /**
+         * @description Enveloppe canonique backend (AR39). Story 2.2 : minimal ; Story 2.3 enrichit le calcul de `permission_keys`.
+         *     Story 5.5 : `presentation_labels` (optionnel) porte uniquement de la présentation pour résoudre des `label_key` CREOS ;
+         *     ne remplace ni permissions, ni routes, ni `page_key`. Rétrocompat : champs optionnels, clients existants ignorables.
+         */
         ContextEnvelope: {
             runtime_state: components["schemas"]["ContextRuntimeState"];
             context?: components["schemas"]["ExploitationContextIds"] | null;
@@ -338,6 +342,13 @@ export interface components {
             computed_at: string;
             /** @description Détail lisible pour `degraded` / `forbidden` (diagnostic UI, non normatif pour l'autorisation). */
             restriction_message?: string | null;
+            /**
+             * @description Map `label_key` (declare dans les manifests CREOS, ex. navigation) vers libelle affichable UTF-8.
+             *     Presentation uniquement : le runtime n'utilise pas ce champ pour autoriser ou masquer des entrees.
+             */
+            presentation_labels?: {
+                [key: string]: string;
+            } | null;
         };
         /** @description Identifiants de contexte visibles (alignement Story 1.3, ContextEnvelope lorsque exposes au client). */
         ExploitationContextIds: {

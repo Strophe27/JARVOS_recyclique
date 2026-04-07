@@ -1,6 +1,7 @@
 import type { NavigationEntry, NavigationManifest } from '../types/navigation-manifest';
 import type { ContextEnvelopeStub } from '../types/context-envelope';
 import { isEnvelopeStale } from './context-envelope-freshness';
+import { resolveContextMarkersFromEnvelope } from './resolve-context-markers';
 
 /**
  * Options pour `filterNavigation` uniquement (fraîcheur / horloge).
@@ -16,8 +17,29 @@ function entryPermissionKeysSatisfied(entry: NavigationEntry, effective: Readonl
   return req.every((k) => effective.has(k));
 }
 
-function filterNavEntry(entry: NavigationEntry, effective: ReadonlySet<string>): NavigationEntry | null {
-  if (!entryPermissionKeysSatisfied(entry, effective)) return null;
+/** `permission_any` du manifest : au moins une clé ; cumul avec `required_permission_keys` (AND). */
+function entryVisibilityPermissionAnySatisfied(entry: NavigationEntry, effective: ReadonlySet<string>): boolean {
+  const anyReq = entry.visibility?.permissionAny;
+  if (!anyReq?.length) return true;
+  return anyReq.some((k) => effective.has(k));
+}
+
+function entryVisibilityContextsSatisfied(entry: NavigationEntry, markers: ReadonlySet<string>): boolean {
+  const vis = entry.visibility;
+  if (!vis) return true;
+  if (vis.contextsAll?.length && !vis.contextsAll.every((m) => markers.has(m))) return false;
+  if (vis.contextsAny?.length && !vis.contextsAny.some((m) => markers.has(m))) return false;
+  return true;
+}
+
+function filterNavEntry(
+  entry: NavigationEntry,
+  effectivePerms: ReadonlySet<string>,
+  contextMarkers: ReadonlySet<string>,
+): NavigationEntry | null {
+  if (!entryVisibilityPermissionAnySatisfied(entry, effectivePerms)) return null;
+  if (!entryPermissionKeysSatisfied(entry, effectivePerms)) return null;
+  if (!entryVisibilityContextsSatisfied(entry, contextMarkers)) return null;
 
   if (!entry.children?.length) {
     const { children: _c, ...rest } = entry;
@@ -25,7 +47,7 @@ function filterNavEntry(entry: NavigationEntry, effective: ReadonlySet<string>):
   }
 
   const nextChildren = entry.children
-    .map((c) => filterNavEntry(c, effective))
+    .map((c) => filterNavEntry(c, effectivePerms, contextMarkers))
     .filter((c): c is NavigationEntry => c !== null);
 
   return {
@@ -51,8 +73,9 @@ export function filterNavigation(
   }
 
   const effective = new Set(envelope.permissions.permissionKeys);
+  const markers = resolveContextMarkersFromEnvelope(envelope);
   const entries = manifest.entries
-    .map((e) => filterNavEntry(e, effective))
+    .map((e) => filterNavEntry(e, effective, markers))
     .filter((e): e is NavigationEntry => e !== null);
   return { version: manifest.version, entries };
 }

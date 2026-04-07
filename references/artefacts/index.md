@@ -24,6 +24,7 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-04-08_01_transverse-shell-coherence-gaps-epic5.md` | Story **5.8** : passe de cohérence transverse du shell (nav, dashboard, admin, layouts, widgets/`data_contract`) ; registre d’écarts (a–d), scénarios permissions/contexte, preuves `npm test` + stack Docker ; synthèse roadmap Epic 6+ et legacy. |
 | `2026-04-07_03_checklist-pr-peintre-sans-metier.md` | Checklist PR / create-story pour les Epics **4 à 10** : éviter de recoder le métier `Recyclique` dans `Peintre_nano`, préserver l’extractibilité future, vérifier la chaîne `OpenAPI` / `CREOS` / `ContextEnvelope` et la promotion des manifests officiels. |
 | `2026-04-07_03_preuve-convergence-2-bandeau-live.md` | Story **4.6** / jalon **Convergence 2** : preuve chaîne bandeau live (OpenAPI, CREOS, registre, polling + `X-Correlation-ID`, fallbacks HTTP / parse) ; commandes `npm test` / `pytest` et chemins fichiers pour reproduction. |
 | `2026-04-07_02_coexistence-frontends-locaux.md` | Décision opérationnelle de coexistence locale : `frontend` = **`peintre-nano`** sur `4444`, `frontend-legacy` = ancien frontend sur `4445`, les deux contre la même API ; règle explicite pour les agents (`peintre-nano` cible v2, legacy transitoire). |

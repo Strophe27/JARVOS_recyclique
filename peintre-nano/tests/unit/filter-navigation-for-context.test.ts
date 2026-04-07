@@ -68,4 +68,67 @@ describe('filterNavigation', () => {
     const out = filterNavigation(manifest, env, { nowMs: issuedAt + 120_000 });
     expect(out.entries).toEqual([]);
   });
+
+  it('applique visibility.permission_any (au moins une clé)', () => {
+    const m: NavigationManifest = {
+      version: '1',
+      entries: [
+        {
+          id: 'x',
+          routeKey: 'x',
+          visibility: { permissionAny: ['a', 'b'] },
+        },
+      ],
+    };
+    expect(filterNavigation(m, baseEnvelope([])).entries).toEqual([]);
+    expect(filterNavigation(m, baseEnvelope(['a'])).entries.map((e) => e.id)).toEqual(['x']);
+    expect(filterNavigation(m, baseEnvelope(['b'])).entries.map((e) => e.id)).toEqual(['x']);
+  });
+
+  it('combine permission_any et required_permission_keys (AND)', () => {
+    const m: NavigationManifest = {
+      version: '1',
+      entries: [
+        {
+          id: 'x',
+          routeKey: 'x',
+          visibility: { permissionAny: ['a', 'b'] },
+          requiredPermissionKeys: ['c'],
+        },
+      ],
+    };
+    expect(filterNavigation(m, baseEnvelope(['a'])).entries).toEqual([]);
+    expect(filterNavigation(m, baseEnvelope(['a', 'c'])).entries.map((e) => e.id)).toEqual(['x']);
+  });
+
+  it('masque une entrée si contexts_any non satisfait (marqueurs dérivés du site)', () => {
+    const m: NavigationManifest = {
+      version: '1',
+      entries: [
+        {
+          id: 'need-site',
+          routeKey: 'need-site',
+          visibility: { contextsAny: ['site'] },
+        },
+      ],
+    };
+    const noSite = { ...baseEnvelope([]), siteId: null };
+    expect(filterNavigation(m, noSite).entries).toEqual([]);
+    expect(filterNavigation(m, baseEnvelope([])).entries.map((e) => e.id)).toEqual(['need-site']);
+  });
+
+  it('respecte contextMarkers explicites du backend', () => {
+    const m: NavigationManifest = {
+      version: '1',
+      entries: [
+        {
+          id: 'custom',
+          routeKey: 'custom',
+          visibility: { contextsAny: ['session-caissier'] },
+        },
+      ],
+    };
+    const env = { ...baseEnvelope([]), contextMarkers: ['session-caissier'] as const };
+    expect(filterNavigation(m, env).entries.map((e) => e.id)).toEqual(['custom']);
+  });
 });

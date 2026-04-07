@@ -1,0 +1,15 @@
+{
+  "version": "1",
+  "page_key": "demo-unknown-widget",
+  "required_permission_keys": ["demo.permission.view-home"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "demo.runtime.stub-only",
+      "widget_props": {
+        "note": "Allowlist étendue côté chargement du lot démo ; composant volontairement absent du registre (story 3.7)."
+      }
+    }
+  ]
+}

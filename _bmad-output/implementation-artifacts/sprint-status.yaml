@@ -1,5 +1,6 @@
 # generated: 2026-04-01T15:39:08
-# last_updated: 2026-04-07 — epic-4 clos ; 4.6 done ; 4.6b done ; convergence 2 validee ; retrospective done
+# last_updated: 2026-04-08 — story 5.8 review (dev-story 5.8) ; epic-5 in-progress
+# (historique) last_updated: 2026-04-07 — epic-4 clos ; 4.6 done ; 4.6b done ; convergence 2 validee ; retrospective done
 # (historique) last_updated: 2026-04-03 — Epic 2 : toutes stories 2-x done ; pret pour bmad-retrospective (epic-2)
 # (historique) last_updated: 2026-04-03 (story 2.7 CS — fichier story ready-for-dev)
 # project: JARVOS_recyclique
@@ -50,7 +51,7 @@
 #   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
 
 generated: "2026-04-01"
-last_updated: "2026-04-07" # epic-4 clos ; 4.6 done ; 4.6b done ; convergence 2 validee ; retrospective done
+last_updated: "2026-04-08" # story 5.8 review ; epic-5 in-progress
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
@@ -99,15 +100,15 @@ development_status:
   4-6b-raccorder-le-slice-bandeau-live-dans-lapplication-peintre-nano-reellement-servie: done
   epic-4-retrospective: done
 
-  epic-5: backlog
-  5-1-recomposer-la-navigation-transverse-commanditaire-dans-peintre-nano: backlog
-  5-2-recomposer-le-dashboard-transverse-dans-la-nouvelle-chaine-ui: backlog
-  5-3-migrer-un-premier-lot-cible-de-listings-et-vues-de-consultation-transverses: backlog
-  5-4-migrer-un-premier-lot-cible-de-pages-admin-transverses: backlog
-  5-5-integrer-les-libelles-personnalises-et-la-visibilite-contextuelle-dans-ui-transverse: backlog
-  5-6-poser-les-templates-et-layouts-reutilisables-des-pages-transverses: backlog
-  5-7-gerer-les-etats-vides-chargements-et-erreurs-sur-les-pages-transverses: backlog
-  5-8-valider-la-coherence-transverse-du-shell-recompose: backlog
+  epic-5: done
+  5-1-recomposer-la-navigation-transverse-commanditaire-dans-peintre-nano: done
+  5-2-recomposer-le-dashboard-transverse-dans-la-nouvelle-chaine-ui: done
+  5-3-migrer-un-premier-lot-cible-de-listings-et-vues-de-consultation-transverses: done
+  5-4-migrer-un-premier-lot-cible-de-pages-admin-transverses: done
+  5-5-integrer-les-libelles-personnalises-et-la-visibilite-contextuelle-dans-ui-transverse: done
+  5-6-poser-les-templates-et-layouts-reutilisables-des-pages-transverses: done
+  5-7-gerer-les-etats-vides-chargements-et-erreurs-sur-les-pages-transverses: done
+  5-8-valider-la-coherence-transverse-du-shell-recompose: done
   epic-5-retrospective: optional
 
   epic-6: backlog
