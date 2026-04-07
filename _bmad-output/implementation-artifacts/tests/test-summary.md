@@ -4,6 +4,43 @@
 
 ---
 
+## Story 10.6b — `10-6b-clarifier-le-point-dentree-docker-local-du-mono-repo`
+
+**Date** : 2026-04-07  
+**Objectif QA** : smoke infra + doc vérifiable — point d’entrée Docker unique (`docker-compose.yml` racine), include legacy `recyclique-1.4.4/`, sans `docker compose up` (pas de conteneurs).
+
+### Tests générés
+
+| Fichier | Rôle |
+|---------|------|
+| `tests/infra/test_docker_compose_entrypoint.py` | Présence `docker-compose.yml` racine ; `docker compose config --quiet` depuis la racine et depuis `recyclique-1.4.4/` ; `recyclique-1.4.4/docker-compose.yml` contient `include` + `../docker-compose.yml` ; `README.md` mentionne `docker-compose.yml` et la racine ; `docker compose config --format json` liste les services `postgres`, `redis`, `api`, `api-migrations`, `frontend`. |
+
+### Résultat d’exécution
+
+```text
+6 passed — exit 0
+```
+
+Commande :
+
+```powershell
+Set-Location 'D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique'
+python -m pytest tests/infra/test_docker_compose_entrypoint.py -v --tb=short
+```
+
+**Prérequis** : CLI `docker` disponible (sinon les tests qui invoquent Compose sont ignorés avec `pytest.mark.skipif`).
+
+### E2E UI (Playwright)
+
+Non applicable (story doc / orchestration ; E2E front inchangé sous `recyclique-1.4.4/frontend/tests/e2e/`).
+
+### Couverture (indicative)
+
+- **Infra** : résolution YAML et services attendus.
+- **Documentation** : chaînes minimales dans `README.md` racine.
+
+---
+
 ## Story 2.7 — `GET /v2/exploitation/live-snapshot` (signaux bandeau live minimal)
 
 **Date** : 2026-04-03  

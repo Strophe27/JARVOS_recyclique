@@ -658,7 +658,7 @@ So that Epic 4 can prove the modular chain with real business context instead of
 
 L'equipe peut stabiliser `Recyclique` comme noyau d'autorite v2 pour l'authentification, les contextes, les permissions, la securite sensible, la persistance terrain, l'audit et les invariants metier, afin de fournir un backend fiable aux futurs modules. Cet epic porte aussi l'exposition backend minimale necessaire aux vues live et slices verticaux initiaux, notamment les signaux et contrats permettant au `bandeau live` de refleter les horaires reels, ouvertures decalees et cas particuliers formalises en Epic 1.
 
-> **Exécution et dossier canonique (Correct Course 2026-04-03) :** jusqu'à la story **2.2b**, le développement backend Epic 2 résidait sous `recyclique-1.4.4/api/` (voir `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md`). **Depuis la migration 2.2b (2026-04-03),** le package vivant FastAPI (`recyclic_api`, tests, Alembic) est sous **`recyclique/api/`** à la racine du mono-repo (`_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md`). La stack Docker de développement **`recyclic-local`** reste lancée depuis `recyclique-1.4.4/docker-compose.yml`, qui construit l'API avec le contexte `../recyclique/api`. **Ordre suite 2.2b :** poursuivre **2.3** à **2.7**. Référence historique : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-03.md`.
+> **Exécution et dossier canonique (Correct Course 2026-04-03) :** jusqu'à la story **2.2b**, le développement backend Epic 2 résidait sous `recyclique-1.4.4/api/` (voir `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md`). **Depuis la migration 2.2b (2026-04-03),** le package vivant FastAPI (`recyclic_api`, tests, Alembic) est sous **`recyclique/api/`** à la racine du mono-repo (`_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md`). **Depuis la story 10.6b (2026-04-07),** la stack Docker de développement **`recyclic-local`** se lance depuis le **`docker-compose.yml` à la racine du mono-repo** ; `recyclique-1.4.4/docker-compose.yml` est un fichier de compatibilité qui inclut ce compose. **Ordre suite 2.2b :** poursuivre **2.3** à **2.7**. Référence historique : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-03.md`.
 
 ### Story 2.1: Poser le socle de session web v2 et l'autorite d'authentification backend
 
@@ -2280,6 +2280,29 @@ So that v2 can actually be installed and evaluated outside the author’s head.
 **When** this story is completed
 **Then** the product gains a reproducible baseline for internal beta and future adopters
 **And** deployability becomes a documented product property rather than an implicit one
+
+### Story 10.6b: Clarifier le point d'entree Docker local du mono-repo
+
+As a developer or future deployer,
+I want the local Docker stack to have one clear entry point in the repository,
+So that I can start the product stack without guessing between `recyclique/`, `recyclique-1.4.4/`, or a legacy path.
+
+**Acceptance Criteria:**
+
+**Given** the live backend now lives under `recyclique/api`
+**When** the local Docker orchestration is reviewed
+**Then** the repository clearly indicates where the dev stack must be launched from
+**And** that entry point is aligned with the current backend location or explicitly documented as a transitional compatibility location
+
+**Given** confusion currently exists between the canonical backend path and the legacy compose location
+**When** this story is completed
+**Then** the project has one documented local Docker startup path
+**And** old or transitional paths are either removed, renamed, or clearly marked as historical / compatibility-only
+
+**Given** this is a clarity and operability story, not a product-feature story
+**When** the change is implemented
+**Then** it updates the relevant README / startup docs / compose references
+**And** it avoids reopening backend feature work that already shipped in Epic 2
 
 ### Story 10.7: Definir et verifier les gates de beta interne et de v2 vendable
 

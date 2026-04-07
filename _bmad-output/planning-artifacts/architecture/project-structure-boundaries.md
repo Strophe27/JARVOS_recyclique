@@ -38,6 +38,8 @@ Apres validation du bandeau (Convergence 2), les pistes peuvent **re-diverger** 
 
 **Liaison manifest OpenAPI** : les widgets portent optionnellement `data_contract.operation_id` qui **doit** correspondre a un `operationId` du fichier OpenAPI reviewable — voir `references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md`.
 
+**Orchestration Docker (implémentation réelle, story 10.6b)** : le `docker-compose.yml` de **développement local** à la racine est le point d’entrée documenté pour la stack `recyclic-local`. Les fichiers `docker-compose.staging.yml` / `docker-compose.prod.yml` peuvent rester sous `recyclique-1.4.4/` jusqu’à un éventuel alignement ultérieur sur la racine.
+
 ## Complete Project Directory Structure
 ```text
 JARVOS_recyclique/

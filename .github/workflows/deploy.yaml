@@ -1,4 +1,6 @@
-# CI/CD — mono-repo JARVOS_recyclique (frontend brownfield + API sous recyclique/api)
+# CI/CD — mono-repo JARVOS_recyclique
+# CI rapide frontend : peintre-nano
+# Déploiement production : frontend legacy brownfield tant qu'un chantier dédié ne l'a pas migré
 name: CI/CD Pipeline
 
 on:
@@ -35,9 +37,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version-file: 'recyclique-1.4.4/frontend/.nvmrc'
+          node-version: '20'
           cache: 'npm'
-          cache-dependency-path: recyclique-1.4.4/frontend/package-lock.json
+          cache-dependency-path: peintre-nano/package-lock.json
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -46,16 +48,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd recyclique-1.4.4/frontend && npm ci
-          cd ../../recyclique/api && pip install -r requirements.txt
+          cd peintre-nano && npm ci
+          cd ../recyclique/api && pip install -r requirements.txt
 
       - name: Lint code
-        run: cd recyclique-1.4.4/frontend && npm run lint
+        run: cd peintre-nano && npm run lint
 
       - name: Run fast tests (excluding performance)
         run: |
-          cd recyclique-1.4.4/frontend && npm run test:run
-          cd ../../recyclique/api && python -m pytest tests/ -v -m "not performance"
+          cd peintre-nano && npm run test
+          cd ../recyclique/api && python -m pytest tests/ -v -m "not performance"
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           REDIS_URL: redis://localhost:6379
@@ -115,6 +117,7 @@ jobs:
       - name: Build Docker images
         run: |
           docker build -t recyclic-api:${{ steps.vars.outputs.tag }} -f recyclique/api/Dockerfile recyclique/api
+          # Legacy kept temporarily for production deployment until a dedicated migration story realigns prod.
           docker build -t recyclic-frontend:${{ steps.vars.outputs.tag }} -f recyclique-1.4.4/frontend/Dockerfile recyclique-1.4.4/frontend
 
       - name: Deploy to production
