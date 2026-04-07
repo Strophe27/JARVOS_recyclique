@@ -2,6 +2,7 @@
 # Lancer depuis la racine du dépôt : `docker compose up --build`
 # Backend vivant (FastAPI) : recyclique/api/ — les chemins ci-dessous sont relatifs à la racine du repo.
 # Frontend dev officiel v2 : peintre-nano/ (même origine navigateur `http://localhost:4444` + proxy Vite vers l'API).
+# Frontend legacy transitoire : recyclique-1.4.4/frontend sur `http://localhost:4445`.
 # Variables : fichier `.env` à la racine (copier recyclique-1.4.4/env.example) ou
 #   `docker compose --env-file recyclique-1.4.4/.env up` si votre `.env` est encore dans ce dossier.
 
@@ -55,8 +56,8 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       HOST: 0.0.0.0
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
-      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:4444}
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:4444}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:4444,http://localhost:4445}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:4444,http://localhost:4445}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
       API_V1_STR: ${API_V1_STR:-/v1}
       ROOT_PATH: ${ROOT_PATH:-}
@@ -147,6 +148,36 @@ services:
       - ./peintre-nano/package-lock.json:/app/package-lock.json
       - ./peintre-nano/vite.config.ts:/app/vite.config.ts
       - ./peintre-nano/tsconfig.json:/app/tsconfig.json
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+
+  frontend-legacy:
+    build:
+      context: ./recyclique-1.4.4/frontend
+      dockerfile: Dockerfile.dev
+      args:
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+    image: recyclic-frontend-dev:${FRONTEND_LEGACY_IMAGE_TAG:-latest}
+    environment:
+      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "4445:5173"
+    volumes:
+      - ./recyclique-1.4.4/frontend/src:/app/src
+      - ./recyclique-1.4.4/frontend/public:/app/public
+      - ./recyclique-1.4.4/frontend/tests:/app/tests
+      - ./recyclique-1.4.4/frontend/package.json:/app/package.json
+      - ./recyclique-1.4.4/frontend/package-lock.json:/app/package-lock.json
+      - ./recyclique-1.4.4/frontend/vite.config.js:/app/vite.config.js
+      - ./recyclique-1.4.4/frontend/tsconfig.json:/app/tsconfig.json
+      - ./recyclique-1.4.4/frontend/tsconfig.node.json:/app/tsconfig.node.json
     depends_on:
       api:
         condition: service_healthy

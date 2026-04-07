@@ -16,7 +16,7 @@ Backend FastAPI du livrable **1.4.4** (package défini dans `pyproject.toml` à 
 
 L’API lit **`BACKEND_CORS_ORIGINS`** ou **`CORS_ALLOW_ORIGINS`** (liste d’URLs séparées par des virgules) et **`FRONTEND_URL`** depuis l’environnement / `.env` via **Settings** (`core/config.py`). Si la liste CORS est vide et que `ENVIRONMENT` est `development`, `dev`, `local` ou `test`, un repli local minimal s’applique (localhost / conteneur frontend). En **production** (ou tout autre environnement non listé), une liste vide déclenche un avertissement côté logs ; en l’absence de `BACKEND_CORS_ORIGINS`, une seule origine dérivée de **`FRONTEND_URL`** est utilisée si elle est renseignée.
 
-Dans le compose de développement du mono-repo, le frontend officiel est maintenant **`peintre-nano`**, exposé côté navigateur sur **`http://localhost:4444`** et configuré avec un **proxy Vite** `/api` vers le service Docker `api`. Ce modèle évite d’ouvrir un chantier cross-origin plus large pour le dev local.
+Dans le compose de développement du mono-repo, le frontend officiel est maintenant **`peintre-nano`**, exposé côté navigateur sur **`http://localhost:4444`** et configuré avec un **proxy Vite** `/api` vers le service Docker `api`. Un second frontend transitoire **`frontend-legacy`** peut aussi tourner sur **`http://localhost:4445`** contre la même API. Ce modèle évite d’ouvrir un chantier cross-origin plus large pour le dev local.
 
 ## Développement local (résumé)
 

@@ -23,6 +23,8 @@ L’image Docker de l’API utilise **Python 3.11**. En développement local san
 
 **Statut frontend** : le frontend de développement **officiel v2** du mono-repo est désormais **`peintre-nano/`**. Le frontend historique sous `recyclique-1.4.4/frontend` reste ici comme brownfield / compatibilité, mais n’est plus la cible locale par défaut.
 
+**Coexistence locale** : le compose racine peut maintenant lancer aussi ce frontend legacy en parallèle sous le service **`frontend-legacy`** sur `http://localhost:4445`, tandis que `peintre-nano` reste sur `http://localhost:4444`.
+
 **Compatibilité** : vous pouvez encore exécuter `docker compose` **depuis ce dossier** (`recyclique-1.4.4/`) : le `docker-compose.yml` local inclut le fichier racine ; le fichier `.env` à côté continue d’être pris en charge pour l’interpolation des variables.
 
 1. Créer un fichier `.env` (à la racine du mono-repo pour le flux recommandé, ou dans ce dossier si vous utilisez uniquement le lancement depuis `recyclique-1.4.4/`) avec au minimum :
@@ -54,6 +56,7 @@ docker compose exec api sh /app/create_admin.sh votre_nom_utilisateur votre_mot_
 - **API** : http://localhost:8000 — préfixe HTTP des routes versionnées : `/v1/...` par défaut (`API_V1_STR` dans compose ; ex. santé : `/health` à la racine de l’app, endpoints métier sous ce préfixe).
 - **Documentation OpenAPI** : http://localhost:8000/docs
 - **Frontend v2 (Vite, hot-reload)** : http://localhost:4444 (`peintre-nano/`, port hôte mappé sur le port 5173 du conteneur)
+- **Frontend legacy (Vite, hot-reload)** : http://localhost:4445 (`recyclique-1.4.4/frontend`, service `frontend-legacy`)
 - **PostgreSQL** : `localhost:5432` (utilisateur `recyclic`, base par défaut `recyclic` si `POSTGRES_DB` non défini)
 - **Redis** : `localhost:6379`
 - **Bot** : non démarré dans ce fichier `docker-compose.yml` (service commenté)

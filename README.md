@@ -7,7 +7,10 @@ Dépôt produit **Recyclique** (backend), **Peintre_nano** (UI v2), contrats Ope
 **Point d'entrée unique :** à la **racine de ce dépôt**, fichier `docker-compose.yml`.
 
 **Frontend dev officiel :** `peintre-nano/`.
-Le service Compose `frontend` sert désormais l'UI v2 sur `http://localhost:4444`, tout en gardant le modèle local sûr déjà utilisé dans le dépôt : **même origine navigateur** + **proxy Vite** `/api` vers l'API Docker. Le frontend `recyclique-1.4.4/frontend` reste un artefact legacy et de compatibilité, pas la cible v2.
+Le service Compose `frontend` sert l'UI v2 sur `http://localhost:4444`, tout en gardant le modèle local sûr déjà utilisé dans le dépôt : **même origine navigateur** + **proxy Vite** `/api` vers l'API Docker.
+
+**Frontend transitoire de comparaison / exploitation :** `recyclique-1.4.4/frontend`.
+Le service Compose `frontend-legacy` le sert en parallèle sur `http://localhost:4445`. Il reste utile tant que `peintre-nano` ne couvre pas encore tous les écrans, mais ce n’est pas la cible v2.
 
 1. Créer un fichier `.env` à la racine (copier `recyclique-1.4.4/env.example` et renseigner au minimum `POSTGRES_PASSWORD`, `SECRET_KEY`).  
    Si vous aviez déjà un `.env` dans `recyclique-1.4.4/`, vous pouvez soit le copier à la racine, soit lancer :  
@@ -31,6 +34,14 @@ docker compose run --rm api-migrations
 Les stacks **staging** / **production** restent décrites par les fichiers `docker-compose.staging.yml`, `docker-compose.prod.yml` sous `recyclique-1.4.4/` (chemins d’usage inchangés pour ces environnements).
 
 **Important :** ce réalignement concerne d’abord le **développement local**. Les pipelines de déploiement et les stacks staging / production peuvent rester temporairement branchés sur le frontend legacy tant qu'un chantier dédié ne les a pas migrés.
+
+### Coexistence locale des deux frontends
+
+- `frontend` = `peintre-nano` sur `http://localhost:4444`
+- `frontend-legacy` = `recyclique-1.4.4/frontend` sur `http://localhost:4445`
+- `api` = `http://localhost:8000`
+
+Les deux frontends pointent vers la **même API**. `FRONTEND_URL` reste réglé sur `http://localhost:4444` pour la cible v2 ; les origines CORS autorisent les deux ports en local.
 
 ## Voir aussi
 

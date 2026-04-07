@@ -17,7 +17,7 @@ export function AuthRuntimeProvider({ children, adapter }: AuthRuntimeProviderPr
   return <AuthPortContext.Provider value={value}>{children}</AuthPortContext.Provider>;
 }
 
-function useAuthPort(): AuthContextPort {
+export function useAuthPort(): AuthContextPort {
   const port = useContext(AuthPortContext);
   if (!port) {
     throw new Error('useAuthSession / useContextEnvelope : enveloppez l\'arbre avec <AuthRuntimeProvider>.');

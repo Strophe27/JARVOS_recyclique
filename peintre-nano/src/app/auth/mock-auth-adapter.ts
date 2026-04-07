@@ -4,6 +4,8 @@ import type { AuthContextPort, AuthSessionState } from './auth-context-port';
 export type MockAuthAdapterOptions = {
   readonly session: AuthSessionState;
   readonly envelope: ContextEnvelopeStub;
+  /** Si défini : `getAccessToken` renvoie cette valeur (tests Bearer). */
+  readonly accessToken?: string;
 };
 
 /** Piste A : données typées pour tests et démo ; remplacement par client réel derrière le même port. */
@@ -13,5 +15,8 @@ export function createMockAuthAdapter(options: MockAuthAdapterOptions): AuthCont
   return {
     getSession: () => session,
     getContextEnvelope: () => envelope,
+    ...(options.accessToken !== undefined
+      ? { getAccessToken: () => options.accessToken }
+      : {}),
   };
 }

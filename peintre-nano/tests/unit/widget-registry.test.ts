@@ -12,12 +12,13 @@ function Dummy(_p: RegisteredWidgetProps) {
 }
 
 describe('widget-registry', () => {
-  it('expose une liste de types enregistrés (catalogue démo)', () => {
+  it('expose une liste de types enregistrés (catalogue démo + bandeau live)', () => {
     const types = getRegisteredWidgetTypes();
     expect(types).toContain('demo.text.block');
     expect(types).toContain('demo.card');
     expect(types).toContain('demo.kpi');
     expect(types).toContain('demo.list.simple');
+    expect(types).toContain('bandeau-live');
   });
 
   it('résout un type démo en composant', () => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { Button, List, Text, Title } from '@mantine/core';
 import type { NavigationEntry } from '../../types/navigation-manifest';
 import { filterNavigation } from '../../runtime/filter-navigation-for-context';
@@ -12,7 +12,7 @@ import { RootShell } from '../layouts/RootShell';
 import { useUserRuntimePrefs } from '../providers/UserRuntimePrefsProvider';
 import mainClasses from '../App.module.css';
 import { flattenNavigationEntries } from './flatten-navigation-entries';
-import { runtimeDemoManifestLoadResult } from './runtime-demo-manifest';
+import { runtimeServedManifestLoadResult } from './runtime-demo-manifest';
 import classes from './RuntimeDemoApp.module.css';
 
 function RuntimePrefsToolbar() {
@@ -47,7 +47,7 @@ export function RuntimeDemoApp() {
     sidebarPanelOpen: prefs.sidebarPanelOpen,
   };
 
-  const manifestLoadResult = runtimeDemoManifestLoadResult;
+  const manifestLoadResult = runtimeServedManifestLoadResult;
 
   const bundle = manifestLoadResult.ok ? manifestLoadResult.bundle : null;
 
@@ -59,6 +59,32 @@ export function RuntimeDemoApp() {
   const flatFiltered = useMemo(
     () => (filteredNavigation ? flattenNavigationEntries(filteredNavigation.entries) : []),
     [filteredNavigation],
+  );
+
+  const syncSelectionFromPath = useCallback(() => {
+    const path = window.location.pathname;
+    const match = flatFiltered.find((e) => e.path === path);
+    if (match) setSelectedEntryId(match.id);
+  }, [flatFiltered]);
+
+  useLayoutEffect(() => {
+    syncSelectionFromPath();
+  }, [syncSelectionFromPath]);
+
+  useLayoutEffect(() => {
+    const onPop = () => syncSelectionFromPath();
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [syncSelectionFromPath]);
+
+  const onSelectNavEntry = useCallback(
+    (entry: NavigationEntry) => {
+      setSelectedEntryId(entry.id);
+      if (entry.path) {
+        window.history.pushState({}, '', entry.path);
+      }
+    },
+    [],
   );
 
   const resolvedEntryId = useMemo(() => {
@@ -93,7 +119,7 @@ export function RuntimeDemoApp() {
       <FilteredNavEntries
         entries={filteredNavigation!.entries}
         selectedEntryId={resolvedEntryId}
-        onSelectEntry={(e: NavigationEntry) => setSelectedEntryId(e.id)}
+        onSelectEntry={onSelectNavEntry}
       />
     </>
   );
@@ -141,31 +167,35 @@ export function RuntimeDemoApp() {
               Manifests validés — navigation v{b.navigation.version} ; {b.pages.length} page(s) dans le lot.
             </Text>
             {pageRegions?.mainWidgets}
-            <Title order={1}>Socle Peintre_nano</Title>
-            <Text c="dimmed">
-              Fondation React + TypeScript + Vite (story 3.0). La navigation, les pages et le contexte autoritatif
-              viendront des contrats commanditaires ; ce socle ne les substitue pas par des routes ou permissions métier
-              codées en dur.
-            </Text>
-            <div>
-              <Text fw={600} mb="xs">
-                Quatre artefacts minimaux (hiérarchie de vérité)
-              </Text>
-              <List className={mainClasses.list} spacing="xs" type="ordered" data-testid="four-artifacts-list">
-                <List.Item>
-                  <strong>ContextEnvelope</strong> — OpenAPI / backend ; Piste A : mocks structurels jusqu'à Convergence 1.
-                </List.Item>
-                <List.Item>
-                  <strong>NavigationManifest</strong> — contrats CREOS / commanditaire ; le runtime interprète.
-                </List.Item>
-                <List.Item>
-                  <strong>PageManifest</strong> — composition déclarative (slots / widgets CREOS).
-                </List.Item>
-                <List.Item>
-                  <strong>UserRuntimePrefs</strong> — préférences UI locales, jamais source de vérité métier.
-                </List.Item>
-              </List>
-            </div>
+            {pageForAccess?.pageKey === 'demo-home' ? (
+              <>
+                <Title order={1}>Socle Peintre_nano</Title>
+                <Text c="dimmed">
+                  Fondation React + TypeScript + Vite (story 3.0). La navigation, les pages et le contexte autoritatif
+                  viendront des contrats commanditaires ; ce socle ne les substitue pas par des routes ou permissions métier
+                  codées en dur.
+                </Text>
+                <div>
+                  <Text fw={600} mb="xs">
+                    Quatre artefacts minimaux (hiérarchie de vérité)
+                  </Text>
+                  <List className={mainClasses.list} spacing="xs" type="ordered" data-testid="four-artifacts-list">
+                    <List.Item>
+                      <strong>ContextEnvelope</strong> — OpenAPI / backend ; Piste A : mocks structurels jusqu'à Convergence 1.
+                    </List.Item>
+                    <List.Item>
+                      <strong>NavigationManifest</strong> — contrats CREOS / commanditaire ; le runtime interprète.
+                    </List.Item>
+                    <List.Item>
+                      <strong>PageManifest</strong> — composition déclarative (slots / widgets CREOS).
+                    </List.Item>
+                    <List.Item>
+                      <strong>UserRuntimePrefs</strong> — préférences UI locales, jamais source de vérité métier.
+                    </List.Item>
+                  </List>
+                </div>
+              </>
+            ) : null}
           </div>
         ),
       }}

@@ -58,6 +58,7 @@ Alignement avec `epics.md` (Story 10.6b) — formulation de référence :
 - [x] Vérifier qu'un `docker compose up` (ou équivalent documenté) depuis le point d'entrée choisi démarre encore la stack attendue — AC : #1, #3  
 - [x] Réaligner le frontend Docker **dev local** sur `peintre-nano/` tout en gardant le modèle local sûr existant (`http://localhost:4444` + proxy Vite `/api`) — AC : #1, #2  
 - [x] Clarifier la frontière : **dev local = `peintre-nano`**, **staging/prod = legacy transitoire** tant qu'une story dédiée n'a pas migré les pipelines — AC : #2, #3  
+- [x] Rendre la **coexistence locale explicite** : `frontend` = `peintre-nano` (`4444`), `frontend-legacy` = ancien frontend (`4445`), les deux contre la même API — AC : #2, #3  
 
 ## Dev Notes
 
@@ -126,10 +127,12 @@ Composer (agent Task — phase DS bmad-dev-story)
 - **Décision** : Option A — `docker-compose.yml` à la racine du mono-repo ; chemins `build` / volumes en `./recyclique/api`, `./peintre-nano`, et artefacts brownfield conservés sous `./recyclique-1.4.4/...` quand encore utiles.
 - **Compatibilité** : `recyclique-1.4.4/docker-compose.yml` remplacé par un `include` vers le compose racine + bannière « historique / compatibilité ».
 - **Frontend dev** : service `frontend` du compose racine réaligné sur `peintre-nano/` avec `Dockerfile.dev`, `.dockerignore`, port navigateur `http://localhost:4444` conservé et proxy Vite `/api` vers `api`.
+- **Coexistence transitoire** : service `frontend-legacy` ajouté au compose racine pour `recyclique-1.4.4/frontend` sur `http://localhost:4445` ; objectif = comparaison / accès aux écrans non encore migrés, sans remettre en cause la cible v2.
 - **Documentation** : README racine créé ; `recyclique/README.md`, `recyclique-1.4.4/README.md`, `recyclique/api/README.md`, `guide-pilotage-v2.md`, `epics.md` (note Epic 2), `project-structure-boundaries.md` mis à jour.
 - **CI** : job rapide GitHub Actions réaligné sur `peintre-nano`; déploiement production explicitement laissé sur le frontend legacy à titre transitoire.
 - **Smoke initial** : validation par `docker compose config` et tests infra.
 - **Validation locale complète (2026-04-07)** : stack réellement démarrée avec un **nouveau projet Compose** / volume PostgreSQL neuf (`jarvos_recyclique_pg15fresh`) ; frontend `http://localhost:4444` OK, API + Swagger OK, healthcheck `http://localhost:8000/health` OK.
+- **Convention de coexistence** : `FRONTEND_URL` reste `http://localhost:4444` pour la cible v2 ; CORS locaux élargis à `4444` et `4445` pour permettre l'usage parallèle des deux frontends.
 - **Piège local identifié** : un ancien volume Docker PostgreSQL initialisé en **16** faisait échouer le compose officiel en **15** ; la référence du dépôt reste **PG15**. Voir `references/artefacts/2026-04-07_01_validation-stack-locale-peintre-nano.md`.
 
 ### File List

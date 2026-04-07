@@ -142,6 +142,8 @@ Integration : approche **API-first**. Plugin Paheko minimal autorise uniquement 
 
 Packaging initial : package interne / workspace dans le meme depot. Extraction vers repo dedie preparee des la conception, mais pas un prerequis immediat.
 
+Invariant v2 : `Peintre_nano` doit rester un runtime de rendu / composition borne, extractible plus tard sans devenir des maintenant un produit separe ni un chantier de split multi-repo. Pour le cadrage post-v2 et les garde-fous operatoires, voir `guide-pilotage-v2.md`, `architecture/post-v2-hypothesis-peintre-autonome-applications-contributrices.md` et `../../references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
+
 ### 3.4 CREOS
 
 `CREOS` porte :

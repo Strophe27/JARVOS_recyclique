@@ -188,10 +188,19 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Instantane signaux exploitation pour bandeau live (brouillon Story 1.7)
-         * @description Sémantique des champs : references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md (§1 bis périmètre v1 KPIs agrégés, §7 daily_kpis_aggregate).
-         *     Premier bandeau v2 : meme esprit que recyclique-1.4.4 (KPIs jour globaux, agrege multi-sites/caisses) ; familles F1-F6 optionnelles ou enrichissements ulterieurs.
+         * Instantane signaux exploitation pour bandeau live (ancrage contractuel Epic 4 / Story 4.1)
+         * @description **Ancrage reviewable (Story 4.1)** : contrat HTTP minimal du slice « bandeau live ». Les manifests CREOS sous
+         *     `contracts/creos/manifests/` referencent cette operation via `data_contract.operation_id` =
+         *     `recyclique_exploitation_getLiveSnapshot` (meme chaine que l'`operationId` ci-dessus — regle B4 : pas de renommage
+         *     sans mise a jour des manifests et du codegen).
+         *
+         *     Semantique des champs : references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md
+         *     (§1 bis perimetre v1 KPIs agreges, §7 daily_kpis_aggregate).
+         *     Premier bandeau v2 : meme esprit que recyclique-1.4.4 (KPIs jour globaux, agrege multi-sites/caisses) ; familles
+         *     F1-F6 optionnelles ou enrichissements ulterieurs.
+         *     Schema `ExploitationLiveSnapshot` : perimetre gele / complete selon Stories 2.6 et 2.7 (null et degradations — artefact 1.7 §6).
          *     Implementation HTTP reelle, auth et persistance : Epic 2.7 / Epic 2.2 (ne pas dupliquer la semantique sync Story 1.5).
+         *     Auth : meme modele que `GET /v1/users/me/context` (Bearer et/ou cookie httpOnly) — acces exploitation, pas reserve admin seul.
          */
         get: operations["recyclique_exploitation_getLiveSnapshot"];
         put?: never;
@@ -200,6 +209,30 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v2/exploitation/bandeau-live-slice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Activer ou desactiver le slice bandeau live (admin site, Story 4.5)
+         * @description **Story 4.5** — ecriture bornee : met a jour `sites.configuration.bandeau_live_slice_enabled`
+         *     pour le site de l'utilisateur authentifie. **Roles** : `admin` ou `super-admin` uniquement.
+         *     La lecture publique du drapeau se fait via `GET /v2/exploitation/live-snapshot` (champ
+         *     `bandeau_live_slice_enabled`) — l'`operationId` du GET reste `recyclique_exploitation_getLiveSnapshot` (regle B4).
+         *     Remplacement prevu : Epic 9.6 (config admin simple).
+         */
+        patch: operations["recyclique_exploitation_patchBandeauLiveSlice"];
         trace?: never;
     };
 }
@@ -319,23 +352,37 @@ export interface components {
          *     `ExploitationContextIds`, champ `observed_at` (date-time ISO 8601), et cohérence `sync_operational_summary`
          *     quand l'objet est non null (sous-objet minimal `worst_state` + `source_reachable`).
          *
-         *     **Placeholder / à figer en Epic 2.7** : clés et types à l'intérieur de `daily_kpis_aggregate`
-         *     (`additionalProperties` volontairement ouvert), sémantique fine de `effective_open_state`, enrichissements
-         *     F1–F6 et agrégats métier (voir artefact 2026-04-02_07). Ne pas inférer une vérité terrain live depuis
-         *     ce schéma avant implémentation 2.7.
+         *     **Complété Story 2.7 (sémantique HTTP + agrégats)** : `daily_kpis_aggregate` reprend les clés de
+         *     `UnifiedLiveStatsResponse` / `GET /v1/stats/live` (période `daily` côté impl) : `tickets_count`,
+         *     `last_ticket_amount`, `ca`, `donations`, `weight_out_sales`, `tickets_open`, `tickets_closed_24h`,
+         *     `items_received`, `weight_in`, `weight_out`, `period_start`, `period_end` (date-time ISO en JSON).
+         *     `effective_open_state` : codes stables `open`, `closed`, `unknown`, `not_applicable`, et pour F2
+         *     `delayed_open` / `delayed_close` lorsque `sites.configuration.opening_exception` le porte.
+         *     Runtime `forbidden` : `context` omis, `daily_kpis_aggregate` null, `sync_operational_summary` null,
+         *     `cash_session_effectiveness` = `unknown` (pas d'inference silencieuse UX-DR15).
+         *
+         *     **Story 4.5** : `bandeau_live_slice_enabled` — vérité `sites.configuration.bandeau_live_slice_enabled`
+         *     (defaut true si absent). Si `false`, pas d'agrégats KPIs dans cette réponse ; champs d'état
+         *     alignés sur une surface minimale (`not_applicable`, sync null).
          *
          *     Absence vs null : artefact 1.7 section 6.
          */
         ExploitationLiveSnapshot: {
+            /** @description True = slice actif ; False = désactivé par admin (config site). Defaut cote client si cle absente du JSON : true. */
+            bandeau_live_slice_enabled?: boolean;
             /**
              * @description KPIs jour agreges (multi-sites, multi-caisses), meme esprit bandeau recyclique 1.4.4 — voir artefact 07 §1 bis.
-             *     Clefs et types (CA, volumes matieres, comptages ventes, etc.) : Epic 2.7 / analyse API existante ; snapshot JSON 1.4.4 : references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json (lecture seule, pas contrat v2).
+             *     Clefs figees Story 2.7 : alignement `UnifiedLiveStatsResponse` (meme moteur que `ReceptionLiveStatsService.get_unified_live_stats`, perimetre site quand `context.site_id` est connu). Snapshot JSON 1.4.4 : references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json (lecture seule, pas contrat v2).
              */
             daily_kpis_aggregate?: {
                 [key: string]: unknown;
             } | null;
             context?: components["schemas"]["ExploitationContextIds"];
-            /** @description Verite metier fenetre d'ouverture effective au sens terrain (backend, famille F1/F3). */
+            /**
+             * @description Verite metier fenetre d'ouverture effective au sens terrain (backend, famille F1/F3).
+             *     F2 (ouverture decalee / exception) : `delayed_open` / `delayed_close` lorsque la regle serveur
+             *     les calcule (ex. hint `sites.configuration.opening_exception`).
+             */
             effective_open_state?: string;
             /**
              * @description Distinct de la simple selection de contexte (UX-DR15). Jamais infere depuis l'existence d'une entite caisse seule.
@@ -352,6 +399,15 @@ export interface components {
              * @description Horodatage serveur autoritaire pour affichage coherent (AR39).
              */
             observed_at?: string;
+        };
+        BandeauLiveSliceToggleRequest: {
+            /** @description True pour reactiver le slice bandeau live sur le site courant ; False pour le couper. */
+            enabled: boolean;
+        };
+        BandeauLiveSliceToggleResponse: {
+            bandeau_live_slice_enabled: boolean;
+            /** @description UUID du site mis a jour */
+            site_id: string;
         };
     };
     responses: never;
@@ -688,6 +744,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                /**
+                 * @description Identifiant de correlation optionnel cote client ; a propager pour le support et l'alignement des journaux
+                 *     inter-couches (exigence pour les stories 4.3 et 4.6 — convergence bout-en-bout). Les reponses d'erreur
+                 *     peuvent reprendre la correlation via `correlation_id` dans `RecycliqueApiError`.
+                 */
                 "X-Correlation-ID"?: string;
             };
             path?: never;
@@ -704,8 +765,86 @@ export interface operations {
                     "application/json": components["schemas"]["ExploitationLiveSnapshot"];
                 };
             };
+            /** @description Non authentifie */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Credentials absents ou refuses (client strict / futur garde-fou) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
             /** @description Source externe ou agregation indisponible — signal explicite (Story 1.7, Epic 2.7) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_exploitation_patchBandeauLiveSlice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BandeauLiveSliceToggleRequest"];
+            };
+        };
+        responses: {
+            /** @description Etat persiste */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BandeauLiveSliceToggleResponse"];
+                };
+            };
+            /** @description Utilisateur sans site affecte */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifie */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Role insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Site introuvable */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

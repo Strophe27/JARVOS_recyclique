@@ -77,6 +77,7 @@ def test_readme_documents_canonical_compose_at_repo_root() -> None:
     assert "docker-compose.yml" in text
     assert "racine" in text.lower()
     assert "peintre-nano" in text.lower()
+    assert "frontend-legacy" in text.lower()
 
 
 def test_compose_resolved_defines_expected_service_names() -> None:
@@ -92,7 +93,7 @@ def test_compose_resolved_defines_expected_service_names() -> None:
     assert r.returncode == 0, r.stderr
     model = json.loads(r.stdout)
     services = model.get("services") or {}
-    for name in ("postgres", "redis", "api", "api-migrations", "frontend"):
+    for name in ("postgres", "redis", "api", "api-migrations", "frontend", "frontend-legacy"):
         assert name in services, f"Service attendu manquant dans le compose résolu : {name}"
 
 
@@ -102,3 +103,11 @@ def test_root_compose_frontend_points_to_peintre_nano() -> None:
     assert "./peintre-nano" in normalized
     assert "context: ./peintre-nano" in normalized
     assert "./peintre-nano/vite.config.ts:/app/vite.config.ts" in normalized
+
+
+def test_root_compose_defines_legacy_frontend_service() -> None:
+    raw = ROOT_COMPOSE.read_text(encoding="utf-8")
+    normalized = raw.replace("\\", "/").lower()
+    assert "frontend-legacy:" in normalized
+    assert "context: ./recyclique-1.4.4/frontend" in normalized
+    assert "\"4445:5173\"" in normalized

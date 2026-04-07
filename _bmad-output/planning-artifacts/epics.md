@@ -1042,6 +1042,7 @@ So that the frontend foundation can be inspected and validated before real busin
 ## Epic 4: Prouver la chaine modulaire complete avec `bandeau live`
 
 **Convergence 2** — meme objectif que le libelle **Convergence A + B — jalon 2** dans l'Epic List. L'equipe peut prouver en vrai la chaine complete backend -> contrat -> manifest -> runtime -> rendu -> fallback, afin de valider le socle modulaire avant de migrer les flows critiques et les autres modules. Cette preuve inclut un `bandeau live` dont l'etat d'exploitation reste coherent avec les horaires reels, les ouvertures decalees et les cas particuliers, sur la base des prerequis de contrats et de contexte poses par Epics 1 et 2, ainsi qu'un mecanisme minimal d'activation/desactivation admin du module avant que la `config admin simple` complete soit livree plus largement par Epic 9.
+**Correct Course 2026-04-07 :** la preuve technique automatisee et documentee du bandeau live ne suffit pas a fermer seule le gate produit. La fermeture effective de **Convergence 2** exige un **raccordement dans l'application reellement servie** puis une **validation humaine explicite** sur stack locale officielle.
 
 ### Story 4.1: Publier le contrat et les manifests minimaux du module `bandeau live`
 
@@ -1188,12 +1189,37 @@ So that the project can move to heavier flows with confidence that the modular a
 
 **Given** Epic 4 is meant to de-risk the roadmap
 **When** this story is completed
-**Then** the team has a reusable reference slice for future module implementation
-**And** the roadmap can proceed without reopening the core modular viability question
+**Then** the team has a reusable technical reference slice for future module implementation
+**And** the fermeture du gate produit reste conditionnee a la story **4.6b** et a une validation humaine explicite sur l'application reellement servie
+
+### Story 4.6b: Raccorder le slice `bandeau live` dans l'application `Peintre_nano` reellement servie
+
+As a delivery team,
+I want the `bandeau live` slice to be mounted in the real `Peintre_nano` application served on the official local stack,
+So that the Convergence 2 proof can be validated by a human on the same artifact that is actually opened in the browser.
+
+**Acceptance Criteria:**
+
+**Given** Epic 4 contracts, widget, live source, fallbacks, and toggle already exist
+**When** the locally served `Peintre_nano` app is opened on the official stack
+**Then** the runtime loads the Epic 4 `bandeau live` manifests in the actually served bundle
+**And** the user can reach the bandeau page through a documented, reproducible path without editing code manually
+
+**Given** the slice must be visible in the real served UI rather than only in test harnesses
+**When** the bandeau page is selected through that path
+**Then** the `bandeau-live` widget is resolved by the runtime registry and rendered in the browser
+**And** the page no longer falls back to the Epic 3 demo content by default for this route
+
+**Given** the page is permissioned and context-sensitive
+**When** the app is used in local validation mode
+**Then** the required permission and context path are provided in a minimal, documented, non-ad-hoc way
+**And** the slice can issue real live requests from the served app, including `X-Correlation-ID`, without expanding scope to Epic 5 or Epic 9
 
 ## Epic 5: Recomposer le shell, le dashboard et l'administration existants dans `Peintre_nano`
 
 Les utilisatrices et responsables peuvent retrouver les pages transverses de `Recyclique` dans une UI composee `Peintre_nano` : shell global, navigation, dashboard, pages admin, listings, cartes, statistiques et points d'entree vers les autres ecrans, avec respect du contexte, des contraintes de rendu en `CSS Grid`, du blueprint `workflow explicite -> PageManifest / navigation contractuelle -> layout`, et du principe que la navigation/structure metier viennent de `Recyclique` via contrats commanditaires.
+
+**Note agents (create-story / review, Epics 5-10) :** `Peintre_nano` reste un **runtime d'affichage borne** : ne pas y recoder navigation metier, permissions, contexte ou logique sensible `Recyclique` hors contrats commanditaires et revalidation backend. Avant toute story ou revue touchant `Peintre_nano` sur les Epics 5 a 10, relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`, l'hypothese `Peintre autonome` (`_bmad-output/planning-artifacts/architecture/post-v2-hypothesis-peintre-autonome-applications-contributrices.md`) et l'artefact de gouvernance `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md`.
 
 ### Story 5.1: Recomposer la navigation transverse commanditaire dans `Peintre_nano`
 
@@ -1386,6 +1412,8 @@ So that the project can move to flow-heavy epics with a stable shared UI spine.
 ## Epic 6: Rendre la caisse v2 exploitable et enrichie par les besoins terrain
 
 **Convergence 3 (flows critiques)** — voir aussi l'**Epic List** pour le detail. Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow` via `FlowRenderer` / flows declaratifs, raccourcis clavier terrain, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`. Au moins un widget de **ticket courant** (ou equivalent metier) **doit** declarer `data_contract.critical: true` ; l'etat **DATA_STALE** et les echecs de donnees critiques **bloquent** le paiement cote UI **et** sont **revalides** cote backend (PRD §10, architecture).
+
+**Note agents (create-story / review) :** pour toute story de cet epic, garder `Peintre_nano` du cote **runtime / rendu / flow UI** ; contexte, permissions, stale data, paiement, audit et regles metier sensibles restent **backend-autoritaires**. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md` et l'artefact de gouvernance `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md`.
 
 ### Story 6.1: Mettre en service le parcours nominal de caisse v2 dans `Peintre_nano`
 
@@ -1633,6 +1661,8 @@ So that Epic 6 confirms the new caisse is genuinely usable before broader rollou
 
 Les operatrices peuvent utiliser la reception dans `Peintre_nano` avec ses ecrans, workflows explicites, definitions d'ecrans, saisies et contextualisation metier, en respectant les contraintes du flux matiere et l'architecture modulaire retenue.
 
+**Note agents (create-story / review) :** pour toute story de cet epic, `Peintre_nano` ne doit pas devenir auteur du **flux matiere** ni du **contexte** ; il consomme et rend des contrats / etats backend. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md` avant de deriver une implementation.
+
 ### Story 7.1: Mettre en service le parcours nominal de reception v2
 
 As a reception operator,
@@ -1774,6 +1804,8 @@ So that Epic 7 confirms reception is genuinely usable in the new chain before br
 ## Epic 8: Fiabiliser l'articulation comptable reelle avec `Paheko`
 
 Les responsables peuvent synchroniser, suivre, corriger et reconcilier les operations entre `Recyclique` et `Paheko`, avec etats explicites, quarantaine, blocages selectifs, correlation inter-systemes et schema de deploiement cible.
+
+**Note agents (create-story / review) :** pour toute story de cet epic, l'integration `Paheko`, l'idempotence, la quarantaine, les mappings et la correlation restent **derriere le backend `Recyclique`** ; `Peintre_nano` affiche des etats et feedbacks, il ne porte pas la logique comptable. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
 
 ### Story 8.1: Implementer un premier slice syncable de bout en bout `Recyclique -> Paheko`
 
@@ -1942,6 +1974,8 @@ So that the project can trust the accounting articulation before wider deploymen
 
 Les responsables et super-admins peuvent utiliser les modules metier complementaires attendus pour une v2 credible : declaration eco-organismes, adherents / vie associative minimale, integration `HelloAsso` et config admin simple, avec arbitrage `HelloAsso` explicite avant implementation large du connecteur.
 Ordre recommande dans cet epic : poser d'abord la gouvernance des mappings sensibles avant la consommation declarative a grande echelle, puis avancer sequentiellement sur `adherents`, arbitrage `HelloAsso`, integration minimale `HelloAsso`, `config admin simple`, ACL minimales, et validation finale.
+
+**Note agents (create-story / review) :** pour toute story de cet epic, ne pas confondre **modules v2 livres avec le build** et hypothese **post-v2** de marketplace / chargement tiers. Les ACL, mappings sensibles et reglages simples restent gouvernes par `Recyclique`, ses contrats et sa tracabilite. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md` et l'hypothese `_bmad-output/planning-artifacts/architecture/post-v2-hypothesis-marketplace-modules.md`.
 
 ### Story 9.1: Livrer le module `declaration eco-organismes`
 
@@ -2130,6 +2164,8 @@ So that the product can claim a credible v2 perimeter beyond the core terrain fl
 ## Epic 10: Industrialiser, valider et rendre la v2 deployable
 
 L'equipe peut verifier, tester, observer, deployer et qualifier la v2 jusqu'aux gates de beta interne et de version vendable, sans laisser les contraintes de qualite, CI, observabilite, installabilite et readiness des modules obligatoires hors backlog.
+
+**Note agents (create-story / review) :** pour toute story de cet epic, transformer les garde-fous `OpenAPI` / `CREOS` / agnosticite `Peintre_nano` en validations executables et checks de drift, sans elargir l'epic a une extraction `Peintre` hors scope v2. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
 
 ### Story 10.1: Outiller la CI minimale pour `recyclique`, `peintre-nano` et les contrats
 

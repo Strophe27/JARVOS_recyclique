@@ -4,6 +4,11 @@
 
 - **[guide-pilotage-v2.md](../guide-pilotage-v2.md)** — Document maître d’exécution : réconciliation séquence PRD / décision directrice et **Pistes A/B** ; jalons Convergence 1–3 et Epics 1–10 (cases à cocher aux grands jalons) ; **où ranger** audits, schémas BDD, handoffs, rapports de tests ; frictions ; prompt type agent superviseur ; **correct course**. Abstract canonique : [references/index.md](../../../references/index.md) (État et suivi).
 
+## Hypothèses post-V2 (hors backlog, non sprint)
+
+- **[post-v2-hypothesis-marketplace-modules.md](./post-v2-hypothesis-marketplace-modules.md)** — Marketplace / modules complémentaires (distribution, activation) **séparé** du cœur métier Recyclique ; alignement avec contrats v2 ; pas d’epic tant que non promu. Visible depuis [references/index.md](../../../references/index.md).
+- **[post-v2-hypothesis-peintre-autonome-applications-contributrices.md](./post-v2-hypothesis-peintre-autonome-applications-contributrices.md)** — Trajectoire où `Peintre` devient un moteur autonome et `Recyclique` une application contributrice ; recommandation explicite : ne pas forcer cette séparation complète dès la v2, mais préserver les frontières qui la rendent possible.
+
 ## Table of Contents
 
 - [Architecture Decision Document](#table-of-contents)

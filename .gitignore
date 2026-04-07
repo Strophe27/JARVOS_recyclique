@@ -1,4 +1,4 @@
-# Dossiers sensibles / confidentiels
+/# Dossiers sensibles / confidentiels
 references/vrac/
 references/ecosysteme/
 references/dumps/
@@ -24,6 +24,8 @@ normalize_typographic_chars_*.log
 
 # Config locale (secrets)
 .env
+.env.*
+!.env.example
 
 # Node (dependances locales — ne jamais versionner)
 node_modules/

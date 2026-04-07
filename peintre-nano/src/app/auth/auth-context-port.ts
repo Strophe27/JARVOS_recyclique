@@ -13,4 +13,9 @@ export interface AuthSessionState {
 export interface AuthContextPort {
   getSession(): AuthSessionState;
   getContextEnvelope(): ContextEnvelopeStub;
+  /**
+   * Jeton Bearer si stocké côté adaptateur. Cookies httpOnly : omettre cette méthode et s’appuyer sur
+   * `credentials: 'include'` sur les appels `fetch` (OpenAPI `bearerOrCookie`).
+   */
+  getAccessToken?: () => string | undefined;
 }

@@ -1,6 +1,169 @@
 # Synthèse automatisation des tests — suivi BMAD
 
-**Cadre** : `bmad-qa-generate-e2e-tests` (pytest API ; pas d’UI E2E sur ce périmètre backend).
+**Cadre** : `bmad-qa-generate-e2e-tests` (pytest API ; E2E UI Vitest + Testing Library sous `peintre-nano/tests/e2e/`).
+
+---
+
+## Story 4.5 — `4-5-ajouter-un-toggle-admin-minimal-borne-au-module-bandeau-live`
+
+**Date** : 2026-04-07  
+**Objectif QA** : vérifier la couverture automatisée vs AC (toggle admin / vérité backend, `BANDEAU_LIVE_MODULE_DISABLED`, pas de poll si slice off, contrats B4 sur le GET, composition bac à sable).
+
+### Revue de couverture vs AC
+
+| AC | Preuve existante | Complément QA (ce passage) |
+|----|------------------|----------------------------|
+| 1 — Chemin admin borné | `test_exploitation_live_snapshot.py` : `test_patch_bandeau_live_slice_*` (403 non-admin, 400 sans site, 200 persistance + GET reflète l’état) | Aucun trou critique — **aucun test ajouté** |
+| 2 — Vérité backend + runtime | Même fichier (`test_live_snapshot_slice_disabled_skips_kpi_aggregate`) ; front : fetch mock + `bandeau_live_slice_enabled: false` | — |
+| 5 — Fallback `BANDEAU_LIVE_*` + `reportRuntimeFallback` | `bandeau-live-widget.test.tsx` (snapshot statique) ; `bandeau-live-live-source.test.tsx` ; `bandeau-live-sandbox-compose.e2e.test.tsx` (« live + slice désactivé ») | — |
+| Pas de poll si off | `bandeau-live-live-source.test.tsx` : **un seul** `fetch`, attente 400 ms sans second appel | L’E2E compose ne refait pas cette attente temporelle : **acceptable** (même logique couverte au niveau widget + source live) |
+| 6 — Contrat reviewable (GET `operationId` inchangé) | `creos-bandeau-live-manifests-4-1.test.ts` + `recyclique-openapi-governance.test.ts` sur `recyclique_exploitation_getLiveSnapshot` | PATCH documenté dans OpenAPI / types générés ; pas d’exigence de test Vitest supplémentaire pour rester vert |
+
+### Fichiers de preuve (inchangés)
+
+| Fichier | Rôle |
+|---------|------|
+| `recyclique/api/tests/test_exploitation_live_snapshot.py` | Toggle PATCH, slice off côté GET, pas d’agrégats KPI si désactivé |
+| `peintre-nano/tests/unit/bandeau-live-live-source.test.tsx` | Un fetch, pas de polling, `reportRuntimeFallback` |
+| `peintre-nano/tests/unit/bandeau-live-widget.test.tsx` | `module_disabled` + codes `data-*` |
+| `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` | Scénario slice off en composition manifests |
+
+### Résultat d’exécution (2026-04-07)
+
+Vitest (`peintre-nano`) :
+
+```text
+129 passed (27 fichiers) — exit 0
+```
+
+Pytest (`recyclique/api`, fichier ciblé) :
+
+```text
+12 passed, 5 warnings (Pydantic) — exit 0
+```
+
+### qa_loop (sous-agent Task)
+
+**0** — couverture jugée suffisante pour les AC testables en automate ; **aucune modification** des fichiers de test applicatifs.
+
+---
+
+## Story 4.4 — `4-4-rendre-visibles-les-fallbacks-et-rejets-du-slice-bandeau-live`
+
+**Date** : 2026-04-07  
+**Objectif QA** : vérifier la couverture Vitest/jsdom vs AC (fallback / rejet visibles, `reportRuntimeFallback`, corrélation `fetchLiveSnapshot` ↔ DOM, reste de page intact).
+
+### Revue de couverture vs AC
+
+| AC | Preuve existante | Complément QA (ce passage) |
+|----|------------------|----------------------------|
+| 1 — Fallback visible + page intacte | `bandeau-live-sandbox-compose.e2e.test.tsx` : bandeau `unavailable` + widget voisin `demo.text.block` ; widget inconnu + bandeau nominal ; `reportRuntimeFallback` sur `UNAVAILABLE_STATIC` et `UNKNOWN_WIDGET_TYPE` | Inchangé (déjà bloquant couvert) |
+| 2 / 4 — Corrélation traçable | 503 HTTP, corps 200 dégradé vide : `data-correlation-id` + `reportRuntimeFallback` avec `correlationId` (UUID mocké) | **Renfort** : JSON invalide (`PARSE_ERROR`) et `fetch` rejeté (`NETWORK_ERROR`) — même lien DOM + charge reporter |
+| 3 — Preuve epic | Composition bac à sable + chemins erreur ci-dessus | — |
+
+### Tests concernés
+
+| Fichier | Rôle |
+|---------|------|
+| `peintre-nano/tests/unit/bandeau-live-live-source.test.tsx` | Parse 200 + réseau : `data-runtime-code`, `data-correlation-id`, `reportRuntimeFallback` (en plus de 503, dégradé vide, catch inattendu). |
+| `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` | Inchangé : indisponible + voisin, unknown widget, rejet lot. |
+| `peintre-nano/tests/unit/bandeau-live-widget.test.tsx` | Chemin statique / `unavailable` (`data-runtime-*`). |
+
+### Résultat d’exécution
+
+```text
+126 passed (27 fichiers) — exit 0
+```
+
+Commande :
+
+```powershell
+Set-Location 'D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\peintre-nano'
+npm run test
+```
+
+### qa_loop (sous-agent Task)
+
+**0** — suite verte avant modification ; renfort assertions sans cycle d’échec.
+
+---
+
+## Story 4.3 — `4-3-brancher-la-source-backend-reelle-et-les-cas-douverture-decalee`
+
+**Date** : 2026-04-07  
+**Objectif QA** : confirmer la couverture Vitest des AC 4.3 (source HTTP, états décalés, dégradé, polling 30 s, `X-Correlation-ID`, erreurs HTTP / parse / réseau) sans élargir le périmètre.
+
+### Tests concernés
+
+| Fichier | Rôle |
+|---------|------|
+| `peintre-nano/tests/unit/bandeau-live-live-source.test.tsx` | Corrélation UUID + Bearer ; `delayed_open` / `delayed_close` ; 401 / **403** / 503 ; JSON invalide ; corps vide dégradé ; **échec réseau** (`fetch` rejeté) ; **intervalle `setInterval` = 30 s** par défaut (`DEFAULT_LIVE_SNAPSHOT_POLLING_INTERVAL_S`). |
+| `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` | Composition manifests + chemin snapshot statique (héritage 4.2, inchangé). |
+| `peintre-nano/tests/unit/bandeau-live-widget.test.tsx` | Chemin statique sans fetch (4.2). |
+
+### Tests API
+
+Déjà couverts côté backend : `recyclique/api/tests/test_exploitation_live_snapshot.py` (dont 403, corrélation) — hors re-run dans ce passage QA front.
+
+### Résultat d’exécution
+
+```text
+123 passed (27 fichiers) — exit 0
+```
+
+Commande :
+
+```powershell
+Set-Location 'D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\peintre-nano'
+npm run test
+```
+
+---
+
+## Story 4.2 — `4-2-implementer-le-widget-bandeau-live-dans-le-registre-peintre-nano`
+
+**Date** : 2026-04-07  
+**Objectif QA** : parcours intégré **manifests CREOS reviewables** (`navigation-bandeau-live-slice.json` + `page-bandeau-live-sandbox.json`) → `loadManifestBundle` → `buildPageManifestRegions` → shell + widget `bandeau-live` ; état dégradé sans snapshot ; rejet lot si `widgetType` inconnu.
+
+### Tests générés
+
+| Fichier | Rôle |
+|---------|------|
+| `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` | Chemin nominal : bandeau `data-bandeau-state="live"`, signaux snapshot (champs + sync) visibles dans la zone main ; sans `widget_props` sur le slot bandeau → `unavailable` ; type fictif → alerte manifests `UNKNOWN_WIDGET_TYPE` / `manifest_bundle_invalid`. |
+
+### Correctif associé (comportement runtime)
+
+| Fichier | Rôle |
+|---------|------|
+| `peintre-nano/src/domains/bandeau-live/BandeauLive.tsx` | `snapshotFromWidgetProps` accepte les clés **snake_case** (tests / JSON brut) et **camelCase** (après `deepMapKeysToCamelCase` à l’ingest du PageManifest), pour que le snapshot du manifest sandbox soit bien affiché en composition réelle. |
+
+### Tests API
+
+Non applicable (story front registre + rendu ; pas de nouvel endpoint).
+
+### Résultat d’exécution
+
+```text
+113 passed (26 fichiers) — exit 0
+```
+
+Commande :
+
+```powershell
+Set-Location 'D:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\peintre-nano'
+npm run test
+npm run lint
+```
+
+### Couverture (indicative)
+
+- **UI E2E (Vitest jsdom)** : composition déclarative bandeau live + 2 chemins d’erreur (données absentes, type hors allowlist).
+- **API** : inchangé.
+
+### Prochaines étapes
+
+- Story **4.6** : E2E navigateur réel / chaîne complète si prévu.
+- CI : job `peintre-nano` `npm run test` inchangé (inclut déjà `tests/e2e/**`).
 
 ---
 

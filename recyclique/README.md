@@ -21,9 +21,9 @@ python -m pytest tests/test_infrastructure.py -v --tb=short
 
 ## Docker (stack `recyclic-local`)
 
-**Point d’entrée unique (story 10.6b puis réalignement frontend v2)** : le fichier **`docker-compose.yml` à la racine du mono-repo** (pas dans `recyclique/`). Il orchestre Postgres, Redis, l’API (build depuis **`recyclique/api/`**) et le frontend dev officiel **`peintre-nano/`** servi sur `http://localhost:4444`. Procédure : **`README.md` à la racine du dépôt** ; détail des ports et du socle legacy : `recyclique-1.4.4/README.md`. Un raccourci de compatibilité existe sous `recyclique-1.4.4/docker-compose.yml` (inclut le compose racine).
+**Point d’entrée unique (story 10.6b puis coexistence explicite des frontends)** : le fichier **`docker-compose.yml` à la racine du mono-repo** (pas dans `recyclique/`). Il orchestre Postgres, Redis, l’API (build depuis **`recyclique/api/`**), le frontend dev officiel **`peintre-nano/`** sur `http://localhost:4444` et un frontend transitoire **`frontend-legacy`** sur `http://localhost:4445`. Procédure : **`README.md` à la racine du dépôt** ; détail des ports et du socle legacy : `recyclique-1.4.4/README.md`. Un raccourci de compatibilité existe sous `recyclique-1.4.4/docker-compose.yml` (inclut le compose racine).
 
-Le frontend `recyclique-1.4.4/frontend` reste un artefact brownfield / de compatibilité ; il n’est plus le frontend de développement par défaut du mono-repo.
+Le frontend `recyclique-1.4.4/frontend` reste un artefact brownfield / de compatibilité ; il n’est plus le frontend de développement par défaut du mono-repo, mais il peut tourner en parallèle contre la même API pour comparaison et accès aux écrans non encore migrés.
 
 ## CI
 

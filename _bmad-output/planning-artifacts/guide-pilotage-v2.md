@@ -35,7 +35,7 @@
 ### Convergences
 
 - [ ] **Convergence 1** — Types / client depuis OpenAPI + hooks réels (plus seulement mocks pour les slices concernés) ; `ContextEnvelope` aligné serveur / UI.
-- [ ] **Convergence 2** — **Bandeau live** : chaîne complète backend → contrat → manifest CREOS → registre Peintre → slot → rendu → fallback (gate décision directrice).
+- [x] **Convergence 2** — **Bandeau live** : chaîne complète backend → contrat → manifest CREOS → registre Peintre → slot → rendu → fallback (gate décision directrice). *Preuve technique acquise : `references/artefacts/2026-04-07_03_preuve-convergence-2-bandeau-live.md` + E2E `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` (story 4.6), puis validation humaine explicite sur l'application reellement servie apres raccordement UI (story 4.6b).*
 - [ ] **Convergence 3** — Flows **cashflow** et **réception** avec données réelles, `data_contract` / `DATA_STALE` ou équivalents ou règles PRD §10.
 
 ### Epics 1 à 10 (titres de référence — alignés sur `epics.md`)
@@ -43,7 +43,7 @@
 - [ ] **Epic 1** — Prérequis structurants, modèle multi-contextes, gouvernance OpenAPI/CREOS (jalon FR73 / schémas minimaux selon epics).
 - [ ] **Epic 2** — Socle backend brownfield v2 (auth, contexte, permissions, persistance, signaux bandeau).
 - [ ] **Epic 3** — Socle Peintre_nano (shell, slots, validation CREOS, mocks permis avant C1).
-- [ ] **Epic 4** — Preuve chaîne modulaire **bandeau live**.
+- [x] **Epic 4** — Preuve chaîne modulaire **bandeau live**.
 - [ ] **Epic 5** — Shell, dashboard, admin transverses dans Peintre.
 - [ ] **Epic 6** — Caisse v2 exploitable.
 - [ ] **Epic 7** — Réception v2 exploitable.
@@ -66,7 +66,7 @@
 | Interop Paheko / éco-organismes | `references/migration-paeco/`, `references/paheko/` | Index de chaque dossier |
 | PRD, archi, epics, readiness, **ce guide** | `_bmad-output/planning-artifacts/` | `_bmad-output/README.md` ; archi : `planning-artifacts/architecture/index.md` |
 | Stories / sprint | `_bmad-output/implementation-artifacts/` | `sprint-status.yaml` |
-| **Tests (code)** | Backend API : **`recyclique/api/`** (gates Story Runner, pytest) ; stack Docker locale : **`docker-compose.yml` à la racine du mono-repo** (point d’entrée unique ; build API depuis `recyclique/api/`) ; raccourci compat. `recyclique-1.4.4/docker-compose.yml` (include du compose racine) ; `peintre-nano/` | — |
+| **Tests (code)** | Backend API : **`recyclique/api/`** (gates Story Runner, pytest) ; stack Docker locale : **`docker-compose.yml` à la racine du mono-repo** (point d’entrée unique ; build API depuis `recyclique/api/`) ; raccourci compat. `recyclique-1.4.4/docker-compose.yml` (include du compose racine) ; front v2 **`peintre-nano/`** (`frontend`, port `4444`) + front transitoire **legacy** (`frontend-legacy`, port `4445`) contre la même API | — |
 | **Rapports / stratégie de tests** (synthèse, pas le code) | Existant 1.4.4 : logique **consolidation** ; **v2 transversal** : fichiers datés dans `references/artefacts/` par défaut | **Dès le premier** rapport / stratégie test v2 : créer l'artefact **et** une entrée dans `references/artefacts/index.md` |
 
 ---
@@ -81,6 +81,7 @@ Garder en tête ; le détail produit est dans **PRD** et **epics** :
 - Discipline **OpenAPI unique** + **CREOS** dans `contracts/` — pas de double définition à la main.
 - Intégrations **Paheko** / **HelloAsso** : découvertes réelles, **correct course** si l'API impose.
 - **FR73** vs vélocité : fermer le **minimum** contractuel avant implémentation **large** des modules, pas la perfection absolue.
+- **Agnosticité Peintre** : ne pas confondre **extractibilité future** et **travail v2 immédiat** ; voir la checklist PR / create-story [`../../references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`](../../references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md).
 
 ---
 
@@ -97,6 +98,7 @@ Tu pilotes une session JARVOS Recyclique v2. Charge dans l'ordre :
 Règles :
 - Respecter la règle d'or Piste A/B (contrat B qui ancère A).
 - Ne pas déclarer un jalon coché sans livrable reviewable.
+- Si la session touche `Peintre_nano` sur les Epics 5 à 10, charger aussi `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
 - En fin de session : mettre à jour references/ou-on-en-est.md (journal daté) ; mettre à jour les cases du guide seulement si un jalon a été franchi.
 ```
 
@@ -107,6 +109,7 @@ Règles :
 Si un audit ou la réalité contredit le plan : arbitrer, documenter, ajuster le backlog — ne pas forcer le plan.
 
 - Exemple de proposition documentée : [`sprint-change-proposal-2026-04-01.md`](sprint-change-proposal-2026-04-01.md)
+- Proposition liée à l'agnosticité future de `Peintre_nano` : [`sprint-change-proposal-2026-04-07-peintre-agnosticite-sans-extraction.md`](./sprint-change-proposal-2026-04-07-peintre-agnosticite-sans-extraction.md)
 - Workflow BMAD : skill **bmad-correct-course** ; alignement procédure habituelle du dépôt.
 
 ---

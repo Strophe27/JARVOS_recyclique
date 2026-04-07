@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.0-draft
+  version: 0.1.2-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -308,10 +308,18 @@ paths:
       operationId: recyclique_exploitation_getLiveSnapshot
       tags:
         - exploitation
-      summary: Instantane signaux exploitation pour bandeau live (brouillon Story 1.7)
+      summary: Instantane signaux exploitation pour bandeau live (ancrage contractuel Epic 4 / Story 4.1)
       description: |
-        Sémantique des champs : references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md (§1 bis périmètre v1 KPIs agrégés, §7 daily_kpis_aggregate).
-        Premier bandeau v2 : meme esprit que recyclique-1.4.4 (KPIs jour globaux, agrege multi-sites/caisses) ; familles F1-F6 optionnelles ou enrichissements ulterieurs.
+        **Ancrage reviewable (Story 4.1)** : contrat HTTP minimal du slice « bandeau live ». Les manifests CREOS sous
+        `contracts/creos/manifests/` referencent cette operation via `data_contract.operation_id` =
+        `recyclique_exploitation_getLiveSnapshot` (meme chaine que l'`operationId` ci-dessus — regle B4 : pas de renommage
+        sans mise a jour des manifests et du codegen).
+
+        Semantique des champs : references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md
+        (§1 bis perimetre v1 KPIs agreges, §7 daily_kpis_aggregate).
+        Premier bandeau v2 : meme esprit que recyclique-1.4.4 (KPIs jour globaux, agrege multi-sites/caisses) ; familles
+        F1-F6 optionnelles ou enrichissements ulterieurs.
+        Schema `ExploitationLiveSnapshot` : perimetre gele / complete selon Stories 2.6 et 2.7 (null et degradations — artefact 1.7 §6).
         Implementation HTTP reelle, auth et persistance : Epic 2.7 / Epic 2.2 (ne pas dupliquer la semantique sync Story 1.5).
         Auth : meme modele que `GET /v1/users/me/context` (Bearer et/ou cookie httpOnly) — acces exploitation, pas reserve admin seul.
       security:
@@ -320,6 +328,10 @@ paths:
         - name: X-Correlation-ID
           in: header
           required: false
+          description: |
+            Identifiant de correlation optionnel cote client ; a propager pour le support et l'alignement des journaux
+            inter-couches (exigence pour les stories 4.3 et 4.6 — convergence bout-en-bout). Les reponses d'erreur
+            peuvent reprendre la correlation via `correlation_id` dans `RecycliqueApiError`.
           schema:
             type: string
       responses:
@@ -343,6 +355,57 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "503":
           description: Source externe ou agregation indisponible — signal explicite (Story 1.7, Epic 2.7)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v2/exploitation/bandeau-live-slice:
+    patch:
+      operationId: recyclique_exploitation_patchBandeauLiveSlice
+      tags:
+        - exploitation
+      summary: Activer ou desactiver le slice bandeau live (admin site, Story 4.5)
+      description: |
+        **Story 4.5** — ecriture bornee : met a jour `sites.configuration.bandeau_live_slice_enabled`
+        pour le site de l'utilisateur authentifie. **Roles** : `admin` ou `super-admin` uniquement.
+        La lecture publique du drapeau se fait via `GET /v2/exploitation/live-snapshot` (champ
+        `bandeau_live_slice_enabled`) — l'`operationId` du GET reste `recyclique_exploitation_getLiveSnapshot` (regle B4).
+        Remplacement prevu : Epic 9.6 (config admin simple).
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BandeauLiveSliceToggleRequest"
+      responses:
+        "200":
+          description: Etat persiste
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BandeauLiveSliceToggleResponse"
+        "400":
+          description: Utilisateur sans site affecte
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Role insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Site introuvable
           content:
             application/json:
               schema:
@@ -581,8 +644,16 @@ components:
         Runtime `forbidden` : `context` omis, `daily_kpis_aggregate` null, `sync_operational_summary` null,
         `cash_session_effectiveness` = `unknown` (pas d'inference silencieuse UX-DR15).
 
+        **Story 4.5** : `bandeau_live_slice_enabled` — vérité `sites.configuration.bandeau_live_slice_enabled`
+        (defaut true si absent). Si `false`, pas d'agrégats KPIs dans cette réponse ; champs d'état
+        alignés sur une surface minimale (`not_applicable`, sync null).
+
         Absence vs null : artefact 1.7 section 6.
       properties:
+        bandeau_live_slice_enabled:
+          type: boolean
+          description: |
+            True = slice actif ; False = désactivé par admin (config site). Defaut cote client si cle absente du JSON : true.
         daily_kpis_aggregate:
           type: object
           nullable: true
@@ -622,3 +693,24 @@ components:
           format: date-time
           description: Horodatage serveur autoritaire pour affichage coherent (AR39).
       additionalProperties: false
+    BandeauLiveSliceToggleRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: True pour reactiver le slice bandeau live sur le site courant ; False pour le couper.
+    BandeauLiveSliceToggleResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - bandeau_live_slice_enabled
+        - site_id
+      properties:
+        bandeau_live_slice_enabled:
+          type: boolean
+        site_id:
+          type: string
+          description: UUID du site mis a jour

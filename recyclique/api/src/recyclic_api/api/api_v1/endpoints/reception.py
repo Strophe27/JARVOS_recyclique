@@ -682,6 +682,7 @@ async def get_live_reception_stats(
         return ReceptionLiveStatsResponse(
             tickets_open=0,
             tickets_closed_24h=0,
+            items_received=0,
             turnover_eur=0.0,
             donations_eur=0.0,
             weight_in=0.0,

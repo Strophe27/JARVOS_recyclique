@@ -1,5 +1,5 @@
 # generated: 2026-04-01T15:39:08
-# last_updated: 2026-04-07 — story 10.6b done (CR+YAML)
+# last_updated: 2026-04-07 — epic-4 clos ; 4.6 done ; 4.6b done ; convergence 2 validee ; retrospective done
 # (historique) last_updated: 2026-04-03 — Epic 2 : toutes stories 2-x done ; pret pour bmad-retrospective (epic-2)
 # (historique) last_updated: 2026-04-03 (story 2.7 CS — fichier story ready-for-dev)
 # project: JARVOS_recyclique
@@ -50,7 +50,7 @@
 #   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
 
 generated: "2026-04-01"
-last_updated: "2026-04-07" # story 10.6b done (Story Runner PASS)
+last_updated: "2026-04-07" # epic-4 clos ; 4.6 done ; 4.6b done ; convergence 2 validee ; retrospective done
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
@@ -76,7 +76,7 @@ development_status:
   2-5-stabiliser-la-persistance-terrain-locale-laudit-et-les-journaux-critiques: done
   2-6-exposer-les-premiers-contrats-backend-versionnes-pour-les-slices-v2: done
   2-7-fournir-les-signaux-backend-minimaux-pour-bandeau-live: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   epic-3: done
   3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux: done
@@ -89,14 +89,15 @@ development_status:
   3-7-produire-la-page-de-demonstration-du-runtime-compose: done
   epic-3-retrospective: done
 
-  epic-4: backlog
-  4-1-publier-le-contrat-et-les-manifests-minimaux-du-module-bandeau-live: backlog
-  4-2-implementer-le-widget-bandeau-live-dans-le-registre-peintre-nano: backlog
-  4-3-brancher-la-source-backend-reelle-et-les-cas-douverture-decalee: backlog
-  4-4-rendre-visibles-les-fallbacks-et-rejets-du-slice-bandeau-live: backlog
-  4-5-ajouter-un-toggle-admin-minimal-borne-au-module-bandeau-live: backlog
-  4-6-valider-la-chaine-complete-backend-contrat-manifest-runtime-rendu-fallback: backlog
-  epic-4-retrospective: optional
+  epic-4: done
+  4-1-publier-le-contrat-et-les-manifests-minimaux-du-module-bandeau-live: done
+  4-2-implementer-le-widget-bandeau-live-dans-le-registre-peintre-nano: done
+  4-3-brancher-la-source-backend-reelle-et-les-cas-douverture-decalee: done
+  4-4-rendre-visibles-les-fallbacks-et-rejets-du-slice-bandeau-live: done
+  4-5-ajouter-un-toggle-admin-minimal-borne-au-module-bandeau-live: done
+  4-6-valider-la-chaine-complete-backend-contrat-manifest-runtime-rendu-fallback: done
+  4-6b-raccorder-le-slice-bandeau-live-dans-lapplication-peintre-nano-reellement-servie: done
+  epic-4-retrospective: done
 
   epic-5: backlog
   5-1-recomposer-la-navigation-transverse-commanditaire-dans-peintre-nano: backlog

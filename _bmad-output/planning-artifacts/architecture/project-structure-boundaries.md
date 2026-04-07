@@ -38,7 +38,7 @@ Apres validation du bandeau (Convergence 2), les pistes peuvent **re-diverger** 
 
 **Liaison manifest OpenAPI** : les widgets portent optionnellement `data_contract.operation_id` qui **doit** correspondre a un `operationId` du fichier OpenAPI reviewable — voir `references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md`.
 
-**Orchestration Docker (implémentation réelle, story 10.6b)** : le `docker-compose.yml` de **développement local** à la racine est le point d’entrée documenté pour la stack `recyclic-local`. Les fichiers `docker-compose.staging.yml` / `docker-compose.prod.yml` peuvent rester sous `recyclique-1.4.4/` jusqu’à un éventuel alignement ultérieur sur la racine.
+**Orchestration Docker (implémentation réelle, story 10.6b)** : le `docker-compose.yml` de **développement local** à la racine est le point d’entrée documenté pour la stack `recyclic-local`. Le service `frontend` pointe vers **`peintre-nano/`** (cible v2) et un service `frontend-legacy` peut coexister à titre transitoire contre la même API pour comparaison / accès aux écrans non encore migrés. Les fichiers `docker-compose.staging.yml` / `docker-compose.prod.yml` peuvent rester sous `recyclique-1.4.4/` jusqu’à un éventuel alignement ultérieur sur la racine.
 
 ## Complete Project Directory Structure
 ```text
@@ -234,6 +234,10 @@ JARVOS_recyclique/
   - domaines UI migres.
 - Il agit comme moteur d'affichage / telecran : il rend, organise et personnalise l'experience, mais n'est pas l'auteur metier de la structure informationnelle.
 - Il reste concu pour extraction future vers un repo dedie.
+
+**Hypothèses post-V2 (non backlog) :**
+- une **plateforme** de modules complémentaires (catalogue, licences, chargement contrôlé d’artefacts tiers) distincte du cœur métier `recyclique/` ; document de cadrage : [post-v2-hypothesis-marketplace-modules.md](./post-v2-hypothesis-marketplace-modules.md) ;
+- une trajectoire où **`Peintre`** devient un moteur autonome et **`Recyclique`** une application contributrice ; document de cadrage : [post-v2-hypothesis-peintre-autonome-applications-contributrices.md](./post-v2-hypothesis-peintre-autonome-applications-contributrices.md).
 
 **Backend Boundary:**
 - `recyclique/` est le backend metier principal.
