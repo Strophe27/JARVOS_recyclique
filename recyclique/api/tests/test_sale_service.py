@@ -18,6 +18,7 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.sale import PaymentCreate, SaleCreate, SaleItemCreate, SaleItemUpdate
 from recyclic_api.services.sale_service import SaleService
+from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 
 def _seed_session(db_session: Session) -> tuple[User, CashSession]:
@@ -33,6 +34,7 @@ def _seed_session(db_session: Session) -> tuple[User, CashSession]:
         role=UserRole.USER,
         status=UserStatus.APPROVED,
         is_active=True,
+        site_id=site_id,
     )
     site = Site(
         id=site_id,
@@ -55,6 +57,7 @@ def _seed_session(db_session: Session) -> tuple[User, CashSession]:
     )
     db_session.add_all([user, site, reg, session])
     db_session.commit()
+    grant_user_caisse_sale_eligibility(db_session, user, site_id)
     return user, session
 
 

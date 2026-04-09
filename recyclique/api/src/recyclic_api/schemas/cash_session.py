@@ -70,6 +70,18 @@ class CashSessionClose(BaseModel):
         return v
 
 
+class CashSessionTotalsV1(BaseModel):
+    """Story 6.4 — agrégats explicites (ventes nominal complétées, reversals, net).
+
+    Rappel clôture locale / Epic 6.7 / NFR21 : ``net`` = ``sales_completed`` + ``refunds``
+    (``refunds`` est la somme algébrique des montants signés des reversals, typiquement ≤ 0).
+    """
+
+    sales_completed: float = Field(..., description="Somme des ventes lifecycle completed (hors reversal)")
+    refunds: float = Field(..., description="Somme algébrique des reversals de session (négatif = sorties)")
+    net: float = Field(..., description="sales_completed + refunds")
+
+
 class CashSessionResponse(CashSessionBase):
     """Schéma de réponse pour une session de caisse."""
     id: str = Field(..., description="ID unique de la session")
@@ -92,6 +104,12 @@ class CashSessionResponse(CashSessionBase):
     
     # Story B49-P1: Options de workflow du registre associé
     register_options: Optional[Dict[str, Any]] = Field(None, description="Options de workflow du poste de caisse associé")
+
+    # Story 6.4 : agrégats tripartites (enrichissement session)
+    totals: Optional[CashSessionTotalsV1] = Field(
+        None,
+        description="Totaux ventes complétées, remboursements (algébrique) et net — Story 6.4",
+    )
 
     @field_validator('id', mode='before')
     @classmethod
@@ -193,7 +211,11 @@ class SaleDetail(BaseModel):
     donation: Optional[float] = Field(None, description="Montant du don")
     payment_method: Optional[str] = Field(None, description="Méthode de paiement (déprécié - utiliser payments)")
     payments: Optional[List[PaymentDetail]] = Field(None, description="Story B52-P1: Liste de paiements multiples")
-    sale_date: datetime = Field(..., description="Date réelle du ticket (date du cahier)")  # Story B52-P3: Date réelle du ticket
+    # Aligné ORM ``Sale.sale_date`` (nullable) et OpenAPI ``SaleResponseV1.sale_date`` (nullable).
+    sale_date: Optional[datetime] = Field(
+        None,
+        description="Date réelle du ticket (cahier). Null si inconnue ou données legacy avant saisie.",
+    )
     created_at: datetime = Field(..., description="Date et heure d'enregistrement")  # Story B52-P3: Date d'enregistrement
     operator_id: Optional[str] = Field(None, description="ID de l'opérateur")
     operator_name: Optional[str] = Field(None, description="Nom de l'opérateur")

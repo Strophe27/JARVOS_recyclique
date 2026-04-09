@@ -4,6 +4,7 @@ from .user import User, UserRole, UserStatus
 from .site import Site
 from .deposit import Deposit
 from .sale import Sale
+from .sale_reversal import SaleReversal, RefundReasonCode
 from .sale_item import SaleItem
 from .payment_transaction import PaymentTransaction
 from .cash_session import CashSession, CashSessionStep
@@ -34,6 +35,8 @@ __all__ = [
     "Site",
     "Deposit",
     "Sale",
+    "SaleReversal",
+    "RefundReasonCode",
     "SaleItem",
     "PaymentTransaction",
     "CashSession",

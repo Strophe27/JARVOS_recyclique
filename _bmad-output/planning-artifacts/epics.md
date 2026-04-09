@@ -417,7 +417,7 @@ Les utilisatrices et responsables peuvent retrouver les pages transverses de `Re
 **FRs covered:** FR10, FR21, FR35
 
 ### Epic 6: Rendre la caisse v2 exploitable et enrichie par les besoins terrain
-**Convergence 3 (flows critiques).** Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow` via `FlowRenderer` / flows declaratifs, raccourcis clavier terrain, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`. Les widgets caisse sensibles (ex. ticket courant / paiement) peuvent declarer `data_contract.critical: true` : l'etat **DATA_STALE** ou incoherence contractuelle **bloque** les actions sensibles conformement au PRD §10 et a l'instruction contrats donnees.
+**Convergence 3 (flows critiques).** Les operatrices peuvent utiliser dans `Peintre_nano` une caisse v2 **brownfield-first**, structuree comme un workflow operatoire continu : dashboard caisse, ouverture, poste de vente, finalisation, cloture locale et supervision admin session. `FlowRenderer`, manifests et widgets restent des mecanismes d'implementation ; ils ne definissent pas la forme produit a eux seuls. Les widgets caisse sensibles (ex. ticket courant / paiement) peuvent declarer `data_contract.critical: true` : l'etat **DATA_STALE** ou incoherence contractuelle **bloque** les actions sensibles conformement au PRD §10 et a l'instruction contrats donnees.
 **FRs covered:** FR2, FR10, FR30, FR38, FR55, FR57
 
 ### Epic 7: Rendre la reception v2 exploitable dans la nouvelle chaine UI
@@ -1411,9 +1411,11 @@ So that the project can move to flow-heavy epics with a stable shared UI spine.
 
 ## Epic 6: Rendre la caisse v2 exploitable et enrichie par les besoins terrain
 
-**Convergence 3 (flows critiques)** — voir aussi l'**Epic List** pour le detail. Les operatrices peuvent utiliser une caisse v2 fluide et fiable dans `Peintre_nano`, incluant le parcours `cashflow` via `FlowRenderer` / flows declaratifs, raccourcis clavier terrain, une cloture locale exploitable avec relais explicite vers la sync/reconciliation, et les evolutions terrain prioritaires de l'interface caisse en coherence avec `Paheko`. Au moins un widget de **ticket courant** (ou equivalent metier) **doit** declarer `data_contract.critical: true` ; l'etat **DATA_STALE** et les echecs de donnees critiques **bloquent** le paiement cote UI **et** sont **revalides** cote backend (PRD §10, architecture).
+**Convergence 3 (flows critiques)** — voir aussi l'**Epic List** pour le detail. Les operatrices peuvent utiliser dans `Peintre_nano` une caisse v2 **brownfield-first**, structuree d'abord comme un **workflow operatoire continu** : dashboard caisse, ouverture de session, poste de vente continu, finalisation, cloture locale, puis supervision admin des sessions. Les manifests CREOS, `FlowRenderer`, widgets et pages servent de **mecanismes d'implementation** ; ils ne definissent pas a eux seuls la forme produit cible. Au moins un widget de **ticket courant** (ou equivalent metier) **doit** declarer `data_contract.critical: true` ; l'etat **DATA_STALE** et les echecs de donnees critiques **bloquent** le paiement cote UI **et** sont **revalides** cote backend (PRD §10, architecture).
 
 **Note agents (create-story / review) :** pour toute story de cet epic, garder `Peintre_nano` du cote **runtime / rendu / flow UI** ; contexte, permissions, stale data, paiement, audit et regles metier sensibles restent **backend-autoritaires**. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md` et l'artefact de gouvernance `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md`.
+
+**Repere de lecture operationnel :** charger aussi `references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` puis `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`.
 
 ### Story 6.1: Mettre en service le parcours nominal de caisse v2 dans `Peintre_nano`
 
@@ -1423,24 +1425,24 @@ So that the new UI becomes operational for day-to-day cashflow work.
 
 **Acceptance Criteria:**
 
-**Given** the caisse flow is one of the two critical brownfield priorities
-**When** the nominal cashflow path is migrated
-**Then** an operator can reach the caisse screen in `Peintre_nano` and complete the core sequence from product scan or lookup to price capture, payment choice, and ticket issuance
+**Given** the brownfield caisse starts from an operational entrypoint
+**When** the nominal cashflow path is rebaselined in `Peintre_nano`
+**Then** an operator can enter a **brownfield-first caisse workspace** from `/caisse`, see the active poste / session / mode, and progress from session opening to product scan or lookup, price capture, payment choice, and ticket issuance
 **And** the sequence stays grounded in backend-owned business rules rather than frontend-only logic
 
 **Given** caisse work must remain fast and robust
 **When** the nominal flow is used
-**Then** the interaction is optimized for keyboard-first operation with immediate feedback on scan, input, and validation
-**And** the runtime does not introduce visible friction that would make the flow impractical on terrain
+**Then** the interaction is optimized for keyboard-first operation with immediate feedback on scan, input, validation, and current ticket state
+**And** the runtime does not fragment the operator into disconnected caisse mini-pages that would make the flow impractical on terrain
 
 **Given** the new caisse should not depend on full sync completion to exist
 **When** the nominal path is completed
 **Then** the sale can be locally recorded in `Recyclique`
 **And** the UI exposes the local outcome clearly without pretending accounting sync is already finalized
 
-**Given** le parcours caisse s'appuie sur des flows declaratifs et le clavier terrain
-**When** le parcours nominal est en service
-**Then** au moins un flow critique (wizard ou tabbed) est pilote via `FlowRenderer` avec une sequence clavier exploitable (ex. scan, tabulation, validation)
+**Given** the Epic 6 implementation still relies on manifests, widgets, and shared runtime mechanisms
+**When** the nominal path is delivered
+**Then** those mechanisms remain subordinate to the brownfield caisse workflow rather than defining the workflow themselves
 **And** au moins un widget **ticket courant** (ou equivalent nomme dans le manifest du slice) **expose** `data_contract.critical: true` et le blocage UI sur **DATA_STALE** / donnees incoherentes **avant** paiement est demontre par test ; le backend **refuse** la mutation de paiement si le contexte ou les preconditions ne sont pas revalides
 
 ### Story 6.2: Garantir le contexte caisse et les blocages de securite metier
@@ -1452,7 +1454,7 @@ So that I do not perform sales in the wrong site, caisse, session, or permission
 **Acceptance Criteria:**
 
 **Given** the caisse is a critical terrain flow
-**When** a user enters or resumes the caisse screen
+**When** a user enters or resumes the dashboard / opening / caisse workspace
 **Then** the flow verifies the active site, caisse, session, poste, and permissions required for operation
 **And** missing or ambiguous context produces an explicit restricted or blocked state instead of a silent guess
 
@@ -1481,7 +1483,7 @@ So that the new caisse supports a common real-life interruption pattern without 
 
 **Given** a held ticket still belongs to the caisse business flow
 **When** it is resumed or abandoned according to allowed rules
-**Then** the UI and backend keep the operation understandable and traceable
+**Then** the UI and backend keep the operation understandable and traceable inside the same caisse workspace
 **And** the story does not require full accounting reconciliation to be useful
 
 **Given** Epic 6 should stay sequential and implementable
@@ -1499,7 +1501,7 @@ So that legitimate reversal cases can be handled without inventing ad hoc workar
 
 **Given** refund is a sensitive terrain request
 **When** the refund flow is introduced
-**Then** it is exposed as an explicit dedicated path rather than a hidden caisse trick
+**Then** it is exposed as an explicit dedicated path inside the caisse workflow rather than a hidden caisse trick or an isolated product silo
 **And** the resulting action stays coherent with permission, traceability, and downstream accounting expectations
 
 **Given** refunds are more sensitive than nominal sales
@@ -1521,9 +1523,9 @@ So that the new caisse supports the main non-standard encashment cases raised by
 **Acceptance Criteria:**
 
 **Given** some real caisse operations do not pass through a normal article sale
-**When** the dedicated special encashment paths are implemented
-**Then** the caisse supports at least donation without article and association membership payment as explicit business flows
-**And** these flows remain understandable to the operator without being hidden inside the nominal sale path
+**When** the special encashment variants are implemented
+**Then** the caisse supports at least donation without article and association membership payment as explicit business flows within the same brownfield caisse workspace
+**And** these flows remain understandable to the operator without becoming detached caisse pages
 
 **Given** these cases have downstream accounting or membership implications
 **When** they are recorded
@@ -1532,8 +1534,8 @@ So that the new caisse supports the main non-standard encashment cases raised by
 
 **Given** Epic 6 should remain incrementally shippable
 **When** this story is completed
-**Then** the caisse gains meaningful real-world coverage beyond nominal sales
-**And** other terrain variants can still be added separately
+**Then** the caisse gains meaningful real-world coverage beyond nominal sales without fragmenting the operator journey
+**And** other terrain variants can still be added as bounded caisse variants rather than separate product baselines
 
 ### Story 6.6: Ajouter les boutons d'actions sociales dedies
 
@@ -1545,8 +1547,8 @@ So that social or solidarity-related caisse operations are visible and operable 
 
 **Given** the terrain backlog requests explicit social-action caisse entries
 **When** these dedicated buttons are introduced
-**Then** the UI exposes named actions for the targeted social-use cases selected for the first delivery batch
-**And** those entries remain understandable as dedicated business intents rather than generic custom hacks
+**Then** the UI exposes named actions for the targeted social-use cases selected for the first delivery batch from within the caisse workspace
+**And** those entries remain understandable as dedicated business intents rather than generic custom hacks or detached caisse pages
 
 **Given** these actions can have downstream accounting consequences
 **When** they are recorded in caisse
@@ -1569,7 +1571,7 @@ So that terrain operations can end cleanly before full accounting reconciliation
 **Given** Epic 6 must stop short of full accounting integration
 **When** a caisse session is closed
 **Then** the system performs local closure checks, computes the relevant totals, and records a clear local outcome in `Recyclique`
-**And** the resulting state is explicit enough to serve as a handoff toward later sync and reconciliation work
+**And** the resulting state is explicit enough to serve as a handoff toward the session manager / admin session detail and later sync and reconciliation work
 
 **Given** some closure situations may be sensitive or inconsistent
 **When** a critical discrepancy is detected
@@ -1603,7 +1605,7 @@ So that obvious input errors can be fixed without losing accountability.
 
 **Given** correction capability must not become a general hidden bypass
 **When** the story is completed
-**Then** the correction path remains narrow, auditable, and role-gated
+**Then** the correction path remains narrow, auditable, and role-gated from the admin session detail / journal locus
 **And** it does not weaken the default caisse immutability posture for ordinary users nor open a generic edition de vente sans bornes
 
 ### Story 6.9: Rendre la caisse defensive face aux erreurs, fallbacks et sync differee
@@ -1644,7 +1646,7 @@ So that Epic 6 confirms the new caisse is genuinely usable before broader rollou
 
 **Given** the caisse is one of the most critical terrain workflows
 **When** the validation pass is executed
-**Then** it confirms that nominal sale flow, context enforcement, closure, error handling, and key terrain variants behave coherently in the new UI
+**Then** it confirms that the caisse v2 reproduces a workflow brownfield operable: dashboard, opening, continuous sale workspace, closure, admin session manager, session detail, error handling, and key terrain variants behave coherently in the new UI
 **And** it documents any remaining known gaps without hiding them behind optimistic readiness claims
 
 **Given** Epic 6 should hand off cleanly into Epic 8 rather than duplicate it
@@ -1654,7 +1656,7 @@ So that Epic 6 confirms the new caisse is genuinely usable before broader rollou
 
 **Given** this epic is about exploitability, not final perfection
 **When** the story is completed
-**Then** the team has a caisse v2 baseline fit for continued iteration
+**Then** the team has a caisse v2 baseline fit for continued iteration because it is judged against brownfield parity rather than the coherence of the previous slice-based baseline
 **And** later work can harden accounting integration without reopening the basic viability of the new caisse
 
 ## Epic 7: Rendre la reception v2 exploitable dans la nouvelle chaine UI
@@ -1662,6 +1664,8 @@ So that Epic 6 confirms the new caisse is genuinely usable before broader rollou
 Les operatrices peuvent utiliser la reception dans `Peintre_nano` avec ses ecrans, workflows explicites, definitions d'ecrans, saisies et contextualisation metier, en respectant les contraintes du flux matiere et l'architecture modulaire retenue.
 
 **Note agents (create-story / review) :** pour toute story de cet epic, `Peintre_nano` ne doit pas devenir auteur du **flux matiere** ni du **contexte** ; il consomme et rend des contrats / etats backend. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md` avant de deriver une implementation.
+
+**Repere de lecture operationnel :** charger aussi `references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` puis `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`.
 
 ### Story 7.1: Mettre en service le parcours nominal de reception v2
 
@@ -1806,6 +1810,8 @@ So that Epic 7 confirms reception is genuinely usable in the new chain before br
 Les responsables peuvent synchroniser, suivre, corriger et reconcilier les operations entre `Recyclique` et `Paheko`, avec etats explicites, quarantaine, blocages selectifs, correlation inter-systemes et schema de deploiement cible.
 
 **Note agents (create-story / review) :** pour toute story de cet epic, l'integration `Paheko`, l'idempotence, la quarantaine, les mappings et la correlation restent **derriere le backend `Recyclique`** ; `Peintre_nano` affiche des etats et feedbacks, il ne porte pas la logique comptable. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
+
+**Repere de lecture operationnel :** charger aussi `references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` puis `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`.
 
 ### Story 8.1: Implementer un premier slice syncable de bout en bout `Recyclique -> Paheko`
 
@@ -1976,6 +1982,8 @@ Les responsables et super-admins peuvent utiliser les modules metier complementa
 Ordre recommande dans cet epic : poser d'abord la gouvernance des mappings sensibles avant la consommation declarative a grande echelle, puis avancer sequentiellement sur `adherents`, arbitrage `HelloAsso`, integration minimale `HelloAsso`, `config admin simple`, ACL minimales, et validation finale.
 
 **Note agents (create-story / review) :** pour toute story de cet epic, ne pas confondre **modules v2 livres avec le build** et hypothese **post-v2** de marketplace / chargement tiers. Les ACL, mappings sensibles et reglages simples restent gouvernes par `Recyclique`, ses contrats et sa tracabilite. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md` et l'hypothese `_bmad-output/planning-artifacts/architecture/post-v2-hypothesis-marketplace-modules.md`.
+
+**Repere de lecture operationnel :** charger aussi `references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` puis `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`.
 
 ### Story 9.1: Livrer le module `declaration eco-organismes`
 
@@ -2166,6 +2174,8 @@ So that the product can claim a credible v2 perimeter beyond the core terrain fl
 L'equipe peut verifier, tester, observer, deployer et qualifier la v2 jusqu'aux gates de beta interne et de version vendable, sans laisser les contraintes de qualite, CI, observabilite, installabilite et readiness des modules obligatoires hors backlog.
 
 **Note agents (create-story / review) :** pour toute story de cet epic, transformer les garde-fous `OpenAPI` / `CREOS` / agnosticite `Peintre_nano` en validations executables et checks de drift, sans elargir l'epic a une extraction `Peintre` hors scope v2. Relire la checklist `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
+
+**Repere de lecture operationnel :** charger aussi `references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` puis `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`.
 
 ### Story 10.1: Outiller la CI minimale pour `recyclique`, `peintre-nano` et les contrats
 

@@ -31,7 +31,7 @@ from recyclic_api.schemas.recyclique_api_error import (
 from recyclic_api.core.database import engine
 from recyclic_api.models import Base
 from recyclic_api.core.database import SessionLocal
-from recyclic_api.initial_data import init_super_admin_if_configured
+from recyclic_api.initial_data import init_super_admin_and_dev_pin
 # from recyclic_api.middleware.activity_tracker import ActivityTrackerMiddleware
 
 # Configure logging
@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI):
     db = None
     try:
         db = SessionLocal()
-        init_super_admin_if_configured(db)
+        init_super_admin_and_dev_pin(db)
     except Exception as e:
         logger.error(f"Startup initialization error: {e}")
     finally:

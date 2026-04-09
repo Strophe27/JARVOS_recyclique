@@ -87,6 +87,32 @@ def run_close_cash_session(
                 status_code=403, detail="Accès non autorisé à cette session"
             )
 
+        # Story 6.7 : alignement Story 6.3 — pas de clôture avec ticket en attente (held).
+        if service.count_held_sales_for_session(session_id) > 0:
+            site_id, reg_id = _audit_ctx_from_session(session)
+            log_cash_session_closing(
+                user_id=str(current_user.id),
+                username=current_user.username or "Unknown",
+                session_id=session_id,
+                closing_amount=session.current_amount,
+                success=False,
+                outcome="refused",
+                db=db,
+                request_id=request_id,
+                site_id=site_id,
+                cash_register_id=reg_id,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "CASH_SESSION_CLOSE_HELD_PENDING",
+                    "message": (
+                        "Impossible de clôturer la session : au moins un ticket est encore "
+                        "en attente (tenu). Finalisez ou abandonnez ces tickets avant la clôture."
+                    ),
+                },
+            )
+
         closing_preview = service.validate_session_close(
             session,
             close_data.actual_amount,

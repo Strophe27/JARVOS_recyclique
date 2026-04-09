@@ -54,10 +54,25 @@ function RuntimePrefsToolbar() {
 /**
  * Parcours démo : même pipeline que le socle (`loadManifestBundle`, filtre nav, garde page, `buildPageManifestRegions`).
  */
+const ADMIN_CASH_SESSION_PATH = /^\/admin\/cash-sessions\/[^/]+\/?$/;
+
+/**
+ * Story 6.5 : anciennes routes « mini-pages » → workspace nominal `/caisse` (CREOS sans entrées nav dédiées).
+ * Story 6.6 : `/caisse/don` (page isolée retirée) → même workspace brownfield que le nominal.
+ */
+const LEGACY_SPECIAL_CASHFLOW_PATHS = new Set([
+  '/caisse/don-sans-article',
+  '/caisse/adhesion-cotisation',
+  '/caisse/don',
+]);
+
 export function RuntimeDemoApp() {
   const envelope = useContextEnvelope();
   const { prefs } = useUserRuntimePrefs();
   const [selectedEntryId, setSelectedEntryId] = useState('root-home');
+  const [pathRoute, setPathRoute] = useState(
+    () => (typeof window !== 'undefined' ? window.location.pathname : '/'),
+  );
   const [searchSnapshot, setSearchSnapshot] = useState(() =>
     typeof window !== 'undefined' ? window.location.search : '',
   );
@@ -82,7 +97,17 @@ export function RuntimeDemoApp() {
   );
 
   const syncSelectionFromPath = useCallback(() => {
-    const path = window.location.pathname;
+    let path = window.location.pathname;
+    if (LEGACY_SPECIAL_CASHFLOW_PATHS.has(path)) {
+      window.history.replaceState({}, '', '/caisse');
+      path = '/caisse';
+    }
+    setPathRoute(path);
+    if (ADMIN_CASH_SESSION_PATH.test(path)) {
+      setSelectedEntryId('transverse-admin');
+      setSearchSnapshot(window.location.search);
+      return;
+    }
     const match = flatFiltered.find((e) => e.path === path);
     if (match) setSelectedEntryId(match.id);
     setSearchSnapshot(window.location.search);
@@ -116,11 +141,18 @@ export function RuntimeDemoApp() {
 
   const selectedEntry = flatFiltered.find((e) => e.id === resolvedEntryId);
 
+  const resolvedPageKey = useMemo(() => {
+    if (ADMIN_CASH_SESSION_PATH.test(pathRoute)) {
+      return 'admin-cash-session-detail';
+    }
+    return selectedEntry?.pageKey ?? 'demo-home';
+  }, [pathRoute, selectedEntry?.pageKey]);
+
   const pageForAccess = useMemo(() => {
     if (!bundle) return undefined;
-    const key = selectedEntry?.pageKey ?? 'demo-home';
+    const key = resolvedPageKey;
     return bundle.pages.find((p) => p.pageKey === key) ?? bundle.pages.find((p) => p.pageKey === 'demo-home');
-  }, [bundle, selectedEntry?.pageKey]);
+  }, [bundle, resolvedPageKey]);
 
   const pageRegions = useMemo(() => {
     if (!pageForAccess) return undefined;

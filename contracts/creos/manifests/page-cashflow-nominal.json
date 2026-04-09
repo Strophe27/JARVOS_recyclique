@@ -1,0 +1,23 @@
+{
+  "version": "1",
+  "page_key": "cashflow-nominal",
+  "required_permission_any_keys": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "caisse-brownfield-dashboard",
+      "widget_props": {}
+    },
+    {
+      "slot_id": "aside",
+      "widget_type": "caisse-current-ticket",
+      "widget_props": {}
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-nominal-wizard",
+      "widget_props": {}
+    }
+  ]
+}

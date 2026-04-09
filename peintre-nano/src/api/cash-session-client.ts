@@ -1,0 +1,525 @@
+import type { AuthContextPort } from '../app/auth/auth-context-port';
+import { DEMO_AUTH_STUB_USER_ID } from '../app/auth/default-demo-auth-adapter';
+import { getLiveSnapshotBasePrefix } from './live-snapshot-client';
+import { parseRecycliqueApiErrorBody, toRecycliqueClientFailure } from './recyclique-api-error';
+
+const UUID_LIKE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isUuidLikeString(s: string): boolean {
+  return UUID_LIKE.test(s.trim());
+}
+
+function operatorIdFromAccessTokenJwt(token: string): string | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
+    const json =
+      typeof atob !== 'undefined'
+        ? atob(b64 + pad)
+        : Buffer.from(b64, 'base64').toString('utf8');
+    const payload = JSON.parse(json) as { sub?: unknown };
+    const sub = typeof payload.sub === 'string' ? payload.sub.trim() : '';
+    return isUuidLikeString(sub) ? sub : null;
+  } catch {
+    return null;
+  }
+}
+
+export type ResolveCashSessionOpeningIdsResult =
+  | { ok: true; operatorId: string; siteId: string }
+  | { ok: false; message: string };
+
+async function fetchUsersMeJson(
+  auth: Pick<AuthContextPort, 'getAccessToken' | 'getSession'>,
+): Promise<
+  | { ok: true; json: Record<string, unknown> }
+  | { ok: false; status: number; message: string }
+> {
+  const token = auth.getAccessToken?.();
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/users/me`;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'GET', credentials: 'include', headers });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return { ok: false, status: 0, message: `${msg} (GET /v1/users/me)` };
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : undefined;
+  } catch {
+    json = undefined;
+  }
+
+  if (!res.ok) {
+    const detail =
+      typeof json === 'object' && json !== null && 'detail' in json
+        ? normalizeDetailForOperatorResolve((json as { detail: unknown }).detail)
+        : text || res.statusText;
+    return {
+      ok: false,
+      status: res.status,
+      message:
+        res.status === 401
+          ? `Identité introuvable (401) : reconnectez-vous. ${detail}`
+          : `GET /v1/users/me a échoué (${res.status}) : ${detail}`,
+    };
+  }
+
+  if (typeof json !== 'object' || json === null) {
+    return { ok: false, status: res.status, message: 'Réponse /v1/users/me invalide.' };
+  }
+  return { ok: true, json: json as Record<string, unknown> };
+}
+
+/**
+ * Résout `operator_id` et `site_id` pour `POST /v1/cash-sessions/` :
+ * — opérateur : UUID session auth, sinon `sub` JWT, sinon `GET /v1/users/me` ;
+ * — site : UUID `ContextEnvelope.siteId` si déjà un UUID, sinon `site_id` de `/v1/users/me` si présent.
+ */
+export async function resolveCashSessionOpeningIds(
+  auth: Pick<AuthContextPort, 'getAccessToken' | 'getSession'>,
+  envelopeSiteId: string | null | undefined,
+): Promise<ResolveCashSessionOpeningIdsResult> {
+  const session = auth.getSession();
+  if (!session.authenticated) {
+    return { ok: false, message: 'Authentification requise pour ouvrir une session caisse.' };
+  }
+
+  const envSiteTrim = envelopeSiteId?.trim() ?? '';
+  const siteFromEnvelope = isUuidLikeString(envSiteTrim) ? envSiteTrim : null;
+
+  const fromSession = session.userId?.trim() ?? '';
+  const sessionLooksUuid = isUuidLikeString(fromSession);
+  /** Placeholder démo : avec cookies réels, l’opérateur effectif vient du backend (`/users/me`). */
+  const sessionIsDemoStub = fromSession === DEMO_AUTH_STUB_USER_ID || fromSession === 'demo-user';
+
+  let operatorId: string | null =
+    sessionLooksUuid && !sessionIsDemoStub ? fromSession : null;
+
+  let me: Record<string, unknown> | null = null;
+  const token = auth.getAccessToken?.();
+
+  if (!operatorId) {
+    if (token) {
+      operatorId = operatorIdFromAccessTokenJwt(token);
+    }
+  }
+
+  if (!operatorId) {
+    const meRes = await fetchUsersMeJson(auth);
+    if (!meRes.ok) {
+      return { ok: false, message: meRes.message };
+    }
+    me = meRes.json;
+    const id = String(me.id ?? '').trim();
+    if (!isUuidLikeString(id)) {
+      return { ok: false, message: "Identifiant utilisateur /me inattendu — UUID requis pour l'ouverture caisse." };
+    }
+    operatorId = id;
+  }
+
+  let siteId: string | null = null;
+  const siteFromMe =
+    me && me.site_id != null && isUuidLikeString(String(me.site_id).trim())
+      ? String(me.site_id).trim()
+      : null;
+
+  if (siteFromMe) {
+    siteId = siteFromMe;
+  } else if (siteFromEnvelope) {
+    siteId = siteFromEnvelope;
+  } else {
+    if (!me) {
+      const meRes = await fetchUsersMeJson(auth);
+      if (!meRes.ok) {
+        return {
+          ok: false,
+          message: `${meRes.message} (site caisse : l'enveloppe n'a pas d'UUID de site.)`,
+        };
+      }
+      me = meRes.json;
+    }
+    const sid = me.site_id != null ? String(me.site_id).trim() : '';
+    if (isUuidLikeString(sid)) {
+      siteId = sid;
+    }
+  }
+
+  if (!siteId) {
+    return {
+      ok: false,
+      message:
+        'Site caisse introuvable : renseignez un UUID de site dans l’enveloppe de contexte ou associez un site au compte (profil / admin).',
+    };
+  }
+
+  return { ok: true, operatorId, siteId };
+}
+
+/** @deprecated Utiliser `resolveCashSessionOpeningIds` (résout aussi le site). */
+export async function resolveCashSessionOperatorId(
+  auth: Pick<AuthContextPort, 'getAccessToken' | 'getSession'>,
+): Promise<
+  | { ok: true; operatorId: string }
+  | { ok: false; message: string }
+> {
+  const r = await resolveCashSessionOpeningIds(auth, undefined);
+  if (!r.ok) return r;
+  return { ok: true, operatorId: r.operatorId };
+}
+
+function normalizeDetailForOperatorResolve(detail: unknown): string {
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === 'object' && item !== null && 'msg' in item) {
+          const m = (item as { msg?: unknown }).msg;
+          return typeof m === 'string' ? m : JSON.stringify(item);
+        }
+        return typeof item === 'string' ? item : JSON.stringify(item);
+      })
+      .join(' · ');
+  }
+  return detail != null ? JSON.stringify(detail) : '';
+}
+
+/** Tolérance alignée backend `CLOSE_VARIANCE_TOLERANCE` (Story 6.7). */
+export const CLOSE_VARIANCE_TOLERANCE_EUR = 0.05;
+
+export type CashSessionTotalsV1 = {
+  sales_completed: number;
+  refunds: number;
+  net: number;
+};
+
+/** Sous-ensemble consommé par l’UI clôture — aligné enrichissement backend / OpenAPI `CashSessionResponse`. */
+export type CashSessionCurrentV1 = {
+  id: string;
+  operator_id?: string;
+  site_id?: string;
+  /** Poste caisse (OpenAPI `register_id`) — exploitable quand l’enveloppe n’expose pas encore `activeRegisterId`. */
+  register_id?: string | null;
+  initial_amount: number;
+  current_amount: number;
+  status: 'open' | 'closed';
+  opened_at?: string;
+  total_sales?: number | null;
+  total_items?: number | null;
+  total_donations?: number | null;
+  total_weight_out?: number | null;
+  totals?: CashSessionTotalsV1 | null;
+};
+
+export type CashSessionClientHttpErrorFields = {
+  readonly code?: string;
+  readonly retryable?: boolean;
+  readonly state?: string | null;
+  readonly correlation_id?: string;
+  readonly networkError?: boolean;
+};
+
+type CashSessionHttpError = { ok: false; status: number; detail: string } & CashSessionClientHttpErrorFields;
+
+export type GetCurrentCashSessionResult =
+  | { ok: true; session: CashSessionCurrentV1 | null }
+  | CashSessionHttpError;
+
+export type OpenCashSessionBody = {
+  operator_id: string;
+  site_id: string;
+  register_id?: string | null;
+  initial_amount: number;
+  opened_at?: string;
+};
+
+export type OpenCashSessionResult = { ok: true; session: CashSessionCurrentV1 } | CashSessionHttpError;
+
+function sessionHttpError(
+  status: number,
+  json: unknown,
+  fallbackDetail: string,
+  networkError?: boolean,
+): CashSessionHttpError {
+  const p = parseRecycliqueApiErrorBody(json, status, fallbackDetail);
+  const f = toRecycliqueClientFailure(status, p, networkError);
+  return {
+    ok: false,
+    status,
+    detail: f.message,
+    code: f.code,
+    retryable: f.retryable,
+    state: f.state,
+    correlation_id: f.correlationId,
+    networkError: f.networkError,
+  };
+}
+
+/**
+ * GET /v1/cash-sessions/current — `operationId` `recyclique_cashSessions_getCurrentOpenSession`.
+ */
+export async function getCurrentOpenCashSession(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<GetCurrentCashSessionResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/current`;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'GET', credentials: 'include', headers });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  const trimmed = text.trim();
+  if (res.status === 200 && (trimmed === '' || trimmed === 'null')) {
+    return { ok: true, session: null };
+  }
+
+  let json: unknown;
+  let parseFailed = false;
+  try {
+    json = text ? JSON.parse(text) : undefined;
+  } catch {
+    parseFailed = true;
+    json = undefined;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (parseFailed) {
+    return sessionHttpError(res.status, json, 'Réponse JSON invalide (session courante)');
+  }
+
+  if (json === null) {
+    return { ok: true, session: null };
+  }
+
+  if (typeof json !== 'object' || json === null || !('id' in json)) {
+    return sessionHttpError(res.status, json, 'Réponse session courante invalide');
+  }
+
+  return { ok: true, session: json as CashSessionCurrentV1 };
+}
+
+/**
+ * POST /v1/cash-sessions/ — ouverture explicite brownfield (Story 6.x / checklist §2).
+ */
+export async function postOpenCashSession(
+  body: OpenCashSessionBody,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<OpenCashSessionResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/`;
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({
+        operator_id: body.operator_id,
+        site_id: body.site_id,
+        register_id: body.register_id ?? null,
+        initial_amount: body.initial_amount,
+        opened_at: body.opened_at ?? undefined,
+      }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  let parseFailed = false;
+  try {
+    json = text ? JSON.parse(text) : undefined;
+  } catch {
+    json = undefined;
+    parseFailed = true;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (parseFailed || typeof json !== 'object' || json === null || !('id' in json)) {
+    return sessionHttpError(res.status, json, 'Réponse ouverture session invalide');
+  }
+
+  return { ok: true, session: json as CashSessionCurrentV1 };
+}
+
+export type CloseCashSessionBody = {
+  actual_amount: number;
+  variance_comment?: string | null;
+};
+
+export type CloseCashSessionSuccess =
+  | { kind: 'closed'; session: Record<string, unknown> }
+  | { kind: 'deleted'; sessionId: string; message?: string };
+
+export type CloseCashSessionResult = { ok: true; data: CloseCashSessionSuccess } | CashSessionHttpError;
+
+export type CloseCashSessionOptions = {
+  stepUpPin: string;
+  idempotencyKey?: string;
+  requestId?: string;
+};
+
+/**
+ * POST /v1/cash-sessions/{session_id}/close — `recyclique_cashSessions_closeSession`.
+ * En-têtes : `X-Step-Up-Pin`, `Idempotency-Key`, `X-Request-Id` (Story 2.4 / 6.7).
+ */
+export async function postCloseCashSession(
+  sessionId: string,
+  body: CloseCashSessionBody,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  opts: CloseCashSessionOptions,
+): Promise<CloseCashSessionResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/close`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'X-Step-Up-Pin': opts.stepUpPin,
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const idem = opts.idempotencyKey?.trim() || crypto.randomUUID();
+  headers['Idempotency-Key'] = idem;
+  headers['X-Request-Id'] = opts.requestId?.trim() || crypto.randomUUID();
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({
+        actual_amount: body.actual_amount,
+        variance_comment: body.variance_comment ?? null,
+      }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json === 'object' && json !== null && (json as { deleted?: boolean }).deleted === true) {
+    return {
+      ok: true,
+      data: {
+        kind: 'deleted',
+        sessionId: String((json as { session_id?: unknown }).session_id ?? sessionId),
+        message: typeof (json as { message?: unknown }).message === 'string' ? (json as { message: string }).message : undefined,
+      },
+    };
+  }
+
+  if (typeof json === 'object' && json !== null && 'id' in json) {
+    return { ok: true, data: { kind: 'closed', session: json as Record<string, unknown> } };
+  }
+
+  return sessionHttpError(res.status, json, 'Réponse clôture invalide');
+}
+
+/** Détail session + ventes (GET admin) — aligné OpenAPI `CashSessionDetailResponseV1` / Story 6.8. */
+export type CashSessionDetailV1 = CashSessionCurrentV1 & {
+  readonly sales?: ReadonlyArray<Record<string, unknown>>;
+  readonly operator_name?: string | null;
+  readonly site_name?: string | null;
+};
+
+export type GetCashSessionDetailResult =
+  | { ok: true; session: CashSessionDetailV1 }
+  | CashSessionHttpError;
+
+/**
+ * GET /v1/cash-sessions/{session_id} — `operationId` `recyclique_cashSessions_getSessionDetail`.
+ */
+export async function getCashSessionDetail(
+  sessionId: string,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<GetCashSessionDetailResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}`;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'GET', credentials: 'include', headers });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : undefined;
+  } catch {
+    json = undefined;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json !== 'object' || json === null || !('id' in json)) {
+    return sessionHttpError(res.status, json, 'Réponse détail session invalide');
+  }
+
+  return { ok: true, session: json as CashSessionDetailV1 };
+}
+
+/** Montant théorique caisse (aligné `CashSessionService.get_closing_preview`). */
+export function theoreticalCloseAmount(session: CashSessionCurrentV1): number {
+  const initial = session.initial_amount ?? 0;
+  const sales = session.total_sales ?? 0;
+  const donations = session.total_donations ?? 0;
+  return initial + sales + donations;
+}
+
+export function needsVarianceComment(actual: number, theoretical: number): boolean {
+  return Math.abs(actual - theoretical) > CLOSE_VARIANCE_TOLERANCE_EUR;
+}

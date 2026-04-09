@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, noload
 from recyclic_api.core.auth import get_user_permissions
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
-from recyclic_api.models.user import User, UserStatus
+from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.context_envelope import (
     ContextEnvelopeResponse,
     ContextRuntimeState,
@@ -115,7 +115,14 @@ def build_context_envelope(db: Session, user_id: uuid.UUID) -> ContextEnvelopeRe
         reception_post_id=str(reception_post_id) if reception_post_id else None,
     )
 
-    permission_keys = get_user_permissions(user, db)
+    permission_keys = list(get_user_permissions(user, db))
+    # Epic 5 / CREOS — hub transverse admin : clé UI attendue par les manifests (non forcément en table permissions).
+    if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+        permission_keys.append("transverse.admin.view")
+    # Story 6.8 — clé UI pour correction vente : émise uniquement pour SUPER_ADMIN (pas dans la table permissions).
+    if user.role == UserRole.SUPER_ADMIN:
+        permission_keys.append("caisse.sale_correct")
+    permission_keys = sorted(set(permission_keys))
 
     return ContextEnvelopeResponse(
         runtime_state=runtime_state,

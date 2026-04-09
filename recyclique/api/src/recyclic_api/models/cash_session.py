@@ -41,7 +41,9 @@ class CashSession(Base):
 
     # Poste de caisse (registre) utilisé pour la session
     register_id = Column(UUID(as_uuid=True), ForeignKey("cash_registers.id"), nullable=True)
-    register = relationship("CashRegister", lazy="joined")
+    # Story 6.3 / SQLite tests : `lazy="joined"` force un JOIN sur `cash_registers` même si `register_id` est NULL,
+    # ce qui casse les suites partielles sans table registre. Chargement à la demande.
+    register = relationship("CashRegister", lazy="select")
     
     # Montants financiers
     initial_amount = Column(Float, nullable=False, default=0.0)

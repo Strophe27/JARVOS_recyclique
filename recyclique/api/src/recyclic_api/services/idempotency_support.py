@@ -30,9 +30,21 @@ def body_fingerprint_close_json(payload: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def body_fingerprint_sale_correction_json(payload: Dict[str, Any]) -> str:
+    """Story 6.8 — empreinte stable du corps PATCH correction vente."""
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def redis_key_idempotent_close(user_id: str, session_id: str, idempotency_key: str) -> str:
     ik = _norm_key_part(idempotency_key)
     return f"idem:v1:close:{user_id}:{session_id}:{ik}"
+
+
+def redis_key_idempotent_sale_correction(user_id: str, sale_id: str, idempotency_key: str) -> str:
+    """Story 6.8 — clé Redis idempotence correction vente."""
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:sale_correct:{user_id}:{sale_id}:{ik}"
 
 
 def get_cached_idempotent_close(

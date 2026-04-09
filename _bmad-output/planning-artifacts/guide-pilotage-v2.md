@@ -46,6 +46,8 @@
 - [x] **Epic 4** — Preuve chaîne modulaire **bandeau live**.
 - [x] **Epic 5** — Shell, dashboard, admin transverses dans Peintre.
 - [ ] **Epic 6** — Caisse v2 exploitable.
+  Gate de lecture : tant que la caisse v2 ne restitue pas un **workflow brownfield operatoire** comparable au legacy (dashboard poste, ouverture, vente continue, cloture, supervision admin session), Epic 6 reste **in-progress** et `6.10` ne peut pas etre consideree `done`.
+  Des stories `6.x` peuvent rester `done` au sens technique (`keep`) sans fermer l'epic tant que ce gate brownfield n'est pas franchi.
 - [ ] **Epic 7** — Réception v2 exploitable.
 - [ ] **Epic 8** — Articulation comptable réelle Paheko.
 - [ ] **Epic 9** — Modules complémentaires (éco-organismes, adhérents, HelloAsso, config admin simple).
@@ -68,6 +70,11 @@
 | Stories / sprint | `_bmad-output/implementation-artifacts/` | `sprint-status.yaml` |
 | **Tests (code)** | Backend API : **`recyclique/api/`** (gates Story Runner, pytest) ; stack Docker locale : **`docker-compose.yml` à la racine du mono-repo** (point d’entrée unique ; build API depuis `recyclique/api/`) ; raccourci compat. `recyclique-1.4.4/docker-compose.yml` (include du compose racine) ; front v2 **`peintre-nano/`** (`frontend`, port `4444`) + front transitoire **legacy** (`frontend-legacy`, port `4445`) contre la même API | — |
 | **Rapports / stratégie de tests** (synthèse, pas le code) | Existant 1.4.4 : logique **consolidation** ; **v2 transversal** : fichiers datés dans `references/artefacts/` par défaut | **Dès le premier** rapport / stratégie test v2 : créer l'artefact **et** une entrée dans `references/artefacts/index.md` |
+
+**Repère Epics 6 a 10** : pour toute session BMAD orientée `caisse`, `reception`, `Paheko`, modules complémentaires ou readiness, charger aussi :
+
+- `../../references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md`
+- `../../references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`
 
 ---
 
@@ -99,6 +106,7 @@ Règles :
 - Respecter la règle d'or Piste A/B (contrat B qui ancère A).
 - Ne pas déclarer un jalon coché sans livrable reviewable.
 - Si la session touche `Peintre_nano` sur les Epics 5 à 10, charger aussi `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
+- Si la session touche les Epics 6 a 10, charger aussi `references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` et `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`.
 - En fin de session : mettre à jour references/ou-on-en-est.md (journal daté) ; mettre à jour les cases du guide seulement si un jalon a été franchi.
 ```
 
@@ -108,8 +116,19 @@ Règles :
 
 Si un audit ou la réalité contredit le plan : arbitrer, documenter, ajuster le backlog — ne pas forcer le plan.
 
+### Gate Epic 6 — Parite workflow brownfield caisse
+
+Avant toute validation terrain Epic 6, verifier explicitement :
+
+- la route `/caisse` sert un **point d'entree operatoire** et pas seulement un slice nominal isole ;
+- l'operatrice retrouve un continuum **dashboard -> ouverture -> vente -> finalisation -> cloture** ;
+- le couple **gestionnaire admin -> detail session** existe comme prolongement exploitable de la caisse ;
+- les variantes reel / virtuel / differe, ainsi que les cas 6.3 / 6.4 / 6.5 / 6.6, restent lisibles comme **variantes du poste caisse** ;
+- le registre `references/artefacts/2026-04-08_04_caisse-v2-exploitabilite-terrain-epic6.md` doit etre lu comme **etat technique intermediaire**, pas comme validation terrain finale, tant que ce gate n'est pas franchi.
+
 - Exemple de proposition documentée : [`sprint-change-proposal-2026-04-01.md`](sprint-change-proposal-2026-04-01.md)
 - Proposition liée à l'agnosticité future de `Peintre_nano` : [`sprint-change-proposal-2026-04-07-peintre-agnosticite-sans-extraction.md`](./sprint-change-proposal-2026-04-07-peintre-agnosticite-sans-extraction.md)
+- Proposition liée au correct course Epic 6 brownfield-first : [`sprint-change-proposal-2026-04-08-epic-6-brownfield-first-correct-course.md`](./sprint-change-proposal-2026-04-08-epic-6-brownfield-first-correct-course.md)
 - Workflow BMAD : skill **bmad-correct-course** ; alignement procédure habituelle du dépôt.
 
 ---
@@ -124,3 +143,5 @@ Si un audit ou la réalité contredit le plan : arbitrer, documenter, ajuster le
 | Sprint status | `../implementation-artifacts/sprint-status.yaml` |
 | Décision directrice v2 | `../../references/vision-projet/2026-03-31_decision-directrice-v2.md` |
 | Index references | `../../references/index.md` |
+| Pack lecture Epics 6-10 | `../../references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` |
+| Tableau ultra operationnel Epics 6-10 | `../../references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md` |

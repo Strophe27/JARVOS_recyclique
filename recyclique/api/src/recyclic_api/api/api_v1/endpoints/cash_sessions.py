@@ -1,5 +1,6 @@
 import json
 import logging
+from pydantic import ValidationError as PydanticValidationError
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -367,6 +368,12 @@ async def get_current_cash_session(
         return enrich_session_response(session, service)
     except ValidationError as e:
         raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
+    except PydanticValidationError:
+        # ``enrich_session_response`` journalise déjà les erreurs de schéma sur la session.
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la récupération de la session courante",
+        )
     except HTTPException:
         raise
     except Exception:
@@ -540,6 +547,25 @@ async def get_cash_session_detail(
             request_id=rid,
         )
         raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
+    except PydanticValidationError as exc:
+        logger.error(
+            "Sérialisation détail session : échec Pydantic (session_id=%s) : %s",
+            session_id,
+            exc.errors(),
+            exc_info=exc,
+        )
+        log_cash_session_access(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            success=False,
+            db=db,
+            request_id=rid,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la sérialisation des détails de la session",
+        ) from exc
     except HTTPException:
         raise
     except Exception as e:

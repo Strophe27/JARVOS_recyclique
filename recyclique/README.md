@@ -29,6 +29,15 @@ Le frontend `recyclique-1.4.4/frontend` reste un artefact brownfield / de compat
 
 Workflows GitHub Actions à la racine du mono-repo : `.github/workflows/` (`deploy.yaml`, `alembic-check.yml`), chemins **`recyclique/api/`**.
 
+## PIN step-up (local / tests)
+
+Les mutations sensibles (ex. clôture de session caisse, correction de vente) exigent l’en-tête **`X-Step-Up-Pin`** aligné sur le champ **`users.hashed_pin`** (haché comme le mot de passe, 4 chiffres).
+
+- **Nouveau stack Docker** : dans le `.env` racine (voir `recyclique-1.4.4/env.example`), définir **`FIRST_SUPER_ADMIN_PIN=1234`** en plus de `FIRST_SUPER_ADMIN_USERNAME` / `FIRST_SUPER_ADMIN_PASSWORD`. Au premier démarrage, le super-admin est créé avec ce PIN ; si le compte bootstrap existait déjà **sans** PIN, un **backfill** au redémarrage applique le PIN **uniquement** lorsque `ENVIRONMENT` vaut `development`, `dev`, `local` ou `test`.
+- **Compte déjà présent, sans variable** : se connecter, puis **`PUT /v1/users/me/pin`** avec `{"pin":"1234"}` (sans `current_password` si aucun PIN n’était défini). Pour **changer** un PIN existant, fournir aussi `current_password`.
+
+Références code : `recyclique/api/src/recyclic_api/initial_data.py`, `core/step_up.py`, `endpoints/users.py` (`PUT /me/pin`).
+
 ## OpenAPI reviewable
 
 Contrat maintenu séparément : `contracts/openapi/recyclique-api.yaml` (pas dans ce dossier).

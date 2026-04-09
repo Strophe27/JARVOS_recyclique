@@ -17,6 +17,11 @@ export interface ContextEnvelopeStub {
   readonly siteId: string | null;
   readonly activeRegisterId: string | null;
   /**
+   * Session caisse active lorsque le backend l'expose (`ContextEnvelope.context.cash_session_id` / exploitation).
+   * Stub démo : peut rester null ; le parcours caisse 6.1 peut demander une saisie locale de secours (terrain).
+   */
+  readonly cashSessionId?: string | null;
+  /**
    * Poste / workstation actif si le backend l’expose — sert au filtrage déclaratif `contexts_*` sur le marqueur `poste`.
    */
   readonly workstationId?: string | null;

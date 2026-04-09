@@ -23,23 +23,7 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.sale import Sale
 from recyclic_api.core.security import hash_password
 from recyclic_api.core.auth import create_access_token
-
-
-@pytest.fixture
-def test_user(db_session: Session):
-    """Créer un utilisateur USER pour les tests."""
-    user = User(
-        id=uuid.uuid4(),
-        username="test_user",
-        hashed_password=hash_password("testpassword123"),
-        role=UserRole.USER,
-        status=UserStatus.ACTIVE,
-        is_active=True
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
+from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 
 @pytest.fixture
@@ -72,6 +56,25 @@ def test_site(db_session: Session):
     db_session.commit()
     db_session.refresh(site)
     return site
+
+
+@pytest.fixture
+def test_user(db_session: Session, test_site: Site):
+    """Créer un utilisateur USER pour les tests (Story 6.2 : site + caisse.access)."""
+    user = User(
+        id=uuid.uuid4(),
+        username="test_user",
+        hashed_password=hash_password("testpassword123"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        is_active=True,
+        site_id=test_site.id,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    grant_user_caisse_sale_eligibility(db_session, user, test_site.id)
+    return user
 
 
 @pytest.fixture

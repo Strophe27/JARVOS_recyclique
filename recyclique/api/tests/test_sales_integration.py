@@ -19,6 +19,7 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.core.security import create_access_token
+from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 
 class TestSalesIntegration:
@@ -30,15 +31,16 @@ class TestSalesIntegration:
         return TestClient(app)
 
     @pytest.fixture
-    def test_cashier(self, client):
-        """Données de test pour un caissier"""
+    def test_cashier(self, test_site):
+        """Données de test pour un caissier (site affecté — Story 6.2)."""
         return {
             "id": uuid.uuid4(),
             "username": "test_cashier",
             "hashed_password": "hashed_password",
-    "role": UserRole.USER,
+            "role": UserRole.USER,
             "status": UserStatus.APPROVED,
-            "is_active": True
+            "is_active": True,
+            "site_id": test_site["id"],
         }
 
     @pytest.fixture
@@ -103,6 +105,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente
         sale_data = {
@@ -186,6 +189,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente avec paiement carte et don
         sale_data = {
@@ -331,6 +335,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente avec note
         sale_data = {
@@ -386,6 +391,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente sans note
         sale_data = {
@@ -439,6 +445,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Créer une vente avec note via l'API
         sale_data = {
@@ -502,6 +509,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Créer une vente avec une note initiale
         from recyclic_api.models.sale import Sale
@@ -582,6 +590,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Créer une vente
         from recyclic_api.models.sale import Sale
@@ -645,6 +654,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Créer une vente
         from recyclic_api.models.sale import Sale
@@ -758,6 +768,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Créer une vente
         from recyclic_api.models.sale import Sale
@@ -839,6 +850,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Créer plusieurs ventes successivement avec un petit délai
         sale_ids = []
@@ -927,7 +939,8 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(closed_session)
         db_session.commit()
-        
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
+
         # Données de vente
         sale_data = {
             "cash_session_id": str(closed_session.id),
@@ -975,6 +988,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente avec paiements multiples
         sale_data = {
@@ -1050,6 +1064,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente : 100€ base + 20€ don = 120€ total
         sale_data = {
@@ -1102,6 +1117,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente : 50€ total, paiement espèces 55€ (reste 5€)
         sale_data = {
@@ -1153,6 +1169,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente : 50€ total, paiements seulement 40€ (insuffisant)
         sale_data = {
@@ -1201,6 +1218,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Données de la vente avec payment_method (ancien format)
         sale_data = {
@@ -1261,6 +1279,7 @@ class TestSalesIntegration:
         db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
         # Créer une vente avec paiements multiples
         sale_data = {

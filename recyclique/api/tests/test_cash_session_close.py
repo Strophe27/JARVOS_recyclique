@@ -365,3 +365,45 @@ class TestCashSessionClose:
         assert (Path(settings.CASH_SESSION_REPORT_DIR) / filename).exists()
         assert data["report_email_sent"] is True
         assert report_environment.send_email.called
+
+    def test_close_session_blocked_when_held_sale_exists(
+        self,
+        client: TestClient,
+        db_session: Session,
+        test_cash_session: CashSession,
+        test_user: User,
+    ):
+        """Story 6.7 : clôture refusée tant qu'un ticket ``held`` subsiste (aligné 6.3)."""
+        from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
+
+        grant_user_caisse_sale_eligibility(db_session, test_user, test_cash_session.site_id)
+        auth = {"Authorization": f"Bearer {create_access_token(data={'sub': str(test_user.id)})}"}
+
+        hold_body = {
+            "cash_session_id": str(test_cash_session.id),
+            "items": [
+                {
+                    "category": "EEE-1",
+                    "quantity": 1,
+                    "weight": 1.0,
+                    "unit_price": 3.0,
+                    "total_price": 3.0,
+                }
+            ],
+            "total_amount": 3.0,
+            "donation": 0,
+        }
+        r_hold = client.post(f"{_V1}/sales/hold", json=hold_body, headers=auth)
+        assert r_hold.status_code == 200, r_hold.text
+
+        close_data = {"actual_amount": 75.0, "variance_comment": None}
+        response = client.post(
+            f"{_V1}/cash-sessions/{test_cash_session.id}/close",
+            json=close_data,
+            headers=_close_headers(test_user.id),
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body.get("code") == "CASH_SESSION_CLOSE_HELD_PENDING"
+        detail = body.get("detail", "")
+        assert "attente" in str(detail).lower() or "ticket" in str(detail).lower()

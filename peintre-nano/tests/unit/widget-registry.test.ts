@@ -12,13 +12,23 @@ function Dummy(_p: RegisteredWidgetProps) {
 }
 
 describe('widget-registry', () => {
-  it('expose une liste de types enregistrés (catalogue démo + bandeau live)', () => {
+  it('expose une liste de types enregistrés (démo + bandeau live + caisse 6.1)', () => {
     const types = getRegisteredWidgetTypes();
     expect(types).toContain('demo.text.block');
     expect(types).toContain('demo.card');
     expect(types).toContain('demo.kpi');
     expect(types).toContain('demo.list.simple');
     expect(types).toContain('bandeau-live');
+    expect(types).toContain('caisse-brownfield-dashboard');
+    expect(types).toContain('caisse-current-ticket');
+    expect(types).toContain('cashflow-nominal-wizard');
+    expect(types).toContain('cashflow-refund-wizard');
+    expect(types).toContain('cashflow-close-wizard');
+    expect(types).toContain('cashflow-sale-correction-wizard');
+    expect(types).toContain('admin-cash-session-detail');
+    expect(types).toContain('cashflow-special-don-wizard');
+    expect(types).toContain('cashflow-special-adhesion-wizard');
+    expect(types).toContain('cashflow-social-don-wizard');
   });
 
   it('résout un type démo en composant', () => {

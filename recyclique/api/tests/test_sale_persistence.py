@@ -17,6 +17,7 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.core.security import hash_password, create_access_token
+from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 
 class TestSalePersistence:
@@ -25,20 +26,10 @@ class TestSalePersistence:
     @pytest.fixture
     def setup_test_data(self, db_session: Session):
         """Crée les données de test nécessaires"""
-        # Créer un utilisateur
         user_id = uuid4()
-        user = User(
-            id=user_id,
-            username="cashier@test.com",
-            hashed_password=hash_password("password123"),
-            role=UserRole.USER,
-            status=UserStatus.ACTIVE,
-            is_active=True
-        )
-        db_session.add(user)
+        site_id = uuid4()
 
         # Créer un site
-        site_id = uuid4()
         site = Site(
             id=site_id,
             name="Test Site",
@@ -48,6 +39,17 @@ class TestSalePersistence:
             country="France"
         )
         db_session.add(site)
+
+        user = User(
+            id=user_id,
+            username="cashier@test.com",
+            hashed_password=hash_password("password123"),
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True,
+            site_id=site_id,
+        )
+        db_session.add(user)
 
         # Créer un poste de caisse
         register_id = uuid4()
@@ -75,6 +77,7 @@ class TestSalePersistence:
         db_session.add(cash_session)
 
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site_id)
 
         return {
             "user_id": user_id,

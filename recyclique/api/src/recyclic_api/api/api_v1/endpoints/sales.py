@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Annotated, List
 from uuid import UUID
 from recyclic_api.core.database import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -8,9 +10,35 @@ from typing import Optional
 from recyclic_api.core.security import verify_token
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.user import User, UserRole
-from recyclic_api.schemas.sale import SaleResponse, SaleCreate, SaleUpdate, SaleItemUpdate, SaleItemResponse, SaleItemWeightUpdate
-from recyclic_api.core.auth import require_role_strict
+from recyclic_api.schemas.sale import (
+    SaleCorrectionCreate,
+    SaleResponse,
+    SaleCreate,
+    SaleUpdate,
+    SaleItemUpdate,
+    SaleItemResponse,
+    SaleItemWeightUpdate,
+    SaleHoldCreate,
+    SaleFinalizeHeld,
+    SaleReversalCreate,
+    SaleReversalResponse,
+)
+from recyclic_api.core.auth import require_role_strict, resolve_access_token
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
+from recyclic_api.core.redis import get_redis
+from recyclic_api.core.step_up import (
+    IDEMPOTENCY_KEY_HEADER,
+    SENSITIVE_OPERATION_CASH_SALE_CORRECT,
+    STEP_UP_PIN_HEADER,
+    verify_step_up_pin_header,
+)
+from recyclic_api.services.idempotency_support import (
+    body_fingerprint_sale_correction_json,
+    get_cached_idempotent_close,
+    redis_key_idempotent_sale_correction,
+    store_idempotent_close,
+    validate_or_raise_idempotency_conflict,
+)
 from recyclic_api.services.sale_service import SaleService
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from sqlalchemy.orm import selectinload
@@ -19,23 +47,26 @@ router = APIRouter()
 auth_scheme = HTTPBearer(auto_error=False)
 
 
-def _jwt_sub_from_optional_bearer(
+def _jwt_sub_from_bearer_or_cookie(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials],
 ) -> str:
     """
-    Extrait le claim ``sub`` du Bearer pour POST /sales/, PUT /sales/{id}, PATCH .../items/{item_id}.
+    Extrait le claim ``sub`` : en-tête ``Authorization: Bearer`` prioritaire, sinon cookie
+    d'accès web v2 (``resolve_access_token``), aligné sur le contrat OpenAPI ``bearerOrCookie``.
 
-    Contrat inchangé (401 explicites, messages historiques) — diffère de
-    ``PATCH .../weight`` qui utilise ``require_role_strict`` (403 sans en-tête).
+    401 et messages inchangés côté client quand l'auth est absente ou invalide.
+    ``PATCH .../weight`` et corrections sensibles restent sur ``require_role_strict``.
     """
-    if credentials is None:
+    token = resolve_access_token(request, credentials)
+    if token is None:
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        payload = verify_token(credentials.credentials)
+        payload = verify_token(token)
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -52,7 +83,11 @@ def _jwt_sub_from_optional_bearer(
 
 def _user_for_sale_item_patch(db: Session, user_id: str) -> User:
     """Charge l'utilisateur pour PATCH item ; 401 ``User not found`` si absent (tests B52-P4)."""
-    user = db.query(User).filter(User.id == user_id).first()
+    try:
+        uid = UUID(str(user_id))
+    except ValueError:
+        raise HTTPException(status_code=401, detail="User not found")
+    user = db.query(User).filter(User.id == uid).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
@@ -65,7 +100,14 @@ def _require_admin_for_sale_note(db: Session, user_id: str) -> None:
     Absence en base ou rôle insuffisant → 403 (même message) ; comportement distinct
     de PATCH item (401 ``User not found`` si utilisateur absent).
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    try:
+        uid = UUID(str(user_id))
+    except ValueError:
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions. Admin access required.",
+        )
+    user = db.query(User).filter(User.id == uid).first()
     if not user or user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
         raise HTTPException(
             status_code=403,
@@ -101,6 +143,20 @@ _SALE_ITEM_WEIGHT_DOMAIN_HTTP = {
     "validation_status": 400,
 }
 
+# Story 6.4 — reversals : conflits métier → 409 (double remboursement, vente non completed, etc.).
+_SALE_REVERSAL_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 409,
+    "validation_status": 400,
+}
+
+# Story 6.8 — corrections sensibles : session clôturée / remboursement → 409.
+_SALE_CORRECTION_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 409,
+    "validation_status": 400,
+}
+
 @router.get("/", response_model=List[SaleResponse])
 async def get_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Get all sales"""
@@ -111,26 +167,190 @@ async def get_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
     ).offset(skip).limit(limit).all()
     return sales
 
-@router.get("/{sale_id}", response_model=SaleResponse)
-async def get_sale(sale_id: str, db: Session = Depends(get_db)):
-    """Get sale by ID"""
+
+# Story 6.3 — chemins statiques avant /{sale_id} pour éviter « held » capturé comme UUID.
+@router.get("/held", response_model=List[SaleResponse])
+async def list_held_sales_for_session(
+    request: Request,
+    cash_session_id: str,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """Tickets en attente pour une session de caisse (garde opérateur / site / permission)."""
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     try:
-        sale_uuid = UUID(sale_id)
+        uid = UUID(str(user_id))
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid sale ID format")
+        raise HTTPException(status_code=401, detail="User not found")
+    row = db.query(User).filter(User.id == uid).first()
+    if not row:
+        raise HTTPException(status_code=401, detail="User not found")
+    try:
+        return SaleService(db).list_held_sales_for_session(cash_session_id, user_id, limit=limit)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
-    # Story B52-P1: Eager load payments pour éviter N+1 queries
-    sale = db.query(Sale).options(
-        selectinload(Sale.payments),
-        selectinload(Sale.items)
-    ).filter(Sale.id == sale_uuid).first()
-    if not sale:
-        raise HTTPException(status_code=404, detail="Sale not found")
 
-    return sale
+@router.post("/hold", response_model=SaleResponse)
+async def create_held_sale(
+    request: Request,
+    hold_data: SaleHoldCreate,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """Met un panier en attente (persisté serveur, sans paiement ni agrégat session)."""
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    rid = getattr(request.state, "request_id", None)
+    try:
+        return SaleService(db).create_held_sale(hold_data, user_id, request_id=rid)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (NotFoundError, ValidationError, ConflictError) as e:
+        raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
+
+
+@router.post("/reversals", response_model=SaleReversalResponse)
+async def create_sale_reversal(
+    request: Request,
+    body: SaleReversalCreate,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """
+    Story 6.4 — enregistre un remboursement total (reversal) lié à une vente ``completed``.
+
+    Permission effective ``caisse.refund`` + mêmes garde-fous session / site / opérateur que la vente nominale.
+    """
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    try:
+        uid = UUID(str(user_id))
+    except ValueError:
+        raise HTTPException(status_code=401, detail="User not found")
+    row = db.query(User).filter(User.id == uid).first()
+    if not row:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    rid = getattr(request.state, "request_id", None)
+    try:
+        return SaleService(db).create_sale_reversal(body, user_id, request_id=rid)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (NotFoundError, ValidationError, ConflictError) as e:
+        raise_domain_exception_as_http(e, **_SALE_REVERSAL_DOMAIN_HTTP)
+
+
+@router.patch("/{sale_id}/corrections", response_model=SaleResponse)
+async def correct_sale_sensitive(
+    request: Request,
+    sale_id: str,
+    body: Annotated[SaleCorrectionCreate, Body(discriminator="kind")],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.SUPER_ADMIN])),
+    redis_client=Depends(get_redis),
+):
+    """
+    Story 6.8 — correction post-hoc bornée (super-admin, session ouverte).
+
+    Liste fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note).
+    Step-up ``X-Step-Up-Pin`` obligatoire ; ``Idempotency-Key`` optionnel (rejouer la même réponse).
+    """
+    verify_step_up_pin_header(
+        user=current_user,
+        pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+        redis_client=redis_client,
+        operation=SENSITIVE_OPERATION_CASH_SALE_CORRECT,
+    )
+
+    idem_key = (request.headers.get(IDEMPOTENCY_KEY_HEADER) or "").strip() or None
+    body_fp = body_fingerprint_sale_correction_json(body.model_dump(mode="json"))
+    rkey = None
+    if idem_key:
+        rkey = redis_key_idempotent_sale_correction(str(current_user.id), sale_id, idem_key)
+        cached = get_cached_idempotent_close(redis_client, rkey)
+        if cached:
+            status_c, response_body = validate_or_raise_idempotency_conflict(cached, body_fp)
+            return JSONResponse(status_code=status_c, content=response_body)
+
+    rid = getattr(request.state, "request_id", None)
+    try:
+        result = SaleService(db).apply_sensitive_sale_correction(
+            sale_id, body, current_user, request_id=rid
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (NotFoundError, ValidationError, ConflictError) as e:
+        raise_domain_exception_as_http(e, **_SALE_CORRECTION_DOMAIN_HTTP)
+
+    encoded = jsonable_encoder(result)
+    if idem_key and rkey:
+        store_idempotent_close(redis_client, rkey, body_fp, 200, encoded)
+    return result
+
+
+@router.get("/reversals/{reversal_id}", response_model=SaleReversalResponse)
+async def get_sale_reversal(
+    request: Request,
+    reversal_id: str,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """Story 6.4 — détail d'un reversal si la vente source est lisible par l'utilisateur."""
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    try:
+        uid = UUID(str(user_id))
+    except ValueError:
+        raise HTTPException(status_code=401, detail="User not found")
+    row = db.query(User).filter(User.id == uid).first()
+    if not row:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    try:
+        return SaleService(db).get_sale_reversal_readable(reversal_id, user_id)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (NotFoundError, ValidationError, ConflictError) as e:
+        raise_domain_exception_as_http(e, **_SALE_REVERSAL_DOMAIN_HTTP)
+
+
+@router.get("/{sale_id}", response_model=SaleResponse)
+async def get_sale(
+    request: Request,
+    sale_id: str,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """
+    Détail vente / ticket (Story 6.2).
+
+    Authentification obligatoire ; revalidation permission caisse, site et opérateur
+    (sauf admin / super-admin : lecture élargie).
+    """
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    try:
+        uid = UUID(str(user_id))
+    except ValueError:
+        raise HTTPException(status_code=401, detail="User not found")
+    row = db.query(User).filter(User.id == uid).first()
+    if not row:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    try:
+        return SaleService(db).get_sale_readable_by_user(sale_id, user_id)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 @router.put("/{sale_id}", response_model=SaleResponse)
 async def update_sale_note(
+    request: Request,
     sale_id: str,
     sale_update: SaleUpdate,
     db: Session = Depends(get_db),
@@ -143,7 +363,7 @@ async def update_sale_note(
     - Restricted to Admin/SuperAdmin roles
     - Updates only the note field
     """
-    user_id = _jwt_sub_from_optional_bearer(credentials)
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     _require_admin_for_sale_note(db, user_id)
 
     try:
@@ -191,16 +411,57 @@ async def create_sale(
     - CRITICAL: total_amount = sum of all total_price (NO multiplication by weight)
     - Example: Item with weight=2.5kg and total_price=15.0 contributes 15.0 to total (NOT 37.5)
     """
-    user_id = _jwt_sub_from_optional_bearer(credentials)
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     rid = getattr(request.state, "request_id", None)
 
     try:
         return SaleService(db).create_sale(sale_data, user_id, request_id=rid)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
     except (NotFoundError, ValidationError, ConflictError) as e:
         raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
 
+
+@router.post("/{sale_id}/finalize-held", response_model=SaleResponse)
+async def finalize_held_sale(
+    request: Request,
+    sale_id: str,
+    payload: SaleFinalizeHeld,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """Finalise un ticket précédemment mis en attente (paiement + agrégats session)."""
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    rid = getattr(request.state, "request_id", None)
+    try:
+        return SaleService(db).finalize_held_sale(sale_id, payload, user_id, request_id=rid)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (NotFoundError, ValidationError, ConflictError) as e:
+        raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
+
+
+@router.post("/{sale_id}/abandon-held", response_model=SaleResponse)
+async def abandon_held_sale(
+    request: Request,
+    sale_id: str,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """Abandon explicite d'un ticket en attente."""
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    rid = getattr(request.state, "request_id", None)
+    try:
+        return SaleService(db).abandon_held_sale(sale_id, user_id, request_id=rid)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (NotFoundError, ValidationError, ConflictError) as e:
+        raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
+
+
 @router.patch("/{sale_id}/items/{item_id}", response_model=SaleItemResponse)
 async def update_sale_item(
+    request: Request,
     sale_id: str,
     item_id: str,
     item_update: SaleItemUpdate,
@@ -216,12 +477,12 @@ async def update_sale_item(
     - Quantity and weight: editable by all operators
     - Price modifications are logged in audit log
     """
-    user_id = _jwt_sub_from_optional_bearer(credentials)
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     user = _user_for_sale_item_patch(db, user_id)
 
     try:
         return SaleService(db).update_sale_item(sale_id, item_id, item_update, user)
     except AuthorizationError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
-    except (NotFoundError, ValidationError) as e:
+    except (NotFoundError, ValidationError, ConflictError) as e:
         raise_domain_exception_as_http(e, **_SALE_ITEM_PATCH_DOMAIN_HTTP)

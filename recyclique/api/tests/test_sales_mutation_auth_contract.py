@@ -1,8 +1,8 @@
 """
 Contrat d'auth des routes sales mutantes (régression après factorisation routeur).
 
-- Bearer optionnel + JWT : POST /sales/, PUT /sales/{id}, PATCH .../items/{id}
-  partagent ``_jwt_sub_from_optional_bearer`` (401 sans en-tête, messages inchangés).
+- ``bearerOrCookie`` : POST /sales/, GET /sales/{id}, PUT …, PATCH …, hold, reversals, etc.
+  utilisent ``_jwt_sub_from_bearer_or_cookie`` (401 si ni Bearer ni cookie d'accès valide).
 - PUT note vs PATCH item : absence d'utilisateur en base → 403 vs 401 (comportement
   historique volontairement distinct).
 
@@ -25,6 +25,7 @@ from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
+from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 _V1 = settings.API_V1_STR.rstrip("/")
 _TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "")
@@ -164,3 +165,22 @@ def test_patch_sale_item_orphan_jwt_returns_401_user_not_found(
     )
     assert response.status_code == 401
     assert response.json()["detail"] == "User not found"
+
+
+def test_get_sale_accepts_web_session_access_cookie_without_bearer(
+    client: TestClient,
+    db_session: Session,
+    minimal_sale_setup,
+    _sale_auth_contract_site,
+    _sale_auth_contract_user,
+):
+    """Session web v2 : GET /sales/{id} authentifié par cookie seul (pas d'en-tête Bearer)."""
+    sale, _ = minimal_sale_setup
+    user = db_session.query(User).filter(User.id == _sale_auth_contract_user["id"]).one()
+    grant_user_caisse_sale_eligibility(db_session, user, _sale_auth_contract_site["id"])
+
+    token = create_access_token(data={"sub": str(user.id)})
+    client.cookies.set(settings.WEB_SESSION_ACCESS_COOKIE_NAME, token)
+    response = client.get(f"{_V1}/sales/{sale.id}")
+    assert response.status_code == 200
+    assert response.json()["id"] == str(sale.id)

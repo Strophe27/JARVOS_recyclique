@@ -41,6 +41,9 @@ class AuditActionType(str, enum.Enum):
     CASH_SESSION_CLOSED = "cash_session_closed"
     CASH_SESSION_ACCESSED = "cash_session_accessed"
     CASH_SALE_RECORDED = "cash_sale_recorded"
+    CASH_SALE_REVERSAL = "cash_sale_reversal"
+    # Story 6.8 — correction post-hoc bornée (audit reviewable)
+    CASH_SALE_CORRECTED = "cash_sale_corrected"
 
     # Actions système
     SYSTEM_CONFIG_CHANGED = "system_config_changed"

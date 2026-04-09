@@ -1,0 +1,65 @@
+.root {
+  min-width: 0;
+}
+
+.step {
+  max-width: 32rem;
+}
+
+.navRow {
+  display: flex;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-md);
+}
+
+.nativeSelect {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  margin-top: var(--mantine-spacing-xs);
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+}
+
+.heldPanel {
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.heldList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--mantine-spacing-sm);
+}
+
+.heldRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.specialPanel {
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-violet-3);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-violet-0);
+}
+
+.specialActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+}
+
+/* Story 6.6 — lot actions sociales (workspace nominal, distinct du panneau violet 6.5) */
+.socialPanel {
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-teal-3);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-teal-0);
+}

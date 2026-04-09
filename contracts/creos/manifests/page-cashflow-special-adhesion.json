@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "page_key": "cashflow-special-adhesion",
+  "required_permission_keys": ["caisse.access", "caisse.special_encaissement"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Adhésion / cotisation — Story 6.5",
+        "body": "Parcours dédié : encaissement adhésion association sans article. `special_encaissement_kind: ADHESION_ASSOCIATION`, montant > 0, `adherent_reference` optionnel (texte, pas de CRM). Aucune intégration Paheko dans ce lot."
+      }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-special-adhesion-wizard",
+      "widget_props": {}
+    }
+  ]
+}

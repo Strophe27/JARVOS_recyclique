@@ -73,6 +73,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-recyclic}
       FIRST_SUPER_ADMIN_USERNAME: ${FIRST_SUPER_ADMIN_USERNAME:-}
       FIRST_SUPER_ADMIN_PASSWORD: ${FIRST_SUPER_ADMIN_PASSWORD:-}
+      # Optionnel (dev) : PIN 4 chiffres pour step-up (clôture caisse, corrections sensibles) — création + backfill si compte sans PIN
+      FIRST_SUPER_ADMIN_PIN: ${FIRST_SUPER_ADMIN_PIN:-}
       TEST_DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
       LEGACY_IMPORT_LLM_PROVIDER: ${LEGACY_IMPORT_LLM_PROVIDER:-}
       LEGACY_IMPORT_LLM_MODEL: ${LEGACY_IMPORT_LLM_MODEL:-}
@@ -138,6 +140,8 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
+      # Login terrain (LiveAuthShell) : même logique que `v === 'true' || v === '1'` dans App.tsx
+      VITE_LIVE_AUTH: ${VITE_LIVE_AUTH:-true}
     ports:
       - "4444:5173"
     volumes:

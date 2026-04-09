@@ -175,9 +175,10 @@ from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.models.site import Site
 from recyclic_api.models.deposit import Deposit
 from recyclic_api.models.sale import Sale
+from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.cash_session import CashSession
-from recyclic_api.models.cash_register import CashRegister
+from recyclic_api.models.payment_transaction import PaymentTransaction
 from recyclic_api.models.sync_log import SyncLog
 from recyclic_api.models.registration_request import RegistrationRequest
 from recyclic_api.models.user_status_history import UserStatusHistory
@@ -348,6 +349,42 @@ def _request_is_pilot_db_isolation(request) -> bool:
     return name in _PILOT_DB_ISOLATION_BASENAMES
 
 
+def _sqlite_align_sales_story_63(bind) -> None:
+    """SQLite partiel : ajoute ``sales.lifecycle_status`` si la table existait sans colonne (Story 6.3)."""
+    if not str(bind.url).startswith("sqlite"):
+        return
+    with bind.connect() as conn:
+        insp = inspect(conn)
+        if not insp.has_table("sales"):
+            return
+        cols = {c["name"] for c in insp.get_columns("sales")}
+        if "lifecycle_status" not in cols:
+            conn.execute(
+                text(
+                    "ALTER TABLE sales ADD COLUMN lifecycle_status VARCHAR(32) NOT NULL DEFAULT 'completed'"
+                )
+            )
+            conn.commit()
+
+
+def _sqlite_align_sales_story_65(bind) -> None:
+    """SQLite partiel : colonnes Story 6.5 (encaissements sans article) si table sales préexistante."""
+    if not str(bind.url).startswith("sqlite"):
+        return
+    with bind.connect() as conn:
+        insp = inspect(conn)
+        if not insp.has_table("sales"):
+            return
+        cols = {c["name"] for c in insp.get_columns("sales")}
+        if "special_encaissement_kind" not in cols:
+            conn.execute(text("ALTER TABLE sales ADD COLUMN special_encaissement_kind VARCHAR(64)"))
+        if "adherent_reference" not in cols:
+            conn.execute(text("ALTER TABLE sales ADD COLUMN adherent_reference VARCHAR(200)"))
+        if "social_action_kind" not in cols:
+            conn.execute(text("ALTER TABLE sales ADD COLUMN social_action_kind VARCHAR(64)"))
+        conn.commit()
+
+
 def _sqlite_align_groups_story_23(bind) -> None:
     """SQLite : `create_all` ne rajoute pas les colonnes sur une table existante (Story 2.3)."""
     if not str(bind.url).startswith("sqlite"):
@@ -434,7 +471,9 @@ def create_tables_if_not_exist():
                     Site.__table__,
                     CashSession.__table__,
                     Sale.__table__,
+                    SaleReversal.__table__,
                     SaleItem.__table__,
+                    PaymentTransaction.__table__,
                     Deposit.__table__,
                     # Réception / dépôt (test_reception_live_stats, stats live)
                     Category.__table__,
@@ -443,6 +482,8 @@ def create_tables_if_not_exist():
                     LigneDepot.__table__,
                 ],
             )
+            _sqlite_align_sales_story_63(engine)
+            _sqlite_align_sales_story_65(engine)
             _sqlite_align_groups_story_23(engine)
         else:
             Base.metadata.create_all(bind=engine)

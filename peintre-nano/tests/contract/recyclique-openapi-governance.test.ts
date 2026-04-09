@@ -57,6 +57,36 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     expect(ping?.get?.tags).toContain("governance");
   });
 
+  it("expose recyclique_sales_correctSaleSensitive sur PATCH /v1/sales/{sale_id}/corrections (Story 6.8)", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const p = paths["/v1/sales/{sale_id}/corrections"];
+    expect(p?.patch?.operationId).toBe("recyclique_sales_correctSaleSensitive");
+    expect(p?.patch?.tags).toContain("sales");
+  });
+
+  it("expose recyclique_cashSessions_getCurrentOpenSession sur GET /v1/cash-sessions/current (Story 6.7)", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const cur = paths["/v1/cash-sessions/current"];
+    expect(cur?.get?.operationId).toBe("recyclique_cashSessions_getCurrentOpenSession");
+    expect(cur?.get?.tags).toContain("cash-sessions");
+  });
+
+  it("expose recyclique_cashSessions_getSessionDetail sur GET /v1/cash-sessions/{session_id} (Story 6.8)", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const detail = paths["/v1/cash-sessions/{session_id}"];
+    expect(detail?.get?.operationId).toBe("recyclique_cashSessions_getSessionDetail");
+    expect(detail?.get?.tags).toContain("cash-sessions");
+  });
+
   it("expose recyclique_exploitation_getLiveSnapshot sur /v2/exploitation/live-snapshot (Stories 1.4 / 1.7)", () => {
     const paths = doc.paths as Record<
       string,

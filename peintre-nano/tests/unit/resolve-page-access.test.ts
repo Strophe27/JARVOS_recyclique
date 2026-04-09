@@ -58,4 +58,18 @@ describe('resolvePageAccess', () => {
     expect(r.allowed).toBe(false);
     if (!r.allowed) expect(r.code).toBe('MISSING_PERMISSIONS');
   });
+
+  it('autorise si une permission alternative satisfaite requiredPermissionAnyKeys', () => {
+    const altPage: PageManifest = {
+      version: '1',
+      pageKey: 'cashflow-nominal',
+      slots: [],
+      requiredPermissionAnyKeys: ['caisse.access', 'caisse.virtual.access', 'caisse.deferred.access'],
+      requiresSite: true,
+    };
+    const r = resolvePageAccess(altPage, env({ permissions: { permissionKeys: ['caisse.virtual.access'] } }), {
+      nowMs: 1_700_000_000_000,
+    });
+    expect(r).toEqual({ allowed: true });
+  });
 });

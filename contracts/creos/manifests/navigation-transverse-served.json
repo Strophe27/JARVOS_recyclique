@@ -145,6 +145,43 @@
       "shortcut_id": "go-bandeau-live-sandbox",
       "label_key": "nav.bandeauLiveSandbox",
       "required_permission_keys": ["recyclique.exploitation.view-live-band"]
+    },
+    {
+      "id": "cashflow-nominal",
+      "route_key": "cashflow-nominal",
+      "path": "/caisse",
+      "page_key": "cashflow-nominal",
+      "shortcut_id": "go-cashflow-nominal",
+      "label_key": "nav.cashflow.nominal",
+      "visibility": {
+        "permission_any": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-refund",
+      "route_key": "cashflow-refund",
+      "path": "/caisse/remboursement",
+      "page_key": "cashflow-refund",
+      "shortcut_id": "go-cashflow-refund",
+      "label_key": "nav.cashflow.refund",
+      "required_permission_keys": ["caisse.access", "caisse.refund"],
+      "visibility": {
+        "permission_any": ["caisse.refund"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-close",
+      "route_key": "cashflow-close",
+      "path": "/caisse/cloture",
+      "page_key": "cashflow-close",
+      "shortcut_id": "go-cashflow-close",
+      "label_key": "nav.cashflow.close",
+      "visibility": {
+        "permission_any": ["caisse.access"],
+        "contexts_any": ["site"]
+      }
     }
   ]
 }

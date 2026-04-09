@@ -1,5 +1,34 @@
 # generated: 2026-04-01T15:39:08
-# last_updated: 2026-04-08 — story 5.8 review (dev-story 5.8) ; epic-5 in-progress
+# last_updated: 2026-04-08 — story 6.5 DS : development_status → review (variantes encaissements spéciaux intégrées au nominal /caisse)
+# last_updated: 2026-04-08 — story 6.5 VS validate-create-story : development_status → ready-for-dev (checklist + fichier story)
+# last_updated: 2026-04-08 — story 6.10 Story Runner : CS→VS→DS→GATE→QA→CR ; 6-10 reste in-progress (HITL UI obligatoire pour done)
+# last_updated: 2026-04-09 — epic-6-retrospective : development_status → done (epic-6-retro-2026-04-09.md)
+# last_updated: 2026-04-09 — story 6.10 : registre _07_ §2.10 (HITL navigateur réel, modèle rapide) → development_status done ; epic-6 done
+# last_updated: 2026-04-08 — story 6.10 CS : development_status → ready-for-dev (fichier story enrichi mapping + checklist, pret validation / execution)
+# last_updated: 2026-04-08 — correct course Epic 6 approuve : freeze cloture, rebaseline brownfield-first, stories rewrite repassees backlog
+# NOTE NORMATIVE — Les lignes `(historique)` ci-dessous sont pre-correct-course et ne font pas foi pour la baseline brownfield-first.
+# L'etat canonique actuel est uniquement celui de `development_status`.
+# (historique) last_updated: 2026-04-08 — story 6.9 done (Story Runner CS→VS→DS→gates→QA→CR ; preuve UI manuelle localhost:4444 = HITL hors run)
+# (historique) last_updated: 2026-04-08 — story 6.9 CS : ready-for-dev (fichier story créé)
+# (historique) last_updated: 2026-04-08 — story 6.8 done (QA reprise localhost:4444 OK, session auth super-admin présente, gates relancés verts)
+# (historique) last_updated: 2026-04-08 — story 6.8 DS : review (correction vente 6.8 + tests)
+# (historique) last_updated: 2026-04-08 — story 6.8 CS : ready-for-dev (fichier story créé)
+# (historique) last_updated: 2026-04-08 — story 6.7 CS : ready-for-dev (fichier story créé)
+# (historique) last_updated: 2026-04-08 — story 6.6 done (Story Runner DS→GATE→QA→CR ; lint/build/test PASS ; CR approved)
+# (historique) last_updated: 2026-04-08 — story 6.6 DS : review (slice social_action_kind + Peintre + tests)
+# (historique) last_updated: 2026-04-08 — story 6.6 VS : NEEDS_HITL arbitrage produit (fichier story Status blocked-pending-arbitrage-produit ; YAML ready-for-dev = fichier présent)
+# (historique) last_updated: 2026-04-08 — story 6.6 CS : ready-for-dev (fichier story créé)
+# (historique) last_updated: 2026-04-08 — story 6.5 done (Story Runner CS→VS→DS→gates→QA→CR)
+# (historique) last_updated: 2026-04-08 — story 6.5 VS : validated (arbitrage figé, AC6 Epic 7, prêt DS)
+# (historique) last_updated: 2026-04-08 — story 6.5 CS : ready-for-dev (fichier story créé)
+# (historique) last_updated: 2026-04-08 — story 6.4 done (Story Runner CS→VS→DS→gates→QA→CR)
+# (historique) last_updated: 2026-04-08 — story 6.4 CS : ready-for-dev (fichier story créé)
+# (historique) last_updated: 2026-04-08 — story 6.3 done (Story Runner CS→VS→DS→gates→QA→CR ; gate retry 1 DS)
+# (historique) last_updated: 2026-04-08 — story 6.3 DS : review (ticket en attente)
+# (historique) last_updated: 2026-04-08 — story 6.2 done (Story Runner CS→VS→DS→gates→QA→CR)
+# (historique) last_updated: 2026-04-08 — story 6.2 CS : ready-for-dev (fichier story créé)
+# (historique) last_updated: 2026-04-08 — story 6.1 done (Story Runner CS→VS→DS→gates→QA→CR ; CR retry 1)
+# (historique) last_updated: 2026-04-08 — epic-5 clos ; stories 5.1-5.8 done ; retrospective epic-5 done
 # (historique) last_updated: 2026-04-07 — epic-4 clos ; 4.6 done ; 4.6b done ; convergence 2 validee ; retrospective done
 # (historique) last_updated: 2026-04-03 — Epic 2 : toutes stories 2-x done ; pret pour bmad-retrospective (epic-2)
 # (historique) last_updated: 2026-04-03 (story 2.7 CS — fichier story ready-for-dev)
@@ -49,9 +78,15 @@
 #   Piste B — Recyclique backend : epic-1, epic-2 ; livrable OpenAPI reviewable contracts/openapi/recyclique-api.yaml.
 #   Convergence 1 : contrat interface + hooks reels. Convergence 2 (GATE) : epic-4 bandeau live bout-en-bout.
 #   Convergence 3 : epic-6, epic-7 flows critiques avec data_contract / critical / DATA_STALE.
+# Repere de lecture operationnel Epics 6-10 :
+#   - references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md
+#   - references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md
+# Utiliser ces deux documents pour toute create-story / dev-story / review sur les stories 6.x a 10.x,
+# en priorite pour les stories encore en backlog ou ready-for-dev.
 
 generated: "2026-04-01"
-last_updated: "2026-04-08" # story 5.8 review ; epic-5 in-progress
+last_updated: "2026-04-09" # epic-6-retrospective → done ; livrable epic-6-retro-2026-04-09.md
+# (historique) last_updated: 2026-04-08 — story 6.7 done (Story Runner reprise GATE→QA→CR après coupure ; lint/build/test + QA PASS + CR APPROVED)
 project: JARVOS_recyclique
 project_key: NOKEY
 tracking_system: file-system
@@ -109,20 +144,21 @@ development_status:
   5-6-poser-les-templates-et-layouts-reutilisables-des-pages-transverses: done
   5-7-gerer-les-etats-vides-chargements-et-erreurs-sur-les-pages-transverses: done
   5-8-valider-la-coherence-transverse-du-shell-recompose: done
-  epic-5-retrospective: optional
+  epic-5-retrospective: done
 
-  epic-6: backlog
-  6-1-mettre-en-service-le-parcours-nominal-de-caisse-v2-dans-peintre-nano: backlog
-  6-2-garantir-le-contexte-caisse-et-les-blocages-de-securite-metier: backlog
-  6-3-ajouter-le-parcours-ticket-en-attente: backlog
-  6-4-ajouter-le-parcours-remboursement-sous-controle: backlog
-  6-5-ajouter-les-encaissements-specifiques-sans-article-et-adhesion-association: backlog
-  6-6-ajouter-les-boutons-dactions-sociales-dedies: backlog
-  6-7-mettre-en-place-la-cloture-locale-exploitable-de-caisse: backlog
-  6-8-gerer-un-premier-perimetre-borne-de-corrections-sensibles-et-laudit-des-ventes-modifiees: backlog
-  6-9-rendre-la-caisse-defensive-face-aux-erreurs-fallbacks-et-sync-differee: backlog
-  6-10-valider-lexploitabilite-terrain-de-la-caisse-v2: backlog
-  epic-6-retrospective: optional
+  epic-6: done
+  # Epic 6 : toutes stories 6.1–6.10 done ; 6.10 clôturée avec registre _07_ §2.10 (gaps assumés nommés, pas parité legacy exhaustive)
+  6-1-mettre-en-service-le-parcours-nominal-de-caisse-v2-dans-peintre-nano: done
+  6-2-garantir-le-contexte-caisse-et-les-blocages-de-securite-metier: done
+  6-3-ajouter-le-parcours-ticket-en-attente: done
+  6-4-ajouter-le-parcours-remboursement-sous-controle: done
+  6-5-ajouter-les-encaissements-specifiques-sans-article-et-adhesion-association: done
+  6-6-ajouter-les-boutons-dactions-sociales-dedies: done
+  6-7-mettre-en-place-la-cloture-locale-exploitable-de-caisse: done
+  6-8-gerer-un-premier-perimetre-borne-de-corrections-sensibles-et-laudit-des-ventes-modifiees: done
+  6-9-rendre-la-caisse-defensive-face-aux-erreurs-fallbacks-et-sync-differee: done
+  6-10-valider-lexploitabilite-terrain-de-la-caisse-v2: done
+  epic-6-retrospective: done
 
   epic-7: backlog
   7-1-mettre-en-service-le-parcours-nominal-de-reception-v2: backlog

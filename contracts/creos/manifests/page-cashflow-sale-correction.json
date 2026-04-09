@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "page_key": "cashflow-sale-correction",
+  "required_permission_keys": ["caisse.sale_correct"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Correction ticket (Story 6.8)",
+        "body": "Périmètre liste fermée côté API : date réelle (sale_date) ou champs de finalisation whitelistés. Super-admin + session ouverte + step-up PIN. Contrat : recyclique_sales_correctSaleSensitive (PATCH /v1/sales/{sale_id}/corrections). Pas d’édition des lignes article dans ce lot."
+      }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-sale-correction-wizard",
+      "widget_props": {}
+    }
+  ]
+}

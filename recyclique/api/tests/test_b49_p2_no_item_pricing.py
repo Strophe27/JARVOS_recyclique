@@ -18,28 +18,9 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.site import Site
 from recyclic_api.core.security import hash_password, create_access_token
 from recyclic_api.services.cash_session_service import CashSessionService
+from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 client = TestClient(app)
-
-
-@pytest.fixture
-def test_user(db_session: Session):
-    """Créer un utilisateur de test."""
-    hashed_password = hash_password("testpassword123")
-    user = User(
-        username="test_user_b49_p2",
-        email="test_b49_p2@example.com",
-        hashed_password=hashed_password,
-        first_name="Test",
-        last_name="User",
-        role=UserRole.USER,
-        status=UserStatus.APPROVED,
-        is_active=True
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
 
 
 @pytest.fixture
@@ -53,6 +34,28 @@ def test_site(db_session: Session):
     db_session.commit()
     db_session.refresh(site)
     return site
+
+
+@pytest.fixture
+def test_user(db_session: Session, test_site: Site):
+    """Créer un utilisateur de test (site + permission caisse — Story 6.2)."""
+    hashed_password = hash_password("testpassword123")
+    user = User(
+        username="test_user_b49_p2",
+        email="test_b49_p2@example.com",
+        hashed_password=hashed_password,
+        first_name="Test",
+        last_name="User",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True,
+        site_id=test_site.id,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    grant_user_caisse_sale_eligibility(db_session, user, test_site.id)
+    return user
 
 
 @pytest.fixture

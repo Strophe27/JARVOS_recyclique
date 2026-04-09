@@ -1,3 +1,5 @@
 # Flows
 
-Flows déclaratifs — hors périmètre shell 3.0.
+Conteneurs de parcours déclaratifs (Story 6.1+).
+
+- **`FlowRenderer`** : enchaînement par onglets (Mantine `Tabs`) avec navigation clavier standard ; utilisé par le wizard caisse nominal (`cashflow-nominal`).

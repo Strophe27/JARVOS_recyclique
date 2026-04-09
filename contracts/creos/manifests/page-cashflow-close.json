@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "page_key": "cashflow-close",
+  "required_permission_keys": ["caisse.access"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Clôture locale de caisse (Story 6.7)",
+        "body": "Récapitulatif et totaux issus du serveur (GET session courante), montant compté, commentaire d’écart si besoin, PIN step-up puis POST close. Aucune simulation Paheko ni état de sync inventé — relais textuel vers les flux synchronisation (Epic 8)."
+      }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-close-wizard",
+      "widget_props": {}
+    }
+  ]
+}

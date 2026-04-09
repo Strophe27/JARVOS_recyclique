@@ -5,6 +5,11 @@ import {
   DEMO_PERMISSION_VIEW_HOME,
   DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD,
   NAV_LABEL_KEY_TRANSVERSE_DASHBOARD,
+  PERMISSION_CASHFLOW_DEFERRED,
+  PERMISSION_CASHFLOW_NOMINAL,
+  PERMISSION_CASHFLOW_REFUND,
+  PERMISSION_CASHFLOW_SPECIAL_ENCAISSEMENT,
+  PERMISSION_CASHFLOW_VIRTUAL,
   RECYCLIQUE_PERMISSION_VIEW_LIVE_BAND,
   TRANSVERSE_PERMISSION_ADMIN_VIEW,
   TRANSVERSE_PERMISSION_CONSULTATION_HUB_VIEW,
@@ -53,6 +58,62 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).toContain('transverse-listing-dons');
     expect(ids).toContain('transverse-consultation-article');
     expect(ids).toContain('transverse-consultation-don');
+    expect(ids).toContain('cashflow-nominal');
+    expect(ids).toContain('cashflow-refund');
+    expect(ids).not.toContain('cashflow-special-don');
+    expect(ids).not.toContain('cashflow-special-adhesion');
+    expect(ids).not.toContain('cashflow-social-don');
+    expect(ids).toContain('cashflow-close');
+    expect(ids).not.toContain('cashflow-sale-correction');
+  });
+
+  it('expose l’entrée /caisse avec une permission virtuelle seule (brownfield réel|virtuel|différé)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const filtered = filterNavigation(
+      runtimeServedManifestLoadResult.bundle.navigation,
+      createDefaultDemoEnvelope({
+        permissions: {
+          permissionKeys: [DEMO_PERMISSION_VIEW_HOME, RECYCLIQUE_PERMISSION_VIEW_LIVE_BAND, PERMISSION_CASHFLOW_VIRTUAL],
+        },
+      }),
+    );
+    expect(filtered.entries.map((e) => e.id)).toContain('cashflow-nominal');
+
+    const page = runtimeServedManifestLoadResult.bundle.pages.find((p) => p.pageKey === 'cashflow-nominal');
+    expect(page).toBeDefined();
+    if (!page) return;
+    expect(resolvePageAccess(page, createDefaultDemoEnvelope({
+      permissions: {
+        permissionKeys: [DEMO_PERMISSION_VIEW_HOME, RECYCLIQUE_PERMISSION_VIEW_LIVE_BAND, PERMISSION_CASHFLOW_VIRTUAL],
+      },
+    }))).toEqual({ allowed: true });
+  });
+
+  it('expose l’entrée /caisse avec une permission différée seule (brownfield réel|virtuel|différé)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const filtered = filterNavigation(
+      runtimeServedManifestLoadResult.bundle.navigation,
+      createDefaultDemoEnvelope({
+        permissions: {
+          permissionKeys: [DEMO_PERMISSION_VIEW_HOME, RECYCLIQUE_PERMISSION_VIEW_LIVE_BAND, PERMISSION_CASHFLOW_DEFERRED],
+        },
+      }),
+    );
+    expect(filtered.entries.map((e) => e.id)).toContain('cashflow-nominal');
+  });
+
+  it('ne sert plus d’entrée transverse caisse « correction ticket » (Story 6.8 — locus admin)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+      return [e, ...(e.children?.flatMap(walk) ?? [])];
+    });
+    expect(flat.some((e) => e.path === '/caisse/correction-ticket')).toBe(false);
+    const pageKeys = new Set(bundle.pages.map((p) => p.pageKey));
+    expect(pageKeys.has('admin-cash-session-detail')).toBe(true);
   });
 
   it('masque les entrées listings si transverse.listings.hub.view est absente (story 5.3)', () => {
@@ -255,6 +316,43 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).not.toContain('transverse-admin');
     expect(ids).not.toContain('transverse-admin-access');
     expect(ids).not.toContain('transverse-admin-site');
+  });
+
+  it('ne sert plus d’entrées nav dédiées don / adhésion spéciaux (Story 6.5 — variantes dans /caisse)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+      return [e, ...(e.children?.flatMap(walk) ?? [])];
+    });
+    expect(flat.some((e) => e.id === 'cashflow-special-don')).toBe(false);
+    expect(flat.some((e) => e.id === 'cashflow-special-adhesion')).toBe(false);
+  });
+
+  it('pas d’entrée nav dédiée Don social — Story 6.6 (locus workspace `/caisse`, widget dans le nominal)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const filtered = filterNavigation(
+      runtimeServedManifestLoadResult.bundle.navigation,
+      createDefaultDemoEnvelope(),
+    );
+    const ids = filtered.entries.map((e) => e.id);
+    expect(ids).not.toContain('cashflow-social-don');
+  });
+
+  it('n’embarque plus les PageManifest isolés don / adhésion spéciaux dans le bundle servi (Story 6.5)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    expect(bundle.pages.some((p) => p.pageKey === 'cashflow-special-don')).toBe(false);
+    expect(bundle.pages.some((p) => p.pageKey === 'cashflow-special-adhesion')).toBe(false);
+  });
+
+  it('n’embarque pas de PageManifest isolé don social — Story 6.6 (widget dans le nominal)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    expect(bundle.pages.some((p) => p.pageKey === 'cashflow-social-don')).toBe(false);
   });
 
   it('resolvePageAccess refuse /admin/access sans transverse.admin.view (story 5.4)', () => {

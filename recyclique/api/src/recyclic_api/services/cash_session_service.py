@@ -9,7 +9,7 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.schemas.cash_register import WorkflowOptions
 from uuid import UUID
 from recyclic_api.models.user import User
-from recyclic_api.models.sale import Sale, PaymentMethod
+from recyclic_api.models.sale import Sale, PaymentMethod, SaleLifecycleStatus
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.ligne_depot import LigneDepot
 from recyclic_api.models.ticket_depot import TicketDepot
@@ -737,6 +737,18 @@ class CashSessionService:
             Sale.cash_session_id == session_id
         ).scalar() or 0.0
         return float(total_donations)
+
+    def count_held_sales_for_session(self, session_id: str) -> int:
+        """Story 6.7 — tickets ``held`` : la clôture est refusée tant qu’il en reste."""
+        sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
+        return (
+            self.db.query(Sale)
+            .filter(
+                Sale.cash_session_id == sid,
+                Sale.lifecycle_status == SaleLifecycleStatus.HELD,
+            )
+            .count()
+        )
 
     def get_closing_preview(self, session: CashSession, actual_amount: float) -> Dict[str, float]:
         total_donations = self.get_total_donations_for_session(str(session.id))

@@ -16,6 +16,32 @@ class PaymentMethod(str, enum.Enum):
     FREE = "free"  # Gratuit/Don
 
 
+class SaleLifecycleStatus(str, enum.Enum):
+    """Story 6.3 — ticket en attente (backend autoritaire)."""
+
+    COMPLETED = "completed"
+    HELD = "held"
+    ABANDONED = "abandoned"
+
+
+class SpecialEncaissementKind(str, enum.Enum):
+    """Story 6.5 — encaissements sans lignes article (discriminant API figé VS)."""
+
+    DON_SANS_ARTICLE = "DON_SANS_ARTICLE"
+    ADHESION_ASSOCIATION = "ADHESION_ASSOCIATION"
+
+
+class SocialActionKind(str, enum.Enum):
+    """Story 6.6 — actions sociales / solidaires (lot 1 figé, distinct de Story 6.5)."""
+
+    DON_LIBRE = "DON_LIBRE"
+    DON_MOINS_18 = "DON_MOINS_18"
+    MARAUDE = "MARAUDE"
+    KIT_INSTALLATION_ETUDIANT = "KIT_INSTALLATION_ETUDIANT"
+    DON_AUX_ANIMAUX = "DON_AUX_ANIMAUX"
+    FRIPERIE_AUTO_GEREE = "FRIPERIE_AUTO_GEREE"
+
+
 class Sale(Base):
     """Modèle pour les ventes - étendu pour Story 1.1.1 avec traçage des boutons prédéfinis"""
     __tablename__ = "sales"
@@ -29,6 +55,22 @@ class Sale(Base):
     note = Column(Text, nullable=True)  # Story B40-P5: Notes sur les tickets de caisse
     # Story 1.1.2: preset_id et notes déplacés vers sale_items (par item individuel)
     sale_date = Column(DateTime(timezone=True), nullable=True)  # Story B52-P3: Date réelle du ticket (date du cahier)
+    lifecycle_status = Column(
+        SQLEnum(
+            SaleLifecycleStatus,
+            name="sale_lifecycle_status",
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=SaleLifecycleStatus.COMPLETED,
+        server_default=SaleLifecycleStatus.COMPLETED.value,
+    )
+    # Story 6.5 — persistance traçable ; NULL = vente nominale / autre.
+    special_encaissement_kind = Column(String(64), nullable=True)
+    # Story 6.6 — mutuellement exclusif avec special_encaissement_kind (contrôlé serveur).
+    social_action_kind = Column(String(64), nullable=True)
+    adherent_reference = Column(String(200), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

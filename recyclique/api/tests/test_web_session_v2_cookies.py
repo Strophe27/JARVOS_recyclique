@@ -168,6 +168,44 @@ class TestWebSessionV2Cookies:
         assert me.status_code == 200
         assert me.json().get("username") == username
 
+    def test_sales_detail_accepts_access_cookie_without_bearer(
+        self, client: TestClient, db_session: Session
+    ):
+        """
+        GET /v1/sales/{id} : sans en-tête Bearer, le cookie d'accès web v2 authentifie
+        (bearerOrCookie). Vente absente → 404 après auth (pas 401).
+        Régression stories 6.5 / 6.6 (POST /sales/ partage la même résolution JWT).
+        """
+        username = f"ws_sales_{uuid.uuid4().hex[:12]}"
+        db_session.add(
+            User(
+                username=username,
+                hashed_password=hash_password("TestPassword123!"),
+                role=UserRole.USER,
+                status=UserStatus.APPROVED,
+                is_active=True,
+            )
+        )
+        db_session.commit()
+
+        login = client.post(
+            f"{_V1}/auth/login",
+            json={
+                "username": username,
+                "password": "TestPassword123!",
+                "use_web_session_cookies": True,
+            },
+        )
+        assert login.status_code == 200
+        missing_sale_id = str(uuid.uuid4())
+        r = client.get(f"{_V1}/sales/{missing_sale_id}")
+        assert r.status_code == 404
+
+        client.cookies.clear()
+        r2 = client.get(f"{_V1}/sales/{missing_sale_id}")
+        assert r2.status_code == 401
+        assert r2.json().get("detail") == "Unauthorized"
+
     def test_logout_clears_session_and_subsequent_me_is_unauthorized(
         self, client: TestClient, db_session: Session
     ):

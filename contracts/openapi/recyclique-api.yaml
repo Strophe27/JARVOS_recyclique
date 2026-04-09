@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.2-draft
+  version: 0.1.5-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -201,6 +201,76 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/current:
+    get:
+      operationId: recyclique_cashSessions_getCurrentOpenSession
+      tags:
+        - cash-sessions
+      summary: Session de caisse ouverte pour l'utilisateur authentifié
+      description: |
+        Retourne la session ouverte (non différée) de l’opérateur connecté, **enrichie**
+        (totaux Story 6.4, dons, poids sorti, etc.) — aligné sur `get_current_cash_session` backend.
+        Réponse **`null`** (JSON) si aucune session ouverte : cas normal, pas une erreur HTTP.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Session enrichie ou absence de session (`null`)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: "null"
+                  - $ref: "#/components/schemas/CashSessionResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}:
+    get:
+      operationId: recyclique_cashSessions_getSessionDetail
+      tags:
+        - cash-sessions
+      summary: Détail d'une session de caisse (admin) avec ventes
+      description: |
+        Journal session — aligné brownfield `/admin/cash-sessions/:id` (Story 6.8).
+        Permissions typiques : ADMIN ou SUPER_ADMIN (backend autoritaire).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session enrichie et liste des ventes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashSessionDetailResponseV1"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/cash-sessions/{session_id}/close:
     post:
       operationId: recyclique_cashSessions_closeSession
@@ -212,6 +282,10 @@ paths:
         (jamais journalisée en clair). Idempotence optionnelle : `Idempotency-Key` + même corps →
         réponse rejouée ; corps différent avec la même clé → **409** (`IDEMPOTENCY_KEY_CONFLICT`).
         Corrélation : `X-Request-Id` (réponse reprend l’identifiant client ou un UUID serveur).
+
+        Story 6.7 : si au moins une vente `lifecycle_status` **held** existe pour la session,
+        réponse **400** avec enveloppe AR21, `code` **`CASH_SESSION_CLOSE_HELD_PENDING`** (pas de clôture
+        tant que des tickets sont en attente — aligné Story 6.3).
       security:
         - bearerOrCookie: []
       parameters:
@@ -249,7 +323,9 @@ paths:
         "200":
           description: Session fermée (ou session vide supprimée — corps `deleted`)
         "400":
-          description: Erreur métier / validation fermeture
+          description: |
+            Erreur métier / validation fermeture. Codes métier possibles : `CASH_SESSION_CLOSE_HELD_PENDING`
+            (tickets en attente), écart sans commentaire, session déjà fermée, etc.
           content:
             application/json:
               schema:
@@ -410,6 +486,535 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/held:
+    get:
+      operationId: recyclique_sales_listHeldSalesForSession
+      tags:
+        - sales
+      summary: Lister les tickets en attente pour une session de caisse
+      description: |
+        **Story 6.3** — Liste bornée des ventes `lifecycle_status=held` pour la session indiquée.
+        Mêmes garde-fous que `POST /v1/sales/` (session ouverte, opérateur, site, `caisse.access`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: cash_session_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Liste des tickets en attente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SaleResponseV1"
+        "400":
+          description: Paramètre invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission / opérateur / site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/hold:
+    post:
+      operationId: recyclique_sales_createHeldSale
+      tags:
+        - sales
+      summary: Mettre un panier en attente (ticket suspendu)
+      description: |
+        **Story 6.3** — Persiste lignes + total sans paiement ; pas d'agrégat `total_sales` de session
+        tant que le ticket n'est pas finalisé (`POST .../finalize-held`). Plafond serveur de brouillons par session.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleHoldCreateV1"
+      responses:
+        "200":
+          description: Ticket en attente créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleResponseV1"
+        "400":
+          description: Validation totaux / lignes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Opérateur / site / permission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Session fermée ou trop de tickets en attente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/reversals:
+    post:
+      operationId: recyclique_sales_createSaleReversal
+      tags:
+        - sales
+      summary: Enregistrer un remboursement (reversal total)
+      description: |
+        **Story 6.4** — Crée un document d'avoir / reversal lié à une vente source ``completed`` ;
+        montant = total de la vente (remboursement total uniquement). Revalidation session ouverte,
+        site, opérateur (6.2) et permission effective **``caisse.refund``** (en plus de ``caisse.access``
+        pour les utilisateurs standard). Vente source non modifiée. Idempotence optionnelle via
+        ``idempotency_key``. Conflits (double remboursement, ticket ``held``, etc.) → **409**.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleReversalCreateV1"
+      responses:
+        "200":
+          description: Reversal enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleReversalResponseV1"
+        "400":
+          description: Paramètres invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission ``caisse.refund`` ou garde-fous caisse
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente source introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit métier (déjà remboursé, vente non ``completed``, session fermée, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Erreur de validation (ex. motif AUTRE sans détail)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/reversals/{reversal_id}:
+    get:
+      operationId: recyclique_sales_getSaleReversal
+      tags:
+        - sales
+      summary: Détail d'un remboursement (reversal)
+      description: |
+        **Story 6.4** — Lecture si l'utilisateur peut lire la vente source (mêmes règles que
+        ``recyclique_sales_getSale``).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: reversal_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Reversal trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleReversalResponseV1"
+        "400":
+          description: Identifiant invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Lecture refusée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Reversal ou vente source introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/{sale_id}/corrections:
+    patch:
+      operationId: recyclique_sales_correctSaleSensitive
+      tags:
+        - sales
+      summary: Correction bornée d'une vente (super-admin, audit)
+      description: |
+        **Story 6.8** — Lot 1 : liste fermée. Discriminant ``kind`` : ``sale_date`` (date réelle du ticket)
+        ou ``finalize_fields`` (uniquement ``donation``, ``total_amount``, ``payment_method``, ``note``).
+        **Super-admin** obligatoire ; session de caisse **ouverte** ; refus si remboursement déjà enregistré pour la vente.
+        **X-Step-Up-Pin** obligatoire (aligné clôture 6.7). **Idempotency-Key** optionnel (rejouer la même réponse HTTP).
+        Le ContextEnvelope n'ajoute la clé effective ``caisse.sale_correct`` que pour les profils super-admin.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+          description: PIN opérateur — preuve step-up ; ne pas logger.
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+          description: Rejouer la même intention (corps identique) sans effet de bord supplémentaire.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleCorrectionCreateV1"
+      responses:
+        "200":
+          description: Vente corrigée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleResponseV1"
+        "400":
+          description: Validation (champs hors liste, cohérence montants / dates)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle non super-admin ou step-up PIN manquant / invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Session clôturée, ticket non éligible, remboursement existant, ou conflit idempotence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Verrouillage step-up PIN (trop de tentatives)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/:
+    post:
+      operationId: recyclique_sales_createSale
+      tags:
+        - sales
+      summary: Créer une vente (parcours caisse nominal v2)
+      description: |
+        **Stories 6.1 / 6.2 / 6.5** — Mutation sensible : le serveur revalide session ouverte, cohérence des totaux / paiements,
+        correspondance opérateur JWT ↔ `cash_sessions.operator_id` (sauf rôles admin / super-admin),
+        affectation site ↔ `cash_sessions.site_id`, et permission effective `caisse.access` pour les utilisateurs standard.
+        **Story 6.5** : si `special_encaissement_kind` est renseigné (don sans article, adhésion association), `items` doit être `[]`,
+        les montants suivent la règle VS (don ≥ 0, adhésion > 0), et la permission effective `caisse.special_encaissement` est exigée en plus du contexte caisse.
+        **Story 6.6** : si `social_action_kind` est renseigné (lot actions sociales), `items` doit être `[]`, `total_amount` > 0,
+        `special_encaissement_kind` doit être absent (exclusivité mutuelle), et la permission effective `caisse.social_encaissement` est exigée.
+        Aligné sur l'implémentation `POST /api/v1/sales/`.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleCreateV1"
+      responses:
+        "200":
+          description: Vente créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleResponseV1"
+        "400":
+          description: Validation métier / totaux
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: >
+            Opérateur / site / permission caisse incohérents (messages stables : opérateur, site, `caisse.access`,
+            `caisse.special_encaissement` pour encaissements spéciaux Story 6.5, ou `caisse.social_encaissement` pour Story 6.6).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session de caisse introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Session fermée ou conflit historique (contrat caisse)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/{sale_id}:
+    get:
+      operationId: recyclique_sales_getSale
+      tags:
+        - sales
+      summary: Détail d'une vente (ticket)
+      description: |
+        **Stories 6.1 / 6.2** — Lecture ticket après création ; authentification obligatoire ; revalidation
+        `caisse.access`, site et opérateur (hors admin / super-admin). `data_contract` du widget ticket critique
+        référence cette opération (`operationId` `recyclique_sales_getSale`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Vente trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleResponseV1"
+        "400":
+          description: Identifiant invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié ou utilisateur JWT absent en base
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission caisse / site / périmètre opérateur insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/{sale_id}/finalize-held:
+    post:
+      operationId: recyclique_sales_finalizeHeldSale
+      tags:
+        - sales
+      summary: Finaliser un ticket en attente (encaissement)
+      description: |
+        **Story 6.3** — Attache les paiements, passe la vente en `completed`, met à jour les agrégats de session.
+        Refus si la vente n'est pas `held` ou si les garde-fous caisse échouent.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleFinalizeHeldV1"
+      responses:
+        "200":
+          description: Vente finalisée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleResponseV1"
+        "400":
+          description: Validation paiements / totaux
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission / opérateur / site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Vente non tenable en attente ou session fermée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/{sale_id}/abandon-held:
+    post:
+      operationId: recyclique_sales_abandonHeldSale
+      tags:
+        - sales
+      summary: Abandonner un ticket en attente
+      description: |
+        **Story 6.3** — Passe la vente en `abandoned` ; pas d'impact sur les agrégats de session.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Ticket abandonné
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleResponseV1"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission / opérateur / site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: La vente n'est pas un ticket en attente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
 components:
   securitySchemes:
     bearerOrCookie:
@@ -469,6 +1074,120 @@ components:
           type: string
           nullable: true
       additionalProperties: false
+    CashSessionTotalsV1:
+      type: object
+      required:
+        - sales_completed
+        - refunds
+        - net
+      description: Agrégats clôture / Story 6.4 — net = sales_completed + refunds (refunds ≤ 0 typiquement).
+      properties:
+        sales_completed:
+          type: number
+        refunds:
+          type: number
+        net:
+          type: number
+      additionalProperties: false
+    CashSessionResponse:
+      type: object
+      description: |
+        Session caisse enrichie (GET current, réponses liste). Champs optionnels selon persistance / enrichissement.
+      required:
+        - id
+        - operator_id
+        - site_id
+        - initial_amount
+        - current_amount
+        - status
+        - opened_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        operator_id:
+          type: string
+        site_id:
+          type: string
+        register_id:
+          type: string
+          nullable: true
+        initial_amount:
+          type: number
+        current_amount:
+          type: number
+        status:
+          type: string
+          enum:
+            - open
+            - closed
+        opened_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        total_sales:
+          type: number
+          nullable: true
+        total_items:
+          type: integer
+          nullable: true
+        number_of_sales:
+          type: integer
+          nullable: true
+        total_donations:
+          type: number
+          nullable: true
+        total_weight_out:
+          type: number
+          nullable: true
+        closing_amount:
+          type: number
+          nullable: true
+        actual_amount:
+          type: number
+          nullable: true
+        variance:
+          type: number
+          nullable: true
+        variance_comment:
+          type: string
+          nullable: true
+        report_download_url:
+          type: string
+          nullable: true
+        report_email_sent:
+          type: boolean
+          nullable: true
+        register_options:
+          type: object
+          nullable: true
+          additionalProperties: true
+        totals:
+          allOf:
+            - $ref: "#/components/schemas/CashSessionTotalsV1"
+          nullable: true
+      additionalProperties: true
+    CashSessionDetailResponseV1:
+      allOf:
+        - $ref: "#/components/schemas/CashSessionResponse"
+      type: object
+      description: |
+        Réponse GET détail session — champs supplémentaires (ventes, libellés opérateur/site).
+      properties:
+        sales:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleResponseV1"
+        operator_name:
+          type: string
+          nullable: true
+        site_name:
+          type: string
+          nullable: true
+      additionalProperties: true
     LoginRequestV2:
       type: object
       required:
@@ -605,6 +1324,8 @@ components:
           description: |
             Clés de permission effectives à l'instant `computed_at` (union additive Story 2.3 ;
             aligné sur `GET /v1/users/me/permissions` pour le même utilisateur et session).
+            **Story 6.8** : la clé `caisse.sale_correct` est ajoutée côté serveur uniquement pour les profils
+            **super-admin** (surface UI correction vente ; l'endpoint reste toutefois contrôlé par rôle serveur).
         computed_at:
           type: string
           format: date-time
@@ -724,3 +1445,384 @@ components:
         site_id:
           type: string
           description: UUID du site mis a jour
+    SaleItemCreateV1:
+      type: object
+      required:
+        - category
+        - quantity
+        - weight
+        - unit_price
+        - total_price
+      properties:
+        category:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        weight:
+          type: number
+        unit_price:
+          type: number
+        total_price:
+          type: number
+        preset_id:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      additionalProperties: false
+    SaleLifecycleStatusV1:
+      type: string
+      enum:
+        - completed
+        - held
+        - abandoned
+      description: Cycle de vie vente caisse (Story 6.3).
+    SpecialEncaissementKindV1:
+      type: string
+      enum:
+        - DON_SANS_ARTICLE
+        - ADHESION_ASSOCIATION
+      description: |
+        Story 6.5 — discriminant API pour encaissements sans lignes article. `DON_SANS_ARTICLE` : total ≥ 0, pas de `adherent_reference`.
+        `ADHESION_ASSOCIATION` : total > 0 ; `adherent_reference` optionnel (max 200 caractères).
+        Mutuellement exclusif avec `social_action_kind` (Story 6.6).
+    SocialActionKindV1:
+      type: string
+      enum:
+        - DON_LIBRE
+        - DON_MOINS_18
+        - MARAUDE
+        - KIT_INSTALLATION_ETUDIANT
+        - DON_AUX_ANIMAUX
+        - FRIPERIE_AUTO_GEREE
+      description: |
+        Story 6.6 — lot 1 figé des actions sociales / solidaires (distinct de `SpecialEncaissementKindV1`).
+        Toujours `items` = [] et `total_amount` > 0 ; `note` optionnelle. Mutuellement exclusif avec `special_encaissement_kind`.
+    PaymentCreateV1:
+      type: object
+      required:
+        - payment_method
+        - amount
+      properties:
+        payment_method:
+          type: string
+          description: Enum métier aligné modèle Sale (cash, card, …)
+        amount:
+          type: number
+      additionalProperties: false
+    SaleHoldCreateV1:
+      type: object
+      required:
+        - cash_session_id
+        - items
+        - total_amount
+      properties:
+        cash_session_id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleItemCreateV1"
+        total_amount:
+          type: number
+        donation:
+          type: number
+          nullable: true
+        note:
+          type: string
+          nullable: true
+      additionalProperties: false
+    SaleFinalizeHeldV1:
+      type: object
+      properties:
+        donation:
+          type: number
+          nullable: true
+        payment_method:
+          type: string
+          nullable: true
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentCreateV1"
+          nullable: true
+        note:
+          type: string
+          nullable: true
+      additionalProperties: false
+    SaleCreateV1:
+      type: object
+      required:
+        - cash_session_id
+        - total_amount
+      description: |
+        Vente nominale : au moins une ligne dans `items`. Encaissement spécial (Story 6.5) : `special_encaissement_kind` renseigné et `items` = [].
+        Action sociale (Story 6.6) : `social_action_kind` renseigné et `items` = [] (exclusif de `special_encaissement_kind`).
+      properties:
+        cash_session_id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleItemCreateV1"
+          description: Vide si et seulement si `special_encaissement_kind` ou `social_action_kind` est défini.
+        total_amount:
+          type: number
+        donation:
+          type: number
+          nullable: true
+        payment_method:
+          type: string
+          nullable: true
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentCreateV1"
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        special_encaissement_kind:
+          allOf:
+            - $ref: "#/components/schemas/SpecialEncaissementKindV1"
+          nullable: true
+        social_action_kind:
+          allOf:
+            - $ref: "#/components/schemas/SocialActionKindV1"
+          nullable: true
+        adherent_reference:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Réservé à `ADHESION_ASSOCIATION` (nom ou note courte, optionnel).
+      additionalProperties: false
+    PaymentResponseV1:
+      type: object
+      required:
+        - id
+        - sale_id
+        - payment_method
+        - amount
+        - created_at
+      properties:
+        id:
+          type: string
+        sale_id:
+          type: string
+        payment_method:
+          type: string
+        amount:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SaleItemResponseV1:
+      allOf:
+        - $ref: "#/components/schemas/SaleItemCreateV1"
+        - type: object
+          required:
+            - id
+            - sale_id
+          properties:
+            id:
+              type: string
+            sale_id:
+              type: string
+          additionalProperties: false
+    SaleResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - total_amount
+        - lifecycle_status
+        - created_at
+        - updated_at
+        - items
+        - payments
+      properties:
+        id:
+          type: string
+        cash_session_id:
+          type: string
+        operator_id:
+          type: string
+          nullable: true
+        lifecycle_status:
+          $ref: "#/components/schemas/SaleLifecycleStatusV1"
+        total_amount:
+          type: number
+        donation:
+          type: number
+          nullable: true
+        payment_method:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        sale_date:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleItemResponseV1"
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentResponseV1"
+        special_encaissement_kind:
+          allOf:
+            - $ref: "#/components/schemas/SpecialEncaissementKindV1"
+          nullable: true
+        social_action_kind:
+          allOf:
+            - $ref: "#/components/schemas/SocialActionKindV1"
+          nullable: true
+        adherent_reference:
+          type: string
+          nullable: true
+      additionalProperties: false
+    RefundReasonCodeV1:
+      type: string
+      enum:
+        - ERREUR_SAISIE
+        - RETOUR_ARTICLE
+        - ANNULATION_CLIENT
+        - AUTRE
+      description: Motif de remboursement (Story 6.4).
+    SaleCorrectionSaleDateV1:
+      type: object
+      required:
+        - kind
+        - sale_date
+        - reason
+      properties:
+        kind:
+          type: string
+          enum:
+            - sale_date
+        sale_date:
+          type: string
+          format: date-time
+          description: Nouvelle date/heure réelle du ticket (B52-P3).
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Motif obligatoire (audit).
+      additionalProperties: false
+    SaleCorrectionFinalizeFieldsV1:
+      type: object
+      required:
+        - kind
+        - reason
+      properties:
+        kind:
+          type: string
+          enum:
+            - finalize_fields
+        donation:
+          type: number
+          nullable: true
+        total_amount:
+          type: number
+          nullable: true
+        payment_method:
+          type: string
+          nullable: true
+          description: Enum alignée sur le modèle Sale (ex. cash, card, check, free).
+        note:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Motif obligatoire (audit).
+      description: |
+        Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note`` doit être présent (validation serveur).
+      additionalProperties: false
+    SaleCorrectionCreateV1:
+      oneOf:
+        - $ref: "#/components/schemas/SaleCorrectionSaleDateV1"
+        - $ref: "#/components/schemas/SaleCorrectionFinalizeFieldsV1"
+      discriminator:
+        propertyName: kind
+        mapping:
+          sale_date: "#/components/schemas/SaleCorrectionSaleDateV1"
+          finalize_fields: "#/components/schemas/SaleCorrectionFinalizeFieldsV1"
+    SaleReversalCreateV1:
+      type: object
+      required:
+        - source_sale_id
+        - reason_code
+      properties:
+        source_sale_id:
+          type: string
+          format: uuid
+          description: Vente source ``completed`` à rembourser intégralement.
+        reason_code:
+          $ref: "#/components/schemas/RefundReasonCodeV1"
+        detail:
+          type: string
+          nullable: true
+          description: Obligatoire si ``reason_code`` = AUTRE (max 500 caractères).
+        idempotency_key:
+          type: string
+          nullable: true
+          maxLength: 128
+          description: Clé client pour rejouer la même intention sans doublon.
+      additionalProperties: false
+    SaleReversalResponseV1:
+      type: object
+      required:
+        - id
+        - source_sale_id
+        - cash_session_id
+        - operator_id
+        - amount_signed
+        - reason_code
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        source_sale_id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        operator_id:
+          type: string
+          format: uuid
+        amount_signed:
+          type: number
+          description: Montant algébrique négatif (sortie de caisse).
+        reason_code:
+          type: string
+        detail:
+          type: string
+          nullable: true
+        idempotency_key:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      additionalProperties: false

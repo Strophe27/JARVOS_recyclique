@@ -8,14 +8,16 @@ function isNonEmptyString(v: unknown): v is string {
 
 function readOptionalPermissionKeysRoot(
   root: Record<string, unknown>,
+  fieldName: 'requiredPermissionKeys' | 'requiredPermissionAnyKeys',
   sourceLabel: string,
 ): { keys?: string[]; issues: ManifestValidationIssue[] } {
   const issues: ManifestValidationIssue[] = [];
-  const raw = root.requiredPermissionKeys;
+  const raw = root[fieldName];
+  const label = fieldName;
   if (raw === undefined) return { issues: [] };
   if (!Array.isArray(raw)) {
     issues.push(
-      manifestErr('MANIFEST_STRUCTURE_INVALID', `requiredPermissionKeys doit être un tableau (${sourceLabel})`, {
+      manifestErr('MANIFEST_STRUCTURE_INVALID', `${label} doit être un tableau (${sourceLabel})`, {
         source: sourceLabel,
       }),
     );
@@ -25,7 +27,7 @@ function readOptionalPermissionKeysRoot(
   raw.forEach((item, i) => {
     if (!isNonEmptyString(item)) {
       issues.push(
-        manifestErr('MANIFEST_STRUCTURE_INVALID', `requiredPermissionKeys[${i}] invalide (${sourceLabel})`, {
+        manifestErr('MANIFEST_STRUCTURE_INVALID', `${label}[${i}] invalide (${sourceLabel})`, {
           source: sourceLabel,
         }),
       );
@@ -132,8 +134,10 @@ export function parsePageManifestJson(
   });
   if (issues.length) return { issues };
 
-  const perm = readOptionalPermissionKeysRoot(root, sourceLabel);
+  const perm = readOptionalPermissionKeysRoot(root, 'requiredPermissionKeys', sourceLabel);
+  const permAny = readOptionalPermissionKeysRoot(root, 'requiredPermissionAnyKeys', sourceLabel);
   issues.push(...perm.issues);
+  issues.push(...permAny.issues);
   let requiresSite: boolean | undefined;
   if (root.requiresSite !== undefined) {
     if (typeof root.requiresSite !== 'boolean') {
@@ -154,6 +158,7 @@ export function parsePageManifestJson(
       pageKey: root.pageKey as string,
       slots,
       ...(perm.keys !== undefined && perm.keys.length ? { requiredPermissionKeys: perm.keys } : {}),
+      ...(permAny.keys !== undefined && permAny.keys.length ? { requiredPermissionAnyKeys: permAny.keys } : {}),
       ...(requiresSite !== undefined ? { requiresSite } : {}),
     },
     issues: [],

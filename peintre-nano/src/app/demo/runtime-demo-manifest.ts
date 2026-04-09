@@ -36,6 +36,10 @@ import pageTransverseConsultationDon from '../../../../contracts/creos/manifests
 import pageTransverseDashboard from '../../../../contracts/creos/manifests/page-transverse-dashboard.json';
 import pageTransverseListingArticles from '../../../../contracts/creos/manifests/page-transverse-listing-articles.json';
 import pageTransverseListingDons from '../../../../contracts/creos/manifests/page-transverse-listing-dons.json';
+import pageCashflowNominal from '../../../../contracts/creos/manifests/page-cashflow-nominal.json';
+import pageCashflowRefund from '../../../../contracts/creos/manifests/page-cashflow-refund.json';
+import pageAdminCashSessionDetail from '../../../../contracts/creos/manifests/page-admin-cash-session-detail.json';
+import pageCashflowClose from '../../../../contracts/creos/manifests/page-cashflow-close.json';
 import widgetsCatalogBandeauLive from '../../../../contracts/creos/manifests/widgets-catalog-bandeau-live.json';
 import validNavigationFixture from '../../fixtures/manifests/valid/navigation.json';
 import validPageGuardedFixture from '../../fixtures/manifests/valid/page-guarded.json';
@@ -121,6 +125,10 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseListingDons),
     JSON.stringify(pageTransverseConsultationArticle),
     JSON.stringify(pageTransverseConsultationDon),
+    JSON.stringify(pageCashflowNominal),
+    JSON.stringify(pageCashflowRefund),
+    JSON.stringify(pageCashflowClose),
+    JSON.stringify(pageAdminCashSessionDetail),
   ],
   allowedWidgetTypes: demoAllowedWidgetTypes(),
   sourceLabels: {
@@ -140,6 +148,10 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-listing-dons.json',
           'contracts/creos/manifests/page-transverse-consultation-article.json',
           'contracts/creos/manifests/page-transverse-consultation-don.json',
+          'contracts/creos/manifests/page-cashflow-nominal.json',
+          'contracts/creos/manifests/page-cashflow-refund.json',
+          'contracts/creos/manifests/page-cashflow-close.json',
+          'contracts/creos/manifests/page-admin-cash-session-detail.json',
         ] as const
       )[i] ?? `page[${i}]`,
   },

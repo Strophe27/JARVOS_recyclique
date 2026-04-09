@@ -21,10 +21,16 @@ export type ResolvePageAccessOptions = {
 };
 
 function permissionsSatisfied(page: PageManifest, envelope: ContextEnvelopeStub): boolean {
-  const req = page.requiredPermissionKeys;
-  if (!req?.length) return true;
   const effective = new Set(envelope.permissions.permissionKeys);
-  return req.every((k) => effective.has(k));
+  const reqAll = page.requiredPermissionKeys;
+  if (reqAll?.length && !reqAll.every((k) => effective.has(k))) {
+    return false;
+  }
+  const reqAny = page.requiredPermissionAnyKeys;
+  if (reqAny?.length && !reqAny.some((k) => effective.has(k))) {
+    return false;
+  }
+  return true;
 }
 
 /**

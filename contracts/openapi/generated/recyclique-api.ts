@@ -135,6 +135,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cash-sessions/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Session de caisse ouverte pour l'utilisateur authentifié
+         * @description Retourne la session ouverte (non différée) de l’opérateur connecté, **enrichie**
+         *     (totaux Story 6.4, dons, poids sorti, etc.) — aligné sur `get_current_cash_session` backend.
+         *     Réponse **`null`** (JSON) si aucune session ouverte : cas normal, pas une erreur HTTP.
+         */
+        get: operations["recyclique_cashSessions_getCurrentOpenSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail d'une session de caisse (admin) avec ventes
+         * @description Journal session — aligné brownfield `/admin/cash-sessions/:id` (Story 6.8).
+         *     Permissions typiques : ADMIN ou SUPER_ADMIN (backend autoritaire).
+         */
+        get: operations["recyclique_cashSessions_getSessionDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cash-sessions/{session_id}/close": {
         parameters: {
             query?: never;
@@ -150,6 +193,10 @@ export interface paths {
          *     (jamais journalisée en clair). Idempotence optionnelle : `Idempotency-Key` + même corps →
          *     réponse rejouée ; corps différent avec la même clé → **409** (`IDEMPOTENCY_KEY_CONFLICT`).
          *     Corrélation : `X-Request-Id` (réponse reprend l’identifiant client ou un UUID serveur).
+         *
+         *     Story 6.7 : si au moins une vente `lifecycle_status` **held** existe pour la session,
+         *     réponse **400** avec enveloppe AR21, `code` **`CASH_SESSION_CLOSE_HELD_PENDING`** (pas de clôture
+         *     tant que des tickets sont en attente — aligné Story 6.3).
          */
         post: operations["recyclique_cashSessions_closeSession"];
         delete?: never;
@@ -235,6 +282,207 @@ export interface paths {
         patch: operations["recyclique_exploitation_patchBandeauLiveSlice"];
         trace?: never;
     };
+    "/v1/sales/held": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lister les tickets en attente pour une session de caisse
+         * @description **Story 6.3** — Liste bornée des ventes `lifecycle_status=held` pour la session indiquée.
+         *     Mêmes garde-fous que `POST /v1/sales/` (session ouverte, opérateur, site, `caisse.access`).
+         */
+        get: operations["recyclique_sales_listHeldSalesForSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mettre un panier en attente (ticket suspendu)
+         * @description **Story 6.3** — Persiste lignes + total sans paiement ; pas d'agrégat `total_sales` de session
+         *     tant que le ticket n'est pas finalisé (`POST .../finalize-held`). Plafond serveur de brouillons par session.
+         */
+        post: operations["recyclique_sales_createHeldSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/reversals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enregistrer un remboursement (reversal total)
+         * @description **Story 6.4** — Crée un document d'avoir / reversal lié à une vente source ``completed`` ;
+         *     montant = total de la vente (remboursement total uniquement). Revalidation session ouverte,
+         *     site, opérateur (6.2) et permission effective **``caisse.refund``** (en plus de ``caisse.access``
+         *     pour les utilisateurs standard). Vente source non modifiée. Idempotence optionnelle via
+         *     ``idempotency_key``. Conflits (double remboursement, ticket ``held``, etc.) → **409**.
+         */
+        post: operations["recyclique_sales_createSaleReversal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/reversals/{reversal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail d'un remboursement (reversal)
+         * @description **Story 6.4** — Lecture si l'utilisateur peut lire la vente source (mêmes règles que
+         *     ``recyclique_sales_getSale``).
+         */
+        get: operations["recyclique_sales_getSaleReversal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/{sale_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Correction bornée d'une vente (super-admin, audit)
+         * @description **Story 6.8** — Lot 1 : liste fermée. Discriminant ``kind`` : ``sale_date`` (date réelle du ticket)
+         *     ou ``finalize_fields`` (uniquement ``donation``, ``total_amount``, ``payment_method``, ``note``).
+         *     **Super-admin** obligatoire ; session de caisse **ouverte** ; refus si remboursement déjà enregistré pour la vente.
+         *     **X-Step-Up-Pin** obligatoire (aligné clôture 6.7). **Idempotency-Key** optionnel (rejouer la même réponse HTTP).
+         *     Le ContextEnvelope n'ajoute la clé effective ``caisse.sale_correct`` que pour les profils super-admin.
+         */
+        patch: operations["recyclique_sales_correctSaleSensitive"];
+        trace?: never;
+    };
+    "/v1/sales/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Créer une vente (parcours caisse nominal v2)
+         * @description **Stories 6.1 / 6.2 / 6.5** — Mutation sensible : le serveur revalide session ouverte, cohérence des totaux / paiements,
+         *     correspondance opérateur JWT ↔ `cash_sessions.operator_id` (sauf rôles admin / super-admin),
+         *     affectation site ↔ `cash_sessions.site_id`, et permission effective `caisse.access` pour les utilisateurs standard.
+         *     **Story 6.5** : si `special_encaissement_kind` est renseigné (don sans article, adhésion association), `items` doit être `[]`,
+         *     les montants suivent la règle VS (don ≥ 0, adhésion > 0), et la permission effective `caisse.special_encaissement` est exigée en plus du contexte caisse.
+         *     **Story 6.6** : si `social_action_kind` est renseigné (lot actions sociales), `items` doit être `[]`, `total_amount` > 0,
+         *     `special_encaissement_kind` doit être absent (exclusivité mutuelle), et la permission effective `caisse.social_encaissement` est exigée.
+         *     Aligné sur l'implémentation `POST /api/v1/sales/`.
+         */
+        post: operations["recyclique_sales_createSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/{sale_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail d'une vente (ticket)
+         * @description **Stories 6.1 / 6.2** — Lecture ticket après création ; authentification obligatoire ; revalidation
+         *     `caisse.access`, site et opérateur (hors admin / super-admin). `data_contract` du widget ticket critique
+         *     référence cette opération (`operationId` `recyclique_sales_getSale`).
+         */
+        get: operations["recyclique_sales_getSale"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/{sale_id}/finalize-held": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finaliser un ticket en attente (encaissement)
+         * @description **Story 6.3** — Attache les paiements, passe la vente en `completed`, met à jour les agrégats de session.
+         *     Refus si la vente n'est pas `held` ou si les garde-fous caisse échouent.
+         */
+        post: operations["recyclique_sales_finalizeHeldSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/{sale_id}/abandon-held": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abandonner un ticket en attente
+         * @description **Story 6.3** — Passe la vente en `abandoned` ; pas d'impact sur les agrégats de session.
+         */
+        post: operations["recyclique_sales_abandonHeldSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -268,6 +516,53 @@ export interface components {
             actual_amount: number;
             variance_comment?: string | null;
         };
+        /** @description Agrégats clôture / Story 6.4 — net = sales_completed + refunds (refunds ≤ 0 typiquement). */
+        CashSessionTotalsV1: {
+            sales_completed: number;
+            refunds: number;
+            net: number;
+        };
+        /** @description Session caisse enrichie (GET current, réponses liste). Champs optionnels selon persistance / enrichissement. */
+        CashSessionResponse: {
+            /** Format: uuid */
+            id: string;
+            operator_id: string;
+            site_id: string;
+            register_id?: string | null;
+            initial_amount: number;
+            current_amount: number;
+            /** @enum {string} */
+            status: "open" | "closed";
+            /** Format: date-time */
+            opened_at: string;
+            /** Format: date-time */
+            closed_at?: string | null;
+            total_sales?: number | null;
+            total_items?: number | null;
+            number_of_sales?: number | null;
+            total_donations?: number | null;
+            total_weight_out?: number | null;
+            closing_amount?: number | null;
+            actual_amount?: number | null;
+            variance?: number | null;
+            variance_comment?: string | null;
+            report_download_url?: string | null;
+            report_email_sent?: boolean | null;
+            register_options?: {
+                [key: string]: unknown;
+            } | null;
+            totals?: components["schemas"]["CashSessionTotalsV1"] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Réponse GET détail session — champs supplémentaires (ventes, libellés opérateur/site). */
+        CashSessionDetailResponseV1: ({
+            sales?: components["schemas"]["SaleResponseV1"][];
+            operator_name?: string | null;
+            site_name?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) & components["schemas"]["CashSessionResponse"];
         LoginRequestV2: {
             username: string;
             /** Format: password */
@@ -333,6 +628,8 @@ export interface components {
             /**
              * @description Clés de permission effectives à l'instant `computed_at` (union additive Story 2.3 ;
              *     aligné sur `GET /v1/users/me/permissions` pour le même utilisateur et session).
+             *     **Story 6.8** : la clé `caisse.sale_correct` est ajoutée côté serveur uniquement pour les profils
+             *     **super-admin** (surface UI correction vente ; l'endpoint reste toutefois contrôlé par rôle serveur).
              */
             permission_keys: string[];
             /**
@@ -419,6 +716,169 @@ export interface components {
             bandeau_live_slice_enabled: boolean;
             /** @description UUID du site mis a jour */
             site_id: string;
+        };
+        SaleItemCreateV1: {
+            category: string;
+            quantity: number;
+            weight: number;
+            unit_price: number;
+            total_price: number;
+            /** Format: uuid */
+            preset_id?: string | null;
+            notes?: string | null;
+        };
+        /**
+         * @description Cycle de vie vente caisse (Story 6.3).
+         * @enum {string}
+         */
+        SaleLifecycleStatusV1: "completed" | "held" | "abandoned";
+        /**
+         * @description Story 6.5 — discriminant API pour encaissements sans lignes article. `DON_SANS_ARTICLE` : total ≥ 0, pas de `adherent_reference`.
+         *     `ADHESION_ASSOCIATION` : total > 0 ; `adherent_reference` optionnel (max 200 caractères).
+         *     Mutuellement exclusif avec `social_action_kind` (Story 6.6).
+         * @enum {string}
+         */
+        SpecialEncaissementKindV1: "DON_SANS_ARTICLE" | "ADHESION_ASSOCIATION";
+        /**
+         * @description Story 6.6 — lot 1 figé des actions sociales / solidaires (distinct de `SpecialEncaissementKindV1`).
+         *     Toujours `items` = [] et `total_amount` > 0 ; `note` optionnelle. Mutuellement exclusif avec `special_encaissement_kind`.
+         * @enum {string}
+         */
+        SocialActionKindV1: "DON_LIBRE" | "DON_MOINS_18" | "MARAUDE" | "KIT_INSTALLATION_ETUDIANT" | "DON_AUX_ANIMAUX" | "FRIPERIE_AUTO_GEREE";
+        PaymentCreateV1: {
+            /** @description Enum métier aligné modèle Sale (cash, card, …) */
+            payment_method: string;
+            amount: number;
+        };
+        SaleHoldCreateV1: {
+            /** Format: uuid */
+            cash_session_id: string;
+            items: components["schemas"]["SaleItemCreateV1"][];
+            total_amount: number;
+            donation?: number | null;
+            note?: string | null;
+        };
+        SaleFinalizeHeldV1: {
+            donation?: number | null;
+            payment_method?: string | null;
+            payments?: components["schemas"]["PaymentCreateV1"][] | null;
+            note?: string | null;
+        };
+        /**
+         * @description Vente nominale : au moins une ligne dans `items`. Encaissement spécial (Story 6.5) : `special_encaissement_kind` renseigné et `items` = [].
+         *     Action sociale (Story 6.6) : `social_action_kind` renseigné et `items` = [] (exclusif de `special_encaissement_kind`).
+         */
+        SaleCreateV1: {
+            /** Format: uuid */
+            cash_session_id: string;
+            /** @description Vide si et seulement si `special_encaissement_kind` ou `social_action_kind` est défini. */
+            items?: components["schemas"]["SaleItemCreateV1"][];
+            total_amount: number;
+            donation?: number | null;
+            payment_method?: string | null;
+            payments?: components["schemas"]["PaymentCreateV1"][] | null;
+            note?: string | null;
+            special_encaissement_kind?: components["schemas"]["SpecialEncaissementKindV1"] | null;
+            social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
+            /** @description Réservé à `ADHESION_ASSOCIATION` (nom ou note courte, optionnel). */
+            adherent_reference?: string | null;
+        };
+        PaymentResponseV1: {
+            id: string;
+            sale_id: string;
+            payment_method: string;
+            amount: number;
+            /** Format: date-time */
+            created_at: string;
+        };
+        SaleItemResponseV1: components["schemas"]["SaleItemCreateV1"] & {
+            id: string;
+            sale_id: string;
+        };
+        SaleResponseV1: {
+            id: string;
+            cash_session_id: string;
+            operator_id?: string | null;
+            lifecycle_status: components["schemas"]["SaleLifecycleStatusV1"];
+            total_amount: number;
+            donation?: number | null;
+            payment_method?: string | null;
+            note?: string | null;
+            /** Format: date-time */
+            sale_date?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            items: components["schemas"]["SaleItemResponseV1"][];
+            payments: components["schemas"]["PaymentResponseV1"][];
+            special_encaissement_kind?: components["schemas"]["SpecialEncaissementKindV1"] | null;
+            social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
+            adherent_reference?: string | null;
+        };
+        /**
+         * @description Motif de remboursement (Story 6.4).
+         * @enum {string}
+         */
+        RefundReasonCodeV1: "ERREUR_SAISIE" | "RETOUR_ARTICLE" | "ANNULATION_CLIENT" | "AUTRE";
+        SaleCorrectionSaleDateV1: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "sale_date";
+            /**
+             * Format: date-time
+             * @description Nouvelle date/heure réelle du ticket (B52-P3).
+             */
+            sale_date: string;
+            /** @description Motif obligatoire (audit). */
+            reason: string;
+        };
+        /** @description Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note`` doit être présent (validation serveur). */
+        SaleCorrectionFinalizeFieldsV1: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "finalize_fields";
+            donation?: number | null;
+            total_amount?: number | null;
+            /** @description Enum alignée sur le modèle Sale (ex. cash, card, check, free). */
+            payment_method?: string | null;
+            note?: string | null;
+            /** @description Motif obligatoire (audit). */
+            reason: string;
+        };
+        SaleCorrectionCreateV1: components["schemas"]["SaleCorrectionSaleDateV1"] | components["schemas"]["SaleCorrectionFinalizeFieldsV1"];
+        SaleReversalCreateV1: {
+            /**
+             * Format: uuid
+             * @description Vente source ``completed`` à rembourser intégralement.
+             */
+            source_sale_id: string;
+            reason_code: components["schemas"]["RefundReasonCodeV1"];
+            /** @description Obligatoire si ``reason_code`` = AUTRE (max 500 caractères). */
+            detail?: string | null;
+            /** @description Clé client pour rejouer la même intention sans doublon. */
+            idempotency_key?: string | null;
+        };
+        SaleReversalResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            source_sale_id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            /** Format: uuid */
+            operator_id: string;
+            /** @description Montant algébrique négatif (sortie de caisse). */
+            amount_signed: number;
+            reason_code: string;
+            detail?: string | null;
+            idempotency_key?: string | null;
+            /** Format: date-time */
+            created_at: string;
         };
     };
     responses: never;
@@ -639,6 +1099,84 @@ export interface operations {
             };
         };
     };
+    recyclique_cashSessions_getCurrentOpenSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session enrichie ou absence de session (`null`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["CashSessionResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_getSessionDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session enrichie et liste des ventes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashSessionDetailResponseV1"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_cashSessions_closeSession: {
         parameters: {
             query?: never;
@@ -668,7 +1206,10 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Erreur métier / validation fermeture */
+            /**
+             * @description Erreur métier / validation fermeture. Codes métier possibles : `CASH_SESSION_CLOSE_HELD_PENDING`
+             *     (tickets en attente), écart sans commentaire, session déjà fermée, etc.
+             */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -856,6 +1397,611 @@ export interface operations {
             };
             /** @description Site introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_listHeldSalesForSession: {
+        parameters: {
+            query: {
+                cash_session_id: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste des tickets en attente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"][];
+                };
+            };
+            /** @description Paramètre invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission / opérateur / site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_createHeldSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleHoldCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Ticket en attente créé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"];
+                };
+            };
+            /** @description Validation totaux / lignes */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Opérateur / site / permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session fermée ou trop de tickets en attente */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_createSaleReversal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleReversalCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Reversal enregistré */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleReversalResponseV1"];
+                };
+            };
+            /** @description Paramètres invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission ``caisse.refund`` ou garde-fous caisse */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente source introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit métier (déjà remboursé, vente non ``completed``, session fermée, etc.) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur de validation (ex. motif AUTRE sans détail) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_getSaleReversal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reversal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reversal trouvé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleReversalResponseV1"];
+                };
+            };
+            /** @description Identifiant invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Lecture refusée */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Reversal ou vente source introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_correctSaleSensitive: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description PIN opérateur — preuve step-up ; ne pas logger. */
+                "X-Step-Up-Pin": string;
+                /** @description Rejouer la même intention (corps identique) sans effet de bord supplémentaire. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleCorrectionCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Vente corrigée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"];
+                };
+            };
+            /** @description Validation (champs hors liste, cohérence montants / dates) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle non super-admin ou step-up PIN manquant / invalide */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session clôturée, ticket non éligible, remboursement existant, ou conflit idempotence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Verrouillage step-up PIN (trop de tentatives) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_createSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Vente créée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"];
+                };
+            };
+            /** @description Validation métier / totaux */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Opérateur / site / permission caisse incohérents (messages stables : opérateur, site, `caisse.access`, `caisse.special_encaissement` pour encaissements spéciaux Story 6.5, ou `caisse.social_encaissement` pour Story 6.6). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session de caisse introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session fermée ou conflit historique (contrat caisse) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_getSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Vente trouvée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"];
+                };
+            };
+            /** @description Identifiant invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié ou utilisateur JWT absent en base */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission caisse / site / périmètre opérateur insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_finalizeHeldSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleFinalizeHeldV1"];
+            };
+        };
+        responses: {
+            /** @description Vente finalisée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"];
+                };
+            };
+            /** @description Validation paiements / totaux */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission / opérateur / site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente non tenable en attente ou session fermée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_abandonHeldSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ticket abandonné */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission / opérateur / site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description La vente n'est pas un ticket en attente */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

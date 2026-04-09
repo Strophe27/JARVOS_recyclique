@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "page_key": "cashflow-refund",
+  "required_permission_keys": ["caisse.access", "caisse.refund"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Remboursement (Story 6.4)",
+        "body": "Parcours dédié : sélection du ticket source puis confirmation avant mutation. Vérité métier et permission `caisse.refund` côté API (`recyclique_sales_createSaleReversal`). Aucun remboursement partiel dans ce lot ; la vente source reste intacte (document d'avoir séparé)."
+      }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-refund-wizard",
+      "widget_props": {}
+    }
+  ]
+}

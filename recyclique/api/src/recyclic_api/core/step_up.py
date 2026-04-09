@@ -26,6 +26,8 @@ REQUEST_ID_HEADER = "X-Request-Id"
 
 # Lot v2 minimal — opérations protégées (référence audit / doc)
 SENSITIVE_OPERATION_CASH_SESSION_CLOSE = "cash_session.close"
+# Story 6.8 — corrections sensibles vente (PIN step-up aligné clôture)
+SENSITIVE_OPERATION_CASH_SALE_CORRECT = "cash_sale.correct"
 
 # Alignement approximatif avec le rate limit ``POST /auth/pin`` (5/min) : fenêtre Redis.
 _STEP_UP_FAIL_WINDOW_SEC = 60
