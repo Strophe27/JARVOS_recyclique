@@ -1,0 +1,18 @@
+{
+  "version": "1",
+  "page_key": "reception-nominal",
+  "required_permission_any_keys": ["reception.access"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "reception-nominal-wizard",
+      "widget_props": {}
+    },
+    {
+      "slot_id": "history",
+      "widget_type": "reception-history-panel",
+      "widget_props": {}
+    }
+  ]
+}

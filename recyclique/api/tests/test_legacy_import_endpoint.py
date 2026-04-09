@@ -10,6 +10,11 @@ from recyclic_api.models.category import Category
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
 
+from tests.api_v1_paths import v1
+
+_LEGACY_ANALYZE = v1("/admin/import/legacy/analyze")
+_LEGACY_EXECUTE = v1("/admin/import/legacy/execute")
+
 
 def make_csv(content: str) -> bytes:
     """Helper pour créer un CSV en bytes."""
@@ -35,7 +40,7 @@ class TestLegacyImportAnalyzeEndpoint:
         )
         
         files = {"file": ("test.csv", make_csv(csv_content), "text/csv")}
-        r = client.post("/api/v1/admin/import/legacy/analyze", files=files)
+        r = client.post(_LEGACY_ANALYZE, files=files)
         
         # Devrait retourner 401 ou 403
         assert r.status_code in [401, 403]
@@ -54,7 +59,7 @@ class TestLegacyImportAnalyzeEndpoint:
         )
         
         files = {"file": ("test.csv", make_csv(csv_content), "text/csv")}
-        r = admin_client.post("/api/v1/admin/import/legacy/analyze", files=files)
+        r = admin_client.post(_LEGACY_ANALYZE, files=files)
         
         assert r.status_code == 200, r.text
         data = r.json()
@@ -68,7 +73,7 @@ class TestLegacyImportAnalyzeEndpoint:
     def test_analyze_invalid_file_format(self, admin_client):
         """Test qu'un fichier non-CSV est rejeté."""
         files = {"file": ("test.txt", b"not a csv", "text/plain")}
-        r = admin_client.post("/api/v1/admin/import/legacy/analyze", files=files)
+        r = admin_client.post(_LEGACY_ANALYZE, files=files)
         
         assert r.status_code == 400
         assert "csv" in r.json()["detail"].lower()
@@ -89,7 +94,7 @@ class TestLegacyImportAnalyzeEndpoint:
         }
         data = {"confidence_threshold": 90.0}
         r = admin_client.post(
-            "/api/v1/admin/import/legacy/analyze",
+            _LEGACY_ANALYZE,
             files=files,
             data=data
         )
@@ -112,7 +117,7 @@ class TestLegacyImportAnalyzeEndpoint:
         }
         data = {"llm_model_id": "mistralai/mistral-7b-instruct:free"}
         r = admin_client.post(
-            "/api/v1/admin/import/legacy/analyze",
+            _LEGACY_ANALYZE,
             files=files,
             data=data
         )
@@ -140,7 +145,7 @@ class TestLegacyImportExecuteEndpoint:
             "csv_file": ("test.csv", make_csv(csv_content), "text/csv"),
             "mapping_file": ("mapping.json", mapping_content, "application/json")
         }
-        r = client.post("/api/v1/admin/import/legacy/execute", files=files)
+        r = client.post(_LEGACY_EXECUTE, files=files)
         
         # Devrait retourner 401 ou 403
         assert r.status_code in [401, 403]
@@ -181,7 +186,7 @@ class TestLegacyImportExecuteEndpoint:
             "csv_file": ("test.csv", make_csv(csv_content), "text/csv"),
             "mapping_file": ("mapping.json", mapping_content, "application/json")
         }
-        r = admin_client.post("/api/v1/admin/import/legacy/execute", files=files)
+        r = admin_client.post(_LEGACY_EXECUTE, files=files)
         
         assert r.status_code == 200, r.text
         data = r.json()
@@ -202,7 +207,7 @@ class TestLegacyImportExecuteEndpoint:
             "csv_file": ("test.csv", make_csv(csv_content), "text/csv"),
             "mapping_file": ("mapping.json", b"invalid json", "application/json")
         }
-        r = admin_client.post("/api/v1/admin/import/legacy/execute", files=files)
+        r = admin_client.post(_LEGACY_EXECUTE, files=files)
         
         assert r.status_code == 400
         assert "json" in r.json()["detail"].lower()
@@ -232,7 +237,7 @@ class TestLegacyImportExecuteEndpoint:
             "csv_file": ("test.csv", make_csv(csv_content), "text/csv"),
             "mapping_file": ("mapping.json", mapping_content, "application/json")
         }
-        r = admin_client.post("/api/v1/admin/import/legacy/execute", files=files)
+        r = admin_client.post(_LEGACY_EXECUTE, files=files)
         
         assert r.status_code == 200  # L'import peut réussir partiellement
         data = r.json()

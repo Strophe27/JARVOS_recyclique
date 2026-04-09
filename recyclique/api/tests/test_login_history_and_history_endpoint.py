@@ -15,6 +15,7 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.security import hash_password
+from tests.api_v1_paths import v1
 
 
 @pytest.fixture
@@ -72,14 +73,14 @@ def test_login_history_persists_success_and_failure(
 
     # 1) Échec de login (mauvais mot de passe)
     resp_fail = client.post(
-        "/api/v1/auth/login",
+        v1("/auth/login"),
         json={"username": active_user.username, "password": "wrong"},
     )
     assert resp_fail.status_code == 401
 
     # 2) Succès de login
     resp_ok = client.post(
-        "/api/v1/auth/login",
+        v1("/auth/login"),
         json={"username": active_user.username, "password": "StrongP@ssw0rd!"},
     )
     assert resp_ok.status_code == 200
@@ -99,7 +100,7 @@ def test_login_history_persists_success_and_failure(
     # Vérifier l'endpoint /history contient des événements LOGIN
     user_id = str(active_user.id)
     resp_hist = client.get(
-        f"/api/v1/admin/users/{user_id}/history",
+        v1(f"/admin/users/{user_id}/history"),
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert resp_hist.status_code == 200

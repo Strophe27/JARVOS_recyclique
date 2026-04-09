@@ -6,7 +6,7 @@ Ce test vérifie que les ventes sont correctement enregistrées en base de donn�
 """
 
 import pytest
-from uuid import uuid4
+from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -17,7 +17,10 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.core.security import hash_password, create_access_token
+from recyclic_api.core.config import settings
 from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 class TestSalePersistence:
@@ -92,7 +95,7 @@ class TestSalePersistence:
         Test que la création d'une vente via l'API persiste bien les données en base.
 
         Acceptance Criteria (STORY-B12-P5):
-        1. Une requête POST /api/v1/sales/ crée une vente
+        1. Une requête POST …/sales/ (préfixe ``settings.API_V1_STR``) crée une vente
         2. La vente et ses lignes sont dans la base de données
         3. Les données correspondent à ce qui a été envoyé
         4. Le poids (weight) est enregistré correctement
@@ -123,7 +126,7 @@ class TestSalePersistence:
 
         # Act: Créer la vente via l'API
         response = client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {setup_test_data['token']}"}
         )
@@ -134,9 +137,10 @@ class TestSalePersistence:
 
         sale_id = response_data["id"]
         assert sale_id is not None
+        sale_uuid = UUID(str(sale_id))
 
         # Assert: Vérifier que la vente existe en base de données
-        db_sale = db_session.query(Sale).filter(Sale.id == sale_id).first()
+        db_sale = db_session.query(Sale).filter(Sale.id == sale_uuid).first()
         assert db_sale is not None, "La vente n'a pas été trouvée en base de données"
 
         # Vérification critique : le total = somme des prix (sans multiplication par poids)
@@ -149,7 +153,7 @@ class TestSalePersistence:
         assert str(db_sale.operator_id) == str(setup_test_data["user_id"])
 
         # Assert: Vérifier que les lignes de vente existent en base de données
-        db_items = db_session.query(SaleItem).filter(SaleItem.sale_id == sale_id).all()
+        db_items = db_session.query(SaleItem).filter(SaleItem.sale_id == sale_uuid).all()
         assert len(db_items) == 2, f"Expected 2 items, found {len(db_items)}"
 
         # Vérifier le premier article (poids, prix, total)
@@ -188,7 +192,7 @@ class TestSalePersistence:
             "total_amount": 10.0
         }
 
-        response = client.post("/api/v1/sales/", json=sale_data)
+        response = client.post(f"{_V1}/sales/", json=sale_data)
         assert response.status_code == 401
 
     def test_session_counters_updated_after_sale(self, client, db_session: Session, setup_test_data):
@@ -221,7 +225,7 @@ class TestSalePersistence:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json=sale_data_1,
             headers={"Authorization": f"Bearer {setup_test_data['token']}"}
         )
@@ -253,7 +257,7 @@ class TestSalePersistence:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json=sale_data_2,
             headers={"Authorization": f"Bearer {setup_test_data['token']}"}
         )

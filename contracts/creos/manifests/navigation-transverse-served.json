@@ -182,6 +182,18 @@
         "permission_any": ["caisse.access"],
         "contexts_any": ["site"]
       }
+    },
+    {
+      "id": "reception-nominal",
+      "route_key": "reception-nominal",
+      "path": "/reception",
+      "page_key": "reception-nominal",
+      "shortcut_id": "go-reception-nominal",
+      "label_key": "nav.reception.nominal",
+      "visibility": {
+        "permission_any": ["reception.access"],
+        "contexts_any": ["site"]
+      }
     }
   ]
 }

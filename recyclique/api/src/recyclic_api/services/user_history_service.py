@@ -27,7 +27,31 @@ class UserHistoryService:
         if dt.tzinfo is None:
             return dt.replace(tzinfo=timezone.utc)
         return dt
-    
+
+    def _sql_filter_bounds(
+        self,
+        date_from: Optional[datetime],
+        date_to: Optional[datetime],
+    ) -> tuple[Optional[datetime], Optional[datetime]]:
+        """
+        Bornes pour les clauses WHERE et comparaisons avec des datetimes ORM SQLite
+        (souvent naïfs, interprétés comme UTC) : évite aware vs naive et erreurs du dialecte.
+        """
+        date_from = self._aware(date_from)
+        date_to = self._aware(date_to)
+        try:
+            if self.db.get_bind().dialect.name != "sqlite":
+                return date_from, date_to
+        except Exception:
+            return date_from, date_to
+
+        def _naive_utc(d: Optional[datetime]) -> Optional[datetime]:
+            if d is None:
+                return None
+            return d.astimezone(timezone.utc).replace(tzinfo=None)
+
+        return _naive_utc(date_from), _naive_utc(date_to)
+
     def get_user_activity_history(
         self,
         user_id: str,
@@ -52,12 +76,14 @@ class UserHistoryService:
             UserHistoryResponse: Réponse contenant les événements et métadonnées de pagination
         """
         try:
-            # Normaliser les bornes temporelles en UTC, si fournies
+            # Normaliser les bornes (UTC aware pour le reste du flux ; variante SQLite pour SQL/filtres ORM)
             date_from = self._aware(date_from)
             date_to = self._aware(date_to)
+            date_from_f, date_to_f = self._sql_filter_bounds(date_from, date_to)
 
-            # Vérifier que l'utilisateur existe
-            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            # Vérifier que l'utilisateur existe (toujours uuid.UUID : le type PG UUID sous SQLite
+            # attend .hex sur la valeur liée, pas une str brute).
+            user_uuid = uuid.UUID(str(user_id))
             user = self.db.query(User).filter(User.id == user_uuid).first()
             if not user:
                 raise ValueError(f"Utilisateur avec l'ID {user_id} non trouvé")
@@ -66,23 +92,23 @@ class UserHistoryService:
             events = []
             
             # 1. Événements d'administration (changements de statut)
-            admin_events = self._get_admin_events(user_uuid, date_from, date_to)
+            admin_events = self._get_admin_events(user_uuid, date_from_f, date_to_f)
             events.extend(admin_events)
             
             # 2. Événements de connexions
-            login_events = self._get_login_events(user_uuid, date_from, date_to)
+            login_events = self._get_login_events(user_uuid, date_from_f, date_to_f)
             events.extend(login_events)
 
             # 3. Sessions de caisse
-            cash_session_events = self._get_cash_session_events(user_uuid, date_from, date_to)
+            cash_session_events = self._get_cash_session_events(user_uuid, date_from_f, date_to_f)
             events.extend(cash_session_events)
             
             # 4. Ventes
-            sale_events = self._get_sale_events(user_uuid, date_from, date_to)
+            sale_events = self._get_sale_events(user_uuid, date_from_f, date_to_f)
             events.extend(sale_events)
             
             # 5. Dépôts
-            deposit_events = self._get_deposit_events(user_uuid, date_from, date_to)
+            deposit_events = self._get_deposit_events(user_uuid, date_from_f, date_to_f)
             events.extend(deposit_events)
             
             # Appliquer le filtre par type d'événement

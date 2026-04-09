@@ -8,7 +8,12 @@ import pytest
 
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.ticket_depot import TicketDepotStatus
+from recyclic_api.models.user import UserRole
 from recyclic_api.services.reception_service import ReceptionService
+
+
+def _admin_actor():
+    return SimpleNamespace(role=UserRole.ADMIN, id=uuid4())
 
 
 def test_close_poste_raises_not_found_error():
@@ -16,7 +21,7 @@ def test_close_poste_raises_not_found_error():
     service.poste_repo.get = lambda _poste_id: None
 
     with pytest.raises(NotFoundError, match="Poste introuvable"):
-        service.close_poste(uuid4())
+        service.close_poste(uuid4(), _admin_actor())
 
 
 def test_open_poste_raises_validation_error_for_future_date():
@@ -24,7 +29,7 @@ def test_open_poste_raises_validation_error_for_future_date():
     future_date = datetime.now(timezone.utc) + timedelta(days=1)
 
     with pytest.raises(ValidationError, match="futur"):
-        service.open_poste(uuid4(), future_date)
+        service.open_poste(actor_user=_admin_actor(), opened_at=future_date)
 
 
 def test_close_poste_raises_conflict_error_when_open_tickets_exist():
@@ -34,7 +39,7 @@ def test_close_poste_raises_conflict_error_when_open_tickets_exist():
     service.poste_repo.count_open_tickets = lambda _poste_id: 1
 
     with pytest.raises(ConflictError, match="tickets ouverts"):
-        service.close_poste(uuid4())
+        service.close_poste(uuid4(), _admin_actor())
 
 
 def test_close_ticket_raises_not_found_error():
@@ -42,7 +47,7 @@ def test_close_ticket_raises_not_found_error():
     service.ticket_repo.get = lambda _ticket_id: None
 
     with pytest.raises(NotFoundError, match="Ticket introuvable"):
-        service.close_ticket(uuid4())
+        service.close_ticket(uuid4(), _admin_actor())
 
 
 def test_close_ticket_keeps_idempotent_behavior_for_closed_ticket():
@@ -50,7 +55,7 @@ def test_close_ticket_keeps_idempotent_behavior_for_closed_ticket():
     ticket = SimpleNamespace(status=TicketDepotStatus.CLOSED.value)
     service.ticket_repo.get = lambda _ticket_id: ticket
 
-    assert service.close_ticket(uuid4()) is ticket
+    assert service.close_ticket(uuid4(), _admin_actor()) is ticket
 
 
 def test_create_ticket_raises_not_found_when_poste_is_missing():
@@ -58,7 +63,7 @@ def test_create_ticket_raises_not_found_when_poste_is_missing():
     service.poste_repo.get = lambda _poste_id: None
 
     with pytest.raises(NotFoundError, match="Poste introuvable"):
-        service.create_ticket(uuid4(), uuid4())
+        service.create_ticket(uuid4(), uuid4(), _admin_actor())
 
 
 def test_create_ticket_raises_conflict_when_poste_is_closed():
@@ -67,7 +72,7 @@ def test_create_ticket_raises_conflict_when_poste_is_closed():
     service.poste_repo.get = lambda _poste_id: poste
 
     with pytest.raises(ConflictError, match="Poste fermé"):
-        service.create_ticket(uuid4(), uuid4())
+        service.create_ticket(uuid4(), uuid4(), _admin_actor())
 
 
 def test_create_ticket_raises_not_found_when_user_is_missing():
@@ -77,7 +82,7 @@ def test_create_ticket_raises_not_found_when_user_is_missing():
     service.user_repo.get = lambda _user_id: None
 
     with pytest.raises(NotFoundError, match="Utilisateur introuvable"):
-        service.create_ticket(uuid4(), uuid4())
+        service.create_ticket(uuid4(), uuid4(), _admin_actor())
 
 
 def test_create_ligne_raises_not_found_when_ticket_is_missing():
@@ -91,6 +96,7 @@ def test_create_ligne_raises_not_found_when_ticket_is_missing():
             poids_kg=1.0,
             destination="MAGASIN",
             notes=None,
+            actor_user=_admin_actor(),
         )
 
 
@@ -106,6 +112,7 @@ def test_create_ligne_raises_conflict_when_ticket_is_closed():
             poids_kg=1.0,
             destination="MAGASIN",
             notes=None,
+            actor_user=_admin_actor(),
         )
 
 
@@ -122,6 +129,7 @@ def test_create_ligne_raises_not_found_when_category_is_missing():
             poids_kg=1.0,
             destination="MAGASIN",
             notes=None,
+            actor_user=_admin_actor(),
         )
 
 
@@ -138,6 +146,7 @@ def test_create_ligne_raises_validation_for_non_positive_weight():
             poids_kg=0,
             destination="MAGASIN",
             notes=None,
+            actor_user=_admin_actor(),
         )
 
 
@@ -155,6 +164,7 @@ def test_create_ligne_raises_validation_for_invalid_exit_destination():
             destination="MAGASIN",
             notes=None,
             is_exit=True,
+            actor_user=_admin_actor(),
         )
 
 
@@ -163,7 +173,7 @@ def test_update_ligne_raises_not_found_when_ligne_is_missing():
     service.ligne_repo.get = lambda _ligne_id: None
 
     with pytest.raises(NotFoundError, match="Ligne introuvable"):
-        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0)
+        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0, actor_user=_admin_actor())
 
 
 def test_update_ligne_raises_conflict_when_ticket_is_closed():
@@ -173,7 +183,7 @@ def test_update_ligne_raises_conflict_when_ticket_is_closed():
     service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.CLOSED.value)
 
     with pytest.raises(ConflictError, match="Ticket fermé"):
-        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0)
+        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0, actor_user=_admin_actor())
 
 
 def test_update_ligne_raises_not_found_when_parent_ticket_is_missing():
@@ -183,7 +193,7 @@ def test_update_ligne_raises_not_found_when_parent_ticket_is_missing():
     service.ticket_repo.get = lambda _ticket_id: None
 
     with pytest.raises(NotFoundError, match="Ticket introuvable"):
-        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0)
+        service.update_ligne(ligne_id=uuid4(), poids_kg=1.0, actor_user=_admin_actor())
 
 
 def test_update_ligne_raises_not_found_when_category_is_missing():
@@ -194,7 +204,7 @@ def test_update_ligne_raises_not_found_when_category_is_missing():
     service.category_repo.exists = lambda _category_id: False
 
     with pytest.raises(NotFoundError, match="Catégorie introuvable"):
-        service.update_ligne(ligne_id=uuid4(), category_id=uuid4())
+        service.update_ligne(ligne_id=uuid4(), category_id=uuid4(), actor_user=_admin_actor())
 
 
 def test_update_ligne_raises_validation_for_non_positive_weight():
@@ -204,7 +214,7 @@ def test_update_ligne_raises_validation_for_non_positive_weight():
     service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.OPENED.value)
 
     with pytest.raises(ValidationError, match="poids_kg"):
-        service.update_ligne(ligne_id=uuid4(), poids_kg=0)
+        service.update_ligne(ligne_id=uuid4(), poids_kg=0, actor_user=_admin_actor())
 
 
 def test_update_ligne_raises_validation_for_invalid_exit_destination():
@@ -214,7 +224,7 @@ def test_update_ligne_raises_validation_for_invalid_exit_destination():
     service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.OPENED.value)
 
     with pytest.raises(ValidationError, match="sortie de stock"):
-        service.update_ligne(ligne_id=uuid4(), is_exit=True)
+        service.update_ligne(ligne_id=uuid4(), is_exit=True, actor_user=_admin_actor())
 
 
 def test_update_ligne_raises_validation_when_existing_exit_gets_invalid_destination():
@@ -224,7 +234,7 @@ def test_update_ligne_raises_validation_when_existing_exit_gets_invalid_destinat
     service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.OPENED.value)
 
     with pytest.raises(ValidationError, match="sortie de stock"):
-        service.update_ligne(ligne_id=uuid4(), destination="MAGASIN")
+        service.update_ligne(ligne_id=uuid4(), destination="MAGASIN", actor_user=_admin_actor())
 
 
 def test_update_ligne_weight_admin_raises_not_found_for_missing_line():
@@ -248,7 +258,7 @@ def test_delete_ligne_raises_not_found_for_missing_line():
     service.ligne_repo.get = lambda _ligne_id: None
 
     with pytest.raises(NotFoundError, match="Ligne introuvable"):
-        service.delete_ligne(ligne_id=uuid4())
+        service.delete_ligne(ligne_id=uuid4(), actor_user=_admin_actor())
 
 
 def test_delete_ligne_raises_not_found_for_missing_parent_ticket():
@@ -258,7 +268,7 @@ def test_delete_ligne_raises_not_found_for_missing_parent_ticket():
     service.ticket_repo.get = lambda _ticket_id: None
 
     with pytest.raises(NotFoundError, match="Ticket introuvable"):
-        service.delete_ligne(ligne_id=uuid4())
+        service.delete_ligne(ligne_id=uuid4(), actor_user=_admin_actor())
 
 
 def test_delete_ligne_raises_conflict_for_closed_ticket():
@@ -268,4 +278,4 @@ def test_delete_ligne_raises_conflict_for_closed_ticket():
     service.ticket_repo.get = lambda _ticket_id: SimpleNamespace(status=TicketDepotStatus.CLOSED.value)
 
     with pytest.raises(ConflictError, match="Ticket fermé"):
-        service.delete_ligne(ligne_id=uuid4())
+        service.delete_ligne(ligne_id=uuid4(), actor_user=_admin_actor())

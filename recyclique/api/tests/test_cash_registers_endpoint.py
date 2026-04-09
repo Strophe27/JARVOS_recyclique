@@ -11,6 +11,8 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole
 
+from tests.api_v1_paths import v1
+
 
 class TestCashRegistersEndpoint:
     """Tests pour les endpoints des postes de caisse."""
@@ -47,7 +49,7 @@ class TestCashRegistersEndpoint:
         db_session.commit()
 
         # Tester la récupération
-        response = admin_client.get("/api/v1/cash-registers")
+        response = admin_client.get(v1("/cash-registers"))
         
         assert response.status_code == 200
         data = response.json()
@@ -93,14 +95,14 @@ class TestCashRegistersEndpoint:
         db_session.commit()
 
         # Tester le filtre is_active=true
-        response = admin_client.get("/api/v1/cash-registers?only_active=true")
+        response = admin_client.get(v1("/cash-registers?only_active=true"))
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
         assert data[0]["is_active"] is True
 
         # Tester le filtre is_active=false
-        response = admin_client.get("/api/v1/cash-registers?only_active=false")
+        response = admin_client.get(v1("/cash-registers?only_active=false"))
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2  # Tous les postes (actifs et inactifs)
@@ -108,7 +110,7 @@ class TestCashRegistersEndpoint:
     def test_get_cash_registers_authentication(self, admin_client: TestClient):
         """Test que l'endpoint nécessite une authentification."""
         # Test sans token (devrait échouer)
-        response = admin_client.get("/api/v1/cash-registers")
+        response = admin_client.get(v1("/cash-registers"))
         # Note: L'endpoint peut être public ou nécessiter une auth selon l'implémentation
         # On vérifie juste qu'il répond
         assert response.status_code in [200, 401, 403]
@@ -133,7 +135,7 @@ class TestCashRegistersEndpoint:
             "is_active": True
         }
 
-        response = admin_client.post("/api/v1/cash-registers", json=register_data)
+        response = admin_client.post(v1("/cash-registers"), json=register_data)
         
         assert response.status_code == 201
         data = response.json()
@@ -169,7 +171,7 @@ class TestCashRegistersEndpoint:
             "location": "Nouvelle location"
         }
 
-        response = admin_client.patch(f"/api/v1/cash-registers/{register.id}", json=update_data)
+        response = admin_client.patch(v1(f"/cash-registers/{register.id}"), json=update_data)
         
         assert response.status_code == 200
         data = response.json()
@@ -197,12 +199,12 @@ class TestCashRegistersEndpoint:
         db_session.add(register)
         db_session.commit()
 
-        response = admin_client.delete(f"/api/v1/cash-registers/{register.id}")
+        response = admin_client.delete(v1(f"/cash-registers/{register.id}"))
         
         assert response.status_code == 204
 
         # Vérifier que le poste a été supprimé
-        response = admin_client.get(f"/api/v1/cash-registers/{register.id}")
+        response = admin_client.get(v1(f"/cash-registers/{register.id}"))
         assert response.status_code == 404
 
     def test_get_cash_register_by_id_success(self, admin_client: TestClient, db_session: Session):
@@ -225,7 +227,7 @@ class TestCashRegistersEndpoint:
         db_session.add(register)
         db_session.commit()
 
-        response = admin_client.get(f"/api/v1/cash-registers/{register.id}")
+        response = admin_client.get(v1(f"/cash-registers/{register.id}"))
         
         assert response.status_code == 200
         data = response.json()
@@ -236,7 +238,7 @@ class TestCashRegistersEndpoint:
     def test_get_cash_register_not_found(self, admin_client: TestClient):
         """Test de récupération d'un poste de caisse inexistant."""
         fake_id = uuid4()
-        response = admin_client.get(f"/api/v1/cash-registers/{fake_id}")
+        response = admin_client.get(v1(f"/cash-registers/{fake_id}"))
 
         assert response.status_code == 404
 
@@ -249,7 +251,7 @@ class TestCashRegistersEndpoint:
             "is_active": True
         }
 
-        response = admin_client.post("/api/v1/cash-registers/", json=register_data)
+        response = admin_client.post(v1("/cash-registers/"), json=register_data)
 
         assert response.status_code == 422
         data = response.json()
@@ -264,7 +266,7 @@ class TestCashRegistersEndpoint:
             "is_active": True
         }
 
-        response = admin_client.post("/api/v1/cash-registers/", json=register_data)
+        response = admin_client.post(v1("/cash-registers/"), json=register_data)
 
         assert response.status_code == 422
 
@@ -306,6 +308,7 @@ class TestCashRegistersEndpoint:
         session = CashSession(
             id=uuid4(),
             operator_id=operator.id,
+            site_id=site.id,
             register_id=register.id,  # FIXED: correct field name
             initial_amount=100.0,
             current_amount=100.0,
@@ -315,7 +318,7 @@ class TestCashRegistersEndpoint:
         db_session.commit()
 
         # Tenter de supprimer le poste (devrait échouer avec 409)
-        response = admin_client.delete(f"/api/v1/cash-registers/{register.id}")
+        response = admin_client.delete(v1(f"/cash-registers/{register.id}"))
 
         assert response.status_code == 409
         data = response.json()
@@ -344,7 +347,7 @@ class TestCashRegistersEndpoint:
         db_session.commit()
 
         # Tenter de supprimer le site (devrait échouer avec 409)
-        response = admin_client.delete(f"/api/v1/sites/{site.id}")
+        response = admin_client.delete(v1(f"/sites/{site.id}"))
 
         assert response.status_code == 409
         data = response.json()

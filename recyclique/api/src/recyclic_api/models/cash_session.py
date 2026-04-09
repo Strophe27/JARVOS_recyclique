@@ -143,7 +143,7 @@ class CashSession(Base):
                     # Try by enum name
                     kwargs["current_step"] = CashSessionStep[cs.upper()]
             except Exception:
-                pass
+                kwargs["current_step"] = None
         super().__init__(**kwargs)
 
     def __repr__(self):
@@ -156,7 +156,7 @@ class CashSession(Base):
             "operator_id": self.operator_id,
             "initial_amount": self.initial_amount,
             "current_amount": self.current_amount,
-            "status": self.status.value,
+            "status": self.status.value if self.status is not None else None,
             "opened_at": self.opened_at.isoformat() if self.opened_at else None,
             "closed_at": self.closed_at.isoformat() if self.closed_at else None,
             # Métriques d'étapes
@@ -234,13 +234,18 @@ class CashSession(Base):
 
     def get_step_metrics(self) -> dict:
         """Retourne les métriques de l'étape actuelle."""
+        start = self.step_start_time
+        now = datetime.now(timezone.utc)
+        if start is not None and getattr(start, "tzinfo", None) is None:
+            start = start.replace(tzinfo=timezone.utc)
         return {
             "current_step": self.current_step.value if self.current_step else None,
             "step_start_time": self.step_start_time.isoformat() if self.step_start_time else None,
             "last_activity": self.last_activity.isoformat() if self.last_activity else None,
             "step_duration_seconds": (
-                (datetime.now(timezone.utc) - self.step_start_time).total_seconds()
-                if self.step_start_time else None
+                (now - start).total_seconds()
+                if start is not None
+                else None
             )
         }
 

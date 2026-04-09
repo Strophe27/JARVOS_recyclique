@@ -1,11 +1,11 @@
-import io
-import json
-from pathlib import Path
-
 import pytest
+from decimal import Decimal
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from recyclic_api.main import app
+from tests.api_v1_paths import v1
 
 
 client = TestClient(app)
@@ -16,14 +16,14 @@ def make_csv(content: str) -> bytes:
 
 
 @pytest.mark.parametrize("filename", ["cats.csv"]) 
-def test_categories_import_analyze_requires_csv_and_returns_session(monkeypatch, admin_client, filename):
+def test_categories_import_analyze_requires_csv_and_returns_session(admin_client, filename):
     csv_data = (
         "Catégorie racine,Sous-catégorie,Prix minimum (€),Prix maximum (€)\n"
         "EEE - Informatique,Ordinateur portable,5,100\n"
     )
 
     files = {"file": (filename, make_csv(csv_data), "text/csv")}
-    r = admin_client.post("/api/v1/categories/import/analyze", files=files)
+    r = admin_client.post(v1("/categories/import/analyze"), files=files)
     assert r.status_code == 200, r.text
     data = r.json()
     assert data["session_id"]
@@ -37,12 +37,12 @@ def test_categories_import_execute_flow(admin_client):
         "Mobilier,Table,10,50\n"
     )
     files = {"file": ("cats.csv", make_csv(csv_data), "text/csv")}
-    r1 = admin_client.post("/api/v1/categories/import/analyze", files=files)
+    r1 = admin_client.post(v1("/categories/import/analyze"), files=files)
     assert r1.status_code == 200, r1.text
     session_id = r1.json()["session_id"]
     assert session_id
 
-    r2 = admin_client.post("/api/v1/categories/import/execute", json={"session_id": session_id})
+    r2 = admin_client.post(v1("/categories/import/execute"), json={"session_id": session_id})
     assert r2.status_code == 200, r2.text
     result = r2.json()
     assert result["errors"] == []
@@ -51,7 +51,7 @@ def test_categories_import_execute_flow(admin_client):
 
 
 def test_categories_import_template_download(admin_client):
-    r = admin_client.get("/api/v1/categories/import/template")
+    r = admin_client.get(v1("/categories/import/template"))
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/csv")
     assert "filename=categories_import_template.csv" in r.headers.get("content-disposition", "")
@@ -60,26 +60,65 @@ def test_categories_import_template_download(admin_client):
 def test_categories_import_execute_with_delete_existing(admin_client, db_session):
     """Test que l'option delete_existing supprime toutes les catégories existantes avant l'import."""
     from recyclic_api.models.category import Category
-    from recyclic_api.models.ligne_depot import LigneDepot
-    
+    from recyclic_api.models.ligne_depot import LigneDepot, Destination
+    from recyclic_api.models.ticket_depot import TicketDepot
+    from recyclic_api.models.poste_reception import PosteReception
+    from recyclic_api.models.user import User, UserRole, UserStatus
+
     # Créer quelques catégories existantes
     existing_cat1 = Category(name="Catégorie existante 1", is_active=True)
     existing_cat2 = Category(name="Catégorie existante 2", is_active=True)
     db_session.add_all([existing_cat1, existing_cat2])
     db_session.commit()
-    
-    # Créer quelques lignes de dépôt qui référencent ces catégories
+    db_session.refresh(existing_cat1)
+    db_session.refresh(existing_cat2)
+
+    user = User(
+        id=uuid4(),
+        username=f"import_del_{uuid4().hex[:8]}@test.com",
+        hashed_password="x",
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    poste = PosteReception(id=uuid4(), opened_by_user_id=user.id, status="opened")
+    db_session.add(poste)
+    db_session.commit()
+    db_session.refresh(poste)
+
+    ticket1_id, ticket2_id = uuid4(), uuid4()
+    db_session.add_all(
+        [
+            TicketDepot(
+                id=ticket1_id,
+                poste_id=poste.id,
+                benevole_user_id=user.id,
+                status="opened",
+            ),
+            TicketDepot(
+                id=ticket2_id,
+                poste_id=poste.id,
+                benevole_user_id=user.id,
+                status="opened",
+            ),
+        ]
+    )
+    db_session.commit()
+
     ligne1 = LigneDepot(
-        ticket_id="test-ticket-1",
+        ticket_id=ticket1_id,
         category_id=existing_cat1.id,
-        poids_kg=1.5,
-        destination="reparation"
+        poids_kg=Decimal("1.5"),
+        destination=Destination.MAGASIN,
     )
     ligne2 = LigneDepot(
-        ticket_id="test-ticket-2", 
+        ticket_id=ticket2_id,
         category_id=existing_cat2.id,
-        poids_kg=2.0,
-        destination="revente"
+        poids_kg=Decimal("2.0"),
+        destination=Destination.RECYCLAGE,
     )
     db_session.add_all([ligne1, ligne2])
     db_session.commit()
@@ -94,13 +133,13 @@ def test_categories_import_execute_with_delete_existing(admin_client, db_session
         "Nouvelle catégorie,Sous-catégorie,10,50\n"
     )
     files = {"file": ("cats.csv", make_csv(csv_data), "text/csv")}
-    r1 = admin_client.post("/api/v1/categories/import/analyze", files=files)
+    r1 = admin_client.post(v1("/categories/import/analyze"), files=files)
     assert r1.status_code == 200, r1.text
     session_id = r1.json()["session_id"]
     assert session_id
     
     # Exécuter l'import avec delete_existing=True
-    r2 = admin_client.post("/api/v1/categories/import/execute", json={
+    r2 = admin_client.post(v1("/categories/import/execute"), json={
         "session_id": session_id,
         "delete_existing": True
     })
@@ -145,13 +184,13 @@ def test_categories_import_execute_without_delete_existing(admin_client, db_sess
         "Nouvelle catégorie,Sous-catégorie,10,50\n"
     )
     files = {"file": ("cats.csv", make_csv(csv_data), "text/csv")}
-    r1 = admin_client.post("/api/v1/categories/import/analyze", files=files)
+    r1 = admin_client.post(v1("/categories/import/analyze"), files=files)
     assert r1.status_code == 200, r1.text
     session_id = r1.json()["session_id"]
     assert session_id
     
     # Exécuter l'import sans delete_existing
-    r2 = admin_client.post("/api/v1/categories/import/execute", json={
+    r2 = admin_client.post(v1("/categories/import/execute"), json={
         "session_id": session_id,
         "delete_existing": False
     })

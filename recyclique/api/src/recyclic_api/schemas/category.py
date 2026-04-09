@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -72,6 +72,7 @@ class CategoryImportAnalyzeResponse(BaseModel):
     summary: dict
     sample: List[dict]
     errors: List[str]
+    warnings: List[str] = Field(default_factory=list)
 
 
 class CategoryImportExecuteRequest(BaseModel):

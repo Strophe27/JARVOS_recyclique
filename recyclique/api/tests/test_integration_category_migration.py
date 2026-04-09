@@ -32,8 +32,8 @@ class TestCategoryMigrationIntegration:
             id=uuid4(),
             username="test@integration.com",
             hashed_password="hashed",
-            role=UserRole.USER,
-            status=UserStatus.ACTIVE
+            role=UserRole.ADMIN,
+            status=UserStatus.ACTIVE,
         )
         db_session.add(user)
         db_session.commit()
@@ -69,7 +69,8 @@ class TestCategoryMigrationIntegration:
             category_id=category.id,
             poids_kg=Decimal("10.5"),
             destination="MAGASIN",
-            notes="Test integration"
+            notes="Test integration",
+            actor_user=user,
         )
 
         # Vérifier que la ligne est créée avec la bonne catégorie

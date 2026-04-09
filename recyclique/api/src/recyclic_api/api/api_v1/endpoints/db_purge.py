@@ -6,7 +6,7 @@ Allows secure deletion of transactional data.
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func, select
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_super_admin_role
@@ -86,7 +86,7 @@ async def purge_transactional_data(
         return {
             "message": "Purge des données transactionnelles effectuée avec succès",
             "deleted_records": deleted_counts,
-            "timestamp": db.execute(text("SELECT NOW()")).scalar()
+            "timestamp": db.execute(select(func.now())).scalar(),
         }
         
     except Exception as e:

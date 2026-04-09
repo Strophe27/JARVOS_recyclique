@@ -20,6 +20,31 @@ from recyclic_api.core.exceptions import ConflictError, NotFoundError, Validatio
 CLOSE_VARIANCE_TOLERANCE = 0.05
 
 
+def _closed_session_duration_hours_expr(db: Session):
+    """Durée SQL (heures) entre fermeture et ouverture — SQLite vs PostgreSQL.
+
+    ``extract(epoch, closed_at - opened_at)`` n'est pas fiable sur SQLite (filtres durée B45-P2).
+    """
+    dialect_name = db.get_bind().dialect.name
+    if dialect_name == "sqlite":
+        return (func.julianday(CashSession.closed_at) - func.julianday(CashSession.opened_at)) * 24.0
+    duration_seconds = func.extract("epoch", CashSession.closed_at - CashSession.opened_at)
+    return duration_seconds / 3600.0
+
+
+def _orm_status_from_filter(status: Any) -> CashSessionStatus:
+    """Convertit le statut filtre API (schéma Pydantic ou str) en enum ORM des sessions."""
+    if isinstance(status, CashSessionStatus):
+        return status
+    raw = getattr(status, "value", status)
+    s = str(raw).strip().lower()
+    if s == "open":
+        return CashSessionStatus.OPEN
+    if s == "closed":
+        return CashSessionStatus.CLOSED
+    return CashSessionStatus[s.upper()]
+
+
 class CashSessionService:
     """Service pour la gestion des sessions de caisse."""
     
@@ -445,7 +470,7 @@ class CashSessionService:
 
         # Appliquer les filtres
         if filters.status:
-            query = query.filter(CashSession.status == filters.status)
+            query = query.filter(CashSession.status == _orm_status_from_filter(filters.status))
         if filters.operator_id:
             oid = UUID(str(filters.operator_id)) if not isinstance(filters.operator_id, UUID) else filters.operator_id
             query = query.filter(CashSession.operator_id == oid)
@@ -540,9 +565,8 @@ class CashSessionService:
         if getattr(filters, 'duration_min_hours', None) is not None or getattr(filters, 'duration_max_hours', None) is not None:
             # Calculer la durée en heures (closed_at - opened_at)
             # Seulement pour les sessions fermées (closed_at non null)
-            duration_seconds = func.extract('epoch', CashSession.closed_at - CashSession.opened_at)
-            duration_hours = duration_seconds / 3600.0
-            
+            duration_hours = _closed_session_duration_hours_expr(self.db)
+
             if filters.duration_min_hours is not None:
                 query = query.filter(
                     and_(
@@ -733,8 +757,9 @@ class CashSessionService:
         return True
 
     def get_total_donations_for_session(self, session_id: str) -> float:
+        sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
         total_donations = self.db.query(func.coalesce(func.sum(Sale.donation), 0)).filter(
-            Sale.cash_session_id == session_id
+            Sale.cash_session_id == sid
         ).scalar() or 0.0
         return float(total_donations)
 

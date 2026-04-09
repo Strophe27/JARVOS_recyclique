@@ -47,7 +47,7 @@ def _auth_headers(user: User) -> dict[str, str]:
 
 def test_get_default_alert_thresholds(client: TestClient, db_session: Session, admin_user: User):
     response = client.get(
-        '/api/v1/admin/settings/alert-thresholds',
+        '/v1/admin/settings/alert-thresholds',
         headers=_auth_headers(admin_user),
     )
     payload = response.json()
@@ -67,7 +67,7 @@ def test_update_alert_thresholds_persists_encrypted_value(client: TestClient, db
     }
 
     update_response = client.put(
-        '/api/v1/admin/settings/alert-thresholds',
+        '/v1/admin/settings/alert-thresholds',
         json=body,
         headers=_auth_headers(admin_user),
     )
@@ -82,7 +82,7 @@ def test_update_alert_thresholds_persists_encrypted_value(client: TestClient, db
     assert '25.5' not in record.value_encrypted
 
     get_response = client.get(
-        f'/api/v1/admin/settings/alert-thresholds?site_id={site_id}',
+        f'/v1/admin/settings/alert-thresholds?site_id={site_id}',
         headers=_auth_headers(admin_user),
     )
     assert get_response.status_code == 200

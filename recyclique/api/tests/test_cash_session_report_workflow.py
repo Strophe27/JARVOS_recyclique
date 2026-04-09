@@ -15,6 +15,8 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.utils.report_tokens import verify_download_token, generate_download_token
 
+from tests.api_v1_paths import v1
+
 
 def _create_site(db_session: Session, name: str) -> Site:
     site = Site(
@@ -103,7 +105,7 @@ def test_cash_session_report_workflow(monkeypatch, tmp_path: Path, client: TestC
     db_session.commit()
 
     response = client.post(
-        f"/api/v1/cash-sessions/{session.id}/close",
+        v1(f"/cash-sessions/{session.id}/close"),
         json={"actual_amount": 100.0, "variance_comment": None},
         headers=_auth_headers(cashier),
     )
@@ -124,7 +126,7 @@ def test_cash_session_report_workflow(monkeypatch, tmp_path: Path, client: TestC
     assert any(file.name == filename for file in reports_dir.iterdir())
 
     list_response = client.get(
-        "/api/v1/admin/reports/cash-sessions",
+        v1("/admin/reports/cash-sessions"),
         headers=_auth_headers(admin),
     )
     assert list_response.status_code == 200
@@ -170,16 +172,19 @@ def test_cash_session_report_site_restriction(monkeypatch, tmp_path: Path, clien
     token = generate_download_token(report_filename)
 
     denied = client.get(
-        f"/api/v1/admin/reports/cash-sessions/{report_filename}",
+        v1(f"/admin/reports/cash-sessions/{report_filename}"),
         params={"token": token},
         headers=_auth_headers(admin_other),
     )
     assert denied.status_code == 403
 
     allowed = client.get(
-        f"/api/v1/admin/reports/cash-sessions/{report_filename}",
+        v1(f"/admin/reports/cash-sessions/{report_filename}"),
         params={"token": token},
         headers=_auth_headers(admin_same),
     )
     assert allowed.status_code == 200
-    assert allowed.content.decode('utf-8').replace('\r\n', '\n') == 'demo\n'
+    # L'endpoint régénère le CSV (export_service) plutôt que de servir le fichier posé sur disque.
+    body = allowed.content.decode("utf-8-sig").replace("\r\n", "\n")
+    assert "=== RÉSUMÉ DE SESSION ===" in body
+    assert str(session.id) in body

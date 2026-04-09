@@ -17,13 +17,46 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.config import settings
+from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.models.ligne_depot import LigneDepot, Destination
+from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.core.security import hash_password
 from recyclic_api.services.statistics_recalculation_service import (
     StatisticsRecalculationService,
 )
+
+_V1 = settings.API_V1_STR.rstrip("/")
+
+
+def _cash_session_and_operator(db_session: Session) -> tuple[CashSession, User]:
+    """Session caisse + opérateur — requis depuis nullable=False sur Sale.cash_session_id."""
+    user = User(
+        id=uuid4(),
+        username=f"b52_op_{uuid4().hex[:10]}@test.com",
+        hashed_password=hash_password("x"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    cs = CashSession(
+        id=uuid4(),
+        operator_id=user.id,
+        site_id=uuid4(),
+        initial_amount=0.0,
+        current_amount=0.0,
+        status=CashSessionStatus.OPEN,
+        opened_at=datetime.now(timezone.utc),
+    )
+    db_session.add(cs)
+    db_session.commit()
+    db_session.refresh(cs)
+    return cs, user
 
 
 def test_update_sale_item_weight_admin_success(admin_client: TestClient, db_session: Session) -> None:
@@ -31,10 +64,12 @@ def test_update_sale_item_weight_admin_success(admin_client: TestClient, db_sess
     B52-P2 – Happy path : un admin peut modifier le poids d'un item de vente.
     """
     # Arrange: créer une vente + item directement en base
+    cs, operator = _cash_session_and_operator(db_session)
     sale_id = uuid4()
     sale = Sale(
         id=sale_id,
-        cash_session_id=None,
+        cash_session_id=cs.id,
+        operator_id=operator.id,
         total_amount=10.0,
         created_at=datetime.now(timezone.utc),
     )
@@ -56,7 +91,7 @@ def test_update_sale_item_weight_admin_success(admin_client: TestClient, db_sess
 
     # Act: appeler l'endpoint PATCH pour modifier le poids
     response = admin_client.patch(
-        f"/api/v1/sales/{sale.id}/items/{item.id}/weight",
+        f"{_V1}/sales/{sale.id}/items/{item.id}/weight",
         json={"weight": 2.75},
     )
 
@@ -107,7 +142,7 @@ def test_update_reception_ligne_weight_closed_ticket_admin_success(
 
     # Act: appeler l'endpoint PATCH pour modifier le poids
     response = admin_client.patch(
-        f"/api/v1/reception/tickets/{ticket.id}/lignes/{ligne.id}/weight",
+        f"{_V1}/reception/tickets/{ticket.id}/lignes/{ligne.id}/weight",
         json={"poids_kg": "7.250"},
     )
 
@@ -130,9 +165,11 @@ def test_update_sale_item_weight_forbidden_for_non_admin(
     """
     B52-P2 – Un utilisateur non-admin ne doit PAS pouvoir modifier le poids d'un item de vente.
     """
+    cs, operator = _cash_session_and_operator(db_session)
     sale = Sale(
         id=uuid4(),
-        cash_session_id=None,
+        cash_session_id=cs.id,
+        operator_id=operator.id,
         total_amount=10.0,
         created_at=datetime.now(timezone.utc),
     )
@@ -152,7 +189,7 @@ def test_update_sale_item_weight_forbidden_for_non_admin(
     db_session.commit()
 
     response = client_with_jwt_auth.patch(
-        f"/api/v1/sales/{sale.id}/items/{item.id}/weight",
+        f"{_V1}/sales/{sale.id}/items/{item.id}/weight",
         json={"weight": 2.0},
     )
 
@@ -190,7 +227,7 @@ def test_update_reception_ligne_weight_forbidden_for_non_admin(
     db_session.commit()
 
     response = client_with_jwt_auth.patch(
-        f"/api/v1/reception/tickets/{ticket.id}/lignes/{ligne.id}/weight",
+        f"{_V1}/reception/tickets/{ticket.id}/lignes/{ligne.id}/weight",
         json={"poids_kg": "4.000"},
     )
 
@@ -206,11 +243,13 @@ def test_statistics_recalculation_performance(db_session: Session) -> None:
     pour ~500 lignes, pour détecter les régressions grossières.
     """
     # Préparer un jeu de données avec plusieurs ventes et lignes de réception
+    cs, operator = _cash_session_and_operator(db_session)
     sales = []
     for _ in range(100):
         sale = Sale(
             id=uuid4(),
-            cash_session_id=None,
+            cash_session_id=cs.id,
+            operator_id=operator.id,
             total_amount=10.0,
             created_at=datetime.now(timezone.utc),
         )

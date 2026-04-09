@@ -47,7 +47,7 @@ def test_user(db_session: Session):
         hashed_password=hash_password("userpwd"),
         first_name="Test",
         last_name="User",
-    role=UserRole.USER,
+        role=UserRole.USER,
         status=UserStatus.APPROVED,
         is_active=True
     )
@@ -155,14 +155,14 @@ def sample_user_history_data(db_session: Session, test_user: User, test_admin_us
 
 
 class TestUserHistoryEndpoint:
-    """Tests pour l'endpoint GET /api/v1/admin/users/{user_id}/history"""
+    """Tests pour l'endpoint GET /v1/admin/users/{user_id}/history"""
     
     def test_get_user_history_success(self, client: TestClient, admin_token: str, sample_user_history_data: dict):
         """Test de récupération réussie de l'historique utilisateur"""
         user_id = str(sample_user_history_data["user"].id)
         
         response = client.get(
-            f"/api/v1/admin/users/{user_id}/history",
+            f"/v1/admin/users/{user_id}/history",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
@@ -199,7 +199,7 @@ class TestUserHistoryEndpoint:
         
         # Test filtre par type d'événement
         response = client.get(
-            f"/api/v1/admin/users/{user_id}/history",
+            f"/v1/admin/users/{user_id}/history",
             params={"event_type": "ADMINISTRATION"},
             headers={"Authorization": f"Bearer {admin_token}"}
         )
@@ -213,7 +213,7 @@ class TestUserHistoryEndpoint:
         # Test filtre par date
         date_from = (datetime.utcnow() - timedelta(days=2)).isoformat()
         response = client.get(
-            f"/api/v1/admin/users/{user_id}/history",
+            f"/v1/admin/users/{user_id}/history",
             params={"date_from": date_from},
             headers={"Authorization": f"Bearer {admin_token}"}
         )
@@ -229,7 +229,7 @@ class TestUserHistoryEndpoint:
         
         # Test première page
         response = client.get(
-            f"/api/v1/admin/users/{user_id}/history",
+            f"/v1/admin/users/{user_id}/history",
             params={"limit": 2, "skip": 0},
             headers={"Authorization": f"Bearer {admin_token}"}
         )
@@ -244,7 +244,7 @@ class TestUserHistoryEndpoint:
         
         # Test deuxième page
         response = client.get(
-            f"/api/v1/admin/users/{user_id}/history",
+            f"/v1/admin/users/{user_id}/history",
             params={"limit": 2, "skip": 2},
             headers={"Authorization": f"Bearer {admin_token}"}
         )
@@ -260,7 +260,7 @@ class TestUserHistoryEndpoint:
         fake_user_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/admin/users/{fake_user_id}/history",
+            f"/v1/admin/users/{fake_user_id}/history",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
@@ -272,14 +272,14 @@ class TestUserHistoryEndpoint:
         """Test sans authentification"""
         user_id = str(sample_user_history_data["user"].id)
         
-        response = client.get(f"/api/v1/admin/users/{user_id}/history")
+        response = client.get(f"/v1/admin/users/{user_id}/history")
         
         assert response.status_code == 401
     
     def test_get_user_history_invalid_user_id(self, client: TestClient, admin_token: str):
         """Test avec un ID utilisateur invalide"""
         response = client.get(
-            "/api/v1/admin/users/invalid-uuid/history",
+            "/v1/admin/users/invalid-uuid/history",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
@@ -290,7 +290,7 @@ class TestUserHistoryEndpoint:
         user_id = str(test_user.id)
         
         response = client.get(
-            f"/api/v1/admin/users/{user_id}/history",
+            f"/v1/admin/users/{user_id}/history",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
@@ -306,7 +306,7 @@ class TestUserHistoryEndpoint:
         user_id = str(sample_user_history_data["user"].id)
         
         response = client.get(
-            f"/api/v1/admin/users/{user_id}/history",
+            f"/v1/admin/users/{user_id}/history",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         

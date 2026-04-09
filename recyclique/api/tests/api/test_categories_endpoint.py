@@ -1,4 +1,5 @@
 """Tests for categories endpoints"""
+import json
 import pytest
 from decimal import Decimal
 from httpx import AsyncClient
@@ -6,7 +7,24 @@ from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.category import Category
 from recyclic_api.core.auth import create_access_token
+from recyclic_api.core.config import settings
 from recyclic_api.core.security import hash_password
+
+_CATEGORIES_PREFIX = f"{settings.API_V1_STR.rstrip('/')}/categories"
+
+
+def _ar21_detail_str(response) -> str:
+    """Extrait le message utilisateur depuis l'enveloppe AR21 (detail string ou JSON métier)."""
+    data = response.json()
+    raw = data.get("detail", "")
+    if isinstance(raw, str) and raw.strip().startswith("{"):
+        try:
+            obj = json.loads(raw)
+            if isinstance(obj, dict) and "message" in obj:
+                return str(obj["message"])
+        except json.JSONDecodeError:
+            pass
+    return raw if isinstance(raw, str) else str(raw)
 
 
 @pytest.fixture
@@ -71,7 +89,7 @@ async def test_create_category_success(async_client: AsyncClient, super_admin_to
     """Test successful category creation by super admin"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={"name": "Furniture"},
         headers=headers
     )
@@ -86,7 +104,7 @@ async def test_create_category_success(async_client: AsyncClient, super_admin_to
 async def test_create_category_unauthorized(async_client: AsyncClient):
     """Test category creation without authentication"""
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={"name": "Furniture"}
     )
     assert response.status_code == 403
@@ -97,7 +115,7 @@ async def test_create_category_forbidden_non_super_admin(async_client: AsyncClie
     """Test category creation by non-super-admin user"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={"name": "Furniture"},
         headers=headers
     )
@@ -109,12 +127,12 @@ async def test_create_category_duplicate_name(async_client: AsyncClient, super_a
     """Test creating category with duplicate name"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={"name": sample_category.name},
         headers=headers
     )
     assert response.status_code == 400
-    assert "already exists" in response.json()["detail"]
+    assert "already exists" in _ar21_detail_str(response)
 
 
 # Test GET /categories - List categories
@@ -122,7 +140,7 @@ async def test_create_category_duplicate_name(async_client: AsyncClient, super_a
 async def test_get_categories_success(async_client: AsyncClient, normal_user_token: str, sample_category: Category):
     """Test getting all categories"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get("/api/v1/categories/", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -142,7 +160,7 @@ async def test_get_categories_filter_active(async_client: AsyncClient, normal_us
     headers = {"Authorization": f"Bearer {normal_user_token}"}
 
     # Get only active categories
-    response = await async_client.get("/api/v1/categories/?is_active=true", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/?is_active=true", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert all(cat["is_active"] is True for cat in data)
@@ -151,7 +169,7 @@ async def test_get_categories_filter_active(async_client: AsyncClient, normal_us
 @pytest.mark.asyncio
 async def test_get_categories_unauthorized(async_client: AsyncClient):
     """Test getting categories without authentication"""
-    response = await async_client.get("/api/v1/categories/")
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/")
     assert response.status_code == 401
 
 
@@ -160,7 +178,7 @@ async def test_get_categories_unauthorized(async_client: AsyncClient):
 async def test_get_category_by_id_success(async_client: AsyncClient, normal_user_token: str, sample_category: Category):
     """Test getting a category by ID"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{sample_category.id}", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{sample_category.id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == str(sample_category.id)
@@ -171,7 +189,7 @@ async def test_get_category_by_id_success(async_client: AsyncClient, normal_user
 async def test_get_category_by_id_not_found(async_client: AsyncClient, normal_user_token: str):
     """Test getting non-existent category"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get("/api/v1/categories/00000000-0000-0000-0000-000000000000", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/00000000-0000-0000-0000-000000000000", headers=headers)
     assert response.status_code == 404
 
 
@@ -181,7 +199,7 @@ async def test_update_category_success(async_client: AsyncClient, super_admin_to
     """Test successful category update by super admin"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{sample_category.id}",
+        f"{_CATEGORIES_PREFIX}/{sample_category.id}",
         json={"name": "Updated Electronics"},
         headers=headers
     )
@@ -195,7 +213,7 @@ async def test_update_category_forbidden_non_super_admin(async_client: AsyncClie
     """Test category update by non-super-admin user"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{sample_category.id}",
+        f"{_CATEGORIES_PREFIX}/{sample_category.id}",
         json={"name": "Updated Electronics"},
         headers=headers
     )
@@ -207,7 +225,7 @@ async def test_update_category_not_found(async_client: AsyncClient, super_admin_
     """Test updating non-existent category"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        "/api/v1/categories/00000000-0000-0000-0000-000000000000",
+        f"{_CATEGORIES_PREFIX}/00000000-0000-0000-0000-000000000000",
         json={"name": "Updated"},
         headers=headers
     )
@@ -225,12 +243,12 @@ async def test_update_category_duplicate_name(async_client: AsyncClient, super_a
 
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{cat2.id}",
+        f"{_CATEGORIES_PREFIX}/{cat2.id}",
         json={"name": "Category 1"},
         headers=headers
     )
     assert response.status_code == 400
-    assert "already exists" in response.json()["detail"]
+    assert "already exists" in _ar21_detail_str(response)
 
 
 # Test DELETE /categories/{id} - Soft delete category (Story B48-P1: uses deleted_at)
@@ -238,7 +256,7 @@ async def test_update_category_duplicate_name(async_client: AsyncClient, super_a
 async def test_delete_category_success(async_client: AsyncClient, super_admin_token: str, sample_category: Category):
     """Test successful soft delete by super admin (Story B48-P1: sets deleted_at)"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
-    response = await async_client.delete(f"/api/v1/categories/{sample_category.id}", headers=headers)
+    response = await async_client.delete(f"{_CATEGORIES_PREFIX}/{sample_category.id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     # Story B48-P1: deleted_at doit être défini
@@ -250,7 +268,7 @@ async def test_delete_category_success(async_client: AsyncClient, super_admin_to
 async def test_delete_category_forbidden_non_super_admin(async_client: AsyncClient, normal_user_token: str, sample_category: Category):
     """Test category deletion by non-super-admin user"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.delete(f"/api/v1/categories/{sample_category.id}", headers=headers)
+    response = await async_client.delete(f"{_CATEGORIES_PREFIX}/{sample_category.id}", headers=headers)
     assert response.status_code == 403
 
 
@@ -258,7 +276,7 @@ async def test_delete_category_forbidden_non_super_admin(async_client: AsyncClie
 async def test_delete_category_not_found(async_client: AsyncClient, super_admin_token: str):
     """Test deleting non-existent category"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
-    response = await async_client.delete("/api/v1/categories/00000000-0000-0000-0000-000000000000", headers=headers)
+    response = await async_client.delete(f"{_CATEGORIES_PREFIX}/00000000-0000-0000-0000-000000000000", headers=headers)
     assert response.status_code == 404
 
 
@@ -294,7 +312,7 @@ async def test_create_category_with_parent(async_client: AsyncClient, super_admi
     """Test creating a category with a parent"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={
             "name": "Laptops",
             "parent_id": str(parent_category.id)
@@ -313,7 +331,7 @@ async def test_create_category_with_invalid_parent(async_client: AsyncClient, su
     """Test creating a category with non-existent parent"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={
             "name": "Laptops",
             "parent_id": "00000000-0000-0000-0000-000000000000"
@@ -321,7 +339,7 @@ async def test_create_category_with_invalid_parent(async_client: AsyncClient, su
         headers=headers
     )
     assert response.status_code == 400
-    assert "not found" in response.json()["detail"]
+    assert "not found" in _ar21_detail_str(response)
 
 
 @pytest.mark.asyncio
@@ -334,7 +352,7 @@ async def test_create_category_with_inactive_parent(async_client: AsyncClient, s
     
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={
             "name": "Child Category",
             "parent_id": str(inactive_parent.id)
@@ -342,7 +360,7 @@ async def test_create_category_with_inactive_parent(async_client: AsyncClient, s
         headers=headers
     )
     assert response.status_code == 400
-    assert "not found or inactive" in response.json()["detail"]
+    assert "not found or inactive" in _ar21_detail_str(response)
 
 
 # Test PUT /categories/{id} - Update category parent
@@ -351,7 +369,7 @@ async def test_update_category_parent(async_client: AsyncClient, super_admin_tok
     """Test updating a category's parent"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{child_category.id}",
+        f"{_CATEGORIES_PREFIX}/{child_category.id}",
         json={"parent_id": None},  # Remove parent
         headers=headers
     )
@@ -365,12 +383,12 @@ async def test_update_category_self_parent(async_client: AsyncClient, super_admi
     """Test updating a category to be its own parent (should fail)"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{parent_category.id}",
+        f"{_CATEGORIES_PREFIX}/{parent_category.id}",
         json={"parent_id": str(parent_category.id)},
         headers=headers
     )
     assert response.status_code == 400
-    assert "cannot be its own parent" in response.json()["detail"]
+    assert "cannot be its own parent" in _ar21_detail_str(response)
 
 
 # Test GET /categories/hierarchy - Get hierarchy
@@ -378,7 +396,7 @@ async def test_update_category_self_parent(async_client: AsyncClient, super_admi
 async def test_get_categories_hierarchy(async_client: AsyncClient, normal_user_token: str, parent_category: Category, child_category: Category):
     """Test getting categories in hierarchical structure"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get("/api/v1/categories/hierarchy", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/hierarchy", headers=headers)
     assert response.status_code == 200
     data = response.json()
     
@@ -395,7 +413,7 @@ async def test_get_categories_hierarchy(async_client: AsyncClient, normal_user_t
 async def test_get_category_children(async_client: AsyncClient, normal_user_token: str, parent_category: Category, child_category: Category):
     """Test getting direct children of a category"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{parent_category.id}/children", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{parent_category.id}/children", headers=headers)
     assert response.status_code == 200
     data = response.json()
     
@@ -408,7 +426,7 @@ async def test_get_category_children(async_client: AsyncClient, normal_user_toke
 async def test_get_category_children_empty(async_client: AsyncClient, normal_user_token: str, child_category: Category):
     """Test getting children of a category with no children"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{child_category.id}/children", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{child_category.id}/children", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 0
@@ -419,7 +437,7 @@ async def test_get_category_children_empty(async_client: AsyncClient, normal_use
 async def test_get_category_parent(async_client: AsyncClient, normal_user_token: str, parent_category: Category, child_category: Category):
     """Test getting parent of a category"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{child_category.id}/parent", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{child_category.id}/parent", headers=headers)
     assert response.status_code == 200
     data = response.json()
     
@@ -431,9 +449,9 @@ async def test_get_category_parent(async_client: AsyncClient, normal_user_token:
 async def test_get_category_parent_not_found(async_client: AsyncClient, normal_user_token: str, parent_category: Category):
     """Test getting parent of a category with no parent"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{parent_category.id}/parent", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{parent_category.id}/parent", headers=headers)
     assert response.status_code == 404
-    assert "no parent" in response.json()["detail"]
+    assert "no parent" in _ar21_detail_str(response)
 
 
 # Test GET /categories/{id}/breadcrumb - Get breadcrumb
@@ -441,7 +459,7 @@ async def test_get_category_parent_not_found(async_client: AsyncClient, normal_u
 async def test_get_category_breadcrumb(async_client: AsyncClient, normal_user_token: str, parent_category: Category, child_category: Category):
     """Test getting breadcrumb of a category"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{child_category.id}/breadcrumb", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{child_category.id}/breadcrumb", headers=headers)
     assert response.status_code == 200
     data = response.json()
     
@@ -455,7 +473,7 @@ async def test_get_category_breadcrumb(async_client: AsyncClient, normal_user_to
 async def test_get_category_breadcrumb_root(async_client: AsyncClient, normal_user_token: str, parent_category: Category):
     """Test getting breadcrumb of a root category"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{parent_category.id}/breadcrumb", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{parent_category.id}/breadcrumb", headers=headers)
     assert response.status_code == 200
     data = response.json()
     
@@ -468,9 +486,9 @@ async def test_get_category_breadcrumb_root(async_client: AsyncClient, normal_us
 async def test_get_category_breadcrumb_not_found(async_client: AsyncClient, normal_user_token: str):
     """Test getting breadcrumb of non-existent category"""
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get("/api/v1/categories/00000000-0000-0000-0000-000000000000/breadcrumb", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/00000000-0000-0000-0000-000000000000/breadcrumb", headers=headers)
     assert response.status_code == 404
-    assert "not found" in response.json()["detail"]
+    assert "not found" in _ar21_detail_str(response)
 
 
 # Test hierarchy depth constraints
@@ -496,7 +514,7 @@ async def test_create_category_exceeds_max_depth(async_client: AsyncClient, supe
     # Try to create a 6th level (should fail)
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={
             "name": "Level 6",
             "parent_id": str(parent_id)
@@ -504,7 +522,7 @@ async def test_create_category_exceeds_max_depth(async_client: AsyncClient, supe
         headers=headers
     )
     assert response.status_code == 400
-    assert "maximum hierarchy depth" in response.json()["detail"]
+    assert "maximum hierarchy depth" in _ar21_detail_str(response)
 
 
 @pytest.mark.asyncio
@@ -535,12 +553,12 @@ async def test_update_category_exceeds_max_depth(async_client: AsyncClient, supe
     # Try to move the root category under the deep hierarchy (should fail)
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{root_category.id}",
+        f"{_CATEGORIES_PREFIX}/{root_category.id}",
         json={"parent_id": str(parent_id)},
         headers=headers
     )
     assert response.status_code == 400
-    assert "maximum hierarchy depth" in response.json()["detail"]
+    assert "maximum hierarchy depth" in _ar21_detail_str(response)
 
 
 # Test price field validation (OLD RULES - DEPRECATED)
@@ -564,7 +582,7 @@ async def test_get_category_with_price_fields(async_client: AsyncClient, normal_
     db_session.refresh(subcategory)
 
     headers = {"Authorization": f"Bearer {normal_user_token}"}
-    response = await async_client.get(f"/api/v1/categories/{subcategory.id}", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/{subcategory.id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert float(data["price"]) == 299.99
@@ -573,9 +591,10 @@ async def test_get_category_with_price_fields(async_client: AsyncClient, normal_
 
 # NEW VALIDATION RULE TESTS: Prices only on "leaf" categories (without children)
 @pytest.mark.asyncio
-async def test_create_subcategory_on_priced_category_fails(async_client: AsyncClient, super_admin_token: str, db_session: Session):
-    """Test creating a subcategory under a category that has prices (should fail with 422)"""
-    # Create a leaf category with price
+async def test_create_subcategory_under_priced_parent_clears_parent_prices(
+    async_client: AsyncClient, super_admin_token: str, db_session: Session
+):
+    """Sous-catégorie sous une feuille tarifée : le parent devient conteneur (prix effacés), création OK."""
     leaf_category = Category(
         name="Priced Leaf",
         is_active=True,
@@ -587,16 +606,20 @@ async def test_create_subcategory_on_priced_category_fails(async_client: AsyncCl
 
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={
             "name": "Attempted Child",
             "parent_id": str(leaf_category.id)
         },
         headers=headers
     )
-    assert response.status_code == 422
-    assert "cannot add a subcategory" in response.json()["detail"].lower()
-    assert "has prices defined" in response.json()["detail"].lower()
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Attempted Child"
+    assert data["parent_id"] == str(leaf_category.id)
+    db_session.refresh(leaf_category)
+    assert leaf_category.price is None
+    assert leaf_category.max_price is None
 
 
 @pytest.mark.asyncio
@@ -604,19 +627,21 @@ async def test_update_category_add_price_when_has_children_fails(async_client: A
     """Test adding price to a category that has children (should fail with 422)"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{parent_category.id}",
+        f"{_CATEGORIES_PREFIX}/{parent_category.id}",
         json={"price": "99.99"},
         headers=headers
     )
     assert response.status_code == 422
-    assert "cannot set prices" in response.json()["detail"].lower()
-    assert "subcategories" in response.json()["detail"].lower()
+    d = _ar21_detail_str(response).lower()
+    assert "cannot set prices" in d
+    assert "subcategories" in d
 
 
 @pytest.mark.asyncio
-async def test_update_category_set_parent_with_price_fails(async_client: AsyncClient, super_admin_token: str, db_session: Session):
-    """Test setting a parent that has prices defined (should fail with 422)"""
-    # Create a root category with price
+async def test_update_category_set_parent_under_priced_parent_clears_parent_prices(
+    async_client: AsyncClient, super_admin_token: str, db_session: Session
+):
+    """Attacher une catégorie sous un parent tarifé : le parent perd ses prix, mise à jour OK."""
     priced_root = Category(
         name="Priced Root",
         is_active=True,
@@ -626,7 +651,6 @@ async def test_update_category_set_parent_with_price_fails(async_client: AsyncCl
     db_session.commit()
     db_session.refresh(priced_root)
 
-    # Create another category
     other_category = Category(
         name="Other Category",
         is_active=True
@@ -635,15 +659,18 @@ async def test_update_category_set_parent_with_price_fails(async_client: AsyncCl
     db_session.commit()
     db_session.refresh(other_category)
 
-    # Try to make other_category a child of priced_root
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{other_category.id}",
+        f"{_CATEGORIES_PREFIX}/{other_category.id}",
         json={"parent_id": str(priced_root.id)},
         headers=headers
     )
-    assert response.status_code == 422
-    assert "cannot add a subcategory" in response.json()["detail"].lower()
+    assert response.status_code == 200
+    data = response.json()
+    assert data["parent_id"] == str(priced_root.id)
+    db_session.refresh(priced_root)
+    assert priced_root.price is None
+    assert priced_root.max_price is None
 
 
 @pytest.mark.asyncio
@@ -651,7 +678,7 @@ async def test_create_leaf_category_with_price_succeeds(async_client: AsyncClien
     """Test creating a leaf category (without parent or children) with price (should succeed)"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.post(
-        "/api/v1/categories/",
+        f"{_CATEGORIES_PREFIX}/",
         json={
             "name": "Standalone Priced Item",
             "price": "79.99",
@@ -680,7 +707,7 @@ async def test_update_leaf_category_add_price_succeeds(async_client: AsyncClient
 
     headers = {"Authorization": f"Bearer {super_admin_token}"}
     response = await async_client.put(
-        f"/api/v1/categories/{leaf_category.id}",
+        f"{_CATEGORIES_PREFIX}/{leaf_category.id}",
         json={"price": "149.99"},
         headers=headers
     )
@@ -694,7 +721,7 @@ async def test_update_leaf_category_add_price_succeeds(async_client: AsyncClient
 async def test_delete_category_sets_deleted_at(async_client: AsyncClient, super_admin_token: str, sample_category: Category):
     """Test que DELETE /categories/{id} définit deleted_at (Story B48-P1)"""
     headers = {"Authorization": f"Bearer {super_admin_token}"}
-    response = await async_client.delete(f"/api/v1/categories/{sample_category.id}", headers=headers)
+    response = await async_client.delete(f"{_CATEGORIES_PREFIX}/{sample_category.id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["deleted_at"] is not None
@@ -716,12 +743,15 @@ async def test_delete_category_with_active_children_fails(async_client: AsyncCli
     db_session.commit()
     
     # Tentative de suppression du parent
-    response = await async_client.delete(f"/api/v1/categories/{parent.id}", headers=headers)
+    response = await async_client.delete(f"{_CATEGORIES_PREFIX}/{parent.id}", headers=headers)
     assert response.status_code == 422
     data = response.json()
-    payload = data["detail"]
-    assert isinstance(payload, dict)
+    assert data.get("code") == "VALIDATION_ERROR"
+    raw = data["detail"]
+    assert isinstance(raw, str)
+    payload = json.loads(raw)
     assert payload["active_children_count"] == 1
+    assert "sous-catégories actives" in payload["message"]
 
 
 @pytest.mark.asyncio
@@ -736,7 +766,7 @@ async def test_restore_category_endpoint(async_client: AsyncClient, super_admin_
     db_session.commit()
     
     # Restaurer
-    response = await async_client.post(f"/api/v1/categories/{category.id}/restore", headers=headers)
+    response = await async_client.post(f"{_CATEGORIES_PREFIX}/{category.id}/restore", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["deleted_at"] is None
@@ -755,14 +785,14 @@ async def test_get_categories_include_archived_param(async_client: AsyncClient, 
     db_session.commit()
     
     # Sans include_archived (défaut: False)
-    response = await async_client.get("/api/v1/categories/", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
     assert data[0]["name"] == "Active"
     
     # Avec include_archived=True
-    response = await async_client.get("/api/v1/categories/?include_archived=true", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/?include_archived=true", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
@@ -784,14 +814,14 @@ async def test_operational_endpoints_exclude_archived(async_client: AsyncClient,
     db_session.commit()
     
     # Test entry-tickets endpoint
-    response = await async_client.get("/api/v1/categories/entry-tickets", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/entry-tickets", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
     assert data[0]["name"] == "Active"
     
     # Test sale-tickets endpoint
-    response = await async_client.get("/api/v1/categories/sale-tickets", headers=headers)
+    response = await async_client.get(f"{_CATEGORIES_PREFIX}/sale-tickets", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1

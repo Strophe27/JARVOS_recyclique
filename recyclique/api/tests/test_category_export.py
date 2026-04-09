@@ -11,6 +11,12 @@ from PyPDF2 import PdfReader
 from recyclic_api.models.category import Category
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
+from tests.api_v1_paths import v1
+
+
+def _categories_export_url(*, format: str | None = None) -> str:
+    base = v1("/categories/actions/export")
+    return f"{base}?format={format}" if format is not None else base
 
 
 class TestCategoryExportEndpoint:
@@ -34,7 +40,7 @@ class TestCategoryExportEndpoint:
         token = create_access_token(data={"sub": str(regular_user.id)})
         client.headers = {"Authorization": f"Bearer {token}"}
 
-        response = client.get("/api/v1/categories/actions/export?format=pdf")
+        response = client.get(_categories_export_url(format="pdf"))
         assert response.status_code == 403
 
     def test_export_xls_requires_super_admin_role(self, client, db_session):
@@ -55,7 +61,7 @@ class TestCategoryExportEndpoint:
         token = create_access_token(data={"sub": str(regular_user.id)})
         client.headers = {"Authorization": f"Bearer {token}"}
 
-        response = client.get("/api/v1/categories/actions/export?format=xls")
+        response = client.get(_categories_export_url(format="xls"))
         assert response.status_code == 403
 
     def test_export_pdf_success(self, super_admin_client, db_session):
@@ -79,11 +85,11 @@ class TestCategoryExportEndpoint:
         db_session.commit()
 
         # Export PDF
-        response = super_admin_client.get("/api/v1/categories/actions/export?format=pdf")
+        response = super_admin_client.get(_categories_export_url(format="pdf"))
 
         # Assert response
         assert response.status_code == 200
-        assert response.headers["content-type"] == "application/pdf"
+        assert response.headers["content-type"].startswith("application/pdf")
         assert "attachment" in response.headers["content-disposition"]
         assert "categories_export_" in response.headers["content-disposition"]
         assert ".pdf" in response.headers["content-disposition"]
@@ -120,11 +126,13 @@ class TestCategoryExportEndpoint:
         db_session.commit()
 
         # Export Excel
-        response = super_admin_client.get("/api/v1/categories/actions/export?format=xls")
+        response = super_admin_client.get(_categories_export_url(format="xls"))
 
         # Assert response
         assert response.status_code == 200
-        assert response.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert response.headers["content-type"].startswith(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         assert "attachment" in response.headers["content-disposition"]
         assert "categories_export_" in response.headers["content-disposition"]
         assert ".xlsx" in response.headers["content-disposition"]
@@ -134,30 +142,30 @@ class TestCategoryExportEndpoint:
         wb = load_workbook(excel_bytes)
         ws = wb.active
 
-        # Check headers
-        assert ws['A1'].value == "ID Catégorie Parente"
-        assert ws['B1'].value == "Nom Catégorie"
-        assert ws['C1'].value == "Prix Minimum"
-        assert ws['D1'].value == "Prix Maximum"
+        # Check headers (alignés sur CategoryExportService.export_to_excel)
+        assert ws["A1"].value == "Catégorie Racine"
+        assert ws["B1"].value == "Nom Sous-Catégorie"
+        assert ws["C1"].value == "Prix Minimum"
+        assert ws["D1"].value == "Prix Maximum"
 
-        # Check data rows (at least 2: root + child)
-        assert ws.max_row >= 3  # Header + at least 2 data rows
+        # Header + ligne racine + ligne enfant
+        assert ws.max_row >= 3
 
-        # Verify root category is in the export
-        category_names = [ws[f'B{i}'].value for i in range(2, ws.max_row + 1)]
-        assert "Root Category" in category_names
-        assert "Child Category" in category_names
+        roots_col_a = [ws[f"A{i}"].value for i in range(2, ws.max_row + 1)]
+        subs_col_b = [ws[f"B{i}"].value for i in range(2, ws.max_row + 1)]
+        assert "Root Category" in roots_col_a
+        assert "Child Category" in subs_col_b
 
     def test_export_invalid_format(self, super_admin_client, db_session):
         """Test export with invalid format parameter"""
-        response = super_admin_client.get("/api/v1/categories/actions/export?format=invalid")
+        response = super_admin_client.get(_categories_export_url(format="invalid"))
 
         assert response.status_code == 400
         assert "Invalid format" in response.json()["detail"]
 
     def test_export_missing_format_parameter(self, super_admin_client, db_session):
         """Test export without format parameter"""
-        response = super_admin_client.get("/api/v1/categories/actions/export")
+        response = super_admin_client.get(_categories_export_url())
 
         assert response.status_code == 422  # FastAPI validation error
 
@@ -168,7 +176,7 @@ class TestCategoryExportEndpoint:
 #        db_session.commit()
 #
 #        # Export should still work, just with empty content
-#        response = super_admin_client.get("/api/v1/categories/actions/export?format=pdf")
+#        response = super_admin_client.get(_categories_export_url(format="pdf"))
 #
 #        assert response.status_code == 200
 #        assert response.headers["content-type"] == "application/pdf"
@@ -180,7 +188,7 @@ class TestCategoryExportEndpoint:
 #        db_session.commit()
 #
 #        # Export should still work, just with headers only
-#        response = super_admin_client.get("/api/v1/categories/actions/export?format=xls")
+#        response = super_admin_client.get(_categories_export_url(format="xls"))
 #
 #        assert response.status_code == 200
 #
@@ -225,7 +233,7 @@ class TestCategoryExportEndpoint:
         db_session.commit()
 
         # Export PDF
-        response = super_admin_client.get("/api/v1/categories/actions/export?format=pdf")
+        response = super_admin_client.get(_categories_export_url(format="pdf"))
 
         assert response.status_code == 200
 
@@ -253,7 +261,7 @@ class TestCategoryExportEndpoint:
         db_session.commit()
 
         # Export Excel
-        response = super_admin_client.get("/api/v1/categories/actions/export?format=xls")
+        response = super_admin_client.get(_categories_export_url(format="xls"))
 
         assert response.status_code == 200
 
@@ -262,11 +270,11 @@ class TestCategoryExportEndpoint:
         wb = load_workbook(excel_bytes)
         ws = wb.active
 
-        # Find the row with "Priced Category"
+        # Racine seule : nom en colonne A, sous-catégorie vide en B
         for row in range(2, ws.max_row + 1):
-            if ws[f'B{row}'].value == "Priced Category":
-                assert ws[f'C{row}'].value == 12.50
-                assert ws[f'D{row}'].value == 99.99
+            if ws[f"A{row}"].value == "Priced Category":
+                assert ws[f"C{row}"].value == 12.50
+                assert ws[f"D{row}"].value == 99.99
                 break
         else:
             pytest.fail("Priced Category not found in export")

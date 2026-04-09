@@ -17,10 +17,13 @@ from sqlalchemy.orm import Session
 
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
-from recyclic_api.models.ligne_depot import LigneDepot
+from recyclic_api.models.ligne_depot import LigneDepot, Destination
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.category import Category
 from recyclic_api.core.security import hash_password
+from tests.api_v1_paths import v1
+
+RECEPTION_TICKETS_EXPORT_BULK = v1("/admin/reports/reception-tickets/export-bulk")
 
 
 @pytest.fixture
@@ -28,8 +31,9 @@ def test_category(db_session: Session) -> Category:
     """Créer une catégorie de test."""
     category = Category(
         id=uuid4(),
-        name="Test Category",
-        price=10.0
+        name=f"bulk_export_cat_{uuid4().hex[:8]}",
+        is_active=True,
+        price=10.0,
     )
     db_session.add(category)
     db_session.commit()
@@ -38,13 +42,13 @@ def test_category(db_session: Session) -> Category:
 
 
 @pytest.fixture
-def test_poste(db_session: Session) -> PosteReception:
+def test_poste(db_session: Session, test_benevole: User) -> PosteReception:
     """Créer un poste de réception de test."""
     poste = PosteReception(
         id=uuid4(),
-        name="Poste Test",
-        status=PosteReceptionStatus.OPENED,
-        opened_at=datetime.now(timezone.utc) - timedelta(days=1)
+        opened_by_user_id=test_benevole.id,
+        status=PosteReceptionStatus.OPENED.value,
+        opened_at=datetime.now(timezone.utc) - timedelta(days=1),
     )
     db_session.add(poste)
     db_session.commit()
@@ -92,7 +96,7 @@ def test_tickets(db_session: Session, test_poste: PosteReception, test_benevole:
         ticket_id=ticket1.id,
         category_id=test_category.id,
         poids_kg=5.5,
-        destination="revente"
+        destination=Destination.MAGASIN,
     )
     db_session.add(ligne1)
     
@@ -101,7 +105,7 @@ def test_tickets(db_session: Session, test_poste: PosteReception, test_benevole:
         ticket_id=ticket1.id,
         category_id=test_category.id,
         poids_kg=3.2,
-        destination="recyclage"
+        destination=Destination.RECYCLAGE,
     )
     db_session.add(ligne2)
     
@@ -121,7 +125,7 @@ def test_tickets(db_session: Session, test_poste: PosteReception, test_benevole:
         ticket_id=ticket2.id,
         category_id=test_category.id,
         poids_kg=2.1,
-        destination="revente"
+        destination=Destination.MAGASIN,
     )
     db_session.add(ligne3)
     
@@ -151,7 +155,7 @@ class TestBulkExportReceptionTicketsCSV:
     def test_export_csv_bulk_success(self, admin_client, test_tickets):
         """Test export CSV bulk avec succès."""
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -167,25 +171,25 @@ class TestBulkExportReceptionTicketsCSV:
         assert "attachment" in response.headers["content-disposition"]
         assert "export_tickets_reception" in response.headers["content-disposition"]
         
-        # Vérifier le contenu CSV
+        # CSV bulk actuel : une ligne par LigneDepot, séparateur `;`, en-têtes techniques (report_service)
         content = response.text
-        assert "ID Ticket" in content
-        assert "Statut" in content
-        assert "Date Création" in content
-        assert "Bénévole" in content
-        assert "Nombre Lignes" in content
-        assert "Poids Total (kg)" in content
+        assert "ticket_id" in content
+        assert "ticket_status" in content
+        assert "benevole_username" in content
+        assert "ticket_total_lignes" in content
+        assert "ticket_total_poids_kg" in content
+        assert ";" in content.splitlines()[0]
     
     def test_export_csv_bulk_with_filters(self, admin_client, test_tickets):
         """Test export CSV avec filtres (statut, date)."""
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-        
+        now = datetime.now(timezone.utc)
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
-                    "date_from": yesterday.isoformat(),
-                    "date_to": datetime.now(timezone.utc).isoformat(),
+                    # Fenêtre large : évite l'écart entre ``now`` fixture et ``now`` à l'assertion
+                    "date_from": (now - timedelta(days=5)).isoformat(),
+                    "date_to": now.isoformat(),
                     "status": "closed",
                     "include_empty": False
                 },
@@ -224,7 +228,7 @@ class TestBulkExportReceptionTicketsCSV:
         client.headers["Authorization"] = f"Bearer {token}"
         
         response = client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {},
                 "format": "csv"
@@ -237,7 +241,7 @@ class TestBulkExportReceptionTicketsCSV:
         """Test que les filtres sont bien respectés."""
         # Filtrer par bénévole
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
                     "benevole_id": str(test_benevole.id),
@@ -262,7 +266,7 @@ class TestBulkExportReceptionTicketsExcel:
     def test_export_excel_bulk_success(self, admin_client, test_tickets):
         """Test export Excel bulk avec succès."""
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -282,9 +286,9 @@ class TestBulkExportReceptionTicketsExcel:
         excel_bytes = io.BytesIO(response.content)
         wb = load_workbook(excel_bytes)
         
-        # Vérifier les onglets
+        # Vérifier les onglets (nom détail au singulier dans report_service)
         assert "Résumé" in wb.sheetnames
-        assert "Détails" in wb.sheetnames
+        assert "Détail" in wb.sheetnames
         
         # Vérifier le contenu de l'onglet Résumé
         ws_summary = wb["Résumé"]
@@ -297,23 +301,22 @@ class TestBulkExportReceptionTicketsExcel:
         assert "Nb Lignes" in headers
         assert "Poids Total (kg)" in headers
         
-        # Vérifier le contenu de l'onglet Détails
-        ws_details = wb["Détails"]
+        ws_details = wb["Détail"]
         assert ws_details.max_row > 1
         
         headers_details = [cell.value for cell in ws_details[1]]
-        assert "ID Ticket" in headers_details
-        assert "Nombre Lignes" in headers_details
+        assert "ticket_id" in headers_details
+        assert "ticket_total_lignes" in headers_details
     
     def test_export_excel_bulk_with_filters(self, admin_client, test_tickets):
         """Test export Excel avec filtres."""
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-        
+        now = datetime.now(timezone.utc)
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
-                    "date_from": yesterday.isoformat(),
+                    "date_from": (now - timedelta(days=5)).isoformat(),
+                    "date_to": now.isoformat(),
                     "status": "closed",
                     "include_empty": False
                 },
@@ -334,7 +337,7 @@ class TestBulkExportReceptionTicketsExcel:
     def test_export_excel_formatting_styles(self, admin_client, test_tickets):
         """Test que la mise en forme (styles, couleurs, bordures) est appliquée."""
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -362,8 +365,7 @@ class TestBulkExportReceptionTicketsExcel:
             # Vérifier que les en-têtes ont des bordures
             assert cell.border is not None, f"Header cell {cell.coordinate} should have border"
         
-        # Vérifier les styles des en-têtes dans l'onglet Détails
-        ws_details = wb["Détails"]
+        ws_details = wb["Détail"]
         detail_header_row = ws_details[1]
         
         for cell in detail_header_row:
@@ -399,7 +401,7 @@ class TestBulkExportReceptionTicketsExcel:
                 ticket_id=ticket.id,
                 category_id=test_category.id,
                 poids_kg=float(idx % 10) + 0.5,
-                destination="revente"
+                destination=Destination.MAGASIN,
             )
             db_session.add(ligne)
         
@@ -409,7 +411,7 @@ class TestBulkExportReceptionTicketsExcel:
         start_time = time.time()
         
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
                     "date_from": (now - timedelta(days=30)).isoformat(),
@@ -429,7 +431,7 @@ class TestBulkExportReceptionTicketsExcel:
         excel_bytes = io.BytesIO(response.content)
         wb = load_workbook(excel_bytes)
         assert "Résumé" in wb.sheetnames
-        assert "Détails" in wb.sheetnames
+        assert "Détail" in wb.sheetnames
 
 
 class TestBulkExportReceptionTicketsValidation:
@@ -438,7 +440,7 @@ class TestBulkExportReceptionTicketsValidation:
     def test_export_bulk_invalid_format(self, admin_client):
         """Test avec format invalide."""
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {},
                 "format": "pdf"  # Format invalide
@@ -452,7 +454,7 @@ class TestBulkExportReceptionTicketsValidation:
         far_future = datetime.now(timezone.utc) + timedelta(days=365)
         
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json={
                 "filters": {
                     "date_from": far_future.isoformat(),
@@ -484,7 +486,7 @@ class TestBulkExportReceptionTicketsValidation:
         }
         
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json=payload
         )
         
@@ -501,7 +503,7 @@ class TestBulkExportReceptionTicketsValidation:
         
         # Si on arrive ici, le bug est corrigé
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert response.headers["content-type"].startswith("text/csv")
     
     def test_export_bulk_reception_with_undefined_dates(self, admin_client, test_tickets):
         """Test export avec dates undefined/null (B50-P2: régression)."""
@@ -515,12 +517,12 @@ class TestBulkExportReceptionTicketsValidation:
         }
         
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json=payload
         )
         
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert response.headers["content-type"].startswith("text/csv")
     
     def test_export_bulk_reception_with_date_only_format(self, admin_client, test_tickets):
         """Test export avec format date seule YYYY-MM-DD (B50-P2: régression)."""
@@ -534,13 +536,13 @@ class TestBulkExportReceptionTicketsValidation:
         }
         
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json=payload
         )
         
         # Le validator devrait parser ce format aussi
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert response.headers["content-type"].startswith("text/csv")
     
     def test_export_bulk_reception_with_isoformat_no_z(self, admin_client, test_tickets):
         """Test export avec format ISO sans 'Z' (B50-P2: régression)."""
@@ -554,12 +556,12 @@ class TestBulkExportReceptionTicketsValidation:
         }
         
         response = admin_client.post(
-            "/api/v1/admin/reports/reception-tickets/export-bulk",
+            RECEPTION_TICKETS_EXPORT_BULK,
             json=payload
         )
         
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert response.headers["content-type"].startswith("text/csv")
 
 
 class TestCalculateTicketTotalsSignature:

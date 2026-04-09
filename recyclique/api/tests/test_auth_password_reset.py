@@ -9,8 +9,12 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from recyclic_api.main import app
+from recyclic_api.core.config import settings
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password, create_password_reset_token, verify_reset_token
+
+# Préfixe API v1 (défaut Settings.API_V1_STR = "/v1", pas "/api/v1")
+_AUTH = f"{settings.API_V1_STR.rstrip('/')}/auth"
 
 # Import the deprecated alias only for the compatibility tests
 from recyclic_api.core.security import create_reset_token
@@ -37,7 +41,7 @@ class TestAuthPasswordResetEndpoints:
 
         # Demander la réinitialisation
         response = client.post(
-            "/api/v1/auth/forgot-password",
+            f"{_AUTH}/forgot-password",
             json={"email": "test@example.com"}
         )
 
@@ -50,7 +54,7 @@ class TestAuthPasswordResetEndpoints:
         """Test de demande de réinitialisation avec un email inexistant"""
 
         response = client.post(
-            "/api/v1/auth/forgot-password",
+            f"{_AUTH}/forgot-password",
             json={"email": "nonexistent@example.com"}
         )
 
@@ -76,7 +80,7 @@ class TestAuthPasswordResetEndpoints:
         db_session.commit()
 
         response = client.post(
-            "/api/v1/auth/forgot-password",
+            f"{_AUTH}/forgot-password",
             json={"email": "inactive@example.com"}
         )
 
@@ -89,7 +93,7 @@ class TestAuthPasswordResetEndpoints:
         """Test de validation avec email manquant"""
 
         response = client.post(
-            "/api/v1/auth/forgot-password",
+            f"{_AUTH}/forgot-password",
             json={}
         )
 
@@ -101,7 +105,7 @@ class TestAuthPasswordResetEndpoints:
         """Test de validation avec format d'email invalide"""
 
         response = client.post(
-            "/api/v1/auth/forgot-password",
+            f"{_AUTH}/forgot-password",
             json={"email": "invalid-email-format"}
         )
 
@@ -130,7 +134,7 @@ class TestAuthPasswordResetEndpoints:
 
         # Réinitialiser le mot de passe
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": reset_token,
                 "new_password": "NewPassword123!"
@@ -151,7 +155,7 @@ class TestAuthPasswordResetEndpoints:
         """Test de réinitialisation avec un token invalide"""
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": "invalid.token.here",
                 "new_password": "NewPassword123!"
@@ -184,7 +188,7 @@ class TestAuthPasswordResetEndpoints:
         expired_token = create_password_reset_token(str(test_user.id), timedelta(seconds=-1))
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": expired_token,
                 "new_password": "NewPassword123!"
@@ -217,7 +221,7 @@ class TestAuthPasswordResetEndpoints:
         access_token = create_access_token({"sub": str(test_user.id)})
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": access_token,
                 "new_password": "NewPassword123!"
@@ -237,7 +241,7 @@ class TestAuthPasswordResetEndpoints:
         reset_token = create_password_reset_token(fake_user_id)
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": reset_token,
                 "new_password": "NewPassword123!"
@@ -269,7 +273,7 @@ class TestAuthPasswordResetEndpoints:
         reset_token = create_password_reset_token(str(inactive_user.id))
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": reset_token,
                 "new_password": "NewPassword123!"
@@ -285,7 +289,7 @@ class TestAuthPasswordResetEndpoints:
         """Test de validation avec token manquant"""
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={"new_password": "NewPassword123!"}
         )
 
@@ -297,7 +301,7 @@ class TestAuthPasswordResetEndpoints:
         """Test de validation avec nouveau mot de passe manquant"""
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={"token": "some.token.here"}
         )
 
@@ -324,7 +328,7 @@ class TestAuthPasswordResetEndpoints:
         reset_token = create_password_reset_token(str(test_user.id))
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": reset_token,
                 "new_password": "short"
@@ -355,7 +359,7 @@ class TestAuthPasswordResetEndpoints:
         reset_token = create_password_reset_token(str(test_user.id))
 
         response = client.post(
-            "/api/v1/auth/reset-password",
+            f"{_AUTH}/reset-password",
             json={
                 "token": reset_token,
                 "new_password": "weakpassword123"
@@ -410,7 +414,7 @@ class TestAuthPasswordResetEndpoints:
 
         # Premier appel - devrait fonctionner
         response = client.post(
-            "/api/v1/auth/forgot-password",
+            f"{_AUTH}/forgot-password",
             json={"email": "ratelimit@example.com"}
         )
         assert response.status_code == 200

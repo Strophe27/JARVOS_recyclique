@@ -7,8 +7,10 @@ from sqlalchemy.orm import Session
 from recyclic_api.main import app
 from recyclic_api.core.config import settings
 from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.models.site import Site
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.security import hash_password
+from tests.reception_story72_eligibility import grant_user_reception_eligibility
 
 os.environ["TESTING"] = "true"
 _V1 = settings.API_V1_STR.rstrip("/")
@@ -17,6 +19,10 @@ _V1 = settings.API_V1_STR.rstrip("/")
 @pytest.fixture
 def user_client(db_session: Session) -> TestClient:
     """Créer un client de test avec un utilisateur ayant le rôle USER."""
+    site = Site(id=uuid.uuid4(), name="User access test site", is_active=True)
+    db_session.add(site)
+    db_session.commit()
+    db_session.refresh(site)
     # Créer un utilisateur USER
     user = User(
         username="test_user",
@@ -24,11 +30,13 @@ def user_client(db_session: Session) -> TestClient:
         hashed_password=hash_password("testpassword"),
         role=UserRole.USER,
         status=UserStatus.ACTIVE,
-        is_active=True
+        is_active=True,
+        site_id=site.id,
     )
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+    grant_user_reception_eligibility(db_session, user, site.id)
 
     # Générer le token
     access_token = create_access_token(data={"sub": str(user.id)})

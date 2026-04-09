@@ -6,11 +6,12 @@ On mocke httpx pour éviter tout appel réseau réel.
 
 from __future__ import annotations
 
+import json
 from typing import Any, Dict
 
-import httpx
 import pytest
 
+from recyclic_api.services import llm_openrouter_client as llm_or_mod
 from recyclic_api.services.llm_openrouter_client import OpenRouterCategoryMappingClient
 
 
@@ -19,6 +20,10 @@ class DummyResponse:
 
     def __init__(self, payload: Dict[str, Any]) -> None:
         self._payload = payload
+        self.status_code = 200
+
+    def raise_for_status(self) -> None:
+        """Aligné sur httpx.Response (succès HTTP)."""
 
     def json(self) -> Dict[str, Any]:  # type: ignore[override]
         return self._payload
@@ -44,20 +49,28 @@ class DummyHTTPXClient:
 
 
 def test_openrouter_client_nominal(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cas nominal : le client retourne des mappings correctement parsés."""
+    """Cas nominal : le client retourne des mappings correctement parsés.
 
+    OpenRouter renvoie ``message.content`` en chaîne JSON (schéma OpenAI-like),
+    pas un objet déjà parsé.
+    """
+
+    inner = json.dumps(
+        {
+            "mappings": {
+                "Vaisselle cassée": {
+                    "target_name": "Vaisselle",
+                    "confidence": 92.5,
+                }
+            }
+        },
+        ensure_ascii=False,
+    )
     payload = {
         "choices": [
             {
                 "message": {
-                    "content": {
-                        "mappings": {
-                            "Vaisselle cassée": {
-                                "target_name": "Vaisselle",
-                                "confidence": 92.5,
-                            }
-                        }
-                    }
+                    "content": inner,
                 }
             }
         ]
@@ -68,7 +81,8 @@ def test_openrouter_client_nominal(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_client(*args: Any, **kwargs: Any) -> DummyHTTPXClient:  # type: ignore[override]
         return dummy_client
 
-    monkeypatch.setattr(httpx, "Client", fake_client)  # type: ignore[arg-type]
+    # Cibler le module sous test (résistant à ``from httpx import Client``).
+    monkeypatch.setattr(llm_or_mod.httpx, "Client", fake_client)  # type: ignore[arg-type]
 
     client = OpenRouterCategoryMappingClient(
         api_key="test-key",
@@ -91,6 +105,9 @@ def test_openrouter_client_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None
     """Réponse mal formée : le client doit retourner un dict vide."""
 
     class BadResponse:
+        def raise_for_status(self) -> None:
+            """HTTP OK ; l'échec attendu est au parse JSON."""
+
         def json(self) -> Dict[str, Any]:  # type: ignore[override]
             raise ValueError("invalid json")
 
@@ -107,7 +124,7 @@ def test_openrouter_client_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None
     def fake_client(*args: Any, **kwargs: Any) -> BadClient:  # type: ignore[override]
         return BadClient()
 
-    monkeypatch.setattr(httpx, "Client", fake_client)  # type: ignore[arg-type]
+    monkeypatch.setattr(llm_or_mod.httpx, "Client", fake_client)  # type: ignore[arg-type]
 
     client = OpenRouterCategoryMappingClient(
         api_key="test-key",

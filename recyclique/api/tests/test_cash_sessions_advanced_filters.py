@@ -225,8 +225,8 @@ def test_filter_by_payment_methods(admin_client, db_session, test_operator, test
     payload = r.json()
     # Vérifier que toutes les sessions ont au moins une vente en cash
     session_ids = [row["id"] for row in payload["data"]]
-    assert any(str(sessions[0].id) in session_ids)  # La première session a cash
-    
+    assert str(sessions[0].id) in session_ids  # La première session a cash
+
     # Test: filtre par plusieurs méthodes de paiement
     params = {"payment_methods": ["cash", "card"]}
     r = admin_client.get("/v1/cash-sessions/", params=params)
@@ -234,8 +234,8 @@ def test_filter_by_payment_methods(admin_client, db_session, test_operator, test
     payload = r.json()
     # Vérifier que les sessions ont au moins une vente avec cash ou card
     session_ids = [row["id"] for row in payload["data"]]
-    assert any(str(sessions[0].id) in session_ids)  # cash
-    assert any(str(sessions[1].id) in session_ids)  # card
+    assert str(sessions[0].id) in session_ids  # cash
+    assert str(sessions[1].id) in session_ids  # card
 
 
 def test_filter_by_has_donation(admin_client, db_session, test_operator, test_site_id):
@@ -281,9 +281,9 @@ def test_filter_by_has_donation(admin_client, db_session, test_operator, test_si
     # Vérifier que toutes les sessions ont au moins une vente avec don > 0
     session_ids = [row["id"] for row in payload["data"]]
     # Les sessions avec don (indices 1 et 3) doivent être présentes
-    assert any(str(sessions[1].id) in session_ids)
-    assert any(str(sessions[3].id) in session_ids)
-    
+    assert str(sessions[1].id) in session_ids
+    assert str(sessions[3].id) in session_ids
+
     # Test: filtre par absence de don
     params = {"has_donation": False}
     r = admin_client.get("/v1/cash-sessions/", params=params)
@@ -292,8 +292,8 @@ def test_filter_by_has_donation(admin_client, db_session, test_operator, test_si
     # Vérifier que les sessions n'ont pas de don > 0
     session_ids = [row["id"] for row in payload["data"]]
     # Les sessions sans don (indices 0, 2, 4) doivent être présentes
-    assert any(str(sessions[0].id) in session_ids)
-    assert any(str(sessions[2].id) in session_ids)
+    assert str(sessions[0].id) in session_ids
+    assert str(sessions[2].id) in session_ids
 
 
 def test_combined_advanced_filters(admin_client, db_session, test_operator, test_site_id):

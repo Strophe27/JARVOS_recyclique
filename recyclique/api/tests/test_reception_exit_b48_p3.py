@@ -14,49 +14,49 @@ from decimal import Decimal
 
 import pytest
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, text
 
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.models.ligne_depot import LigneDepot, Destination
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
 from recyclic_api.models.category import Category
-from recyclic_api.services.reception_service import ReceptionService
+from recyclic_api.core.config import settings
 from recyclic_api.services.reception_stats_service import ReceptionLiveStatsService
 from recyclic_api.core.security import hash_password
 
 os.environ["TESTING"] = "true"
+_V1 = settings.API_V1_STR.rstrip("/")
+
+
+@pytest.fixture
+def active_category_id(db_session: Session) -> str:
+    """Catégorie active dans la même DB que le TestClient (évite second engine / jeux vides)."""
+    cat = Category(name=f"reception_exit_b48_{uuid.uuid4().hex[:10]}", is_active=True)
+    db_session.add(cat)
+    db_session.commit()
+    db_session.refresh(cat)
+    return str(cat.id)
 
 
 class TestReceptionExitCreation:
     """Tests pour la création de lignes avec is_exit"""
 
-    def test_create_ligne_with_is_exit_false(self, admin_client):
+    def test_create_ligne_with_is_exit_false(self, admin_client, active_category_id):
         """Test création ligne avec is_exit=false (comportement par défaut)"""
         # Setup poste + ticket
-        r = admin_client.post("/api/v1/reception/postes/open")
+        r = admin_client.post(f"{_V1}/reception/postes/open")
         assert r.status_code == 200
         poste_id = r.json()["id"]
-        r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert r.status_code == 200
         ticket_id = r.json()["id"]
 
-        # Récupérer une catégorie
-        db_url = os.getenv(
-            "TEST_DATABASE_URL",
-            os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
-        )
-        engine = create_engine(db_url)
-        with engine.begin() as conn:
-            category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
-        assert category_id
-
         # Créer ligne avec is_exit=false (explicite)
         r = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
-                "category_id": str(category_id),
+                "category_id": active_category_id,
                 "poids_kg": "5.500",
                 "destination": "MAGASIN",
                 "is_exit": False,
@@ -67,32 +67,22 @@ class TestReceptionExitCreation:
         assert data["is_exit"] is False
         assert data["destination"] == "MAGASIN"
 
-    def test_create_ligne_with_is_exit_true_recyclage(self, admin_client):
+    def test_create_ligne_with_is_exit_true_recyclage(self, admin_client, active_category_id):
         """Test création ligne sortie avec destination RECYCLAGE"""
         # Setup poste + ticket
-        r = admin_client.post("/api/v1/reception/postes/open")
+        r = admin_client.post(f"{_V1}/reception/postes/open")
         assert r.status_code == 200
         poste_id = r.json()["id"]
-        r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert r.status_code == 200
         ticket_id = r.json()["id"]
 
-        # Récupérer une catégorie
-        db_url = os.getenv(
-            "TEST_DATABASE_URL",
-            os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
-        )
-        engine = create_engine(db_url)
-        with engine.begin() as conn:
-            category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
-        assert category_id
-
         # Créer ligne sortie avec RECYCLAGE
         r = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
-                "category_id": str(category_id),
+                "category_id": active_category_id,
                 "poids_kg": "3.250",
                 "destination": "RECYCLAGE",
                 "is_exit": True,
@@ -103,32 +93,22 @@ class TestReceptionExitCreation:
         assert data["is_exit"] is True
         assert data["destination"] == "RECYCLAGE"
 
-    def test_create_ligne_with_is_exit_true_dechetterie(self, admin_client):
+    def test_create_ligne_with_is_exit_true_dechetterie(self, admin_client, active_category_id):
         """Test création ligne sortie avec destination DECHETERIE"""
         # Setup poste + ticket
-        r = admin_client.post("/api/v1/reception/postes/open")
+        r = admin_client.post(f"{_V1}/reception/postes/open")
         assert r.status_code == 200
         poste_id = r.json()["id"]
-        r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert r.status_code == 200
         ticket_id = r.json()["id"]
 
-        # Récupérer une catégorie
-        db_url = os.getenv(
-            "TEST_DATABASE_URL",
-            os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
-        )
-        engine = create_engine(db_url)
-        with engine.begin() as conn:
-            category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
-        assert category_id
-
         # Créer ligne sortie avec DECHETERIE
         r = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
-                "category_id": str(category_id),
+                "category_id": active_category_id,
                 "poids_kg": "7.750",
                 "destination": "DECHETERIE",
                 "is_exit": True,
@@ -139,32 +119,22 @@ class TestReceptionExitCreation:
         assert data["is_exit"] is True
         assert data["destination"] == "DECHETERIE"
 
-    def test_create_ligne_is_exit_true_with_magasin_fails(self, admin_client):
+    def test_create_ligne_is_exit_true_with_magasin_fails(self, admin_client, active_category_id):
         """Test que is_exit=true avec destination MAGASIN échoue"""
         # Setup poste + ticket
-        r = admin_client.post("/api/v1/reception/postes/open")
+        r = admin_client.post(f"{_V1}/reception/postes/open")
         assert r.status_code == 200
         poste_id = r.json()["id"]
-        r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert r.status_code == 200
         ticket_id = r.json()["id"]
 
-        # Récupérer une catégorie
-        db_url = os.getenv(
-            "TEST_DATABASE_URL",
-            os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
-        )
-        engine = create_engine(db_url)
-        with engine.begin() as conn:
-            category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
-        assert category_id
-
         # Tentative création ligne sortie avec MAGASIN → doit échouer
         r = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
-                "category_id": str(category_id),
+                "category_id": active_category_id,
                 "poids_kg": "2.000",
                 "destination": "MAGASIN",
                 "is_exit": True,
@@ -173,32 +143,22 @@ class TestReceptionExitCreation:
         assert r.status_code == 422
         assert "sortie de stock" in str(r.json()).lower() or "recyclage" in str(r.json()).lower() or "dechetterie" in str(r.json()).lower()
 
-    def test_create_ligne_is_exit_default_false(self, admin_client):
+    def test_create_ligne_is_exit_default_false(self, admin_client, active_category_id):
         """Test que is_exit par défaut est False si non fourni"""
         # Setup poste + ticket
-        r = admin_client.post("/api/v1/reception/postes/open")
+        r = admin_client.post(f"{_V1}/reception/postes/open")
         assert r.status_code == 200
         poste_id = r.json()["id"]
-        r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert r.status_code == 200
         ticket_id = r.json()["id"]
 
-        # Récupérer une catégorie
-        db_url = os.getenv(
-            "TEST_DATABASE_URL",
-            os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
-        )
-        engine = create_engine(db_url)
-        with engine.begin() as conn:
-            category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
-        assert category_id
-
         # Créer ligne sans is_exit → doit être False par défaut
         r = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
-                "category_id": str(category_id),
+                "category_id": active_category_id,
                 "poids_kg": "1.000",
                 "destination": "MAGASIN",
             },
@@ -211,32 +171,22 @@ class TestReceptionExitCreation:
 class TestReceptionExitUpdate:
     """Tests pour la modification de is_exit sur lignes existantes"""
 
-    def test_update_ligne_set_is_exit_true(self, admin_client):
+    def test_update_ligne_set_is_exit_true(self, admin_client, active_category_id):
         """Test modification ligne pour passer is_exit à True"""
         # Setup poste + ticket
-        r = admin_client.post("/api/v1/reception/postes/open")
+        r = admin_client.post(f"{_V1}/reception/postes/open")
         assert r.status_code == 200
         poste_id = r.json()["id"]
-        r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert r.status_code == 200
         ticket_id = r.json()["id"]
 
-        # Récupérer une catégorie
-        db_url = os.getenv(
-            "TEST_DATABASE_URL",
-            os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
-        )
-        engine = create_engine(db_url)
-        with engine.begin() as conn:
-            category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
-        assert category_id
-
         # Créer ligne normale (is_exit=false)
         r = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
-                "category_id": str(category_id),
+                "category_id": active_category_id,
                 "poids_kg": "4.500",
                 "destination": "MAGASIN",
                 "is_exit": False,
@@ -247,7 +197,7 @@ class TestReceptionExitUpdate:
 
         # Modifier pour passer à is_exit=true avec destination RECYCLAGE
         r = admin_client.put(
-            f"/api/v1/reception/lignes/{ligne_id}",
+            f"{_V1}/reception/lignes/{ligne_id}",
             json={
                 "is_exit": True,
                 "destination": "RECYCLAGE",
@@ -258,32 +208,22 @@ class TestReceptionExitUpdate:
         assert data["is_exit"] is True
         assert data["destination"] == "RECYCLAGE"
 
-    def test_update_ligne_is_exit_true_with_magasin_fails(self, admin_client):
+    def test_update_ligne_is_exit_true_with_magasin_fails(self, admin_client, active_category_id):
         """Test que modifier is_exit à True avec MAGASIN échoue"""
         # Setup poste + ticket
-        r = admin_client.post("/api/v1/reception/postes/open")
+        r = admin_client.post(f"{_V1}/reception/postes/open")
         assert r.status_code == 200
         poste_id = r.json()["id"]
-        r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        r = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert r.status_code == 200
         ticket_id = r.json()["id"]
 
-        # Récupérer une catégorie
-        db_url = os.getenv(
-            "TEST_DATABASE_URL",
-            os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
-        )
-        engine = create_engine(db_url)
-        with engine.begin() as conn:
-            category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
-        assert category_id
-
         # Créer ligne normale
         r = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
-                "category_id": str(category_id),
+                "category_id": active_category_id,
                 "poids_kg": "2.500",
                 "destination": "MAGASIN",
             },
@@ -293,7 +233,7 @@ class TestReceptionExitUpdate:
 
         # Tentative modification is_exit à True avec MAGASIN → doit échouer
         r = admin_client.put(
-            f"/api/v1/reception/lignes/{ligne_id}",
+            f"{_V1}/reception/lignes/{ligne_id}",
             json={
                 "is_exit": True,
                 "destination": "MAGASIN",  # Incohérent

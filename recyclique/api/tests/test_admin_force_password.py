@@ -13,6 +13,8 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password, verify_password
 from recyclic_api.core.auth import create_access_token
 
+from tests.api_v1_paths import v1
+
 
 class TestAdminForcePasswordEndpoint:
     """Tests d'intégration pour l'endpoint de forçage de mot de passe"""
@@ -52,7 +54,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Forcer le mot de passe
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "new_password": "NewForcedPassword123!",
                 "reason": "Sécurité compromise"
@@ -106,7 +108,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Tenter de forcer le mot de passe
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "new_password": "NewForcedPassword123!",
                 "reason": "Test"
@@ -153,7 +155,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Tenter de forcer le mot de passe
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "new_password": "NewForcedPassword123!",
                 "reason": "Test"
@@ -185,7 +187,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Tenter de forcer le mot de passe sans token
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "new_password": "NewForcedPassword123!",
                 "reason": "Test"
@@ -218,7 +220,7 @@ class TestAdminForcePasswordEndpoint:
         # Tenter de forcer le mot de passe d'un utilisateur inexistant
         fake_user_id = "99999999-9999-9999-9999-999999999999"
         response = client.post(
-            f"/api/v1/admin/users/{fake_user_id}/force-password",
+            v1(f"/admin/users/{fake_user_id}/force-password"),
             json={
                 "new_password": "NewForcedPassword123!",
                 "reason": "Test"
@@ -265,7 +267,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Tenter de forcer un mot de passe faible
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "new_password": "weak",
                 "reason": "Test"
@@ -319,7 +321,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Tenter de forcer sans mot de passe
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "reason": "Test"
             },
@@ -365,7 +367,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Forcer le mot de passe
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "new_password": "NewForcedPassword123!",
                 "reason": "Test d'audit"
@@ -422,7 +424,7 @@ class TestAdminForcePasswordEndpoint:
 
         # Premier appel - devrait fonctionner
         response = client.post(
-            f"/api/v1/admin/users/{target_user.id}/force-password",
+            v1(f"/admin/users/{target_user.id}/force-password"),
             json={
                 "new_password": "NewForcedPassword123!",
                 "reason": "Test rate limiting"

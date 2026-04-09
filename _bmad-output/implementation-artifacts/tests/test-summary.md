@@ -89,6 +89,26 @@
 - [x] Tests indépendants (`afterEach` remet `history` sur `/`)  
 - [x] Synthèse enregistrée ici  
 
+## Story 7.1 — réception nominale v2 (2026-04-09)
+
+- Synthèse détaillée QA e2e : [`test-summary-story-7-1-e2e.md`](./test-summary-story-7-1-e2e.md).
+- Gate ciblé : `npx vitest run tests/e2e/reception-nominal-7-1.e2e.test.tsx` dans `peintre-nano/` — **2** tests, **PASS**. Les preuves réseau sur `http://localhost:4444` restent manuelles / registre terrain (hors jsdom).
+
+## Story 7.2 — contexte réception / blocages (2026-04-09)
+
+- [x] `peintre-nano/tests/e2e/reception-context-gate-7-2.e2e.test.tsx` — chaîne **`App` + `RootProviders`** (pattern `cashflow-context-gate-6-2.e2e.test.tsx`) :
+  - Shell `PageAccessBlocked` : `FORBIDDEN`, `DEGRADED_CONTEXT`, `MISSING_SITE`, `STALE_CONTEXT` sur `/reception`.
+  - Garde wizard `reception-context-blocked` : `siteId` uniquement espaces (comme caisse 6.2).
+  - Sans `reception.access` : entrée nav `nav-entry-reception-nominal` absente (filtrage manifeste ; pas de deep link → `MISSING_PERMISSIONS` car la sélection nav ne résout pas la page réception).
+  - Refus API **403** après ouverture poste : `reception-api-error` + remise à plat wizard (pas de `reception-poste-id` résiduel).
+- Complément unitaire existant : `peintre-nano/tests/unit/reception-context-gate-7-2.test.tsx`.
+- Gate : `npm run test` dans `peintre-nano/` — **313** tests, **PASS** (2026-04-09).
+
+## Story 7.6 — validation exploitabilité terrain réception v2 (2026-04-09)
+
+- Synthèse Story Runner (rejeux + pytest ciblé) : [`test-summary-story-7-6-e2e.md`](./test-summary-story-7-6-e2e.md).
+- Pas de nouvelle suite e2e : consolidation + registre ; preuves navigateur MCP documentées dans `references/artefacts/2026-04-09_01_reception-v2-exploitabilite-terrain-epic7-squelette.md`.
+
 ## Prochaines étapes
 
 - Garder `npm run test` en CI.  

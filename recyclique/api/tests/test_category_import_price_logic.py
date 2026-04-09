@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from io import StringIO
+from tests.api_v1_paths import v1
 
 from recyclic_api.main import app
 from recyclic_api.models.category import Category
@@ -10,9 +10,9 @@ from recyclic_api.models.user import UserRole
 client = TestClient(app)
 
 
-def make_csv(content: str) -> StringIO:
-    """Helper to create CSV content"""
-    return StringIO(content)
+def make_csv(content: str) -> bytes:
+    """Contenu CSV encodé UTF-8 (multipart httpx exige bytes, pas StringIO)."""
+    return content.encode("utf-8")
 
 
 def test_import_csv_with_parent_price_conflict(admin_client, db_session):
@@ -42,7 +42,7 @@ def test_import_csv_with_parent_price_conflict(admin_client, db_session):
     files = {"file": ("test.csv", make_csv(csv_data), "text/csv")}
     
     # Analyser l'import
-    r1 = admin_client.post("/api/v1/categories/import/analyze", files=files)
+    r1 = admin_client.post(v1("/categories/import/analyze"), files=files)
     assert r1.status_code == 200, r1.text
     result = r1.json()
     
@@ -52,7 +52,7 @@ def test_import_csv_with_parent_price_conflict(admin_client, db_session):
     assert "prix qui seront supprimés automatiquement" in result["warnings"][0]
     
     # Exécuter l'import
-    r2 = admin_client.post("/api/v1/categories/import/execute", json={
+    r2 = admin_client.post(v1("/categories/import/execute"), json={
         "session_id": result["session_id"],
         "delete_existing": False
     })
@@ -87,7 +87,7 @@ def test_import_csv_with_root_prices_allowed(admin_client, db_session):
     files = {"file": ("test.csv", make_csv(csv_data), "text/csv")}
     
     # Analyser l'import
-    r1 = admin_client.post("/api/v1/categories/import/analyze", files=files)
+    r1 = admin_client.post(v1("/categories/import/analyze"), files=files)
     assert r1.status_code == 200, r1.text
     result = r1.json()
     
@@ -95,7 +95,7 @@ def test_import_csv_with_root_prices_allowed(admin_client, db_session):
     assert result["errors"] == []
     
     # Exécuter l'import
-    r2 = admin_client.post("/api/v1/categories/import/execute", json={
+    r2 = admin_client.post(v1("/categories/import/execute"), json={
         "session_id": result["session_id"],
         "delete_existing": False
     })
@@ -130,7 +130,7 @@ def test_import_csv_mixed_scenario(admin_client, db_session):
     files = {"file": ("test.csv", make_csv(csv_data), "text/csv")}
     
     # Analyser l'import
-    r1 = admin_client.post("/api/v1/categories/import/analyze", files=files)
+    r1 = admin_client.post(v1("/categories/import/analyze"), files=files)
     assert r1.status_code == 200, r1.text
     result = r1.json()
     
@@ -138,7 +138,7 @@ def test_import_csv_mixed_scenario(admin_client, db_session):
     assert result["errors"] == []
     
     # Exécuter l'import
-    r2 = admin_client.post("/api/v1/categories/import/execute", json={
+    r2 = admin_client.post(v1("/categories/import/execute"), json={
         "session_id": result["session_id"],
         "delete_existing": False
     })

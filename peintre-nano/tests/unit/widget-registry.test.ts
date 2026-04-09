@@ -29,6 +29,8 @@ describe('widget-registry', () => {
     expect(types).toContain('cashflow-special-don-wizard');
     expect(types).toContain('cashflow-special-adhesion-wizard');
     expect(types).toContain('cashflow-social-don-wizard');
+    expect(types).toContain('reception-nominal-wizard');
+    expect(types).toContain('reception-history-panel');
   });
 
   it('résout un type démo en composant', () => {

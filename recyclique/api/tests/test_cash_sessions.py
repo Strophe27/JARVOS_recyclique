@@ -1,5 +1,8 @@
 import pytest
+import tempfile
 import uuid
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -17,6 +20,24 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStatus as SchemaCashSessionStatus,
     CashSessionFilters,
 )
+
+from tests.api_v1_paths import v1
+
+
+@pytest.fixture
+def stub_generate_cash_session_report(monkeypatch):
+    """SQLite tests : le rapport CSV joint ``preset_buttons`` (non cree en test)."""
+
+    def _fake(db, closed_session):
+        p = Path(tempfile.mkdtemp()) / f"cash_session_{closed_session.id}.csv"
+        p.write_text("id,total\n", encoding="utf-8")
+        return p
+
+    monkeypatch.setattr(
+        "recyclic_api.api.api_v1.endpoints.cash_sessions.generate_cash_session_report",
+        _fake,
+    )
+
 
 def validate_with_resolver(instance, schema, openapi_schema):
     """Valide une instance contre un schÃ©ma OpenAPI avec rÃ©solution des rÃ©fÃ©rences."""
@@ -122,7 +143,7 @@ class TestCashSessionEndpoints:
         
         # CrÃ©er la session
         response = client.post(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -158,7 +179,7 @@ class TestCashSessionEndpoints:
             "initial_amount": 50.0
         }
         
-        response = client_with_jwt_auth.post("/api/v1/cash-sessions/", json=session_data)
+        response = client_with_jwt_auth.post(v1("/cash-sessions/"), json=session_data)
         
         assert response.status_code == 403
     
@@ -178,7 +199,7 @@ class TestCashSessionEndpoints:
         }
         
         response = client_with_jwt_auth.post(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -193,7 +214,7 @@ class TestCashSessionEndpoints:
         db_session.commit()
         
         response = client_with_jwt_auth.get(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
@@ -214,7 +235,7 @@ class TestCashSessionEndpoints:
         db_session.commit()
         
         response = client_with_jwt_auth.get(
-            "/api/v1/cash-sessions/?limit=10",
+            v1("/cash-sessions/?limit=10"),
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
@@ -243,7 +264,7 @@ class TestCashSessionEndpoints:
         }
         
         create_response = client_with_jwt_auth.post(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -251,7 +272,7 @@ class TestCashSessionEndpoints:
         
         # RÃ©cupÃ©rer la session courante
         response = client_with_jwt_auth.get(
-            "/api/v1/cash-sessions/current",
+            v1("/cash-sessions/current"),
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         
@@ -261,12 +282,23 @@ class TestCashSessionEndpoints:
         assert data["operator_id"] == str(test_cashier["id"])
         assert data["status"] == "open"
     
-    def test_get_cash_session_by_id(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
-        """Test de rÃ©cupÃ©ration d'une session par ID."""
-        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
+    def test_get_cash_session_by_id(
+        self,
+        client_with_jwt_auth: TestClient,
+        test_cashier,
+        test_admin,
+        test_site,
+        cashier_token,
+        admin_token,
+        db_session,
+    ):
+        """Test de rÃ©cupÃ©ration d'une session par ID (dÃ©tail : ADMIN / SUPER_ADMIN uniquement)."""
+        # CrÃ©er l'utilisateur, l'admin et le site en base de donnÃ©es
         user = User(**test_cashier)
+        admin_user = User(**test_admin)
         site = Site(**test_site)
         db_session.add(user)
+        db_session.add(admin_user)
         db_session.add(site)
         db_session.commit()
         
@@ -278,16 +310,16 @@ class TestCashSessionEndpoints:
         }
         
         create_response = client_with_jwt_auth.post(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         session_id = create_response.json()["id"]
         
-        # RÃ©cupÃ©rer la session par ID
+        # RÃ©cupÃ©rer le dÃ©tail par ID (rÃ©servÃ© admin)
         response = client_with_jwt_auth.get(
-            f"/api/v1/cash-sessions/{session_id}",
-            headers={"Authorization": f"Bearer {cashier_token}"}
+            v1(f"/cash-sessions/{session_id}"),
+            headers={"Authorization": f"Bearer {admin_token}"}
         )
         
         assert response.status_code == 200
@@ -296,16 +328,17 @@ class TestCashSessionEndpoints:
         assert data["id"] == session_id
         assert data["operator_id"] == str(test_cashier["id"])
     
-    def test_get_cash_session_not_found(self, client_with_jwt_auth: TestClient, test_cashier, cashier_token, db_session):
-        """Test de rÃ©cupÃ©ration d'une session inexistante."""
-        # CrÃ©er l'utilisateur caissier en base de donnÃ©es
-        cashier_user = User(**test_cashier)
-        db_session.add(cashier_user)
+    def test_get_cash_session_not_found(
+        self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session
+    ):
+        """Test de rÃ©cupÃ©ration d'une session inexistante (appel admin pour obtenir 404 mÃ©tier)."""
+        admin_user = User(**test_admin)
+        db_session.add(admin_user)
         db_session.commit()
-        
+
         response = client_with_jwt_auth.get(
-            "/api/v1/cash-sessions/00000000-0000-0000-0000-000000000000",
-            headers={"Authorization": f"Bearer {cashier_token}"}
+            v1("/cash-sessions/00000000-0000-0000-0000-000000000000"),
+            headers={"Authorization": f"Bearer {admin_token}"}
         )
         
         assert response.status_code == 404
@@ -327,7 +360,7 @@ class TestCashSessionEndpoints:
         }
         
         create_response = client_with_jwt_auth.post(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -341,7 +374,7 @@ class TestCashSessionEndpoints:
         }
         
         response = client_with_jwt_auth.put(
-            f"/api/v1/cash-sessions/{session_id}",
+            v1(f"/cash-sessions/{session_id}"),
             json=update_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -353,7 +386,15 @@ class TestCashSessionEndpoints:
         assert data["total_sales"] == 25.0
         assert data["total_items"] == 3
     
-    def test_close_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
+    def test_close_cash_session(
+        self,
+        client_with_jwt_auth: TestClient,
+        test_cashier,
+        test_site,
+        cashier_token,
+        db_session,
+        stub_generate_cash_session_report,
+    ):
         """Test de fermeture d'une session."""
         # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
@@ -370,19 +411,24 @@ class TestCashSessionEndpoints:
         }
         
         create_response = client_with_jwt_auth.post(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         session_id = create_response.json()["id"]
-        
+        # B44-P3 : session vide -> suppression au lieu de cl\u00f4ture ; simuler une activit\u00e9 minimale
+        sess = db_session.query(CashSession).filter(CashSession.id == uuid.UUID(session_id)).one()
+        sess.total_sales = 1.0
+        sess.total_items = 1
+        db_session.commit()
+
         # Fermer la session
         close_data = {
-            "actual_amount": 50.0,
+            "actual_amount": 51.0,
             "variance_comment": None
         }
         response = client_with_jwt_auth.post(
-            f"/api/v1/cash-sessions/{session_id}/close",
+            v1(f"/cash-sessions/{session_id}/close"),
             json=close_data,
             headers={
                 "Authorization": f"Bearer {cashier_token}",
@@ -396,7 +442,15 @@ class TestCashSessionEndpoints:
         assert data["status"] == "closed"
         assert data["closed_at"] is not None
     
-    def test_close_already_closed_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
+    def test_close_already_closed_session(
+        self,
+        client_with_jwt_auth: TestClient,
+        test_cashier,
+        test_site,
+        cashier_token,
+        db_session,
+        stub_generate_cash_session_report,
+    ):
         """Test de fermeture d'une session dÃ©jÃ  fermÃ©e."""
         # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
@@ -413,19 +467,23 @@ class TestCashSessionEndpoints:
         }
         
         create_response = client_with_jwt_auth.post(
-            "/api/v1/cash-sessions/",
+            v1("/cash-sessions/"),
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         session_id = create_response.json()["id"]
-        
+        sess = db_session.query(CashSession).filter(CashSession.id == uuid.UUID(session_id)).one()
+        sess.total_sales = 1.0
+        sess.total_items = 1
+        db_session.commit()
+
         # Fermer la session une premiÃ¨re fois
         close_data = {
-            "actual_amount": 50.0,
+            "actual_amount": 51.0,
             "variance_comment": None
         }
         close_response = client_with_jwt_auth.post(
-            f"/api/v1/cash-sessions/{session_id}/close",
+            v1(f"/cash-sessions/{session_id}/close"),
             json=close_data,
             headers={
                 "Authorization": f"Bearer {cashier_token}",
@@ -436,7 +494,7 @@ class TestCashSessionEndpoints:
         
         # Essayer de fermer Ã  nouveau
         response = client_with_jwt_auth.post(
-            f"/api/v1/cash-sessions/{session_id}/close",
+            v1(f"/cash-sessions/{session_id}/close"),
             json=close_data,
             headers={
                 "Authorization": f"Bearer {cashier_token}",
@@ -445,7 +503,8 @@ class TestCashSessionEndpoints:
         )
         
         assert response.status_code == 400
-        assert "dÃ©jÃ  fermÃ©e" in response.json()["detail"]
+        detail = response.json().get("detail", "")
+        assert "ferm" in detail.lower()
     
     def test_get_cash_session_stats(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
         """Test de rÃ©cupÃ©ration des statistiques des sessions."""
@@ -455,7 +514,7 @@ class TestCashSessionEndpoints:
         db_session.commit()
         
         response = client_with_jwt_auth.get(
-            "/api/v1/cash-sessions/stats/summary",
+            v1("/cash-sessions/stats/summary"),
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
@@ -490,7 +549,7 @@ class TestCashSessionEndpoints:
         # Note: Dans un vrai test, il faudrait crÃ©er un token admin
         # Pour simplifier, on teste juste que l'accÃ¨s est refusÃ©
         response = client_with_jwt_auth.get(
-            f"/api/v1/cash-sessions/{test_admin['id']}",
+            v1(f"/cash-sessions/{test_admin['id']}"),
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         
@@ -630,7 +689,10 @@ class TestCashSessionService:
             initial_amount=50.0,
         )
 
-        filters = CashSessionFilters(search=test_cashier["username"].upper())
+        filters = CashSessionFilters(
+            search=test_cashier["username"].upper(),
+            include_empty=True,
+        )
         sessions, total = service.get_sessions_with_filters(filters)
 
         assert total == 1

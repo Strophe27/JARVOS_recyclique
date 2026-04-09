@@ -30,7 +30,10 @@ def test_cash_sessions_search_by_operator_username(admin_client, db_session):
     db_session.commit()
 
     # Act
-    resp = admin_client.get("/v1/cash-sessions/", params={"search": "jean"})
+    resp = admin_client.get(
+        "/v1/cash-sessions/",
+        params={"search": "jean", "include_empty": True},
+    )
 
     # Assert
     assert resp.status_code == 200
@@ -64,7 +67,10 @@ def test_cash_sessions_search_by_session_id(admin_client, db_session):
     db_session.commit()
 
     # Act
-    resp = admin_client.get("/v1/cash-sessions/", params={"search": str(s.id)[:8]})
+    resp = admin_client.get(
+        "/v1/cash-sessions/",
+        params={"search": str(s.id)[:8], "include_empty": True},
+    )
 
     # Assert
     assert resp.status_code == 200

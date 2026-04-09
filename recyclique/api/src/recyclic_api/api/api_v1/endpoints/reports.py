@@ -30,11 +30,12 @@ router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
-# Pattern pour extraire l'UUID de session depuis le nom de fichier
-# Supporte les deux formats :
-# - Ancien: cash_session_{uuid}_{timestamp}.csv
-# - Nouveau: session_caisse_{date}_{operator}_{site}_{uuid}_{timestamp}.csv
-_SESSION_FILENAME_PATTERN = re.compile(r"(?:cash_session_|session_caisse_[^_]+_[^_]+_[^_]+_)([0-9a-fA-F-]{36})_")
+# UUID de session : avant le suffixe _<timestamp>.csv (évite les échecs si opérateur/site
+# contiennent des underscores dans le nom de fichier).
+_SESSION_ID_IN_REPORT_NAME = re.compile(
+    r"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})_\d+\.csv$",
+    re.IGNORECASE,
+)
 
 
 def _reports_directory() -> Path:
@@ -44,7 +45,7 @@ def _reports_directory() -> Path:
 
 
 def _extract_session_id(filename: str) -> UUID | None:
-    match = _SESSION_FILENAME_PATTERN.match(filename)
+    match = _SESSION_ID_IN_REPORT_NAME.search(filename)
     if not match:
         return None
     try:
@@ -490,6 +491,7 @@ def export_bulk_reception_tickets(
         if request_body.format == "csv":
             buffer = generate_bulk_reception_tickets_csv(
                 db,
+                current_user,
                 status=request_body.filters.status,
                 date_from=request_body.filters.date_from,
                 date_to=request_body.filters.date_to,
@@ -502,6 +504,7 @@ def export_bulk_reception_tickets(
         else:  # excel
             buffer = generate_bulk_reception_tickets_excel(
                 db,
+                current_user,
                 status=request_body.filters.status,
                 date_from=request_body.filters.date_from,
                 date_to=request_body.filters.date_to,

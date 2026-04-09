@@ -1,61 +1,92 @@
 """
 Test automatisé pour valider l'ordre des migrations Alembic.
-Ce test s'assure que les migrations peuvent être appliquées dans l'ordre correct
-sans conflits de dépendances.
+
+- Graphe de révisions / fichiers : vérifiable **sans** Postgres (sous-processus ``alembic`` hérite
+  de l'environnement pytest : ``TESTING``, ``DATABASE_URL``, ``TEST_DATABASE_URL`` si présents).
+- ``alembic current`` : optionnel ; ``skip`` si aucune base n'est joignable (honnête pour le local SQLite).
 """
-import pytest
-import subprocess
-import shutil
-import tempfile
 import os
+import re
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
+
+# Première affectation ``revision`` / ``revision: str =`` dans chaque script Alembic
+_REVISION_ASSIGN_RE = re.compile(
+    r"^revision\s*(?::\s*[^=]+)?=\s*[\"']([^\"']+)[\"']",
+    re.MULTILINE,
+)
+
+
+def _revision_id_from_file(path: Path) -> str | None:
+    content = path.read_text(encoding="utf-8")
+    m = _REVISION_ASSIGN_RE.search(content)
+    return m.group(1) if m else None
 
 
 class TestMigrationOrder:
     """Tests pour valider l'ordre et la cohérence des migrations Alembic."""
-    
+
     def _alembic_cmd(self, *args):
-        """Resolve alembic executable portably (PATH or local venv)."""
+        """Resolve alembic executable portably (PATH or local venv, Unix + Windows)."""
         alembic_path = shutil.which("alembic")
         if not alembic_path:
-            candidate = Path(__file__).parent.parent / "venv" / "bin" / "alembic"
-            if candidate.exists():
-                alembic_path = str(candidate)
+            venv = Path(__file__).resolve().parent.parent / "venv"
+            candidates = [
+                venv / "bin" / "alembic",
+                venv / "Scripts" / "alembic.exe",
+                venv / "Scripts" / "alembic.bat",
+            ]
+            for candidate in candidates:
+                if candidate.exists():
+                    alembic_path = str(candidate)
+                    break
             else:
-                # Fallback: mark test as xfail with clear message
                 pytest.skip("alembic executable not found in PATH or local venv")
         return [alembic_path, *args]
 
-    @pytest.mark.skip(reason="Migration tests require external database connection")
-    def test_migration_order_consistency(self):
-        """Test que l'ordre des migrations est cohérent et sans conflits."""
-        # Vérifier que alembic peut lister les migrations sans erreur
+    def _api_root(self) -> Path:
+        return Path(__file__).resolve().parent.parent
+
+    def test_alembic_history_verbose_succeeds(self):
+        """``alembic history --verbose`` ne nécessite pas une base joignable."""
         result = subprocess.run(
             self._alembic_cmd("history", "--verbose"),
-            cwd=Path(__file__).parent.parent,
+            cwd=self._api_root(),
             capture_output=True,
-            text=True
+            text=True,
+            env=os.environ.copy(),
         )
-        
+
         assert result.returncode == 0, f"Erreur lors de la liste des migrations: {result.stderr}"
-        
-        # Vérifier que la commande current fonctionne
+
+    def test_alembic_current_when_database_available(self):
+        """Révision appliquée : exige une DB joignable (SQLite de test ou Postgres). Sinon skip."""
         result = subprocess.run(
             self._alembic_cmd("current"),
-            cwd=Path(__file__).parent.parent,
+            cwd=self._api_root(),
             capture_output=True,
-            text=True
+            text=True,
+            env=os.environ.copy(),
         )
-        
-        assert result.returncode == 0, f"Erreur lors de la vérification de l'état actuel: {result.stderr}"
+
+        if result.returncode != 0:
+            msg = (result.stderr or result.stdout or "").strip()
+            pytest.skip(
+                "alembic current non exécutable sans base joignable / env applicatif complet: "
+                + (msg[:500] if msg else "(pas de détail)")
+            )
     
     def test_migration_heads_consistency(self):
         """Test que les têtes de migration sont cohérentes."""
         result = subprocess.run(
             self._alembic_cmd("heads"),
-            cwd=Path(__file__).parent.parent,
+            cwd=self._api_root(),
             capture_output=True,
-            text=True
+            text=True,
+            env=os.environ.copy(),
         )
         
         assert result.returncode == 0, f"Erreur lors de la vérification des têtes: {result.stderr}"
@@ -70,9 +101,10 @@ class TestMigrationOrder:
         """Test que les dépendances entre migrations sont correctes."""
         result = subprocess.run(
             self._alembic_cmd("show", "head"),
-            cwd=Path(__file__).parent.parent,
+            cwd=self._api_root(),
             capture_output=True,
-            text=True
+            text=True,
+            env=os.environ.copy(),
         )
         
         assert result.returncode == 0, f"Erreur lors de l'affichage de la tête: {result.stderr}"
@@ -83,58 +115,53 @@ class TestMigrationOrder:
         assert ("Parent revision(s):" in result.stdout) or ("Parent:" in result.stdout)
     
     def test_migration_files_exist(self):
-        """Test que tous les fichiers de migration référencés existent."""
-        # Obtenir la liste des migrations
+        """Chaque entrée d'historique Alembic pointe vers un fichier .py existant (ligne Path:)."""
         result = subprocess.run(
             self._alembic_cmd("history", "--verbose"),
-            cwd=Path(__file__).parent.parent,
+            cwd=self._api_root(),
             capture_output=True,
-            text=True
+            text=True,
+            env=os.environ.copy(),
         )
-        
+
         assert result.returncode == 0, f"Erreur lors de la liste des migrations: {result.stderr}"
+
+        paths: list[Path] = []
+        for line in result.stdout.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("Path:"):
+                raw = stripped.split("Path:", 1)[1].strip()
+                paths.append(Path(raw))
         
-        # Extraire les IDs de révision
-        migration_ids = []
-        for line in result.stdout.split('\n'):
-            if 'Rev:' in line:
-                # Format: "Rev: abc123 (head)"
-                rev_id = line.split('Rev:')[1].split()[0].strip()
-                migration_ids.append(rev_id)
-        
-        # Vérifier que tous les fichiers de migration existent
-        migrations_dir = Path(__file__).parent.parent / "migrations" / "versions"
-        
-        for rev_id in migration_ids:
-            # Chercher le fichier correspondant
-            migration_files = list(migrations_dir.glob(f"*{rev_id}*.py"))
-            assert len(migration_files) > 0, f"Fichier de migration non trouvé pour la révision {rev_id}"
-            assert len(migration_files) == 1, f"Plusieurs fichiers trouvés pour la révision {rev_id}: {migration_files}"
+        assert paths, "Aucune ligne Path: dans alembic history --verbose"
+        migrations_dir = (self._api_root() / "migrations" / "versions").resolve()
+        for p in paths:
+            rp = p.resolve()
+            assert rp.is_file(), f"Fichier migration introuvable: {p}"
+            assert rp.parent == migrations_dir, (
+                f"Fichier migration hors versions/ attendu: {rp} (attendu sous {migrations_dir})"
+            )
     
     def test_no_duplicate_migrations(self):
-        """Test qu'il n'y a pas de migrations dupliquées."""
-        migrations_dir = Path(__file__).parent.parent / "migrations" / "versions"
+        """Les identifiants ``revision`` déclarés dans les scripts sont uniques (pas le préfixe du nom de fichier)."""
+        migrations_dir = self._api_root() / "migrations" / "versions"
+        migration_files = sorted(migrations_dir.glob("*.py"))
         
-        # Compter les fichiers de migration
-        migration_files = list(migrations_dir.glob("*.py"))
-        
-        # Extraire les IDs de révision des noms de fichiers
-        revision_ids = []
+        revision_ids: list[str] = []
         for file_path in migration_files:
-            # Format: "abc123_description.py"
-            filename = file_path.name
-            if filename.startswith("__"):
+            if file_path.name.startswith("__"):
                 continue
-            revision_id = filename.split("_")[0]
-            revision_ids.append(revision_id)
+            rid = _revision_id_from_file(file_path)
+            assert rid is not None, f"Impossible de lire revision dans {file_path}"
+            revision_ids.append(rid)
         
-        # Vérifier qu'il n'y a pas de doublons
-        assert len(revision_ids) == len(set(revision_ids)), f"IDs de révision dupliqués détectés: {revision_ids}"
+        assert len(revision_ids) == len(set(revision_ids)), (
+            f"IDs de révision Alembic dupliqués: {revision_ids}"
+        )
     
-    @pytest.mark.skip(reason="Migration tests require external database connection")
     def test_migration_syntax_validity(self):
         """Test que tous les fichiers de migration ont une syntaxe Python valide."""
-        migrations_dir = Path(__file__).parent.parent / "migrations" / "versions"
+        migrations_dir = self._api_root() / "migrations" / "versions"
         
         for migration_file in migrations_dir.glob("*.py"):
             if migration_file.name.startswith("__"):
@@ -143,9 +170,11 @@ class TestMigrationOrder:
             # Vérifier la syntaxe Python
             python_exec = shutil.which("python")
             if not python_exec:
-                candidate = Path(__file__).parent.parent / "venv" / "bin" / "python"
-                if candidate.exists():
-                    python_exec = str(candidate)
+                venv = self._api_root() / "venv"
+                for candidate in (venv / "bin" / "python", venv / "Scripts" / "python.exe"):
+                    if candidate.exists():
+                        python_exec = str(candidate)
+                        break
                 else:
                     pytest.skip("python executable not found in PATH or local venv")
             result = subprocess.run(

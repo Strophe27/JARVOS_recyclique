@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 from unittest.mock import MagicMock
 
+from recyclic_api.models.user import UserRole
 from recyclic_api.repositories.reception import LigneDepotRepository, PosteReceptionRepository
 from recyclic_api.services.reception_service import ReceptionService
 
@@ -31,7 +32,11 @@ def test_reception_service_open_poste_commits_and_refreshes_once():
     service = ReceptionService(db)
     service.poste_repo.add = MagicMock()
 
-    poste = service.open_poste(opened_by_user_id=uuid4())
+    actor = MagicMock()
+    actor.id = uuid4()
+    actor.role = UserRole.ADMIN
+
+    poste = service.open_poste(actor_user=actor)
 
     service.poste_repo.add.assert_called_once()
     db.commit.assert_called_once_with()

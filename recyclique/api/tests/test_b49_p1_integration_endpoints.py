@@ -3,14 +3,13 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from recyclic_api.main import app
+from tests.api_v1_paths import v1
+
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.site import Site
 from recyclic_api.core.auth import create_access_token
-
-client = TestClient(app)
 
 
 @pytest.fixture
@@ -89,7 +88,7 @@ class TestIntegrationRegisterOptions:
         access_token = create_access_token(data={"sub": str(test_user.id)})
         headers = {"Authorization": f"Bearer {access_token}"}
         
-        response = client.get("/api/v1/cash-sessions/current", headers=headers)
+        response = client.get(v1("/cash-sessions/current"), headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -104,7 +103,7 @@ class TestIntegrationRegisterOptions:
         access_token = create_access_token(data={"sub": str(test_user.id)})
         headers = {"Authorization": f"Bearer {access_token}"}
         
-        response = client.get(f"/api/v1/cash-sessions/{test_session.id}", headers=headers)
+        response = client.get(v1(f"/cash-sessions/{test_session.id}"), headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -122,7 +121,7 @@ class TestIntegrationRegisterOptions:
         }
         
         response = client.put(
-            f"/api/v1/cash-sessions/{test_session.id}",
+            v1(f"/cash-sessions/{test_session.id}"),
             json=update_data,
             headers=headers
         )
@@ -145,7 +144,12 @@ class TestIntegrationRegisterOptions:
             payment_method=PaymentMethod.CASH
         )
         db_session.add(sale)
+        # Même agrégats que via le flux API : get_closing_preview lit total_sales sur la session.
+        test_session.total_sales = 25.0
+        test_session.total_items = 1
+        db_session.add(test_session)
         db_session.commit()
+        db_session.refresh(test_session)
         
         access_token = create_access_token(data={"sub": str(test_user.id)})
         headers = {
@@ -159,7 +163,7 @@ class TestIntegrationRegisterOptions:
         }
         
         response = client.post(
-            f"/api/v1/cash-sessions/{test_session.id}/close",
+            v1(f"/cash-sessions/{test_session.id}/close"),
             json=close_data,
             headers=headers
         )
@@ -175,7 +179,11 @@ class TestIntegrationRegisterOptions:
         access_token = create_access_token(data={"sub": str(test_user.id)})
         headers = {"Authorization": f"Bearer {access_token}"}
         
-        response = client.get("/api/v1/cash-sessions/", headers=headers)
+        response = client.get(
+            v1("/cash-sessions/"),
+            headers=headers,
+            params={"include_empty": True},
+        )
         
         assert response.status_code == 200
         data = response.json()

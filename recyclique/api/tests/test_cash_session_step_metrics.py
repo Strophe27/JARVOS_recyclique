@@ -10,9 +10,9 @@ class TestCashSessionStepMetrics:
 
     def test_current_step_enum_values(self):
         """Test que l'enum CashSessionStep contient les bonnes valeurs."""
-        assert CashSessionStep.ENTRY.value == "entry"
-        assert CashSessionStep.SALE.value == "sale"
-        assert CashSessionStep.EXIT.value == "exit"
+        assert CashSessionStep.ENTRY.value == "ENTRY"
+        assert CashSessionStep.SALE.value == "SALE"
+        assert CashSessionStep.EXIT.value == "EXIT"
 
     def test_cash_session_initialization_with_step_fields(self):
         """Test l'initialisation d'une CashSession avec les nouveaux champs."""
@@ -107,7 +107,7 @@ class TestCashSessionStepMetrics:
         session.set_current_step(CashSessionStep.SALE)
 
         metrics = session.get_step_metrics()
-        assert metrics["current_step"] == "sale"
+        assert metrics["current_step"] == "SALE"
         assert metrics["step_start_time"] is not None
         assert metrics["last_activity"] is not None
         assert metrics["step_duration_seconds"] >= 0
@@ -128,7 +128,7 @@ class TestCashSessionStepMetrics:
         assert "current_step" in data
         assert "last_activity" in data
         assert "step_start_time" in data
-        assert data["current_step"] == "exit"
+        assert data["current_step"] == "EXIT"
         assert data["last_activity"] is not None
         assert data["step_start_time"] is not None
 

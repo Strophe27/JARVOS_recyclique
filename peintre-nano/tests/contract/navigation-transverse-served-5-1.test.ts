@@ -65,6 +65,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).not.toContain('cashflow-social-don');
     expect(ids).toContain('cashflow-close');
     expect(ids).not.toContain('cashflow-sale-correction');
+    expect(ids).toContain('reception-nominal');
   });
 
   it('expose l’entrée /caisse avec une permission virtuelle seule (brownfield réel|virtuel|différé)', () => {

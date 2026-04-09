@@ -49,7 +49,7 @@ async def get_preset_button(preset_id: str, db: Session = Depends(get_db)):
     Get a specific preset button by ID.
     """
     service = PresetManagementService(db)
-    preset = await service.get_preset_button_by_id(preset_id)
+    preset = service.get_preset_button_by_id(preset_id)
 
     if not preset:
         raise HTTPException(status_code=404, detail="Preset button not found")

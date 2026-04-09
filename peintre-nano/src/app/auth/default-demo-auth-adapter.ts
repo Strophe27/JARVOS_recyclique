@@ -15,6 +15,9 @@ export const TRANSVERSE_PERMISSION_ADMIN_VIEW = 'transverse.admin.view';
 export const TRANSVERSE_PERMISSION_LISTINGS_HUB_VIEW = 'transverse.listings.hub.view';
 export const TRANSVERSE_PERMISSION_CONSULTATION_HUB_VIEW = 'transverse.consultation.hub.view';
 
+/** Story 7.1 — entrée navigation réception (`reception.access`). */
+export const PERMISSION_RECEPTION_ACCESS = 'reception.access';
+
 /** Story 6.1 — entrée navigation caisse nominale (alignement clés permissions brownfield `caisse.access`). */
 export const PERMISSION_CASHFLOW_NOMINAL = 'caisse.access';
 export const PERMISSION_CASHFLOW_VIRTUAL = 'caisse.virtual.access';
@@ -54,6 +57,7 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
         TRANSVERSE_PERMISSION_ADMIN_VIEW,
         TRANSVERSE_PERMISSION_LISTINGS_HUB_VIEW,
         TRANSVERSE_PERMISSION_CONSULTATION_HUB_VIEW,
+        PERMISSION_RECEPTION_ACCESS,
         PERMISSION_CASHFLOW_NOMINAL,
         PERMISSION_CASHFLOW_VIRTUAL,
         PERMISSION_CASHFLOW_DEFERRED,
@@ -68,6 +72,7 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
     runtimeStatus: 'ok',
     presentationLabels: {
       [NAV_LABEL_KEY_TRANSVERSE_DASHBOARD]: DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD,
+      'nav.reception.nominal': 'Réception (v2 nominal)',
       'nav.cashflow.nominal': 'Caisse (v2 nominal)',
       'nav.cashflow.refund': 'Remboursement',
       'nav.cashflow.specialDon': 'Don (sans article)',

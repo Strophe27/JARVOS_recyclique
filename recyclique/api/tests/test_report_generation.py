@@ -98,18 +98,19 @@ def test_generate_cash_session_report_creates_csv(monkeypatch, tmp_path: Path, d
 
     assert report_path.exists()
     assert report_path.parent == reports_dir
-    assert report_path.name.startswith(f"cash_session_{session.id}_")
+    assert report_path.name.startswith("session_caisse_")
+    assert str(session.id) in report_path.name
     assert not old_file.exists(), "Retention policy should remove stale reports"
 
-    with report_path.open("r", encoding="utf-8") as handle:
-        rows = list(csv.reader(handle))
+    with report_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.reader(handle, delimiter=";"))
 
-    header = rows[0]
-    assert header == ['section', 'field', 'value']
-    summary = {row[1]: row[2] for row in rows[1:16] if row and row[0] == 'session_summary'}
-    assert summary["Session ID"] == str(session.id)
-    assert summary["Total Sales"] == "75.00"
-    assert summary["Total Items"] == "5"
+    assert rows[0] == ["=== RÉSUMÉ DE SESSION ==="]
+    assert rows[1] == ["Champ", "Valeur"]
+    summary = {row[0]: row[1] for row in rows[2:] if len(row) >= 2 and row[0] and not row[0].startswith("=")}
+    assert summary["ID Session"] == str(session.id)
+    assert summary["Total Ventes (€)"] == "75,00"
+    assert summary["Nombre d'Articles"] == "5"
 
 
 def test_generate_cash_session_report_respects_custom_dir(monkeypatch, tmp_path: Path, db_session: Session):
@@ -132,4 +133,5 @@ def test_generate_cash_session_report_respects_custom_dir(monkeypatch, tmp_path:
 
     assert report_path.exists()
     assert report_path.parent == custom_dir
-    assert report_path.read_text(encoding="utf-8").splitlines()[0] == 'section,field,value'
+    first_line = report_path.read_text(encoding="utf-8-sig").splitlines()[0]
+    assert first_line == "=== RÉSUMÉ DE SESSION ==="

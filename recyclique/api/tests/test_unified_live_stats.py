@@ -10,15 +10,40 @@ import pytest
 from sqlalchemy.orm import Session
 
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
-from recyclic_api.models.ligne_depot import LigneDepot
+from recyclic_api.models.ligne_depot import LigneDepot, Destination
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.category import Category
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.site import Site
+from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.services.reception_stats_service import ReceptionLiveStatsService
 from recyclic_api.core.security import hash_password
+
+
+def _site_and_register(db_session: Session) -> tuple[Site, CashRegister]:
+    site = Site(
+        name="Unified stats site",
+        address="1 rue Test",
+        city="Testville",
+        postal_code="75000",
+        country="France",
+        is_active=True,
+    )
+    db_session.add(site)
+    db_session.flush()
+    register = CashRegister(
+        id=uuid.uuid4(),
+        name="Reg test",
+        location="Salle",
+        site_id=site.id,
+        is_active=True,
+    )
+    db_session.add(register)
+    db_session.flush()
+    return site, register
 
 
 class TestUnifiedLiveStatsService:
@@ -37,6 +62,8 @@ class TestUnifiedLiveStatsService:
         )
         db_session.add(user)
         db_session.commit()
+
+        site, register = _site_and_register(db_session)
 
         # Create poste opened today
         now = datetime.now(timezone.utc)
@@ -75,11 +102,10 @@ class TestUnifiedLiveStatsService:
             id=uuid.uuid4(),
             ticket_id=ticket.id,
             category_id=category.id,
-            poids_kg=Decimal("10.5")
+            poids_kg=Decimal("10.5"),
+            destination=Destination.MAGASIN,
+            is_exit=False,
         )
-        # Set is_exit only if column exists (B48-P3)
-        if hasattr(LigneDepot, 'is_exit'):
-            ligne.is_exit = False
         db_session.add(ligne)
         db_session.commit()
 
@@ -87,33 +113,37 @@ class TestUnifiedLiveStatsService:
         session = CashSession(
             id=uuid.uuid4(),
             operator_id=user.id,
+            site_id=site.id,
+            register_id=register.id,
             initial_amount=100.0,
             current_amount=100.0,
-            status=CashSessionStatus.OPEN.value,
-            opened_at=start_of_today + timedelta(hours=2)
+            status=CashSessionStatus.OPEN,
+            opened_at=start_of_today + timedelta(hours=2),
         )
         db_session.add(session)
         db_session.commit()
 
-        # Create sale
+        # Create sale (dans la fenêtre « journée » : évite flake entre minuit et 2h UTC)
         sale = Sale(
             id=uuid.uuid4(),
             cash_session_id=session.id,
             operator_id=user.id,
             total_amount=50.0,
             donation=5.0,
-            created_at=now - timedelta(hours=2)
+            created_at=start_of_today + timedelta(hours=3),
         )
         db_session.add(sale)
         db_session.commit()
 
-        # Create sale item with weight
+        # Create sale item with weight (category = code libellé, pas FK)
         sale_item = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale.id,
-            category_id=category.id,
-            weight=Decimal("5.0"),
-            price=50.0
+            category="Test Category",
+            quantity=1,
+            weight=5.0,
+            unit_price=50.0,
+            total_price=50.0,
         )
         db_session.add(sale_item)
         db_session.commit()
@@ -159,15 +189,19 @@ class TestUnifiedLiveStatsService:
         db_session.add(user)
         db_session.commit()
 
+        site, register = _site_and_register(db_session)
+
         # Create cash session
         now = datetime.now(timezone.utc)
         session = CashSession(
             id=uuid.uuid4(),
             operator_id=user.id,
+            site_id=site.id,
+            register_id=register.id,
             initial_amount=100.0,
             current_amount=100.0,
-            status=CashSessionStatus.OPEN.value,
-            opened_at=now - timedelta(hours=12)  # 12h ago
+            status=CashSessionStatus.OPEN,
+            opened_at=now - timedelta(hours=12),  # 12h ago
         )
         db_session.add(session)
         db_session.commit()
@@ -206,16 +240,20 @@ class TestUnifiedLiveStatsService:
         db_session.add(user)
         db_session.commit()
 
+        site, register = _site_and_register(db_session)
+
         # Create cash session
         now = datetime.now(timezone.utc)
         start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         session = CashSession(
             id=uuid.uuid4(),
             operator_id=user.id,
+            site_id=site.id,
+            register_id=register.id,
             initial_amount=100.0,
             current_amount=100.0,
-            status=CashSessionStatus.OPEN.value,
-            opened_at=start_of_today + timedelta(hours=1)
+            status=CashSessionStatus.OPEN,
+            opened_at=start_of_today + timedelta(hours=1),
         )
         db_session.add(session)
         db_session.commit()
@@ -229,14 +267,14 @@ class TestUnifiedLiveStatsService:
         db_session.add(category)
         db_session.commit()
 
-        # Create two sales
+        # Create two sales (horodatages dans la journée courante)
         sale1 = Sale(
             id=uuid.uuid4(),
             cash_session_id=session.id,
             operator_id=user.id,
             total_amount=20.0,
             donation=2.0,
-            created_at=now - timedelta(hours=1)
+            created_at=start_of_today + timedelta(hours=2),
         )
         sale2 = Sale(
             id=uuid.uuid4(),
@@ -244,7 +282,7 @@ class TestUnifiedLiveStatsService:
             operator_id=user.id,
             total_amount=30.0,
             donation=3.0,
-            created_at=now - timedelta(minutes=30)
+            created_at=start_of_today + timedelta(hours=2, minutes=30),
         )
         db_session.add_all([sale1, sale2])
         db_session.commit()
@@ -253,16 +291,20 @@ class TestUnifiedLiveStatsService:
         item1 = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale1.id,
-            category_id=category.id,
-            weight=Decimal("2.0"),
-            price=20.0
+            category="Test Category",
+            quantity=1,
+            weight=2.0,
+            unit_price=20.0,
+            total_price=20.0,
         )
         item2 = SaleItem(
             id=uuid.uuid4(),
             sale_id=sale2.id,
-            category_id=category.id,
-            weight=Decimal("3.0"),
-            price=30.0
+            category="Test Category",
+            quantity=1,
+            weight=3.0,
+            unit_price=30.0,
+            total_price=30.0,
         )
         db_session.add_all([item1, item2])
         db_session.commit()

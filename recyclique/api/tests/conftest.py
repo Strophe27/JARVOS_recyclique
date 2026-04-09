@@ -45,6 +45,13 @@ if "DATABASE_URL" not in os.environ:
 
 import types
 
+# Précharger reportlab si installé (comme openpyxl ci-dessous) : sinon le stub vide
+# casse export_categories PDF (getSampleStyleSheet → {} → KeyError 'Heading1').
+try:
+    import reportlab  # noqa: F401
+except ImportError:
+    pass
+
 if "reportlab" not in sys.modules:
     reportlab = types.ModuleType("reportlab")
     lib = types.ModuleType("reportlab.lib")
@@ -80,6 +87,13 @@ if "reportlab" not in sys.modules:
     sys.modules["reportlab.lib.units"] = units
     sys.modules["reportlab.lib.enums"] = enums
     sys.modules["reportlab.platypus"] = platypus
+
+# Stub openpyxl uniquement si le paquet est absent (CI minimale). Si openpyxl est installé,
+# le précharger ici évite d'écraser sys.modules avec un Workbook factice (exports Excel en 500).
+try:
+    import openpyxl  # noqa: F401
+except ImportError:
+    pass
 
 if "openpyxl" not in sys.modules:
     class _DummyCell:
@@ -135,6 +149,14 @@ if "openpyxl" not in sys.modules:
         def __init__(self, *args, **kwargs):
             pass
 
+    class _DummyBorder:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class _DummySide:
+        def __init__(self, *args, **kwargs):
+            pass
+
     def _dummy_load_workbook(*args, **kwargs):
         """Mock pour load_workbook qui retourne un workbook vide."""
         return _DummyWorkbook()
@@ -144,6 +166,8 @@ if "openpyxl" not in sys.modules:
     styles_module.Font = _DummyFont
     styles_module.Alignment = _DummyAlignment
     styles_module.PatternFill = _DummyPatternFill
+    styles_module.Border = _DummyBorder
+    styles_module.Side = _DummySide
 
     sys.modules["openpyxl"] = openpyxl
     sys.modules["openpyxl.styles"] = styles_module
@@ -158,7 +182,12 @@ if "openpyxl" not in sys.modules:
 import re
 
 import pytest
+
+# Module `clean_legacy_import` absent (script hors dépôt) — évite l'échec de collecte.
+collect_ignore = ["test_clean_legacy_import.py"]
+
 from fastapi.testclient import TestClient
+import httpx
 from httpx import AsyncClient
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
@@ -171,8 +200,10 @@ from recyclic_api.core.database import get_db, Base
 from sqlalchemy.orm import Session
 
 from recyclic_api.models.user import User, UserRole, UserStatus
+from tests.memory_redis_for_tests import MemoryRedisForTests
 from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.models.site import Site
+from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.deposit import Deposit
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_reversal import SaleReversal
@@ -182,7 +213,9 @@ from recyclic_api.models.payment_transaction import PaymentTransaction
 from recyclic_api.models.sync_log import SyncLog
 from recyclic_api.models.registration_request import RegistrationRequest
 from recyclic_api.models.user_status_history import UserStatusHistory
+from recyclic_api.models.admin_setting import AdminSetting  # noqa: F401 — admin_settings (SQLite)
 from recyclic_api.models.category import Category
+from recyclic_api.models.preset_button import PresetButton  # noqa: F401 — preset_buttons (tests presets API)
 from recyclic_api.models.poste_reception import PosteReception
 from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.models.ligne_depot import LigneDepot
@@ -198,6 +231,19 @@ from recyclic_api.models.permission import (  # noqa: F401 — tests groupes / p
 from recyclic_api.core.security import create_access_token, hash_password
 
 logger = logging.getLogger(__name__)
+
+# httpx >= 0.28 : ``AsyncClient(app=...)`` supprimé — transport ASGI explicite.
+def _async_client_for_fastapi_app():
+    """Construit un ``AsyncClient`` contre l'app FastAPI, compatible httpx 0.25–0.28+."""
+    base_url = "http://testserver"
+    try:
+        return AsyncClient(app=app, base_url=base_url)
+    except TypeError:
+        # httpx 0.28+ : uniquement ``transport=ASGITransport(app=...)``.
+        return AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url=base_url,
+        )
 
 # SQLite ne conserve pas le tz des colonnes DateTime(timezone=True) : l'ORM peut
 # renvoyer des datetimes naïfs, ce qui casse les comparaisons avec ``datetime.now(timezone.utc)``.
@@ -255,6 +301,18 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Même Engine / SessionLocal que ``recyclic_api.core.database`` : évite une base « vide »
+# pour ``get_token_expiration_minutes`` (``next(get_db())`` hors override FastAPI) et
+# aligne ``check_same_thread=False`` pour TestClient / httpx (threads).
+import recyclic_api.core.database as _app_database_module
+
+try:
+    _app_database_module.engine.dispose(close=True)
+except Exception:
+    pass
+_app_database_module.engine = engine
+_app_database_module.SessionLocal = TestingSessionLocal
 
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     from sqlalchemy import event
@@ -452,8 +510,8 @@ def create_tables_if_not_exist():
                 """))
                 conn.commit()
         if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-            # Les imports ci-dessus enregistrent aussi des modèles JSONB (ex. cash_registers) : create_all
-            # complet échoue sur SQLite ; le bloc try/except masquait l erreur et laissait user_sessions absent.
+            # Schéma SQLite partiel : tables listées ci-dessous (JSONB non supporté par le dialecte SQLite,
+            # ex. audit_logs — voir fixture _sqlite_skip_audit_log_commit).
             Base.metadata.create_all(
                 bind=engine,
                 tables=[
@@ -469,6 +527,10 @@ def create_tables_if_not_exist():
                     user_groups,
                     # Sessions caisse / ventes (tests admin maintenance, cash_session_*, etc.)
                     Site.__table__,
+                    # FK site_id — requis pour DELETE sites (UoW SQLAlchemy charge la relation)
+                    RegistrationRequest.__table__,
+                    AdminSetting.__table__,
+                    CashRegister.__table__,
                     CashSession.__table__,
                     Sale.__table__,
                     SaleReversal.__table__,
@@ -477,6 +539,7 @@ def create_tables_if_not_exist():
                     Deposit.__table__,
                     # Réception / dépôt (test_reception_live_stats, stats live)
                     Category.__table__,
+                    PresetButton.__table__,
                     PosteReception.__table__,
                     TicketDepot.__table__,
                     LigneDepot.__table__,
@@ -504,8 +567,9 @@ def _sqlite_skip_audit_log_commit(request):
     """
     Sous SQLite, audit_logs (JSONB) n'est pas créé ; log_audit() et dérivés
     (log_role_change, etc.) font un commit() ou échouent sur insert. On neutralise
-    log_audit dans core.audit (imports dynamiques ex. users), auth,     admin_users_credentials et
-    admin_activity_threshold (rollback d'insert audit annulerait la session SQLite).
+    log_audit dans core.audit (imports dynamiques ex. users), auth, admin_users_credentials,
+    admin_activity_threshold, reception (PATCH poids ligne) et sale_service
+    (rollback d'insert audit annulerait la session SQLite).
     """
     if not SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
         yield
@@ -521,6 +585,7 @@ def _sqlite_skip_audit_log_commit(request):
     )
     from recyclic_api.api.api_v1.endpoints import admin_activity_threshold as admin_activity_threshold_endpoints
     from recyclic_api.api.api_v1.endpoints import auth as auth_endpoints
+    from recyclic_api.api.api_v1.endpoints import reception as reception_endpoints
     from recyclic_api.services import sale_service as sale_service_mod
 
     _noop = lambda *args, **kwargs: None
@@ -530,6 +595,7 @@ def _sqlite_skip_audit_log_commit(request):
         patch.object(auth_endpoints, "log_audit", _noop),
         patch.object(admin_users_credentials_endpoints, "log_audit", _noop),
         patch.object(admin_activity_threshold_endpoints, "log_audit", _noop),
+        patch.object(reception_endpoints, "log_audit", _noop),
         patch.object(sale_service_mod, "log_audit", _noop),
     ):
         yield
@@ -544,7 +610,8 @@ def _db_autouse(db_engine, request):
     - Au début du test, une transaction est ouverte sur la connexion via ``connection.begin()`` ;
       le retour n'est pas utilisé dans le teardown (**ni commit ni rollback explicites** sur cet
       objet — comportement historique volontairement inchangé).
-    - L'override FastAPI ``get_db`` injecte cette ``Session`` pour ``TestClient`` / les endpoints.
+    - L'override FastAPI ``get_db`` ouvre une **nouvelle** ``Session`` par requête HTTP
+      (même ``connection``) ; la ``Session`` ``yield``-ée au test reste celle du code de test.
 
     **Ce qu'elle ne garantit pas**
     - **Pas d'isolation « rollback entre tests »** via cette fixture seule : tout ``commit()``
@@ -570,10 +637,14 @@ def _db_autouse(db_engine, request):
     session = TestingSessionLocal(bind=connection)
 
     def override_get_db():
+        # Une Session par requête HTTP : le TestClient Starlette exécute les routes
+        # synchrones dans un thread pool ; réutiliser la même Session ORM entre threads
+        # est indéfini (lectures vides après commits, export ticket CSV, etc.).
+        req_session = TestingSessionLocal(bind=connection)
         try:
-            yield session
+            yield req_session
         finally:
-            pass
+            req_session.close()
 
     # Override ciblé (pas de clear global)
     app.dependency_overrides[get_db] = override_get_db
@@ -675,6 +746,65 @@ def admin_client(db_session: Session) -> Generator[TestClient, None, None]:
 
     yield authenticated_client
 
+
+@pytest.fixture(scope="function")
+def user_client(db_session: Session) -> Generator[TestClient, None, None]:
+    """Client authentifié avec rôle USER (permissions sites : liste OK, CRUD admin refusé)."""
+    user_username = f"user_{uuid.uuid4().hex}@test.com"
+    user_password = "user_password"
+    hashed_password = hash_password(user_password)
+
+    user = User(
+        username=user_username,
+        hashed_password=hashed_password,
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        legacy_external_contact_id="777777777",
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    access_token = create_access_token(data={"sub": str(user.id)})
+
+    class AuthenticatedTestClient:
+        """Wrapper pour TestClient qui injecte automatiquement le header Authorization."""
+
+        def __init__(self, client: TestClient, token: str):
+            self._client = client
+            self._auth_header = {"Authorization": f"Bearer {token}"}
+
+        def get(self, url: str, **kwargs):
+            headers = kwargs.pop("headers", {})
+            headers.update(self._auth_header)
+            return self._client.get(url, headers=headers, **kwargs)
+
+        def post(self, url: str, **kwargs):
+            headers = kwargs.pop("headers", {})
+            headers.update(self._auth_header)
+            return self._client.post(url, headers=headers, **kwargs)
+
+        def patch(self, url: str, **kwargs):
+            headers = kwargs.pop("headers", {})
+            headers.update(self._auth_header)
+            return self._client.patch(url, headers=headers, **kwargs)
+
+        def put(self, url: str, **kwargs):
+            headers = kwargs.pop("headers", {})
+            headers.update(self._auth_header)
+            return self._client.put(url, headers=headers, **kwargs)
+
+        def delete(self, url: str, **kwargs):
+            headers = kwargs.pop("headers", {})
+            headers.update(self._auth_header)
+            return self._client.delete(url, headers=headers, **kwargs)
+
+    client = TestClient(app)
+    authenticated_client = AuthenticatedTestClient(client, access_token)
+
+    yield authenticated_client
+
+
 @pytest.fixture(scope="function")
 def super_admin_client(db_session: Session) -> Generator[TestClient, None, None]:
     """
@@ -708,12 +838,93 @@ def super_admin_client(db_session: Session) -> Generator[TestClient, None, None]
 
 @pytest.fixture(scope="function")
 def async_client():
-    """Fixture pour le client de test asynchrone FastAPI."""
-    return AsyncClient(app=app, base_url="http://testserver")
+    """Fixture pour le client de test asynchrone FastAPI (httpx 0.25 ``app=`` ou 0.28+ ASGITransport)."""
+    return _async_client_for_fastapi_app()
 
 
 @pytest.fixture(scope="session")
 def openapi_schema():
     """Fixture pour le schéma OpenAPI (généré dynamiquement, pas depuis fichier)."""
     return app.openapi()
+
+
+# --- Activité / statuts utilisateurs : Redis mémoire + comptes de test reproductibles ---
+_ACTIVITY_REDIS_TEST_FILES = frozenset(
+    {"test_activity_ping.py", "test_user_statuses.py"},
+)
+
+
+def _activity_status_test_basename(request) -> str:
+    try:
+        path = getattr(request.node, "path", None) or getattr(request.node, "fspath", None)
+        return path.name if path is not None else ""
+    except Exception:
+        return ""
+
+
+def _ensure_seed_user_for_activity_tests(
+    db_session: Session, *, username: str, role: UserRole, legacy_tag: str
+) -> None:
+    """Comptes stables attendus par les tests ping / statuts (plus de seed implicite Docker)."""
+    password_plain = "Test1234!"
+    u = db_session.query(User).filter(User.username == username).first()
+    hashed = hash_password(password_plain)
+    if u is None:
+        u = User(
+            username=username,
+            hashed_password=hashed,
+            role=role,
+            status=UserStatus.ACTIVE,
+            is_active=True,
+            legacy_external_contact_id=legacy_tag,
+        )
+        db_session.add(u)
+    else:
+        u.hashed_password = hashed
+        u.role = role
+        u.status = UserStatus.ACTIVE
+        u.is_active = True
+    db_session.commit()
+    db_session.refresh(u)
+
+
+@pytest.fixture(autouse=True)
+def _activity_user_status_tests_env(request, monkeypatch, db_session):
+    """
+    Pour ``test_activity_ping`` et ``test_user_statuses`` :
+    - remplace le client Redis global par une implémentation en mémoire ;
+    - garantit ``superadmintest1`` / ``admintest1`` avec mot de passe ``Test1234!`` ;
+    - réinitialise le cache de seuil ``ActivityService`` (évite la fuite entre tests).
+    """
+    if _activity_status_test_basename(request) not in _ACTIVITY_REDIS_TEST_FILES:
+        yield
+        return
+    if request.node.get_closest_marker("no_db"):
+        yield
+        return
+
+    from recyclic_api.core import redis as redis_core
+    from recyclic_api.services.activity_service import (
+        ActivityService,
+        DEFAULT_ACTIVITY_THRESHOLD_MINUTES,
+    )
+
+    monkeypatch.setattr(redis_core, "redis_client", MemoryRedisForTests())
+    ActivityService._cached_threshold_minutes = DEFAULT_ACTIVITY_THRESHOLD_MINUTES
+    ActivityService._cache_expiration_timestamp = 0.0
+
+    _ensure_seed_user_for_activity_tests(
+        db_session,
+        username="superadmintest1",
+        role=UserRole.SUPER_ADMIN,
+        legacy_tag="seed-sa-activity",
+    )
+    _ensure_seed_user_for_activity_tests(
+        db_session,
+        username="admintest1",
+        role=UserRole.ADMIN,
+        legacy_tag="seed-ad-activity",
+    )
+
+    yield
 

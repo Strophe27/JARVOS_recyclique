@@ -290,17 +290,11 @@ class CategoryService:
         
         # Sort children by name for consistent ordering
         children.sort(key=lambda x: x.name)
-        
-        return CategoryWithChildren(
-            id=str(category.id),
-            name=category.name,
-            is_active=category.is_active,
-            parent_id=str(category.parent_id) if category.parent_id else None,
-            created_at=category.created_at,
-            updated_at=category.updated_at,
-            deleted_at=category.deleted_at,
-            children=children
-        )
+
+        base = CategoryRead.model_validate(category)
+        payload = base.model_dump()
+        payload["children"] = children
+        return CategoryWithChildren.model_validate(payload)
     
     async def get_category_children(self, category_id: str) -> List[CategoryRead]:
         """Get direct children of a category.
@@ -398,7 +392,9 @@ class CategoryService:
         if active_children_count > 0:
             raise ConflictError(
                 {
-                    "detail": "Impossible de désactiver cette catégorie car elle contient des sous-catégories actives. Veuillez d'abord désactiver ou transférer les sous-catégories.",
+                    # Clé « message » (pas « detail ») : évite la sérialisation en chaîne
+                    # quand HTTPException enveloppe déjà le corps dans « detail ».
+                    "message": "Impossible de désactiver cette catégorie car elle contient des sous-catégories actives. Veuillez d'abord désactiver ou transférer les sous-catégories.",
                     "category_id": str(category_id),
                     "active_children_count": active_children_count,
                 }

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.auth import create_access_token
+from tests.api_v1_paths import v1
 
 
 def _auth_headers(user: User):
@@ -25,7 +26,7 @@ def test_active_operators_filters_roles_and_is_active(client: TestClient, db_ses
     db_session.commit()
 
     # Act
-    resp = client.get("/api/v1/users/active-operators", headers=_auth_headers(requester))
+    resp = client.get(v1("/users/active-operators"), headers=_auth_headers(requester))
 
     # Assert
     assert resp.status_code == 200

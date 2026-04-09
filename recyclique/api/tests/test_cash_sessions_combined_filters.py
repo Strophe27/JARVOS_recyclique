@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.sale import Sale
 from recyclic_api.models.user import User, UserRole, UserStatus
 
 
@@ -51,6 +52,18 @@ def test_cash_sessions_combined_filters_list_and_kpis(admin_client, db_session: 
         total_items=1,
     )
     db_session.add_all([s_match, s_old])
+    db_session.flush()
+    # KPI stats/summary agrège Sale.total_amount (pas seulement cash_sessions.total_sales)
+    sale_match = Sale(
+        id=uuid.uuid4(),
+        cash_session_id=s_match.id,
+        operator_id=operator.id,
+        total_amount=70.0,
+        donation=0.0,
+        sale_date=in_range,
+        created_at=in_range,
+    )
+    db_session.add(sale_match)
     db_session.commit()
 
     # Act: list with combined filters + search by partial username

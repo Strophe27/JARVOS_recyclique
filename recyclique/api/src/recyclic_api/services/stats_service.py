@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func, and_, or_, cast, String
 
 from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.ligne_depot import LigneDepot
@@ -251,8 +251,19 @@ class StatsService:
         # - LEFT JOIN sur ParentCat pour obtenir le parent
         # - Utiliser func.coalesce(ParentCat.name, Category.name) pour le nom
         # - Filtrer pour ne garder que les catégories principales (parent_id IS NULL)
-        from sqlalchemy.dialects.postgresql import UUID as PGUUID
-        
+        # SQLite (tests) : SaleItem.category est une chaîne ; comparer à Category.id casté en String.
+        # PostgreSQL : cast explicite string → UUID pour le JOIN.
+        dialect_name = self.db.get_bind().dialect.name
+        if dialect_name == "sqlite":
+            # SQLite + UUID PG : formats stockés/castés variables ; comparer sans tirets.
+            cat_id_txt = func.lower(func.replace(cast(Category.id, String), "-", ""))
+            item_cat_txt = func.lower(func.replace(SaleItem.category, "-", ""))
+            category_join_cond = item_cat_txt == cat_id_txt
+        else:
+            from sqlalchemy.dialects.postgresql import UUID as PGUUID
+
+            category_join_cond = cast(SaleItem.category, PGUUID) == Category.id
+
         query = self.db.query(
             func.coalesce(ParentCat.name, Category.name).label('category_name'),
             func.coalesce(func.sum(SaleItem.weight), 0).label('total_weight'),
@@ -267,19 +278,18 @@ class StatsService:
             Sale.cash_session_id == CashSession.id
         ).outerjoin(
             Category,
-            func.cast(SaleItem.category, PGUUID) == Category.id
+            category_join_cond,
         ).outerjoin(
             ParentCat,
             Category.parent_id == ParentCat.id
         ).filter(
-            # Filtrer uniquement les catégories principales
-            # Si Category.parent_id IS NULL, c'est une catégorie principale
-            # Si Category.parent_id IS NOT NULL, c'est une sous-catégorie, on utilise ParentCat
-            # Si Category n'existe pas (LEFT JOIN), on exclut (pas de catégorie valide)
+            # Sans ligne Category résolue, parent_id et name sont NULL mais
+            # ``parent_id IS NULL`` est vrai → il faut exclure ces lignes orphelines.
+            Category.id.isnot(None),
             or_(
-                Category.parent_id.is_(None),  # Catégorie principale directe
-                ParentCat.parent_id.is_(None)  # Sous-catégorie dont le parent est principal
-            )
+                Category.parent_id.is_(None),
+                ParentCat.parent_id.is_(None),
+            ),
         )
 
         # Apply date filters if provided

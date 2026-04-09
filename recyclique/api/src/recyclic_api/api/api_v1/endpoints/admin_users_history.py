@@ -52,10 +52,16 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
                 success=True,
             )
 
-            UUID(user_id)
+            try:
+                user_uuid = UUID(user_id)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=http_status.HTTP_404_NOT_FOUND,
+                    detail=str(exc),
+                ) from exc
 
             # Récupérer le nom de l'utilisateur cible pour une description plus lisible
-            target_user = db.query(User).filter(User.id == user_id).first()
+            target_user = db.query(User).filter(User.id == user_uuid).first()
             target_name = "utilisateur inconnu"
             if target_user:
                 if target_user.first_name and target_user.last_name:
@@ -78,6 +84,8 @@ def register_admin_users_history_routes(router: APIRouter, limiter: Limiter) -> 
 
             return history_response
 
+        except HTTPException:
+            raise
         except ValueError as e:
             log_admin_access(
                 user_id=str(current_user.id),

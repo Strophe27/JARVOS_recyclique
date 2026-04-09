@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Union
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,12 @@ from recyclic_api.schemas.site import (
     SiteCreate,
     SiteUpdate,
 )
+
+
+def _as_uuid(value: Union[str, UUID]) -> UUID:
+    if isinstance(value, UUID):
+        return value
+    return UUID(str(value))
 
 
 class SiteService:
@@ -35,7 +42,7 @@ class SiteService:
         return query.offset(skip).limit(limit).all()
 
     def get(self, *, site_id: str) -> Optional[Site]:
-        return self._db.query(Site).filter(Site.id == site_id).first()
+        return self._db.query(Site).filter(Site.id == _as_uuid(site_id)).first()
 
     # Create
     def create(self, *, data: SiteCreate) -> Site:
@@ -75,8 +82,9 @@ class SiteService:
         from recyclic_api.models.user import User
 
         # Check for cash registers
+        sid = _as_uuid(site.id)
         cash_registers_count = self._db.query(CashRegister).filter(
-            CashRegister.site_id == site.id
+            CashRegister.site_id == sid
         ).count()
 
         if cash_registers_count > 0:
@@ -87,7 +95,7 @@ class SiteService:
 
         # Check for users assigned to this site
         users_count = self._db.query(User).filter(
-            User.site_id == site.id
+            User.site_id == sid
         ).count()
 
         if users_count > 0:

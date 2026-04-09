@@ -129,7 +129,7 @@ def test_cash_session_detail_includes_weight_fields(
   db_session.commit()
 
   # Appeler l'endpoint de détail de session
-  response = admin_client.get(f"/api/v1/cash-sessions/{session.id}")
+  response = admin_client.get(f"/v1/cash-sessions/{session.id}")
   assert response.status_code == 200
   data = response.json()
 

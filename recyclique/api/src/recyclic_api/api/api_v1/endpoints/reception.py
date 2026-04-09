@@ -8,9 +8,9 @@ from datetime import date, datetime
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_role_strict
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
-from recyclic_api.models.user import UserRole, User
+from recyclic_api.models.user import User, UserRole
 from recyclic_api.utils.report_tokens import verify_download_token
 from recyclic_api.application.reception_lignes_export_presentation import (
     build_lignes_depot_export_filename,
@@ -82,7 +82,9 @@ def open_poste(
     
     service = ReceptionService(db)
     try:
-        poste = service.open_poste(opened_by_user_id=current_user.id, opened_at=opened_at)
+        poste = service.open_poste(actor_user=current_user, opened_at=opened_at)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except ValidationError as exc:
         raise_domain_exception_as_http(
             exc,
@@ -100,7 +102,9 @@ def close_poste(
 ):
     service = ReceptionService(db)
     try:
-        poste = service.close_poste(poste_id=UUID(poste_id))
+        poste = service.close_poste(poste_id=UUID(poste_id), actor_user=current_user)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except (NotFoundError, ConflictError) as exc:
         raise_domain_exception_as_http(
             exc,
@@ -118,7 +122,13 @@ def create_ticket(
 ):
     service = ReceptionService(db)
     try:
-        ticket = service.create_ticket(poste_id=UUID(payload.poste_id), benevole_user_id=current_user.id)
+        ticket = service.create_ticket(
+            poste_id=UUID(payload.poste_id),
+            benevole_user_id=current_user.id,
+            actor_user=current_user,
+        )
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except (NotFoundError, ConflictError) as exc:
         raise_domain_exception_as_http(
             exc,
@@ -136,7 +146,9 @@ def close_ticket(
 ):
     service = ReceptionService(db)
     try:
-        ticket = service.close_ticket(ticket_id=UUID(ticket_id))
+        ticket = service.close_ticket(ticket_id=UUID(ticket_id), actor_user=current_user)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except NotFoundError as exc:
         raise_domain_exception_as_http(
             exc,
@@ -163,7 +175,10 @@ def add_ligne(
             destination=payload.destination,
             notes=payload.notes,
             is_exit=payload.is_exit if payload.is_exit is not None else False,
+            actor_user=current_user,
         )
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except (NotFoundError, ConflictError, ValidationError) as exc:
         raise_domain_exception_as_http(
             exc,
@@ -198,6 +213,10 @@ def get_categories(
     
     Story B48-P5: Retourne name (nom court/rapide) pour l'affichage opérationnel.
     """
+    try:
+        ReceptionService(db).assert_nominal_reception_eligible(current_user)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     categories = db.query(Category).filter(
         Category.is_active == True
     ).all()
@@ -226,7 +245,10 @@ def update_ligne(
             destination=payload.destination,
             notes=payload.notes,
             is_exit=payload.is_exit,
+            actor_user=current_user,
         )
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except (NotFoundError, ConflictError, ValidationError) as exc:
         raise_domain_exception_as_http(
             exc,
@@ -265,7 +287,9 @@ def delete_ligne(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ID format") from exc
 
     try:
-        service.delete_ligne(ligne_id=ligne_uuid)
+        service.delete_ligne(ligne_id=ligne_uuid, actor_user=current_user)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except (NotFoundError, ConflictError) as exc:
         raise_domain_exception_as_http(
             exc,
@@ -301,6 +325,11 @@ def update_ligne_weight(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ID format")
     
     service = ReceptionService(db)
+    # Story 7.3 — même pivot éligibilité réception que les autres routes (ADMIN/SUPER_ADMIN : no-op ici).
+    try:
+        service.assert_nominal_reception_eligible(current_user)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     
     # Récupérer la ligne pour obtenir l'ancien poids
     ligne = service.ligne_repo.get(ligne_uuid)
@@ -329,6 +358,15 @@ def update_ligne_weight(
             **_RECEPTION_DOMAIN_HTTP,
             validation_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
+    
+    # Snapshot champs avant audit/recalcul (évite ORM expiré / ObjectDeletedError après commits)
+    snap_id = ligne.id
+    snap_ticket_id = ligne.ticket_id
+    snap_category_id = ligne.category_id
+    snap_poids_kg = ligne.poids_kg
+    snap_destination = ligne.destination
+    snap_notes = ligne.notes
+    snap_is_exit = ligne.is_exit
     
     # Recalculer les statistiques affectées
     recalculation_result = None
@@ -363,21 +401,22 @@ def update_ligne_weight(
         db=db
     )
     
-    # Récupérer le nom de la catégorie
-    from recyclic_api.services.category_service import CategoryService
+    # Libellé catégorie : requête explicite (pas de lazy-load sur instance `ligne` post-audit)
     category_label = "Catégorie inconnue"
-    if ligne.category:
-        category_label = ligne.category.name  # Story B48-P5: Utilise name (nom court/rapide)
+    if snap_category_id:
+        cat = db.query(Category).filter(Category.id == snap_category_id).first()
+        if cat:
+            category_label = cat.name
     
     return {
-        "id": str(ligne.id),
-        "ticket_id": str(ligne.ticket_id),
-        "category_id": str(ligne.category_id),
+        "id": str(snap_id),
+        "ticket_id": str(snap_ticket_id),
+        "category_id": str(snap_category_id),
         "category_label": category_label,
-        "poids_kg": ligne.poids_kg,
-        "destination": ligne.destination,
-        "notes": ligne.notes,
-        "is_exit": ligne.is_exit,
+        "poids_kg": snap_poids_kg,
+        "destination": snap_destination,
+        "notes": snap_notes,
+        "is_exit": snap_is_exit,
     }
 
 
@@ -404,13 +443,17 @@ def get_tickets(
 ):
     """Récupérer la liste des tickets de réception avec pagination."""
     service = ReceptionService(db)
+    try:
+        service.assert_nominal_reception_eligible(current_user)
+    except AuthorizationError as exc:
+        # Ne pas utiliser `status.HTTP_*` ici : le paramètre Query `status` masque `fastapi.status`.
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     benevole_uuid = None
     if benevole_id:
         try:
             benevole_uuid = UUID(benevole_id)
         except ValueError:
-            from fastapi import HTTPException, status
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="benevole_id invalide")
+            raise HTTPException(status_code=400, detail="benevole_id invalide")
     
     # Convertir les catégories en UUIDs
     category_uuids = None
@@ -418,12 +461,12 @@ def get_tickets(
         try:
             category_uuids = [UUID(cat_id) for cat_id in categories]
         except ValueError:
-            from fastapi import HTTPException, status
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="categories invalides")
+            raise HTTPException(status_code=400, detail="categories invalides")
     
     tickets, total = service.get_tickets_list(
-        page=page, 
-        per_page=per_page, 
+        current_user,
+        page=page,
+        per_page=per_page,
         status=status,
         date_from=date_from,
         date_to=date_to,
@@ -448,8 +491,11 @@ def get_ticket_detail(
 ):
     """Récupérer les détails complets d'un ticket de réception."""
     service = ReceptionService(db)
-    ticket = service.get_ticket_detail(UUID(ticket_id))
-    
+    try:
+        ticket = service.get_ticket_detail(UUID(ticket_id), current_user)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
     if not ticket:
         from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket introuvable")
@@ -494,8 +540,8 @@ def generate_ticket_download_token(
     from fastapi import HTTPException, status
     
     service = ReceptionService(db)
-    ticket = service.get_ticket_detail(UUID(ticket_id))
-    
+    ticket = service.get_ticket_detail(UUID(ticket_id), current_user)
+
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket introuvable")
 
@@ -526,7 +572,7 @@ def export_ticket_csv(
         logger.info(f"Export CSV ticket demandé: ticket_id={ticket_id}")
 
         service = ReceptionService(db)
-        ticket = service.get_ticket_detail(UUID(ticket_id))
+        ticket = service.get_ticket_detail_unrestricted(UUID(ticket_id))
 
         if not ticket:
             logger.warning(f"Ticket introuvable: ticket_id={ticket_id}")

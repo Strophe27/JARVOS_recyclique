@@ -18,6 +18,11 @@ from recyclic_api.core.security import hash_password
 from recyclic_api.core.logging import TRANSACTION_LOG_FILE, shutdown_transaction_logger
 from recyclic_api.services.cash_session_service import CashSessionService
 
+from tests.api_v1_paths import v1
+
+_SALES = v1("/sales/")
+_TRANSACTIONS_LOG = v1("/transactions/log")
+
 
 @pytest.fixture
 def test_user(db_session: Session):
@@ -164,7 +169,7 @@ class TestPaymentValidationLogging:
             "payment_method": "cash"
         }
         
-        response = admin_client.post("/api/v1/sales/", json=sale_data)
+        response = admin_client.post(_SALES, json=sale_data)
         assert response.status_code == 200
         
         # Attendre que les logs soient écrits
@@ -189,7 +194,7 @@ class TestTransactionLogEndpoint:
     def test_transaction_log_endpoint_requires_auth(self, client):
         """Test que l'endpoint nécessite une authentification."""
         response = client.post(
-            "/api/v1/transactions/log",
+            _TRANSACTIONS_LOG,
             json={
                 "event": "TICKET_OPENED",
                 "session_id": "test-session-id"
@@ -226,7 +231,7 @@ class TestTransactionLogEndpoint:
             "anomaly": False
         }
         
-        response = admin_client.post("/api/v1/transactions/log", json=log_data)
+        response = admin_client.post(_TRANSACTIONS_LOG, json=log_data)
         assert response.status_code == 200
         assert response.json()["success"] is True
         
@@ -274,7 +279,7 @@ class TestTransactionLogEndpoint:
             "anomaly": False
         }
         
-        response = admin_client.post("/api/v1/transactions/log", json=log_data)
+        response = admin_client.post(_TRANSACTIONS_LOG, json=log_data)
         assert response.status_code == 200
         
         # Attendre que le log soit écrit
@@ -318,7 +323,7 @@ class TestTransactionLogEndpoint:
             "details": "Item added but no ticket is explicitly opened"
         }
         
-        response = admin_client.post("/api/v1/transactions/log", json=log_data)
+        response = admin_client.post(_TRANSACTIONS_LOG, json=log_data)
         assert response.status_code == 200
         assert response.json()["success"] is True
         

@@ -20,6 +20,7 @@ from recyclic_api.core.database import get_db
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.admin import AdminUser, PendingUserResponse, UserStatusesResponse
 from recyclic_api.services.activity_service import ActivityService
+from recyclic_api.utils.rate_limit import conditional_limiter_limit
 
 
 def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> None:
@@ -31,7 +32,7 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
         summary="Liste des utilisateurs (Admin)",
         description="Récupère la liste des utilisateurs avec filtres optionnels",
     )
-    @limiter.limit("30/minute")
+    @conditional_limiter_limit(limiter, "30/minute")
     def get_users(
         request: Request,
         skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
@@ -96,7 +97,7 @@ def register_admin_users_read_routes(router: APIRouter, limiter: Limiter) -> Non
         summary="Statuts des utilisateurs (Admin)",
         description="Récupère les statuts en ligne/hors ligne de tous les utilisateurs",
     )
-    @limiter.limit("30/minute")
+    @conditional_limiter_limit(limiter, "30/minute")
     def get_users_statuses(
         request: Request,
         current_user: User = Depends(require_admin_role),

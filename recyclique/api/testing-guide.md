@@ -144,7 +144,7 @@ Le fichier `api/tests/conftest.py` est le cœur de notre configuration de test. 
 
 3.  **Assertions de Contenu :** Ne vous contentez pas de vérifier le statut HTTP 200. Ajoutez des `assert` pour vérifier que le *contenu* de la réponse est correct.
 
-4.  **Authentification :** Pour tester un endpoint sécurisé, utilisez une fixture qui fournit un client avec un token JWT valide (voir `async_client` dans `conftest.py` comme exemple).
+4.  **Authentification :** Pour tester un endpoint sécurisé, utilisez une fixture qui fournit un client avec un token JWT valide (voir `async_client` dans `conftest.py` comme exemple). À partir de **httpx 0.28**, le paramètre `app=` sur `AsyncClient` n’existe plus : la fixture utilise `ASGITransport(app=…)` avec repli sur l’ancienne forme pour les environnements encore en httpx < 0.28.
 
 5.  **Création d'utilisateurs de test :** Lors de la création d'utilisateurs de test, il est **obligatoire** de fournir un `hashed_password` car la colonne est non-nullable.
 

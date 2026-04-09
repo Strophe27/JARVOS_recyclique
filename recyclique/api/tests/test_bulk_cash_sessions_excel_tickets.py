@@ -120,6 +120,7 @@ def test_session_with_sales(
     sub_category: Category
 ) -> CashSession:
     """Créer une session de caisse avec des ventes et items."""
+    now = datetime.now(timezone.utc)
     session = CashSession(
         id=uuid4(),
         operator_id=test_operator.id,
@@ -128,12 +129,14 @@ def test_session_with_sales(
         initial_amount=100.0,
         current_amount=150.0,
         status=CashSessionStatus.CLOSED,
+        opened_at=now - timedelta(hours=2),
+        closed_at=now,
         total_sales=50.0,
         total_items=3,
-        number_of_sales=2
+        closing_amount=150.0,
+        actual_amount=150.0,
+        variance=0.0,
     )
-    session.opened_at = datetime.now(timezone.utc) - timedelta(hours=2)
-    session.closed_at = datetime.now(timezone.utc)
     db_session.add(session)
     db_session.commit()
     db_session.refresh(session)
@@ -225,6 +228,7 @@ class TestBulkCashSessionsExcelTicketsTab:
             'Numéro Ticket',
             'Date Vente',
             'Catégorie Principale',
+            'Catégorie Secondaire',
             'Quantité',
             'Poids (kg)',
             'Prix Unitaire (€)',
@@ -261,7 +265,7 @@ class TestBulkCashSessionsExcelTicketsTab:
         # Parcourir les lignes de données (skip header)
         categories_found = set()
         for row in ws_tickets.iter_rows(min_row=2, values_only=True):
-            if row[2]:  # Catégorie Principale (colonne C)
+            if row[2]:  # Catégorie Principale (colonne C, index 2)
                 categories_found.add(row[2])
         
         # Vérifier que toutes les catégories sont des catégories principales
@@ -285,8 +289,10 @@ class TestBulkCashSessionsExcelTicketsTab:
         found_subcategory_item = False
         for row in ws_tickets.iter_rows(min_row=2, values_only=True):
             category = row[2]  # Catégorie Principale
-            quantity = row[3]  # Quantité
-            if category == "EEE-1" and quantity == 1:
+            quantity = row[4]  # Quantité (après colonne Catégorie Secondaire)
+            # Quantités exportées en texte (openpyxl lit souvent des str)
+            qty_ok = quantity == 1 or quantity == "1"
+            if category == "EEE-1" and qty_ok:
                 # C'est l'item avec sous-catégorie, vérifié qu'il est bien avec EEE-1
                 found_subcategory_item = True
                 break
@@ -306,9 +312,9 @@ class TestBulkCashSessionsExcelTicketsTab:
         
         # Vérifier le formatage (virgule comme séparateur décimal pour format français)
         for row in ws_tickets.iter_rows(min_row=2, values_only=True):
-            weight = row[4]  # Poids (kg)
-            unit_price = row[5]  # Prix Unitaire (€)
-            total_price = row[6]  # Prix Total (€)
+            weight = row[5]  # Poids (kg)
+            unit_price = row[6]  # Prix Unitaire (€)
+            total_price = row[7]  # Prix Total (€)
             
             # Vérifier que les montants utilisent la virgule comme séparateur
             if unit_price:
@@ -321,6 +327,7 @@ class TestBulkCashSessionsExcelTicketsTab:
     def test_tickets_tab_empty_sessions(self, db_session: Session, test_site: Site, test_operator: User):
         """Test que les sessions vides n'apparaissent pas dans l'onglet."""
         # Créer une session vide
+        now = datetime.now(timezone.utc)
         empty_session = CashSession(
             id=uuid4(),
             operator_id=test_operator.id,
@@ -328,12 +335,14 @@ class TestBulkCashSessionsExcelTicketsTab:
             initial_amount=100.0,
             current_amount=100.0,
             status=CashSessionStatus.CLOSED,
+            opened_at=now - timedelta(hours=1),
+            closed_at=now,
             total_sales=0.0,
             total_items=0,
-            number_of_sales=0
+            closing_amount=100.0,
+            actual_amount=100.0,
+            variance=0.0,
         )
-        empty_session.opened_at = datetime.now(timezone.utc) - timedelta(hours=1)
-        empty_session.closed_at = datetime.now(timezone.utc)
         db_session.add(empty_session)
         db_session.commit()
         

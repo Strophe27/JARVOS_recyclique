@@ -16,6 +16,8 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.utils.report_tokens import generate_download_token
 
+from tests.api_v1_paths import v1
+
 
 def _auth_headers(user: User) -> dict[str, str]:
     token = create_access_token(data={"sub": str(user.id)})
@@ -125,7 +127,7 @@ def test_list_reports_endpoint(monkeypatch, tmp_path: Path, client: TestClient, 
         filenames.append(filename)
 
     response = client.get(
-        "/api/v1/admin/reports/cash-sessions",
+        v1("/admin/reports/cash-sessions"),
         headers=_auth_headers(admin_user),
     )
 
@@ -155,13 +157,13 @@ def test_download_report_requires_token(monkeypatch, tmp_path: Path, client: Tes
     report_file.write_text('content\n', encoding='utf-8')
 
     response = client.get(
-        f"/api/v1/admin/reports/cash-sessions/{filename}",
+        v1(f"/admin/reports/cash-sessions/{filename}"),
         headers=_auth_headers(admin_user),
     )
     assert response.status_code == 422
 
     response = client.get(
-        f"/api/v1/admin/reports/cash-sessions/{filename}",
+        v1(f"/admin/reports/cash-sessions/{filename}"),
         params={'token': 'invalid'},
         headers=_auth_headers(admin_user),
     )
@@ -186,7 +188,7 @@ def test_download_report_endpoint(monkeypatch, tmp_path: Path, client: TestClien
     report_file.write_text("content\n", encoding="utf-8")
 
     list_response = client.get(
-        "/api/v1/admin/reports/cash-sessions",
+        v1("/admin/reports/cash-sessions"),
         headers=_auth_headers(admin_user),
     )
     download_entry = next(entry for entry in list_response.json()["reports"] if entry["filename"] == filename)
@@ -201,8 +203,12 @@ def test_download_report_endpoint(monkeypatch, tmp_path: Path, client: TestClien
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/csv")
-    assert response.headers["content-disposition"].endswith(f'filename="{filename}"')
-    assert response.content.decode('utf-8').replace('\r\n', '\n') == 'content\n'
+    cd = response.headers.get("content-disposition", "")
+    assert "attachment" in cd and ".csv" in cd
+    # Téléchargement : régénération via export_service (nom + contenu ≠ fichier listé legacy)
+    body = response.content.decode("utf-8-sig").replace("\r\n", "\n")
+    assert str(session.id) in body
+    assert "ID Session" in body or "Champ;Valeur" in body
 
 
 def test_download_report_access_control(monkeypatch, tmp_path: Path, client: TestClient, db_session: Session):
@@ -248,16 +254,17 @@ def test_download_report_access_control(monkeypatch, tmp_path: Path, client: Tes
     token = generate_download_token(filename)
 
     denied_response = client.get(
-        f"/api/v1/admin/reports/cash-sessions/{filename}",
+        v1(f"/admin/reports/cash-sessions/{filename}"),
         params={"token": token},
         headers=_auth_headers(admin_restricted),
     )
     assert denied_response.status_code == 403
 
     allowed_response = client.get(
-        f"/api/v1/admin/reports/cash-sessions/{filename}",
+        v1(f"/admin/reports/cash-sessions/{filename}"),
         params={"token": token},
         headers=_auth_headers(admin_allowed),
     )
     assert allowed_response.status_code == 200
-    assert allowed_response.content.decode('utf-8').replace('\r\n', '\n') == 'data\n'
+    allowed_body = allowed_response.content.decode("utf-8-sig").replace("\r\n", "\n")
+    assert str(session.id) in allowed_body

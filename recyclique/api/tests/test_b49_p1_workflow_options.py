@@ -151,19 +151,20 @@ class TestCashSessionRegisterOptions:
         assert register_options["features"]["no_item_pricing"]["enabled"] is True
     
     def test_session_without_register_has_no_options(self, db_session: Session, test_user: User, test_site: Site):
-        """Test qu'une session sans register n'a pas d'options."""
+        """Sans register_id, le service affecte une caisse par défaut du site — options schéma vide."""
         service = CashSessionService(db_session)
-        
+
         session = service.create_session(
             operator_id=str(test_user.id),
             site_id=str(test_site.id),
             initial_amount=100.0,
-            register_id=None
+            register_id=None,
         )
-        
+
         register_options = service.get_register_options(session)
-        
-        assert register_options is None
+
+        assert register_options is not None
+        assert register_options.get("features") == {}
 
 
 class TestCashRegisterAPIEndpoints:
@@ -175,7 +176,7 @@ class TestCashRegisterAPIEndpoints:
         headers = {"Authorization": f"Bearer {access_token}"}
         
         response = client.get(
-            f"/api/v1/cash-registers/{test_register.id}",
+            f"/v1/cash-registers/{test_register.id}",
             headers=headers
         )
         
@@ -201,7 +202,7 @@ class TestCashRegisterAPIEndpoints:
         }
         
         response = client.post(
-            "/api/v1/cash-registers/",
+            "/v1/cash-registers/",
             json=payload,
             headers=headers
         )
@@ -232,7 +233,7 @@ class TestCashSessionAPIEndpoints:
         headers = {"Authorization": f"Bearer {access_token}"}
         
         response = client.get(
-            f"/api/v1/cash-sessions/{session.id}",
+            f"/v1/cash-sessions/{session.id}",
             headers=headers
         )
         

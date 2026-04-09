@@ -4,14 +4,16 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.user import UserUpdate
 from uuid import UUID
 
+from tests.api_v1_paths import v1
+
 
 def test_user_profile_persistence_two_separate_requests(db_session: Session, client):
     """Test de reproduction du bug: les modifications de profil ne persistent pas entre deux requêtes HTTP séparées.
 
     Ce test reproduit le scénario utilisateur réel:
     1. Créer un utilisateur
-    2. Modifier son profil via PUT /api/v1/users/{id} (première requête)
-    3. Faire une nouvelle requête GET /api/v1/users/{id} (deuxième requête)
+    2. Modifier son profil via PUT {API_V1_STR}/users/{id} (première requête)
+    3. Faire une nouvelle requête GET {API_V1_STR}/users/{id} (deuxième requête)
     4. Vérifier que les modifications sont visibles dans la deuxième requête
     """
     # Arrange: Créer un utilisateur avec un nom initial
@@ -36,14 +38,14 @@ def test_user_profile_persistence_two_separate_requests(db_session: Session, cli
     )
 
     update_response = client.put(
-        f"/api/v1/users/{user_id}",
+        v1(f"/users/{user_id}"),
         json=update_data.model_dump(exclude_unset=True)
     )
 
     assert update_response.status_code == 200
 
     # Act: Récupérer l'utilisateur modifié (deuxième requête séparée)
-    get_response = client.get(f"/api/v1/users/{user_id}")
+    get_response = client.get(v1(f"/users/{user_id}"))
     assert get_response.status_code == 200
 
     user_data = get_response.json()
@@ -78,7 +80,7 @@ def test_user_profile_persistence_with_uuid_without_hyphens(db_session: Session,
 
     uuid_without_hyphens = user_id.replace("-", "")
     response = client.put(
-        f"/api/v1/users/{uuid_without_hyphens}",
+        v1(f"/users/{uuid_without_hyphens}"),
         json=update_data.model_dump(exclude_unset=True)
     )
 
@@ -121,7 +123,7 @@ def test_user_profile_persistence_with_valid_uuid_still_works(db_session: Sessio
     )
 
     response = client.put(
-        f"/api/v1/users/{user_id}",
+        v1(f"/users/{user_id}"),
         json=update_data.model_dump(exclude_unset=True)
     )
 

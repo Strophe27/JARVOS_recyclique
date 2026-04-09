@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.5-draft
+  version: 0.1.9-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -1015,6 +1015,693 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/postes/open:
+    post:
+      operationId: recyclique_reception_openPoste
+      tags:
+        - reception
+      summary: Ouvrir un poste de réception
+      description: |
+        **Story 7.1** — Crée un poste ouvert pour la session courante. Corps optionnel (`opened_at` réservé ADMIN/SUPER_ADMIN).
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceptionOpenPosteRequest"
+      responses:
+        "200":
+          description: Poste créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionOpenPosteResponse"
+        "400":
+          description: Validation métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            `opened_at` personnalisé réservé ADMIN/SUPER_ADMIN ; ou **Story 7.2** : permission `reception.access`,
+            site affecté (USER), ou refus métier d’ouverture.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/postes/{poste_id}/close:
+    post:
+      operationId: recyclique_reception_closePoste
+      tags:
+        - reception
+      summary: Fermer un poste de réception
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: poste_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Poste fermé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionCloseResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            Story 7.2 — refus contexte réception (permission `reception.access`, site, ou poste ouvert par un autre opérateur).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Poste introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/tickets:
+    get:
+      operationId: recyclique_reception_listTickets
+      tags:
+        - reception
+      summary: Liste paginée des tickets réception (historique)
+      description: |
+        **Story 7.4** — Lecture historique ; périmètre **USER** aligné sur le détail ticket (bénévole du ticket
+        ou opérateur ayant ouvert le poste). **ADMIN** / **SUPER_ADMIN** : tous les tickets.
+        Exclut par défaut les tickets sans lignes (`include_empty=false`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: status
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: benevole_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: search
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: include_empty
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: poids_min
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            nullable: true
+        - name: poids_max
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            nullable: true
+        - name: categories
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          style: form
+          explode: true
+        - name: destinations
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: lignes_min
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            nullable: true
+        - name: lignes_max
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            nullable: true
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionTicketListResponse"
+        "400":
+          description: Paramètres invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            Story 7.2 / 7.4 — permission `reception.access`, site affecté (USER), ou hors périmètre.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    post:
+      operationId: recyclique_reception_createTicket
+      tags:
+        - reception
+      summary: Créer un ticket de dépôt dans un poste
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceptionCreateTicketRequest"
+      responses:
+        "200":
+          description: Ticket créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionCreateTicketResponse"
+        "400":
+          description: Poste introuvable ou conflit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            Story 7.2 — refus contexte réception (permission, site, ou poste non opéré par l’utilisateur authentifié).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/tickets/{ticket_id}/close:
+    post:
+      operationId: recyclique_reception_closeTicket
+      tags:
+        - reception
+      summary: Fermer un ticket de dépôt
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Ticket fermé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionCloseResponse"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            Story 7.2 — refus contexte réception (permission, site, ou ticket hors périmètre bénévole / opérateur).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ticket introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/tickets/{ticket_id}:
+    get:
+      operationId: recyclique_reception_getTicketDetail
+      tags:
+        - reception
+      summary: Détail d'un ticket de réception (lignes incluses)
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Détail ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionTicketDetailResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            Story 7.2 — refus lecture détail (permission, site, ou ticket hors périmètre).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ticket introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/tickets/{ticket_id}/download-token:
+    post:
+      operationId: recyclique_reception_createTicketDownloadToken
+      tags:
+        - reception
+      summary: Jeton signé pour export CSV d'un ticket
+      description: |
+        **ADMIN** / **SUPER_ADMIN** ; ticket doit être lisible comme pour le GET détail.
+        Le client enchaîne sur `GET …/export-csv?token=…` (souvent `window.open` même origine).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: URL relative de téléchargement et métadonnées
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionTicketDownloadTokenResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant ou ticket hors périmètre
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ticket introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/tickets/{ticket_id}/export-csv:
+    get:
+      operationId: recyclique_reception_exportTicketCsv
+      tags:
+        - reception
+      summary: Export CSV d'un ticket (token signé)
+      description: |
+        Authentification par `token` uniquement (pas de JWT). Réponse binaire `text/csv` avec en-tête Content-Disposition.
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Fichier CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: Token invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ticket introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/lignes:
+    post:
+      operationId: recyclique_reception_createLigne
+      tags:
+        - reception
+      summary: Ajouter une ligne de dépôt
+      description: |
+        Poids en **kg** (> 0). Destination alignée sur l'enum métier `ReceptionDestinationV1`.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceptionCreateLigneRequest"
+      responses:
+        "200":
+          description: Ligne créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionLigneResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            Story 7.2 — refus contexte réception (permission, site, ou ticket hors périmètre bénévole).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ressource introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Validation (poids, destination, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/lignes/{ligne_id}:
+    put:
+      operationId: recyclique_reception_updateLigne
+      tags:
+        - reception
+      summary: Mettre à jour une ligne de dépôt (ticket ouvert)
+      description: |
+        **Story 7.3** — Champs partiels ; ticket doit rester **ouvert** (sinon 409). Même périmètre opérateur
+        que la création de ligne (bénévole du ticket ou ADMIN/SUPER_ADMIN).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: ligne_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceptionUpdateLigneRequest"
+      responses:
+        "200":
+          description: Ligne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionLigneResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Story 7.2 — ticket hors périmètre opérateur / permission réception.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ligne ou catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Ticket fermé — modification interdite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Validation (poids, destination, is_exit, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    delete:
+      operationId: recyclique_reception_deleteLigne
+      tags:
+        - reception
+      summary: Supprimer une ligne de dépôt (ticket ouvert)
+      description: |
+        **Story 7.3** — Réservé tant que le ticket est **ouvert** ; mêmes garde-fous opérateur que PUT.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: ligne_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Ligne supprimée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionDeleteLigneResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Story 7.2 — refus périmètre / permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ligne introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Ticket fermé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/tickets/{ticket_id}/lignes/{ligne_id}/weight:
+    patch:
+      operationId: recyclique_reception_patchLigneWeight
+      tags:
+        - reception
+      summary: Corriger le poids d'une ligne (ADMIN / SUPER_ADMIN)
+      description: |
+        **Story 7.3 / B52** — Correction de poids en kg même si le ticket est **fermé**. Rôle serveur
+        **ADMIN** ou **SUPER_ADMIN** uniquement ; recalcul statistiques et audit côté serveur.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: ligne_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceptionLigneWeightPatchRequest"
+      responses:
+        "200":
+          description: Poids mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceptionLigneResponse"
+        "400":
+          description: Ligne n'appartient pas au ticket ou UUID invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant (USER ne peut pas appeler cette route)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Ligne introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Poids invalide (≤ 0)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/categories:
+    get:
+      operationId: recyclique_reception_listCategories
+      tags:
+        - reception
+      summary: Liste des catégories actives (réception)
+      description: |
+        Équivalent opérationnel à une liste pour saisie ticket ; le backend filtre `is_active`.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Liste `{ id, name }`
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReceptionCategoryRow"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: |
+            Story 7.2 — refus liste catégories (permission `reception.access` ou site affecté pour les USER).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
 components:
   securitySchemes:
     bearerOrCookie:
@@ -1825,4 +2512,273 @@ components:
         created_at:
           type: string
           format: date-time
+      additionalProperties: false
+    ReceptionDestinationV1:
+      type: string
+      description: Destination ligne dépôt (aligné modèle `Destination` backend).
+      enum:
+        - MAGASIN
+        - RECYCLAGE
+        - DECHETERIE
+    ReceptionOpenPosteRequest:
+      type: object
+      properties:
+        opened_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Saisie différée — réservé ADMIN/SUPER_ADMIN côté serveur.
+      additionalProperties: false
+    ReceptionOpenPosteResponse:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+          description: UUID texte du poste
+        status:
+          type: string
+          description: opened | closed
+      additionalProperties: false
+    ReceptionCloseResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+      additionalProperties: false
+    ReceptionCreateTicketRequest:
+      type: object
+      required:
+        - poste_id
+      properties:
+        poste_id:
+          type: string
+          format: uuid
+      additionalProperties: false
+    ReceptionCreateTicketResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+      additionalProperties: false
+    ReceptionCreateLigneRequest:
+      type: object
+      required:
+        - ticket_id
+        - category_id
+        - poids_kg
+        - destination
+      properties:
+        ticket_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        poids_kg:
+          type: number
+          exclusiveMinimum: 0
+          description: Poids en kilogrammes (> 0).
+        destination:
+          $ref: "#/components/schemas/ReceptionDestinationV1"
+        notes:
+          type: string
+          nullable: true
+        is_exit:
+          type: boolean
+          default: false
+      additionalProperties: false
+    ReceptionUpdateLigneRequest:
+      type: object
+      description: |
+        Mise à jour partielle d'une ligne (tous les champs optionnels ; le serveur fusionne avec l'existant).
+        Contrainte métier `is_exit` + destination alignée sur le backend (RECYCLAGE ou DECHETERIE si sortie).
+      properties:
+        category_id:
+          type: string
+          format: uuid
+        poids_kg:
+          type: number
+          exclusiveMinimum: 0
+          description: Poids en kg (> 0).
+        destination:
+          $ref: "#/components/schemas/ReceptionDestinationV1"
+        notes:
+          type: string
+          nullable: true
+        is_exit:
+          type: boolean
+      additionalProperties: false
+    ReceptionLigneWeightPatchRequest:
+      type: object
+      required:
+        - poids_kg
+      properties:
+        poids_kg:
+          type: number
+          exclusiveMinimum: 0
+          description: Nouveau poids en kilogrammes.
+      additionalProperties: false
+    ReceptionDeleteLigneResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: Valeur fixe `deleted` à la suppression réussie.
+      additionalProperties: false
+    ReceptionLigneResponse:
+      type: object
+      required:
+        - id
+        - ticket_id
+        - category_id
+        - category_label
+        - poids_kg
+        - destination
+        - is_exit
+      properties:
+        id:
+          type: string
+        ticket_id:
+          type: string
+        category_id:
+          type: string
+        category_label:
+          type: string
+        poids_kg:
+          type: number
+        destination:
+          $ref: "#/components/schemas/ReceptionDestinationV1"
+        notes:
+          type: string
+          nullable: true
+        is_exit:
+          type: boolean
+      additionalProperties: false
+    ReceptionCategoryRow:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      additionalProperties: false
+    ReceptionTicketSummaryRow:
+      type: object
+      required:
+        - id
+        - poste_id
+        - benevole_username
+        - created_at
+        - status
+        - total_lignes
+        - total_poids
+        - poids_entree
+        - poids_direct
+        - poids_sortie
+      properties:
+        id:
+          type: string
+        poste_id:
+          type: string
+        benevole_username:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+        total_lignes:
+          type: integer
+        total_poids:
+          type: number
+        poids_entree:
+          type: number
+        poids_direct:
+          type: number
+        poids_sortie:
+          type: number
+      additionalProperties: false
+    ReceptionTicketListResponse:
+      type: object
+      required:
+        - tickets
+        - total
+        - page
+        - per_page
+        - total_pages
+      properties:
+        tickets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReceptionTicketSummaryRow"
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
+      additionalProperties: false
+    ReceptionTicketDownloadTokenResponse:
+      type: object
+      required:
+        - download_url
+        - filename
+        - expires_in_seconds
+      properties:
+        download_url:
+          type: string
+          description: Chemin relatif ou absolu vers GET export-csv avec token
+        filename:
+          type: string
+        expires_in_seconds:
+          type: integer
+      additionalProperties: false
+    ReceptionTicketDetailResponse:
+      type: object
+      required:
+        - id
+        - poste_id
+        - benevole_username
+        - created_at
+        - status
+        - lignes
+      properties:
+        id:
+          type: string
+        poste_id:
+          type: string
+        benevole_username:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+        lignes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReceptionLigneResponse"
       additionalProperties: false

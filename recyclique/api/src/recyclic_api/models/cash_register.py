@@ -1,5 +1,5 @@
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -19,8 +19,8 @@ class CashRegister(Base):
     site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     
-    # Story B49-P1: Options de workflow
-    workflow_options = Column(JSONB, nullable=False, server_default='{}')
+    # Story B49-P1: Options de workflow (JSON dialect-neutral — JSONB ne compile pas sous SQLite tests)
+    workflow_options = Column(JSON, nullable=False, server_default=text("'{}'"))
     enable_virtual = Column(Boolean, nullable=False, server_default='false')
     enable_deferred = Column(Boolean, nullable=False, server_default='false')
 

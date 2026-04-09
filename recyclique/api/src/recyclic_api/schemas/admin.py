@@ -99,6 +99,7 @@ class UserProfileUpdate(BaseModel):
     first_name: Optional[str] = Field(None, description="Prénom de l'utilisateur")
     last_name: Optional[str] = Field(None, description="Nom de famille de l'utilisateur")
     username: Optional[str] = Field(None, description="Nom d'utilisateur")
+    email: Optional[str] = Field(None, description="Adresse email de l'utilisateur")
     role: Optional[UserRole] = Field(None, description="Rôle de l'utilisateur")
     status: Optional[UserStatus] = Field(None, description="Statut de l'utilisateur")
 

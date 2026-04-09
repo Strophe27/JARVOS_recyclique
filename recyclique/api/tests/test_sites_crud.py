@@ -1,12 +1,11 @@
-import pytest
 from uuid import uuid4
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
+from recyclic_api.core.config import settings
 from recyclic_api.core.security import hash_password
-from recyclic_api.main import app
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 def test_create_site_success(admin_client):
@@ -20,7 +19,7 @@ def test_create_site_success(admin_client):
         "is_active": True
     }
 
-    response = admin_client.post("/api/v1/sites/", json=site_data)
+    response = admin_client.post(f"{_V1}/sites/", json=site_data)
 
     assert response.status_code == 201
     data = response.json()
@@ -41,7 +40,7 @@ def test_get_sites_success(admin_client, db_session):
     db_session.add_all([site1, site2])
     db_session.commit()
 
-    response = admin_client.get("/api/v1/sites/")
+    response = admin_client.get(f"{_V1}/sites/")
 
     assert response.status_code == 200
     data = response.json()
@@ -58,7 +57,7 @@ def test_get_site_by_id_success(admin_client, db_session):
     db_session.commit()
     db_session.refresh(site)
 
-    response = admin_client.get(f"/api/v1/sites/{site.id}")
+    response = admin_client.get(f"{_V1}/sites/{site.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -80,7 +79,7 @@ def test_update_site_success(admin_client, db_session):
         "is_active": False
     }
 
-    response = admin_client.patch(f"/api/v1/sites/{site.id}", json=update_data)
+    response = admin_client.patch(f"{_V1}/sites/{site.id}", json=update_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -96,7 +95,7 @@ def test_delete_site_success(admin_client, db_session):
     db_session.commit()
     db_session.refresh(site)
 
-    response = admin_client.delete(f"/api/v1/sites/{site.id}")
+    response = admin_client.delete(f"{_V1}/sites/{site.id}")
 
     assert response.status_code == 204
 
@@ -121,7 +120,7 @@ def test_delete_site_fails_409_when_users_attached(admin_client, db_session):
     db_session.add(attached)
     db_session.commit()
 
-    response = admin_client.delete(f"/api/v1/sites/{site.id}")
+    response = admin_client.delete(f"{_V1}/sites/{site.id}")
 
     assert response.status_code == 409
     body = response.json()
@@ -130,37 +129,37 @@ def test_delete_site_fails_409_when_users_attached(admin_client, db_session):
 
 
 def test_create_site_requires_admin(client):
-    """Test that creating a site requires admin privileges."""
+    """Sans jeton, la création est refusée (require_role_strict → 403 sans Bearer)."""
     site_data = {
         "name": "Test Site",
         "is_active": True
     }
 
-    response = client.post("/api/v1/sites/", json=site_data)
+    response = client.post(f"{_V1}/sites/", json=site_data)
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 def test_site_not_found(admin_client):
     """Test 404 response for non-existent site."""
     fake_id = "00000000-0000-0000-0000-000000000000"
 
-    response = admin_client.get(f"/api/v1/sites/{fake_id}")
+    response = admin_client.get(f"{_V1}/sites/{fake_id}")
     assert response.status_code == 404
 
-    response = admin_client.patch(f"/api/v1/sites/{fake_id}", json={"name": "Updated"})
+    response = admin_client.patch(f"{_V1}/sites/{fake_id}", json={"name": "Updated"})
     assert response.status_code == 404
 
-    response = admin_client.delete(f"/api/v1/sites/{fake_id}")
+    response = admin_client.delete(f"{_V1}/sites/{fake_id}")
     assert response.status_code == 404
 
 
 def test_create_site_validation(admin_client):
     """Test site creation validation."""
     # Test empty name
-    response = admin_client.post("/api/v1/sites/", json={"name": ""})
+    response = admin_client.post(f"{_V1}/sites/", json={"name": ""})
     assert response.status_code == 422
 
     # Test missing name
-    response = admin_client.post("/api/v1/sites/", json={"address": "Test Address"})
+    response = admin_client.post(f"{_V1}/sites/", json={"address": "Test Address"})
     assert response.status_code == 422

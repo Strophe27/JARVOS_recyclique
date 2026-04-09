@@ -71,9 +71,7 @@ def test_sessions(db_session: Session, test_site: Site, test_operator: User) -> 
         opened_at=now - timedelta(days=1),
         closed_at=now - timedelta(hours=12),
         total_sales=250.0,
-        number_of_sales=5,
         total_items=10,
-        total_donations=10.0,
         closing_amount=350.0,
         actual_amount=350.0,
         variance=0.0
@@ -111,7 +109,6 @@ def test_sessions(db_session: Session, test_site: Site, test_operator: User) -> 
         status=CashSessionStatus.OPEN,
         opened_at=now - timedelta(hours=2),
         total_sales=100.0,
-        number_of_sales=3,
         total_items=6
     )
     db_session.add(session2)
@@ -126,7 +123,6 @@ def test_sessions(db_session: Session, test_site: Site, test_operator: User) -> 
         opened_at=now - timedelta(days=3),
         closed_at=now - timedelta(days=3, hours=1),
         total_sales=0.0,
-        number_of_sales=0,
         total_items=0,
         closing_amount=200.0,
         actual_amount=200.0,
@@ -149,7 +145,7 @@ class TestBulkExportCashSessionsCSV:
     def test_export_csv_bulk_success(self, admin_client, test_sessions):
         """Test export CSV bulk avec succès."""
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -175,14 +171,16 @@ class TestBulkExportCashSessionsCSV:
     
     def test_export_csv_bulk_with_filters(self, admin_client, test_sessions):
         """Test export CSV avec filtres (statut, date)."""
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-        
+        now = datetime.now(timezone.utc)
+        # Marge : `opened_at` des fixtures est fixé avant cet appel ; un seul jour peut exclure la session « hier ».
+        date_from = now - timedelta(days=2)
+
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
-                    "date_from": yesterday.isoformat(),
-                    "date_to": datetime.now(timezone.utc).isoformat(),
+                    "date_from": date_from.isoformat(),
+                    "date_to": now.isoformat(),
                     "status": "closed",
                     "include_empty": False
                 },
@@ -222,7 +220,7 @@ class TestBulkExportCashSessionsCSV:
         client.headers["Authorization"] = f"Bearer {token}"
         
         response = client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {},
                 "format": "csv"
@@ -235,7 +233,7 @@ class TestBulkExportCashSessionsCSV:
         """Test que les filtres sont bien respectés."""
         # Filtrer par site
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
                     "site_id": str(test_site.id),
@@ -260,7 +258,7 @@ class TestBulkExportCashSessionsExcel:
     def test_export_excel_bulk_success(self, admin_client, test_sessions):
         """Test export Excel bulk avec succès."""
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -304,13 +302,15 @@ class TestBulkExportCashSessionsExcel:
     
     def test_export_excel_bulk_with_filters(self, admin_client, test_sessions):
         """Test export Excel avec filtres."""
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-        
+        now = datetime.now(timezone.utc)
+        date_from = now - timedelta(days=2)
+
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
-                    "date_from": yesterday.isoformat(),
+                    "date_from": date_from.isoformat(),
+                    "date_to": now.isoformat(),
                     "status": "closed",
                     "include_empty": False
                 },
@@ -331,7 +331,7 @@ class TestBulkExportCashSessionsExcel:
     def test_export_excel_formatting_styles(self, admin_client, test_sessions):
         """Test que la mise en forme (styles, couleurs, bordures) est appliquée."""
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -394,7 +394,6 @@ class TestBulkExportCashSessionsExcel:
                 opened_at=now - timedelta(days=i % 30),
                 closed_at=now - timedelta(days=i % 30, hours=1),
                 total_sales=float(i * 10),
-                number_of_sales=i % 10,
                 total_items=i % 20,
                 closing_amount=100.0 + float(i * 10),
                 actual_amount=100.0 + float(i * 10),
@@ -409,7 +408,7 @@ class TestBulkExportCashSessionsExcel:
         start_time = time.time()
         
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
                     "date_from": (now - timedelta(days=30)).isoformat(),
@@ -438,7 +437,7 @@ class TestBulkExportCashSessionsValidation:
     def test_export_bulk_invalid_format(self, admin_client):
         """Test avec format invalide."""
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {},
                 "format": "pdf"  # Format invalide
@@ -453,7 +452,7 @@ class TestBulkExportCashSessionsValidation:
         future_date = datetime.now(timezone.utc) + timedelta(days=10)
         
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
                     "date_from": future_date.isoformat()
@@ -470,7 +469,7 @@ class TestBulkExportCashSessionsValidation:
         far_future = datetime.now(timezone.utc) + timedelta(days=365)
         
         response = admin_client.post(
-            "/api/v1/admin/reports/cash-sessions/export-bulk",
+            "/v1/admin/reports/cash-sessions/export-bulk",
             json={
                 "filters": {
                     "date_from": far_future.isoformat(),

@@ -153,7 +153,7 @@ class TestNoItemPricingMode:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -184,7 +184,7 @@ class TestNoItemPricingMode:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -220,7 +220,7 @@ class TestNoItemPricingMode:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -250,7 +250,7 @@ class TestNoItemPricingMode:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -277,7 +277,7 @@ class TestNoItemPricingMode:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -309,7 +309,7 @@ class TestStandardWorkflowRegression:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -338,7 +338,7 @@ class TestStandardWorkflowRegression:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -366,7 +366,7 @@ class TestStandardWorkflowRegression:
         }
         
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {user_token}"}
         )

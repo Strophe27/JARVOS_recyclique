@@ -3,7 +3,18 @@
 # last_updated: 2026-04-08 — story 6.5 VS validate-create-story : development_status → ready-for-dev (checklist + fichier story)
 # last_updated: 2026-04-08 — story 6.10 Story Runner : CS→VS→DS→GATE→QA→CR ; 6-10 reste in-progress (HITL UI obligatoire pour done)
 # last_updated: 2026-04-09 — epic-6-retrospective : development_status → done (epic-6-retro-2026-04-09.md)
+# last_updated: 2026-04-09 — story 7.1 CS bmad-create-story : epic-7 in-progress ; 7-1-mettre-en-service-le-parcours-nominal-de-reception-v2 ready-for-dev (+ registre `references/artefacts/2026-04-09_01_…`)
+# last_updated: 2026-04-09 — story 7.1 DS bmad-dev-story : 7-1-mettre-en-service-le-parcours-nominal-de-reception-v2 → review
 # last_updated: 2026-04-09 — story 6.10 : registre _07_ §2.10 (HITL navigateur réel, modèle rapide) → development_status done ; epic-6 done
+# last_updated: 2026-04-09 — story 7.2 CS bmad-create-story : 7-2-garantir-le-contexte-reception-et-les-blocages-metier-associes backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-09 — story 7.3 CS bmad-create-story : 7-3-integrer-la-categorisation-la-pesee-et-la-qualification-du-flux-matiere backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-09 — story 7.4 DS bmad-dev-story : 7-4-journaliser-les-entrees-reception-et-assurer-leur-exploitabilite-historique → review
+# last_updated: 2026-04-09 — story 7.4 CS bmad-create-story : 7-4-journaliser-les-entrees-reception-et-assurer-leur-exploitabilite-historique backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-09 — story 7.5 DS bmad-dev-story : 7-5-rendre-la-reception-defensive-face-aux-erreurs-contrats-incomplets-et-degradations → review
+# last_updated: 2026-04-09 — story 7.5 CS bmad-create-story : 7-5-rendre-la-reception-defensive-face-aux-erreurs-contrats-incomplets-et-degradations backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-09 — story 7.6 DS bmad-dev-story : 7-6-valider-lexploitabilite-terrain-de-la-reception-v2 → review (registre Epic 7 consolidé ; pas done avant gates/QA/CR)
+# last_updated: 2026-04-09 — story 7.6 CS bmad-create-story : 7-6-valider-lexploitabilite-terrain-de-la-reception-v2 backlog → ready-for-dev (fichier story + sprint-status) ; epic-7 in-progress
+# last_updated: 2026-04-09 — story 7.3 DS bmad-dev-story : 7-3-integrer-la-categorisation-la-pesee-et-la-qualification-du-flux-matiere → review
 # last_updated: 2026-04-08 — story 6.10 CS : development_status → ready-for-dev (fichier story enrichi mapping + checklist, pret validation / execution)
 # last_updated: 2026-04-08 — correct course Epic 6 approuve : freeze cloture, rebaseline brownfield-first, stories rewrite repassees backlog
 # NOTE NORMATIVE — Les lignes `(historique)` ci-dessous sont pre-correct-course et ne font pas foi pour la baseline brownfield-first.
@@ -85,7 +96,8 @@
 # en priorite pour les stories encore en backlog ou ready-for-dev.
 
 generated: "2026-04-01"
-last_updated: "2026-04-09" # epic-6-retrospective → done ; livrable epic-6-retro-2026-04-09.md
+# last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
+last_updated: "2026-04-09" # story 7.6 Story Runner : CS→VS→DS→gates→QA→CR ; 7-6 → done ; epic-7 → done
 # (historique) last_updated: 2026-04-08 — story 6.7 done (Story Runner reprise GATE→QA→CR après coupure ; lint/build/test + QA PASS + CR APPROVED)
 project: JARVOS_recyclique
 project_key: NOKEY
@@ -160,13 +172,13 @@ development_status:
   6-10-valider-lexploitabilite-terrain-de-la-caisse-v2: done
   epic-6-retrospective: done
 
-  epic-7: backlog
-  7-1-mettre-en-service-le-parcours-nominal-de-reception-v2: backlog
-  7-2-garantir-le-contexte-reception-et-les-blocages-metier-associes: backlog
-  7-3-integrer-la-categorisation-la-pesee-et-la-qualification-du-flux-matiere: backlog
-  7-4-journaliser-les-entrees-reception-et-assurer-leur-exploitabilite-historique: backlog
-  7-5-rendre-la-reception-defensive-face-aux-erreurs-contrats-incomplets-et-degradations: backlog
-  7-6-valider-lexploitabilite-terrain-de-la-reception-v2: backlog
+  epic-7: done
+  7-1-mettre-en-service-le-parcours-nominal-de-reception-v2: done
+  7-2-garantir-le-contexte-reception-et-les-blocages-metier-associes: done
+  7-3-integrer-la-categorisation-la-pesee-et-la-qualification-du-flux-matiere: done
+  7-4-journaliser-les-entrees-reception-et-assurer-leur-exploitabilite-historique: done
+  7-5-rendre-la-reception-defensive-face-aux-erreurs-contrats-incomplets-et-degradations: done
+  7-6-valider-lexploitabilite-terrain-de-la-reception-v2: done
   epic-7-retrospective: optional
 
   epic-8: backlog

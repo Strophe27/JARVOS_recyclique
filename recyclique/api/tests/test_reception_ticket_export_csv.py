@@ -13,6 +13,7 @@ from recyclic_api.main import app
 from recyclic_api.models import User, UserRole, UserStatus, PosteReception, TicketDepot, LigneDepot, Category
 from recyclic_api.models.ligne_depot import Destination
 from recyclic_api.utils.report_tokens import generate_download_token
+from tests.api_v1_paths import v1
 
 
 @pytest.fixture
@@ -127,8 +128,8 @@ class TestTicketExportCSV:
         ticket_id = str(uuid4())
         headers = create_auth_headers(regular_user.id)
         response = client.post(
-            f"/api/v1/reception/tickets/{ticket_id}/download-token",
-            headers=headers
+            v1(f"/reception/tickets/{ticket_id}/download-token"),
+            headers=headers,
         )
         assert response.status_code == 403
     
@@ -142,8 +143,8 @@ class TestTicketExportCSV:
         
         # 1. Générer le token de téléchargement
         response = client.post(
-            f"/api/v1/reception/tickets/{ticket_id}/download-token",
-            headers=headers
+            v1(f"/reception/tickets/{ticket_id}/download-token"),
+            headers=headers,
         )
         assert response.status_code == 200
         token_data = response.json()
@@ -155,8 +156,8 @@ class TestTicketExportCSV:
         
         # 2. Appeler l'endpoint d'export CSV
         response = client.get(
-            f"/api/v1/reception/tickets/{ticket_id}/export-csv",
-            params={"token": token}
+            v1(f"/reception/tickets/{ticket_id}/export-csv"),
+            params={"token": token},
         )
         
         # AVANT CORRECTION : Devrait échouer avec 500
@@ -199,8 +200,8 @@ class TestTicketExportCSV:
         
         # Générer le token
         response = client.post(
-            f"/api/v1/reception/tickets/{ticket_id}/download-token",
-            headers=headers
+            v1(f"/reception/tickets/{ticket_id}/download-token"),
+            headers=headers,
         )
         assert response.status_code == 200
         token_data = response.json()
@@ -208,8 +209,8 @@ class TestTicketExportCSV:
         
         # Exporter
         response = client.get(
-            f"/api/v1/reception/tickets/{ticket_id}/export-csv",
-            params={"token": token}
+            v1(f"/reception/tickets/{ticket_id}/export-csv"),
+            params={"token": token},
         )
         
         assert response.status_code == 200
@@ -224,8 +225,8 @@ class TestTicketExportCSV:
         
         # Utiliser un token invalide
         response = client.get(
-            f"/api/v1/reception/tickets/{ticket_id}/export-csv",
-            params={"token": "invalid_token"}
+            v1(f"/reception/tickets/{ticket_id}/export-csv"),
+            params={"token": "invalid_token"},
         )
         
         assert response.status_code == 403
@@ -237,8 +238,8 @@ class TestTicketExportCSV:
         
         # Générer un token pour un ticket inexistant
         response = client.post(
-            f"/api/v1/reception/tickets/{fake_ticket_id}/download-token",
-            headers=headers
+            v1(f"/reception/tickets/{fake_ticket_id}/download-token"),
+            headers=headers,
         )
         assert response.status_code == 404
 

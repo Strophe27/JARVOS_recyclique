@@ -483,6 +483,227 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reception/postes/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ouvrir un poste de réception
+         * @description **Story 7.1** — Crée un poste ouvert pour la session courante. Corps optionnel (`opened_at` réservé ADMIN/SUPER_ADMIN).
+         */
+        post: operations["recyclique_reception_openPoste"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/postes/{poste_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fermer un poste de réception */
+        post: operations["recyclique_reception_closePoste"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste paginée des tickets réception (historique)
+         * @description **Story 7.4** — Lecture historique ; périmètre **USER** aligné sur le détail ticket (bénévole du ticket
+         *     ou opérateur ayant ouvert le poste). **ADMIN** / **SUPER_ADMIN** : tous les tickets.
+         *     Exclut par défaut les tickets sans lignes (`include_empty=false`).
+         */
+        get: operations["recyclique_reception_listTickets"];
+        put?: never;
+        /** Créer un ticket de dépôt dans un poste */
+        post: operations["recyclique_reception_createTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/tickets/{ticket_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fermer un ticket de dépôt */
+        post: operations["recyclique_reception_closeTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/tickets/{ticket_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'un ticket de réception (lignes incluses) */
+        get: operations["recyclique_reception_getTicketDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/tickets/{ticket_id}/download-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Jeton signé pour export CSV d'un ticket
+         * @description **ADMIN** / **SUPER_ADMIN** ; ticket doit être lisible comme pour le GET détail.
+         *     Le client enchaîne sur `GET …/export-csv?token=…` (souvent `window.open` même origine).
+         */
+        post: operations["recyclique_reception_createTicketDownloadToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/tickets/{ticket_id}/export-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export CSV d'un ticket (token signé)
+         * @description Authentification par `token` uniquement (pas de JWT). Réponse binaire `text/csv` avec en-tête Content-Disposition.
+         */
+        get: operations["recyclique_reception_exportTicketCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/lignes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ajouter une ligne de dépôt
+         * @description Poids en **kg** (> 0). Destination alignée sur l'enum métier `ReceptionDestinationV1`.
+         */
+        post: operations["recyclique_reception_createLigne"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/lignes/{ligne_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mettre à jour une ligne de dépôt (ticket ouvert)
+         * @description **Story 7.3** — Champs partiels ; ticket doit rester **ouvert** (sinon 409). Même périmètre opérateur
+         *     que la création de ligne (bénévole du ticket ou ADMIN/SUPER_ADMIN).
+         */
+        put: operations["recyclique_reception_updateLigne"];
+        post?: never;
+        /**
+         * Supprimer une ligne de dépôt (ticket ouvert)
+         * @description **Story 7.3** — Réservé tant que le ticket est **ouvert** ; mêmes garde-fous opérateur que PUT.
+         */
+        delete: operations["recyclique_reception_deleteLigne"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/tickets/{ticket_id}/lignes/{ligne_id}/weight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Corriger le poids d'une ligne (ADMIN / SUPER_ADMIN)
+         * @description **Story 7.3 / B52** — Correction de poids en kg même si le ticket est **fermé**. Rôle serveur
+         *     **ADMIN** ou **SUPER_ADMIN** uniquement ; recalcul statistiques et audit côté serveur.
+         */
+        patch: operations["recyclique_reception_patchLigneWeight"];
+        trace?: never;
+    };
+    "/v1/reception/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des catégories actives (réception)
+         * @description Équivalent opérationnel à une liste pour saisie ticket ; le backend filtre `is_active`.
+         */
+        get: operations["recyclique_reception_listCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -879,6 +1100,121 @@ export interface components {
             idempotency_key?: string | null;
             /** Format: date-time */
             created_at: string;
+        };
+        /**
+         * @description Destination ligne dépôt (aligné modèle `Destination` backend).
+         * @enum {string}
+         */
+        ReceptionDestinationV1: "MAGASIN" | "RECYCLAGE" | "DECHETERIE";
+        ReceptionOpenPosteRequest: {
+            /**
+             * Format: date-time
+             * @description Saisie différée — réservé ADMIN/SUPER_ADMIN côté serveur.
+             */
+            opened_at?: string | null;
+        };
+        ReceptionOpenPosteResponse: {
+            /** @description UUID texte du poste */
+            id: string;
+            /** @description opened | closed */
+            status: string;
+        };
+        ReceptionCloseResponse: {
+            status: string;
+        };
+        ReceptionCreateTicketRequest: {
+            /** Format: uuid */
+            poste_id: string;
+        };
+        ReceptionCreateTicketResponse: {
+            /** Format: uuid */
+            id: string;
+        };
+        ReceptionCreateLigneRequest: {
+            /** Format: uuid */
+            ticket_id: string;
+            /** Format: uuid */
+            category_id: string;
+            /** @description Poids en kilogrammes (> 0). */
+            poids_kg: number;
+            destination: components["schemas"]["ReceptionDestinationV1"];
+            notes?: string | null;
+            /** @default false */
+            is_exit: boolean;
+        };
+        /**
+         * @description Mise à jour partielle d'une ligne (tous les champs optionnels ; le serveur fusionne avec l'existant).
+         *     Contrainte métier `is_exit` + destination alignée sur le backend (RECYCLAGE ou DECHETERIE si sortie).
+         */
+        ReceptionUpdateLigneRequest: {
+            /** Format: uuid */
+            category_id?: string;
+            /** @description Poids en kg (> 0). */
+            poids_kg?: number;
+            destination?: components["schemas"]["ReceptionDestinationV1"];
+            notes?: string | null;
+            is_exit?: boolean;
+        };
+        ReceptionLigneWeightPatchRequest: {
+            /** @description Nouveau poids en kilogrammes. */
+            poids_kg: number;
+        };
+        ReceptionDeleteLigneResponse: {
+            /** @description Valeur fixe `deleted` à la suppression réussie. */
+            status: string;
+        };
+        ReceptionLigneResponse: {
+            id: string;
+            ticket_id: string;
+            category_id: string;
+            category_label: string;
+            poids_kg: number;
+            destination: components["schemas"]["ReceptionDestinationV1"];
+            notes?: string | null;
+            is_exit: boolean;
+        };
+        ReceptionCategoryRow: {
+            id: string;
+            name: string;
+        };
+        ReceptionTicketSummaryRow: {
+            id: string;
+            poste_id: string;
+            benevole_username: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            closed_at?: string | null;
+            status: string;
+            total_lignes: number;
+            total_poids: number;
+            poids_entree: number;
+            poids_direct: number;
+            poids_sortie: number;
+        };
+        ReceptionTicketListResponse: {
+            tickets: components["schemas"]["ReceptionTicketSummaryRow"][];
+            total: number;
+            page: number;
+            per_page: number;
+            total_pages: number;
+        };
+        ReceptionTicketDownloadTokenResponse: {
+            /** @description Chemin relatif ou absolu vers GET export-csv avec token */
+            download_url: string;
+            filename: string;
+            expires_in_seconds: number;
+        };
+        ReceptionTicketDetailResponse: {
+            id: string;
+            poste_id: string;
+            benevole_username: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            closed_at?: string | null;
+            status: string;
+            lignes: components["schemas"]["ReceptionLigneResponse"][];
         };
     };
     responses: never;
@@ -2002,6 +2338,737 @@ export interface operations {
             };
             /** @description La vente n'est pas un ticket en attente */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_openPoste: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReceptionOpenPosteRequest"];
+            };
+        };
+        responses: {
+            /** @description Poste créé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionOpenPosteResponse"];
+                };
+            };
+            /** @description Validation métier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /**
+             * @description `opened_at` personnalisé réservé ADMIN/SUPER_ADMIN ; ou **Story 7.2** : permission `reception.access`,
+             *     site affecté (USER), ou refus métier d’ouverture.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_closePoste: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                poste_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Poste fermé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionCloseResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — refus contexte réception (permission `reception.access`, site, ou poste ouvert par un autre opérateur). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Poste introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit métier */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_listTickets: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                status?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                benevole_id?: string | null;
+                search?: string | null;
+                include_empty?: boolean;
+                poids_min?: number | null;
+                poids_max?: number | null;
+                categories?: string[];
+                destinations?: string[];
+                lignes_min?: number | null;
+                lignes_max?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste paginée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionTicketListResponse"];
+                };
+            };
+            /** @description Paramètres invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 / 7.4 — permission `reception.access`, site affecté (USER), ou hors périmètre. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_createTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceptionCreateTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description Ticket créé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionCreateTicketResponse"];
+                };
+            };
+            /** @description Poste introuvable ou conflit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — refus contexte réception (permission, site, ou poste non opéré par l’utilisateur authentifié). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_closeTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ticket fermé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionCloseResponse"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — refus contexte réception (permission, site, ou ticket hors périmètre bénévole / opérateur). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ticket introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_getTicketDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Détail ticket */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionTicketDetailResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — refus lecture détail (permission, site, ou ticket hors périmètre). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ticket introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_createTicketDownloadToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL relative de téléchargement et métadonnées */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionTicketDownloadTokenResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant ou ticket hors périmètre */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ticket introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_exportTicketCsv: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fichier CSV */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Token invalide ou expiré */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ticket introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_createLigne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceptionCreateLigneRequest"];
+            };
+        };
+        responses: {
+            /** @description Ligne créée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionLigneResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — refus contexte réception (permission, site, ou ticket hors périmètre bénévole). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ressource introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit métier */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Validation (poids, destination, etc.) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_updateLigne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ligne_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceptionUpdateLigneRequest"];
+            };
+        };
+        responses: {
+            /** @description Ligne mise à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionLigneResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — ticket hors périmètre opérateur / permission réception. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ligne ou catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ticket fermé — modification interdite */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Validation (poids, destination, is_exit, etc.) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_deleteLigne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ligne_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ligne supprimée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionDeleteLigneResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — refus périmètre / permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ligne introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ticket fermé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_patchLigneWeight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+                ligne_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceptionLigneWeightPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Poids mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionLigneResponse"];
+                };
+            };
+            /** @description Ligne n'appartient pas au ticket ou UUID invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant (USER ne peut pas appeler cette route) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ligne introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Poids invalide (≤ 0) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_listCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste `{ id, name }` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionCategoryRow"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 7.2 — refus liste catégories (permission `reception.access` ou site affecté pour les USER). */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

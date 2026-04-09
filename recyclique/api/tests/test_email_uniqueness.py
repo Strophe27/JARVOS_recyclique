@@ -1,51 +1,18 @@
 """
 Tests pour la sécurisation de l'email utilisateur (Story b34-p3)
-Vérifie que l'unicité de l'email est bien appliquée sur tous les endpoints.
+Vérifie que l'unicité de l'email est bien appliquée sur les endpoints concernés
+(création / mise à jour utilisateur — pas de self-signup public).
 """
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
+from tests.api_v1_paths import v1
 
 
 class TestEmailUniqueness:
     """Tests pour vérifier l'unicité de l'email utilisateur."""
-
-    def test_signup_with_duplicate_email_returns_409(self, client: TestClient, db_session: Session):
-        """Test que l'inscription avec un email déjà utilisé retourne 409."""
-        # Créer un utilisateur existant avec un email
-        existing_user = User(
-            username="existing_user",
-            email="test@example.com",
-            hashed_password=hash_password("Test1234!"),
-            role=UserRole.USER,
-            status=UserStatus.ACTIVE
-        )
-        db_session.add(existing_user)
-        db_session.commit()
-
-        # Tenter de créer un nouvel utilisateur avec le même email
-        response = client.post("/api/v1/auth/signup", json={
-            "username": "new_user",
-            "email": "test@example.com",
-            "password": "Test1234!"
-        })
-
-        assert response.status_code == 409
-        assert "Un compte avec cet email existe déjà" in response.json()["detail"]
-
-    def test_signup_with_unique_email_succeeds(self, client: TestClient, db_session: Session):
-        """Test que l'inscription avec un email unique fonctionne."""
-        response = client.post("/api/v1/auth/signup", json={
-            "username": "new_user",
-            "email": "unique@example.com",
-            "password": "Test1234!"
-        })
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["message"] == "Compte créé avec succès. Votre compte est en attente de validation par un administrateur."
 
     def test_create_user_with_duplicate_email_returns_409(self, client: TestClient, db_session: Session):
         """Test que la création d'utilisateur avec un email déjà utilisé retourne 409."""
@@ -61,7 +28,7 @@ class TestEmailUniqueness:
         db_session.commit()
 
         # Tenter de créer un nouvel utilisateur avec le même email
-        response = client.post("/api/v1/users/", json={
+        response = client.post(v1("/users/"), json={
             "username": "new_user",
             "email": "test@example.com",
             "password": "Test1234!",
@@ -93,7 +60,7 @@ class TestEmailUniqueness:
         db_session.commit()
 
         # Tenter de mettre à jour user2 avec l'email de user1
-        response = client.put(f"/api/v1/users/{user2.id}", json={
+        response = client.put(v1(f"/users/{user2.id}"), json={
             "email": "user1@example.com"
         })
 
@@ -114,7 +81,7 @@ class TestEmailUniqueness:
         db_session.commit()
 
         # Mettre à jour avec un nouvel email
-        response = client.put(f"/api/v1/users/{user.id}", json={
+        response = client.put(v1(f"/users/{user.id}"), json={
             "email": "new@example.com"
         })
 
@@ -148,7 +115,7 @@ class TestEmailUniqueness:
         client.headers["Authorization"] = f"Bearer {token}"
 
         # Tenter de mettre à jour user2 avec l'email de user1
-        response = client.put("/api/v1/users/me", json={
+        response = client.put(v1("/users/me"), json={
             "email": "user1@example.com"
         })
 
@@ -176,7 +143,7 @@ class TestEmailUniqueness:
         db_session.commit()
 
         # Tenter de mettre à jour user2 avec l'email de user1 via l'admin
-        response = admin_client.put(f"/api/v1/admin/users/{user2.id}", json={
+        response = admin_client.put(v1(f"/admin/users/{user2.id}"), json={
             "email": "user1@example.com"
         })
 

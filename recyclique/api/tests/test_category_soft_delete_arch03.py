@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -53,7 +54,7 @@ async def test_soft_delete_with_active_children_raises_conflict():
     assert isinstance(d, dict)
     assert d["active_children_count"] == 3
     assert d["category_id"] == cid
-    assert "sous-catégories actives" in d["detail"]
+    assert "sous-catégories actives" in d["message"]
     db.commit.assert_not_called()
 
 
@@ -92,7 +93,7 @@ async def test_soft_delete_success_commits():
 def test_delete_category_route_maps_conflict_to_422_structured(admin_client):
     cid = str(uuid4())
     detail = {
-        "detail": "Impossible de désactiver cette catégorie car elle contient des sous-catégories actives. Veuillez d'abord désactiver ou transférer les sous-catégories.",
+        "message": "Impossible de désactiver cette catégorie car elle contient des sous-catégories actives. Veuillez d'abord désactiver ou transférer les sous-catégories.",
         "category_id": cid,
         "active_children_count": 1,
     }
@@ -104,7 +105,9 @@ def test_delete_category_route_maps_conflict_to_422_structured(admin_client):
         )
         response = admin_client.delete(f"{_V1}/categories/{cid}")
     assert response.status_code == 422
-    assert response.json()["detail"] == detail
+    body = response.json()
+    assert body.get("code") == "VALIDATION_ERROR"
+    assert json.loads(body["detail"]) == detail
 
 
 def test_delete_category_route_success_returns_200(admin_client):

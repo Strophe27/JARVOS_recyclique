@@ -161,20 +161,25 @@ class TestPendingUsersEndpoints:
     def test_database_error_handling_returns_500(
         self, admin_client: TestClient, db_session: Session, monkeypatch,
     ):
-        """Après la résolution de l'admin (1er db.query), la 2e requête échoue → 500."""
+        """Après la résolution de l'admin (1er db.query), la 2e requête échoue → 500.
+
+        ``get_db`` en test fournit une Session par requête HTTP, distincte de ``db_session``.
+        On patche ``Session.query`` au niveau classe pour que le 2e ``query`` de la requête
+        (liste pending, après ``require_admin_role``) lève et soit mappé en 500 par le handler.
+        """
         user = UserFactory(status=UserStatus.PENDING, legacy_external_contact_id=_legacy_contact_id())
         db_session.add(user)
         db_session.commit()
 
         query_calls = {"n": 0}
-        real_query = db_session.query
+        real_query = Session.query
 
-        def counting_query(*args, **kwargs):
+        def counting_query(self, *args, **kwargs):
             query_calls["n"] += 1
             if query_calls["n"] >= 2:
                 raise RuntimeError("Database connection error")
-            return real_query(*args, **kwargs)
+            return real_query(self, *args, **kwargs)
 
-        monkeypatch.setattr(db_session, "query", counting_query)
+        monkeypatch.setattr(Session, "query", counting_query)
         response = admin_client.get(f"{_ADMIN_USERS}/pending")
         assert response.status_code == 500

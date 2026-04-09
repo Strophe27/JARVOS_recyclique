@@ -6,8 +6,9 @@ from decimal import Decimal
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import func, desc, and_, String
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from sqlalchemy import func, desc, and_, or_, String
+from recyclic_api.core.auth import user_has_permission
+from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 
 from recyclic_api.models import (
     PosteReception,
@@ -24,6 +25,10 @@ from recyclic_api.repositories.reception import (
     LigneDepotRepository,
     CategoryRepository,
 )
+from recyclic_api.models.user import User, UserRole
+
+
+RECEPTION_ACCESS_PERMISSION_KEY = "reception.access"
 
 
 class ReceptionService:
@@ -37,6 +42,51 @@ class ReceptionService:
         self.ligne_repo = LigneDepotRepository(db)
         self.category_repo = CategoryRepository(db)
 
+    def assert_nominal_reception_eligible(self, user: User) -> None:
+        """
+        Story 7.2 — même esprit que la caisse 6.2 : les USER doivent avoir
+        ``reception.access`` et un site affecté ; ADMIN / SUPER_ADMIN passent.
+        """
+        if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+            return
+        if not user_has_permission(user, RECEPTION_ACCESS_PERMISSION_KEY, self.db):
+            raise AuthorizationError(f"Permission requise: {RECEPTION_ACCESS_PERMISSION_KEY}")
+        if user.site_id is None:
+            raise AuthorizationError("Aucun site d'exploitation affecté — réception refusée.")
+
+    def _assert_poste_operator(self, poste: PosteReception, user: User) -> None:
+        """Poste sans ``site_id`` en base : on aligne l'opérateur sur ``opened_by_user_id`` (brownfield)."""
+        if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+            return
+        if poste.opened_by_user_id != user.id:
+            raise AuthorizationError(
+                "Ce poste de réception ne correspond pas à votre session opérateur."
+            )
+
+    def _assert_ticket_write_actor(self, ticket: TicketDepot, user: User) -> None:
+        """Mutations sur lignes / fermeture ticket : bénévole du ticket (ou privilégié)."""
+        if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+            return
+        self.assert_nominal_reception_eligible(user)
+        if ticket.benevole_user_id != user.id:
+            raise AuthorizationError(
+                "Ce ticket ne correspond pas à votre périmètre opérateur réception."
+            )
+
+    def _assert_ticket_readable(self, ticket: TicketDepot, user: User) -> None:
+        """Lecture détail ticket : bénévole, ouvreur du poste, ou privilégié."""
+        if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+            return
+        self.assert_nominal_reception_eligible(user)
+        if ticket.benevole_user_id == user.id:
+            return
+        poste: Optional[PosteReception] = ticket.poste
+        if poste is None:
+            poste = self.poste_repo.get(ticket.poste_id)
+        if poste is not None and poste.opened_by_user_id == user.id:
+            return
+        raise AuthorizationError("Ticket hors de votre périmètre opérateur réception.")
+
     def _commit_and_refresh(self, entity):
         self.db.commit()
         self.db.refresh(entity)
@@ -46,17 +96,19 @@ class ReceptionService:
         self.db.commit()
 
     # Postes
-    def open_poste(self, opened_by_user_id: UUID, opened_at: Optional[datetime] = None) -> PosteReception:
+    def open_poste(self, *, actor_user: User, opened_at: Optional[datetime] = None) -> PosteReception:
         """
         Ouvrir un poste de réception.
         
         Args:
-            opened_by_user_id: ID de l'utilisateur qui ouvre le poste
+            actor_user: Utilisateur authentifié (ouvreur du poste).
             opened_at: Date d'ouverture optionnelle (pour saisie différée, uniquement ADMIN/SUPER_ADMIN)
         
         Returns:
             PosteReception: Le poste créé
         """
+        self.assert_nominal_reception_eligible(actor_user)
+        opened_by_user_id = actor_user.id
         # Validation de la date si fournie
         if opened_at is not None:
             now = datetime.now(timezone.utc)
@@ -79,10 +131,12 @@ class ReceptionService:
         self.poste_repo.add(poste)
         return self._commit_and_refresh(poste)
 
-    def close_poste(self, poste_id: UUID) -> PosteReception:
+    def close_poste(self, poste_id: UUID, actor_user: User) -> PosteReception:
+        self.assert_nominal_reception_eligible(actor_user)
         poste: Optional[PosteReception] = self.poste_repo.get(poste_id)
         if not poste:
             raise NotFoundError("Poste introuvable")
+        self._assert_poste_operator(poste, actor_user)
 
         # Contrainte métier: pas de tickets ouverts
         open_tickets = self.poste_repo.count_open_tickets(poste.id)
@@ -97,13 +151,22 @@ class ReceptionService:
         return self._commit_and_refresh(poste)
 
     # Tickets
-    def create_ticket(self, poste_id: UUID, benevole_user_id: UUID) -> TicketDepot:
+    def create_ticket(
+        self, poste_id: UUID, benevole_user_id: UUID, actor_user: User
+    ) -> TicketDepot:
+        self.assert_nominal_reception_eligible(actor_user)
+        if actor_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+            if benevole_user_id != actor_user.id:
+                raise AuthorizationError(
+                    "Le bénévole du ticket doit être l'utilisateur authentifié."
+                )
         # Vérifier que le poste existe et est ouvert
         poste: Optional[PosteReception] = self.poste_repo.get(poste_id)
         if not poste:
             raise NotFoundError("Poste introuvable")
         if poste.status != PosteReceptionStatus.OPENED.value:
             raise ConflictError("Poste fermé")
+        self._assert_poste_operator(poste, actor_user)
 
         # Vérifier l'utilisateur
         if not self.user_repo.get(benevole_user_id):
@@ -137,10 +200,11 @@ class ReceptionService:
         self.ticket_repo.add(ticket)
         return self._commit_and_refresh(ticket)
 
-    def close_ticket(self, ticket_id: UUID) -> TicketDepot:
+    def close_ticket(self, ticket_id: UUID, actor_user: User) -> TicketDepot:
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ticket_id)
         if not ticket:
             raise NotFoundError("Ticket introuvable")
+        self._assert_ticket_write_actor(ticket, actor_user)
         if ticket.status == TicketDepotStatus.CLOSED.value:
             return ticket
 
@@ -153,11 +217,22 @@ class ReceptionService:
 
 
     # Lignes de dépôt
-    def create_ligne(self, *, ticket_id: UUID, category_id: UUID, poids_kg: float, destination: Optional[str], notes: Optional[str], is_exit: Optional[bool] = False) -> LigneDepot:
+    def create_ligne(
+        self,
+        *,
+        ticket_id: UUID,
+        category_id: UUID,
+        poids_kg: float,
+        destination: Optional[str],
+        notes: Optional[str],
+        is_exit: Optional[bool] = False,
+        actor_user: User,
+    ) -> LigneDepot:
         """Créer une ligne de dépôt avec règles métier: poids>0 et ticket ouvert."""
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ticket_id)
         if not ticket:
             raise NotFoundError("Ticket introuvable")
+        self._assert_ticket_write_actor(ticket, actor_user)
         if ticket.status != TicketDepotStatus.OPENED.value:
             raise ConflictError("Ticket fermé")
 
@@ -204,6 +279,7 @@ class ReceptionService:
         destination: Optional[str] = None,
         notes: Optional[str] = None,
         is_exit: Optional[bool] = None,
+        actor_user: User,
     ) -> LigneDepot:
         ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
         if not ligne:
@@ -213,6 +289,7 @@ class ReceptionService:
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ligne.ticket_id)
         if not ticket:
             raise NotFoundError("Ticket introuvable")
+        self._assert_ticket_write_actor(ticket, actor_user)
         if ticket.status != TicketDepotStatus.OPENED.value:
             raise ConflictError("Ticket fermé")
 
@@ -291,13 +368,14 @@ class ReceptionService:
         self.ligne_repo.update(ligne)
         return self._commit_and_refresh(ligne)
 
-    def delete_ligne(self, *, ligne_id: UUID) -> None:
+    def delete_ligne(self, *, ligne_id: UUID, actor_user: User) -> None:
         ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
         if not ligne:
             raise NotFoundError("Ligne introuvable")
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ligne.ticket_id)
         if not ticket:
             raise NotFoundError("Ticket introuvable")
+        self._assert_ticket_write_actor(ticket, actor_user)
         if ticket.status != TicketDepotStatus.OPENED.value:
             raise ConflictError("Ticket fermé")
         self.ligne_repo.delete(ligne)
@@ -305,9 +383,10 @@ class ReceptionService:
 
     # Méthodes pour l'historique des tickets
     def get_tickets_list(
-        self, 
-        page: int = 1, 
-        per_page: int = 10, 
+        self,
+        actor_user: User,
+        page: int = 1,
+        per_page: int = 10,
         status: Optional[str] = None,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
@@ -322,15 +401,27 @@ class ReceptionService:
         lignes_min: Optional[int] = None,
         lignes_max: Optional[int] = None,
     ) -> Tuple[List[TicketDepot], int]:
-        """Récupérer la liste paginée des tickets avec leurs informations de base."""
+        """Récupérer la liste paginée des tickets avec leurs informations de base.
+
+        Story 7.4 : pour les USER, périmètre aligné sur :meth:`_assert_ticket_readable`
+        (bénévole du ticket **ou** opérateur ayant ouvert le poste). ADMIN / SUPER_ADMIN : liste globale.
+        """
         offset = (page - 1) * per_page
-        
+
         # Requête avec eager loading pour éviter les N+1 queries
         query = self.db.query(TicketDepot).options(
             selectinload(TicketDepot.benevole),
             selectinload(TicketDepot.lignes)
         ).order_by(desc(TicketDepot.created_at))
-        
+
+        if actor_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+            query = query.join(PosteReception, TicketDepot.poste_id == PosteReception.id).filter(
+                or_(
+                    TicketDepot.benevole_user_id == actor_user.id,
+                    PosteReception.opened_by_user_id == actor_user.id,
+                )
+            )
+
         # Appliquer les filtres
         if status:
             query = query.filter(TicketDepot.status == status)
@@ -445,12 +536,30 @@ class ReceptionService:
         
         return tickets, total
 
-    def get_ticket_detail(self, ticket_id: UUID) -> Optional[TicketDepot]:
-        """Récupérer les détails complets d'un ticket avec ses lignes."""
-        return self.db.query(TicketDepot).options(
-            selectinload(TicketDepot.benevole),
-            selectinload(TicketDepot.lignes).selectinload(LigneDepot.category)
-        ).filter(TicketDepot.id == ticket_id).first()
+    def _fetch_ticket_detail_entity(self, ticket_id: UUID) -> Optional[TicketDepot]:
+        """Charge ticket + relations ; pas d'autorisation (usage interne / export signé)."""
+        return (
+            self.db.query(TicketDepot)
+            .options(
+                selectinload(TicketDepot.benevole),
+                selectinload(TicketDepot.poste),
+                selectinload(TicketDepot.lignes).selectinload(LigneDepot.category),
+            )
+            .filter(TicketDepot.id == ticket_id)
+            .first()
+        )
+
+    def get_ticket_detail_unrestricted(self, ticket_id: UUID) -> Optional[TicketDepot]:
+        """Détail ticket sans contrôle acteur (ex. export CSV avec token signé)."""
+        return self._fetch_ticket_detail_entity(ticket_id)
+
+    def get_ticket_detail(self, ticket_id: UUID, actor_user: User) -> Optional[TicketDepot]:
+        """Récupérer les détails complets d'un ticket avec ses lignes (Story 7.2 : périmètre acteur)."""
+        ticket = self._fetch_ticket_detail_entity(ticket_id)
+        if ticket is None:
+            return None
+        self._assert_ticket_readable(ticket, actor_user)
+        return ticket
 
     def _calculate_ticket_totals(self, ticket: TicketDepot) -> Tuple[int, Decimal, Decimal, Decimal, Decimal]:
         """

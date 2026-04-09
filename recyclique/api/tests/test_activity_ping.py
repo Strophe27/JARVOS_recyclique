@@ -74,7 +74,7 @@ class TestActivityPing:
 
     @staticmethod
     def _user_id_from_token(token: str) -> str:
-        payload = jwt.decode(token, options={"verify_signature": False})
+        payload = jwt.get_unverified_claims(token)
         return payload["sub"]
 
     def test_ping_records_activity(self):

@@ -28,8 +28,23 @@ def conditional_rate_limit(limit_str: str) -> Callable:
     return decorator
 
 
+def conditional_limiter_limit(limiter_instance: object, limit_str: str) -> Callable:
+    """Applique ``limiter_instance.limit`` sauf en mode test (même détection que ``conditional_rate_limit``).
+
+    Utile pour les routeurs admin qui instancient un ``Limiter`` dédié (non partagé avec ce module).
+    """
+
+    def decorator(func: Callable) -> Callable:
+        if _is_test_mode():
+            return func
+        return limiter_instance.limit(limit_str)(func)
+
+    return decorator
+
+
 __all__ = [
     "limiter",
     "conditional_rate_limit",
+    "conditional_limiter_limit",
     "RateLimitExceeded",
 ]

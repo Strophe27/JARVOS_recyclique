@@ -12,10 +12,23 @@ from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import create_access_token
 from tests.factories import UserFactory
+from tests.api_v1_paths import v1
+
+_DB_EXPORT = v1("/admin/db/export")
+
+# L’endpoint parse DATABASE_URL avant subprocess ; les tests utilisent SQLite par défaut.
+_PG_URL_FOR_DUMP_TESTS = "postgresql://pytest:pytest@127.0.0.1:5432/pytest_db_export"
+
+
+@pytest.fixture
+def postgres_url_for_db_export(monkeypatch):
+    from recyclic_api.core import config
+
+    monkeypatch.setattr(config.settings, "DATABASE_URL", _PG_URL_FOR_DUMP_TESTS)
 
 
 class TestDatabaseExportEndpoint:
-    """Tests pour l'endpoint POST /api/v1/admin/db/export"""
+    """Tests pour l'endpoint POST {API_V1_STR}/admin/db/export"""
 
     @patch('recyclic_api.api.api_v1.endpoints.db_export.FileResponse')
     @patch('recyclic_api.api.api_v1.endpoints.db_export.subprocess.run')
@@ -25,7 +38,8 @@ class TestDatabaseExportEndpoint:
         mock_exists: Mock,
         mock_subprocess: Mock,
         mock_file_response: Mock,
-        super_admin_client: TestClient
+        super_admin_client: TestClient,
+        postgres_url_for_db_export,
     ):
         """Teste qu'un super-admin peut exporter la base de données avec succès."""
         # Arrange
@@ -42,7 +56,7 @@ class TestDatabaseExportEndpoint:
         )
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/export")
+        response = super_admin_client.post(_DB_EXPORT)
 
         # Assert
         assert response.status_code == 200
@@ -52,7 +66,7 @@ class TestDatabaseExportEndpoint:
     def test_export_database_requires_authentication(self, client: TestClient):
         """Teste que l'endpoint nécessite une authentification."""
         # Act
-        response = client.post("/api/v1/admin/db/export")
+        response = client.post(_DB_EXPORT)
 
         # Assert
         assert response.status_code == 401
@@ -63,7 +77,7 @@ class TestDatabaseExportEndpoint:
     ):
         """Teste que l'endpoint nécessite le rôle SUPER_ADMIN (ADMIN n'est pas suffisant)."""
         # Act
-        response = admin_client.post("/api/v1/admin/db/export")
+        response = admin_client.post(_DB_EXPORT)
 
         # Assert
         assert response.status_code == 403
@@ -83,7 +97,7 @@ class TestDatabaseExportEndpoint:
         client.headers = {"Authorization": f"Bearer {access_token}"}
 
         # Act
-        response = client.post("/api/v1/admin/db/export")
+        response = client.post(_DB_EXPORT)
 
         # Assert
         # require_super_admin_role() retourne 401 pour les non-super-admins même s'ils sont authentifiés
@@ -95,7 +109,8 @@ class TestDatabaseExportEndpoint:
         self,
         mock_exists: Mock,
         mock_subprocess: Mock,
-        super_admin_client: TestClient
+        super_admin_client: TestClient,
+        postgres_url_for_db_export,
     ):
         """Teste que l'échec de pg_dump retourne une erreur 500."""
         # Arrange
@@ -106,7 +121,7 @@ class TestDatabaseExportEndpoint:
         )
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/export")
+        response = super_admin_client.post(_DB_EXPORT)
 
         # Assert
         assert response.status_code == 500
@@ -118,7 +133,8 @@ class TestDatabaseExportEndpoint:
         self,
         mock_exists: Mock,
         mock_subprocess: Mock,
-        super_admin_client: TestClient
+        super_admin_client: TestClient,
+        postgres_url_for_db_export,
     ):
         """Teste que l'absence de fichier créé retourne une erreur 500."""
         # Arrange
@@ -127,7 +143,7 @@ class TestDatabaseExportEndpoint:
         mock_exists.return_value = False
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/export")
+        response = super_admin_client.post(_DB_EXPORT)
 
         # Assert
         assert response.status_code == 500
@@ -137,7 +153,8 @@ class TestDatabaseExportEndpoint:
     def test_export_database_timeout_returns_504(
         self,
         mock_subprocess: Mock,
-        super_admin_client: TestClient
+        super_admin_client: TestClient,
+        postgres_url_for_db_export,
     ):
         """Teste que le timeout de pg_dump retourne une erreur 504."""
         # Arrange
@@ -146,7 +163,7 @@ class TestDatabaseExportEndpoint:
         mock_subprocess.side_effect = TimeoutExpired(cmd="pg_dump", timeout=300)
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/export")
+        response = super_admin_client.post(_DB_EXPORT)
 
         # Assert
         assert response.status_code == 504
@@ -160,7 +177,8 @@ class TestDatabaseExportEndpoint:
         mock_exists: Mock,
         mock_subprocess: Mock,
         mock_file_response: Mock,
-        super_admin_client: TestClient
+        super_admin_client: TestClient,
+        postgres_url_for_db_export,
     ):
         """Teste que le nom du fichier contient un timestamp."""
         # Arrange
@@ -177,7 +195,7 @@ class TestDatabaseExportEndpoint:
         )
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/export")
+        response = super_admin_client.post(_DB_EXPORT)
 
         # Assert
         assert response.status_code == 200

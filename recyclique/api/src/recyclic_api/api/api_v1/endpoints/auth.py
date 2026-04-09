@@ -17,7 +17,7 @@ from recyclic_api.core.audit import log_audit, AuditActionType
 from recyclic_api.core.auth import get_current_user
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.login_history import LoginHistory
-from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse, LogoutResponse, RefreshTokenRequest, RefreshTokenResponse
+from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse, LogoutResponse, RefreshTokenRequest, RefreshTokenResponse
 from recyclic_api.schemas.pin import PinAuthRequest, PinAuthResponse
 from recyclic_api.utils.auth_metrics import auth_metrics
 from recyclic_api.core.uuid_validation import validate_and_convert_uuid
@@ -350,63 +350,15 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
         )
 
 
-@router.post("/signup", response_model=SignupResponse)
-@conditional_rate_limit("5/minute")
-async def signup(request: Request, payload: SignupRequest, db: Session = Depends(get_db)) -> SignupResponse:
-    """Crée un nouveau compte utilisateur en attente de validation."""
-
-    # Validation simple de l'email si fourni
-    if payload.email is not None:
-        email_val = str(payload.email)
-        if "@" not in email_val or "." not in email_val:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Email invalide",
-            )
-
-    # Vérifier si le nom d'utilisateur existe déjà
-    result = db.execute(select(User).where(User.username == payload.username))
-    existing_user = result.scalar_one_or_none()
-
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Ce nom d'utilisateur est déjà pris",
-        )
-
-    # Vérifier si l'email existe déjà (si fourni)
-    if payload.email is not None:
-        result = db.execute(select(User).where(User.email == payload.email))
-        existing_email_user = result.scalar_one_or_none()
-        
-        if existing_email_user:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Un compte avec cet email existe déjà",
-            )
-
-    # Hasher le mot de passe
-    hashed_password = hash_password(payload.password)
-
-    # Créer le nouvel utilisateur
-    new_user = User(
-        username=payload.username,
-        email=payload.email,
-        hashed_password=hashed_password,
-        role=UserRole.USER,
-        status=UserStatus.PENDING,
-        is_active=True
-    )
-
-    # Sauvegarder en base de données
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return SignupResponse(
-        message="Compte créé avec succès. Votre compte est en attente de validation par un administrateur.",
-        user_id=str(new_user.id),
-        status=new_user.status.value
+@router.post("/signup", include_in_schema=False)
+async def signup_public_disabled():
+    """Pas d'inscription publique : les administrateurs créent les comptes et attribuent les rôles."""
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=(
+            "L'inscription publique n'est pas disponible. "
+            "Les comptes sont créés par un administrateur."
+        ),
     )
 
 
@@ -471,11 +423,18 @@ async def forgot_password(request: Request, payload: ForgotPasswordRequest, db: 
 async def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> ResetPasswordResponse:
     """Réinitialise le mot de passe avec un token valide."""
 
-    # Vérifier et décoder le token
-    user_id = verify_reset_token(payload.token)
+    # Vérifier et décoder le token (sub = identifiant utilisateur, typiquement UUID en chaîne)
+    user_id_str = verify_reset_token(payload.token)
+    try:
+        user_uuid = uuid.UUID(str(user_id_str))
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalide",
+        )
 
     # Récupérer l'utilisateur
-    result = db.execute(select(User).where(User.id == user_id))
+    result = db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:

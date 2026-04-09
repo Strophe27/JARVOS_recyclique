@@ -100,6 +100,40 @@ async def get_categories_hierarchy(
     return await service.get_categories_hierarchy(is_active=is_active)
 
 
+# Enregistrés avant /{category_id} pour éviter que « entry-tickets » / « sale-tickets »
+# soient interprétés comme des UUID de catégorie.
+@router.get(
+    "/entry-tickets",
+    response_model=List[CategoryRead],
+    summary="Get categories for ENTRY tickets",
+    description="Get categories filtered by visibility for ENTRY/DEPOT tickets. Requires authentication."
+)
+async def get_categories_for_entry_tickets(
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get categories for ENTRY tickets (respects visibility settings)"""
+    service = CategoryManagementService(db)
+    return await service.get_categories_for_entry_tickets(is_active=is_active)
+
+
+@router.get(
+    "/sale-tickets",
+    response_model=List[CategoryRead],
+    summary="Get categories for SALE tickets",
+    description="Get all categories for SALE/CASH REGISTER tickets (ignores visibility). Requires authentication."
+)
+async def get_categories_for_sale_tickets(
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get categories for SALE tickets (always shows all categories)"""
+    service = CategoryManagementService(db)
+    return await service.get_categories_for_sale_tickets(is_active=is_active)
+
+
 @router.get(
     "/actions/export",
     summary="Export categories configuration",
@@ -492,35 +526,3 @@ async def update_category_display_order_entry(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
-
-
-@router.get(
-    "/entry-tickets",
-    response_model=List[CategoryRead],
-    summary="Get categories for ENTRY tickets",
-    description="Get categories filtered by visibility for ENTRY/DEPOT tickets. Requires authentication."
-)
-async def get_categories_for_entry_tickets(
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get categories for ENTRY tickets (respects visibility settings)"""
-    service = CategoryManagementService(db)
-    return await service.get_categories_for_entry_tickets(is_active=is_active)
-
-
-@router.get(
-    "/sale-tickets",
-    response_model=List[CategoryRead],
-    summary="Get categories for SALE tickets",
-    description="Get all categories for SALE/CASH REGISTER tickets (ignores visibility). Requires authentication."
-)
-async def get_categories_for_sale_tickets(
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get categories for SALE tickets (always shows all categories)"""
-    service = CategoryManagementService(db)
-    return await service.get_categories_for_sale_tickets(is_active=is_active)

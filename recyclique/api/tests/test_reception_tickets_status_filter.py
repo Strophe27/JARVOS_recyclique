@@ -7,10 +7,12 @@ from sqlalchemy.orm import Session
 from uuid import uuid4
 
 from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.models.site import Site
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.core.security import hash_password
 from recyclic_api.core.config import settings
+from tests.reception_story72_eligibility import grant_user_reception_eligibility
 
 _V1 = settings.API_V1_STR.rstrip("/")
 
@@ -20,16 +22,22 @@ class TestReceptionTicketsStatusFilter:
 
     def test_get_tickets_without_status_filter(self, client: TestClient, db_session: Session):
         """Test que l'endpoint retourne tous les tickets quand aucun filtre de statut n'est fourni."""
-        # Créer un utilisateur de test
+        site = Site(id=uuid4(), name="Site tickets filtre", is_active=True)
+        db_session.add(site)
+        db_session.commit()
+        db_session.refresh(site)
         user = User(
             id=uuid4(),
             username="test@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
-            status=UserStatus.ACTIVE
+            status=UserStatus.ACTIVE,
+            site_id=site.id,
         )
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
+        grant_user_reception_eligibility(db_session, user, site.id)
 
         # Créer un poste de réception
         poste = PosteReception(
@@ -87,16 +95,22 @@ class TestReceptionTicketsStatusFilter:
 
     def test_get_tickets_with_status_filter_opened(self, client: TestClient, db_session: Session):
         """Test que l'endpoint retourne uniquement les tickets ouverts avec le filtre status=opened."""
-        # Créer un utilisateur de test
+        site = Site(id=uuid4(), name="Site tickets filtre", is_active=True)
+        db_session.add(site)
+        db_session.commit()
+        db_session.refresh(site)
         user = User(
             id=uuid4(),
             username="test@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
-            status=UserStatus.ACTIVE
+            status=UserStatus.ACTIVE,
+            site_id=site.id,
         )
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
+        grant_user_reception_eligibility(db_session, user, site.id)
 
         # Créer un poste de réception
         poste = PosteReception(
@@ -153,16 +167,22 @@ class TestReceptionTicketsStatusFilter:
 
     def test_get_tickets_with_status_filter_closed(self, client: TestClient, db_session: Session):
         """Test que l'endpoint retourne uniquement les tickets fermés avec le filtre status=closed."""
-        # Créer un utilisateur de test
+        site = Site(id=uuid4(), name="Site tickets filtre", is_active=True)
+        db_session.add(site)
+        db_session.commit()
+        db_session.refresh(site)
         user = User(
             id=uuid4(),
             username="test@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
-            status=UserStatus.ACTIVE
+            status=UserStatus.ACTIVE,
+            site_id=site.id,
         )
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
+        grant_user_reception_eligibility(db_session, user, site.id)
 
         # Créer un poste de réception
         poste = PosteReception(
@@ -219,16 +239,22 @@ class TestReceptionTicketsStatusFilter:
 
     def test_get_tickets_with_invalid_status_filter(self, client: TestClient, db_session: Session):
         """Test que l'endpoint retourne une liste vide avec un statut invalide."""
-        # Créer un utilisateur de test
+        site = Site(id=uuid4(), name="Site tickets filtre", is_active=True)
+        db_session.add(site)
+        db_session.commit()
+        db_session.refresh(site)
         user = User(
             id=uuid4(),
             username="test@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
-            status=UserStatus.ACTIVE
+            status=UserStatus.ACTIVE,
+            site_id=site.id,
         )
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
+        grant_user_reception_eligibility(db_session, user, site.id)
 
         # Créer un poste de réception
         poste = PosteReception(
@@ -278,16 +304,22 @@ class TestReceptionTicketsStatusFilter:
 
     def test_get_tickets_with_pagination_and_status_filter(self, client: TestClient, db_session: Session):
         """Test que la pagination fonctionne correctement avec le filtre de statut."""
-        # Créer un utilisateur de test
+        site = Site(id=uuid4(), name="Site tickets filtre", is_active=True)
+        db_session.add(site)
+        db_session.commit()
+        db_session.refresh(site)
         user = User(
             id=uuid4(),
             username="test@example.com",
             hashed_password=hash_password("testpassword"),
             role=UserRole.USER,
-            status=UserStatus.ACTIVE
+            status=UserStatus.ACTIVE,
+            site_id=site.id,
         )
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
+        grant_user_reception_eligibility(db_session, user, site.id)
 
         # Créer un poste de réception
         poste = PosteReception(

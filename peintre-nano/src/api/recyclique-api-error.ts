@@ -150,3 +150,16 @@ export function recycliqueClientFailureFromSalesHttp(err: {
     networkError: err.networkError,
   };
 }
+
+/** Alias explicite pour erreurs `reception-client` (même forme AR21 que sales). */
+export function recycliqueClientFailureFromReceptionHttp(err: {
+  readonly status: number;
+  readonly detail: string;
+  readonly code?: string;
+  readonly retryable?: boolean;
+  readonly state?: string | null;
+  readonly correlation_id?: string;
+  readonly networkError?: boolean;
+}): RecycliqueClientFailure {
+  return recycliqueClientFailureFromSalesHttp(err);
+}

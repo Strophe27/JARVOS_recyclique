@@ -4,6 +4,8 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.user import UserUpdate, UserSelfUpdate
 from uuid import UUID
 
+from tests.api_v1_paths import v1
+
 
 class TestUserProfileEndpoints:
     """Tests d'intégration pour les endpoints utilisateur avec les nouveaux champs de profil."""
@@ -32,7 +34,7 @@ class TestUserProfileEndpoints:
         user_id = str(user.id)
         
         # Test GET /users/{id}
-        response = client.get(f"/api/v1/users/{user_id}")
+        response = client.get(v1(f"/users/{user_id}"))
         assert response.status_code == 200
         
         user_data = response.json()
@@ -73,7 +75,7 @@ class TestUserProfileEndpoints:
         }
         
         # Test PUT /users/{id}
-        response = client.put(f"/api/v1/users/{user_id}", json=update_data)
+        response = client.put(v1(f"/users/{user_id}"), json=update_data)
         assert response.status_code == 200
         
         updated_user = response.json()
@@ -115,7 +117,7 @@ class TestUserProfileEndpoints:
         }
         
         # Test PUT /users/{id}
-        response = client.put(f"/api/v1/users/{user_id}", json=partial_update)
+        response = client.put(v1(f"/users/{user_id}"), json=partial_update)
         assert response.status_code == 200
         
         updated_user = response.json()
@@ -159,7 +161,7 @@ class TestUserProfileEndpoints:
         }
         
         # Test PUT /users/{id}
-        response = client.put(f"/api/v1/users/{user_id}", json=clear_data)
+        response = client.put(v1(f"/users/{user_id}"), json=clear_data)
         assert response.status_code == 200
         
         updated_user = response.json()
@@ -194,7 +196,7 @@ class TestUserProfileEndpoints:
             "availability": "Disponibilités valides"
         }
         
-        response = client.put(f"/api/v1/users/{user_id}", json=valid_data)
+        response = client.put(v1(f"/users/{user_id}"), json=valid_data)
         assert response.status_code == 200
         
         # Test avec des chaînes vides (devrait être autorisé)
@@ -206,7 +208,7 @@ class TestUserProfileEndpoints:
             "availability": ""
         }
         
-        response = client.put(f"/api/v1/users/{user_id}", json=empty_string_data)
+        response = client.put(v1(f"/users/{user_id}"), json=empty_string_data)
         assert response.status_code == 200
         
         updated_user = response.json()

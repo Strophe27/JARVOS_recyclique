@@ -7,13 +7,13 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
+from tests.api_v1_paths import v1
 
 # Client HTTP module-level pour les tests qui n'injectent pas la fixture
 class TestAuthLoginUsernamePassword:
-    """Tests for the POST /api/v1/auth/login endpoint with username/password"""
+    """Tests for POST {API_V1_STR}/auth/login (see tests.api_v1_paths) with username/password"""
 
     def test_login_success_valid_credentials(self, client: TestClient, db_session: Session):
         """Test successful login with valid username and password"""
@@ -32,7 +32,7 @@ class TestAuthLoginUsernamePassword:
 
         # Test login
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "testuser1",
                 "password": "testpassword123"
@@ -52,7 +52,7 @@ class TestAuthLoginUsernamePassword:
     def test_login_failure_invalid_username(self, client: TestClient, db_session: Session):
         """Test login failure with non-existent username"""
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "nonexistent",
                 "password": "password123"
@@ -80,7 +80,7 @@ class TestAuthLoginUsernamePassword:
 
         # Test with wrong password
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "testuser2",
                 "password": "wrongpassword"
@@ -107,7 +107,7 @@ class TestAuthLoginUsernamePassword:
         db_session.commit()
 
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "inactiveuser",
                 "password": "testpassword123"
@@ -122,7 +122,7 @@ class TestAuthLoginUsernamePassword:
     def test_login_validation_error_missing_username(self, client: TestClient):
         """Test validation error with missing username"""
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={"password": "password123"}
         )
 
@@ -133,7 +133,7 @@ class TestAuthLoginUsernamePassword:
     def test_login_validation_error_missing_password(self, client: TestClient):
         """Test validation error with missing password"""
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={"username": "testuser"}
         )
 
@@ -144,7 +144,7 @@ class TestAuthLoginUsernamePassword:
     def test_login_validation_error_empty_credentials(self, client: TestClient):
         """Test validation error with empty credentials"""
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={}
         )
 
@@ -167,7 +167,7 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(admin_user)
 
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "adminuser",
                 "password": "adminpass123"
@@ -194,7 +194,7 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(super_admin)
 
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "superadmin",
                 "password": "superadminpass123"
@@ -221,7 +221,7 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(test_user)
 
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "jwtuser",
                 "password": "tokentest123"
@@ -254,7 +254,7 @@ class TestAuthLoginUsernamePassword:
 
         # Test with correct case
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "caseuser",
                 "password": "CaseSensitive123"
@@ -264,7 +264,7 @@ class TestAuthLoginUsernamePassword:
 
         # Test with wrong case
         response = client.post(
-            "/api/v1/auth/login",
+            v1("/auth/login"),
             json={
                 "username": "caseuser",
                 "password": "casesensitive123"

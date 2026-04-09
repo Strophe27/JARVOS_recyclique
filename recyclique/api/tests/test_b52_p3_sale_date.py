@@ -23,7 +23,18 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.sale import Sale
 from recyclic_api.core.security import hash_password
 from recyclic_api.core.auth import create_access_token
+from recyclic_api.core.config import settings
 from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
+
+_V1 = settings.API_V1_STR.rstrip("/")
+
+
+def _api_dt(value: str) -> datetime:
+    """Parse une datetime JSON API ; SQLite / sérialisation peuvent renvoyer du naïf UTC."""
+    d = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if d.tzinfo is None:
+        return d.replace(tzinfo=timezone.utc)
+    return d
 
 
 @pytest.fixture
@@ -184,7 +195,7 @@ class TestSaleDateNormalSession:
         """Test création vente dans session normale : sale_date = created_at."""
         # Créer session normale (sans opened_at personnalisé)
         session_response = user_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_user.id),
                 "site_id": str(test_site.id),
@@ -200,7 +211,7 @@ class TestSaleDateNormalSession:
         
         # Créer une vente
         sale_response = user_client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json={
                 "cash_session_id": session_id,
                 "items": [
@@ -227,8 +238,8 @@ class TestSaleDateNormalSession:
         assert "sale_date" in sale_data
         assert "created_at" in sale_data
         
-        sale_date = datetime.fromisoformat(sale_data["sale_date"].replace("Z", "+00:00"))
-        created_at = datetime.fromisoformat(sale_data["created_at"].replace("Z", "+00:00"))
+        sale_date = _api_dt(sale_data["sale_date"])
+        created_at = _api_dt(sale_data["created_at"])
         
         # Pour session normale : sale_date = created_at (même valeur)
         assert abs((sale_date - created_at).total_seconds()) < 1
@@ -253,7 +264,7 @@ class TestSaleDateDeferredSession:
         past_date = datetime.now(timezone.utc) - timedelta(days=7)
         
         session_response = admin_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_admin.id),
                 "site_id": str(test_site.id),
@@ -267,7 +278,7 @@ class TestSaleDateDeferredSession:
         
         # Créer une vente
         sale_response = admin_client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json={
                 "cash_session_id": session_id,
                 "items": [
@@ -292,11 +303,9 @@ class TestSaleDateDeferredSession:
         assert "sale_date" in sale_data
         assert "created_at" in sale_data
         
-        sale_date = datetime.fromisoformat(sale_data["sale_date"].replace("Z", "+00:00"))
-        created_at = datetime.fromisoformat(sale_data["created_at"].replace("Z", "+00:00"))
-        session_opened_at = datetime.fromisoformat(
-            session_response.json()["opened_at"].replace("Z", "+00:00")
-        )
+        sale_date = _api_dt(sale_data["sale_date"])
+        created_at = _api_dt(sale_data["created_at"])
+        session_opened_at = _api_dt(session_response.json()["opened_at"])
         
         # Session différée : sale_date et created_at alignés sur opened_at
         assert abs((sale_date - session_opened_at).total_seconds()) < 1
@@ -365,7 +374,7 @@ class TestSaleDateInResponse:
         """Test que sale_date est présent dans la réponse de création de vente."""
         # Créer session
         session_response = user_client.post(
-            "/api/v1/cash-sessions/",
+            f"{_V1}/cash-sessions/",
             json={
                 "operator_id": str(test_user.id),
                 "site_id": str(test_site.id),
@@ -378,7 +387,7 @@ class TestSaleDateInResponse:
         
         # Créer une vente
         sale_response = user_client.post(
-            "/api/v1/sales/",
+            f"{_V1}/sales/",
             json={
                 "cash_session_id": session_id,
                 "items": [

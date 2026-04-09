@@ -12,11 +12,27 @@ from io import BytesIO
 
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import create_access_token
+from recyclic_api.core.config import settings
+from recyclic_api.api.api_v1.endpoints import db_import as db_import_endpoint
 from tests.factories import UserFactory
+
+_V1 = settings.API_V1_STR.rstrip("/")
+_DB_IMPORT_URL = f"{_V1}/admin/db/import"
+
+# L'endpoint parse ``DATABASE_URL`` et exige ``postgresql://`` avant tout ``subprocess`` :
+# les tests utilisent SQLite via conftest → forcer une URL Postgres factice pour les chemins mockés.
+_FAKE_PG_URL = "postgresql://postgres:secret@127.0.0.1:5432/recyclic_import_test"
+
+
+@pytest.fixture(autouse=True)
+def _db_import_test_env(monkeypatch):
+    monkeypatch.setattr(db_import_endpoint.settings, "DATABASE_URL", _FAKE_PG_URL)
+    monkeypatch.setattr(db_import_endpoint.time, "sleep", lambda *args, **kwargs: None)
+    monkeypatch.setattr(db_import_endpoint.shutil, "copy2", lambda *args, **kwargs: None)
 
 
 class TestDatabaseImportEndpoint:
-    """Tests pour l'endpoint POST /api/v1/admin/db/import"""
+    """Tests pour l'endpoint POST {API_V1_STR}/admin/db/import"""
 
     @patch('recyclic_api.api.api_v1.endpoints.db_import.subprocess.run')
     @patch('recyclic_api.api.api_v1.endpoints.db_import.os.makedirs')
@@ -30,10 +46,7 @@ class TestDatabaseImportEndpoint:
         # Arrange
         # Mock successful validation, backup and restore
         def side_effect(*args, **kwargs):
-            # First call: pg_restore --list (validation)
-            # Second call: pg_dump (backup)
-            # Third call: pg_restore (restore)
-            call_count = len(mock_subprocess.call_args_list)
+            # Ordre réel : pg_restore --list, pg_dump, psql (terminate), pg_restore (restore)
             return MagicMock(returncode=0, stderr="", stdout="")
         
         mock_subprocess.side_effect = side_effect
@@ -44,7 +57,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 200
@@ -67,7 +80,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = client.post("/api/v1/admin/db/import", files=files)
+        response = client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 401
@@ -82,7 +95,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = admin_client.post("/api/v1/admin/db/import", files=files)
+        response = admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 403
@@ -105,19 +118,17 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = client.post("/api/v1/admin/db/import", files=files)
+        response = client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 401
 
-    def test_import_database_no_file_returns_400(self, super_admin_client: TestClient):
-        """Teste que l'absence de fichier retourne une erreur 400."""
-        # Act
-        response = super_admin_client.post("/api/v1/admin/db/import")
-
-        # Assert
-        assert response.status_code == 400
-        assert "Aucun fichier fourni" in response.json()["detail"]
+    def test_import_database_no_file_returns_422(self, super_admin_client: TestClient):
+        """Sans fichier : FastAPI / File(...) → 422 (champ ``file`` manquant), pas le corps métier 400."""
+        response = super_admin_client.post(_DB_IMPORT_URL)
+        assert response.status_code == 422
+        body = response.json()
+        assert "detail" in body
 
     def test_import_database_non_dump_file_returns_400(self, super_admin_client: TestClient):
         """Teste qu'un fichier non-.dump retourne une erreur 400."""
@@ -125,7 +136,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.txt", BytesIO(b"content"), "text/plain")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 400
@@ -139,7 +150,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("large.dump", BytesIO(large_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 413
@@ -166,7 +177,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 400
@@ -182,15 +193,15 @@ class TestDatabaseImportEndpoint:
     ):
         """Teste que l'échec de la sauvegarde automatique retourne une erreur 500."""
         # Arrange
-        # Mock validation success but backup failure
+        # Validation (pg_restore --list) OK ; échec sur pg_dump — ne pas se fier à len(call_args_list)
         def side_effect(*args, **kwargs):
-            call_count = len(mock_subprocess.call_args_list)
-            if call_count == 0:
-                # Validation succeeds
-                return MagicMock(returncode=0, stderr="")
-            else:
-                # Backup fails
+            cmd = args[0] if args else ()
+            cmd0 = cmd[0] if cmd else ""
+            if "pg_restore" in cmd0 and "--list" in cmd:
+                return MagicMock(returncode=0, stderr="", stdout="")
+            if "pg_dump" in cmd0:
                 return MagicMock(returncode=1, stderr="pg_dump: error: connection failed")
+            return MagicMock(returncode=0, stderr="", stdout="")
         
         mock_subprocess.side_effect = side_effect
         mock_makedirs.return_value = None
@@ -199,7 +210,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 500
@@ -215,18 +226,12 @@ class TestDatabaseImportEndpoint:
     ):
         """Teste que l'échec de la restauration retourne une erreur 500."""
         # Arrange
-        # Mock successful validation and backup but failed restore
+        # Validation, backup, psql terminate OK ; échec sur le 4e appel (pg_restore)
         def side_effect(*args, **kwargs):
-            call_count = len(mock_subprocess.call_args_list)
-            if call_count == 0:
-                # Validation succeeds
-                return MagicMock(returncode=0, stderr="")
-            elif call_count == 1:
-                # Backup succeeds
-                return MagicMock(returncode=0, stderr="")
-            else:
-                # Restore fails
-                return MagicMock(returncode=1, stderr="pg_restore: error: database error")
+            n = len(mock_subprocess.call_args_list)
+            if n < 3:
+                return MagicMock(returncode=0, stderr="", stdout="")
+            return MagicMock(returncode=1, stderr="pg_restore: error: database error")
         
         mock_subprocess.side_effect = side_effect
         mock_makedirs.return_value = None
@@ -235,7 +240,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 500
@@ -253,17 +258,12 @@ class TestDatabaseImportEndpoint:
         # Arrange
         # Mock timeout during restore
         from subprocess import TimeoutExpired
+
         def side_effect(*args, **kwargs):
-            call_count = len(mock_subprocess.call_args_list)
-            if call_count == 0:
-                # Validation succeeds
-                return MagicMock(returncode=0, stderr="")
-            elif call_count == 1:
-                # Backup succeeds
-                return MagicMock(returncode=0, stderr="")
-            else:
-                # Restore times out
-                raise TimeoutExpired(cmd="pg_restore", timeout=600)
+            n = len(mock_subprocess.call_args_list)
+            if n < 3:
+                return MagicMock(returncode=0, stderr="", stdout="")
+            raise TimeoutExpired(cmd="pg_restore", timeout=600)
         
         mock_subprocess.side_effect = side_effect
         mock_makedirs.return_value = None
@@ -272,7 +272,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 504
@@ -299,19 +299,18 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 200
         response_data = response.json()
         assert "backup_created" in response_data
         assert "pre_restore_" in response_data["backup_created"]
-        assert response_data["backup_path"].startswith("/backups/")
+        norm_backup = response_data["backup_path"].replace("\\", "/")
+        assert norm_backup.startswith("/backups/")
         
-        # Vérifier que pg_dump a été appelé pour la sauvegarde (deuxième appel après validation)
         assert mock_subprocess.called
         assert len(mock_subprocess.call_args_list) >= 2
-        # Le deuxième appel devrait être pg_dump (backup)
         backup_call = mock_subprocess.call_args_list[1]
         assert "pg_dump" in backup_call[0][0]
         assert "-F" in backup_call[0][0]
@@ -342,7 +341,7 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post("/api/v1/admin/db/import", files=files)
+        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
 
         # Assert
         assert response.status_code == 200

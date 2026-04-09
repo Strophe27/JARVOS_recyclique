@@ -86,6 +86,7 @@ def test_run_close_cash_session_admin_can_close_any_session(mock_audit):
     db = MagicMock()
     service = MagicMock()
     service.get_session_by_id_or_raise.return_value = session
+    service.count_held_sales_for_session.return_value = 0
     service.validate_session_close.return_value = {
         "total_donations": 0.0,
         "theoretical_amount": 125.0,
@@ -122,6 +123,7 @@ def test_run_close_cash_session_empty_deleted_outcome(mock_audit):
     db = MagicMock()
     service = MagicMock()
     service.get_session_by_id_or_raise.return_value = session
+    service.count_held_sales_for_session.return_value = 0
     service.validate_session_close.return_value = {
         "total_donations": 0.0,
         "theoretical_amount": 50.0,

@@ -3,17 +3,17 @@ Tests d'intégration pour l'endpoint llm-only (B47-P6).
 """
 
 import pytest
-from fastapi.testclient import TestClient
 
 from recyclic_api.models.category import Category
-from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.core.security import hash_password
+from tests.api_v1_paths import v1
+
+_LLM_ONLY = v1("/admin/import/legacy/analyze/llm-only")
 
 
 def test_llm_only_requires_admin(client):
     """Test que l'endpoint require ADMIN ou SUPER_ADMIN."""
     r = client.post(
-        "/api/v1/admin/import/legacy/analyze/llm-only",
+        _LLM_ONLY,
         json={"unmapped_categories": ["Cat1", "Cat2"]}
     )
     
@@ -23,7 +23,7 @@ def test_llm_only_requires_admin(client):
 def test_llm_only_with_empty_list(admin_client, db_session):
     """Test que l'endpoint accepte une liste vide."""
     r = admin_client.post(
-        "/api/v1/admin/import/legacy/analyze/llm-only",
+        _LLM_ONLY,
         json={"unmapped_categories": []}
     )
     
@@ -42,7 +42,7 @@ def test_llm_only_with_model_override(admin_client, db_session):
     db_session.commit()
     
     r = admin_client.post(
-        "/api/v1/admin/import/legacy/analyze/llm-only",
+        _LLM_ONLY,
         json={
             "unmapped_categories": ["UnknownCategory"],
             "llm_model_id": "mistralai/mistral-7b-instruct:free"
@@ -64,7 +64,7 @@ def test_llm_only_response_schema_validation(admin_client, db_session):
     db_session.commit()
     
     r = admin_client.post(
-        "/api/v1/admin/import/legacy/analyze/llm-only",
+        _LLM_ONLY,
         json={
             "unmapped_categories": ["UnknownCategory"],
         }
@@ -112,7 +112,7 @@ def test_llm_only_with_all_categories(admin_client, db_session):
     all_categories = ["Category1", "Category2", "Category3"]
     
     r = admin_client.post(
-        "/api/v1/admin/import/legacy/analyze/llm-only",
+        _LLM_ONLY,
         json={
             "unmapped_categories": all_categories,
             "llm_model_id": "mistralai/mistral-7b-instruct:free"

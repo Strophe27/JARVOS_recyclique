@@ -10,10 +10,14 @@ from typing import Any, Dict
 import httpx
 import pytest
 
+from recyclic_api.api.api_v1.endpoints import legacy_import as legacy_import_ep
+
+from tests.api_v1_paths import v1
+
 
 def test_llm_models_requires_admin(client) -> None:
     """L'endpoint doit être protégé par rôle ADMIN / SUPER_ADMIN."""
-    response = client.get("/api/v1/admin/import/legacy/llm-models")
+    response = client.get(v1("/admin/import/legacy/llm-models"))
 
     # 401 (non authentifié) ou 403 (auth mais pas admin) sont acceptables.
     assert response.status_code in {401, 403}
@@ -74,7 +78,7 @@ def test_llm_models_nominal(admin_client, monkeypatch: pytest.MonkeyPatch) -> No
 
     monkeypatch.setattr(httpx, "Client", fake_client)  # type: ignore[arg-type]
 
-    response = admin_client.get("/api/v1/admin/import/legacy/llm-models")
+    response = admin_client.get(v1("/admin/import/legacy/llm-models"))
 
     assert response.status_code == 200, response.text
     data = response.json()
@@ -114,9 +118,12 @@ def test_llm_models_openrouter_unavailable_returns_error(
     def fake_client(*args: Any, **kwargs: Any) -> FailingClient:  # type: ignore[override]
         return FailingClient()
 
+    # Sinon un cache rempli par un test précédent court-circuite l'appel httpx.
+    monkeypatch.setattr(legacy_import_ep, "_OPENROUTER_MODELS_CACHE", None)
+    monkeypatch.setattr(legacy_import_ep, "_OPENROUTER_MODELS_CACHE_TS", None)
     monkeypatch.setattr(httpx, "Client", fake_client)  # type: ignore[arg-type]
 
-    response = admin_client.get("/api/v1/admin/import/legacy/llm-models")
+    response = admin_client.get(v1("/admin/import/legacy/llm-models"))
 
     assert response.status_code == 200, response.text
     data = response.json()

@@ -112,7 +112,7 @@ class TestAdminE2E:
     
     def test_admin_can_list_users(self, client: TestClient, admin_headers, test_db):
         """Test : Un admin peut lister les utilisateurs"""
-        response = client.get("/api/v1/admin/users", headers=admin_headers)
+        response = client.get("/v1/admin/users", headers=admin_headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -137,7 +137,7 @@ class TestAdminE2E:
     def test_admin_can_filter_users_by_role(self, client: TestClient, admin_headers, test_db):
         """Test : Un admin peut filtrer les utilisateurs par rôle"""
         response = client.get(
-            "/api/v1/admin/users?role=user", 
+            "/v1/admin/users?role=user", 
             headers=admin_headers
         )
         
@@ -161,7 +161,7 @@ class TestAdminE2E:
     def test_admin_can_filter_users_by_status(self, client: TestClient, admin_headers, test_db):
         """Test : Un admin peut filtrer les utilisateurs par statut"""
         response = client.get(
-            "/api/v1/admin/users?status=approved", 
+            "/v1/admin/users?status=approved", 
             headers=admin_headers
         )
         
@@ -185,10 +185,10 @@ class TestAdminE2E:
         """Test : Un admin peut modifier le rôle d'un utilisateur"""
         # Utilise l'ID UUID généré pour l'utilisateur de test
         user_id = uuid.UUID(get_user_uuid())
-        new_role = "manager"
+        new_role = "admin"
         
         response = client.put(
-            f"/api/v1/admin/users/{user_id}/role",
+            f"/v1/admin/users/{user_id}/role",
             json={"role": new_role},
             headers=admin_headers
         )
@@ -218,7 +218,7 @@ class TestAdminE2E:
         new_role = "user"
         
         response = client.put(
-            f"/api/v1/admin/users/{admin_id}/role",
+            f"/v1/admin/users/{admin_id}/role",
             json={"role": new_role},
             headers=admin_headers
         )
@@ -232,12 +232,12 @@ class TestAdminE2E:
     def test_regular_user_cannot_access_admin_endpoints(self, client: TestClient, user_headers, test_db):
         """Test : Un utilisateur normal ne peut pas accéder aux endpoints admin"""
         # Test de l'endpoint de liste des utilisateurs
-        response = client.get("/api/v1/admin/users", headers=user_headers)
+        response = client.get("/v1/admin/users", headers=user_headers)
         assert response.status_code == 403
         
         # Test de l'endpoint de modification de rôle
         response = client.put(
-            "/api/v1/admin/users/some-id/role",
+            "/v1/admin/users/some-id/role",
             json={"role": "admin"},
             headers=user_headers
         )
@@ -246,8 +246,8 @@ class TestAdminE2E:
     def test_unauthenticated_user_cannot_access_admin_endpoints(self, client: TestClient):
         """Les utilisateurs non authentifiés reçoivent une erreur 401."""
         endpoints = [
-            "/api/v1/admin/users",
-            "/api/v1/admin/users/pending",
+            "/v1/admin/users",
+            "/v1/admin/users/pending",
             # Ajoutez d'autres endpoints admin ici
         ]
         for endpoint in endpoints:
@@ -257,7 +257,7 @@ class TestAdminE2E:
     def test_admin_pagination_works(self, client: TestClient, admin_headers, test_db):
         """Test : La pagination fonctionne correctement"""
         response = client.get(
-            "/api/v1/admin/users?skip=0&limit=5",
+            "/v1/admin/users?skip=0&limit=5",
             headers=admin_headers
         )
         
@@ -271,7 +271,7 @@ class TestAdminE2E:
         user_id = uuid.UUID(get_user_uuid())
         
         response = client.put(
-            f"/api/v1/admin/users/{user_id}/role",
+            f"/v1/admin/users/{user_id}/role",
             json={"role": "invalid_role"},
             headers=admin_headers
         )
@@ -280,11 +280,11 @@ class TestAdminE2E:
     
     def test_nonexistent_user_update_fails(self, client: TestClient, admin_headers, test_db):
         """Test : Mise à jour d'un utilisateur inexistant échoue"""
-        nonexistent_id = "nonexistent-user-123"
-        
+        nonexistent_id = str(uuid.uuid4())
+
         response = client.put(
-            f"/api/v1/admin/users/{nonexistent_id}/role",
-            json={"role": "manager"},
+            f"/v1/admin/users/{nonexistent_id}/role",
+            json={"role": "admin"},
             headers=admin_headers
         )
         
@@ -304,19 +304,19 @@ class TestAdminSecurity:
         )
         headers = {"Authorization": f"Bearer {expired_token}"}
         
-        response = client.get("/api/v1/admin/users", headers=headers)
+        response = client.get("/v1/admin/users", headers=headers)
         assert response.status_code == 401
     
     def test_invalid_token_handling(self, client: TestClient, test_db):
         """Test : Gestion des tokens invalides"""
         headers = {"Authorization": "Bearer invalid_token"}
         
-        response = client.get("/api/v1/admin/users", headers=headers)
+        response = client.get("/v1/admin/users", headers=headers)
         assert response.status_code == 401
     
     def test_missing_token_handling(self, client: TestClient):
         """Vérifie que les endpoints admin renvoient 401 si le token est manquant."""
-        response = client.get("/api/v1/admin/users")
+        response = client.get("/v1/admin/users")
         assert response.status_code == 401
 
 # Tests de performance
@@ -328,7 +328,7 @@ class TestAdminPerformance:
         import time
         
         start_time = time.time()
-        response = client.get("/api/v1/admin/users", headers=admin_headers)
+        response = client.get("/v1/admin/users", headers=admin_headers)
         end_time = time.time()
         
         assert response.status_code == 200
@@ -338,7 +338,7 @@ class TestAdminPerformance:
         """Test : Gestion d'une grande liste d'utilisateurs"""
         # Test avec une limite élevée
         response = client.get(
-            "/api/v1/admin/users?limit=100",
+            "/v1/admin/users?limit=100",
             headers=admin_headers
         )
         

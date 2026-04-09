@@ -23,6 +23,11 @@ TRANSACTION_LOG_FILE = TRANSACTION_LOG_DIR / "transactions.log"
 MAX_BYTES = 10 * 1024 * 1024  # 10MB
 BACKUP_COUNT = 5  # 5 fichiers de backup
 
+
+def _utc_iso_z() -> str:
+    """Horodatage UTC suffixe Z (sans doubler +00:00 et Z)."""
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
 # Queue pour logging asynchrone
 _log_queue: Optional[queue.Queue] = None
 _queue_listener: Optional[QueueListener] = None
@@ -70,7 +75,7 @@ class JSONFormatter(logging.Formatter):
         # Le timestamp et event sont déjà dans log_data depuis log_transaction_event()
         # On ne les ajoute que s'ils sont absents (pour compatibilité)
         if "timestamp" not in log_data:
-            log_data["timestamp"] = datetime.now(timezone.utc).isoformat() + "Z"
+            log_data["timestamp"] = _utc_iso_z()
         
         if "level" not in log_data:
             log_data["level"] = record.levelname
@@ -156,7 +161,7 @@ def log_transaction_event(
         
         # Construire le payload JSON
         log_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+            "timestamp": _utc_iso_z(),
             "event": event_type,
             **data
         }
@@ -178,9 +183,13 @@ def log_transaction_event(
 
 
 def shutdown_transaction_logger() -> None:
-    """Arrête proprement le queue listener (utile pour les tests)."""
-    global _queue_listener
+    """Arrête proprement le queue listener et permet une ré-init (tests / redémarrage)."""
+    global _queue_listener, _log_queue, _transaction_logger
     if _queue_listener is not None:
         _queue_listener.stop()
         _queue_listener = None
+    _log_queue = None
+    _transaction_logger = None
+    tx = logging.getLogger("transaction_audit")
+    tx.handlers.clear()
 

@@ -28,6 +28,15 @@ from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 _V1 = settings.API_V1_STR.rstrip("/")
 
 
+def _parse_api_datetime(value: str) -> datetime:
+    """ISO API / SQLite : tolère l'absence de timezone ou le suffixe Z."""
+    raw = (value or "").replace("Z", "+00:00")
+    dt = datetime.fromisoformat(raw)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 @pytest.fixture
 def test_admin(db_session: Session):
     """Créer un utilisateur ADMIN pour les tests."""
@@ -160,7 +169,7 @@ class TestDeferredCashSessionCreation:
         assert response.status_code == 201
         data = response.json()
         assert data["id"] is not None
-        assert data["opened_at"] == past_date.isoformat().replace("+00:00", "Z")
+        assert abs((_parse_api_datetime(data["opened_at"]) - past_date).total_seconds()) < 1
         assert data["status"] == "open"
 
     def test_create_deferred_session_with_past_date_super_admin(self, super_admin_client: TestClient, test_super_admin: User, test_site: Site, test_register: CashRegister):
@@ -181,7 +190,7 @@ class TestDeferredCashSessionCreation:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["opened_at"] == past_date.isoformat().replace("+00:00", "Z")
+        assert abs((_parse_api_datetime(data["opened_at"]) - past_date).total_seconds()) < 1
 
     def test_create_deferred_session_with_future_date_rejected(self, admin_client: TestClient, test_admin: User, test_site: Site, test_register: CashRegister):
         """Test création session avec date future (erreur 400)."""
@@ -236,7 +245,7 @@ class TestDeferredCashSessionCreation:
         data = response.json()
         assert data["opened_at"] is not None
         # Vérifier que opened_at est proche de maintenant (à 1 seconde près)
-        opened_at = datetime.fromisoformat(data["opened_at"].replace("Z", "+00:00"))
+        opened_at = _parse_api_datetime(data["opened_at"])
         now = datetime.now(timezone.utc)
         assert abs((opened_at - now).total_seconds()) < 5
 
@@ -258,7 +267,8 @@ class TestDeferredCashSessionCreation:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["opened_at"] == old_date.isoformat().replace("+00:00", "Z")
+        opened_parsed = _parse_api_datetime(data["opened_at"])
+        assert abs((opened_parsed - old_date).total_seconds()) < 1
 
     def test_create_deferred_session_with_today_date(self, admin_client: TestClient, test_admin: User, test_site: Site, test_register: CashRegister):
         """Test création session avec date d'aujourd'hui (doit être acceptée)."""
@@ -330,8 +340,8 @@ class TestDeferredSaleCreation:
         sale_data = sale_response.json()
         
         # Vérifier que created_at de la vente = opened_at de la session (à 1 seconde près)
-        sale_created_at = datetime.fromisoformat(sale_data["created_at"].replace("Z", "+00:00"))
-        session_opened_at = datetime.fromisoformat(session_response.json()["opened_at"].replace("Z", "+00:00"))
+        sale_created_at = _parse_api_datetime(sale_data["created_at"])
+        session_opened_at = _parse_api_datetime(session_response.json()["opened_at"])
         
         # La différence doit être très petite (moins de 1 seconde)
         assert abs((sale_created_at - session_opened_at).total_seconds()) < 1
@@ -380,7 +390,7 @@ class TestDeferredSaleCreation:
         sale_data = sale_response.json()
         
         # Vérifier que created_at de la vente est proche de maintenant (pas de la session)
-        sale_created_at = datetime.fromisoformat(sale_data["created_at"].replace("Z", "+00:00"))
+        sale_created_at = _parse_api_datetime(sale_data["created_at"])
         
         # created_at doit être entre before_sale et after_sale
         assert sale_created_at >= before_sale
@@ -428,8 +438,8 @@ class TestDeferredSaleCreation:
         sale_data = sale_response.json()
         
         # Vérifier que created_at = opened_at de session (6 mois avant)
-        sale_created_at = datetime.fromisoformat(sale_data["created_at"].replace("Z", "+00:00"))
-        session_opened_at = datetime.fromisoformat(session_response.json()["opened_at"].replace("Z", "+00:00"))
+        sale_created_at = _parse_api_datetime(sale_data["created_at"])
+        session_opened_at = _parse_api_datetime(session_response.json()["opened_at"])
         
         # La différence doit être très petite
         assert abs((sale_created_at - session_opened_at).total_seconds()) < 1

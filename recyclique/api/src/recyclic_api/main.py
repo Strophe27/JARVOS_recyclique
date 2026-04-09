@@ -28,9 +28,8 @@ from recyclic_api.schemas.recyclique_api_error import (
     RecycliqueApiError,
     recyclique_api_error_from_http_exception,
 )
-from recyclic_api.core.database import engine
+from recyclic_api.core import database
 from recyclic_api.models import Base
-from recyclic_api.core.database import SessionLocal
 from recyclic_api.initial_data import init_super_admin_and_dev_pin
 # from recyclic_api.middleware.activity_tracker import ActivityTrackerMiddleware
 
@@ -74,7 +73,7 @@ async def lifespan(app: FastAPI):
     # Initialisation applicative (création super-admin si configuré)
     db = None
     try:
-        db = SessionLocal()
+        db = database.SessionLocal()
         init_super_admin_and_dev_pin(db)
     except Exception as e:
         logger.error(f"Startup initialization error: {e}")
@@ -246,7 +245,7 @@ async def health_check():
     db = None
     try:
         # Test database session (fermer explicitement : next(get_db()) ne déclenchait pas le finally du générateur)
-        db = SessionLocal()
+        db = database.SessionLocal()
         db.execute(text("SELECT 1"))
 
         # Test Redis connection

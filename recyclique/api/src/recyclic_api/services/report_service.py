@@ -128,7 +128,10 @@ def generate_bulk_cash_sessions_csv(
         
         # Conversion sécurisée du statut
         status_str = str(s.status.value) if hasattr(s.status, 'value') else str(s.status) if s.status else ''
-        
+
+        nb_sales = int(getattr(session, "number_of_sales", 0) or 0)
+        tot_don = getattr(session, "total_donations", None)
+
         row = [
             _format_date(s.opened_at),
             _format_date(s.closed_at),
@@ -137,9 +140,9 @@ def generate_bulk_cash_sessions_csv(
             site_name,
             _format_amount(s.initial_amount),
             _format_amount(s.total_sales),
-            str(s.number_of_sales or 0),
+            str(nb_sales),
             str(s.total_items or 0),
-            _format_amount(s.total_donations),
+            _format_amount(tot_don),
             _format_amount(s.closing_amount),
             _format_amount(s.actual_amount),
             _format_amount(s.variance),
@@ -262,7 +265,7 @@ def generate_bulk_cash_sessions_excel(
         status_str = str(s.status.value) if hasattr(s.status, 'value') else str(s.status) if s.status else ''
         
         ca = s.total_sales or 0.0
-        nb_ventes = s.number_of_sales or 0
+        nb_ventes = int(getattr(session, "number_of_sales", 0) or 0)
         nb_articles = s.total_items or 0
         
         total_ca += ca
@@ -348,6 +351,9 @@ def generate_bulk_cash_sessions_excel(
         # Conversion sécurisée du statut
         status_str = str(s.status.value) if hasattr(s.status, 'value') else str(s.status) if s.status else ''
         
+        nb_sales_d = int(getattr(session, "number_of_sales", 0) or 0)
+        tot_don_d = getattr(session, "total_donations", None)
+
         row = [
             _format_date(s.opened_at),
             _format_date(s.closed_at),
@@ -356,9 +362,9 @@ def generate_bulk_cash_sessions_excel(
             site_name,
             _format_amount(s.initial_amount),
             _format_amount(s.total_sales),
-            str(s.number_of_sales or 0),
+            str(nb_sales_d),
             str(s.total_items or 0),
-            _format_amount(s.total_donations),
+            _format_amount(tot_don_d),
             _format_amount(s.closing_amount),
             _format_amount(s.actual_amount),
             _format_amount(s.variance),
@@ -578,6 +584,7 @@ def _format_weight(value: Optional[float]) -> str:
 
 def generate_bulk_reception_tickets_csv(
     db: Session,
+    actor_user: User,
     status: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
@@ -611,6 +618,7 @@ def generate_bulk_reception_tickets_csv(
     
     # Récupérer tous les tickets avec leurs lignes et catégories chargées
     tickets, total = service.get_tickets_list(
+        actor_user,
         page=1,
         per_page=max_items,
         status=status,
@@ -727,6 +735,7 @@ def generate_bulk_reception_tickets_csv(
 
 def generate_bulk_reception_tickets_excel(
     db: Session,
+    actor_user: User,
     status: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
@@ -755,6 +764,7 @@ def generate_bulk_reception_tickets_excel(
     
     # Récupérer tous les tickets
     tickets, total = service.get_tickets_list(
+        actor_user,
         page=1,
         per_page=max_items,
         status=status,

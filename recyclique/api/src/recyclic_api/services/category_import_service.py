@@ -214,10 +214,12 @@ class CategoryImportService:
 
                 # Upsert root (par nom global)
                 root_obj = self.db.query(Category).filter(Category.name == root).first()
+                root_created = False
                 if root_obj is None:
                     root_obj = Category(name=root, is_active=True, parent_id=None)
                     self.db.add(root_obj)
                     self.db.flush()
+                    root_created = True
                 else:
                     # S'assurer que c'est une racine
                     root_obj.parent_id = None
@@ -228,10 +230,11 @@ class CategoryImportService:
                     # Mettre à jour les prix de la catégorie racine
                     root_obj.price = min_price
                     root_obj.max_price = max_price
-                    if root_obj.id not in [obj.id for obj in self.db.new]:  # Si pas nouveau
-                        updated += 1
-                    else:
+                    # Après flush(), l'objet n'est plus dans session.new — ne pas s'appuyer sur .new
+                    if root_created:
                         imported += 1
+                    else:
+                        updated += 1
 
                 # Subcat upsert si présent (par nom global)
                 if sub is not None:

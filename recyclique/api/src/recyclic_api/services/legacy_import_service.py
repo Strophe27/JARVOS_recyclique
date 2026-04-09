@@ -31,6 +31,7 @@ from recyclic_api.models.poste_reception import PosteReception, PosteReceptionSt
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.models.ligne_depot import LigneDepot, Destination as DBLigneDestination
 from recyclic_api.models.category import Category
+from recyclic_api.models.user import User
 from recyclic_api.core.config import settings
 import logging
 
@@ -846,7 +847,8 @@ class LegacyImportService:
                 "mappings": {},
                 "statistics": {
                     "llm_attempted": False,
-                    "llm_model_used": None,
+                    # Conserver l'ID demandé même si le provider n'est pas disponible (tests / traçabilité).
+                    "llm_model_used": llm_model_override,
                     "llm_batches_total": 0,
                     "llm_batches_succeeded": 0,
                     "llm_batches_failed": 0,
@@ -993,20 +995,21 @@ class LegacyImportService:
     # ---------- Execute ----------
 
     def _get_or_create_poste_for_date(
-        self, 
-        date_obj: date, 
-        admin_user_id: UUID
+        self,
+        date_obj: date,
+        admin_user: User,
     ) -> Tuple[PosteReception, bool]:
         """
         Récupère ou crée un poste de réception pour une date donnée.
         
         Args:
             date_obj: Date du poste
-            admin_user_id: ID de l'utilisateur admin qui importe
+            admin_user: Utilisateur admin qui importe (Story 7.2 : acteur nominal réception)
         
         Returns:
             Tuple (PosteReception, bool): (poste, is_new) où is_new=True si créé, False si existant
         """
+        admin_user_id = admin_user.id
         # Convertir la date en datetime (début de journée en UTC)
         opened_at = datetime.combine(date_obj, datetime.min.time()).replace(tzinfo=timezone.utc)
         
@@ -1031,10 +1034,7 @@ class LegacyImportService:
             return existing_poste, False
         
         # Créer un nouveau poste
-        new_poste = self.reception_service.open_poste(
-            opened_by_user_id=admin_user_id,
-            opened_at=opened_at
-        )
+        new_poste = self.reception_service.open_poste(actor_user=admin_user, opened_at=opened_at)
         return new_poste, True
 
     def execute(
@@ -1157,11 +1157,18 @@ class LegacyImportService:
                 "parsed_date": parsed_date  # Pour le groupement si pas d'import_date
             })
         
+        admin_user = self.db.query(User).filter(User.id == admin_user_id).first()
+        if not admin_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Utilisateur admin introuvable pour l'import réception",
+            )
+
         # Transaction: tout ou rien
         try:
             if import_date:
                 # Mode date unique : créer un seul poste/ticket (B47-P11)
-                poste, is_new = self._get_or_create_poste_for_date(import_date, admin_user_id)
+                poste, is_new = self._get_or_create_poste_for_date(import_date, admin_user)
                 if is_new:
                     postes_created += 1
                 else:
@@ -1170,7 +1177,8 @@ class LegacyImportService:
                 # Créer un seul ticket pour cette date
                 ticket = self.reception_service.create_ticket(
                     poste_id=poste.id,
-                    benevole_user_id=admin_user_id
+                    benevole_user_id=admin_user_id,
+                    actor_user=admin_user,
                 )
                 tickets_created += 1
                 
@@ -1182,7 +1190,8 @@ class LegacyImportService:
                             category_id=row["category_id"],
                             poids_kg=row["poids_kg"],
                             destination=row["destination"],
-                            notes=row["notes"]
+                            notes=row["notes"],
+                            actor_user=admin_user,
                         )
                         lignes_imported += 1
                     except Exception as e:
@@ -1199,7 +1208,7 @@ class LegacyImportService:
                 # Créer postes et tickets par date
                 for date_obj, rows in rows_by_date.items():
                     # Récupérer ou créer le poste pour cette date
-                    poste, is_new = self._get_or_create_poste_for_date(date_obj, admin_user_id)
+                    poste, is_new = self._get_or_create_poste_for_date(date_obj, admin_user)
                     if is_new:
                         postes_created += 1
                     else:
@@ -1208,7 +1217,8 @@ class LegacyImportService:
                     # Créer un ticket pour cette date
                     ticket = self.reception_service.create_ticket(
                         poste_id=poste.id,
-                        benevole_user_id=admin_user_id
+                        benevole_user_id=admin_user_id,
+                        actor_user=admin_user,
                     )
                     tickets_created += 1
                     
@@ -1221,7 +1231,8 @@ class LegacyImportService:
                                 category_id=row["category_id"],
                                 poids_kg=row["poids_kg"],
                                 destination=row["destination"],
-                                notes=row["notes"]
+                                notes=row["notes"],
+                                actor_user=admin_user,
                             )
                             lignes_imported += 1
                         except Exception as e:

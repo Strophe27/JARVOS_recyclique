@@ -2,6 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from tests.api_v1_paths import v1
+
 from recyclic_api.main import app
 from recyclic_api.models.category import Category
 from recyclic_api.models.user import UserRole
@@ -36,7 +38,7 @@ def test_create_subcategory_removes_parent_price(admin_client, db_session):
         "max_price": 25.0
     }
     
-    response = admin_client.post("/api/v1/categories/", json=subcategory_data)
+    response = admin_client.post(v1("/categories/"), json=subcategory_data)
     assert response.status_code == 201
     
     # Vérifier que la sous-catégorie a été créée
@@ -82,7 +84,7 @@ def test_update_category_parent_removes_parent_price(admin_client, db_session):
         "parent_id": str(parent_category.id)
     }
     
-    response = admin_client.put(f"/api/v1/categories/{child_category.id}", json=update_data)
+    response = admin_client.put(v1(f"/categories/{child_category.id}"), json=update_data)
     assert response.status_code == 200
     
     # Vérifier que les prix du parent ont été supprimés
@@ -118,15 +120,15 @@ def test_create_subcategory_without_parent_price_works_normally(admin_client, db
         "max_price": 25.0
     }
     
-    response = admin_client.post("/api/v1/categories/", json=subcategory_data)
+    response = admin_client.post(v1("/categories/"), json=subcategory_data)
     assert response.status_code == 201
     
     # Vérifier que la sous-catégorie a été créée
     subcategory = response.json()
     assert subcategory["name"] == "Sous-catégorie"
     assert subcategory["parent_id"] == str(parent_category.id)
-    assert subcategory["price"] == 5.0
-    assert subcategory["max_price"] == 25.0
+    assert float(subcategory["price"]) == 5.0
+    assert float(subcategory["max_price"]) == 25.0
     
     # Vérifier que le parent n'a toujours pas de prix (pas de changement)
     db_session.refresh(parent_category)

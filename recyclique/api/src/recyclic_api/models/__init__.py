@@ -7,7 +7,7 @@ from .sale import Sale
 from .sale_reversal import SaleReversal, RefundReasonCode
 from .sale_item import SaleItem
 from .payment_transaction import PaymentTransaction
-from .cash_session import CashSession, CashSessionStep
+from .cash_session import CashSession, CashSessionStatus, CashSessionStep
 from .cash_register import CashRegister
 from .sync_log import SyncLog
 from .registration_request import RegistrationRequest
@@ -40,6 +40,7 @@ __all__ = [
     "SaleItem",
     "PaymentTransaction",
     "CashSession",
+    "CashSessionStatus",
     "CashSessionStep",
     "CashRegister",
     "SyncLog",

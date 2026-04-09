@@ -9,10 +9,21 @@ from urllib.parse import parse_qs, urlparse
 from recyclic_api.core.config import settings
 from recyclic_api.models import TicketDepot, PosteReception, LigneDepot, Category, User, UserRole, UserStatus
 from recyclic_api.models.ligne_depot import Destination
+from recyclic_api.models.site import Site
+from tests.reception_story72_eligibility import grant_user_reception_eligibility
 
 
 @pytest.fixture
-def test_user(db_session):
+def test_site(db_session):
+    site = Site(id=uuid4(), name="Test site tickets history", is_active=True)
+    db_session.add(site)
+    db_session.commit()
+    db_session.refresh(site)
+    return site
+
+
+@pytest.fixture
+def test_user(db_session, test_site):
     """Créer un utilisateur de test."""
     from recyclic_api.core.security import hash_password
     user = User(
@@ -20,11 +31,13 @@ def test_user(db_session):
         username="test_user@example.com",
         hashed_password=hash_password("testpassword"),
         role=UserRole.USER,
-        status=UserStatus.ACTIVE
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
     )
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+    grant_user_reception_eligibility(db_session, user, test_site.id)
     return user
 
 
@@ -119,7 +132,7 @@ def test_get_tickets_list_success(client, test_tickets, test_user):
     token = create_access_token(data={"sub": str(test_user.id)})
     
     response = client.get(
-        "/api/v1/reception/tickets",
+        "/v1/reception/tickets",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -159,7 +172,7 @@ def test_get_tickets_list_pagination(client, test_tickets, test_user):
     
     # Test avec pagination
     response = client.get(
-        "/api/v1/reception/tickets?page=1&per_page=2",
+        "/v1/reception/tickets?page=1&per_page=2",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -174,7 +187,7 @@ def test_get_tickets_list_pagination(client, test_tickets, test_user):
 
 def test_get_tickets_list_unauthorized(client):
     """Test d'accès non autorisé à la liste des tickets."""
-    response = client.get("/api/v1/reception/tickets")
+    response = client.get("/v1/reception/tickets")
     assert response.status_code == 403  # FastAPI retourne 403 pour les routes protégées sans token
 
 
@@ -185,7 +198,7 @@ def test_get_ticket_detail_success(client, test_tickets, test_user):
     
     ticket_id = str(test_tickets[0].id)
     response = client.get(
-        f"/api/v1/reception/tickets/{ticket_id}",
+        f"/v1/reception/tickets/{ticket_id}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -220,7 +233,7 @@ def test_get_ticket_detail_not_found(client, test_user):
     
     fake_id = str(uuid4())
     response = client.get(
-        f"/api/v1/reception/tickets/{fake_id}",
+        f"/v1/reception/tickets/{fake_id}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -231,7 +244,7 @@ def test_get_ticket_detail_not_found(client, test_user):
 def test_get_ticket_detail_unauthorized(client, test_tickets):
     """Test d'accès non autorisé aux détails d'un ticket."""
     ticket_id = str(test_tickets[0].id)
-    response = client.get(f"/api/v1/reception/tickets/{ticket_id}")
+    response = client.get(f"/v1/reception/tickets/{ticket_id}")
     assert response.status_code == 403  # FastAPI retourne 403 pour les routes protégées sans token
 
 
@@ -241,7 +254,7 @@ def test_get_tickets_list_admin_access(client, test_tickets, test_admin):
     token = create_access_token(data={"sub": str(test_admin.id)})
     
     response = client.get(
-        "/api/v1/reception/tickets",
+        "/v1/reception/tickets",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -261,7 +274,7 @@ def test_get_tickets_list_empty(client, test_user, db_session):
     token = create_access_token(data={"sub": str(test_user.id)})
 
     response = client.get(
-        "/api/v1/reception/tickets",
+        "/v1/reception/tickets",
         headers={"Authorization": f"Bearer {token}"}
     )
 
@@ -278,7 +291,7 @@ def test_get_tickets_list_validation_errors(client, test_user):
     
     # Test avec des paramètres invalides
     response = client.get(
-        "/api/v1/reception/tickets?page=0&per_page=0",
+        "/v1/reception/tickets?page=0&per_page=0",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -291,7 +304,7 @@ def test_get_tickets_list_large_per_page(client, test_user):
     token = create_access_token(data={"sub": str(test_user.id)})
     
     response = client.get(
-        "/api/v1/reception/tickets?per_page=200",  # Limite à 100
+        "/v1/reception/tickets?per_page=200",  # Limite à 100
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -306,7 +319,7 @@ def test_get_tickets_list_filter_by_status(client, test_tickets, test_user):
     
     # Filtrer par statut "closed"
     response = client.get(
-        "/api/v1/reception/tickets?status=closed",
+        "/v1/reception/tickets?status=closed",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -331,7 +344,7 @@ def test_get_tickets_list_filter_by_date_from(client, test_tickets, test_user, d
     # Filtrer les tickets créés depuis hier
     date_from = (datetime.utcnow() - timedelta(days=1)).isoformat()
     response = client.get(
-        f"/api/v1/reception/tickets?date_from={date_from}",
+        f"/v1/reception/tickets?date_from={date_from}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -350,7 +363,7 @@ def test_get_tickets_list_filter_by_date_to(client, test_tickets, test_user, db_
     # Filtrer les tickets créés jusqu'à hier
     date_to = (datetime.utcnow() - timedelta(days=1)).isoformat()
     response = client.get(
-        f"/api/v1/reception/tickets?date_to={date_to}",
+        f"/v1/reception/tickets?date_to={date_to}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -367,7 +380,7 @@ def test_get_tickets_list_filter_by_benevole_id(client, test_tickets, test_user)
     
     # Filtrer par ID du bénévole de test
     response = client.get(
-        f"/api/v1/reception/tickets?benevole_id={test_user.id}",
+        f"/v1/reception/tickets?benevole_id={test_user.id}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -385,7 +398,7 @@ def test_get_tickets_list_filter_by_search(client, test_tickets, test_user):
     
     # Rechercher par username
     response = client.get(
-        f"/api/v1/reception/tickets?search={test_user.username}",
+        f"/v1/reception/tickets?search={test_user.username}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -403,7 +416,7 @@ def test_get_tickets_list_filter_combined(client, test_tickets, test_user):
     
     # Combiner plusieurs filtres
     response = client.get(
-        f"/api/v1/reception/tickets?status=closed&benevole_id={test_user.id}",
+        f"/v1/reception/tickets?status=closed&benevole_id={test_user.id}",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -452,7 +465,7 @@ def test_get_tickets_list_exclude_empty_tickets(client, test_user, test_poste, t
     
     # Récupérer les tickets (include_empty=False par défaut)
     response = client.get(
-        "/api/v1/reception/tickets",
+        "/v1/reception/tickets",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -482,7 +495,7 @@ def test_get_tickets_list_include_empty_tickets(client, test_user, test_poste, d
     
     # Récupérer les tickets avec include_empty=True
     response = client.get(
-        "/api/v1/reception/tickets?include_empty=true",
+        "/v1/reception/tickets?include_empty=true",
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -583,3 +596,78 @@ def test_export_ticket_csv_admin_access(client, test_tickets, test_admin):
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
+
+
+def test_get_tickets_list_user_scope_excludes_unrelated_ticket(client, db_session, test_site, test_category):
+    """Story 7.4 — USER ne voit pas les tickets hors périmètre (ni bénévole ni opérateur du poste)."""
+    from recyclic_api.core.security import hash_password, create_access_token
+
+    alice_id, bob_id, charlie_id = uuid4(), uuid4(), uuid4()
+    alice = User(
+        id=alice_id,
+        username="alice_scope@example.com",
+        hashed_password=hash_password("p"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
+    )
+    bob = User(
+        id=bob_id,
+        username="bob_scope@example.com",
+        hashed_password=hash_password("p"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
+    )
+    charlie = User(
+        id=charlie_id,
+        username="charlie_scope@example.com",
+        hashed_password=hash_password("p"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
+    )
+    db_session.add_all([alice, bob, charlie])
+    db_session.commit()
+    grant_user_reception_eligibility(db_session, alice, test_site.id)
+    grant_user_reception_eligibility(db_session, bob, test_site.id)
+    grant_user_reception_eligibility(db_session, charlie, test_site.id)
+
+    poste = PosteReception(id=uuid4(), opened_by_user_id=alice.id, status="opened")
+    db_session.add(poste)
+    db_session.flush()
+    ticket = TicketDepot(
+        id=uuid4(),
+        poste_id=poste.id,
+        benevole_user_id=bob.id,
+        status="closed",
+    )
+    db_session.add(ticket)
+    db_session.flush()
+    ligne = LigneDepot(
+        id=uuid4(),
+        ticket_id=ticket.id,
+        category_id=test_category.id,
+        poids_kg=Decimal("1.0"),
+        destination=Destination.MAGASIN,
+        notes="scope",
+    )
+    db_session.add(ligne)
+    db_session.commit()
+
+    charlie_token = create_access_token(data={"sub": str(charlie.id)})
+    r_charlie = client.get("/v1/reception/tickets", headers={"Authorization": f"Bearer {charlie_token}"})
+    assert r_charlie.status_code == 200
+    assert r_charlie.json()["total"] == 0
+
+    alice_token = create_access_token(data={"sub": str(alice.id)})
+    r_alice = client.get("/v1/reception/tickets", headers={"Authorization": f"Bearer {alice_token}"})
+    assert r_alice.status_code == 200
+    ids_alice = {t["id"] for t in r_alice.json()["tickets"]}
+    assert str(ticket.id) in ids_alice
+
+    bob_token = create_access_token(data={"sub": str(bob.id)})
+    r_bob = client.get("/v1/reception/tickets", headers={"Authorization": f"Bearer {bob_token}"})
+    assert r_bob.status_code == 200
+    ids_bob = {t["id"] for t in r_bob.json()["tickets"]}
+    assert str(ticket.id) in ids_bob

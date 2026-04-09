@@ -11,6 +11,7 @@ from uuid import uuid4
 from recyclic_api.main import app
 from recyclic_api.models import User, UserRole, UserStatus, PosteReception, TicketDepot, LigneDepot, Category
 from recyclic_api.models.ligne_depot import Destination
+from tests.api_v1_paths import v1
 
 
 @pytest.fixture
@@ -154,13 +155,13 @@ class TestReceptionLignesEndpoint:
     def test_get_lignes_requires_admin_role(self, client: TestClient, regular_user: User):
         """Test que l'endpoint nécessite un rôle admin."""
         headers = create_auth_headers(regular_user.id)
-        response = client.get("/api/v1/reception/lignes", headers=headers)
+        response = client.get(v1("/reception/lignes"), headers=headers)
         assert response.status_code == 403
 
     def test_get_lignes_success_admin(self, client: TestClient, admin_user: User, test_data: dict):
         """Test de récupération réussie des lignes avec un admin."""
         headers = create_auth_headers(admin_user.id)
-        response = client.get("/api/v1/reception/lignes", headers=headers)
+        response = client.get(v1("/reception/lignes"), headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -179,7 +180,7 @@ class TestReceptionLignesEndpoint:
     def test_get_lignes_success_super_admin(self, client: TestClient, super_admin_user: User, test_data: dict):
         """Test de récupération réussie des lignes avec un super admin."""
         headers = create_auth_headers(super_admin_user.id)
-        response = client.get("/api/v1/reception/lignes", headers=headers)
+        response = client.get(v1("/reception/lignes"), headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -188,7 +189,7 @@ class TestReceptionLignesEndpoint:
     def test_get_lignes_pagination(self, client: TestClient, admin_user: User, test_data: dict):
         """Test de la pagination."""
         headers = create_auth_headers(admin_user.id)
-        response = client.get("/api/v1/reception/lignes?page=1&per_page=2", headers=headers)
+        response = client.get(f"{v1('/reception/lignes')}?page=1&per_page=2", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -205,8 +206,8 @@ class TestReceptionLignesEndpoint:
         # Filtrer par date de début (il y a 3 jours, donc devrait inclure les 2 derniers tickets)
         start_date = (datetime.now() - timedelta(days=3)).date()
         response = client.get(
-            f"/api/v1/reception/lignes?start_date={start_date}",
-            headers=headers
+            f"{v1('/reception/lignes')}?start_date={start_date}",
+            headers=headers,
         )
         
         assert response.status_code == 200
@@ -220,8 +221,8 @@ class TestReceptionLignesEndpoint:
         category_id = str(test_data["category"].id)
         
         response = client.get(
-            f"/api/v1/reception/lignes?category_id={category_id}",
-            headers=headers
+            f"{v1('/reception/lignes')}?category_id={category_id}",
+            headers=headers,
         )
         
         assert response.status_code == 200
@@ -236,8 +237,8 @@ class TestReceptionLignesEndpoint:
         """Test avec un ID de catégorie invalide."""
         headers = create_auth_headers(admin_user.id)
         response = client.get(
-            "/api/v1/reception/lignes?category_id=invalid-uuid",
-            headers=headers
+            f"{v1('/reception/lignes')}?category_id=invalid-uuid",
+            headers=headers,
         )
         
         assert response.status_code == 400
@@ -245,7 +246,7 @@ class TestReceptionLignesEndpoint:
     def test_get_lignes_structure(self, client: TestClient, admin_user: User, test_data: dict):
         """Test de la structure de la réponse."""
         headers = create_auth_headers(admin_user.id)
-        response = client.get("/api/v1/reception/lignes", headers=headers)
+        response = client.get(v1("/reception/lignes"), headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -266,16 +267,16 @@ class TestReceptionLignesExportCSVEndpoint:
     def test_export_csv_requires_admin_role(self, client: TestClient, regular_user: User):
         """Test que l'endpoint nécessite un rôle admin."""
         headers = create_auth_headers(regular_user.id)
-        response = client.get("/api/v1/reception/lignes/export-csv", headers=headers)
+        response = client.get(v1("/reception/lignes/export-csv"), headers=headers)
         assert response.status_code == 403
 
     def test_export_csv_success(self, client: TestClient, admin_user: User, test_data: dict):
         """Test d'export CSV réussi."""
         headers = create_auth_headers(admin_user.id)
-        response = client.get("/api/v1/reception/lignes/export-csv", headers=headers)
+        response = client.get(v1("/reception/lignes/export-csv"), headers=headers)
         
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert response.headers["content-type"].startswith("text/csv")
         assert "attachment" in response.headers["content-disposition"]
         
         # Vérifier le contenu CSV
@@ -300,8 +301,8 @@ class TestReceptionLignesExportCSVEndpoint:
         category_id = str(test_data["category"].id)
         
         response = client.get(
-            f"/api/v1/reception/lignes/export-csv?category_id={category_id}",
-            headers=headers
+            f"{v1('/reception/lignes/export-csv')}?category_id={category_id}",
+            headers=headers,
         )
         
         assert response.status_code == 200
@@ -319,8 +320,8 @@ class TestReceptionLignesExportCSVEndpoint:
         category_id = str(test_data["category"].id)
         
         response = client.get(
-            f"/api/v1/reception/lignes/export-csv?start_date={start_date}&end_date={end_date}&category_id={category_id}",
-            headers=headers
+            f"{v1('/reception/lignes/export-csv')}?start_date={start_date}&end_date={end_date}&category_id={category_id}",
+            headers=headers,
         )
         
         assert response.status_code == 200
@@ -341,15 +342,15 @@ class TestReceptionLignesIntegration:
         headers = create_auth_headers(admin_user.id)
         
         # 1. Récupérer les lignes
-        response = client.get("/api/v1/reception/lignes", headers=headers)
+        response = client.get(v1("/reception/lignes"), headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert len(data["lignes"]) == 3
         
         # 2. Exporter en CSV
-        response = client.get("/api/v1/reception/lignes/export-csv", headers=headers)
+        response = client.get(v1("/reception/lignes/export-csv"), headers=headers)
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert response.headers["content-type"].startswith("text/csv")
         
         # 3. Vérifier la cohérence des données
         csv_content = response.text

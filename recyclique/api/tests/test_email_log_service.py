@@ -41,7 +41,7 @@ class TestEmailLogService:
         assert email_log.status == EmailStatus.PENDING
         assert email_log.recipient_name == "Test User"
         assert email_log.external_id == "ext-123"
-        assert email_log.metadata == '{"key": "value"}'
+        assert email_log.additional_data == '{"key": "value"}'
         assert email_log.created_at is not None
         assert email_log.updated_at is not None
 
@@ -353,7 +353,7 @@ class TestEmailLogService:
         
         # All logs should belong to the user
         for log in user_logs:
-            assert log.user_id == user_id
+            assert str(log.user_id) == user_id
 
     def test_update_email_status_nonexistent_log(self, db_session: Session):
         """Test updating status for non-existent email log."""

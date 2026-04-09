@@ -62,8 +62,9 @@ class TestSalesIntegration:
             "id": uuid.uuid4(),
             "name": "Test Register",
             "location": "Test Location",
-            "site_id": str(test_site["id"]),
-            "is_active": True
+            # uuid.UUID requis : sous SQLite le dialecte PostgreSQL UUID attend .hex, pas une str.
+            "site_id": test_site["id"],
+            "is_active": True,
         }
 
     @pytest.fixture
@@ -133,7 +134,7 @@ class TestSalesIntegration:
 
         # Créer la vente
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -209,7 +210,7 @@ class TestSalesIntegration:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -238,7 +239,7 @@ class TestSalesIntegration:
             "total_amount": 10.0
         }
 
-        response = client.post("/api/v1/sales/", json=sale_data)
+        response = client.post("/v1/sales/", json=sale_data)
         assert response.status_code == 401
 
     @pytest.mark.integration_db
@@ -303,7 +304,7 @@ class TestSalesIntegration:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -312,7 +313,7 @@ class TestSalesIntegration:
     def test_get_sales_list(self, client: TestClient, cashier_token):
         """Test de récupération de la liste des ventes"""
         response = client.get(
-            "/api/v1/sales/",
+            "/v1/sales/",
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         assert response.status_code == 200
@@ -355,7 +356,7 @@ class TestSalesIntegration:
 
         # Créer la vente
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -369,7 +370,7 @@ class TestSalesIntegration:
 
         # Vérifier que la note est persistée en base de données
         from recyclic_api.models.sale import Sale
-        sale_id = data["id"]
+        sale_id = uuid.UUID(str(data["id"]))
         db_sale = db_session.query(Sale).filter(Sale.id == sale_id).first()
         assert db_sale is not None
         assert db_sale.note == "Client a demandé une facture"
@@ -410,7 +411,7 @@ class TestSalesIntegration:
 
         # Créer la vente
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -423,7 +424,7 @@ class TestSalesIntegration:
 
         # Vérifier en base de données
         from recyclic_api.models.sale import Sale
-        sale_id = data["id"]
+        sale_id = uuid.UUID(str(data["id"]))
         db_sale = db_session.query(Sale).filter(Sale.id == sale_id).first()
         assert db_sale is not None
         assert db_sale.note is None
@@ -464,7 +465,7 @@ class TestSalesIntegration:
         }
 
         create_response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -473,7 +474,7 @@ class TestSalesIntegration:
 
         # Récupérer la vente
         get_response = client.get(
-            f"/api/v1/sales/{sale_id}",
+            f"/v1/sales/{sale_id}",
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
 
@@ -558,7 +559,7 @@ class TestSalesIntegration:
         }
 
         response = client.put(
-            f"/api/v1/sales/{sale.id}",
+            f"/v1/sales/{sale.id}",
             json=update_data,
             headers={"Authorization": f"Bearer {admin_token_real}"}
         )
@@ -569,7 +570,8 @@ class TestSalesIntegration:
         # Vérifier que la note a été mise à jour
         assert data["note"] == "Note mise à jour par admin"
 
-        # Vérifier en base de données
+        # Vérifier en base de données (expire : le PUT HTTP met à jour une autre session)
+        db_session.expire_all()
         db_sale = db_session.query(Sale).filter(Sale.id == sale.id).first()
         assert db_sale.note == "Note mise à jour par admin"
 
@@ -625,7 +627,7 @@ class TestSalesIntegration:
         }
 
         response = client.put(
-            f"/api/v1/sales/{sale.id}",
+            f"/v1/sales/{sale.id}",
             json=update_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -688,7 +690,7 @@ class TestSalesIntegration:
             "note": "Note mise à jour sans auth"
         }
 
-        response = client.put(f"/api/v1/sales/{sale.id}", json=update_data)
+        response = client.put(f"/v1/sales/{sale.id}", json=update_data)
 
         # Doit retourner 401 Unauthorized
         assert response.status_code == 401
@@ -720,7 +722,7 @@ class TestSalesIntegration:
 
         fake_sale_id = str(uuid.uuid4())
         response = client.put(
-            f"/api/v1/sales/{fake_sale_id}",
+            f"/v1/sales/{fake_sale_id}",
             json=update_data,
             headers={"Authorization": f"Bearer {admin_token_real}"}
         )
@@ -817,7 +819,7 @@ class TestSalesIntegration:
         }
 
         response = client.put(
-            f"/api/v1/sales/{sale.id}",
+            f"/v1/sales/{sale.id}",
             json=update_data,
             headers={"Authorization": f"Bearer {super_admin_token}"}
         )
@@ -828,7 +830,8 @@ class TestSalesIntegration:
         # Vérifier que la note a été mise à jour
         assert data["note"] == "Note mise à jour par super admin"
 
-        # Vérifier en base de données
+        # Vérifier en base de données (expire : le PUT HTTP met à jour une autre session)
+        db_session.expire_all()
         db_sale = db_session.query(Sale).filter(Sale.id == sale.id).first()
         assert db_sale.note == "Note mise à jour par super admin"
 
@@ -858,7 +861,7 @@ class TestSalesIntegration:
         
         for i in range(3):
             response = client.post(
-                "/api/v1/sales/",
+                "/v1/sales/",
                 json={
                     "cash_session_id": str(test_cash_session["id"]),
                     "items": [
@@ -960,7 +963,7 @@ class TestSalesIntegration:
         
         # Tenter de créer une vente pour une session fermée
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -1011,7 +1014,7 @@ class TestSalesIntegration:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -1041,7 +1044,7 @@ class TestSalesIntegration:
 
         # Vérifier en base de données
         from recyclic_api.models.payment_transaction import PaymentTransaction
-        sale_id = data["id"]
+        sale_id = uuid.UUID(str(data["id"]))
         db_payments = db_session.query(PaymentTransaction).filter(
             PaymentTransaction.sale_id == sale_id
         ).all()
@@ -1087,7 +1090,7 @@ class TestSalesIntegration:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -1139,7 +1142,7 @@ class TestSalesIntegration:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -1192,7 +1195,7 @@ class TestSalesIntegration:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -1238,7 +1241,7 @@ class TestSalesIntegration:
         }
 
         response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -1254,7 +1257,7 @@ class TestSalesIntegration:
 
         # Vérifier en base de données
         from recyclic_api.models.payment_transaction import PaymentTransaction
-        sale_id = data["id"]
+        sale_id = uuid.UUID(str(data["id"]))
         db_payments = db_session.query(PaymentTransaction).filter(
             PaymentTransaction.sale_id == sale_id
         ).all()
@@ -1302,7 +1305,7 @@ class TestSalesIntegration:
         }
 
         create_response = client.post(
-            "/api/v1/sales/",
+            "/v1/sales/",
             json=sale_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
@@ -1311,7 +1314,7 @@ class TestSalesIntegration:
 
         # Récupérer la vente
         get_response = client.get(
-            f"/api/v1/sales/{sale_id}",
+            f"/v1/sales/{sale_id}",
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
 

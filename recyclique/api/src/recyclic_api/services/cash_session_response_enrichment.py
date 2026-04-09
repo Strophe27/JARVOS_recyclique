@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Optional
 
 from pydantic import ValidationError as PydanticValidationError
@@ -15,6 +16,14 @@ from recyclic_api.schemas.cash_session import CashSessionResponse, CashSessionTo
 from recyclic_api.services.cash_session_service import CashSessionService
 
 logger = logging.getLogger(__name__)
+
+
+def _session_pk(session: CashSession) -> uuid.UUID:
+    """SQLite peut hydrater les PK UUID en str ; les comparaisons ORM exigent uuid.UUID."""
+    sid = session.id
+    if isinstance(sid, uuid.UUID):
+        return sid
+    return uuid.UUID(str(sid))
 
 
 def enrich_session_response(
@@ -33,10 +42,11 @@ def enrich_session_response(
     """
     register_options = service.get_register_options(session)
 
+    sid = _session_pk(session)
     total_donations = (
         service.db.query(func.coalesce(func.sum(Sale.donation), 0))
         .filter(
-            Sale.cash_session_id == session.id,
+            Sale.cash_session_id == sid,
             Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
         )
         .scalar()
@@ -71,7 +81,7 @@ def enrich_session_response(
     sales_completed = (
         db.query(func.coalesce(func.sum(Sale.total_amount), 0))
         .filter(
-            Sale.cash_session_id == session.id,
+            Sale.cash_session_id == sid,
             Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
         )
         .scalar()
@@ -80,7 +90,7 @@ def enrich_session_response(
     sales_completed = float(sales_completed)
     refunds_alg = (
         db.query(func.coalesce(func.sum(SaleReversal.amount_signed), 0))
-        .filter(SaleReversal.cash_session_id == session.id)
+        .filter(SaleReversal.cash_session_id == sid)
         .scalar()
         or 0.0
     )

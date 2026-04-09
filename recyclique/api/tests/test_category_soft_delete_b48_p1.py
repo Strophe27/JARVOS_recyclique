@@ -169,79 +169,77 @@ class TestCategoryRestore:
 class TestCategoryFiltering:
     """Tests pour le filtrage des catégories archivées"""
 
-    def test_get_categories_excludes_archived_by_default(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_get_categories_excludes_archived_by_default(self, db_session: Session):
         """Test que get_categories() exclut les catégories archivées par défaut"""
         service = CategoryService(db_session)
-        
-        # Créer catégories actives et archivées
+
         active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None)
         archived = Category(id=uuid4(), name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc))
-        
+
         db_session.add_all([active, archived])
         db_session.commit()
-        
-        # Récupérer sans include_archived
-        categories = service.get_categories(include_archived=False)
-        
-        # Vérifier que seule la catégorie active est retournée
+
+        categories = await service.get_categories(include_archived=False)
+
         assert len(categories) == 1
         assert categories[0].name == "Active"
         assert categories[0].deleted_at is None
 
-    def test_get_categories_includes_archived_when_requested(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_get_categories_includes_archived_when_requested(self, db_session: Session):
         """Test que get_categories() inclut les catégories archivées si include_archived=True"""
         service = CategoryService(db_session)
-        
-        # Créer catégories actives et archivées
+
         active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None)
         archived = Category(id=uuid4(), name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc))
-        
+
         db_session.add_all([active, archived])
         db_session.commit()
-        
-        # Récupérer avec include_archived=True
-        categories = service.get_categories(include_archived=True)
-        
-        # Vérifier que les deux catégories sont retournées
+
+        categories = await service.get_categories(include_archived=True)
+
         assert len(categories) == 2
         names = {cat.name for cat in categories}
         assert "Active" in names
         assert "Archived" in names
 
-    def test_operational_endpoints_exclude_archived(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_operational_endpoints_exclude_archived(self, db_session: Session):
         """Test que les endpoints opérationnels excluent les catégories archivées"""
         management_service = CategoryManagementService(db_session)
-        
-        # Créer catégories actives et archivées
+
         active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None, is_visible=True)
-        archived = Category(id=uuid4(), name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc), is_visible=True)
-        
+        archived = Category(
+            id=uuid4(),
+            name="Archived",
+            is_active=True,
+            deleted_at=datetime.now(timezone.utc),
+            is_visible=True,
+        )
+
         db_session.add_all([active, archived])
         db_session.commit()
-        
-        # Récupérer pour entry tickets (opérationnel)
-        categories = management_service.get_categories_for_entry_tickets()
-        
-        # Vérifier que seule la catégorie active est retournée
+
+        categories = await management_service.get_categories_for_entry_tickets()
+
         assert len(categories) == 1
         assert categories[0].name == "Active"
         assert categories[0].deleted_at is None
 
-    def test_operational_endpoints_sale_tickets_exclude_archived(self, db_session: Session):
+    @pytest.mark.asyncio
+    async def test_operational_endpoints_sale_tickets_exclude_archived(self, db_session: Session):
         """Test que les endpoints sale tickets excluent aussi les catégories archivées"""
         management_service = CategoryManagementService(db_session)
-        
-        # Créer catégories actives et archivées
+
         active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None)
         archived = Category(id=uuid4(), name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc))
-        
+
         db_session.add_all([active, archived])
         db_session.commit()
-        
-        # Récupérer pour sale tickets (opérationnel)
-        categories = management_service.get_categories_for_sale_tickets()
-        
-        # Vérifier que seule la catégorie active est retournée
+
+        categories = await management_service.get_categories_for_sale_tickets()
+
         assert len(categories) == 1
         assert categories[0].name == "Active"
         assert categories[0].deleted_at is None

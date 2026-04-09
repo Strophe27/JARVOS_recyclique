@@ -87,7 +87,7 @@ class TestCashRegisterOptionsAPI:
         }
 
         response = client.post(
-            "/api/v1/cash-registers/",
+            "/v1/cash-registers/",
             json=payload,
             headers=headers
         )
@@ -116,7 +116,7 @@ class TestCashRegisterOptionsAPI:
         }
 
         response = client.patch(
-            f"/api/v1/cash-registers/{test_register.id}",
+            f"/v1/cash-registers/{test_register.id}",
             json=update_payload,
             headers=headers
         )
@@ -147,7 +147,7 @@ class TestCashRegisterOptionsAPI:
         }
 
         response = client.post(
-            "/api/v1/cash-registers/",
+            "/v1/cash-registers/",
             json=valid_payload,
             headers=headers
         )
@@ -170,7 +170,7 @@ class TestCashRegisterOptionsAPI:
         }
 
         response = client.post(
-            "/api/v1/cash-registers/",
+            "/v1/cash-registers/",
             json=invalid_payload,
             headers=headers
         )
@@ -198,7 +198,7 @@ class TestCashRegisterOptionsAPI:
         }
 
         response = client.post(
-            "/api/v1/cash-registers/",
+            "/v1/cash-registers/",
             json=invalid_payload,
             headers=headers
         )
@@ -225,7 +225,7 @@ class TestCashRegisterOptionsAPI:
 
         # Récupérer la session via API
         response = client.get(
-            f"/api/v1/cash-sessions/{session.id}",
+            f"/v1/cash-sessions/{session.id}",
             headers=headers
         )
 
@@ -256,7 +256,7 @@ class TestCashRegisterOptionsAPI:
 
         # Récupérer la session courante via API
         response = client.get(
-            "/api/v1/cash-sessions/current",
+            "/v1/cash-sessions/current",
             headers=headers
         )
 

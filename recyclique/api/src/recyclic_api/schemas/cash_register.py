@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 
 class WorkflowFeatureOption(BaseModel):
@@ -50,10 +50,21 @@ class CashRegisterBase(BaseModel):
     is_active: bool = Field(default=True, description="Poste actif")
     workflow_options: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Options de workflow configurables (JSONB)"
+        description="Options de workflow configurables (JSONB)",
     )
     enable_virtual: bool = Field(default=False, description="Activer les caisses virtuelles")
     enable_deferred: bool = Field(default=False, description="Activer les caisses différées")
+
+    @field_validator("workflow_options", mode="before")
+    @classmethod
+    def _validate_workflow_options_schema(cls, v: Any) -> Any:
+        """Rejette les structures invalides (ex. features liste) tout en gardant un dict stockable."""
+        if v is None:
+            return {}
+        if not isinstance(v, dict):
+            raise ValueError("workflow_options doit être un objet JSON")
+        WorkflowOptions.model_validate(v)
+        return v
 
     @field_validator('site_id', mode='before')
     @classmethod
@@ -83,9 +94,21 @@ class CashRegisterUpdate(BaseModel):
     location: Optional[str] = Field(None, max_length=255)
     site_id: Optional[str] = Field(None)
     is_active: Optional[bool] = Field(None)
-    workflow_options: Optional[Dict[str, Any]] = Field(None, description="Options de workflow configurables (JSONB)")
+    workflow_options: Optional[Dict[str, Any]] = Field(
+        None, description="Options de workflow configurables (JSONB)"
+    )
     enable_virtual: Optional[bool] = Field(None, description="Activer les caisses virtuelles")
     enable_deferred: Optional[bool] = Field(None, description="Activer les caisses différées")
+
+    @field_validator("workflow_options", mode="before")
+    @classmethod
+    def _validate_workflow_options_schema_update(cls, v: Any) -> Any:
+        if v is None:
+            return None
+        if not isinstance(v, dict):
+            raise ValueError("workflow_options doit être un objet JSON")
+        WorkflowOptions.model_validate(v)
+        return v
 
     @field_validator("site_id", mode="before")
     @classmethod
