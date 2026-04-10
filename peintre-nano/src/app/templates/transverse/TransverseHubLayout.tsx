@@ -25,7 +25,7 @@ export function TransverseHubLayout({ family, children, pageState }: TransverseH
       data-testid="transverse-page-shell"
       data-transverse-layout="hub"
       data-transverse-family={family}
-      aria-label="Mise en page transverse hub"
+      aria-label="Contenu principal"
     >
       <TransversePageStateSlot pageState={pageState} />
       {head ? (

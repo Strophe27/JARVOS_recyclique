@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 from uuid import UUID
 
+from sqlalchemy import String, cast, func
 from sqlalchemy.orm import Session
 
 from recyclic_api.models import PosteReception, TicketDepot, User, LigneDepot, Category
@@ -78,6 +79,16 @@ class CategoryRepository:
         self.db = db
 
     def exists(self, category_id: UUID) -> bool:
+        # SQLite + colonne PostgreSQL UUID : formats stockés variables ; aligner stats_service.
+        if self.db.get_bind().dialect.name == "sqlite":
+            key_norm = str(category_id).replace("-", "").lower()
+            id_norm = func.lower(func.replace(cast(Category.id, String), "-", ""))
+            return (
+                self.db.query(Category)
+                .filter(id_norm == key_norm, Category.is_active.is_(True))
+                .first()
+                is not None
+            )
         return (
             self.db.query(Category)
             .filter(Category.id == category_id, Category.is_active.is_(True))

@@ -14,6 +14,22 @@
 # last_updated: 2026-04-09 — story 7.5 CS bmad-create-story : 7-5-rendre-la-reception-defensive-face-aux-erreurs-contrats-incomplets-et-degradations backlog → ready-for-dev (fichier story + sprint-status)
 # last_updated: 2026-04-09 — story 7.6 DS bmad-dev-story : 7-6-valider-lexploitabilite-terrain-de-la-reception-v2 → review (registre Epic 7 consolidé ; pas done avant gates/QA/CR)
 # last_updated: 2026-04-09 — story 7.6 CS bmad-create-story : 7-6-valider-lexploitabilite-terrain-de-la-reception-v2 backlog → ready-for-dev (fichier story + sprint-status) ; epic-7 in-progress
+# last_updated: 2026-04-10 — story 8.4 CS bmad-create-story : 8-4-encadrer-la-quarantaine-et-la-resolution-manuelle-des-ecarts-persistants backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-10 — story 8.4 DS bmad-dev-story (Task) : 8-4 → review (audit sync, endpoints lift/confirm, tests 8.4)
+# last_updated: 2026-04-10 — story 8.5 DS bmad-dev-story (Task) : 8-5 backlog → review (corrélation API + OpenAPI + tests)
+# last_updated: 2026-04-10 — story 8.6 CS bmad-create-story : 8-6-gerer-le-blocage-selectif-des-actions-critiques-finales backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-10 — story 8.7 DS bmad-dev-story (Task) : 8-7-valider-la-reconciliation-reelle-avec-paheko backlog → review (registre §2 + état initial AC6 option B + gate pytest + test-summary 8.7)
+# last_updated: 2026-04-10 — epic-8-retrospective : development_status → done (epic-8-retro-2026-04-10.md)
+# last_updated: 2026-04-10 — story 8.7 Story Runner : gates→QA→CR (retry doc) ; 8-7 → done ; epic-8 → done ; registre ensuite consolidé avec preuve terrain réelle (historique AC6 B → A)
+# last_updated: 2026-04-10 — story 11.2 Story Runner : DS→gates→QA→CR PASS ; 11-2 → done (canon /dashboard, matrice ui-pilote-02, DevTools legacy)
+# last_updated: 2026-04-10 — story 11.3 DS (Task) : alias /cash-register/sale kiosque + matrice ui-pilote-03 ; gates peintre-nano lint/test PASS ; 11-3 → review
+# last_updated: 2026-04-10 — story 11.2 DS (Task) : dashboard post-login /dashboard + matrice ui-pilote-02 ; gates peintre-nano lint/test PASS ; 11-2 → review
+# last_updated: 2026-04-10 — story 11.1 DS (Story Runner resume_at DS) : login public CREOS + LiveAuthShell ; gates lint/build/test PASS ; 11-1 → review
+# last_updated: 2026-04-10 — story 8.6 DS bmad-dev-story (Task) : 8-6 → in-progress (registre Epic 8 ; gates/QA/CR parent)
+# last_updated: 2026-04-10 — story 8.5 Story Runner : CS→VS→DS→gates→QA→CR ; 8-5 → done (corrélation + gate pytest 8.1–8.5 incl. test_story_8_5 ; npm peintre-nano lint/build ; contracts/openapi generate)
+# last_updated: 2026-04-10 — story 8.4 Story Runner : CS→VS→DS→gates→QA→CR (retry DS lift/attempt_count) ; 8-4 → done
+# last_updated: 2026-04-10 — story 8.3 CS bmad-create-story : 8-3-gerer-les-correspondances-site-caisse-emplacements-paheko backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-10 — story 8.2 CS bmad-create-story : 8-2-gerer-lidempotence-les-retries-et-les-statuts-explicites-de-sync backlog → ready-for-dev (fichier story + sprint-status)
 # last_updated: 2026-04-09 — story 7.3 DS bmad-dev-story : 7-3-integrer-la-categorisation-la-pesee-et-la-qualification-du-flux-matiere → review
 # last_updated: 2026-04-08 — story 6.10 CS : development_status → ready-for-dev (fichier story enrichi mapping + checklist, pret validation / execution)
 # last_updated: 2026-04-08 — correct course Epic 6 approuve : freeze cloture, rebaseline brownfield-first, stories rewrite repassees backlog
@@ -97,7 +113,10 @@
 
 generated: "2026-04-01"
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
-last_updated: "2026-04-09" # story 7.6 Story Runner : CS→VS→DS→gates→QA→CR ; 7-6 → done ; epic-7 → done
+last_updated: "2026-04-10" # story 11.3 Story Runner : gates→QA→CR PASS ; doc CREOS + matrice + slash final ; 11-3 → done
+# last_updated: "2026-04-10" # story 8.1 Story Runner DS→gates→QA→CR : 8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko review → done
+# last_updated: "2026-04-10" # epic-7-retrospective : development_status → done (epic-7-retro-2026-04-10.md)
+# last_updated: "2026-04-09" # story 7.6 Story Runner : CS→VS→DS→gates→QA→CR ; 7-6 → done ; epic-7 → done
 # (historique) last_updated: 2026-04-08 — story 6.7 done (Story Runner reprise GATE→QA→CR après coupure ; lint/build/test + QA PASS + CR APPROVED)
 project: JARVOS_recyclique
 project_key: NOKEY
@@ -179,17 +198,17 @@ development_status:
   7-4-journaliser-les-entrees-reception-et-assurer-leur-exploitabilite-historique: done
   7-5-rendre-la-reception-defensive-face-aux-erreurs-contrats-incomplets-et-degradations: done
   7-6-valider-lexploitabilite-terrain-de-la-reception-v2: done
-  epic-7-retrospective: optional
+  epic-7-retrospective: done
 
-  epic-8: backlog
-  8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko: backlog
-  8-2-gerer-lidempotence-les-retries-et-les-statuts-explicites-de-sync: backlog
-  8-3-gerer-les-correspondances-site-caisse-emplacements-paheko: backlog
-  8-4-encadrer-la-quarantaine-et-la-resolution-manuelle-des-ecarts-persistants: backlog
-  8-5-mettre-en-place-le-suivi-et-la-correlation-inter-systemes-des-operations: backlog
-  8-6-gerer-le-blocage-selectif-des-actions-critiques-finales: backlog
-  8-7-valider-la-reconciliation-reelle-avec-paheko: backlog
-  epic-8-retrospective: optional
+  epic-8: done
+  8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko: done
+  8-2-gerer-lidempotence-les-retries-et-les-statuts-explicites-de-sync: done
+  8-3-gerer-les-correspondances-site-caisse-emplacements-paheko: done
+  8-4-encadrer-la-quarantaine-et-la-resolution-manuelle-des-ecarts-persistants: done
+  8-5-mettre-en-place-le-suivi-et-la-correlation-inter-systemes-des-operations: done
+  8-6-gerer-le-blocage-selectif-des-actions-critiques-finales: done
+  8-7-valider-la-reconciliation-reelle-avec-paheko: done
+  epic-8-retrospective: done
 
   epic-9: backlog
   9-1-livrer-le-module-declaration-eco-organismes: backlog
@@ -213,3 +232,10 @@ development_status:
   10-7-definir-et-verifier-les-gates-de-beta-interne-et-de-v2-vendable: backlog
   10-8-valider-la-readiness-globale-de-la-v2: backlog
   epic-10-retrospective: optional
+
+  epic-11: done
+  # last_updated: "2026-04-10" # epic-11 initialise : stories 11.1-11.3 creees a partir du cadrage / matrice parite legacy -> Peintre_nano
+  11-1-retrouver-la-connexion-publique-observable-dans-peintre-nano: done
+  11-2-retrouver-le-dashboard-standard-observable-dans-peintre-nano: done
+  11-3-retrouver-la-vente-caisse-kiosque-observable-dans-peintre-nano: done
+  epic-11-retrospective: optional

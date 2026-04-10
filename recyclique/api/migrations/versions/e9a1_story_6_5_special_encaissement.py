@@ -9,8 +9,6 @@ Encaissements sans lignes article (don, adhésion) : agrégats session inchangé
 """
 from __future__ import annotations
 
-import uuid
-
 import sqlalchemy as sa
 from alembic import op
 
@@ -21,28 +19,28 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("sales", sa.Column("special_encaissement_kind", sa.String(length=64), nullable=True))
-    op.add_column("sales", sa.Column("adherent_reference", sa.String(length=200), nullable=True))
+    bind = op.get_bind()
+    cols = {c["name"] for c in sa.inspect(bind).get_columns("sales")}
+    if "special_encaissement_kind" not in cols:
+        op.add_column("sales", sa.Column("special_encaissement_kind", sa.String(length=64), nullable=True))
+    if "adherent_reference" not in cols:
+        op.add_column("sales", sa.Column("adherent_reference", sa.String(length=200), nullable=True))
 
-    permissions_table = sa.table(
-        "permissions",
-        sa.column("id", sa.UUID),
-        sa.column("name", sa.String),
-        sa.column("description", sa.Text),
-    )
-    op.bulk_insert(
-        permissions_table,
-        [
-            {
-                "id": str(uuid.uuid4()),
-                "name": "caisse.special_encaissement",
-                "description": "Autorise les encaissements spéciaux sans article (don, adhésion) — Story 6.5.",
-            }
-        ],
+    op.execute(
+        """
+        INSERT INTO permissions (id, name, description)
+        SELECT gen_random_uuid(), 'caisse.special_encaissement',
+               'Autorise les encaissements spéciaux sans article (don, adhésion) — Story 6.5.'
+        WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'caisse.special_encaissement')
+        """
     )
 
 
 def downgrade() -> None:
     op.execute("DELETE FROM permissions WHERE name = 'caisse.special_encaissement'")
-    op.drop_column("sales", "adherent_reference")
-    op.drop_column("sales", "special_encaissement_kind")
+    bind = op.get_bind()
+    cols = {c["name"] for c in sa.inspect(bind).get_columns("sales")}
+    if "adherent_reference" in cols:
+        op.drop_column("sales", "adherent_reference")
+    if "special_encaissement_kind" in cols:
+        op.drop_column("sales", "special_encaissement_kind")

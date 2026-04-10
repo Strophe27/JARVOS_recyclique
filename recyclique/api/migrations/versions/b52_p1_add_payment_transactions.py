@@ -22,17 +22,28 @@ depends_on = None
 
 def upgrade() -> None:
     # Story B52-P1: Créer la table payment_transactions
-    op.create_table(
-        'payment_transactions',
-        sa.Column('id', UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-        sa.Column('sale_id', UUID(as_uuid=True), sa.ForeignKey('sales.id'), nullable=False),
-        sa.Column('payment_method', sa.String(50), nullable=False),  # Utilise le même enum que sales.payment_method
-        sa.Column('amount', sa.Float(), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
-    )
-    
-    # Créer un index sur sale_id pour améliorer les performances des requêtes
-    op.create_index('ix_payment_transactions_sale_id', 'payment_transactions', ['sale_id'])
+    # Idempotent : dumps / volumes réutilisés peuvent déjà avoir la table sans revision enregistrée.
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    tables = set(inspector.get_table_names())
+    if "payment_transactions" not in tables:
+        op.create_table(
+            "payment_transactions",
+            sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+            sa.Column("sale_id", UUID(as_uuid=True), sa.ForeignKey("sales.id"), nullable=False),
+            sa.Column("payment_method", sa.String(50), nullable=False),
+            sa.Column("amount", sa.Float(), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        )
+
+    inspector = sa.inspect(bind)
+    existing_index_names = {idx["name"] for idx in inspector.get_indexes("payment_transactions")}
+    if "ix_payment_transactions_sale_id" not in existing_index_names:
+        op.create_index(
+            "ix_payment_transactions_sale_id",
+            "payment_transactions",
+            ["sale_id"],
+        )
     
     # Story B52-P1: Migrer les données existantes
     # Pour chaque Sale existant, créer un PaymentTransaction avec payment_method et total_amount

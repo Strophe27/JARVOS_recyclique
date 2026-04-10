@@ -39,7 +39,7 @@ export const PERMISSION_CASHFLOW_SALE_CORRECT = 'caisse.sale_correct';
 export const NAV_LABEL_KEY_TRANSVERSE_DASHBOARD = 'nav.transverse.dashboard';
 
 /** Libellé présentation servi par l’enveloppe démo pour prouver la résolution `label_key` → texte (story 5.5). */
-export const DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD = 'Tableau de bord (libellé ressourcerie démo)';
+export const DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD = 'Tableau de bord';
 
 /** UUID factice de site pour démo / Vitest — aligné sur l’attendu backend (`site_id` UUID). */
 export const DEMO_AUTH_STUB_SITE_ID = '00000000-0000-4000-8000-00000000d157';
@@ -72,8 +72,8 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
     runtimeStatus: 'ok',
     presentationLabels: {
       [NAV_LABEL_KEY_TRANSVERSE_DASHBOARD]: DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD,
-      'nav.reception.nominal': 'Réception (v2 nominal)',
-      'nav.cashflow.nominal': 'Caisse (v2 nominal)',
+      'nav.reception.nominal': 'Réception',
+      'nav.cashflow.nominal': 'Caisse',
       'nav.cashflow.refund': 'Remboursement',
       'nav.cashflow.specialDon': 'Don (sans article)',
       'nav.cashflow.specialAdhesion': 'Adhésion / cotisation',

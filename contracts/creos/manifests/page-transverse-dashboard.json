@@ -5,35 +5,21 @@
   "requires_site": true,
   "slots": [
     {
-      "slot_id": "dashboard.header",
-      "widget_type": "demo.text.block",
+      "slot_id": "header",
+      "widget_type": "demo.legacy.app.topstrip",
       "widget_props": {
-        "title": "Dashboard transverse — synthèse",
-        "body": "Informations opérationnelles transverses (résumés, indicateurs légers, liens d'entrée). Aucun workflow métier complet (caisse, réception, sync, modules sensibles) dans ce périmètre."
+        "brandTitle": "RecyClique",
+        "welcomeLine": "Pilotage et activité du site"
       }
     },
     {
-      "slot_id": "dashboard.overview",
-      "widget_type": "demo.text.block",
+      "slot_id": "main",
+      "widget_type": "demo.legacy.dashboard.workspace",
       "widget_props": {
-        "title": "Périmètre actif",
-        "body": "Le contenu visible dépend du ContextEnvelope et des permissions servies par le backend ; pas de recalcul des droits côté UI. Le masquage déclaratif des blocs reste dans le manifeste ou derrière des données API futures."
-      }
-    },
-    {
-      "slot_id": "dashboard.hints",
-      "widget_type": "demo.text.block",
-      "widget_props": {
-        "title": "Prochaines entrées",
-        "body": "Utilisez la navigation latérale pour les zones futures (listings 5.3+, admin transverse 5.4+) sans simuler les parcours métier ici."
-      }
-    },
-    {
-      "slot_id": "dashboard.data-gap",
-      "widget_type": "demo.text.block",
-      "widget_props": {
-        "title": "Indicateurs data (gap documenté)",
-        "body": "Aucun widget data_contract sur ce slice : les KPI et agrégats transverses suivront quand les operation_id OpenAPI et les réponses backend seront prêts ; le rendu reste sur widgets de présentation allowlistés."
+        "welcomeTitle": "Bienvenue sur RecyClique",
+        "welcomeSubtitle": "Plateforme de gestion pour ressourceries. Gérez vos dépôts, suivez vos ventes et analysez vos performances.",
+        "personalDashboardLabel": "Dashboard personnel",
+        "personalDashboardPath": "/dashboard/benevole"
       }
     }
   ]

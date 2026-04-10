@@ -36,6 +36,23 @@ class Settings(BaseSettings):
     # Pas de défaut localhost ici : en prod/staging, une valeur explicite est requise (voir get_effective_frontend_url).
     FRONTEND_URL: str = ""
 
+    # Paheko — intégration comptable outbound (Epic 8, Story 8.1+). 12-factor : pas de secrets en dur.
+    PAHEKO_API_BASE_URL: str = ""
+    # Auth canonique alignée doc Paheko : HTTP Basic Auth (clé/login + secret/mot de passe).
+    PAHEKO_API_USER: str | None = None
+    PAHEKO_API_PASSWORD: str | None = None
+    # Compat legacy : Bearer token encore accepté transitoirement si Basic n'est pas configuré.
+    PAHEKO_API_TOKEN: str | None = None
+    PAHEKO_HTTP_TIMEOUT_SECONDS: float = 15.0
+    # Chemin relatif à PAHEKO_API_BASE_URL pour le slice clôture caisse.
+    # Par défaut on vise l'endpoint officiel Paheko de création d'écriture comptable.
+    PAHEKO_ACCOUNTING_CASH_SESSION_CLOSE_PATH: str = "/api/accounting/transaction"
+    # Story 8.3 : fusion ``destination_params`` (table ``paheko_cash_session_close_mappings``) dans le POST — pas de secrets ici.
+    # Outbox — retry / plafond (Story 8.2, AR11 at-least-once)
+    PAHEKO_OUTBOX_MAX_ATTEMPTS: int = 8
+    PAHEKO_OUTBOX_RETRY_BASE_SECONDS: float = 2.0
+    PAHEKO_OUTBOX_RETRY_MAX_SECONDS: float = 900.0
+
     # kDrive Sync
     KDRIVE_WEBDAV_URL: str | None = None
     KDRIVE_WEBDAV_USERNAME: str | None = None
@@ -114,6 +131,21 @@ def get_effective_frontend_url() -> str:
     if _is_dev_like_environment():
         return _DEV_FRONTEND_URL_FALLBACK.rstrip("/")
     return ""
+
+
+def get_browser_api_v1_prefix() -> str:
+    """Préfixe API relatif utilisable tel quel depuis le navigateur.
+
+    En dev local, le front live (`localhost:4444`) ne proxifie que `/api/*`.
+    Si l'API interne est configurée en `/v1`, on expose donc `/api/v1` aux clients
+    navigateur pour éviter qu'une navigation sur `/v1/...` ne retombe sur la SPA.
+    """
+    prefix = settings.API_V1_STR.rstrip("/")
+    if not prefix:
+        return "/api"
+    if prefix.startswith("/api/") or prefix == "/api":
+        return prefix
+    return f"/api{prefix}"
 
 
 def get_cors_allow_origins() -> list[str]:

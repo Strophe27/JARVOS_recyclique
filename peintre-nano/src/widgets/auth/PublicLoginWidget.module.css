@@ -1,0 +1,67 @@
+/**
+ * Gabarit login public — bandeau pleine largeur (héritage visuel Recyclique 1.4.x),
+ * zone formulaire centrée, sans logique métier.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--pn-login-page-bg, #eef1f4);
+}
+
+.topBar {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  min-height: 3.25rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--pn-login-banner-bg, #2d7a4f);
+  color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.brandLine {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.centerWrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2.5rem 1.25rem 2rem;
+  box-sizing: border-box;
+}
+
+.formPanel {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.mainTitle {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  margin: 0 0 1.25rem;
+  color: var(--mantine-color-dark-7, #1a1b1e);
+  letter-spacing: -0.02em;
+}
+
+.forgotRow {
+  margin-top: 0.25rem;
+}
+
+.secondaryActions {
+  margin-top: 0.5rem;
+}

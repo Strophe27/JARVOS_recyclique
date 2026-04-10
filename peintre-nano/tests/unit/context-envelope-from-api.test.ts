@@ -22,6 +22,21 @@ describe('contextEnvelopeStubFromApi', () => {
     expect(stub!.issuedAt).toBe(Date.parse('2026-01-15T12:00:00.000Z'));
   });
 
+  it('mappe presentation_labels (snake_case OpenAPI) vers presentationLabels du stub', () => {
+    const stub = contextEnvelopeStubFromApi({
+      runtime_state: 'ok',
+      permission_keys: [],
+      computed_at: '2026-01-15T12:00:00.000Z',
+      presentation_labels: {
+        'nav.transverse.dashboard': 'Tableau de bord',
+        'nav.reception.nominal': 'Réception',
+      },
+    });
+    expect(stub).not.toBeNull();
+    expect(stub!.presentationLabels?.['nav.transverse.dashboard']).toBe('Tableau de bord');
+    expect(stub!.presentationLabels?.['nav.reception.nominal']).toBe('Réception');
+  });
+
   it('retourne null si runtime_state invalide', () => {
     expect(
       contextEnvelopeStubFromApi({

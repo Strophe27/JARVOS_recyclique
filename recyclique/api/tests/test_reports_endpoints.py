@@ -16,7 +16,7 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.utils.report_tokens import generate_download_token
 
-from tests.api_v1_paths import v1
+from tests.api_v1_paths import browser_api_to_testclient_path, v1
 
 
 def _auth_headers(user: User) -> dict[str, str]:
@@ -196,7 +196,7 @@ def test_download_report_endpoint(monkeypatch, tmp_path: Path, client: TestClien
     token = parse_qs(parsed.query).get("token", [None])[0]
 
     response = client.get(
-        parsed.path,
+        browser_api_to_testclient_path(parsed.path),
         params={"token": token},
         headers=_auth_headers(admin_user),
     )

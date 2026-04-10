@@ -49,11 +49,11 @@ describe('E2E — états transverses (story 5.7)', () => {
 
     await waitFor(() => {
       const main = screen.getByTestId('shell-zone-main');
-      const shell = within(within(main).getByTestId('page-slot-unmapped')).getByTestId('transverse-page-shell');
-      expect(within(shell).getByTestId('transverse-state-loading')).toBeTruthy();
-      expect(shell.querySelector('[data-testid="transverse-page-state-slot"]')?.getAttribute('data-transverse-state')).toBe(
-        'loading',
-      );
+      const dash = within(main).getByTestId('widget-legacy-dashboard-workspace');
+      expect(within(dash).getByTestId('transverse-state-loading')).toBeTruthy();
+      expect(
+        within(dash).getByTestId('transverse-page-state-slot').getAttribute('data-transverse-state'),
+      ).toBe('loading');
     });
   });
 

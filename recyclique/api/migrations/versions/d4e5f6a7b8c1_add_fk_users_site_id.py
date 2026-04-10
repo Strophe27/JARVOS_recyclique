@@ -9,6 +9,7 @@ Create Date: 2026-03-24
 
 """
 from alembic import op
+import sqlalchemy as sa
 
 
 revision = "d4e5f6a7b8c1"
@@ -38,14 +39,22 @@ def upgrade() -> None:
         $data03$;
         """
     )
-    op.create_foreign_key(
-        FK_NAME,
-        "users",
-        "sites",
-        ["site_id"],
-        ["id"],
-    )
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    existing_fk_names = {fk["name"] for fk in insp.get_foreign_keys("users") if fk.get("name")}
+    if FK_NAME not in existing_fk_names:
+        op.create_foreign_key(
+            FK_NAME,
+            "users",
+            "sites",
+            ["site_id"],
+            ["id"],
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint(FK_NAME, "users", type_="foreignkey")
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    existing_fk_names = {fk["name"] for fk in insp.get_foreign_keys("users") if fk.get("name")}
+    if FK_NAME in existing_fk_names:
+        op.drop_constraint(FK_NAME, "users", type_="foreignkey")

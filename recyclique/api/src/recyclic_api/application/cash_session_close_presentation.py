@@ -13,11 +13,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from recyclic_api.application.cash_session_closing import CloseCashSessionOutcome
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import settings, get_browser_api_v1_prefix
 from recyclic_api.core.email_service import EmailAttachment
 from recyclic_api.schemas.cash_session import CashSessionResponse
 from recyclic_api.services.cash_session_response_enrichment import enrich_session_response
 from recyclic_api.services.cash_session_service import CashSessionService
+from recyclic_api.services.paheko_outbox_service import get_outbox_item_for_cash_session
 from recyclic_api.utils.report_tokens import generate_download_token
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ def present_close_cash_session_outcome(
     report_path = generate_cash_session_report(db, closed_session)
     download_token = generate_download_token(report_path.name)
     report_download_url = (
-        f"{settings.API_V1_STR}/admin/reports/cash-sessions/{report_path.name}"
+        f"{get_browser_api_v1_prefix()}/admin/reports/cash-sessions/{report_path.name}"
         f"?token={download_token}"
     )
     email_sent = False
@@ -113,9 +114,14 @@ def present_close_cash_session_outcome(
             logger.error("Failed to send cash session report email: %s", exc)
 
     response_model = enrich_session_response(closed_session, service)
+    outbox_row = get_outbox_item_for_cash_session(db, closed_session.id)
+    paheko_cid = outbox_row.correlation_id if outbox_row else None
+    paheko_oid = str(outbox_row.id) if outbox_row else None
     return response_model.model_copy(
         update={
             "report_download_url": report_download_url,
             "report_email_sent": email_sent,
+            "paheko_sync_correlation_id": paheko_cid,
+            "paheko_outbox_item_id": paheko_oid,
         }
     )

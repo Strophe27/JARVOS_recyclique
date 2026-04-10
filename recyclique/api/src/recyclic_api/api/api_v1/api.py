@@ -29,6 +29,8 @@ from .endpoints import (
     presets_router as presets,
     transactions_router as transactions,
     legacy_import_router as legacy_import,
+    admin_paheko_outbox_router as admin_paheko_outbox,
+    admin_paheko_mapping_router as admin_paheko_mapping,
 )
 
 api_router = APIRouter()
@@ -63,4 +65,14 @@ api_router.include_router(activity, prefix="/activity", tags=["activity"])
 api_router.include_router(presets, prefix="/presets", tags=["presets"])
 api_router.include_router(transactions, prefix="/transactions", tags=["transactions"])
 api_router.include_router(legacy_import, prefix="/admin", tags=["admin"])
+api_router.include_router(
+    admin_paheko_outbox,
+    prefix="/admin/paheko-outbox",
+    tags=["admin", "paheko-outbox"],
+)
+api_router.include_router(
+    admin_paheko_mapping,
+    prefix="/admin/paheko-mappings",
+    tags=["admin", "paheko-mappings"],
+)
 

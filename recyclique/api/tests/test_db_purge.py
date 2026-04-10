@@ -232,6 +232,11 @@ class TestDatabasePurge:
 
         token = create_access_token(data={"sub": str(super_admin_user.id)})
 
+        # Même fichier SQLite partagé entre fonctions de test : normaliser d'abord pour que
+        # ce test vérifie le comportement « déjà vide », sans dépendre du résidu d'un test précédent.
+        norm = client.post(PURGE_URL, headers={"Authorization": f"Bearer {token}"})
+        assert norm.status_code == 200
+
         response = client.post(
             PURGE_URL,
             headers={"Authorization": f"Bearer {token}"},

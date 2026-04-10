@@ -8,8 +8,6 @@ Discriminant exclusif de ``special_encaissement_kind`` ; montants > 0 validés e
 """
 from __future__ import annotations
 
-import uuid
-
 import sqlalchemy as sa
 from alembic import op
 
@@ -20,26 +18,24 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("sales", sa.Column("social_action_kind", sa.String(length=64), nullable=True))
+    bind = op.get_bind()
+    cols = {c["name"] for c in sa.inspect(bind).get_columns("sales")}
+    if "social_action_kind" not in cols:
+        op.add_column("sales", sa.Column("social_action_kind", sa.String(length=64), nullable=True))
 
-    permissions_table = sa.table(
-        "permissions",
-        sa.column("id", sa.UUID),
-        sa.column("name", sa.String),
-        sa.column("description", sa.Text),
-    )
-    op.bulk_insert(
-        permissions_table,
-        [
-            {
-                "id": str(uuid.uuid4()),
-                "name": "caisse.social_encaissement",
-                "description": "Autorise les encaissements d'actions sociales / solidaires (lot 1) — Story 6.6.",
-            }
-        ],
+    op.execute(
+        """
+        INSERT INTO permissions (id, name, description)
+        SELECT gen_random_uuid(), 'caisse.social_encaissement',
+               'Autorise les encaissements d''actions sociales / solidaires (lot 1) — Story 6.6.'
+        WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'caisse.social_encaissement')
+        """
     )
 
 
 def downgrade() -> None:
     op.execute("DELETE FROM permissions WHERE name = 'caisse.social_encaissement'")
-    op.drop_column("sales", "social_action_kind")
+    bind = op.get_bind()
+    cols = {c["name"] for c in sa.inspect(bind).get_columns("sales")}
+    if "social_action_kind" in cols:
+        op.drop_column("sales", "social_action_kind")

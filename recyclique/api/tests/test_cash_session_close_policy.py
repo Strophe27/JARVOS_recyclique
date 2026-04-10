@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 from uuid import uuid4
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from recyclic_api.services.cash_session_service import CashSessionService
 
@@ -29,7 +29,8 @@ def test_get_closing_preview_uses_single_formula():
     }
 
 
-def test_close_session_with_amounts_reuses_preview_formula():
+@patch("recyclic_api.services.paheko_sync_final_action_policy.assert_a1_allowed_for_cash_session_close")
+def test_close_session_with_amounts_reuses_preview_formula(mock_a1):
     db = MagicMock()
     service = CashSessionService(db)
 

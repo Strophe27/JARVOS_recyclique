@@ -16,9 +16,14 @@ import pytest
 from fastapi import HTTPException
 
 from recyclic_api.application.cash_session_closing import run_close_cash_session
+from recyclic_api.core.exceptions import PahekoSyncPolicyBlockedError
 from recyclic_api.models.cash_session import CashSessionStatus
 from recyclic_api.models.user import UserRole
 from recyclic_api.schemas.cash_session import CashSessionClose
+from recyclic_api.services.paheko_sync_final_action_policy import (
+    CODE_REFUSED,
+    REASON_SESSION_OUTBOX_QUARANTINE,
+)
 
 
 def _user(role: UserRole = UserRole.USER, user_id=None):
@@ -143,3 +148,50 @@ def test_run_close_cash_session_empty_deleted_outcome(mock_audit):
     assert outcome.session_id == str(session.id)
     mock_audit.assert_called()
     assert mock_audit.call_args.kwargs.get("success") is True
+
+
+@patch("recyclic_api.application.cash_session_closing.log_cash_session_closing")
+def test_run_close_cash_session_409_when_paheko_a1_policy_blocks(mock_audit):
+    """Story 8.6 — refus politique (A1) : HTTP 409 + payload AR21, distinct du 200 + outbox."""
+    uid = uuid4()
+    session = SimpleNamespace(
+        id=uuid4(),
+        operator_id=uid,
+        site_id=uuid4(),
+        register_id=None,
+        current_amount=20.0,
+        initial_amount=10.0,
+        total_sales=10.0,
+        status=CashSessionStatus.OPEN,
+    )
+    block_id = uuid4()
+    payload = {
+        "code": CODE_REFUSED,
+        "policy_reason_code": REASON_SESSION_OUTBOX_QUARANTINE,
+        "correlation_id": "corr-8-6-arch04",
+        "blocking_outbox_item_id": str(block_id),
+    }
+    db = MagicMock()
+    service = MagicMock()
+    service.get_session_by_id_or_raise.return_value = session
+    service.count_held_sales_for_session.return_value = 0
+    service.validate_session_close.return_value = {
+        "total_donations": 0.0,
+        "theoretical_amount": 20.0,
+        "variance": 0.0,
+    }
+    service.close_session_with_amounts.side_effect = PahekoSyncPolicyBlockedError(payload)
+
+    with pytest.raises(HTTPException) as exc_info:
+        run_close_cash_session(
+            db=db,
+            service=service,
+            current_user=_user(UserRole.USER, uid),
+            session_id=str(session.id),
+            close_data=_close_payload(actual=20.0),
+            request_id="req-8-6",
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == payload
+    mock_audit.assert_not_called()

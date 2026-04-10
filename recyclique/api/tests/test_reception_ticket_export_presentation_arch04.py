@@ -16,7 +16,7 @@ from recyclic_api.application.reception_ticket_export_presentation import (
     reception_ticket_csv_filename,
     render_reception_ticket_csv_bytes,
 )
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import settings, get_browser_api_v1_prefix
 from recyclic_api.utils.report_tokens import verify_download_token
 
 
@@ -54,8 +54,8 @@ def test_build_reception_ticket_download_json_contract():
     body = build_reception_ticket_download_json(tid, filename, ttl_seconds=60)
     assert body["filename"] == filename
     assert body["expires_in_seconds"] == 60
-    _prefix = settings.API_V1_STR.rstrip("/")
-    assert f"{_prefix}/reception/tickets/{tid}/export-csv" in body["download_url"]
+    expected_prefix = get_browser_api_v1_prefix()
+    assert f"{expected_prefix}/reception/tickets/{tid}/export-csv" in body["download_url"]
     parsed = urlparse(body["download_url"])
     qs = parse_qs(parsed.query)
     assert "token" in qs

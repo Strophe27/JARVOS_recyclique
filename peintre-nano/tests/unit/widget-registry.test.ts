@@ -18,6 +18,8 @@ describe('widget-registry', () => {
     expect(types).toContain('demo.card');
     expect(types).toContain('demo.kpi');
     expect(types).toContain('demo.list.simple');
+    expect(types).toContain('demo.legacy.app.topstrip');
+    expect(types).toContain('demo.legacy.dashboard.workspace');
     expect(types).toContain('bandeau-live');
     expect(types).toContain('caisse-brownfield-dashboard');
     expect(types).toContain('caisse-current-ticket');
@@ -31,6 +33,7 @@ describe('widget-registry', () => {
     expect(types).toContain('cashflow-social-don-wizard');
     expect(types).toContain('reception-nominal-wizard');
     expect(types).toContain('reception-history-panel');
+    expect(types).toContain('auth.live.public-login');
   });
 
   it('résout un type démo en composant', () => {

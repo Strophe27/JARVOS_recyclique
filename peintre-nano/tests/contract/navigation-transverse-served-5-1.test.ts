@@ -25,6 +25,20 @@ import { resolvePageAccess } from '../../src/runtime/resolve-page-access';
  * (pas de navigation orpheline : chaque page_key de la nav a un PageManifest dans le lot).
  */
 describe('contract — navigation transverse servie (story 5.1)', () => {
+  it('ne sert plus d’entrées nav démo parasites (hors parcours produit / legacy observable)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const rawIds = runtimeServedManifestLoadResult.bundle.navigation.entries.map((e) => e.id);
+    for (const id of [
+      'demo-guarded-nav',
+      'runtime-demo-sandbox',
+      'demo-fallback-unknown-widget',
+      'admin-area',
+    ] as const) {
+      expect(rawIds).not.toContain(id);
+    }
+  });
+
   it('charge le lot sans erreur de validation', () => {
     expect(runtimeServedManifestLoadResult.ok).toBe(true);
     if (!runtimeServedManifestLoadResult.ok) return;
@@ -181,15 +195,11 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(dash.requiredPermissionKeys).toEqual(['transverse.dashboard.view']);
     expect(dash.requiresSite).toBe(true);
     const slotIds = dash.slots.map((s) => s.slotId);
-    expect(slotIds).toEqual([
-      'dashboard.header',
-      'dashboard.overview',
-      'dashboard.hints',
-      'dashboard.data-gap',
+    expect(slotIds).toEqual(['header', 'main']);
+    expect(dash.slots.map((s) => s.widgetType)).toEqual([
+      'demo.legacy.app.topstrip',
+      'demo.legacy.dashboard.workspace',
     ]);
-    for (const s of dash.slots) {
-      expect(s.widgetType).toBe('demo.text.block');
-    }
   });
 
   /**

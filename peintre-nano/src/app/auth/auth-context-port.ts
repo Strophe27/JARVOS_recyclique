@@ -4,6 +4,11 @@ import type { ContextEnvelopeStub } from '../../types/context-envelope';
 export interface AuthSessionState {
   readonly authenticated: boolean;
   readonly userId?: string;
+  /**
+   * Libellé présentation (prénom/nom, sinon login, sinon rôle) issu de `AuthUserV2` au login — OpenAPI.
+   * Persisté en session navigateur avec le jeton pour les rechargements.
+   */
+  readonly userDisplayLabel?: string;
 }
 
 /**

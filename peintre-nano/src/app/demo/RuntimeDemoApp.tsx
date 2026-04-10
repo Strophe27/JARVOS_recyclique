@@ -4,6 +4,7 @@ import type { NavigationEntry } from '../../types/navigation-manifest';
 import { filterNavigation } from '../../runtime/filter-navigation-for-context';
 import { resolvePageAccess } from '../../runtime/resolve-page-access';
 import { useContextEnvelope } from '../auth/AuthRuntimeProvider';
+import { useLiveAuthActions } from '../auth/LiveAuthActionsContext';
 import { FilteredNavEntries } from '../FilteredNavEntries';
 import { ManifestErrorBanner } from '../ManifestErrorBanner';
 import { buildPageManifestRegions } from '../PageRenderer';
@@ -66,8 +67,30 @@ const LEGACY_SPECIAL_CASHFLOW_PATHS = new Set([
   '/caisse/don',
 ]);
 
+/**
+ * Story 11.3 — route legacy observée sur le brownfield ; alias runtime vers `page_key` `cashflow-nominal` (`/caisse` en CREOS),
+ * sans entrée `NavigationManifest` dédiée (décision documentée : `peintre-nano/docs/03-contrats-creos-et-donnees.md`).
+ */
+const CASH_REGISTER_SALE_PATH = '/cash-register/sale';
+
+function pathnameNoTrailingSlashExceptRoot(path: string): string {
+  if (path.length > 1 && path.endsWith('/')) return path.slice(0, -1);
+  return path;
+}
+
+function isCashRegisterSaleKioskPath(path: string): boolean {
+  return pathnameNoTrailingSlashExceptRoot(path) === CASH_REGISTER_SALE_PATH;
+}
+
+function liveAuthPresentationMode(): boolean {
+  const v = import.meta.env.VITE_LIVE_AUTH as string | undefined;
+  return v === 'true' || v === '1';
+}
+
 export function RuntimeDemoApp() {
   const envelope = useContextEnvelope();
+  const liveAuthActions = useLiveAuthActions();
+  const hideSandboxBanner = liveAuthPresentationMode();
   const { prefs } = useUserRuntimePrefs();
   const [selectedEntryId, setSelectedEntryId] = useState('root-home');
   const [pathRoute, setPathRoute] = useState(
@@ -108,6 +131,11 @@ export function RuntimeDemoApp() {
       setSearchSnapshot(window.location.search);
       return;
     }
+    if (isCashRegisterSaleKioskPath(path)) {
+      setSelectedEntryId('cashflow-nominal');
+      setSearchSnapshot(window.location.search);
+      return;
+    }
     const match = flatFiltered.find((e) => e.path === path);
     if (match) setSelectedEntryId(match.id);
     setSearchSnapshot(window.location.search);
@@ -145,8 +173,14 @@ export function RuntimeDemoApp() {
     if (ADMIN_CASH_SESSION_PATH.test(pathRoute)) {
       return 'admin-cash-session-detail';
     }
+    if (isCashRegisterSaleKioskPath(pathRoute)) {
+      return 'cashflow-nominal';
+    }
     return selectedEntry?.pageKey ?? 'demo-home';
   }, [pathRoute, selectedEntry?.pageKey]);
+
+  const kioskSaleObservable = isCashRegisterSaleKioskPath(pathRoute);
+  const showSandboxBanner = !hideSandboxBanner && !kioskSaleObservable;
 
   const pageForAccess = useMemo(() => {
     if (!bundle) return undefined;
@@ -178,7 +212,11 @@ export function RuntimeDemoApp() {
     return (
       <>
         <ContextRestrictionBanner message={envelope.restrictionMessage} />
-        <RootShell shellPresentation={shellPresentation}>
+        <RootShell
+          shellPresentation={shellPresentation}
+          hideNav={kioskSaleObservable}
+          minimalChrome={hideSandboxBanner}
+        >
           <ManifestErrorBanner issues={manifestLoadResult.issues} />
         </RootShell>
       </>
@@ -189,12 +227,20 @@ export function RuntimeDemoApp() {
 
   const navRegion = (
     <>
-      <RuntimePrefsToolbar />
+      {!hideSandboxBanner ? <RuntimePrefsToolbar /> : null}
       <FilteredNavEntries
         entries={filteredNavigation!.entries}
         envelope={envelope}
         selectedEntryId={resolvedEntryId}
         onSelectEntry={onSelectNavEntry}
+        layout={hideSandboxBanner ? 'toolbar' : 'list'}
+        toolbarEnd={
+          hideSandboxBanner && liveAuthActions ? (
+            <Button type="button" variant="light" size="xs" onClick={liveAuthActions.requestLogout}>
+              Déconnexion
+            </Button>
+          ) : undefined
+        }
       />
     </>
   );
@@ -205,16 +251,20 @@ export function RuntimeDemoApp() {
         <ContextRestrictionBanner message={envelope.restrictionMessage} />
         <RootShell
           shellPresentation={shellPresentation}
+          hideNav={kioskSaleObservable}
+          minimalChrome={hideSandboxBanner}
           regions={{
             nav: navRegion,
             main: (
               <div className={mainClasses.mainInner} data-testid="runtime-demo-root">
-                <div className={classes.sandboxBanner}>
-                  <p className={classes.sandboxTitle}>Démonstration runtime (bac à sable)</p>
-                  <p className={classes.sandboxHint}>
-                    Parcours contrôlé : navigation et pages issues du NavigationManifest chargé — pas un écran métier.
-                  </p>
-                </div>
+                {showSandboxBanner ? (
+                  <div className={classes.sandboxBanner}>
+                    <p className={classes.sandboxTitle}>Démonstration runtime (bac à sable)</p>
+                    <p className={classes.sandboxHint}>
+                      Parcours contrôlé : navigation et pages issues du NavigationManifest chargé — pas un écran métier.
+                    </p>
+                  </div>
+                ) : null}
                 <PageAccessBlocked result={pageAccess} />
               </div>
             ),
@@ -229,6 +279,8 @@ export function RuntimeDemoApp() {
       <ContextRestrictionBanner message={envelope.restrictionMessage} />
       <RootShell
         shellPresentation={shellPresentation}
+        hideNav={kioskSaleObservable}
+        minimalChrome={hideSandboxBanner}
         regions={{
           header: pageRegions?.header,
           nav: navRegion,
@@ -236,16 +288,20 @@ export function RuntimeDemoApp() {
           footer: pageRegions?.footer,
           main: (
             <div className={mainClasses.mainInner} data-testid="runtime-demo-root">
-              <div className={classes.sandboxBanner}>
-                <p className={classes.sandboxTitle}>Démonstration runtime (bac à sable)</p>
-                <p className={classes.sandboxHint}>
-                  Même chaîne que le produit minimal : lot nav + pages chargé ici, nav filtrée par ContextEnvelope, slots via registre.
-                  Essayez « nav.demoUnknownWidget » (widget non enregistré) ou « nav.demoGuardedPage » (permissions page).
-                </p>
-              </div>
-              <Text size="sm" c="dimmed" mb="sm" data-testid="manifest-bundle-ok">
-                Manifests validés — navigation v{b.navigation.version} ; {b.pages.length} page(s) dans le lot.
-              </Text>
+              {showSandboxBanner ? (
+                <div className={classes.sandboxBanner}>
+                  <p className={classes.sandboxTitle}>Démonstration runtime (bac à sable)</p>
+                  <p className={classes.sandboxHint}>
+                    Même chaîne que le produit minimal : lot nav + pages chargé ici, nav filtrée par ContextEnvelope, slots via registre.
+                    Essayez « nav.demoUnknownWidget » (widget non enregistré) ou « nav.demoGuardedPage » (permissions page).
+                  </p>
+                </div>
+              ) : null}
+              {!hideSandboxBanner ? (
+                <Text size="sm" c="dimmed" mb="sm" data-testid="manifest-bundle-ok">
+                  Manifests validés — navigation v{b.navigation.version} ; {b.pages.length} page(s) dans le lot.
+                </Text>
+              ) : null}
               {pageRegions?.mainWidgets}
               {pageForAccess?.pageKey === 'demo-home' ? (
                 <>

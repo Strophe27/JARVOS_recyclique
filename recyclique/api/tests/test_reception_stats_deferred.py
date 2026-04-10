@@ -12,7 +12,8 @@ import pytest
 from sqlalchemy.orm import Session
 
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
-from recyclic_api.models.ligne_depot import LigneDepot
+from recyclic_api.models.ligne_depot import LigneDepot, Destination
+from recyclic_api.models.category import Category
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
@@ -22,6 +23,29 @@ from recyclic_api.services.reception_stats_service import ReceptionLiveStatsServ
 from recyclic_api.core.security import hash_password
 
 
+@pytest.fixture
+def _reception_stats_isolated_db(db_session: Session):
+    """
+    La suite utilise une DB SQLite fichier partagée avec d'autres tests : sans reset,
+    les ``commit()`` successifs font grossir les compteurs (tickets ouverts, etc.).
+    """
+    db_session.query(SaleItem).delete()
+    db_session.query(Sale).delete()
+    db_session.query(CashSession).delete()
+    db_session.query(LigneDepot).delete()
+    db_session.query(TicketDepot).delete()
+    db_session.query(PosteReception).delete()
+    db_session.query(Category).filter(Category.name.like("stats-deferred-%")).delete(
+        synchronize_session=False
+    )
+    db_session.query(User).filter(
+        User.username.in_(["benevole@test.com", "operator@test.com"])
+    ).delete(synchronize_session=False)
+    db_session.commit()
+    yield
+
+
+@pytest.mark.usefixtures("_reception_stats_isolated_db")
 class TestReceptionStatsDeferred:
     """Tests for reception live stats excluding deferred tickets and sales."""
 
@@ -90,19 +114,34 @@ class TestReceptionStatsDeferred:
         db_session.add_all([normal_ticket, deferred_ticket])
         db_session.commit()
 
-        # Create lignes
+        cat_normal = Category(
+            id=uuid.uuid4(),
+            name=f"stats-deferred-a-{uuid.uuid4().hex[:8]}",
+            is_active=True,
+        )
+        cat_deferred = Category(
+            id=uuid.uuid4(),
+            name=f"stats-deferred-b-{uuid.uuid4().hex[:8]}",
+            is_active=True,
+        )
+        db_session.add_all([cat_normal, cat_deferred])
+        db_session.commit()
+
+        # Create lignes (FK ``category_id`` — le champ libellé ``category`` n'existe plus sur LigneDepot)
         normal_ligne = LigneDepot(
             id=uuid.uuid4(),
             ticket_id=normal_ticket.id,
-            category="EEE-1",
+            category_id=cat_normal.id,
             poids_kg=10.0,
+            destination=Destination.MAGASIN,
         )
-        
+
         deferred_ligne = LigneDepot(
             id=uuid.uuid4(),
             ticket_id=deferred_ticket.id,
-            category="EEE-2",
+            category_id=cat_deferred.id,
             poids_kg=20.0,
+            destination=Destination.MAGASIN,
         )
         
         db_session.add_all([normal_ligne, deferred_ligne])

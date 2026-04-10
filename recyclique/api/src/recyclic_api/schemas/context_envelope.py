@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -41,4 +41,8 @@ class ContextEnvelopeResponse(BaseModel):
     restriction_message: Optional[str] = Field(
         default=None,
         description="Précision serveur pour degraded / forbidden (pas de logique métier côté client).",
+    )
+    presentation_labels: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Map label_key CREOS → libellé affichable (Story 5.5) ; présentation uniquement.",
     )

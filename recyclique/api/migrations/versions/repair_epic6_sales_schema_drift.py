@@ -23,6 +23,11 @@ branch_labels = None
 depends_on = None
 
 
+def _table_exists(bind, table_name: str) -> bool:
+    row = bind.execute(sa.text("SELECT to_regclass(:table_name)"), {"table_name": f"public.{table_name}"}).scalar()
+    return row is not None
+
+
 def _sales_column_names(bind) -> set[str]:
     insp = sa.inspect(bind)
     if not insp.has_table("sales"):
@@ -104,7 +109,7 @@ def upgrade() -> None:
             sa.Column("social_action_kind", sa.String(length=64), nullable=True),
         )
 
-    if not insp.has_table("sale_reversals"):
+    if not _table_exists(bind, "sale_reversals"):
         op.create_table(
             "sale_reversals",
             sa.Column("id", UUID(as_uuid=True), nullable=False),

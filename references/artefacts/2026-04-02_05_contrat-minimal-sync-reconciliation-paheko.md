@@ -107,6 +107,7 @@
 - Mécanismes attendus (détail Epic 8) :
   - en-tête ou champ de type **`Idempotency-Key`** pour les mutations HTTP exposées par Recyclique (**AR24**) ;
   - **clés métier** stables (identifiant d'opération Recyclique, lot de clôture, etc.) réutilisées dans la couche d'intégration Paheko pour détecter ou éviter les doublons côté Paheko **lorsque** l'API ou l'extension le permet — sinon **quarantaine** ou **gap** documenté en **1.6**.
+- **Mise à jour terrain (2026-04-10, endpoint `POST /api/accounting/transaction`)** : dans le setup local testé, Paheko a accepté **deux** requêtes strictement identiques avec le **même** `Idempotency-Key` et a créé **deux** écritures distinctes ; l’idempotence comptable distante ne doit donc **pas** être présumée sur cet endpoint sans mécanisme complémentaire.
 
 ---
 
@@ -115,6 +116,7 @@
 ### 4.1 Propagation (AR17)
 
 - Un identifiant de **corrélation** unique par **unité de travail** (session utilisateur, lot de sync, requête API traversant plusieurs services) est propagé dans les **logs structurés** et, pour le HTTP, via le header canonique **`X-Correlation-ID`** (**AR17**).
+- **Mise à jour terrain (2026-04-10)** : le probe HTTP local contre Paheko n’a montré **aucune** réémission visible de `X-Correlation-ID` dans les en-têtes de réponse ; cela prouve l’émission côté Recyclique, **pas** une exploitation serveur Paheko.
 
 ### 4.2 Erreurs JSON et alignement gouvernance 1.4 (AR21)
 

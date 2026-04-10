@@ -2396,3 +2396,81 @@ So that the project ends the epic sequence with an explicit go/no-go picture rat
 **Then** the roadmap gains an explicit final readiness statement
 **And** the next phase can begin from a known quality posture rather than a guessed one
 
+## Epic 11: Retrouver la parite UI legacy critique dans `Peintre_nano`
+
+L'equipe peut reconstruire dans `Peintre_nano` un premier noyau de parcours legacy reellement observables, avec preuves terrain sur `localhost:4445`, sans casser le fil des Epics 1 a 10 ni transformer Epic 10 en fourre-tout.
+
+**Note agents (create-story / review) :** cet epic reste etroit. Il couvre uniquement les 3 parcours pilotes formalises dans les artefacts du 2026-04-10 (`login` public, `dashboard` standard, `caisse vente` kiosque) et leurs prerequis UI minimaux. Ne pas y glisser de nouvelles features metier, de refonte design globale, ni de dette backend non deja nommee comme gap de contrat.
+Pour la caisse, **Epic 6** reste la reference fonctionnelle metier ; **Epic 11** ne re-specifie pas le domaine caisse et traite uniquement la **parite UI observable** et l'alignement contractuel de rendu dans `Peintre_nano`.
+
+**Repere de lecture operationnel :** charger d'abord `references/artefacts/2026-04-10_02_cadrage-parite-ui-legacy-peintre.md`, puis `references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md`, puis `references/artefacts/2026-04-10_04_story-seeds-parite-ui-pilotes-peintre.md`.
+
+### Story 11.1: Retrouver la connexion publique observable dans `Peintre_nano`
+
+As a non-authenticated user,
+I want a public login path in `Peintre_nano` that behaves like the legacy reference,
+So that I can enter the authenticated UI through a contract-driven path rather than through frontend-specific auth logic.
+
+**Acceptance Criteria:**
+
+**Given** the legacy login is observed on `http://localhost:4445/login`
+**When** the public auth slice is implemented in `Peintre_nano`
+**Then** the screen exposes the same core intentions (`Connexion`, username, password, submit, forgot-password entry point)
+**And** the delivered path remains anchored to reviewable contracts rather than ad hoc local auth structure
+
+**Given** the project hierarchy of truth is `OpenAPI > ContextEnvelope > CREOS`
+**When** the login story is delivered
+**Then** the frontend uses only the reviewable auth/context operations explicitly accepted for the slice
+**And** any legacy-observed endpoint absent from the reviewable YAML is documented as a gap or excluded from scope rather than silently assumed
+
+**Given** this is a pilote de parite UI and not a full auth epic
+**When** the story is accepted
+**Then** the matrix line `ui-pilote-01-login-public` contains a proof, a contract mapping, and explicit residual gaps
+**And** signup / reset / heartbeat remain out of scope unless explicitly brought into a later story
+
+### Story 11.2: Retrouver le dashboard standard observable dans `Peintre_nano`
+
+As an authenticated user,
+I want the standard dashboard shell and first transverse view to feel and behave like the legacy reference,
+So that the post-login experience regains a recognizable product spine before wider migration work.
+
+**Acceptance Criteria:**
+
+**Given** the legacy dashboard is observed on `http://localhost:4445/`
+**When** the dashboard pilote is delivered
+**Then** the standard shell, navigation structure, welcome area, and first bounded dashboard blocks match the observed legacy usage at an equivalent functional level
+**And** the delivered slice names its explicit route alignment decision between legacy `/` and the current CREOS anchor
+
+**Given** current CREOS reviewable artifacts already include a transverse dashboard skeleton
+**When** the story is implemented
+**Then** it anchors on reviewable manifests rather than inventing a one-off dashboard page in the frontend
+**And** every displayed data block in scope is mapped to a reviewable contract or explicitly marked as blocked / deferred
+
+**Given** this pilote should remain bounded
+**When** the story is accepted
+**Then** only the bounded blocks and states defined in the matrix are considered in scope
+**And** missing statistics, route mismatches, or non-mapped calls are tracked as explicit gaps instead of being hidden inside the implementation
+
+### Story 11.3: Retrouver la vente caisse kiosque observable dans `Peintre_nano`
+
+As a user with `caisse.access` and an open cash session,
+I want the nominal kiosk sale flow in `Peintre_nano` to match the observed legacy experience,
+So that a critical terrain path becomes testable in the new UI without moving business authority out of the API.
+
+**Acceptance Criteria:**
+
+**Given** the legacy kiosk flow is observed from `http://localhost:4445/caisse` to `/cash-register/sale`
+**When** the kiosk pilote is implemented
+**Then** the delivered slice reproduces the nominal sequence and shell qualities in scope (hub access, kiosk view, session context, wizard/ticket/finalization structure)
+**And** the story remains strictly limited to the nominal real-cash path, excluding virtual and deferred variants
+
+**Given** the current reviewable CREOS slice for cashflow does not equal the legacy kiosk route one-to-one
+**When** the story is implemented
+**Then** that mismatch is documented as an explicit alignment decision
+**And** the frontend does not pretend the current `/caisse` CREOS slice is already a full route-equivalent kiosk contract if it is not
+
+**Given** the kiosk flow is business-critical
+**When** the story is accepted
+**Then** the matrix line `ui-pilote-03-caisse-vente-kiosk` includes manual proof on `localhost:4445`, a network proof point on the nominal sale path, and explicit contract mapping for the delivered surface
+**And** no extra business rules are recreated in UI state beyond the bounded local interaction state needed to drive the flow
+

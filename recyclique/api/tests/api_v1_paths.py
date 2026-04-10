@@ -15,3 +15,12 @@ def v1(path: str) -> str:
     """Construit l'URL complète sous le préfixe v1 (ex. ``v1("/sales/")`` -> ``/v1/sales/``)."""
     suffix = path if path.startswith("/") else f"/{path}"
     return f"{API_V1_PREFIX}{suffix}"
+
+
+def browser_api_to_testclient_path(path: str) -> str:
+    """Convertit une URL relative navigateur (`/api/v1/...`) en chemin TestClient (`/v1/...`)."""
+    if path.startswith("/api/"):
+        return path[4:]
+    if path == "/api":
+        return "/"
+    return path

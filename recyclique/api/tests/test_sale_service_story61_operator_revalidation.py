@@ -10,6 +10,7 @@ import pytest
 from recyclic_api.core.exceptions import AuthorizationError
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import PaymentMethod
+from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import SaleCreate, SaleItemCreate
 from recyclic_api.services.sale_service import SaleService
 
@@ -25,10 +26,21 @@ def test_create_sale_raises_when_jwt_operator_not_session_operator():
     cash_session.status = CashSessionStatus.OPEN
 
     db = MagicMock()
-    chain = MagicMock()
-    db.query.return_value = chain
-    chain.filter.return_value = chain
-    chain.first.return_value = cash_session
+
+    def _query_side_effect(model):
+        chain = MagicMock()
+        chain.filter.return_value = chain
+        if model is CashSession:
+            chain.first.return_value = cash_session
+        elif model is User:
+            intruder_row = MagicMock()
+            intruder_row.role = UserRole.USER
+            chain.first.return_value = intruder_row
+        else:
+            chain.first.return_value = None
+        return chain
+
+    db.query.side_effect = _query_side_effect
 
     sale_data = SaleCreate(
         cash_session_id=session_uuid,

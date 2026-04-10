@@ -26,6 +26,9 @@ from .audit_log import AuditLog, AuditActionType
 from .email_log import EmailLog, EmailStatus, EmailType
 from .email_event import EmailEvent, EmailEventType, EmailStatusModel
 from .legacy_category_mapping_cache import LegacyCategoryMappingCache
+from .paheko_outbox import PahekoOutboxItem, PahekoOutboxOperationType, PahekoOutboxStatus
+from .paheko_outbox_sync_transition import PahekoOutboxSyncTransition
+from .paheko_cash_session_close_mapping import PahekoCashSessionCloseMapping
 
 __all__ = [
     "Base",
@@ -72,4 +75,9 @@ __all__ = [
     "EmailEventType",
     "EmailStatusModel",
     "LegacyCategoryMappingCache",
+    "PahekoOutboxItem",
+    "PahekoOutboxOperationType",
+    "PahekoOutboxStatus",
+    "PahekoOutboxSyncTransition",
+    "PahekoCashSessionCloseMapping",
 ]

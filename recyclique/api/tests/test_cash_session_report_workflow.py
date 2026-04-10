@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
 
 from recyclic_api.core.auth import create_access_token
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import settings, get_browser_api_v1_prefix
 from recyclic_api.core.security import hash_password
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import Sale
@@ -15,7 +15,7 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.utils.report_tokens import verify_download_token, generate_download_token
 
-from tests.api_v1_paths import v1
+from tests.api_v1_paths import browser_api_to_testclient_path, v1
 
 
 def _create_site(db_session: Session, name: str) -> Site:
@@ -112,7 +112,7 @@ def test_cash_session_report_workflow(monkeypatch, tmp_path: Path, client: TestC
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["report_download_url"].startswith(settings.API_V1_STR)
+    assert payload["report_download_url"].startswith(get_browser_api_v1_prefix())
     assert payload["report_email_sent"] is True
     fake_email_service.send_email.assert_called_once()
 
@@ -134,7 +134,7 @@ def test_cash_session_report_workflow(monkeypatch, tmp_path: Path, client: TestC
     assert filename in listed_files
 
     download_response = client.get(
-        parsed.path,
+        browser_api_to_testclient_path(parsed.path),
         params={"token": token},
         headers=_auth_headers(admin),
     )

@@ -11,35 +11,158 @@
       "required_permission_keys": ["demo.permission.view-home"]
     },
     {
-      "id": "runtime-demo-sandbox",
-      "route_key": "runtime-demo",
-      "path": "/runtime-demo",
-      "page_key": "demo-home",
-      "label_key": "nav.runtimeDemo",
-      "required_permission_keys": ["demo.permission.view-home"]
+      "id": "transverse-dashboard",
+      "route_key": "transverse-dashboard",
+      "path": "/dashboard",
+      "page_key": "transverse-dashboard",
+      "shortcut_id": "go-transverse-dashboard",
+      "label_key": "nav.transverse.dashboard",
+      "visibility": {
+        "permission_any": ["transverse.dashboard.view"],
+        "contexts_any": ["site"]
+      }
     },
     {
-      "id": "demo-fallback-unknown-widget",
-      "route_key": "demo-unknown-widget",
-      "path": "/demo-unknown-widget",
-      "page_key": "demo-unknown-widget",
-      "label_key": "nav.demoUnknownWidget",
-      "required_permission_keys": ["demo.permission.view-home"]
+      "id": "transverse-admin",
+      "route_key": "transverse-admin",
+      "path": "/admin",
+      "page_key": "transverse-admin-placeholder",
+      "shortcut_id": "go-transverse-admin",
+      "label_key": "nav.transverse.admin",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
     },
     {
-      "id": "demo-guarded-nav",
-      "route_key": "demo-guarded",
-      "path": "/demo-guarded",
-      "page_key": "demo-guarded-page",
-      "label_key": "nav.demoGuardedPage"
+      "id": "transverse-admin-access",
+      "route_key": "transverse-admin-access",
+      "path": "/admin/access",
+      "page_key": "transverse-admin-access-overview",
+      "shortcut_id": "go-transverse-admin-access",
+      "label_key": "nav.transverse.admin.access",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
     },
     {
-      "id": "admin-area",
-      "route_key": "admin-demo",
-      "path": "/admin-demo",
-      "page_key": "demo-home",
-      "label_key": "nav.admin",
-      "required_permission_keys": ["demo.permission.admin-only"]
+      "id": "transverse-admin-site",
+      "route_key": "transverse-admin-site",
+      "path": "/admin/site",
+      "page_key": "transverse-admin-site-overview",
+      "shortcut_id": "go-transverse-admin-site",
+      "label_key": "nav.transverse.admin.site",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-listing-articles",
+      "route_key": "transverse-listing-articles",
+      "path": "/listings/articles",
+      "page_key": "transverse-listing-articles",
+      "shortcut_id": "go-transverse-listing-articles",
+      "label_key": "nav.transverse.listings.articles",
+      "visibility": {
+        "permission_any": ["transverse.listings.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-listing-dons",
+      "route_key": "transverse-listing-dons",
+      "path": "/listings/dons",
+      "page_key": "transverse-listing-dons",
+      "shortcut_id": "go-transverse-listing-dons",
+      "label_key": "nav.transverse.listings.dons",
+      "visibility": {
+        "permission_any": ["transverse.listings.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-consultation-article",
+      "route_key": "transverse-consultation-article",
+      "path": "/consultation/article",
+      "page_key": "transverse-consultation-article",
+      "shortcut_id": "go-transverse-consultation-article",
+      "label_key": "nav.transverse.consultation.article",
+      "visibility": {
+        "permission_any": ["transverse.consultation.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-consultation-don",
+      "route_key": "transverse-consultation-don",
+      "path": "/consultation/don",
+      "page_key": "transverse-consultation-don",
+      "shortcut_id": "go-transverse-consultation-don",
+      "label_key": "nav.transverse.consultation.don",
+      "visibility": {
+        "permission_any": ["transverse.consultation.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "bandeau-live-sandbox",
+      "route_key": "bandeau-live-sandbox",
+      "path": "/bandeau-live-sandbox",
+      "page_key": "bandeau-live-sandbox",
+      "shortcut_id": "go-bandeau-live-sandbox",
+      "label_key": "nav.bandeauLiveSandbox",
+      "required_permission_keys": ["recyclique.exploitation.view-live-band"]
+    },
+    {
+      "id": "cashflow-nominal",
+      "route_key": "cashflow-nominal",
+      "path": "/caisse",
+      "page_key": "cashflow-nominal",
+      "shortcut_id": "go-cashflow-nominal",
+      "label_key": "nav.cashflow.nominal",
+      "visibility": {
+        "permission_any": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-refund",
+      "route_key": "cashflow-refund",
+      "path": "/caisse/remboursement",
+      "page_key": "cashflow-refund",
+      "shortcut_id": "go-cashflow-refund",
+      "label_key": "nav.cashflow.refund",
+      "required_permission_keys": ["caisse.access", "caisse.refund"],
+      "visibility": {
+        "permission_any": ["caisse.refund"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-close",
+      "route_key": "cashflow-close",
+      "path": "/caisse/cloture",
+      "page_key": "cashflow-close",
+      "shortcut_id": "go-cashflow-close",
+      "label_key": "nav.cashflow.close",
+      "visibility": {
+        "permission_any": ["caisse.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "reception-nominal",
+      "route_key": "reception-nominal",
+      "path": "/reception",
+      "page_key": "reception-nominal",
+      "shortcut_id": "go-reception-nominal",
+      "label_key": "nav.reception.nominal",
+      "visibility": {
+        "permission_any": ["reception.access"],
+        "contexts_any": ["site"]
+      }
     }
   ]
 }

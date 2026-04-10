@@ -15,7 +15,7 @@ from recyclic_api.utils.export_error_handler import handle_export_errors_with_lo
 from recyclic_api.utils.date_utils import parse_iso_datetime
 from recyclic_api.core.audit import log_cash_session_access, log_admin_access
 from recyclic_api.core.auth import require_role_strict
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import settings, get_browser_api_v1_prefix
 from recyclic_api.core.database import get_db
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.user import User, UserRole
@@ -86,7 +86,7 @@ def list_cash_session_reports(
                 filename=file.name,
                 size_bytes=stat_result.st_size,
                 modified_at=datetime.fromtimestamp(stat_result.st_mtime, tz=timezone.utc),
-                download_url=f"{settings.API_V1_STR}/admin/reports/cash-sessions/{file.name}?token={generate_download_token(file.name)}",
+                download_url=f"{get_browser_api_v1_prefix()}/admin/reports/cash-sessions/{file.name}?token={generate_download_token(file.name)}",
             )
         )
 

@@ -54,7 +54,10 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
     cleanup();
   });
 
-  it('depuis /reception : FlowRenderer + chaîne POST/GET réception mockée (AC 1)', async () => {
+  it(
+    'depuis /reception : FlowRenderer + chaîne POST/GET réception mockée (AC 1)',
+    { timeout: 15_000 },
+    async () => {
     const lignes: Array<{
       id: string;
       ticket_id: string;

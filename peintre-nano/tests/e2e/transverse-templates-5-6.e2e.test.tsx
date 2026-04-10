@@ -53,14 +53,16 @@ function assertTransverseHubInMain(
 }
 
 describe('E2E — templates transverses (story 5.6)', () => {
-  it('chemin nominal : dashboard → gabarit hub + famille dashboard sous page-slot-unmapped', () => {
+  it('chemin nominal : dashboard → workspace principal (slots shell header + main, sans gabarit hub unmapped)', () => {
     renderServedApp();
     const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
     fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-dashboard')).getByRole('button'));
 
     expect(window.location.pathname).toBe('/dashboard');
     const main = screen.getByTestId('shell-zone-main');
-    assertTransverseHubInMain(main, 'dashboard');
+    expect(within(main).getByTestId('widget-legacy-dashboard-workspace')).toBeTruthy();
+    expect(within(main).queryByTestId('page-slot-unmapped')).toBeNull();
+    expect(within(main).queryByTestId('transverse-page-shell')).toBeNull();
   });
 
   it('chemin nominal : listing articles → même patron hub que le dashboard (famille listing)', () => {

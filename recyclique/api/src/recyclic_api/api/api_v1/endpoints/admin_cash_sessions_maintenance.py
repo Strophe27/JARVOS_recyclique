@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session, noload
 from slowapi import Limiter
 
 from recyclic_api.core.auth import require_super_admin_role
+from recyclic_api.core.exceptions import PahekoSyncPolicyBlockedError
 from recyclic_api.core.database import get_db
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import Sale
@@ -190,11 +191,17 @@ def register_admin_cash_sessions_maintenance_routes(router: APIRouter, limiter: 
                 if service.is_session_empty(session):
                     service.delete_session(str(dup_id))
                 else:
-                    service.close_session_with_amounts(
-                        str(dup_id),
-                        actual_amount=0.0,
-                        variance_comment=f"Fermeture automatique - session dupliquée fusionnée avec session {main_session_id}",
-                    )
+                    try:
+                        service.close_session_with_amounts(
+                            str(dup_id),
+                            actual_amount=0.0,
+                            variance_comment=f"Fermeture automatique - session dupliquée fusionnée avec session {main_session_id}",
+                        )
+                    except PahekoSyncPolicyBlockedError as e:
+                        raise HTTPException(
+                            status_code=http_status.HTTP_409_CONFLICT,
+                            detail=e.payload,
+                        ) from e
                 closed_count += 1
                 logger.info(f"Session dupliquée fermée: {dup_id} (fusionnée avec {main_session_id})")
 

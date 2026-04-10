@@ -111,6 +111,16 @@ class CashSessionResponse(CashSessionBase):
         description="Totaux ventes complétées, remboursements (algébrique) et net — Story 6.4",
     )
 
+    # Story 8.5 — lien terrain ↔ outbox / Paheko (null si session ouverte ou sans ligne outbox)
+    paheko_sync_correlation_id: Optional[str] = Field(
+        None,
+        description="Corrélation outbox et en-tête X-Correlation-ID vers Paheko pour cette clôture.",
+    )
+    paheko_outbox_item_id: Optional[str] = Field(
+        None,
+        description="Identifiant de la ligne paheko_outbox_items ; détail admin GET .../paheko-outbox/items/{id}.",
+    )
+
     @field_validator('id', mode='before')
     @classmethod
     def convert_id_uuid_to_str(cls, v):

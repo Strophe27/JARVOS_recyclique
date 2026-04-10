@@ -2,6 +2,7 @@
 import json
 import pytest
 from decimal import Decimal
+from uuid import uuid4
 from httpx import AsyncClient
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
@@ -399,10 +400,10 @@ async def test_get_categories_hierarchy(async_client: AsyncClient, normal_user_t
     response = await async_client.get(f"{_CATEGORIES_PREFIX}/hierarchy", headers=headers)
     assert response.status_code == 200
     data = response.json()
-    
-    # Should have one root category with one child
-    assert len(data) == 1
-    root_category = data[0]
+
+    # DB partagée entre tests : cibler la racine créée par la fixture (pas un comptage global).
+    root_category = next((c for c in data if c["id"] == str(parent_category.id)), None)
+    assert root_category is not None
     assert root_category["name"] == "Electronics"
     assert len(root_category["children"]) == 1
     assert root_category["children"][0]["name"] == "Smartphones"
@@ -779,26 +780,32 @@ async def test_get_categories_include_archived_param(async_client: AsyncClient, 
     
     # Créer catégories actives et archivées
     from datetime import datetime, timezone
-    active = Category(name="Active", is_active=True, deleted_at=None)
-    archived = Category(name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc))
+
+    tag = uuid4().hex[:8]
+    active = Category(name=f"Active_{tag}", is_active=True, deleted_at=None)
+    archived = Category(name=f"Archived_{tag}", is_active=True, deleted_at=datetime.now(timezone.utc))
     db_session.add_all([active, archived])
     db_session.commit()
-    
+
+    our_names = {f"Active_{tag}", f"Archived_{tag}"}
+
     # Sans include_archived (défaut: False)
     response = await async_client.get(f"{_CATEGORIES_PREFIX}/", headers=headers)
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "Active"
-    
+    ours = [c for c in data if c["name"] in our_names]
+    assert len(ours) == 1
+    assert ours[0]["name"] == f"Active_{tag}"
+
     # Avec include_archived=True
     response = await async_client.get(f"{_CATEGORIES_PREFIX}/?include_archived=true", headers=headers)
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
-    names = {cat["name"] for cat in data}
-    assert "Active" in names
-    assert "Archived" in names
+    ours = [c for c in data if c["name"] in our_names]
+    assert len(ours) == 2
+    names = {cat["name"] for cat in ours}
+    assert f"Active_{tag}" in names
+    assert f"Archived_{tag}" in names
 
 
 @pytest.mark.asyncio
@@ -808,21 +815,32 @@ async def test_operational_endpoints_exclude_archived(async_client: AsyncClient,
     
     # Créer catégories actives et archivées
     from datetime import datetime, timezone
-    active = Category(name="Active", is_active=True, deleted_at=None, is_visible=True)
-    archived = Category(name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc), is_visible=True)
+
+    tag = uuid4().hex[:8]
+    active = Category(name=f"Active_{tag}", is_active=True, deleted_at=None, is_visible=True)
+    archived = Category(
+        name=f"Archived_{tag}",
+        is_active=True,
+        deleted_at=datetime.now(timezone.utc),
+        is_visible=True,
+    )
     db_session.add_all([active, archived])
     db_session.commit()
-    
+
+    our_names = {f"Active_{tag}", f"Archived_{tag}"}
+
     # Test entry-tickets endpoint
     response = await async_client.get(f"{_CATEGORIES_PREFIX}/entry-tickets", headers=headers)
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "Active"
-    
+    ours = [c for c in data if c["name"] in our_names]
+    assert len(ours) == 1
+    assert ours[0]["name"] == f"Active_{tag}"
+
     # Test sale-tickets endpoint
     response = await async_client.get(f"{_CATEGORIES_PREFIX}/sale-tickets", headers=headers)
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "Active"
+    ours = [c for c in data if c["name"] in our_names]
+    assert len(ours) == 1
+    assert ours[0]["name"] == f"Active_{tag}"

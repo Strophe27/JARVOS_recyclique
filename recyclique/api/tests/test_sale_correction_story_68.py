@@ -136,6 +136,8 @@ def test_correct_finalize_super_admin_ok(client, db_session, super_admin_pin, op
         headers={"Authorization": f"Bearer {token}", "X-Step-Up-Pin": _PIN},
     )
     assert r.status_code == 200, r.text
+    # La requête HTTP utilise une autre Session ORM : expirer le cache identité du test.
+    db_session.expire_all()
     row = db_session.query(Sale).filter(Sale.id == sale.id).first()
     assert float(row.donation or 0) == 1.0
     assert row.note == "note corrigée"

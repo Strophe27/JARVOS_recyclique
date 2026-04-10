@@ -174,45 +174,56 @@ class TestCategoryFiltering:
         """Test que get_categories() exclut les catégories archivées par défaut"""
         service = CategoryService(db_session)
 
-        active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None)
-        archived = Category(id=uuid4(), name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc))
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None)
+        archived = Category(
+            id=uuid4(), name=f"Archived_{tag}", is_active=True, deleted_at=datetime.now(timezone.utc)
+        )
 
         db_session.add_all([active, archived])
         db_session.commit()
 
         categories = await service.get_categories(include_archived=False)
 
-        assert len(categories) == 1
-        assert categories[0].name == "Active"
-        assert categories[0].deleted_at is None
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 1
+        assert ours[0].name == f"Active_{tag}"
+        assert ours[0].deleted_at is None
 
     @pytest.mark.asyncio
     async def test_get_categories_includes_archived_when_requested(self, db_session: Session):
         """Test que get_categories() inclut les catégories archivées si include_archived=True"""
         service = CategoryService(db_session)
 
-        active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None)
-        archived = Category(id=uuid4(), name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc))
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None)
+        archived = Category(
+            id=uuid4(), name=f"Archived_{tag}", is_active=True, deleted_at=datetime.now(timezone.utc)
+        )
 
         db_session.add_all([active, archived])
         db_session.commit()
 
         categories = await service.get_categories(include_archived=True)
 
-        assert len(categories) == 2
-        names = {cat.name for cat in categories}
-        assert "Active" in names
-        assert "Archived" in names
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 2
+        names = {cat.name for cat in ours}
+        assert f"Active_{tag}" in names
+        assert f"Archived_{tag}" in names
 
     @pytest.mark.asyncio
     async def test_operational_endpoints_exclude_archived(self, db_session: Session):
         """Test que les endpoints opérationnels excluent les catégories archivées"""
         management_service = CategoryManagementService(db_session)
 
-        active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None, is_visible=True)
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None, is_visible=True)
         archived = Category(
             id=uuid4(),
-            name="Archived",
+            name=f"Archived_{tag}",
             is_active=True,
             deleted_at=datetime.now(timezone.utc),
             is_visible=True,
@@ -223,24 +234,31 @@ class TestCategoryFiltering:
 
         categories = await management_service.get_categories_for_entry_tickets()
 
-        assert len(categories) == 1
-        assert categories[0].name == "Active"
-        assert categories[0].deleted_at is None
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 1
+        assert ours[0].name == f"Active_{tag}"
+        assert ours[0].deleted_at is None
 
     @pytest.mark.asyncio
     async def test_operational_endpoints_sale_tickets_exclude_archived(self, db_session: Session):
         """Test que les endpoints sale tickets excluent aussi les catégories archivées"""
         management_service = CategoryManagementService(db_session)
 
-        active = Category(id=uuid4(), name="Active", is_active=True, deleted_at=None)
-        archived = Category(id=uuid4(), name="Archived", is_active=True, deleted_at=datetime.now(timezone.utc))
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None)
+        archived = Category(
+            id=uuid4(), name=f"Archived_{tag}", is_active=True, deleted_at=datetime.now(timezone.utc)
+        )
 
         db_session.add_all([active, archived])
         db_session.commit()
 
         categories = await management_service.get_categories_for_sale_tickets()
 
-        assert len(categories) == 1
-        assert categories[0].name == "Active"
-        assert categories[0].deleted_at is None
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 1
+        assert ours[0].name == f"Active_{tag}"
+        assert ours[0].deleted_at is None
 

@@ -809,6 +809,7 @@ class CashSessionService:
         actual_amount: float,
         variance_comment: str = None,
         preview: Optional[Dict[str, float]] = None,
+        sync_correlation_id: Optional[str] = None,
     ) -> Optional[CashSession]:
         """B44-P3: Ferme une session de caisse avec contrôle des montants.
         
@@ -833,13 +834,27 @@ class CashSessionService:
         # Session avec transactions : fermer normalement
         normalized_comment = variance_comment.strip() if variance_comment else None
         preview = preview or self.validate_session_close(session, actual_amount, normalized_comment)
-        
+
+        import uuid as _uuid
+
+        from recyclic_api.services.paheko_outbox_service import enqueue_cash_session_close_outbox
+        from recyclic_api.services.paheko_sync_final_action_policy import (
+            assert_a1_allowed_for_cash_session_close,
+        )
+
+        cid = (sync_correlation_id or "").strip() or str(_uuid.uuid4())
+        # Story 8.6 : garde unique A1 (quarantaine session + mapping) avant mutation / outbox.
+        assert_a1_allowed_for_cash_session_close(self.db, session, sync_correlation_id=cid)
+
         # Utiliser la nouvelle méthode du modèle avec le montant théorique calculé
         session.close_with_amounts(actual_amount, normalized_comment, preview["theoretical_amount"])
-        
+
+        # Story 8.1 : outbox Paheko dans la même transaction que la clôture locale (AR11).
+        enqueue_cash_session_close_outbox(self.db, closed_session=session, correlation_id=cid)
+
         self.db.commit()
         self.db.refresh(session)
-        
+
         return session
     
     def add_sale_to_session(self, session_id: str, amount: float) -> bool:

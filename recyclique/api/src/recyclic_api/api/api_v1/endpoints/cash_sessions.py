@@ -613,8 +613,9 @@ async def update_cash_session(
 
 
 @router.post(
-    "/{session_id}/close", 
+    "/{session_id}/close",
     response_model=CashSessionResponse,
+    operation_id="recyclique_cashSessions_closeSession",
     summary="Fermer une session de caisse",
     description="""
     Ferme une session de caisse ouverte.
@@ -747,7 +748,7 @@ async def get_cash_session_stats(
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
     site_id: Optional[str] = Query(None, description="Filtrer par ID de site"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  # Changed: Allow all authenticated users
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     response: Response = Response(),
 ):
     """

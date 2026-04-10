@@ -209,6 +209,9 @@ from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.cash_session import CashSession
+from recyclic_api.models.paheko_outbox import PahekoOutboxItem
+from recyclic_api.models.paheko_outbox_sync_transition import PahekoOutboxSyncTransition
+from recyclic_api.models.paheko_cash_session_close_mapping import PahekoCashSessionCloseMapping
 from recyclic_api.models.payment_transaction import PaymentTransaction
 from recyclic_api.models.sync_log import SyncLog
 from recyclic_api.models.registration_request import RegistrationRequest
@@ -491,6 +494,36 @@ def _sqlite_align_groups_story_23(bind) -> None:
         conn.commit()
 
 
+def _sqlite_align_paheko_outbox_story_82(bind) -> None:
+    """SQLite : colonnes Story 8.2 (`next_retry_at`, `rejection_reason`) si table outbox préexistante."""
+    if not str(bind.url).startswith("sqlite"):
+        return
+    with bind.connect() as conn:
+        insp = inspect(conn)
+        if not insp.has_table("paheko_outbox_items"):
+            return
+        cols = {c["name"] for c in insp.get_columns("paheko_outbox_items")}
+        if "next_retry_at" not in cols:
+            conn.execute(text("ALTER TABLE paheko_outbox_items ADD COLUMN next_retry_at DATETIME"))
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_paheko_outbox_next_retry_at "
+                    "ON paheko_outbox_items (next_retry_at)"
+                )
+            )
+        if "rejection_reason" not in cols:
+            conn.execute(text("ALTER TABLE paheko_outbox_items ADD COLUMN rejection_reason TEXT"))
+        if "mapping_resolution_error" not in cols:
+            conn.execute(text("ALTER TABLE paheko_outbox_items ADD COLUMN mapping_resolution_error VARCHAR(64)"))
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_paheko_outbox_mapping_resolution_error "
+                    "ON paheko_outbox_items (mapping_resolution_error)"
+                )
+            )
+        conn.commit()
+
+
 # Fonction pour créer les tables
 def create_tables_if_not_exist():
     """Créer les tables si elles n'existent pas"""
@@ -532,6 +565,9 @@ def create_tables_if_not_exist():
                     AdminSetting.__table__,
                     CashRegister.__table__,
                     CashSession.__table__,
+                    PahekoOutboxItem.__table__,
+                    PahekoOutboxSyncTransition.__table__,
+                    PahekoCashSessionCloseMapping.__table__,
                     Sale.__table__,
                     SaleReversal.__table__,
                     SaleItem.__table__,
@@ -548,6 +584,7 @@ def create_tables_if_not_exist():
             _sqlite_align_sales_story_63(engine)
             _sqlite_align_sales_story_65(engine)
             _sqlite_align_groups_story_23(engine)
+            _sqlite_align_paheko_outbox_story_82(engine)
         else:
             Base.metadata.create_all(bind=engine)
         print("✅ Tables créées avec succès")

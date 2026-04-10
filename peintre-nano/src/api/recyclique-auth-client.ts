@@ -5,11 +5,60 @@ import { contextEnvelopeStubFromApi } from './context-envelope-from-api';
 /** Stockage session navigateur — tests terrain uniquement ; en prod viser cookies httpOnly (`use_web_session_cookies`). */
 export const LIVE_AUTH_ACCESS_TOKEN_STORAGE_KEY = 'peintre-nano.recyclique.access_token';
 
+/** Libellé d’accueil (même durée de vie que le jeton stocké). */
+export const LIVE_AUTH_USER_DISPLAY_KEY = 'peintre-nano.recyclique.user_display';
+
+/**
+ * Construit un libellé d’affichage depuis le bloc `user` de `LoginResponseV2` / `AuthUserV2` (OpenAPI).
+ */
+export function presentationLabelFromAuthUserV2(user: unknown): string | undefined {
+  if (user === null || typeof user !== 'object') {
+    return undefined;
+  }
+  const u = user as Record<string, unknown>;
+  const fn = typeof u.first_name === 'string' ? u.first_name.trim() : '';
+  const ln = typeof u.last_name === 'string' ? u.last_name.trim() : '';
+  const un = typeof u.username === 'string' ? u.username.trim() : '';
+  const role = typeof u.role === 'string' ? u.role.trim() : '';
+  const full = [fn, ln].filter(Boolean).join(' ').trim();
+  if (full.length > 0) {
+    return full;
+  }
+  if (un.length > 0) {
+    return un;
+  }
+  if (role.length > 0) {
+    return role;
+  }
+  return undefined;
+}
+
+export function readStoredUserDisplay(): string | undefined {
+  if (typeof sessionStorage === 'undefined') {
+    return undefined;
+  }
+  const s = sessionStorage.getItem(LIVE_AUTH_USER_DISPLAY_KEY)?.trim();
+  return s || undefined;
+}
+
+export function persistUserDisplay(label: string | undefined): void {
+  if (typeof sessionStorage === 'undefined') {
+    return;
+  }
+  if (!label?.trim()) {
+    sessionStorage.removeItem(LIVE_AUTH_USER_DISPLAY_KEY);
+    return;
+  }
+  sessionStorage.setItem(LIVE_AUTH_USER_DISPLAY_KEY, label.trim());
+}
+
 export type RecycliqueLoginOk = {
   ok: true;
   accessToken: string;
   refreshToken: string | null;
   userId: string | undefined;
+  /** Dérivé de `user` (AuthUserV2) — même source contractuelle que l’API login. */
+  userDisplayLabel: string | undefined;
 };
 
 export type RecycliqueLoginFail = { ok: false; status: number; message: string };
@@ -85,8 +134,9 @@ export async function postRecycliqueLogin(
   if (typeof user === 'object' && user !== null && typeof (user as { id?: unknown }).id === 'string') {
     userId = (user as { id: string }).id;
   }
+  const userDisplayLabel = presentationLabelFromAuthUserV2(user);
 
-  return { ok: true, accessToken, refreshToken, userId };
+  return { ok: true, accessToken, refreshToken, userId, userDisplayLabel };
 }
 
 export type FetchContextEnvelopeResult =

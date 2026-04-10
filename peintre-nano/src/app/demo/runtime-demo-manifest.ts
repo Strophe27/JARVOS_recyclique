@@ -41,6 +41,7 @@ import pageCashflowRefund from '../../../../contracts/creos/manifests/page-cashf
 import pageAdminCashSessionDetail from '../../../../contracts/creos/manifests/page-admin-cash-session-detail.json';
 import pageCashflowClose from '../../../../contracts/creos/manifests/page-cashflow-close.json';
 import pageReceptionNominal from '../../../../contracts/creos/manifests/page-reception-nominal.json';
+import pageLoginPublic from '../../../../contracts/creos/manifests/page-login-public.json';
 import widgetsCatalogBandeauLive from '../../../../contracts/creos/manifests/widgets-catalog-bandeau-live.json';
 import validNavigationFixture from '../../fixtures/manifests/valid/navigation.json';
 import validPageGuardedFixture from '../../fixtures/manifests/valid/page-guarded.json';
@@ -131,6 +132,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageCashflowClose),
     JSON.stringify(pageAdminCashSessionDetail),
     JSON.stringify(pageReceptionNominal),
+    JSON.stringify(pageLoginPublic),
   ],
   allowedWidgetTypes: demoAllowedWidgetTypes(),
   sourceLabels: {
@@ -155,6 +157,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-cashflow-close.json',
           'contracts/creos/manifests/page-admin-cash-session-detail.json',
           'contracts/creos/manifests/page-reception-nominal.json',
+          'contracts/creos/manifests/page-login-public.json',
         ] as const
       )[i] ?? `page[${i}]`,
   },

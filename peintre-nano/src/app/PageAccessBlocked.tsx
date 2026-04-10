@@ -11,10 +11,14 @@ export type PageAccessBlockedProps = {
 /** État explicite lorsque le manifest page n’est pas rendu (intersection enveloppe). */
 export function PageAccessBlocked({ result }: PageAccessBlockedProps) {
   useEffect(() => {
+    const severity =
+      result.code === 'MISSING_PERMISSIONS'
+        ? ('info' as const)
+        : ('blocked' as const);
     reportRuntimeFallback({
       code: result.code,
       message: result.message,
-      severity: 'blocked',
+      severity,
       state: 'page_access_denied',
       detail: { blockCode: result.code },
     });

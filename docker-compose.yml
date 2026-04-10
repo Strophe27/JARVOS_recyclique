@@ -81,6 +81,15 @@ services:
       LEGACY_IMPORT_LLM_BATCH_SIZE: ${LEGACY_IMPORT_LLM_BATCH_SIZE:-20}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_API_BASE_URL: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
+      PAHEKO_API_BASE_URL: ${PAHEKO_API_BASE_URL:-http://paheko}
+      PAHEKO_API_USER: ${PAHEKO_API_USER:-}
+      PAHEKO_API_PASSWORD: ${PAHEKO_API_PASSWORD:-}
+      PAHEKO_API_TOKEN: ${PAHEKO_API_TOKEN:-}
+      PAHEKO_HTTP_TIMEOUT_SECONDS: ${PAHEKO_HTTP_TIMEOUT_SECONDS:-15}
+      PAHEKO_ACCOUNTING_CASH_SESSION_CLOSE_PATH: ${PAHEKO_ACCOUNTING_CASH_SESSION_CLOSE_PATH:-/api/accounting/transaction}
+      PAHEKO_OUTBOX_MAX_ATTEMPTS: ${PAHEKO_OUTBOX_MAX_ATTEMPTS:-8}
+      PAHEKO_OUTBOX_RETRY_BASE_SECONDS: ${PAHEKO_OUTBOX_RETRY_BASE_SECONDS:-2}
+      PAHEKO_OUTBOX_RETRY_MAX_SECONDS: ${PAHEKO_OUTBOX_RETRY_MAX_SECONDS:-900}
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
@@ -93,12 +102,40 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Évite un démarrage API sur une base vide / en retard de migration (ex. 500 sur live-snapshot si `paheko_outbox_items` absente).
+      api-migrations:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+    networks:
+      - recyclic-network
+
+  paheko:
+    image: paheko/paheko@sha256:fa2b4a6188802447cc3c43f51d3bac55a73cb203e17e05ed68c8a2d4d29a15ec
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Bootstrap API headless : Paheko expose un compte système API si ces variables
+      # sont présentes (mappées en constantes côté app). Recyclique doit recevoir
+      # les mêmes secrets via PAHEKO_API_USER / PAHEKO_API_PASSWORD côté service `api`.
+      PAHEKO_API_USER: ${PAHEKO_API_USER:-}
+      PAHEKO_API_PASSWORD: ${PAHEKO_API_PASSWORD:-}
+    ports:
+      - "${PAHEKO_PORT:-8080}:80"
+    volumes:
+      - paheko_data:/var/www/paheko/data
+      - ./paheko-www.htaccess:/var/www/paheko/www/.htaccess:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://127.0.0.1/admin/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     networks:
       - recyclic-network
 
@@ -191,6 +228,7 @@ services:
 
 volumes:
   postgres_data:
+  paheko_data:
 
 networks:
   recyclic-network:

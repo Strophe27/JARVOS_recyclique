@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from recyclic_api.core.audit import log_admin_access
 from recyclic_api.core.auth import require_admin_role
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import settings, get_browser_api_v1_prefix
 from recyclic_api.core.database import get_db
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.user import User, UserRole
@@ -19,6 +19,7 @@ from recyclic_api.schemas.dashboard import DashboardMetrics, DashboardStatsRespo
 from recyclic_api.services.cash_session_service import CashSessionService
 from recyclic_api.utils.financial_security import encrypt_string
 from recyclic_api.utils.rate_limit import conditional_rate_limit
+from recyclic_api.utils.report_tokens import generate_download_token
 
 router = APIRouter(tags=["admin", "dashboard"])
 
@@ -87,7 +88,10 @@ def _recent_reports(service: CashSessionService, site_id: Optional[str]) -> List
         selected.append(
             RecentReport(
                 filename=file.name,
-                download_url=f"{settings.API_V1_STR}/admin/reports/cash-sessions/{file.name}",
+                download_url=(
+                    f"{get_browser_api_v1_prefix()}/admin/reports/cash-sessions/{file.name}"
+                    f"?token={generate_download_token(file.name)}"
+                ),
                 generated_at=generated_at,
                 size_bytes=stat.st_size,
             )

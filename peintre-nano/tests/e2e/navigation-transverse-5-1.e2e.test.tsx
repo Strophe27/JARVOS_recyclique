@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@mantine/core/styles.css';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { App } from '../../src/app/App';
 import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
@@ -63,12 +63,12 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
     ).toBeTruthy();
     expect(
       within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button', {
-        name: 'nav.transverse.admin',
+        name: 'Administration',
       }),
     ).toBeTruthy();
   });
 
-  it('parcours dashboard : clic nav → composition PageManifest transverse-dashboard (story 5.2)', () => {
+  it('parcours dashboard : clic nav → composition PageManifest transverse-dashboard (story 5.2)', async () => {
     renderServedApp();
 
     const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
@@ -79,13 +79,14 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
     const main = screen.getByTestId('shell-zone-main');
     expect(
       within(main).getByRole('heading', {
-        level: 2,
-        name: /Dashboard transverse — synthèse/i,
+        level: 1,
+        name: /Bienvenue sur RecyClique/i,
       }),
     ).toBeTruthy();
-    expect(
-      within(main).getByText(/Aucun widget data_contract sur ce slice/i),
-    ).toBeTruthy();
+    expect(within(main).getByTestId('widget-legacy-dashboard-workspace')).toBeTruthy();
+    await waitFor(() => {
+      expect(within(main).getByTestId('stat-sales-revenue')).toBeTruthy();
+    });
   });
 
   it('parcours admin : clic nav → hub PageManifest transverse-admin-placeholder (story 5.4)', () => {
@@ -118,8 +119,8 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
     const main = screen.getByTestId('shell-zone-main');
     expect(
       within(main).getByRole('heading', {
-        level: 2,
-        name: /Dashboard transverse — synthèse/i,
+        level: 1,
+        name: /Bienvenue sur RecyClique/i,
       }),
     ).toBeTruthy();
   });
@@ -170,7 +171,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
   });
 
   describe('Story 5.2 — dashboard transverse (slots CREOS, cohérence nav)', () => {
-    it('rend les quatre blocs demo.text.block du manifest page-transverse-dashboard', () => {
+    it('rend le manifest page-transverse-dashboard (topstrip shell + workspace legacy observable)', async () => {
       renderServedApp();
 
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
@@ -178,25 +179,19 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       fireEvent.click(dashBtn);
 
       expect(window.location.pathname).toBe('/dashboard');
+      const header = screen.getByTestId('shell-zone-header');
+      expect(within(header).getByTestId('widget-demo-legacy-app-topstrip')).toBeTruthy();
       const main = screen.getByTestId('shell-zone-main');
-      const blocks = within(main).getAllByTestId('widget-demo-text-block');
-      expect(blocks).toHaveLength(4);
-
-      const titles = [
-        'Dashboard transverse — synthèse',
-        'Périmètre actif',
-        'Prochaines entrées',
-        'Indicateurs data (gap documenté)',
-      ];
-      for (const name of titles) {
-        expect(within(main).getByRole('heading', { level: 2, name })).toBeTruthy();
-      }
+      expect(within(main).getByTestId('widget-legacy-dashboard-workspace')).toBeTruthy();
+      await waitFor(() => {
+        expect(within(main).getByTestId('stat-sales-revenue')).toBeTruthy();
+      });
       expect(
-        within(main).getByText(/Aucun widget data_contract sur ce slice/i),
+        within(main).getByRole('heading', { name: /Ventes \(Sorties\)/i }),
       ).toBeTruthy();
     });
 
-    it('cohérence navigation : dashboard → accueil → dashboard (aria-current + URL)', () => {
+    it('cohérence navigation : dashboard → accueil → dashboard (aria-current + URL)', async () => {
       renderServedApp();
 
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
@@ -221,7 +216,9 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(window.location.pathname).toBe('/dashboard');
       expect(dashBtn.getAttribute('aria-current')).toBe('true');
       const mainDash = screen.getByTestId('shell-zone-main');
-      expect(within(mainDash).getAllByTestId('widget-demo-text-block')).toHaveLength(4);
+      await waitFor(() => {
+        expect(within(mainDash).getByTestId('stat-sales-revenue')).toBeTruthy();
+      });
     });
   });
 
@@ -363,12 +360,12 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(within(nav).getByTestId('nav-entry-transverse-admin-site')).toBeTruthy();
       expect(
         within(within(nav).getByTestId('nav-entry-transverse-admin-access')).getByRole('button', {
-          name: 'nav.transverse.admin.access',
+          name: 'Accès et visibilité',
         }),
       ).toBeTruthy();
       expect(
         within(within(nav).getByTestId('nav-entry-transverse-admin-site')).getByRole('button', {
-          name: 'nav.transverse.admin.site',
+          name: 'Site et périmètre',
         }),
       ).toBeTruthy();
     });

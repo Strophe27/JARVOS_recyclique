@@ -21,6 +21,7 @@ from recyclic_api.schemas.context_envelope import (
     ContextRuntimeState,
     ExploitationContextIdsOut,
 )
+from recyclic_api.services.creos_nav_presentation_labels import CREOS_NAV_PRESENTATION_LABELS
 
 
 def _utc_now() -> datetime:
@@ -64,6 +65,7 @@ def build_context_envelope(db: Session, user_id: uuid.UUID) -> ContextEnvelopeRe
             permission_keys=[],
             computed_at=_utc_now(),
             restriction_message="Utilisateur introuvable",
+            presentation_labels=None,
         )
 
     if user.status == UserStatus.REJECTED:
@@ -73,6 +75,7 @@ def build_context_envelope(db: Session, user_id: uuid.UUID) -> ContextEnvelopeRe
             permission_keys=[],
             computed_at=_utc_now(),
             restriction_message="Compte refusé — exploitation interdite",
+            presentation_labels=None,
         )
 
     # noload(register) : évite le JOIN lazy="joined" vers cash_registers (tables pilotes SQLite incomplètes).
@@ -119,6 +122,10 @@ def build_context_envelope(db: Session, user_id: uuid.UUID) -> ContextEnvelopeRe
     # Epic 5 / CREOS — hub transverse admin : clé UI attendue par les manifests (non forcément en table permissions).
     if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
         permission_keys.append("transverse.admin.view")
+    # Tableau de bord transverse (Peintre_nano / CREOS) : même principe que `transverse.admin.view`.
+    # Les admins ont déjà `reports.view` en base ; les opérateurs avec rapports seuls reçoivent la clé UI si `reports.view` est effectif.
+    if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN) or "reports.view" in permission_keys:
+        permission_keys.append("transverse.dashboard.view")
     # Story 6.8 — clé UI pour correction vente : émise uniquement pour SUPER_ADMIN (pas dans la table permissions).
     if user.role == UserRole.SUPER_ADMIN:
         permission_keys.append("caisse.sale_correct")
@@ -130,4 +137,5 @@ def build_context_envelope(db: Session, user_id: uuid.UUID) -> ContextEnvelopeRe
         permission_keys=permission_keys,
         computed_at=_utc_now(),
         restriction_message=restriction_message,
+        presentation_labels=dict(CREOS_NAV_PRESENTATION_LABELS),
     )

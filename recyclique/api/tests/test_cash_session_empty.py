@@ -12,6 +12,7 @@ from recyclic_api.models.site import Site
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.config import settings
 from recyclic_api.services.cash_session_service import CashSessionService
+from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
 
 _V1 = settings.API_V1_STR.rstrip("/")
 
@@ -157,7 +158,9 @@ class TestEmptySessionDeletion:
         """Test que fermer une session avec transactions fonctionne normalement."""
         service = CashSessionService(db_session)
         session_id = str(non_empty_cash_session.id)
-        
+        assert non_empty_cash_session.site_id is not None
+        seed_default_paheko_close_mapping(db_session, non_empty_cash_session.site_id)
+
         # Fermer la session avec transactions
         result = service.close_session_with_amounts(session_id, 75.0, "Aucun écart")
         

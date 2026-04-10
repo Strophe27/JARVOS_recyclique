@@ -20,6 +20,21 @@ function strField(raw: Record<string, unknown>, snake: string, camel: string): s
 }
 
 /** Normalise un bloc sync après ingest manifest (snake_case JSON → camelCase imbriqué). */
+function dailyKpisAggregateFromRaw(
+  v: unknown,
+): ExploitationLiveSnapshot['daily_kpis_aggregate'] {
+  if (v === undefined) {
+    return undefined;
+  }
+  if (v === null) {
+    return null;
+  }
+  if (!isRecord(v)) {
+    return null;
+  }
+  return { ...v };
+}
+
 function syncOperationalSummaryFromRaw(
   v: unknown,
 ): ExploitationLiveSnapshot['sync_operational_summary'] {
@@ -59,11 +74,19 @@ function snapshotFromRawRecord(raw: Record<string, unknown>): ExploitationLiveSn
   );
   const bleRaw = raw.bandeau_live_slice_enabled ?? raw.bandeauLiveSliceEnabled;
   const bandeau_live_slice_enabled = typeof bleRaw === 'boolean' ? bleRaw : undefined;
+  const daily_kpis_aggregate = dailyKpisAggregateFromRaw(
+    raw.daily_kpis_aggregate ?? raw.dailyKpisAggregate,
+  );
+  const hasDailyKpis =
+    daily_kpis_aggregate != null &&
+    typeof daily_kpis_aggregate === 'object' &&
+    Object.keys(daily_kpis_aggregate).length > 0;
   const hasSignal =
     bandeau_live_slice_enabled !== undefined ||
     effective_open_state !== undefined ||
     cash_session_effectiveness !== undefined ||
     observed_at !== undefined ||
+    hasDailyKpis ||
     (sync_operational_summary != null &&
       (sync_operational_summary.worst_state !== undefined ||
         sync_operational_summary.source_reachable !== undefined));
@@ -76,6 +99,7 @@ function snapshotFromRawRecord(raw: Record<string, unknown>): ExploitationLiveSn
     ...(cash_session_effectiveness !== undefined ? { cash_session_effectiveness } : {}),
     ...(observed_at !== undefined ? { observed_at } : {}),
     ...(sync_operational_summary !== undefined ? { sync_operational_summary } : {}),
+    ...(daily_kpis_aggregate !== undefined ? { daily_kpis_aggregate } : {}),
   };
 }
 

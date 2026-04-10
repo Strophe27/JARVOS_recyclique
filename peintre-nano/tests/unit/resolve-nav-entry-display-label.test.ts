@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { contextEnvelopeStubFromApi } from '../../src/api/context-envelope-from-api';
 import {
   createDefaultDemoEnvelope,
   DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD,
@@ -64,5 +65,24 @@ describe('resolveNavEntryDisplayLabel (story 5.5)', () => {
     });
     expect(resolveNavEntryDisplayLabel(entry, a)).toBe(DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD);
     expect(resolveNavEntryDisplayLabel(entry, b)).toBe('Libellé alternatif serveur');
+  });
+
+  it('live : libellé humain quand presentation_labels vient du JSON GET /v1/users/me/context', () => {
+    const liveStub = contextEnvelopeStubFromApi({
+      runtime_state: 'ok',
+      permission_keys: ['transverse.dashboard.view'],
+      computed_at: '2026-04-10T12:00:00.000Z',
+      context: {
+        site_id: '11111111-1111-4111-8111-111111111111',
+        cash_register_id: null,
+        cash_session_id: null,
+        reception_post_id: null,
+      },
+      presentation_labels: { [NAV_LABEL_KEY_TRANSVERSE_DASHBOARD]: 'Tableau de bord' },
+    });
+    expect(liveStub).not.toBeNull();
+    expect(
+      resolveNavEntryDisplayLabel(entryWithKey(NAV_LABEL_KEY_TRANSVERSE_DASHBOARD), liveStub!),
+    ).toBe('Tableau de bord');
   });
 });

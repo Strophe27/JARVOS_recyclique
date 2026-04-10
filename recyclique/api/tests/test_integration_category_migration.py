@@ -6,10 +6,13 @@ from sqlalchemy.orm import Session
 from uuid import uuid4
 from decimal import Decimal
 
+from recyclic_api.core.config import settings
 from recyclic_api.models import Category, LigneDepot, TicketDepot, PosteReception, User, UserRole, UserStatus
 from recyclic_api.models.ligne_depot import Destination
 from recyclic_api.services.reception_service import ReceptionService
 from recyclic_api.services.stats_service import StatsService
+
+_V1 = settings.API_V1_STR.rstrip("/")
 
 
 class TestCategoryMigrationIntegration:
@@ -178,18 +181,18 @@ class TestCategoryMigrationIntegration:
         db_session.refresh(category)
 
         # Créer un poste via API
-        response = admin_client.post("/api/v1/reception/postes/open")
+        response = admin_client.post(f"{_V1}/reception/postes/open")
         assert response.status_code == 200
         poste_id = response.json()["id"]
 
         # Créer un ticket via API
-        response = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+        response = admin_client.post(f"{_V1}/reception/tickets", json={"poste_id": poste_id})
         assert response.status_code == 200
         ticket_id = response.json()["id"]
 
         # Test création de ligne via API
         response = admin_client.post(
-            "/api/v1/reception/lignes",
+            f"{_V1}/reception/lignes",
             json={
                 "ticket_id": ticket_id,
                 "category_id": str(category.id),
@@ -206,7 +209,7 @@ class TestCategoryMigrationIntegration:
         assert data["poids_kg"] == "15.500"
 
         # Test récupération des catégories via API
-        response = admin_client.get("/api/v1/reception/categories")
+        response = admin_client.get(f"{_V1}/reception/categories")
         assert response.status_code == 200
         categories_data = response.json()
         assert len(categories_data) >= 1

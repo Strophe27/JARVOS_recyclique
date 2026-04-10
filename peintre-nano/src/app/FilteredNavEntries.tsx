@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import type { ContextEnvelopeStub } from '../types/context-envelope';
 import type { NavigationEntry } from '../types/navigation-manifest';
 import { resolveNavEntryDisplayLabel } from '../runtime/resolve-nav-entry-display-label';
@@ -11,9 +11,12 @@ export type FilteredNavEntriesProps = {
   readonly envelope: ContextEnvelopeStub;
   readonly selectedEntryId?: string;
   readonly onSelectEntry?: (entry: NavigationEntry) => void;
+  /** `toolbar` : barre horizontale type legacy (auth live). */
+  readonly layout?: 'list' | 'toolbar';
+  readonly toolbarEnd?: ReactNode;
 };
 
-type NavSubtreeProps = FilteredNavEntriesProps;
+type NavSubtreeProps = Omit<FilteredNavEntriesProps, 'layout' | 'toolbarEnd'>;
 
 function NavSubtree({ entries, envelope, selectedEntryId, onSelectEntry }: NavSubtreeProps) {
   return (
@@ -74,13 +77,26 @@ function FilteredNavEmpty() {
 }
 
 /** Navigation issue du manifest, déjà filtrée par `filterNavigation` (runtime). */
-export function FilteredNavEntries({ entries, envelope, selectedEntryId, onSelectEntry }: FilteredNavEntriesProps) {
+export function FilteredNavEntries({
+  entries,
+  envelope,
+  selectedEntryId,
+  onSelectEntry,
+  layout = 'list',
+  toolbarEnd,
+}: FilteredNavEntriesProps) {
   if (!entries.length) {
     return <FilteredNavEmpty />;
   }
+  const rootClass = layout === 'toolbar' ? `${classes.root} ${classes.rootToolbar}` : classes.root;
   return (
-    <div className={classes.root} data-testid="filtered-nav-entries">
+    <div className={rootClass} data-testid="filtered-nav-entries" data-nav-layout={layout}>
       <NavSubtree entries={entries} envelope={envelope} selectedEntryId={selectedEntryId} onSelectEntry={onSelectEntry} />
+      {layout === 'toolbar' && toolbarEnd ? (
+        <div className={classes.toolbarEnd} data-testid="filtered-nav-toolbar-end">
+          {toolbarEnd}
+        </div>
+      ) : null}
     </div>
   );
 }

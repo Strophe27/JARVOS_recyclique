@@ -64,6 +64,9 @@ class TestUnifiedLiveStatsService:
         db_session.commit()
 
         site, register = _site_and_register(db_session)
+        user.site_id = site.id
+        db_session.add(user)
+        db_session.commit()
 
         # Create poste opened today
         now = datetime.now(timezone.utc)
@@ -150,7 +153,7 @@ class TestUnifiedLiveStatsService:
 
         # Test unified stats
         service = ReceptionLiveStatsService(db_session)
-        stats = await service.get_unified_live_stats(period_type="daily", site_id=None)
+        stats = await service.get_unified_live_stats(period_type="daily", site_id=str(site.id))
 
         # Verify stats structure
         assert "tickets_count" in stats

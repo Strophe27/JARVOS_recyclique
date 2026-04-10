@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.9-draft
+  version: 0.1.16-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -286,6 +286,20 @@ paths:
         Story 6.7 : si au moins une vente `lifecycle_status` **held** existe pour la session,
         réponse **400** avec enveloppe AR21, `code` **`CASH_SESSION_CLOSE_HELD_PENDING`** (pas de clôture
         tant que des tickets sont en attente — aligné Story 6.3).
+
+        **Story 8.1** : en cas de clôture **persistée** (session non vide), une ligne **outbox Paheko**
+        (`paheko_outbox_items`) est écrite **dans la même transaction** SQL que la mise à jour locale
+        de la session. Cela **ne** constitue **pas** une « sync OK » Paheko : l'état distant est porté
+        par l'outbox et les endpoints `recyclique_pahekoOutbox_*` / `sync_operational_summary` (bandeau).
+
+        **Story 8.5** : réponse 200 enrichie avec `paheko_sync_correlation_id` et `paheko_outbox_item_id`
+        (lien support vers `GET .../admin/paheko-outbox/items/{id}` et `recyclique_pahekoOutbox_getCorrelationTimeline`).
+
+        **Story 8.6** : refus **politique sync** (action finale A1) — **409** avec enveloppe AR21,
+        `code` **`PAHEKO_SYNC_FINAL_ACTION_REFUSED`**, champs optionnels `policy_reason_code`
+        (`PAHEKO_SYNC_A1_BLOCKED_SESSION_OUTBOX_QUARANTINE` ou `PAHEKO_SYNC_A1_BLOCKED_CLOSE_MAPPING`),
+        `mapping_resolution_code`, `blocking_outbox_item_id`, etc. **Distinct** d'une clôture **200**
+        avec outbox en file (`paheko_outbox_item_id` présent) — le client ne doit pas les confondre.
       security:
         - bearerOrCookie: []
       parameters:
@@ -349,7 +363,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "409":
-          description: Conflit idempotence — `IDEMPOTENCY_KEY_CONFLICT`
+          description: |
+            Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) **ou** refus politique sync Story **8.6**
+            (`PAHEKO_SYNC_FINAL_ACTION_REFUSED` + `policy_reason_code` — quarantaine outbox session ou mapping clôture).
           content:
             application/json:
               schema:
@@ -362,6 +378,594 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "429":
           description: Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-outbox/items:
+    get:
+      operationId: recyclique_pahekoOutbox_listItems
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Lister les éléments d'outbox Paheko (observabilité Epic 8)
+      description: |
+        **Stories 8.1–8.2** : lecture versionnée des lignes outbox — états **distincts** de la seule persistance locale.
+        Filtres optionnels : type d'opération, session caisse, statut technique outbox (`pending`, `processing`, `delivered`, `failed`).
+        Permissions : **ADMIN** ou **SUPER_ADMIN** (support).
+
+        **Story 8.2** : échec **retryable** (5xx, 408, 429, erreur réseau) → `outbox_status=pending` + `sync_state_core=a_reessayer`
+        + `next_retry_at` (backoff exponentiel plafonné) tant que `attempt_count < PAHEKO_OUTBOX_MAX_ATTEMPTS` ; au-delà →
+        `failed` + `en_quarantaine`. **409** distants comptent comme **preuve idempotente** (`resolu` / `delivered`).
+        **`rejete`** : décision explicite via `POST .../reject` (pas de retry automatique identique).
+
+        **Story 8.5** : filtre optionnel `correlation_id` (égalité exacte) ; vue agrégée `GET .../by-correlation/{correlation_id}`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: operation_type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: cash_session_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: outbox_status
+          in: query
+          required: false
+          schema:
+            type: string
+            description: pending, processing, delivered, failed
+        - name: correlation_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Story 8.5 — filtre exact sur correlation_id (support / supervision).
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoOutboxListResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-outbox/by-correlation/{correlation_id}:
+    get:
+      operationId: recyclique_pahekoOutbox_getCorrelationTimeline
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Agrégat outbox + audit par correlation_id (Story 8.5)
+      description: |
+        Retourne toutes les lignes `paheko_outbox_items` et (paginé) les entrées `paheko_outbox_sync_transitions`
+        partageant le même `correlation_id` — parcours support clôture → tentatives → quarantaine / résolution.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: correlation_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: transitions_skip
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: transitions_limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 200
+      responses:
+        "200":
+          description: Agrégat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoOutboxCorrelationTimelineResponse"
+        "400":
+          description: correlation_id vide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Aucune ligne outbox pour ce correlation_id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-outbox/items/{item_id}:
+    get:
+      operationId: recyclique_pahekoOutbox_getItem
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Détail d'un élément d'outbox Paheko
+      description: |
+        **Story 8.1** : payload technique, dernière tentative HTTP, erreur, corrélation.
+        **Story 8.4** : `recent_sync_transitions` — derniers événements d'audit (§6), plus récents en premier.
+        Le champ `sync_state_core` (`resolu`, `a_reessayer`, etc.) **ne** doit **pas** être confondu avec
+        « session clôturée localement » (`local_session_persisted`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Détail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoOutboxItemDetail"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Élément introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-outbox/items/{item_id}/reject:
+    post:
+      operationId: recyclique_pahekoOutbox_rejectItem
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Rejeter explicitement une ligne outbox (sync_state_core=rejete)
+      description: |
+        **Story 8.2** : abandon / non-poussée Paheko avec **raison traçable** (`rejection_reason`). Pas de retry
+        automatique sur le même contexte.
+        **Story 8.4** : même exigence d'audit §6 que levée / constat resolu (acteur, horodatage, corrélation).
+        **409** si la ligne est déjà **delivered** / **resolu** (pas de rejet après sync réussie).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PahekoOutboxRejectBody"
+      responses:
+        "200":
+          description: Ligne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoOutboxItemDetail"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Élément introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Ligne déjà synchronisée (delivered / resolu) ; rejet impossible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-outbox/items/{item_id}/sync-transitions:
+    get:
+      operationId: recyclique_pahekoOutbox_listItemSyncTransitions
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Piste d'audit des transitions sync (Story 8.4)
+      description: |
+        Journal **append-only** des transitions (système ou actions manuelles habilitées), ordre chronologique croissant.
+        Contrat §6 — qui / quoi / quand ; corrélation conservée.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Liste paginée des transitions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoOutboxSyncTransitionListResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Élément introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-outbox/items/{item_id}/lift-quarantine:
+    post:
+      operationId: recyclique_pahekoOutbox_liftQuarantineToRetry
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Levée de quarantaine — reprise traitement (Story 8.4)
+      description: |
+        Passe ``sync_state_core`` de **en_quarantaine** à **a_reessayer** et ``outbox_status`` à **pending**
+        (ré-éligibilité processor 8.2/8.3). **Raison obligatoire** ; audit §6 avec acteur authentifié.
+        Si la quarantaine faisait suite à l'épuisement des tentatives retryables (8.2), le compteur
+        de tentatives HTTP est réinitialisé pour permettre un nouveau cycle backoff / plafond ; l'audit
+        et les champs d'erreur historiques restent consultables.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PahekoOutboxRejectBody"
+      responses:
+        "200":
+          description: Ligne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoOutboxItemDetail"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Élément introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Ligne pas en quarantaine — transition refusée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-outbox/items/{item_id}/confirm-resolved:
+    post:
+      operationId: recyclique_pahekoOutbox_confirmResolvedFromDelivered
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Constat resolu si delivered uniquement (Story 8.4)
+      description: |
+        Alignement **resolu** **uniquement** si ``outbox_status=delivered`` (preuve livraison / idempotence 8.2).
+        Idempotent si déjà **resolu**. **Raison obligatoire** ; audit §6.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PahekoOutboxRejectBody"
+      responses:
+        "200":
+          description: Ligne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoOutboxItemDetail"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Élément introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Pas delivered — critère 8.2 non satisfait
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-mappings/cash-session-close:
+    get:
+      operationId: recyclique_pahekoMapping_listCashSessionCloseMappings
+      tags:
+        - admin
+        - paheko-mappings
+      summary: Lister les correspondances Paheko (clôture session caisse)
+      description: |
+        **Story 8.3** : vérité de configuration `(site_id [, register_id]) → destination_params` pour le slice
+        `cash_session_close`. `register_id` null = défaut pour tout le site. Permissions **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoCashSessionCloseMappingListResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    post:
+      operationId: recyclique_pahekoMapping_createCashSessionCloseMapping
+      tags:
+        - admin
+        - paheko-mappings
+      summary: Créer une correspondance Paheko (clôture session caisse)
+      description: |
+        **Story 8.3** : une seule ligne **défaut site** (`register_id` absent/null) par `site_id` ; au plus une ligne par
+        couple `(site_id, register_id)` pour les surcharges caisse. `destination_params` est fusionné dans le POST sortant
+        (aucune invention silencieuse au runtime).
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PahekoCashSessionCloseMappingCreateBody"
+      responses:
+        "200":
+          description: Ligne créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoCashSessionCloseMappingPublic"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Doublon (site_id, register_id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/paheko-mappings/cash-session-close/{mapping_id}:
+    patch:
+      operationId: recyclique_pahekoMapping_updateCashSessionCloseMapping
+      tags:
+        - admin
+        - paheko-mappings
+      summary: Mettre à jour ou désactiver une correspondance Paheko (clôture)
+      description: |
+        **Story 8.3** : mise à jour de `destination_params`, `enabled` ou `label`. Désactiver (`enabled=false`) équivaut
+        à ignorer la ligne à la résolution (échec explicite si aucune autre ligne applicable).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: mapping_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PahekoCashSessionCloseMappingUpdateBody"
+      responses:
+        "200":
+          description: Ligne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PahekoCashSessionCloseMappingPublic"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Correspondance introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide
           content:
             application/json:
               schema:
@@ -1748,6 +2352,35 @@ components:
         correlation_id:
           type: string
           description: Identifiant pour corrélation support et logs (sans données sensibles).
+        policy_reason_code:
+          type: string
+          nullable: true
+          description: |
+            Story 8.6 — présent si `code` = `PAHEKO_SYNC_FINAL_ACTION_REFUSED` : sous-code stable
+            (`PAHEKO_SYNC_A1_BLOCKED_SESSION_OUTBOX_QUARANTINE`, `PAHEKO_SYNC_A1_BLOCKED_CLOSE_MAPPING`).
+        policy_version:
+          type: string
+          nullable: true
+          description: Version documentée de la politique d'actions finales (ex. `8.6.1`).
+        cash_session_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Session caisse concernée par le refus A1.
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Site concerné par le refus A1.
+        blocking_outbox_item_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Identifiant ligne outbox en quarantaine bloquante (prédicat P1).
+        mapping_resolution_code:
+          type: string
+          nullable: true
+          description: Code résolution mapping 8.3 (`mapping_missing`, `mapping_disabled`, …) si refus P2.
       additionalProperties: false
     CashSessionCloseBody:
       type: object
@@ -1856,6 +2489,15 @@ components:
           allOf:
             - $ref: "#/components/schemas/CashSessionTotalsV1"
           nullable: true
+        paheko_sync_correlation_id:
+          type: string
+          nullable: true
+          description: Story 8.5 — corrélation outbox / X-Correlation-ID Paheko après clôture persistée.
+        paheko_outbox_item_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Story 8.5 — id ligne outbox ; null si session ouverte ou sans outbox.
       additionalProperties: true
     CashSessionDetailResponseV1:
       allOf:
@@ -1971,11 +2613,319 @@ components:
       description: |
         Noyau d'etats de synchronisation operation (FR24, Story 1.5). Ne pas etendre la semantique metier sans version de contrat.
         Reference : references/artefacts/2026-04-02_05_contrat-minimal-sync-reconciliation-paheko.md
+
+        **Story 8.2** : `a_reessayer` couvre file **sans tentative HTTP** (`pending`, `remote_attempt_count=0`) —
+        ce n'est **pas** `resolu`. Après échec retryable, la ligne repasse en `pending` avec `next_retry_at` futur
+        jusqu'au plafond de tentatives ; `resolu` uniquement après **2xx** ou **409** idempotent documenté.
       enum:
         - a_reessayer
         - en_quarantaine
         - resolu
         - rejete
+    PahekoOutboxItemPublic:
+      type: object
+      description: |
+        Vue liste outbox Paheko (Stories 8.1–8.3). `outbox_status` = cycle technique ; `sync_state_core` = état métier FR24.
+        `next_retry_at` : backoff ; `rejection_reason` : si `rejete`. **8.3** : `mapping_resolution_error` si échec **avant**
+        tout POST Paheko (distinct des erreurs HTTP `last_remote_http_status`). En-tête sortant : `Idempotency-Key` = `idempotency_key`.
+      required:
+        - id
+        - operation_type
+        - idempotency_key
+        - outbox_status
+        - sync_state_core
+        - local_session_persisted
+        - remote_attempt_count
+        - correlation_id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        operation_type:
+          type: string
+        idempotency_key:
+          type: string
+        cash_session_id:
+          type: string
+          format: uuid
+          nullable: true
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        outbox_status:
+          type: string
+        sync_state_core:
+          $ref: "#/components/schemas/SyncStateCore"
+        local_session_persisted:
+          type: boolean
+        remote_attempt_count:
+          type: integer
+        last_remote_http_status:
+          type: integer
+          nullable: true
+        last_error:
+          type: string
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Prochain créneau éligible pour tentative distante (backoff 8.2).
+        rejection_reason:
+          type: string
+          nullable: true
+          description: Motif si sync_state_core=rejete (POST /reject).
+        mapping_resolution_error:
+          type: string
+          nullable: true
+          description: |
+            Story 8.3 — code d'échec de résolution mapping avant HTTP (ex. mapping_missing, mapping_disabled,
+            session_not_found, site_missing, invalid_destination_params). Null si une tentative réseau Paheko a eu lieu ou N/A.
+        correlation_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    PahekoOutboxRejectBody:
+      type: object
+      additionalProperties: false
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Motif traçable du rejet (8.2), levée de quarantaine ou constat resolu (8.4).
+    PahekoOutboxSyncTransitionPublic:
+      type: object
+      additionalProperties: false
+      description: Entrée append-only — audit minimal §6 (Story 8.4).
+      required:
+        - id
+        - transition_name
+        - from_sync_state
+        - to_sync_state
+        - from_outbox_status
+        - to_outbox_status
+        - occurred_at
+        - reason
+        - correlation_id
+        - context_json
+      properties:
+        id:
+          type: string
+          format: uuid
+        transition_name:
+          type: string
+        from_sync_state:
+          $ref: "#/components/schemas/SyncStateCore"
+        to_sync_state:
+          $ref: "#/components/schemas/SyncStateCore"
+        from_outbox_status:
+          type: string
+        to_outbox_status:
+          type: string
+        actor_user_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null si transition système (processor).
+        occurred_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        correlation_id:
+          type: string
+        context_json:
+          type: object
+          additionalProperties: true
+    PahekoOutboxSyncTransitionListResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - data
+        - total
+        - skip
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PahekoOutboxSyncTransitionPublic"
+        total:
+          type: integer
+        skip:
+          type: integer
+        limit:
+          type: integer
+    PahekoOutboxItemDetail:
+      allOf:
+        - $ref: "#/components/schemas/PahekoOutboxItemPublic"
+        - type: object
+          required:
+            - payload
+            - recent_sync_transitions
+          properties:
+            payload:
+              type: object
+              additionalProperties: true
+            last_response_snippet:
+              type: string
+              nullable: true
+            recent_sync_transitions:
+              type: array
+              description: Dernières transitions (8.4), plus récentes en premier.
+              items:
+                $ref: "#/components/schemas/PahekoOutboxSyncTransitionPublic"
+          additionalProperties: false
+    PahekoOutboxListResponse:
+      type: object
+      required:
+        - data
+        - total
+        - skip
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PahekoOutboxItemPublic"
+        total:
+          type: integer
+        skip:
+          type: integer
+        limit:
+          type: integer
+      additionalProperties: false
+    PahekoOutboxCorrelationTimelineResponse:
+      type: object
+      description: Story 8.5 — vue support pour un correlation_id (lignes outbox + audit transitions).
+      additionalProperties: false
+      required:
+        - correlation_id
+        - items
+        - sync_transitions
+        - sync_transitions_total
+        - sync_transitions_skip
+        - sync_transitions_limit
+      properties:
+        correlation_id:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PahekoOutboxItemPublic"
+        sync_transitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PahekoOutboxSyncTransitionPublic"
+        sync_transitions_total:
+          type: integer
+        sync_transitions_skip:
+          type: integer
+        sync_transitions_limit:
+          type: integer
+    PahekoCashSessionCloseMappingPublic:
+      type: object
+      description: Correspondance persistée site / caisse → paramètres JSON fusionnés dans le POST Paheko (Story 8.3).
+      required:
+        - id
+        - site_id
+        - enabled
+        - destination_params
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        site_id:
+          type: string
+          format: uuid
+        register_id:
+          type: string
+          format: uuid
+          nullable: true
+        enabled:
+          type: boolean
+        destination_params:
+          type: object
+          additionalProperties: true
+        label:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    PahekoCashSessionCloseMappingListResponse:
+      type: object
+      required:
+        - data
+        - total
+        - skip
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PahekoCashSessionCloseMappingPublic"
+        total:
+          type: integer
+        skip:
+          type: integer
+        limit:
+          type: integer
+      additionalProperties: false
+    PahekoCashSessionCloseMappingCreateBody:
+      type: object
+      additionalProperties: false
+      required:
+        - site_id
+        - destination_params
+      properties:
+        site_id:
+          type: string
+          format: uuid
+        register_id:
+          type: string
+          format: uuid
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        destination_params:
+          type: object
+          additionalProperties: true
+        label:
+          type: string
+          maxLength: 255
+          nullable: true
+    PahekoCashSessionCloseMappingUpdateBody:
+      type: object
+      additionalProperties: false
+      properties:
+        destination_params:
+          type: object
+          additionalProperties: true
+        enabled:
+          type: boolean
+        label:
+          type: string
+          maxLength: 255
+          nullable: true
     ContextRuntimeState:
       type: string
       description: |
@@ -2066,6 +3016,9 @@ components:
         (defaut true si absent). Si `false`, pas d'agrégats KPIs dans cette réponse ; champs d'état
         alignés sur une surface minimale (`not_applicable`, sync null).
 
+        **Story 8.2** : `sync_operational_summary.deferred_remote_retry` — au moins une ligne outbox du site
+        en backoff (`next_retry_at` futur, `pending`).
+
         Absence vs null : artefact 1.7 section 6.
       properties:
         bandeau_live_slice_enabled:
@@ -2105,6 +3058,9 @@ components:
               $ref: "#/components/schemas/SyncStateCore"
             source_reachable:
               type: boolean
+            deferred_remote_retry:
+              type: boolean
+              description: True si backoff actif sur au moins une ligne outbox du site (Story 8.2).
           additionalProperties: false
         observed_at:
           type: string

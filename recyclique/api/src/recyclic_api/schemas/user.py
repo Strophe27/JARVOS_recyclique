@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from typing import Optional, Tuple, List
 from datetime import datetime
+from uuid import UUID
 import re
 from recyclic_api.models.user import UserRole, UserStatus
 
@@ -20,7 +21,7 @@ class UserProfileFields(BaseModel):
     role: UserRole = UserRole.USER
     status: UserStatus = UserStatus.PENDING
     is_active: bool = True
-    site_id: Optional[str] = None
+    site_id: Optional[UUID] = None
 
 
 class UserBase(UserProfileFields):
@@ -80,7 +81,7 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     status: Optional[UserStatus] = None
     is_active: Optional[bool] = None
-    site_id: Optional[str] = None
+    site_id: Optional[UUID] = None
 
 class UserSelfUpdate(BaseModel):
     """Champs autorisés pour la mise à jour par l'utilisateur lui-même.

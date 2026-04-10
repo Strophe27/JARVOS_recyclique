@@ -160,9 +160,7 @@ describe('E2E — auth / ContextEnvelope (story 3.4)', () => {
     );
 
     const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
-    // Entrée sans `required_permission_keys` (manifest démo) reste visible ; les entrées qui exigent view-home sont masquées.
-    expect(within(nav).getByTestId('nav-entry-demo-guarded-nav')).toBeTruthy();
-    expect(within(nav).queryByTestId('nav-entry-root-home')).toBeNull();
+    expect(within(nav).getByTestId('filtered-nav-empty')).toBeTruthy();
 
     const main = screen.getByTestId('shell-zone-main');
     expect(within(main).getByTestId('page-access-blocked').getAttribute('data-block-code')).toBe(

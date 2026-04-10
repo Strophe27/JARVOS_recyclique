@@ -16,7 +16,12 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from recyclic_api.core.audit import log_cash_session_closing
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.core.exceptions import (
+    ConflictError,
+    NotFoundError,
+    PahekoSyncPolicyBlockedError,
+    ValidationError,
+)
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.cash_session import CashSessionClose
@@ -143,12 +148,26 @@ def run_close_cash_session(
             bool(close_data.variance_comment),
         )
 
-        closed_session = service.close_session_with_amounts(
-            session_id,
-            close_data.actual_amount,
-            close_data.variance_comment,
-            preview=closing_preview,
-        )
+        try:
+            closed_session = service.close_session_with_amounts(
+                session_id,
+                close_data.actual_amount,
+                close_data.variance_comment,
+                preview=closing_preview,
+                sync_correlation_id=request_id,
+            )
+        except PahekoSyncPolicyBlockedError as e:
+            site_id, reg_id = _audit_ctx_from_session(session)
+            pl = e.payload
+            logger.info(
+                "paheko_a1_policy_refused_http session_id=%s site_id=%s policy_reason_code=%s "
+                "correlation_id=%s",
+                session_id,
+                site_id,
+                pl.get("policy_reason_code"),
+                pl.get("correlation_id") or request_id,
+            )
+            raise HTTPException(status_code=409, detail=e.payload) from e
 
         if closed_session is None:
             site_id, reg_id = _audit_ctx_from_session(session)

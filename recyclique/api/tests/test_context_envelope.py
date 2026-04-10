@@ -173,6 +173,48 @@ class TestContextEnvelope:
         r = client.post("/v1/users/me/context/refresh")
         assert r.status_code in (401, 403)
 
+    def test_context_presentation_labels_nav_transverse_dashboard(self, client: TestClient, db_session: Session):
+        """Story 5.5 : libellés CREOS servis pour la nav live (évite le fallback `nav.*` côté Peintre_nano)."""
+        site = Site(id=uuid.uuid4(), name="Site nav labels", is_active=True)
+        db_session.add(site)
+        uid = uuid.uuid4()
+        user = User(
+            id=uid,
+            username="ctx_pres_labels",
+            hashed_password=hash_password("Test1234!"),
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True,
+            site_id=site.id,
+        )
+        db_session.add(user)
+        db_session.commit()
+
+        r = client.get("/v1/users/me/context", headers=_auth_headers(uid))
+        assert r.status_code == 200
+        data = r.json()
+        pl = data.get("presentation_labels")
+        assert isinstance(pl, dict)
+        assert pl.get("nav.transverse.dashboard") == "Tableau de bord"
+        assert pl.get("nav.reception.nominal") == "Réception"
+
+    def test_context_forbidden_no_presentation_labels(self, client: TestClient, db_session: Session):
+        uid = uuid.uuid4()
+        user = User(
+            id=uid,
+            username="ctx_no_pl",
+            hashed_password=hash_password("Test1234!"),
+            role=UserRole.USER,
+            status=UserStatus.REJECTED,
+            is_active=True,
+            site_id=None,
+        )
+        db_session.add(user)
+        db_session.commit()
+        data = client.get("/v1/users/me/context", headers=_auth_headers(uid)).json()
+        assert data["runtime_state"] == "forbidden"
+        assert data.get("presentation_labels") is None
+
     def test_context_degraded_status_not_active(self, client: TestClient, db_session: Session):
         """Compte authentifié mais statut != ACTIVE → degraded explicite (AC3)."""
         site = Site(id=uuid.uuid4(), name="Site appr", is_active=True)
@@ -217,6 +259,7 @@ class TestContextEnvelope:
             "permission_keys",
             "computed_at",
             "restriction_message",
+            "presentation_labels",
         }
         ctx = data["context"]
         assert ctx is not None

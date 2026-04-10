@@ -42,6 +42,20 @@
   grid-area: footer;
 }
 
+/**
+ * Présentation kiosque vente (story 11.3) : pas de colonne nav — alignement legacy `/cash-register/sale`.
+ * Le `PageManifest` `cashflow-nominal` continue de piloter header / aside / main / footer.
+ */
+.rootKioskNavHidden {
+  grid-template-columns:
+    1fr
+    minmax(var(--pn-shell-aside-min), var(--pn-shell-aside-max));
+  grid-template-areas:
+    'header header'
+    'main aside'
+    'footer footer';
+}
+
 /* Zones de démo : visibilité pour inspection / tests (tokens uniquement) */
 .zone {
   margin: 0;
@@ -76,4 +90,39 @@
   border: none;
   opacity: 0;
   pointer-events: none;
+}
+
+/** Auth live : une colonne principale, pas de panneaux latéraux décoratifs */
+.rootMinimalChrome {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'header'
+    'nav'
+    'main'
+    'footer';
+}
+
+.rootMinimalChrome .aside {
+  display: none;
+}
+
+.rootMinimalChrome .footer {
+  display: none;
+}
+
+.headerApp {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.navApp {
+  margin: 0;
+  padding: var(--pn-space-sm) var(--pn-space-md);
+  background: var(--pn-color-surface);
+  border: 1px solid var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+  color: var(--pn-color-text);
 }

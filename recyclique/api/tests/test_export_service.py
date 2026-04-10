@@ -231,5 +231,7 @@ def test_generate_cash_session_report_prunes_old_files(db_session, monkeypatch, 
 
     assert report_path.exists()
     assert report_path.parent == tmp_path
-    assert report_path.name.startswith(f"cash_session_{session.id}")
+    # Convention export_service : session_caisse_YYYYMMDD_operateur_site_{UUID}_HHMMSS.csv
+    assert report_path.name.startswith("session_caisse_")
+    assert str(session.id) in report_path.name
     assert not old_file.exists()

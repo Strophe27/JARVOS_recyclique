@@ -83,7 +83,7 @@ describe('reportRuntimeFallback — story 3.6', () => {
     );
   });
 
-  it('PageAccessBlocked : attributs runtime + reporter blocked', () => {
+  it('PageAccessBlocked : MISSING_PERMISSIONS journalisé en info (évite le bruit console.error en dev)', () => {
     const spy = vi.spyOn(runtimeReporting, 'reportRuntimeFallback').mockImplementation(() => {});
     render(
       <RootProviders>
@@ -97,7 +97,7 @@ describe('reportRuntimeFallback — story 3.6', () => {
     expect(el.getAttribute('data-runtime-code')).toBe('MISSING_PERMISSIONS');
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
-        severity: 'blocked',
+        severity: 'info',
         code: 'MISSING_PERMISSIONS',
         state: 'page_access_denied',
       }),

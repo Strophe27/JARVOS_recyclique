@@ -1,0 +1,39 @@
+/**
+ * Bandeau supérieur type legacy RecyClique (présentation seule — pas de données métier).
+ */
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-md);
+  width: 100%;
+  min-height: 3rem;
+  padding: var(--pn-space-sm) var(--pn-space-lg);
+  margin: calc(-1 * var(--pn-space-sm)) calc(-1 * var(--pn-space-md));
+  margin-bottom: 0;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #2b8a3e 0%, #2f9e44 100%);
+  border: none;
+  border-radius: var(--pn-radius-md) var(--pn-radius-md) 0 0;
+  color: #fff;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 12%);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--pn-font-size-lg, 1.125rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sub {
+  margin: 0;
+  font-size: var(--pn-font-size-sm, 0.875rem);
+  opacity: 0.92;
+}

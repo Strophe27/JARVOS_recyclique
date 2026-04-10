@@ -37,3 +37,11 @@ class ConflictError(RecyclicException):
             super().__init__(detail)
         else:
             super().__init__(detail.get("detail", str(detail)))
+
+
+class PahekoSyncPolicyBlockedError(RecyclicException):
+    """Story 8.6 — action finale critique (A1) refusée par la politique de sync backend."""
+
+    def __init__(self, payload: dict) -> None:
+        self.payload = payload
+        super().__init__(payload.get("message") or str(payload))

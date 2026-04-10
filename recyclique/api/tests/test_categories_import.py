@@ -60,7 +60,11 @@ def test_categories_import_template_download(admin_client):
 def test_categories_import_execute_with_delete_existing(admin_client, db_session):
     """Test que l'option delete_existing supprime toutes les catégories existantes avant l'import."""
     from recyclic_api.models.category import Category
+
+    categories_before = db_session.query(Category).count()
     from recyclic_api.models.ligne_depot import LigneDepot, Destination
+
+    lignes_before = db_session.query(LigneDepot).count()
     from recyclic_api.models.ticket_depot import TicketDepot
     from recyclic_api.models.poste_reception import PosteReception
     from recyclic_api.models.user import User, UserRole, UserStatus
@@ -123,9 +127,9 @@ def test_categories_import_execute_with_delete_existing(admin_client, db_session
     db_session.add_all([ligne1, ligne2])
     db_session.commit()
     
-    # Vérifier qu'elles existent
-    assert db_session.query(Category).count() == 2
-    assert db_session.query(LigneDepot).count() == 2
+    # Vérifier qu'elles existent (comptage relatif : DB SQLite partagée entre tests)
+    assert db_session.query(Category).count() == categories_before + 2
+    assert db_session.query(LigneDepot).count() == lignes_before + 2
     
     # Préparer l'import avec delete_existing=True
     csv_data = (
@@ -169,14 +173,16 @@ def test_categories_import_execute_with_delete_existing(admin_client, db_session
 def test_categories_import_execute_without_delete_existing(admin_client, db_session):
     """Test que sans delete_existing, les catégories existantes sont préservées."""
     from recyclic_api.models.category import Category
-    
+
+    categories_before = db_session.query(Category).count()
+
     # Créer quelques catégories existantes
     existing_cat = Category(name="Catégorie existante", is_active=True)
     db_session.add(existing_cat)
     db_session.commit()
-    
+
     # Vérifier qu'elle existe
-    assert db_session.query(Category).count() == 1
+    assert db_session.query(Category).count() == categories_before + 1
     
     # Préparer l'import avec delete_existing=False (par défaut)
     csv_data = (

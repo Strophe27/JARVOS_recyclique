@@ -197,12 +197,236 @@ export interface paths {
          *     Story 6.7 : si au moins une vente `lifecycle_status` **held** existe pour la session,
          *     réponse **400** avec enveloppe AR21, `code` **`CASH_SESSION_CLOSE_HELD_PENDING`** (pas de clôture
          *     tant que des tickets sont en attente — aligné Story 6.3).
+         *
+         *     **Story 8.1** : en cas de clôture **persistée** (session non vide), une ligne **outbox Paheko**
+         *     (`paheko_outbox_items`) est écrite **dans la même transaction** SQL que la mise à jour locale
+         *     de la session. Cela **ne** constitue **pas** une « sync OK » Paheko : l'état distant est porté
+         *     par l'outbox et les endpoints `recyclique_pahekoOutbox_*` / `sync_operational_summary` (bandeau).
+         *
+         *     **Story 8.5** : réponse 200 enrichie avec `paheko_sync_correlation_id` et `paheko_outbox_item_id`
+         *     (lien support vers `GET .../admin/paheko-outbox/items/{id}` et `recyclique_pahekoOutbox_getCorrelationTimeline`).
+         *
+         *     **Story 8.6** : refus **politique sync** (action finale A1) — **409** avec enveloppe AR21,
+         *     `code` **`PAHEKO_SYNC_FINAL_ACTION_REFUSED`**, champs optionnels `policy_reason_code`
+         *     (`PAHEKO_SYNC_A1_BLOCKED_SESSION_OUTBOX_QUARANTINE` ou `PAHEKO_SYNC_A1_BLOCKED_CLOSE_MAPPING`),
+         *     `mapping_resolution_code`, `blocking_outbox_item_id`, etc. **Distinct** d'une clôture **200**
+         *     avec outbox en file (`paheko_outbox_item_id` présent) — le client ne doit pas les confondre.
          */
         post: operations["recyclique_cashSessions_closeSession"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-outbox/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lister les éléments d'outbox Paheko (observabilité Epic 8)
+         * @description **Stories 8.1–8.2** : lecture versionnée des lignes outbox — états **distincts** de la seule persistance locale.
+         *     Filtres optionnels : type d'opération, session caisse, statut technique outbox (`pending`, `processing`, `delivered`, `failed`).
+         *     Permissions : **ADMIN** ou **SUPER_ADMIN** (support).
+         *
+         *     **Story 8.2** : échec **retryable** (5xx, 408, 429, erreur réseau) → `outbox_status=pending` + `sync_state_core=a_reessayer`
+         *     + `next_retry_at` (backoff exponentiel plafonné) tant que `attempt_count < PAHEKO_OUTBOX_MAX_ATTEMPTS` ; au-delà →
+         *     `failed` + `en_quarantaine`. **409** distants comptent comme **preuve idempotente** (`resolu` / `delivered`).
+         *     **`rejete`** : décision explicite via `POST .../reject` (pas de retry automatique identique).
+         *
+         *     **Story 8.5** : filtre optionnel `correlation_id` (égalité exacte) ; vue agrégée `GET .../by-correlation/{correlation_id}`.
+         */
+        get: operations["recyclique_pahekoOutbox_listItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-outbox/by-correlation/{correlation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agrégat outbox + audit par correlation_id (Story 8.5)
+         * @description Retourne toutes les lignes `paheko_outbox_items` et (paginé) les entrées `paheko_outbox_sync_transitions`
+         *     partageant le même `correlation_id` — parcours support clôture → tentatives → quarantaine / résolution.
+         */
+        get: operations["recyclique_pahekoOutbox_getCorrelationTimeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-outbox/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail d'un élément d'outbox Paheko
+         * @description **Story 8.1** : payload technique, dernière tentative HTTP, erreur, corrélation.
+         *     **Story 8.4** : `recent_sync_transitions` — derniers événements d'audit (§6), plus récents en premier.
+         *     Le champ `sync_state_core` (`resolu`, `a_reessayer`, etc.) **ne** doit **pas** être confondu avec
+         *     « session clôturée localement » (`local_session_persisted`).
+         */
+        get: operations["recyclique_pahekoOutbox_getItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-outbox/items/{item_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rejeter explicitement une ligne outbox (sync_state_core=rejete)
+         * @description **Story 8.2** : abandon / non-poussée Paheko avec **raison traçable** (`rejection_reason`). Pas de retry
+         *     automatique sur le même contexte.
+         *     **Story 8.4** : même exigence d'audit §6 que levée / constat resolu (acteur, horodatage, corrélation).
+         *     **409** si la ligne est déjà **delivered** / **resolu** (pas de rejet après sync réussie).
+         */
+        post: operations["recyclique_pahekoOutbox_rejectItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-outbox/items/{item_id}/sync-transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Piste d'audit des transitions sync (Story 8.4)
+         * @description Journal **append-only** des transitions (système ou actions manuelles habilitées), ordre chronologique croissant.
+         *     Contrat §6 — qui / quoi / quand ; corrélation conservée.
+         */
+        get: operations["recyclique_pahekoOutbox_listItemSyncTransitions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-outbox/items/{item_id}/lift-quarantine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Levée de quarantaine — reprise traitement (Story 8.4)
+         * @description Passe ``sync_state_core`` de **en_quarantaine** à **a_reessayer** et ``outbox_status`` à **pending**
+         *     (ré-éligibilité processor 8.2/8.3). **Raison obligatoire** ; audit §6 avec acteur authentifié.
+         *     Si la quarantaine faisait suite à l'épuisement des tentatives retryables (8.2), le compteur
+         *     de tentatives HTTP est réinitialisé pour permettre un nouveau cycle backoff / plafond ; l'audit
+         *     et les champs d'erreur historiques restent consultables.
+         */
+        post: operations["recyclique_pahekoOutbox_liftQuarantineToRetry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-outbox/items/{item_id}/confirm-resolved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Constat resolu si delivered uniquement (Story 8.4)
+         * @description Alignement **resolu** **uniquement** si ``outbox_status=delivered`` (preuve livraison / idempotence 8.2).
+         *     Idempotent si déjà **resolu**. **Raison obligatoire** ; audit §6.
+         */
+        post: operations["recyclique_pahekoOutbox_confirmResolvedFromDelivered"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-mappings/cash-session-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lister les correspondances Paheko (clôture session caisse)
+         * @description **Story 8.3** : vérité de configuration `(site_id [, register_id]) → destination_params` pour le slice
+         *     `cash_session_close`. `register_id` null = défaut pour tout le site. Permissions **ADMIN** ou **SUPER_ADMIN**.
+         */
+        get: operations["recyclique_pahekoMapping_listCashSessionCloseMappings"];
+        put?: never;
+        /**
+         * Créer une correspondance Paheko (clôture session caisse)
+         * @description **Story 8.3** : une seule ligne **défaut site** (`register_id` absent/null) par `site_id` ; au plus une ligne par
+         *     couple `(site_id, register_id)` pour les surcharges caisse. `destination_params` est fusionné dans le POST sortant
+         *     (aucune invention silencieuse au runtime).
+         */
+        post: operations["recyclique_pahekoMapping_createCashSessionCloseMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/paheko-mappings/cash-session-close/{mapping_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mettre à jour ou désactiver une correspondance Paheko (clôture)
+         * @description **Story 8.3** : mise à jour de `destination_params`, `enabled` ou `label`. Désactiver (`enabled=false`) équivaut
+         *     à ignorer la ligne à la résolution (échec explicite si aucune autre ligne applicable).
+         */
+        patch: operations["recyclique_pahekoMapping_updateCashSessionCloseMapping"];
         trace?: never;
     };
     "/v2/_contract-governance/ping": {
@@ -732,6 +956,30 @@ export interface components {
             state?: string | null;
             /** @description Identifiant pour corrélation support et logs (sans données sensibles). */
             correlation_id: string;
+            /**
+             * @description Story 8.6 — présent si `code` = `PAHEKO_SYNC_FINAL_ACTION_REFUSED` : sous-code stable
+             *     (`PAHEKO_SYNC_A1_BLOCKED_SESSION_OUTBOX_QUARANTINE`, `PAHEKO_SYNC_A1_BLOCKED_CLOSE_MAPPING`).
+             */
+            policy_reason_code?: string | null;
+            /** @description Version documentée de la politique d'actions finales (ex. `8.6.1`). */
+            policy_version?: string | null;
+            /**
+             * Format: uuid
+             * @description Session caisse concernée par le refus A1.
+             */
+            cash_session_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Site concerné par le refus A1.
+             */
+            site_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Identifiant ligne outbox en quarantaine bloquante (prédicat P1).
+             */
+            blocking_outbox_item_id?: string | null;
+            /** @description Code résolution mapping 8.3 (`mapping_missing`, `mapping_disabled`, …) si refus P2. */
+            mapping_resolution_code?: string | null;
         };
         CashSessionCloseBody: {
             actual_amount: number;
@@ -773,6 +1021,13 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             totals?: components["schemas"]["CashSessionTotalsV1"] | null;
+            /** @description Story 8.5 — corrélation outbox / X-Correlation-ID Paheko après clôture persistée. */
+            paheko_sync_correlation_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Story 8.5 — id ligne outbox ; null si session ouverte ou sans outbox.
+             */
+            paheko_outbox_item_id?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -827,9 +1082,149 @@ export interface components {
         /**
          * @description Noyau d'etats de synchronisation operation (FR24, Story 1.5). Ne pas etendre la semantique metier sans version de contrat.
          *     Reference : references/artefacts/2026-04-02_05_contrat-minimal-sync-reconciliation-paheko.md
+         *
+         *     **Story 8.2** : `a_reessayer` couvre file **sans tentative HTTP** (`pending`, `remote_attempt_count=0`) —
+         *     ce n'est **pas** `resolu`. Après échec retryable, la ligne repasse en `pending` avec `next_retry_at` futur
+         *     jusqu'au plafond de tentatives ; `resolu` uniquement après **2xx** ou **409** idempotent documenté.
          * @enum {string}
          */
         SyncStateCore: "a_reessayer" | "en_quarantaine" | "resolu" | "rejete";
+        /**
+         * @description Vue liste outbox Paheko (Stories 8.1–8.3). `outbox_status` = cycle technique ; `sync_state_core` = état métier FR24.
+         *     `next_retry_at` : backoff ; `rejection_reason` : si `rejete`. **8.3** : `mapping_resolution_error` si échec **avant**
+         *     tout POST Paheko (distinct des erreurs HTTP `last_remote_http_status`). En-tête sortant : `Idempotency-Key` = `idempotency_key`.
+         */
+        PahekoOutboxItemPublic: {
+            /** Format: uuid */
+            id: string;
+            operation_type: string;
+            idempotency_key: string;
+            /** Format: uuid */
+            cash_session_id?: string | null;
+            /** Format: uuid */
+            site_id?: string | null;
+            outbox_status: string;
+            sync_state_core: components["schemas"]["SyncStateCore"];
+            local_session_persisted: boolean;
+            remote_attempt_count: number;
+            last_remote_http_status?: number | null;
+            last_error?: string | null;
+            /**
+             * Format: date-time
+             * @description Prochain créneau éligible pour tentative distante (backoff 8.2).
+             */
+            next_retry_at?: string | null;
+            /** @description Motif si sync_state_core=rejete (POST /reject). */
+            rejection_reason?: string | null;
+            /**
+             * @description Story 8.3 — code d'échec de résolution mapping avant HTTP (ex. mapping_missing, mapping_disabled,
+             *     session_not_found, site_missing, invalid_destination_params). Null si une tentative réseau Paheko a eu lieu ou N/A.
+             */
+            mapping_resolution_error?: string | null;
+            correlation_id: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PahekoOutboxRejectBody: {
+            /** @description Motif traçable du rejet (8.2), levée de quarantaine ou constat resolu (8.4). */
+            reason: string;
+        };
+        /** @description Entrée append-only — audit minimal §6 (Story 8.4). */
+        PahekoOutboxSyncTransitionPublic: {
+            /** Format: uuid */
+            id: string;
+            transition_name: string;
+            from_sync_state: components["schemas"]["SyncStateCore"];
+            to_sync_state: components["schemas"]["SyncStateCore"];
+            from_outbox_status: string;
+            to_outbox_status: string;
+            /**
+             * Format: uuid
+             * @description Null si transition système (processor).
+             */
+            actor_user_id?: string | null;
+            /** Format: date-time */
+            occurred_at: string;
+            reason: string;
+            correlation_id: string;
+            context_json: {
+                [key: string]: unknown;
+            };
+        };
+        PahekoOutboxSyncTransitionListResponse: {
+            data: components["schemas"]["PahekoOutboxSyncTransitionPublic"][];
+            total: number;
+            skip: number;
+            limit: number;
+        };
+        PahekoOutboxItemDetail: components["schemas"]["PahekoOutboxItemPublic"] & {
+            payload: {
+                [key: string]: unknown;
+            };
+            last_response_snippet?: string | null;
+            /** @description Dernières transitions (8.4), plus récentes en premier. */
+            recent_sync_transitions: components["schemas"]["PahekoOutboxSyncTransitionPublic"][];
+        };
+        PahekoOutboxListResponse: {
+            data: components["schemas"]["PahekoOutboxItemPublic"][];
+            total: number;
+            skip: number;
+            limit: number;
+        };
+        /** @description Story 8.5 — vue support pour un correlation_id (lignes outbox + audit transitions). */
+        PahekoOutboxCorrelationTimelineResponse: {
+            correlation_id: string;
+            items: components["schemas"]["PahekoOutboxItemPublic"][];
+            sync_transitions: components["schemas"]["PahekoOutboxSyncTransitionPublic"][];
+            sync_transitions_total: number;
+            sync_transitions_skip: number;
+            sync_transitions_limit: number;
+        };
+        /** @description Correspondance persistée site / caisse → paramètres JSON fusionnés dans le POST Paheko (Story 8.3). */
+        PahekoCashSessionCloseMappingPublic: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            site_id: string;
+            /** Format: uuid */
+            register_id?: string | null;
+            enabled: boolean;
+            destination_params: {
+                [key: string]: unknown;
+            };
+            label?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PahekoCashSessionCloseMappingListResponse: {
+            data: components["schemas"]["PahekoCashSessionCloseMappingPublic"][];
+            total: number;
+            skip: number;
+            limit: number;
+        };
+        PahekoCashSessionCloseMappingCreateBody: {
+            /** Format: uuid */
+            site_id: string;
+            /** Format: uuid */
+            register_id?: string | null;
+            /** @default true */
+            enabled: boolean;
+            destination_params: {
+                [key: string]: unknown;
+            };
+            label?: string | null;
+        };
+        PahekoCashSessionCloseMappingUpdateBody: {
+            destination_params?: {
+                [key: string]: unknown;
+            };
+            enabled?: boolean;
+            label?: string | null;
+        };
         /**
          * @description État runtime UI pour le périmètre exploitation (spec 1.3 §4.2).
          *     - ok : affectation site minimale cohérente avec les sessions ouvertes connues.
@@ -894,6 +1289,9 @@ export interface components {
          *     (defaut true si absent). Si `false`, pas d'agrégats KPIs dans cette réponse ; champs d'état
          *     alignés sur une surface minimale (`not_applicable`, sync null).
          *
+         *     **Story 8.2** : `sync_operational_summary.deferred_remote_retry` — au moins une ligne outbox du site
+         *     en backoff (`next_retry_at` futur, `pending`).
+         *
          *     Absence vs null : artefact 1.7 section 6.
          */
         ExploitationLiveSnapshot: {
@@ -922,6 +1320,8 @@ export interface components {
             sync_operational_summary?: {
                 worst_state?: components["schemas"]["SyncStateCore"];
                 source_reachable?: boolean;
+                /** @description True si backoff actif sur au moins une ligne outbox du site (Story 8.2). */
+                deferred_remote_retry?: boolean;
             } | null;
             /**
              * Format: date-time
@@ -1581,7 +1981,10 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Conflit idempotence — `IDEMPOTENCY_KEY_CONFLICT` */
+            /**
+             * @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) **ou** refus politique sync Story **8.6**
+             *     (`PAHEKO_SYNC_FINAL_ACTION_REFUSED` + `policy_reason_code` — quarantaine outbox session ou mapping clôture).
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1601,6 +2004,591 @@ export interface operations {
             };
             /** @description Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED` */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoOutbox_listItems: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                operation_type?: string;
+                cash_session_id?: string;
+                outbox_status?: string;
+                /** @description Story 8.5 — filtre exact sur correlation_id (support / supervision). */
+                correlation_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste paginée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoOutboxListResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoOutbox_getCorrelationTimeline: {
+        parameters: {
+            query?: {
+                transitions_skip?: number;
+                transitions_limit?: number;
+            };
+            header?: never;
+            path: {
+                correlation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agrégat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoOutboxCorrelationTimelineResponse"];
+                };
+            };
+            /** @description correlation_id vide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Aucune ligne outbox pour ce correlation_id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoOutbox_getItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Détail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoOutboxItemDetail"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Élément introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoOutbox_rejectItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PahekoOutboxRejectBody"];
+            };
+        };
+        responses: {
+            /** @description Ligne mise à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoOutboxItemDetail"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Élément introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ligne déjà synchronisée (delivered / resolu) ; rejet impossible */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoOutbox_listItemSyncTransitions: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste paginée des transitions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoOutboxSyncTransitionListResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Élément introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoOutbox_liftQuarantineToRetry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PahekoOutboxRejectBody"];
+            };
+        };
+        responses: {
+            /** @description Ligne mise à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoOutboxItemDetail"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Élément introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Ligne pas en quarantaine — transition refusée */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoOutbox_confirmResolvedFromDelivered: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PahekoOutboxRejectBody"];
+            };
+        };
+        responses: {
+            /** @description Ligne mise à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoOutboxItemDetail"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Élément introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Pas delivered — critère 8.2 non satisfait */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoMapping_listCashSessionCloseMappings: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                site_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste paginée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoCashSessionCloseMappingListResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoMapping_createCashSessionCloseMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PahekoCashSessionCloseMappingCreateBody"];
+            };
+        };
+        responses: {
+            /** @description Ligne créée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoCashSessionCloseMappingPublic"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Doublon (site_id, register_id) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_pahekoMapping_updateCashSessionCloseMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mapping_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PahekoCashSessionCloseMappingUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description Ligne mise à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PahekoCashSessionCloseMappingPublic"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Correspondance introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

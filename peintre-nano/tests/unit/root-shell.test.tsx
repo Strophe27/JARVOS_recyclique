@@ -77,4 +77,20 @@ describe('RootShell (grille et zones nommées)', () => {
     expect(screen.getByTestId('custom-header')).toBeTruthy();
     expect(screen.getByText('main body')).toBeTruthy();
   });
+
+  it('hideNav : pas de zone nav, marqueur kiosque vente, grille sans colonne nav (story 11.3)', () => {
+    render(
+      <RootProviders>
+        <RootShell hideNav regions={{ main: <span>plein écran caisse</span> }}>
+          <span>ignored</span>
+        </RootShell>
+      </RootProviders>,
+    );
+
+    const shell = screen.getByTestId('peintre-nano-shell');
+    expect(shell.getAttribute('data-pn-kiosk-nav-hidden')).toBe('true');
+    expect(screen.getByTestId('cash-register-sale-kiosk')).toBeTruthy();
+    expect(screen.queryByTestId('shell-zone-nav')).toBeNull();
+    expect(screen.getByText('plein écran caisse')).toBeTruthy();
+  });
 });

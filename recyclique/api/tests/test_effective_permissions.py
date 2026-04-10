@@ -238,3 +238,50 @@ class TestEffectivePermissions:
         db_session.commit()
 
         assert user_has_effective_permission(u, "inventee.mais.admin", db_session) is True
+
+    def test_context_envelope_includes_transverse_dashboard_view_for_admin(
+        self, db_session: Session
+    ):
+        """CREOS / Peintre_nano : clé UI `transverse.dashboard.view` émise pour les admins (hors table permissions)."""
+        u = User(
+            id=uuid.uuid4(),
+            username="u_admin_dash",
+            hashed_password=hash_password("Test1234!"),
+            role=UserRole.ADMIN,
+            status=UserStatus.ACTIVE,
+            is_active=True,
+        )
+        db_session.add(u)
+        db_session.commit()
+        env = build_context_envelope(db_session, u.id)
+        assert "transverse.dashboard.view" in env.permission_keys
+        assert "transverse.admin.view" in env.permission_keys
+
+    def test_context_envelope_includes_transverse_dashboard_view_when_reports_view(
+        self, db_session: Session, site_a: Site
+    ):
+        """Utilisateur standard : clé dashboard transverse si `reports.view` est dans le périmètre effectif."""
+        p = Permission(name="reports.view", description="Rapports")
+        db_session.add(p)
+        g = Group(
+            name="G reports",
+            description="",
+            key="g-reports-dash",
+            site_id=site_a.id,
+        )
+        g.permissions = [p]
+        u = User(
+            id=uuid.uuid4(),
+            username="u_reports_dash",
+            hashed_password=hash_password("Test1234!"),
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True,
+            site_id=site_a.id,
+        )
+        u.groups = [g]
+        db_session.add_all([g, u])
+        db_session.commit()
+        env = build_context_envelope(db_session, u.id)
+        assert "reports.view" in env.permission_keys
+        assert "transverse.dashboard.view" in env.permission_keys

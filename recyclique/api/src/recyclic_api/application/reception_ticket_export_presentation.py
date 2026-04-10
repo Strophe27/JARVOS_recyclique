@@ -13,7 +13,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional, Union
 
-from recyclic_api.core.config import settings
+from recyclic_api.core.config import get_browser_api_v1_prefix
 from recyclic_api.utils.report_tokens import generate_download_token
 
 if TYPE_CHECKING:
@@ -51,8 +51,8 @@ def build_reception_ticket_download_json(
     ``filename`` doit être celui retourné par :func:`reception_ticket_csv_filename` pour ce ticket.
     """
     token = generate_download_token(filename, ttl_seconds=ttl_seconds)
-    prefix = settings.API_V1_STR.rstrip("/")
-    download_url = f"{prefix}/reception/tickets/{ticket_id}/export-csv?token={token}"
+    browser_prefix = get_browser_api_v1_prefix()
+    download_url = f"{browser_prefix}/reception/tickets/{ticket_id}/export-csv?token={token}"
     return {
         "download_url": download_url,
         "filename": filename,

@@ -12,6 +12,7 @@ from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.site import Site
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.services.paheko_sync_final_action_policy import REASON_CLOSE_MAPPING
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.security import hash_password
 from recyclic_api.schemas.cash_session import (
@@ -505,6 +506,58 @@ class TestCashSessionEndpoints:
         assert response.status_code == 400
         detail = response.json().get("detail", "")
         assert "ferm" in detail.lower()
+
+    def test_close_cash_session_returns_409_when_paheko_a1_mapping_blocks(
+        self,
+        client_with_jwt_auth: TestClient,
+        test_cashier,
+        test_site,
+        cashier_token,
+        db_session,
+        stub_generate_cash_session_report,
+    ):
+        """Story 8.6 — preuve HTTP client : refus A1 mapping => 409 structuré."""
+        user = User(**test_cashier)
+        site = Site(**test_site)
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
+
+        session_data = {
+            "operator_id": str(test_cashier["id"]),
+            "site_id": str(test_site["id"]),
+            "initial_amount": 50.0,
+        }
+
+        create_response = client_with_jwt_auth.post(
+            v1("/cash-sessions/"),
+            json=session_data,
+            headers={"Authorization": f"Bearer {cashier_token}"},
+        )
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        sess = db_session.query(CashSession).filter(CashSession.id == uuid.UUID(session_id)).one()
+        sess.total_sales = 1.0
+        sess.total_items = 1
+        db_session.commit()
+
+        response = client_with_jwt_auth.post(
+            v1(f"/cash-sessions/{session_id}/close"),
+            json={"actual_amount": 51.0, "variance_comment": None},
+            headers={
+                "Authorization": f"Bearer {cashier_token}",
+                "X-Step-Up-Pin": "1234",
+            },
+        )
+
+        assert response.status_code == 409
+        body = response.json()
+        detail = body["detail"]
+        if isinstance(detail, dict):
+            assert detail.get("policy_reason_code") == REASON_CLOSE_MAPPING
+        else:
+            assert "correspondance Paheko" in str(detail)
     
     def test_get_cash_session_stats(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
         """Test de rÃ©cupÃ©ration des statistiques des sessions."""
