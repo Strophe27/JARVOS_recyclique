@@ -9,7 +9,13 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy.orm import Session
 
+from decimal import Decimal
+
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.category import Category
+from recyclic_api.models.ligne_depot import LigneDepot, Destination
+from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
+from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
@@ -184,6 +190,60 @@ class TestCashSessionStatsDeferred:
         assert stats["total_sessions"] == 2, "Should count both normal sessions"
         assert stats["open_sessions"] == 1, "Should count open session"
         assert stats["closed_sessions"] == 1, "Should count closed session"
+
+    def test_stats_include_exit_reception_weight_without_date_filter(self, db_session: Session):
+        """Le KPI global 'poids sorti' doit aussi refléter les sorties réception hors filtre daté."""
+        operator = User(
+            id=uuid.uuid4(),
+            username="operator-exit@test.com",
+            hashed_password=hash_password("testpass"),
+            role=UserRole.ADMIN,
+            status=UserStatus.ACTIVE,
+        )
+        site_id = uuid.uuid4()
+        session = CashSession(
+            id=uuid.uuid4(),
+            operator_id=operator.id,
+            site_id=site_id,
+            initial_amount=50.0,
+            current_amount=50.0,
+            status=CashSessionStatus.CLOSED,
+            opened_at=datetime.now(timezone.utc) - timedelta(days=1),
+            closed_at=datetime.now(timezone.utc) - timedelta(hours=20),
+        )
+        poste = PosteReception(
+            id=uuid.uuid4(),
+            opened_by_user_id=operator.id,
+            status=PosteReceptionStatus.OPENED.value,
+        )
+        ticket = TicketDepot(
+            id=uuid.uuid4(),
+            poste_id=poste.id,
+            benevole_user_id=operator.id,
+            status=TicketDepotStatus.CLOSED.value,
+            created_at=datetime.now(timezone.utc) - timedelta(hours=3),
+        )
+        category = Category(
+            id=uuid.uuid4(),
+            name="EEE-EXIT",
+            is_active=True,
+            parent_id=None,
+        )
+        exit_line = LigneDepot(
+            id=uuid.uuid4(),
+            ticket_id=ticket.id,
+            category_id=category.id,
+            poids_kg=Decimal("7.2"),
+            destination=Destination.MAGASIN,
+            is_exit=True,
+        )
+        db_session.add_all([operator, session, poste, category, ticket, exit_line])
+        db_session.commit()
+
+        service = CashSessionService(db_session)
+        stats = service.get_session_stats(site_id=str(site_id))
+
+        assert stats["total_weight_sold"] == 7.2
 
 
 

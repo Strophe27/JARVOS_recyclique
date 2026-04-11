@@ -102,6 +102,14 @@
     'footer';
 }
 
+/** Live : manifeste sans slot `header` — la grille ne réserve plus de rangée vide au-dessus de la nav. */
+.rootMinimalChrome.rootMinimalChromeNoPageHeader {
+  grid-template-areas:
+    'nav'
+    'main'
+    'footer';
+}
+
 .rootMinimalChrome .aside {
   display: none;
 }
@@ -125,4 +133,26 @@
   border: 1px solid var(--pn-color-border);
   border-radius: var(--pn-radius-md);
   color: var(--pn-color-text);
+}
+
+/** Barre navigation pleine largeur type legacy 1.4.4 (`#2e7d32`). */
+.rootMinimalChrome .navAppLegacyToolbar {
+  margin-inline: calc(-1 * var(--pn-space-md));
+  width: calc(100% + 2 * var(--pn-space-md));
+  max-width: none;
+  padding: 0.65rem var(--pn-space-md);
+  background: #2e7d32;
+  border: none;
+  border-radius: 0;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.rootMinimalChrome[data-pn-ui-density='compact'] .navAppLegacyToolbar {
+  margin-inline: calc(-1 * var(--pn-space-sm));
+  width: calc(100% + 2 * var(--pn-space-sm));
+}
+
+.rootMinimalChrome .navAppLegacyToolbar [data-nav-chrome='legacyToolbar'] {
+  box-shadow: none;
 }

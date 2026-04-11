@@ -39,6 +39,7 @@ beforeAll(() => {
 describe('Story 5.6 — templates transverses', () => {
   it('resolveTransverseMainLayoutMode : hub dashboard + listings + admin, consultation pour fiches', () => {
     expect(resolveTransverseMainLayoutMode('transverse-dashboard')).toBe('hub');
+    expect(resolveTransverseMainLayoutMode('transverse-dashboard-benevole')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-listing-articles')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-admin-placeholder')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-consultation-article')).toBe('consultation');

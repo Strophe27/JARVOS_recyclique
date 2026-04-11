@@ -55,6 +55,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
     expect(within(nav).getByTestId('nav-entry-transverse-dashboard')).toBeTruthy();
+    expect(within(nav).getByTestId('nav-entry-transverse-dashboard-benevole')).toBeTruthy();
     expect(within(nav).getByTestId('nav-entry-transverse-admin')).toBeTruthy();
     expect(
       within(within(nav).getByTestId('nav-entry-transverse-dashboard')).getByRole('button', {
@@ -171,7 +172,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
   });
 
   describe('Story 5.2 — dashboard transverse (slots CREOS, cohérence nav)', () => {
-    it('rend le manifest page-transverse-dashboard (topstrip shell + workspace legacy observable)', async () => {
+    it('rend le manifest page-transverse-dashboard (sans topstrip — marque dans la nav en live ; bac à sable sans widget header)', async () => {
       renderServedApp();
 
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
@@ -179,8 +180,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       fireEvent.click(dashBtn);
 
       expect(window.location.pathname).toBe('/dashboard');
-      const header = screen.getByTestId('shell-zone-header');
-      expect(within(header).getByTestId('widget-demo-legacy-app-topstrip')).toBeTruthy();
+      expect(screen.queryByTestId('widget-demo-legacy-app-topstrip')).toBeNull();
       const main = screen.getByTestId('shell-zone-main');
       expect(within(main).getByTestId('widget-legacy-dashboard-workspace')).toBeTruthy();
       await waitFor(() => {
@@ -189,6 +189,43 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(
         within(main).getByRole('heading', { name: /Ventes \(Sorties\)/i }),
       ).toBeTruthy();
+    });
+
+    it('URL profonde /dashboard/benevole : composition PageManifest transverse-dashboard-benevole', () => {
+      window.history.pushState({}, '', '/dashboard/benevole');
+      renderServedApp();
+      const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
+      const personalBtn = within(within(nav).getByTestId('nav-entry-transverse-dashboard-benevole')).getByRole(
+        'button',
+      );
+      expect(personalBtn.getAttribute('aria-current')).toBe('true');
+      const main = screen.getByTestId('shell-zone-main');
+      expect(within(main).getByTestId('widget-legacy-dashboard-personal')).toBeTruthy();
+      expect(
+        within(main).getByRole('heading', {
+          level: 1,
+          name: /Bienvenue,/i,
+        }),
+      ).toBeTruthy();
+    });
+
+    it('depuis le workspace dashboard, navigation vers /dashboard/benevole (popstate) affiche l’espace personnel', async () => {
+      renderServedApp();
+      const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
+      fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-dashboard')).getByRole('button'));
+      const main = screen.getByTestId('shell-zone-main');
+      await waitFor(() => {
+        expect(within(main).getByTestId('widget-legacy-dashboard-workspace')).toBeTruthy();
+      });
+      window.history.pushState({}, '', '/dashboard/benevole');
+      fireEvent.popState(window);
+      await waitFor(() => {
+        expect(within(screen.getByTestId('shell-zone-main')).getByTestId('widget-legacy-dashboard-personal')).toBeTruthy();
+      });
+      const personalNav = within(within(nav).getByTestId('nav-entry-transverse-dashboard-benevole')).getByRole(
+        'button',
+      );
+      expect(personalNav.getAttribute('aria-current')).toBe('true');
     });
 
     it('cohérence navigation : dashboard → accueil → dashboard (aria-current + URL)', async () => {

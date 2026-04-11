@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:15
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -59,7 +59,8 @@ jobs:
           cd peintre-nano && npm run test
           cd ../recyclique/api && python -m pytest tests/ -v -m "not performance"
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
           REDIS_URL: redis://localhost:6379
 
   test-complete:
@@ -68,7 +69,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     services:
       postgres:
-        image: postgres:15
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -98,7 +99,8 @@ jobs:
       - name: Run all tests (including performance)
         run: cd recyclique/api && python -m pytest tests/ -v
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
           REDIS_URL: redis://localhost:6379
 
   build-and-deploy:

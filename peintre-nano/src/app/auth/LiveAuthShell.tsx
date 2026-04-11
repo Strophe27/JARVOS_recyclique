@@ -96,7 +96,11 @@ export function LiveAuthShell({ children }: LiveAuthShellProps) {
     });
     setPhase('ready');
     setFormError(null);
-    replacePath(CANONICAL_POST_LOGIN_PATH);
+    // Ne pas écraser une URL profonde (ex. `/dashboard/benevole`) lors du `loadContextForToken` au chargement.
+    // La redirection canonique post-login reste réservée à la sortie explicite de `/login`.
+    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+      replacePath(CANONICAL_POST_LOGIN_PATH);
+    }
   }, []);
 
   const clearSession = useCallback(() => {

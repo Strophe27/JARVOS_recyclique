@@ -230,4 +230,27 @@ describe('LegacyDashboardWorkspaceWidget — API legacy (UnifiedDashboard)', () 
       ),
     ).toBeTruthy();
   });
+
+  it('réception avec données mais ventes par catégorie vides : message sorties + pas de graphiques ventes', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockDashboardFetch({
+        receptionByCat: [{ category_name: 'Livres', total_weight: 3, total_items: 2 }],
+        salesByCat: [],
+      }),
+    );
+    render(wrap(<LegacyDashboardWorkspaceWidget widgetProps={{}} />));
+    await waitFor(() => {
+      expect(screen.getByTestId('legacy-dashboard-chart-reception-bar')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('legacy-dashboard-chart-sales-bar')).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByTestId('legacy-dashboard-empty-sales-categories')).toBeTruthy();
+    });
+    expect(
+      within(screen.getByTestId('legacy-dashboard-empty-sales-categories')).getByText(
+        /Aucune donnée de vente par catégorie/,
+      ),
+    ).toBeTruthy();
+  });
 });

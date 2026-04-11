@@ -8,7 +8,9 @@
 
 services:
   postgres:
-    image: postgres:15
+    # Image cible ADR-INFRA-PG17 (story 10.6d). Sur volume existant en 15 : migration données obligatoire — runbook
+    # _bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md
+    image: postgres:17
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-recyclic}
       POSTGRES_USER: recyclic

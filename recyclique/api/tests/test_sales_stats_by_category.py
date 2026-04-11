@@ -14,6 +14,9 @@ from decimal import Decimal
 import pytest
 from sqlalchemy.orm import Session
 
+from recyclic_api.models.ligne_depot import LigneDepot, Destination
+from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
+from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.category import Category
 from recyclic_api.models.sale import Sale
@@ -172,6 +175,101 @@ class TestSalesStatsByCategoryService:
         assert eee1_stats is not None
         assert eee1_stats.total_weight == Decimal("15.0"), "Should aggregate weight from main + sub"
         assert eee1_stats.total_items == 2, "Should aggregate items from main + sub"
+
+    def test_get_sales_by_category_includes_unresolved_category_raw_value(
+        self, db_session: Session, test_user: User, test_categories, test_cash_session
+    ):
+        """Code ou libellé absent de `categories` : les KPI somment quand même le poids ; le détail doit suivre."""
+        sale = Sale(
+            id=uuid.uuid4(),
+            cash_session_id=test_cash_session.id,
+            operator_id=test_user.id,
+            total_amount=10.0,
+            created_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+        orphan_code = "ZZ-INCONNU"
+        item = SaleItem(
+            id=uuid.uuid4(),
+            sale_id=sale.id,
+            category=orphan_code,
+            quantity=1,
+            weight=3.25,
+            unit_price=10.0,
+            total_price=10.0,
+        )
+        db_session.add_all([sale, item])
+        db_session.commit()
+
+        service = StatsService(db_session)
+        results = service.get_sales_by_category()
+        bucket = next((r for r in results if r.category_name == orphan_code), None)
+        assert bucket is not None
+        assert bucket.total_weight == Decimal("3.25")
+        assert bucket.total_items == 1
+
+    def test_get_sales_by_category_falls_back_to_exit_lines_when_sales_items_missing(
+        self, db_session: Session, test_user: User, test_categories
+    ):
+        """Brownfield: pas de sale_items reliés, mais des sorties réception existent encore."""
+        poste = PosteReception(
+            id=uuid.uuid4(),
+            opened_by_user_id=test_user.id,
+            status=PosteReceptionStatus.OPENED.value,
+        )
+        ticket = TicketDepot(
+            id=uuid.uuid4(),
+            poste_id=poste.id,
+            benevole_user_id=test_user.id,
+            status=TicketDepotStatus.CLOSED.value,
+            created_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+        exit_line = LigneDepot(
+            id=uuid.uuid4(),
+            ticket_id=ticket.id,
+            category_id=test_categories["sub_cat1"].id,
+            poids_kg=Decimal("12.5"),
+            destination=Destination.MAGASIN,
+            is_exit=True,
+        )
+        db_session.add_all([poste, ticket, exit_line])
+        db_session.commit()
+
+        service = StatsService(db_session)
+        results = service.get_sales_by_category()
+        eee1_stats = next((r for r in results if r.category_name == "EEE-1"), None)
+        assert eee1_stats is not None
+        assert eee1_stats.total_weight == Decimal("12.5")
+        assert eee1_stats.total_items == 1
+
+    def test_get_sales_by_category_joins_on_category_name_legacy_string(
+        self, db_session: Session, test_user: User, test_categories, test_cash_session
+    ):
+        """Données brownfield : `sale_items.category` peut stocker le nom (ex. EEE-1), pas l'UUID."""
+        sale = Sale(
+            id=uuid.uuid4(),
+            cash_session_id=test_cash_session.id,
+            operator_id=test_user.id,
+            total_amount=100.0,
+            created_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+        item = SaleItem(
+            id=uuid.uuid4(),
+            sale_id=sale.id,
+            category=test_categories["main_cat1"].name,
+            quantity=1,
+            weight=7.5,
+            unit_price=100.0,
+            total_price=100.0,
+        )
+        db_session.add_all([sale, item])
+        db_session.commit()
+
+        service = StatsService(db_session)
+        results = service.get_sales_by_category()
+        eee1 = next((r for r in results if r.category_name == "EEE-1"), None)
+        assert eee1 is not None
+        assert eee1.total_weight == Decimal("7.5")
+        assert eee1.total_items == 1
 
     def test_get_sales_by_category_with_date_filters(
         self, db_session: Session, test_user: User, test_categories, test_cash_session

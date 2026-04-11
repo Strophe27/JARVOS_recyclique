@@ -65,6 +65,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     );
     const ids = filtered.entries.map((e) => e.id);
     expect(ids).toContain('transverse-dashboard');
+    expect(ids).toContain('transverse-dashboard-benevole');
     expect(ids).toContain('transverse-admin');
     expect(ids).toContain('transverse-admin-access');
     expect(ids).toContain('transverse-admin-site');
@@ -195,11 +196,22 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(dash.requiredPermissionKeys).toEqual(['transverse.dashboard.view']);
     expect(dash.requiresSite).toBe(true);
     const slotIds = dash.slots.map((s) => s.slotId);
-    expect(slotIds).toEqual(['header', 'main']);
-    expect(dash.slots.map((s) => s.widgetType)).toEqual([
-      'demo.legacy.app.topstrip',
-      'demo.legacy.dashboard.workspace',
-    ]);
+    expect(slotIds).toEqual(['main']);
+    expect(dash.slots.map((s) => s.widgetType)).toEqual(['demo.legacy.dashboard.workspace']);
+  });
+
+  it('résout la page transverse-dashboard-benevole (dashboard personnel, parité legacy)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find(
+      (p) => p.pageKey === 'transverse-dashboard-benevole',
+    );
+    expect(page, 'PageManifest transverse-dashboard-benevole absente du bundle servi').toBeDefined();
+    if (!page) return;
+    expect(page.requiredPermissionKeys).toEqual(['transverse.dashboard.view']);
+    expect(page.requiresSite).toBe(true);
+    expect(page.slots.map((s) => s.slotId)).toEqual(['main']);
+    expect(page.slots.map((s) => s.widgetType)).toEqual(['demo.legacy.dashboard.personal']);
   });
 
   /**
@@ -441,6 +453,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       });
       const transverseIds = new Set([
         'transverse-dashboard',
+        'transverse-dashboard-benevole',
         'transverse-admin',
         'transverse-admin-access',
         'transverse-admin-site',

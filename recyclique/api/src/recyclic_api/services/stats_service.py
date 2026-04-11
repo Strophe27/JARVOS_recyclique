@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, cast, String
+from sqlalchemy import func, and_, or_, cast, String, case
 
 from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.ligne_depot import LigneDepot
@@ -226,6 +226,8 @@ class StatsService:
         Story B50-P5: Cette méthode agrège les données de ventes (SaleItem) par catégorie principale.
         Les données des catégories enfants sont agrégées vers leurs catégories parentes
         pour n'afficher que les catégories principales dans le dashboard.
+        Rétrocompat : ``SaleItem.category`` peut être soit l'UUID (format canonique), soit le nom
+        de catégorie (jeux de données hérités), aligné sur ``CategoryService`` (recherche par nom).
 
         Args:
             start_date: Optional start date filter (inclusive)
@@ -252,20 +254,42 @@ class StatsService:
         # - Utiliser func.coalesce(ParentCat.name, Category.name) pour le nom
         # - Filtrer pour ne garder que les catégories principales (parent_id IS NULL)
         # SQLite (tests) : SaleItem.category est une chaîne ; comparer à Category.id casté en String.
-        # PostgreSQL : cast explicite string → UUID pour le JOIN.
+        # PostgreSQL : cast string → UUID pour le JOIN **uniquement** si la valeur ressemble à un UUID,
+        # sinon jointure sur le nom (données historiques 1.4.x où `sale_items.category` peut être le libellé).
         dialect_name = self.db.get_bind().dialect.name
         if dialect_name == "sqlite":
             # SQLite + UUID PG : formats stockés/castés variables ; comparer sans tirets.
             cat_id_txt = func.lower(func.replace(cast(Category.id, String), "-", ""))
             item_cat_txt = func.lower(func.replace(SaleItem.category, "-", ""))
-            category_join_cond = item_cat_txt == cat_id_txt
+            category_join_cond = or_(
+                item_cat_txt == cat_id_txt,
+                SaleItem.category == Category.name,
+            )
         else:
             from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
-            category_join_cond = cast(SaleItem.category, PGUUID) == Category.id
+            _uuid_txt_rx = (
+                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            )
+            looks_like_uuid = SaleItem.category.op("~")(_uuid_txt_rx)
+            category_join_cond = case(
+                (
+                    looks_like_uuid,
+                    cast(SaleItem.category, PGUUID) == Category.id,
+                ),
+                else_=SaleItem.category == Category.name,
+            )
+
+        # Libellé affiché : catégorie principale résolue, sinon nom direct, sinon valeur brute
+        # (données brownfield : code inconnu, typo, ancien libellé hors table `categories`).
+        category_display = func.coalesce(
+            ParentCat.name,
+            Category.name,
+            SaleItem.category,
+        )
 
         query = self.db.query(
-            func.coalesce(ParentCat.name, Category.name).label('category_name'),
+            category_display.label('category_name'),
             func.coalesce(func.sum(SaleItem.weight), 0).label('total_weight'),
             func.count(SaleItem.id).label('total_items')
         ).select_from(
@@ -283,12 +307,15 @@ class StatsService:
             ParentCat,
             Category.parent_id == ParentCat.id
         ).filter(
-            # Sans ligne Category résolue, parent_id et name sont NULL mais
-            # ``parent_id IS NULL`` est vrai → il faut exclure ces lignes orphelines.
-            Category.id.isnot(None),
+            # Ligne résolue vers une catégorie principale (réception dashboard) OU
+            # jointure `categories` impossible : on garde quand même la ligne pour
+            # aligner le détail sorties avec les KPI (somme des poids sans exiger la FK).
             or_(
-                Category.parent_id.is_(None),
-                ParentCat.parent_id.is_(None),
+                Category.id.is_(None),
+                or_(
+                    Category.parent_id.is_(None),
+                    ParentCat.parent_id.is_(None),
+                ),
             ),
         )
 
@@ -302,13 +329,58 @@ class StatsService:
         if filters:
             query = query.filter(and_(*filters))
 
-        # Group by category principale and order by weight
-        query = query.group_by(
-            func.coalesce(ParentCat.name, Category.name)
-        ).order_by(func.sum(SaleItem.weight).desc())
+        # Group by même expression que le libellé (PostgreSQL / SQLite).
+        query = query.group_by(category_display).order_by(
+            func.sum(SaleItem.weight).desc()
+        )
 
         # Execute query
         results = query.all()
+        if results:
+            return [
+                CategoryStats(
+                    category_name=row.category_name,
+                    total_weight=Decimal(str(row.total_weight or 0)),
+                    total_items=row.total_items
+                )
+                for row in results
+            ]
+
+        # Brownfield fallback: certaines bases ont bien des sorties observables, mais aucune
+        # ligne `sale_items` reliée aux ventes encore présentes. On recycle alors les sorties
+        # de réception (`is_exit=true`) pour garder un détail cohérent avec le poids de sortie.
+        exit_query = self.db.query(
+            func.coalesce(ParentCat.name, Category.name).label('category_name'),
+            func.coalesce(func.sum(LigneDepot.poids_kg), 0).label('total_weight'),
+            func.count(LigneDepot.id).label('total_items'),
+        ).select_from(
+            LigneDepot
+        ).join(
+            Category,
+            LigneDepot.category_id == Category.id
+        ).outerjoin(
+            ParentCat,
+            Category.parent_id == ParentCat.id
+        ).join(
+            TicketDepot,
+            LigneDepot.ticket_id == TicketDepot.id
+        ).filter(
+            LigneDepot.is_exit == True,
+        )
+
+        exit_filters = []
+        if start_date:
+            exit_filters.append(TicketDepot.created_at >= _utc_aware(start_date))
+        if end_date:
+            exit_filters.append(_created_at_end_filter(TicketDepot.created_at, end_date))
+        if exit_filters:
+            exit_query = exit_query.filter(and_(*exit_filters))
+
+        exit_results = exit_query.group_by(
+            func.coalesce(ParentCat.name, Category.name)
+        ).order_by(
+            func.sum(LigneDepot.poids_kg).desc()
+        ).all()
 
         return [
             CategoryStats(
@@ -316,5 +388,5 @@ class StatsService:
                 total_weight=Decimal(str(row.total_weight or 0)),
                 total_items=row.total_items
             )
-            for row in results
+            for row in exit_results
         ]

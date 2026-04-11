@@ -89,4 +89,23 @@ describe('LiveAuthShell (Story 11.2)', () => {
     expect(screen.queryByText(/GET \/v1\/users\/me\/context/)).toBeNull();
     expect(screen.queryByText(/Auth live/)).toBeNull();
   });
+
+  it('restauration de session sur URL profonde /dashboard/benevole : ne remplace pas par /dashboard', async () => {
+    sessionStorage.setItem('peintre-nano.recyclique.access_token', 'stored-token');
+    window.history.pushState({}, '', '/dashboard/benevole');
+
+    render(
+      <MantineProvider>
+        <LiveAuthShell>
+          <span data-testid="post-login-child">in</span>
+        </LiveAuthShell>
+      </MantineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('post-login-child')).toBeTruthy();
+    });
+    expect(window.location.pathname).toBe('/dashboard/benevole');
+    expect(fetchRecycliqueContextEnvelope).toHaveBeenCalledWith('stored-token');
+  });
 });

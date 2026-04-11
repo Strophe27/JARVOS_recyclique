@@ -5,14 +5,6 @@
   "requires_site": true,
   "slots": [
     {
-      "slot_id": "header",
-      "widget_type": "demo.legacy.app.topstrip",
-      "widget_props": {
-        "brandTitle": "RecyClique",
-        "welcomeLine": "Pilotage et activité du site"
-      }
-    },
-    {
       "slot_id": "main",
       "widget_type": "demo.legacy.dashboard.workspace",
       "widget_props": {

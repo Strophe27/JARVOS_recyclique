@@ -24,6 +24,7 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-04-11_01_prompt-extension-parite-ui-legacy-peintre.md` | Prompt BMAD reutilisable pour etendre la **parite UI legacy -> Peintre_nano** apres l'Epic 11, avec methode legacy-first, DevTools obligatoires, hiérarchie `OpenAPI / ContextEnvelope / NavigationManifest / PageManifest / UserRuntimePrefs`, ordre recommande `Epic 13 -> 12 -> 14`, et rappel de lancer ensuite les stories via `create-story`. |
 | `2026-04-10_04_story-seeds-parite-ui-pilotes-peintre.md` | Trois **story seeds** executables pour lancer la **parité UI legacy -> Peintre_nano** : `login` public, `dashboard` standard, `caisse vente` kiosque ; ordre d'execution recommande et gaps bloquants principaux. |
 | `2026-04-10_03_matrice-parite-ui-pilotes-peintre.md` | Initialisation de la matrice de **parité UI legacy -> Peintre_nano** avec **3 lignes pilotes** officielles : `login` public, `dashboard` standard, `caisse vente` kiosque ; champs prudents `A confirmer sur localhost:4445`, statuts `Backlog`, et règle de preuve avant validation. |
 | `2026-04-10_02_cadrage-parite-ui-legacy-peintre.md` | Cadrage de travail pour la **parité UI legacy -> Peintre_nano** : reference `localhost:4445`, hiérarchie **OpenAPI / ContextEnvelope / CREOS**, definition de la **parité observable**, matrice normative, statuts fermes, protocole de preuve et enchainement immediat en **3 lignes pilotes**. |

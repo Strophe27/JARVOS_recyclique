@@ -24,6 +24,10 @@ export type RootShellProps = {
    * Présentation « app » : masque aside / footer décoratifs (auth live / tableau de bord observable).
    */
   minimalChrome?: boolean;
+  /**
+   * Présentation de la zone `nav` (shell) — décoratif ; ne filtre pas la navigation manifeste.
+   */
+  navPresentation?: 'default' | 'legacyToolbar';
 };
 
 /**
@@ -35,14 +39,18 @@ export function RootShell({
   shellPresentation,
   hideNav = false,
   minimalChrome = false,
+  navPresentation = 'default',
 }: RootShellProps) {
   const mainContent = regions?.main !== undefined ? regions.main : children;
   const uiDensity = shellPresentation?.uiDensity ?? 'comfortable';
   const sidebarPanelOpen = shellPresentation?.sidebarPanelOpen ?? true;
+  /** Pages live sans slot `header` : pas de rangée shell vide ni placeholder « Zone header ». */
+  const hasPageHeader = Boolean(regions?.header);
+  const omitHeaderRow = minimalChrome && !hasPageHeader;
 
   return (
     <div
-      className={`${classes.root}${hideNav ? ` ${classes.rootKioskNavHidden}` : ''}${minimalChrome ? ` ${classes.rootMinimalChrome}` : ''}`}
+      className={`${classes.root}${hideNav ? ` ${classes.rootKioskNavHidden}` : ''}${minimalChrome ? ` ${classes.rootMinimalChrome}` : ''}${omitHeaderRow ? ` ${classes.rootMinimalChromeNoPageHeader}` : ''}`}
       data-testid="peintre-nano-shell"
       data-pn-ui-density={uiDensity}
       data-pn-sidebar-panel={sidebarPanelOpen ? 'open' : 'closed'}
@@ -51,21 +59,24 @@ export function RootShell({
       {hideNav ? (
         <span data-testid="cash-register-sale-kiosk" style={{ display: 'none' }} aria-hidden="true" />
       ) : null}
-      <header
-        className={`${classes.header} ${minimalChrome && regions?.header ? classes.headerApp : classes.zone}`}
-        data-testid="shell-zone-header"
-      >
-        {regions?.header ?? (
-          <>
-            <span className={classes.zoneLabel}>Zone header</span>
-            {' — placeholder shell (pas de routes métier)'}
-          </>
-        )}
-      </header>
+      {!omitHeaderRow ? (
+        <header
+          className={`${classes.header} ${minimalChrome && hasPageHeader ? classes.headerApp : classes.zone}`}
+          data-testid="shell-zone-header"
+        >
+          {regions?.header ?? (
+            <>
+              <span className={classes.zoneLabel}>Zone header</span>
+              {' — placeholder shell (pas de routes métier)'}
+            </>
+          )}
+        </header>
+      ) : null}
       {!hideNav ? (
         <nav
-          className={`${classes.nav} ${minimalChrome ? classes.navApp : classes.zone}`}
+          className={`${classes.nav} ${minimalChrome ? classes.navApp : classes.zone}${minimalChrome && navPresentation === 'legacyToolbar' ? ` ${classes.navAppLegacyToolbar}` : ''}`}
           data-testid="shell-zone-nav"
+          data-pn-nav-presentation={minimalChrome ? navPresentation : undefined}
           aria-label="Zone navigation"
         >
           {regions?.nav ?? (

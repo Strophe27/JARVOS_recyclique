@@ -4,6 +4,7 @@ import { DemoLegacyAppTopstrip } from '../widgets/demo/DemoLegacyAppTopstrip';
 import { DemoKpi } from '../widgets/demo/DemoKpi';
 import { DemoListSimple } from '../widgets/demo/DemoListSimple';
 import { DemoTextBlock } from '../widgets/demo/DemoTextBlock';
+import { LegacyDashboardPersonalWidget } from '../widgets/demo/LegacyDashboardPersonalWidget';
 import { LegacyDashboardWorkspaceWidget } from '../widgets/demo/LegacyDashboardWorkspaceWidget';
 
 /**
@@ -17,4 +18,5 @@ export function registerDemoWidgets(): void {
   registerWidget('demo.list.simple', DemoListSimple);
   registerWidget('demo.legacy.app.topstrip', DemoLegacyAppTopstrip);
   registerWidget('demo.legacy.dashboard.workspace', LegacyDashboardWorkspaceWidget);
+  registerWidget('demo.legacy.dashboard.personal', LegacyDashboardPersonalWidget);
 }

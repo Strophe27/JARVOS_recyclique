@@ -13,7 +13,11 @@ export type FilteredNavEntriesProps = {
   readonly onSelectEntry?: (entry: NavigationEntry) => void;
   /** `toolbar` : barre horizontale type legacy (auth live). */
   readonly layout?: 'list' | 'toolbar';
+  /** Zone début barre (ex. marque RecyClique) — présentation shell uniquement. */
+  readonly toolbarStart?: ReactNode;
   readonly toolbarEnd?: ReactNode;
+  /** Barre verte type `Header.jsx` 1.4.4 (auth live). */
+  readonly navChrome?: 'default' | 'legacyToolbar';
 };
 
 type NavSubtreeProps = Omit<FilteredNavEntriesProps, 'layout' | 'toolbarEnd'>;
@@ -83,20 +87,46 @@ export function FilteredNavEntries({
   selectedEntryId,
   onSelectEntry,
   layout = 'list',
+  toolbarStart,
   toolbarEnd,
+  navChrome = 'default',
 }: FilteredNavEntriesProps) {
   if (!entries.length) {
     return <FilteredNavEmpty />;
   }
-  const rootClass = layout === 'toolbar' ? `${classes.root} ${classes.rootToolbar}` : classes.root;
-  return (
-    <div className={rootClass} data-testid="filtered-nav-entries" data-nav-layout={layout}>
+  const legacy = layout === 'toolbar' && navChrome === 'legacyToolbar';
+  const rootClass = [
+    classes.root,
+    layout === 'toolbar' ? classes.rootToolbar : '',
+    legacy ? classes.rootToolbarLegacy : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const inner = (
+    <>
+      {toolbarStart}
       <NavSubtree entries={entries} envelope={envelope} selectedEntryId={selectedEntryId} onSelectEntry={onSelectEntry} />
       {layout === 'toolbar' && toolbarEnd ? (
         <div className={classes.toolbarEnd} data-testid="filtered-nav-toolbar-end">
           {toolbarEnd}
         </div>
       ) : null}
+    </>
+  );
+  return (
+    <div
+      className={rootClass}
+      data-testid="filtered-nav-entries"
+      data-nav-layout={layout}
+      data-nav-chrome={navChrome}
+    >
+      {layout === 'toolbar' && (toolbarStart || legacy) ? (
+        <div className={classes.toolbarRow} data-testid="filtered-nav-toolbar-row">
+          {inner}
+        </div>
+      ) : (
+        inner
+      )}
     </div>
   );
 }

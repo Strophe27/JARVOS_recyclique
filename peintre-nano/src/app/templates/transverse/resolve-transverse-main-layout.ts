@@ -13,6 +13,7 @@ export function resolveTransverseMainLayoutMode(pageKey: string | undefined): Tr
   }
   if (
     pageKey === 'transverse-dashboard' ||
+    pageKey.startsWith('transverse-dashboard-') ||
     pageKey.startsWith('transverse-listing-') ||
     pageKey.startsWith('transverse-admin')
   ) {
@@ -25,7 +26,7 @@ export type TransverseHubFamily = 'dashboard' | 'listing' | 'admin' | 'consultat
 
 /** Sous-étiquette `data-transverse-family` pour tests et doc (hub et repli consultation). */
 export function resolveTransverseHubFamily(pageKey: string): TransverseHubFamily {
-  if (pageKey === 'transverse-dashboard') return 'dashboard';
+  if (pageKey === 'transverse-dashboard' || pageKey.startsWith('transverse-dashboard-')) return 'dashboard';
   if (pageKey.startsWith('transverse-listing-')) return 'listing';
   if (pageKey.startsWith('transverse-consultation-')) return 'consultation';
   return 'admin';

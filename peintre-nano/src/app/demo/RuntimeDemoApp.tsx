@@ -2,8 +2,10 @@ import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode } from 
 import { Button, List, Text, Title } from '@mantine/core';
 import type { NavigationEntry } from '../../types/navigation-manifest';
 import { filterNavigation } from '../../runtime/filter-navigation-for-context';
+import { pruneNavigationEntriesForLiveToolbar } from '../../runtime/prune-navigation-for-live-toolbar';
+import { toolbarSelectedEntryIdFromResolved } from '../../runtime/toolbar-selection-for-live-path';
 import { resolvePageAccess } from '../../runtime/resolve-page-access';
-import { useContextEnvelope } from '../auth/AuthRuntimeProvider';
+import { useAuthSession, useContextEnvelope } from '../auth/AuthRuntimeProvider';
 import { useLiveAuthActions } from '../auth/LiveAuthActionsContext';
 import { FilteredNavEntries } from '../FilteredNavEntries';
 import { ManifestErrorBanner } from '../ManifestErrorBanner';
@@ -17,6 +19,8 @@ import { flattenNavigationEntries } from './flatten-navigation-entries';
 import { runtimeServedManifestLoadResult } from './runtime-demo-manifest';
 import { transversePageStateFromSearch } from './runtime-demo-transverse-state';
 import classes from './RuntimeDemoApp.module.css';
+import { LiveShellBrand } from '../shell/LiveShellBrand';
+import { LiveShellUserMenu } from '../shell/LiveShellUserMenu';
 
 /** Affiche `restriction_message` quand l’enveloppe le fournit — ne remplace pas `resolvePageAccess`. */
 function ContextRestrictionBanner({ message }: { readonly message: string | null | undefined }) {
@@ -89,6 +93,7 @@ function liveAuthPresentationMode(): boolean {
 
 export function RuntimeDemoApp() {
   const envelope = useContextEnvelope();
+  const authSession = useAuthSession();
   const liveAuthActions = useLiveAuthActions();
   const hideSandboxBanner = liveAuthPresentationMode();
   const { prefs } = useUserRuntimePrefs();
@@ -162,10 +167,28 @@ export function RuntimeDemoApp() {
     [],
   );
 
+  const goPersonalDashboardFromMenu = useCallback(() => {
+    window.history.pushState({}, '', '/dashboard/benevole');
+    syncSelectionFromPath();
+  }, [syncSelectionFromPath]);
+
   const resolvedEntryId = useMemo(() => {
     if (flatFiltered.some((e) => e.id === selectedEntryId)) return selectedEntryId;
     return flatFiltered[0]?.id ?? selectedEntryId;
   }, [flatFiltered, selectedEntryId]);
+
+  const navEntriesForDisplay = useMemo(
+    () =>
+      hideSandboxBanner && filteredNavigation
+        ? pruneNavigationEntriesForLiveToolbar(filteredNavigation.entries)
+        : filteredNavigation?.entries ?? [],
+    [hideSandboxBanner, filteredNavigation],
+  );
+
+  const toolbarSelectedEntryId = useMemo(
+    () => toolbarSelectedEntryIdFromResolved(resolvedEntryId, hideSandboxBanner),
+    [resolvedEntryId, hideSandboxBanner],
+  );
 
   const selectedEntry = flatFiltered.find((e) => e.id === resolvedEntryId);
 
@@ -216,6 +239,7 @@ export function RuntimeDemoApp() {
           shellPresentation={shellPresentation}
           hideNav={kioskSaleObservable}
           minimalChrome={hideSandboxBanner}
+          navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
         >
           <ManifestErrorBanner issues={manifestLoadResult.issues} />
         </RootShell>
@@ -229,16 +253,30 @@ export function RuntimeDemoApp() {
     <>
       {!hideSandboxBanner ? <RuntimePrefsToolbar /> : null}
       <FilteredNavEntries
-        entries={filteredNavigation!.entries}
+        entries={navEntriesForDisplay}
         envelope={envelope}
-        selectedEntryId={resolvedEntryId}
+        selectedEntryId={hideSandboxBanner ? toolbarSelectedEntryId : resolvedEntryId}
         onSelectEntry={onSelectNavEntry}
         layout={hideSandboxBanner ? 'toolbar' : 'list'}
+        navChrome={hideSandboxBanner ? 'legacyToolbar' : 'default'}
+        toolbarStart={hideSandboxBanner ? <LiveShellBrand /> : undefined}
         toolbarEnd={
           hideSandboxBanner && liveAuthActions ? (
-            <Button type="button" variant="light" size="xs" onClick={liveAuthActions.requestLogout}>
-              Déconnexion
-            </Button>
+            authSession.authenticated && authSession.userDisplayLabel ? (
+              <LiveShellUserMenu
+                displayLabel={authSession.userDisplayLabel}
+                onLogout={liveAuthActions.requestLogout}
+                onPersonalDashboard={
+                  flatFiltered.some((e) => e.id === 'transverse-dashboard-benevole')
+                    ? goPersonalDashboardFromMenu
+                    : undefined
+                }
+              />
+            ) : (
+              <Button type="button" variant="light" size="xs" onClick={liveAuthActions.requestLogout}>
+                Déconnexion
+              </Button>
+            )
           ) : undefined
         }
       />
@@ -253,6 +291,7 @@ export function RuntimeDemoApp() {
           shellPresentation={shellPresentation}
           hideNav={kioskSaleObservable}
           minimalChrome={hideSandboxBanner}
+          navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
           regions={{
             nav: navRegion,
             main: (
@@ -281,6 +320,7 @@ export function RuntimeDemoApp() {
         shellPresentation={shellPresentation}
         hideNav={kioskSaleObservable}
         minimalChrome={hideSandboxBanner}
+        navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
         regions={{
           header: pageRegions?.header,
           nav: navRegion,

@@ -45,6 +45,7 @@ Les deux frontends pointent vers la **même API**. `FRONTEND_URL` reste réglé 
 
 ## Voir aussi
 
+- [_bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md](_bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md) — spike documenté **PostgreSQL 15 → 17** (stack canonique, hors legacy `recyclique-1.4.4/`) : backup, dump/restore, `pg_upgrade --check`, preuve minimale.
 - `recyclique/README.md` — backend, pytest, lien Docker  
 - `recyclique-1.4.4/README.md` — détail services legacy, ports, super-admin  
 - `peintre-nano/README.md` — frontend v2, scripts et runtime local  

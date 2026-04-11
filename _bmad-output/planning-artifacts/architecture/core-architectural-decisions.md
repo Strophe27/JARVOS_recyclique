@@ -33,7 +33,8 @@
 - Base transactionnelle principale : `PostgreSQL`
   - Decision : conserver PostgreSQL comme base metier centrale pour `Recyclique`.
   - Rationale : continuite brownfield, robustesse transactionnelle, auditabilite, compatibilite avec SQLAlchemy/Alembic, bonne base pour flux financiers et matiere articules.
-  - Version de reference d'implementation : ligne brownfield existante d'abord ; une montee vers `PostgreSQL 18.x` est une decision d'infrastructure separee, non prerequise au socle v2.
+  - Version cible infrastructure (migration en cours, avril 2026) : **PostgreSQL 17** — voir **ADR** [`adr-postgresql-17-migration.md`](./adr-postgresql-17-migration.md) et recherche technique associee dans `_bmad-output/planning-artifacts/research/`. Le code applicatif et les migrations Alembic vivent sous **`recyclique/api/`**. Le chantier **ne porte pas** sur le dossier legacy **`recyclique-1.4.4/`**. Les environnements vises (compose racine, CI, runbooks hors legacy) doivent etre alignes sur cette cible une fois la procedure de migration des donnees validee (pas de simple changement de tag d'image sur le meme volume).
+  - Palier ulterieur (`PostgreSQL 18+`) : reste une **decision d'infrastructure separee** (nouvel ADR ou addendum), non requise pour cloturer le palier 17.
 
 - ORM / migrations :
   - Decision : conserver `SQLAlchemy 2.x` et `Alembic`.
@@ -188,6 +189,7 @@
 
 - CI/CD :
   - Decision : la CI doit valider au minimum lint/tests, generation et diff `OpenAPI`, validation des schemas/manifests `CREOS`, et un smoke test de rendu de `Peintre_nano` sur les modules critiques.
+  - Decision (alignement PostgreSQL) : les jobs qui levent un service `postgres` (ex. `alembic-check`, tests API) doivent utiliser la **meme version majeure** que la cible documentee (`adr-postgresql-17-migration.md`) afin d'eviter les ecarts dev/CI/prod.
   - Rationale : rendre la gouvernance contractuelle executable, pas seulement declarative.
 
 - Observabilite :

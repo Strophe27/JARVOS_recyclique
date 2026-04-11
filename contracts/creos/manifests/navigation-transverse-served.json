@@ -2,15 +2,6 @@
   "version": "1",
   "entries": [
     {
-      "id": "root-home",
-      "route_key": "home",
-      "path": "/",
-      "page_key": "demo-home",
-      "shortcut_id": "go-home",
-      "label_key": "nav.home",
-      "required_permission_keys": ["demo.permission.view-home"]
-    },
-    {
       "id": "transverse-dashboard",
       "route_key": "transverse-dashboard",
       "path": "/dashboard",
@@ -19,6 +10,42 @@
       "label_key": "nav.transverse.dashboard",
       "visibility": {
         "permission_any": ["transverse.dashboard.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-dashboard-benevole",
+      "route_key": "transverse-dashboard-benevole",
+      "path": "/dashboard/benevole",
+      "page_key": "transverse-dashboard-benevole",
+      "shortcut_id": "go-transverse-dashboard-benevole",
+      "label_key": "nav.transverse.dashboard.personal",
+      "visibility": {
+        "permission_any": ["transverse.dashboard.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-nominal",
+      "route_key": "cashflow-nominal",
+      "path": "/caisse",
+      "page_key": "cashflow-nominal",
+      "shortcut_id": "go-cashflow-nominal",
+      "label_key": "nav.cashflow.nominal",
+      "visibility": {
+        "permission_any": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "reception-nominal",
+      "route_key": "reception-nominal",
+      "path": "/reception",
+      "page_key": "reception-nominal",
+      "shortcut_id": "go-reception-nominal",
+      "label_key": "nav.reception.nominal",
+      "visibility": {
+        "permission_any": ["reception.access"],
         "contexts_any": ["site"]
       }
     },
@@ -116,18 +143,6 @@
       "required_permission_keys": ["recyclique.exploitation.view-live-band"]
     },
     {
-      "id": "cashflow-nominal",
-      "route_key": "cashflow-nominal",
-      "path": "/caisse",
-      "page_key": "cashflow-nominal",
-      "shortcut_id": "go-cashflow-nominal",
-      "label_key": "nav.cashflow.nominal",
-      "visibility": {
-        "permission_any": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
-        "contexts_any": ["site"]
-      }
-    },
-    {
       "id": "cashflow-refund",
       "route_key": "cashflow-refund",
       "path": "/caisse/remboursement",
@@ -153,16 +168,13 @@
       }
     },
     {
-      "id": "reception-nominal",
-      "route_key": "reception-nominal",
-      "path": "/reception",
-      "page_key": "reception-nominal",
-      "shortcut_id": "go-reception-nominal",
-      "label_key": "nav.reception.nominal",
-      "visibility": {
-        "permission_any": ["reception.access"],
-        "contexts_any": ["site"]
-      }
+      "id": "root-home",
+      "route_key": "home",
+      "path": "/",
+      "page_key": "demo-home",
+      "shortcut_id": "go-home",
+      "label_key": "nav.home",
+      "required_permission_keys": ["demo.permission.view-home"]
     }
   ]
 }

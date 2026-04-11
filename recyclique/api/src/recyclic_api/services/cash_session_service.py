@@ -16,6 +16,7 @@ from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.schemas.cash_session import CashSessionFilters, CashSessionStep as ApiCashSessionStep
 from recyclic_api.core.logging import log_transaction_event
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.services.stats_service import _created_at_end_filter
 
 CLOSE_VARIANCE_TOLERANCE = 0.05
 
@@ -896,7 +897,8 @@ class CashSessionService:
             # Rendre la date consciente du fuseau horaire (UTC)
             if date_to.tzinfo is None:
                 date_to = date_to.replace(tzinfo=timezone.utc)
-            query = query.filter(CashSession.opened_at <= date_to)
+            # Même borne inclusive « jour calendaire » que StatsService (réception / sorties réception).
+            query = query.filter(_created_at_end_filter(CashSession.opened_at, date_to))
         
         # Statistiques de base
         total_sessions = query.count()
@@ -922,7 +924,7 @@ class CashSessionService:
         if date_to:
             if date_to.tzinfo is None:
                 date_to = date_to.replace(tzinfo=timezone.utc)
-            sales_query = sales_query.filter(Sale.created_at <= date_to)
+            sales_query = sales_query.filter(_created_at_end_filter(Sale.created_at, date_to))
 
         # Nombre de ventes (COUNT sur Sale avec filtres de date)
         number_of_sales = int(sales_query.count() or 0)
@@ -963,23 +965,17 @@ class CashSessionService:
         )
         poids_ventes = float(total_weight_result or 0.0)
         
-        # Story B48-P3: Ajouter les sorties depuis réception (is_exit=true) pour weight_out
-        if date_from and date_to:
-            poids_exit_reception = (
-                self.db.query(func.coalesce(func.sum(LigneDepot.poids_kg), 0))
-                .join(TicketDepot, LigneDepot.ticket_id == TicketDepot.id)
-                .filter(
-                    and_(
-                        LigneDepot.is_exit == True,  # Uniquement les sorties
-                        TicketDepot.created_at >= date_from,
-                        TicketDepot.created_at <= date_to
-                    )
-                )
-                .scalar()
-            )
-            poids_exit_reception = float(poids_exit_reception or 0.0)
-        else:
-            poids_exit_reception = 0.0
+        # Story B48-P3: Ajouter les sorties depuis réception (is_exit=true) pour weight_out.
+        exit_query = (
+            self.db.query(func.coalesce(func.sum(LigneDepot.poids_kg), 0))
+            .join(TicketDepot, LigneDepot.ticket_id == TicketDepot.id)
+            .filter(LigneDepot.is_exit == True)
+        )
+        if date_from:
+            exit_query = exit_query.filter(TicketDepot.created_at >= date_from)
+        if date_to:
+            exit_query = exit_query.filter(_created_at_end_filter(TicketDepot.created_at, date_to))
+        poids_exit_reception = float(exit_query.scalar() or 0.0)
         
         total_weight_sold = poids_ventes + poids_exit_reception
         

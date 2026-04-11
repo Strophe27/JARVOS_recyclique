@@ -4,6 +4,11 @@
 
 - **[guide-pilotage-v2.md](../guide-pilotage-v2.md)** — Document maître d’exécution : réconciliation séquence PRD / décision directrice et **Pistes A/B** ; jalons Convergence 1–3 et Epics 1–10 (cases à cocher aux grands jalons) ; **où ranger** audits, schémas BDD, handoffs, rapports de tests ; frictions ; prompt type agent superviseur ; **correct course**. Abstract canonique : [references/index.md](../../../references/index.md) (État et suivi).
 
+## Infrastructure / données (décisions récentes)
+
+- **[adr-postgresql-17-migration.md](./adr-postgresql-17-migration.md)** — **ADR** : cible **PostgreSQL 17**, stratégies de migration (`pg_dump`/`pg_restore` vs `pg_upgrade`), alignement **compose racine + CI** uniquement ; **`recyclique-1.4.4/` exclu** (legacy). Backend canonique **`recyclique/api/`**. Recherche technique : [technical-migration-postgresql-15-vers-17-recyclique-research-2026-04-11.md](../research/technical-migration-postgresql-15-vers-17-recyclique-research-2026-04-11.md). Indépendant des epics métier (8, 11, etc.) — chantier plateforme.
+- **[operations/runbook-spike-postgresql-15-vers-17.md](../operations/runbook-spike-postgresql-15-vers-17.md)** — **Runbook spike** Epic 10.6c : backup, dump/restore, `pg_upgrade --check`, vérifs, rollback, risques, volumes ; preuve d’exécution ; aligné ADR + recherche. Les changements d’image `postgres:*` et workflows relèvent de **10.6d** ; tests applicatifs PG 17 de **10.6e**.
+
 ## Hypothèses post-V2 (hors backlog, non sprint)
 
 - **[post-v2-hypothesis-marketplace-modules.md](./post-v2-hypothesis-marketplace-modules.md)** — Marketplace / modules complémentaires (distribution, activation) **séparé** du cœur métier Recyclique ; alignement avec contrats v2 ; pas d’epic tant que non promu. Visible depuis [references/index.md](../../../references/index.md).
@@ -12,6 +17,7 @@
 ## Table of Contents
 
 - [Architecture Decision Document](#table-of-contents)
+  - [ADR — PostgreSQL 17 (migration)](./adr-postgresql-17-migration.md)
   - [Project Context Analysis](./project-context-analysis.md)
     - [Requirements Overview](./project-context-analysis.md#requirements-overview)
     - [Technical Constraints & Dependencies](./project-context-analysis.md#technical-constraints-dependencies)

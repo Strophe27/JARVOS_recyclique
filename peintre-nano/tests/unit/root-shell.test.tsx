@@ -78,6 +78,19 @@ describe('RootShell (grille et zones nommées)', () => {
     expect(screen.getByText('main body')).toBeTruthy();
   });
 
+  it('minimalChrome sans regions.header : pas de rangée header shell (alignement live / dashboard sans topstrip)', () => {
+    render(
+      <RootProviders>
+        <RootShell minimalChrome regions={{ main: <span data-testid="live-main-only">corps</span> }}>
+          <span>ignored</span>
+        </RootShell>
+      </RootProviders>,
+    );
+
+    expect(screen.queryByTestId('shell-zone-header')).toBeNull();
+    expect(screen.getByTestId('live-main-only')).toBeTruthy();
+  });
+
   it('hideNav : pas de zone nav, marqueur kiosque vente, grille sans colonne nav (story 11.3)', () => {
     render(
       <RootProviders>

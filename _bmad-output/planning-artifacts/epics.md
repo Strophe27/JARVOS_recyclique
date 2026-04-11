@@ -2350,6 +2350,75 @@ So that I can start the product stack without guessing between `recyclique/`, `r
 **Then** it updates the relevant README / startup docs / compose references
 **And** it avoids reopening backend feature work that already shipped in Epic 2
 
+### Story 10.6c: Documenter et valider le spike de migration PostgreSQL 15 -> 17 hors legacy
+
+As an operations-conscious delivery team,
+I want a documented and testable migration spike for PostgreSQL 15 -> 17 on the canonical stack,
+So that the version bump is backed by an explicit data-migration path rather than a blind image change.
+
+**Acceptance Criteria:**
+
+**Given** the accepted ADR excludes `recyclique-1.4.4/` from this chantier
+**When** the spike is prepared
+**Then** the procedure and evidence only target the canonical stack (`docker-compose.yml` racine, `recyclique/api/`, CI, runbooks non legacy)
+**And** the documentation reiterates that no migration action is required or planned in `recyclique-1.4.4/`
+
+**Given** a major PostgreSQL upgrade requires a data migration strategy
+**When** the spike is completed
+**Then** the project documents at least one validated path (`pg_dump` / `pg_restore` and/or `pg_upgrade --check` with decision notes)
+**And** the runbook records backup, verification, rollback, and residual risk in a bounded form usable by maintainers
+
+**Given** this story is a spike plus operability story rather than a hidden infrastructure rewrite
+**When** it is accepted
+**Then** the resulting documentation is short, actionable, and aligned with the ADR and technical research
+**And** it does not broaden the scope to unrelated deployment refactors or legacy compose changes
+
+### Story 10.6d: Aligner le compose racine et la CI non legacy sur PostgreSQL 17
+
+As a delivery platform team,
+I want the canonical local stack and CI services to target PostgreSQL 17 consistently,
+So that development and automated checks stop diverging on the supported database major version.
+
+**Acceptance Criteria:**
+
+**Given** the ADR names `docker-compose.yml` racine and the listed GitHub workflows as in-scope surfaces
+**When** the infrastructure alignment is implemented
+**Then** the root `postgres` service and the relevant CI `postgres` services target PostgreSQL 17 (or a documented patch-pinned 17 tag where required)
+**And** the change set remains explicitly limited to non legacy surfaces
+
+**Given** the repository still contains legacy assets under `recyclique-1.4.4/`
+**When** this story is completed
+**Then** no migration requirement, compose change, or support promise is added there for this chantier
+**And** any remaining references keep the legacy status explicit
+
+**Given** a simple image bump is unsafe without migration awareness
+**When** the story is reviewed
+**Then** the implementation points to the spike / runbook that explains the data migration prerequisite
+**And** the compose / CI alignment is coherent with that documented procedure
+
+### Story 10.6e: Verifier `recyclique/api` et Alembic sur PostgreSQL 17
+
+As a backend maintainer,
+I want the canonical API and migration path to be exercised against PostgreSQL 17,
+So that the stack upgrade has concrete application-level evidence rather than infrastructure-only optimism.
+
+**Acceptance Criteria:**
+
+**Given** the living backend is `recyclique/api/`
+**When** validation is executed against PostgreSQL 17
+**Then** the relevant Alembic path and a bounded pytest selection are run or explicitly documented with outcomes
+**And** blocking regressions inside the in-scope backend surface are either fixed or reported before the story can be marked done
+
+**Given** the chantier is intentionally bounded
+**When** validation evidence is recorded
+**Then** it focuses on `recyclique/api/` plus its PostgreSQL-dependent checks
+**And** it does not reopen unrelated frontend or product backlog work
+
+**Given** a deployability story needs operator trust
+**When** this story is accepted
+**Then** the project has a concise verification trail for PostgreSQL 17 compatibility
+**And** the final QA can cite that evidence directly
+
 ### Story 10.7: Definir et verifier les gates de beta interne et de v2 vendable
 
 As a product owner and delivery team,
@@ -2473,4 +2542,191 @@ So that a critical terrain path becomes testable in the new UI without moving bu
 **When** the story is accepted
 **Then** the matrix line `ui-pilote-03-caisse-vente-kiosk` includes manual proof on `localhost:4445`, a network proof point on the nominal sale path, and explicit contract mapping for the delivered surface
 **And** no extra business rules are recreated in UI state beyond the bounded local interaction state needed to drive the flow
+
+## Epic 12: Etendre la parite UI legacy de la reception dans `Peintre_nano`
+
+L'equipe peut etendre la methode legacy-first validee par l'Epic 11 aux ecrans et sous-parcours reception prioritaires, avec preuves terrain sur `localhost:4445`, sans deplacer l'autorite metier hors de `Recyclique` ni absorber des chantiers de convergence qui relevent deja des epics precedents.
+
+**Note agents (create-story / review) :** cet epic reste etroit. Il traite la **parite UI observable** et la cartographie contractuelle de la reception legacy vers `Peintre_nano`, ecran par ecran. Ne pas y glisser de refonte categorie, de logique metier reception recomposee dans le frontend, ni de sujets sync/Paheko hors gaps deja nommes.
+Les artefacts de l'Epic 11 servent de methode de reference ; produire un pack reception dedie (cadrage, matrice, story seeds, preuves) avant de chercher la fermeture complete.
+
+**Repere de lecture operationnel :** reutiliser la discipline `OpenAPI > ContextEnvelope > NavigationManifest > PageManifest > UserRuntimePrefs`, les preuves DevTools sur le legacy et l'analyse du code `recyclique-1.4.4` quand le comportement observable doit etre tranche.
+
+### Story 12.1: Retrouver l'acces reception observable dans `Peintre_nano`
+
+As a user with reception access,
+I want the reception entry path and its immediate shell to match the observed legacy route,
+So that I can retrouver the correct point of entry before deeper migration of the reception workflow.
+
+**Acceptance Criteria:**
+
+**Given** the legacy reception access path is observed on `localhost:4445`
+**When** the first reception story is implemented
+**Then** `Peintre_nano` exposes the same bounded access intent, shell cues, and immediate context as the reference path in scope
+**And** the route alignment decision is explicit rather than silently assumed
+
+**Given** the hierarchy of truth remains `OpenAPI > ContextEnvelope > NavigationManifest > PageManifest > UserRuntimePrefs`
+**When** the reception access slice is delivered
+**Then** the rendered access state is anchored to reviewable contracts, navigation/page manifests, and explicit runtime preferences
+**And** any missing backend contract is documented as a gap instead of being recreated in frontend state
+
+### Story 12.2: Retrouver le flux nominal d'entree reception observable dans `Peintre_nano`
+
+As a reception operator,
+I want the nominal intake sequence to feel and behave like the legacy reference,
+So that the critical terrain path can be exercised in the new UI without inventing a new workflow.
+
+**Acceptance Criteria:**
+
+**Given** the nominal reception flow is observed in the legacy UI
+**When** the intake story is delivered
+**Then** the bounded sequence in scope reproduces the same main steps, visible states, and operator cues at an equivalent functional level
+**And** the story states explicitly what remains out of scope in the matrix
+
+**Given** reception remains business-authoritative in the API
+**When** the story is accepted
+**Then** only local interaction state needed for rendering is handled in `Peintre_nano`
+**And** category, validation, and business decisions stay mapped to reviewable backend authority
+
+### Story 12.3: Retrouver la mesure et la qualification reception observables dans `Peintre_nano`
+
+As a reception operator,
+I want the mesure / qualification parts of the reception path to match the observed legacy behavior in the bounded scope,
+So that the migrated UI remains credible on the terrain-critical details that users actually see.
+
+**Acceptance Criteria:**
+
+**Given** the legacy reception UI exposes measurement and qualification states in the nominal path
+**When** this story is implemented
+**Then** the delivered slice reproduces the visible controls, transitions, and feedback explicitly retained in scope
+**And** unsupported branches are marked as gaps, not hidden inside the implementation
+
+**Given** this epic must stay bounded
+**When** the story is reviewed
+**Then** the matrix records proof points, contract mappings, and residual risks for the delivered reception surface
+**And** no silent expansion to full reception domain coverage is accepted
+
+## Epic 13: Etendre la parite UI legacy de la caisse au-dela du kiosque nominal dans `Peintre_nano`
+
+L'equipe peut prolonger la parite UI amorcee par la story 11.3 sur les ecrans et variantes caisse encore critiques sur le terrain, toujours avec preuves legacy sur `localhost:4445`, sans respecifier le domaine caisse deja cadre par l'Epic 6.
+
+**Note agents (create-story / review) :** Epic 6 reste la reference fonctionnelle metier caisse. Cet epic couvre la **parite UI observable** des ecrans caisse restants et l'alignement contractuel de rendu dans `Peintre_nano`. Ne pas absorber de nouvelles regles caisse, ni traiter comme equivalent sans decision ecrite le slice CREOS `/caisse` et toute route legacy plus riche.
+
+**Repere de lecture operationnel :** repartir de la matrice et des preuves de l'Epic 11, puis ouvrir un pack dedie pour les extensions caisse encore visibles au legacy (variants, retours, cloture, signaux, raccourcis si confirmes).
+
+### Story 13.1: Retrouver les ecrans caisse adjacents au kiosque observable dans `Peintre_nano`
+
+As a cashier with an active session,
+I want the UI states immediately before or after the nominal kiosk sale flow to match the observed legacy behavior,
+So that the migrated path does not stop at a misleadingly isolated kiosk screen.
+
+**Acceptance Criteria:**
+
+**Given** the legacy caisse flow includes adjacent UI states around the kiosk path
+**When** the extension story is implemented
+**Then** the bounded pre/post-kiosk screens in scope are rendered with equivalent shell cues, context, and transitions
+**And** the retained scope is documented explicitly in the matrix
+
+**Given** the delivered path must remain contract-driven
+**When** the story is accepted
+**Then** every displayed block is mapped to reviewable contracts or flagged as deferred
+**And** no hidden caisse business fallback is recreated in frontend code
+
+### Story 13.2: Retrouver les variantes caisse explicitement retenues dans la matrice de parite
+
+As a cashier,
+I want the explicitly approved caisse variants to feel and behave like the observed legacy reference,
+So that important terrain branches can be tested in `Peintre_nano` without guessing their UI.
+
+**Acceptance Criteria:**
+
+**Given** some caisse variants are observed on the legacy reference and approved in the matrix
+**When** this story is implemented
+**Then** only those approved variants are delivered with explicit route and contract alignment decisions
+**And** all other variants remain excluded or marked as gaps
+
+**Given** Epic 6 remains the caisse authority
+**When** review happens
+**Then** the story proves UI parity in scope without redefining caisse business rules
+**And** any mismatch between legacy route shape and current CREOS slice is written down explicitly
+
+### Story 13.3: Retrouver la cloture ou fin de session caisse observable dans `Peintre_nano`
+
+As a cashier or supervisor,
+I want the bounded caisse session closing UI to match the legacy reference where it is in scope,
+So that the extended caisse surface remains coherent from sale to end-of-session cues.
+
+**Acceptance Criteria:**
+
+**Given** the legacy reference exposes a visible end-of-session or closing path
+**When** this story is delivered
+**Then** `Peintre_nano` reproduces the retained shell, signals, and operator-facing steps at an equivalent functional level
+**And** sync, accounting, or backend-heavy consequences outside the UI scope stay delegated to the proper epics and contracts
+
+**Given** this path is operationally sensitive
+**When** the story is accepted
+**Then** DevTools proof, contract mapping, and residual gaps are all recorded explicitly
+**And** no ambiguous completion state is left undocumented
+
+## Epic 14: Etendre la parite UI legacy de l'administration dans `Peintre_nano`
+
+L'equipe peut retrouver dans `Peintre_nano` les vues d'administration legacy prioritaires pour le parametage quotidien et la supervision simple, avec selection de contexte explicite et preuves de rendu, sans contourner les regles de permissions, de step-up, ou de separation multi-contexte.
+
+**Note agents (create-story / review) :** cet epic distingue l'administration observable de la logique de gouvernance deja traitee ailleurs. Ne pas y glisser de contournement auth, de bypass PIN, ni d'analytique avancee non deja bornee. Les decisions de persistance et de gouvernance restent dans leurs epics de reference ; ici on traite la **parite UI observable** et le fil contractuel vers `Peintre_nano`.
+
+**Repere de lecture operationnel :** s'appuyer sur les invariants multi-contextes, les permissions du `ContextEnvelope`, les manifests de navigation, puis trancher avec DevTools legacy et code `recyclique-1.4.4` avant toute extension admin.
+
+### Story 14.1: Retrouver le shell et le choix de contexte admin observables dans `Peintre_nano`
+
+As an authorized admin user,
+I want the admin shell and its visible context selection cues to match the legacy reference,
+So that I can navigate the admin space without losing the expected site or scope framing.
+
+**Acceptance Criteria:**
+
+**Given** the legacy admin access path is observed on `localhost:4445`
+**When** the first admin story is delivered
+**Then** the admin entry shell, navigation cues, and visible context selection states in scope match the legacy intent at an equivalent functional level
+**And** the story states explicitly how multi-context rendering is bounded
+
+**Given** admin UI is permission-sensitive
+**When** the slice is reviewed
+**Then** access control remains driven by `ContextEnvelope` and reviewable manifests
+**And** any missing step-up or context contract is surfaced as a documented gap
+
+### Story 14.2: Retrouver les ecrans de parametres admin simples observables dans `Peintre_nano`
+
+As an authorized admin user,
+I want the bounded simple configuration screens to feel and behave like the legacy reference,
+So that day-to-day administration regains a recognizable UI before broader migration work.
+
+**Acceptance Criteria:**
+
+**Given** some simple admin parameter screens are selected in the parity matrix
+**When** this story is implemented
+**Then** only those bounded screens are rendered with equivalent visible structure, controls, and feedback
+**And** any persistence authority stays mapped to existing contracts rather than improvised in the frontend
+
+**Given** admin scope can easily sprawl
+**When** the story is accepted
+**Then** retained screens, excluded screens, and residual risks are all explicit in the matrix and proof set
+**And** no hidden expansion to the full admin domain is accepted
+
+### Story 14.3: Retrouver les vues admin de supervision simple observables dans `Peintre_nano`
+
+As an authorized admin user,
+I want the bounded read-oriented admin supervision views to resemble the legacy reference,
+So that Peintre regains credible admin visibility without inventing a new reporting product.
+
+**Acceptance Criteria:**
+
+**Given** the legacy admin area exposes simple supervision or list views in the retained scope
+**When** this story is delivered
+**Then** the corresponding `Peintre_nano` surfaces reproduce the visible blocks, navigation, and labels that are explicitly kept in scope
+**And** advanced analytics or unrelated admin branches remain outside the story
+
+**Given** these views can leak across contexts if handled loosely
+**When** the story is reviewed
+**Then** the delivered rendering shows explicit context anchoring and permission handling
+**And** residual cross-context risks are documented rather than ignored
 

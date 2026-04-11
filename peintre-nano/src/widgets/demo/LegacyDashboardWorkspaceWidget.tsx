@@ -163,12 +163,24 @@ export function LegacyDashboardWorkspaceWidget({ widgetProps }: RegisteredWidget
       setError(null);
       const range = { start, end };
 
-      const [cash, reception, receptionByCat, salesCat] = await Promise.all([
+      const [cash, reception, receptionByCat] = await Promise.all([
         fetchCashSessionStatsSummary(auth, range, ac.signal),
         fetchReceptionStatsSummary(auth, range, ac.signal),
         fetchReceptionByCategory(auth, range, ac.signal),
-        fetchSalesByCategory(auth, range, ac.signal).catch(() => [] as CategoryStatRow[]),
       ]);
+
+      let salesCat: CategoryStatRow[] = [];
+      try {
+        salesCat = await fetchSalesByCategory(auth, range, ac.signal);
+      } catch (e) {
+        if (!(e instanceof DOMException && e.name === 'AbortError')) {
+          if (!(e instanceof Error && e.name === 'AbortError')) {
+            // Ne pas masquer une 5xx / JSON invalide : les KPI viennent d’autres endpoints.
+            console.error('[LegacyDashboard] GET /v1/stats/sales/by-category', e);
+          }
+        }
+        salesCat = [];
+      }
 
       if (ac.signal.aborted) {
         return;
@@ -177,7 +189,7 @@ export function LegacyDashboardWorkspaceWidget({ widgetProps }: RegisteredWidget
       setSalesStats(cash);
       setReceptionStats(reception);
       setReceptionByCategoryRaw(Array.isArray(receptionByCat) ? receptionByCat : []);
-      setSalesByCategory(salesCat ?? []);
+      setSalesByCategory(Array.isArray(salesCat) ? salesCat : []);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         return;

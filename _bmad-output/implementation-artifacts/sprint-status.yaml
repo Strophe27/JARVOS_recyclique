@@ -22,6 +22,11 @@
 # last_updated: 2026-04-10 — epic-8-retrospective : development_status → done (epic-8-retro-2026-04-10.md)
 # last_updated: 2026-04-10 — story 8.7 Story Runner : gates→QA→CR (retry doc) ; 8-7 → done ; epic-8 → done ; registre ensuite consolidé avec preuve terrain réelle (historique AC6 B → A)
 # last_updated: 2026-04-10 — story 11.2 Story Runner : DS→gates→QA→CR PASS ; 11-2 → done (canon /dashboard, matrice ui-pilote-02, DevTools legacy)
+# last_updated: 2026-04-11 — story 10.6d Story Runner : CS→VS→DS→gates→QA→CR ; 10-6d → done (compose racine + CI postgres:17, smoke pytest)
+# last_updated: 2026-04-11 — story 10.6c Story Runner : CS→VS→DS→gates→QA→CR ; 10-6c → done (runbook operations, pytest infra smoke)
+# last_updated: 2026-04-11 — story 10.6c DS bmad-dev-story (Task) : 10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy ready-for-dev → review (runbook operations + preuve spike Docker)
+# last_updated: 2026-04-11 — story 10.6c CS bmad-create-story : 10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy backlog → ready-for-dev (fichier story + sprint-status) ; epic-10 reste in-progress
+# last_updated: 2026-04-11 — planning BMAD : ajout des epics 12 a 14 (reception, caisse extension, administration) dans `epics.md` et synchronisation `sprint-status.yaml` en backlog
 # last_updated: 2026-04-10 — story 11.3 DS (Task) : alias /cash-register/sale kiosque + matrice ui-pilote-03 ; gates peintre-nano lint/test PASS ; 11-3 → review
 # last_updated: 2026-04-10 — story 11.2 DS (Task) : dashboard post-login /dashboard + matrice ui-pilote-02 ; gates peintre-nano lint/test PASS ; 11-2 → review
 # last_updated: 2026-04-10 — story 11.1 DS (Story Runner resume_at DS) : login public CREOS + LiveAuthShell ; gates lint/build/test PASS ; 11-1 → review
@@ -113,7 +118,9 @@
 
 generated: "2026-04-01"
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
-last_updated: "2026-04-10" # story 11.3 Story Runner : gates→QA→CR PASS ; doc CREOS + matrice + slash final ; 11-3 → done
+last_updated: "2026-04-11" # epic-11-retrospective → done (epic-11-retro-2026-04-11.md) ; 10-6e Story Runner (Plan B) → done
+# last_updated: "2026-04-11" # story 10.6d Story Runner : gates docker compose + pytest infra OK ; 10-6d-aligner-le-compose-racine-et-la-ci-non-legacy-sur-postgresql-17 → done
+# last_updated: "2026-04-11" # story 10.6c Story Runner : gates docker compose OK ; QA pytest infra OK ; CR APPROVED ; 10-6c → done
 # last_updated: "2026-04-10" # story 8.1 Story Runner DS→gates→QA→CR : 8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko review → done
 # last_updated: "2026-04-10" # epic-7-retrospective : development_status → done (epic-7-retro-2026-04-10.md)
 # last_updated: "2026-04-09" # story 7.6 Story Runner : CS→VS→DS→gates→QA→CR ; 7-6 → done ; epic-7 → done
@@ -221,7 +228,7 @@ development_status:
   9-8-valider-la-coherence-des-modules-complementaires-v2: backlog
   epic-9-retrospective: optional
 
-  epic-10: backlog
+  epic-10: in-progress
   10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: backlog
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: backlog
@@ -229,6 +236,9 @@ development_status:
   10-5-rendre-lobservabilite-et-le-support-exploitables-en-environnement-reel: backlog
   10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte: backlog
   10-6b-clarifier-le-point-dentree-docker-local-du-mono-repo: done
+  10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy: done
+  10-6d-aligner-le-compose-racine-et-la-ci-non-legacy-sur-postgresql-17: done
+  10-6e-verifier-recyclique-api-et-alembic-sur-postgresql-17: done
   10-7-definir-et-verifier-les-gates-de-beta-interne-et-de-v2-vendable: backlog
   10-8-valider-la-readiness-globale-de-la-v2: backlog
   epic-10-retrospective: optional
@@ -238,4 +248,22 @@ development_status:
   11-1-retrouver-la-connexion-publique-observable-dans-peintre-nano: done
   11-2-retrouver-le-dashboard-standard-observable-dans-peintre-nano: done
   11-3-retrouver-la-vente-caisse-kiosque-observable-dans-peintre-nano: done
-  epic-11-retrospective: optional
+  epic-11-retrospective: done
+
+  epic-12: backlog
+  12-1-retrouver-lacces-reception-observable-dans-peintre-nano: backlog
+  12-2-retrouver-le-flux-nominal-dentree-reception-observable-dans-peintre-nano: backlog
+  12-3-retrouver-la-mesure-et-la-qualification-reception-observables-dans-peintre-nano: backlog
+  epic-12-retrospective: optional
+
+  epic-13: backlog
+  13-1-retrouver-les-ecrans-caisse-adjacents-au-kiosque-observable-dans-peintre-nano: backlog
+  13-2-retrouver-les-variantes-caisse-explicitement-retenues-dans-la-matrice-de-parite: backlog
+  13-3-retrouver-la-cloture-ou-fin-de-session-caisse-observable-dans-peintre-nano: backlog
+  epic-13-retrospective: optional
+
+  epic-14: backlog
+  14-1-retrouver-le-shell-et-le-choix-de-contexte-admin-observables-dans-peintre-nano: backlog
+  14-2-retrouver-les-ecrans-de-parametres-admin-simples-observables-dans-peintre-nano: backlog
+  14-3-retrouver-les-vues-admin-de-supervision-simple-observables-dans-peintre-nano: backlog
+  epic-14-retrospective: optional

@@ -1,5 +1,6 @@
 /**
- * Bandeau supérieur type legacy RecyClique (présentation seule — pas de données métier).
+ * Titre de page sous la barre shell (auth live) — évite un second bandeau vert ; la barre globale
+ * est portée par `FilteredNavEntries` + `RootShell` (`navPresentation=legacyToolbar`).
  */
 .root {
   display: flex;
@@ -7,16 +8,14 @@
   justify-content: space-between;
   gap: var(--pn-space-md);
   width: 100%;
-  min-height: 3rem;
-  padding: var(--pn-space-sm) var(--pn-space-lg);
-  margin: calc(-1 * var(--pn-space-sm)) calc(-1 * var(--pn-space-md));
-  margin-bottom: 0;
+  min-height: 2.75rem;
+  padding: var(--pn-space-sm) 0;
+  margin: 0;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #2b8a3e 0%, #2f9e44 100%);
+  background: transparent;
   border: none;
-  border-radius: var(--pn-radius-md) var(--pn-radius-md) 0 0;
-  color: #fff;
-  box-shadow: 0 1px 0 rgb(0 0 0 / 12%);
+  border-radius: 0;
+  color: var(--pn-color-text, #212529);
 }
 
 .brand {
@@ -28,12 +27,12 @@
 .title {
   margin: 0;
   font-size: var(--pn-font-size-lg, 1.125rem);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .sub {
   margin: 0;
   font-size: var(--pn-font-size-sm, 0.875rem);
-  opacity: 0.92;
+  color: var(--pn-color-text-muted, #868e96);
 }

@@ -91,3 +91,47 @@
   flex-shrink: 0;
   margin-inline-start: auto;
 }
+
+/* --- Auth live : parité barre `Header.jsx` (recyclique-1.4.4) --- */
+.rootToolbarLegacy {
+  color: #fff;
+  font-size: 0.9375rem;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 12%);
+}
+
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-md, 1rem);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.rootToolbarLegacy .list {
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 0.25rem 1.75rem;
+}
+
+.rootToolbarLegacy .navButton {
+  color: #fff;
+  padding: 0.45rem 0.85rem;
+  border-radius: 4px;
+}
+
+.rootToolbarLegacy .navButton:hover {
+  background: rgb(255 255 255 / 10%);
+  text-decoration: none;
+}
+
+.rootToolbarLegacy .navButton[aria-current='true'] {
+  background: rgb(255 255 255 / 20%);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: none;
+}
