@@ -116,14 +116,14 @@ class TestReceptionSummaryEndpoint:
     """Tests for GET {API_V1_STR}/stats/reception/summary."""
 
     def test_summary_requires_authentication(self, client: TestClient, test_reception_data):
-        """Test that the endpoint requires authentication."""
+        """Sans jeton : ``get_current_user_strict`` via ``require_role_strict`` → 403 (Story 16.4)."""
         response = client.get(f"{_V1}/stats/reception/summary")
-        assert response.status_code == 401
+        assert response.status_code == 403
 
-    def test_summary_allows_authenticated_non_admin_user(
+    def test_summary_forbidden_for_authenticated_non_admin(
         self, client: TestClient, db_session: Session, test_reception_data
     ):
-        """Tout utilisateur authentifié peut lire le résumé (Depends get_current_user)."""
+        """Story 16.4 : agrégats réception — USER authentifié reçoit 403."""
         user = User(
             id=uuid4(),
             username="user@test.com",
@@ -140,11 +140,7 @@ class TestReceptionSummaryEndpoint:
             f"{_V1}/stats/reception/summary",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "total_weight" in data
-        assert "total_items" in data
-        assert "unique_categories" in data
+        assert response.status_code == 403
 
     def test_summary_success_no_filters(self, admin_client: TestClient, test_reception_data):
         """Test successful retrieval of summary without filters."""
@@ -239,14 +235,14 @@ class TestReceptionByCategoryEndpoint:
     """Tests for GET {API_V1_STR}/stats/reception/by-category."""
 
     def test_by_category_requires_authentication(self, client: TestClient, test_reception_data):
-        """Test that the endpoint requires authentication."""
+        """Sans jeton : 403 strict bearer (aligné summary)."""
         response = client.get(f"{_V1}/stats/reception/by-category")
-        assert response.status_code == 401
+        assert response.status_code == 403
 
-    def test_by_category_allows_authenticated_non_admin_user(
+    def test_by_category_forbidden_for_authenticated_non_admin(
         self, client: TestClient, db_session: Session, test_reception_data
     ):
-        """Tout utilisateur authentifié peut lire les stats par catégorie (Depends get_current_user)."""
+        """Story 16.4 : stats par catégorie réception — USER authentifié reçoit 403."""
         user = User(
             id=uuid4(),
             username="user2@test.com",
@@ -263,13 +259,7 @@ class TestReceptionByCategoryEndpoint:
             f"{_V1}/stats/reception/by-category",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        for item in data:
-            assert "category_name" in item
-            assert "total_weight" in item
-            assert "total_items" in item
+        assert response.status_code == 403
 
     def test_by_category_success_no_filters(self, admin_client: TestClient, test_reception_data):
         """Test successful retrieval of stats by category without filters."""

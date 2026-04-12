@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.user import UserUpdate
+from recyclic_api.core.security import hash_password
 from uuid import UUID
 
 from tests.api_v1_paths import v1
@@ -44,8 +45,25 @@ def test_user_profile_persistence_two_separate_requests(db_session: Session, cli
 
     assert update_response.status_code == 200
 
-    # Act: Récupérer l'utilisateur modifié (deuxième requête séparée)
-    get_response = client.get(v1(f"/users/{user_id}"))
+    admin = User(
+        username=f"admin_persist_{user_id.replace('-', '')[:20]}",
+        hashed_password=hash_password("Password1!Aa"),
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(admin)
+    db_session.commit()
+    db_session.refresh(admin)
+    login = client.post(
+        v1("/auth/login"),
+        json={"username": admin.username, "password": "Password1!Aa"},
+    )
+    assert login.status_code == 200
+    admin_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    # Act: Récupérer l'utilisateur modifié (deuxième requête séparée) — G-OA-03 : Bearer admin
+    get_response = client.get(v1(f"/users/{user_id}"), headers=admin_headers)
     assert get_response.status_code == 200
 
     user_data = get_response.json()

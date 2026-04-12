@@ -1,0 +1,30 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-pending",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Utilisateurs en attente de validation",
+        "title_level": "1",
+        "body": "Route legacy observable `/admin/pending` (`PendingUsers.tsx`). Shell admin transverse (Epic 14.1) : même famille de navigation et permissions manifestées que les autres entrées `/admin/*`."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.contract-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Écart OpenAPI canon (rail U — pas de contournement)",
+        "body": "Le legacy appelle `GET /v1/admin/users/pending` ; sous `contracts/openapi/recyclique-api.yaml`, la recherche `users/pending` est vide et le préfixe `/v1/admin/users` ne matérialise que `GET /v1/admin/users/{user_id}/groups`. Tout binding live type client généré doit attendre la fermeture **Epic 16** (rail K)."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.pending-users.demo",
+      "widget_props": {}
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button, List, Text, Title } from '@mantine/core';
 import type { NavigationEntry } from '../../types/navigation-manifest';
 import type { PageManifest } from '../../types/page-manifest';
@@ -22,6 +22,7 @@ import { transversePageStateFromSearch } from './runtime-demo-transverse-state';
 import classes from './RuntimeDemoApp.module.css';
 import { LiveShellBrand } from '../shell/LiveShellBrand';
 import { LiveShellUserMenu } from '../shell/LiveShellUserMenu';
+import { LiveAdminPerimeterStrip } from '../shell/LiveAdminPerimeterStrip';
 
 /** Affiche `restriction_message` quand l’enveloppe le fournit — ne remplace pas `resolvePageAccess`. */
 function ContextRestrictionBanner({ message }: { readonly message: string | null | undefined }) {
@@ -61,6 +62,9 @@ function RuntimePrefsToolbar() {
  * Parcours démo : même pipeline que le socle (`loadManifestBundle`, filtre nav, garde page, `buildPageManifestRegions`).
  */
 const ADMIN_CASH_SESSION_PATH = /^\/admin\/cash-sessions\/[^/]+\/?$/;
+
+/** Story 19.2 — détail ticket réception : même logique de sélection nav hub que `ADMIN_CASH_SESSION_PATH` (18.2). */
+const ADMIN_RECEPTION_TICKET_PATH = /^\/admin\/reception-tickets\/[^/]+\/?$/;
 
 /**
  * Story 6.5 : anciennes routes « mini-pages » → workspace nominal `/caisse` (CREOS sans entrées nav dédiées).
@@ -108,6 +112,12 @@ function pathnameNoTrailingSlashExceptRoot(path: string): string {
   return path;
 }
 
+/** Epic 14.1 — périmètre shell admin transverse (CREOS `/admin` + sous-routes manifestées). */
+function isTransverseAdminShellPath(path: string): boolean {
+  const p = pathnameNoTrailingSlashExceptRoot(path);
+  return p === '/admin' || p.startsWith('/admin/');
+}
+
 function isCashRegisterSaleKioskPath(path: string): boolean {
   const p = pathnameNoTrailingSlashExceptRoot(path);
   return (
@@ -144,6 +154,21 @@ function sessionCloseSaleLegacyPath(pathRoute: string): string {
 
 function isCashRegisterVirtualHubPath(path: string): boolean {
   return pathnameNoTrailingSlashExceptRoot(path) === CASH_REGISTER_VIRTUAL_ROOT_PATH;
+}
+
+/**
+ * Story 13.6 — chemins `page_key` `cashflow-nominal` : chrome démo (bac à sable, prefs, bandeau versions)
+ * masqué hors captures « outil » pour rapprocher l’expérience du legacy certifié (`guide-pilotage-v2.md`).
+ */
+function isCashflowNominalCertificationPathRoute(path: string): boolean {
+  const p = pathnameNoTrailingSlashExceptRoot(path);
+  if (p === '/caisse' || LEGACY_SPECIAL_CASHFLOW_PATHS.has(p)) return true;
+  if (isCashRegisterSaleKioskPath(path)) return true;
+  if (isCashRegisterSessionOpenPath(path)) return true;
+  if (isCashRegisterSessionClosePath(path)) return true;
+  if (isCashRegisterVirtualHubPath(path)) return true;
+  if (p === CASH_REGISTER_DEFERRED_ROOT_PATH) return true;
+  return false;
 }
 
 /**
@@ -206,6 +231,62 @@ function withCashflowNominalSessionClosePresentation(page: PageManifest, pathRou
   };
 }
 
+/**
+ * Story 13.6 — routes kiosque `…/sale` : le manifeste porte encore `presentation_surface: hub` sur le widget brownfield ;
+ * sans surcouche, un **reload** sur `/cash-register/sale` réaffiche titre hub + modes + formulaire d’ouverture **en plus** du wizard (hybride).
+ * On borne l’intention **poste de vente nominal** via `widget_props` reviewables (pas de second `PageManifest`).
+ */
+function withCashflowNominalKioskSaleDashboard(page: PageManifest, pathRoute: string): PageManifest {
+  if (page.pageKey !== 'cashflow-nominal' || !isCashRegisterSaleKioskPath(pathRoute)) return page;
+  return {
+    ...page,
+    slots: page.slots.map((slot) => {
+      if (slot.widgetType !== 'caisse-brownfield-dashboard') return slot;
+      const base = slot.widgetProps ?? {};
+      return {
+        ...slot,
+        widgetProps: {
+          ...base,
+          sale_kiosk_minimal_dashboard: true,
+        },
+      };
+    }),
+  };
+}
+
+/**
+ * Story 13.8 — alias `…/sale` : grille catégories + parcours lignes dans le wizard (même `PageManifest`, surcouche reviewable).
+ * Alignement blueprint 13.7 (intention grille catégories) ; pas de second manifeste CREOS.
+ */
+function withCashflowNominalKioskSaleWizard(page: PageManifest, pathRoute: string): PageManifest {
+  if (page.pageKey !== 'cashflow-nominal' || !isCashRegisterSaleKioskPath(pathRoute)) return page;
+  return {
+    ...page,
+    slots: page.slots.map((slot) => {
+      const base = slot.widgetProps ?? {};
+      if (slot.widgetType === 'cashflow-nominal-wizard') {
+        return {
+          ...slot,
+          widgetProps: {
+            ...base,
+            sale_kiosk_category_workspace: true,
+          },
+        };
+      }
+      if (slot.widgetType === 'caisse-current-ticket') {
+        return {
+          ...slot,
+          widgetProps: {
+            ...base,
+            sale_kiosk_unified_ui: true,
+          },
+        };
+      }
+      return slot;
+    }),
+  };
+}
+
 function withCashflowNominalCaisseHubPresentation(page: PageManifest, pathRoute: string): PageManifest {
   const p = pathnameNoTrailingSlashExceptRoot(pathRoute);
   if (page.pageKey !== 'cashflow-nominal' || (p !== '/caisse' && !isCashRegisterVirtualHubPath(pathRoute))) {
@@ -251,6 +332,13 @@ export function RuntimeDemoApp() {
     typeof window !== 'undefined' ? window.location.search : '',
   );
 
+  const cashflowCertificationUi = useMemo(
+    () => isCashflowNominalCertificationPathRoute(pathRoute),
+    [pathRoute],
+  );
+  /** Auth live **ou** parcours caisse nominal en démo : pas de zones shell décoratives ni de bruit « runtime démo » sur le chemin certifié. */
+  const minimalAppChrome = hideSandboxBanner || cashflowCertificationUi;
+
   const shellPresentation = {
     uiDensity: prefs.uiDensity,
     sidebarPanelOpen: prefs.sidebarPanelOpen,
@@ -282,9 +370,65 @@ export function RuntimeDemoApp() {
       window.history.replaceState({}, '', `${CASH_REGISTER_DEFERRED_SESSION_OPEN_PATH}${qs}`);
       path = window.location.pathname;
     }
+    /** Story 18.1 — CR : `/admin/reports` n’est pas dans le NavigationManifest servi ; alias → `/admin` (`transverse-admin`). */
+    if (pathnameNoTrailingSlashExceptRoot(path) === '/admin/reports') {
+      const qs = window.location.search;
+      window.history.replaceState({}, '', `/admin${qs}`);
+      path = window.location.pathname;
+    }
     setPathRoute(path);
     const pathForMatch = pathnameNoTrailingSlashExceptRoot(path);
+    if (ADMIN_RECEPTION_TICKET_PATH.test(path)) {
+      setSelectedEntryId('transverse-admin');
+      setSearchSnapshot(window.location.search);
+      return;
+    }
     if (ADMIN_CASH_SESSION_PATH.test(path)) {
+      setSelectedEntryId('transverse-admin');
+      setSearchSnapshot(window.location.search);
+      return;
+    }
+    if (isTransverseAdminShellPath(path)) {
+      if (pathForMatch === '/admin/access') {
+        setSelectedEntryId('transverse-admin-access');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/site') {
+        setSelectedEntryId('transverse-admin-site');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/pending') {
+        setSelectedEntryId('transverse-admin-pending');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/cash-registers') {
+        setSelectedEntryId('transverse-admin-cash-registers');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/sites') {
+        setSelectedEntryId('transverse-admin-sites');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/session-manager') {
+        setSelectedEntryId('transverse-admin-session-manager');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/reception-stats') {
+        setSelectedEntryId('transverse-admin-reception-stats');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/reception-sessions') {
+        setSelectedEntryId('transverse-admin-reception-sessions');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
       setSelectedEntryId('transverse-admin');
       setSearchSnapshot(window.location.search);
       return;
@@ -362,6 +506,9 @@ export function RuntimeDemoApp() {
   const selectedEntry = flatFiltered.find((e) => e.id === resolvedEntryId);
 
   const resolvedPageKey = useMemo(() => {
+    if (ADMIN_RECEPTION_TICKET_PATH.test(pathRoute)) {
+      return 'admin-reception-ticket-detail';
+    }
     if (ADMIN_CASH_SESSION_PATH.test(pathRoute)) {
       return 'admin-cash-session-detail';
     }
@@ -376,7 +523,8 @@ export function RuntimeDemoApp() {
   }, [pathRoute, selectedEntry?.pageKey]);
 
   const kioskSaleObservable = isCashRegisterSaleKioskPath(pathRoute);
-  const showSandboxBanner = !hideSandboxBanner && !kioskSaleObservable;
+  const showSandboxBanner = !hideSandboxBanner && !kioskSaleObservable && !cashflowCertificationUi;
+  const showLiveAdminPerimeterStrip = hideSandboxBanner && isTransverseAdminShellPath(pathRoute);
 
   const pageForAccess = useMemo(() => {
     if (!bundle) return undefined;
@@ -400,6 +548,8 @@ export function RuntimeDemoApp() {
     let p = withCashflowNominalSessionOpenPresentation(pageForAccess, pathRoute);
     p = withCashflowNominalSessionClosePresentation(p, pathRoute);
     p = withCashflowNominalCaisseHubPresentation(p, pathRoute);
+    p = withCashflowNominalKioskSaleDashboard(p, pathRoute);
+    p = withCashflowNominalKioskSaleWizard(p, pathRoute);
     /** Hub `/caisse` et ouverture session : le wizard + ticket latéral sont retirés ; le dashboard reste en slot `main` (pas le faux header shell). */
     if (suppressCashflowNominalWorkspaceSaleAndAside) {
       p = {
@@ -428,6 +578,12 @@ export function RuntimeDemoApp() {
         : undefined;
     return buildPageManifestRegions(pageManifestForRegions, { wrapUnmappedSlotContent });
   }, [pageManifestForRegions, searchSnapshot]);
+
+  /** Même `page_key` + même slot : React recycle le widget ; après SPA hub → `…/session/open`, l’état local restait « hub » jusqu’au reload. */
+  const cashflowNominalMainRemountKey =
+    resolvedPageKey === 'cashflow-nominal'
+      ? `${pathnameNoTrailingSlashExceptRoot(pathRoute)}${searchSnapshot}`
+      : resolvedPageKey;
   const pageAccess = pageForAccess ? resolvePageAccess(pageForAccess, envelope) : { allowed: false as const, code: 'MISSING_PERMISSIONS' as const, message: 'Page introuvable.' };
 
   if (!manifestLoadResult.ok) {
@@ -437,7 +593,7 @@ export function RuntimeDemoApp() {
         <RootShell
           shellPresentation={shellPresentation}
           hideNav={kioskSaleObservable}
-          minimalChrome={hideSandboxBanner}
+          minimalChrome={minimalAppChrome}
           navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
         >
           <ManifestErrorBanner issues={manifestLoadResult.issues} />
@@ -450,7 +606,7 @@ export function RuntimeDemoApp() {
 
   const navRegion = (
     <>
-      {!hideSandboxBanner ? <RuntimePrefsToolbar /> : null}
+      {!hideSandboxBanner && !cashflowCertificationUi ? <RuntimePrefsToolbar /> : null}
       <FilteredNavEntries
         entries={navEntriesForDisplay}
         envelope={envelope}
@@ -489,7 +645,7 @@ export function RuntimeDemoApp() {
         <RootShell
           shellPresentation={shellPresentation}
           hideNav={kioskSaleObservable}
-          minimalChrome={hideSandboxBanner}
+          minimalChrome={minimalAppChrome}
           navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
           regions={{
             nav: navRegion,
@@ -503,6 +659,7 @@ export function RuntimeDemoApp() {
                     </p>
                   </div>
                 ) : null}
+                {showLiveAdminPerimeterStrip ? <LiveAdminPerimeterStrip envelope={envelope} /> : null}
                 <PageAccessBlocked result={pageAccess} />
               </div>
             ),
@@ -523,7 +680,7 @@ export function RuntimeDemoApp() {
       <RootShell
         shellPresentation={shellPresentation}
         hideNav={kioskSaleObservable}
-        minimalChrome={hideSandboxBanner}
+        minimalChrome={minimalAppChrome}
         navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
         regions={{
           header: pageRegions?.header,
@@ -541,12 +698,13 @@ export function RuntimeDemoApp() {
                   </p>
                 </div>
               ) : null}
-              {!hideSandboxBanner ? (
+              {!hideSandboxBanner && !cashflowCertificationUi ? (
                 <Text size="sm" c="dimmed" mb="sm" data-testid="manifest-bundle-ok">
                   Manifests validés — navigation v{b.navigation.version} ; {b.pages.length} page(s) dans le lot.
                 </Text>
               ) : null}
-              {pageRegions?.mainWidgets}
+              {showLiveAdminPerimeterStrip ? <LiveAdminPerimeterStrip envelope={envelope} /> : null}
+              <Fragment key={cashflowNominalMainRemountKey}>{pageRegions?.mainWidgets}</Fragment>
               {pageForAccess?.pageKey === 'demo-home' ? (
                 <>
                   <Title order={1}>Socle Peintre_nano</Title>

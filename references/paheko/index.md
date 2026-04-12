@@ -6,7 +6,7 @@ Guide et reference pour **Paheko** (gestion d'association) dans le cadre de l'in
 
 
 
-> Charger si : session sur integration Paheko, analyse API/extensions, ou croisement avec migration-paeco.
+> Charger si : session sur integration Paheko, analyse API/extensions, ou croisement avec migration-paheko.
 
 
 
@@ -42,7 +42,7 @@ Guide et reference pour **Paheko** (gestion d'association) dans le cadre de l'in
 
 
 
-Pour analyser le code : utiliser `repo/` comme point d'entree. Structure selon l'archive (ex. `include/`, `www/`, `modules/` dont saisie_poids). Voir aussi **references/migration-paeco/** pour les guides RecyClique+Paheko.
+Pour analyser le code : utiliser `repo/` comme point d'entree. Structure selon l'archive (ex. `include/`, `www/`, `modules/` dont saisie_poids). Voir aussi **references/migration-paheko/** pour les guides RecyClique+Paheko.
 
 
 

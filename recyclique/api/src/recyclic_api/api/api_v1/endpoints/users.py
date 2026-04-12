@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List
 from recyclic_api.core.database import get_db
@@ -13,7 +13,12 @@ from recyclic_api.schemas.user import (
     PasswordChangeRequest,
 )
 from recyclic_api.schemas.pin import PinSetRequest
-from recyclic_api.core.auth import require_role_strict, get_current_user, get_user_permissions
+from recyclic_api.core.auth import (
+    require_role_strict,
+    get_current_user,
+    get_user_permissions,
+    require_admin_role,
+)
 from recyclic_api.core.security import hash_password, verify_password
 from recyclic_api.schemas.context_envelope import ContextEnvelopeResponse
 from recyclic_api.services.context_envelope_service import build_context_envelope
@@ -144,14 +149,23 @@ async def get_active_operators(db: Session = Depends(get_db), current_user=Depen
     return users
 
 @router.get("/", response_model=List[UserResponse])
-async def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all users"""
+async def get_users(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin_role),
+):
+    """Liste des utilisateurs (admin). G-OA-03 : même autorité que les lectures admin (`require_admin_role`)."""
     users = db.query(User).offset(skip).limit(limit).all()
     return users
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: str, db: Session = Depends(get_db)):
-    """Get user by ID"""
+async def get_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin_role),
+):
+    """Détail utilisateur par id (admin). G-OA-03 : `require_admin_role` explicite sur la signature."""
     user_uuid = validate_and_convert_uuid(user_id)
 
     user = db.query(User).filter(User.id == user_uuid).first()

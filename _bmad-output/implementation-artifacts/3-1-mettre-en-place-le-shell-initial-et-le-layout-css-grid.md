@@ -13,7 +13,7 @@
 - **Story :** 3.1 — **shell racine** et **structure spatiale** basée sur **CSS Grid** (zones nommées), prête pour la composition ultérieure par slots / manifests.
 - **Clé de fichier (exacte, obligatoire) :** `3-1-mettre-en-place-le-shell-initial-et-le-layout-css-grid` — toute autre variante de slug est **incorrecte** pour les chemins `implementation-artifacts` et `sprint-status.yaml`.
 - **Epic :** epic-3 — runtime UI v2 minimal mais réel.
-- **Nano + CREOS :** périmètre **structure visuelle et spatiale** du shell ; **pas** de bus, pas d’agent mini/macro, pas de pipeline manifest → rendu dynamique complet (stories 3.2–3.3).
+- **Nano + CREOS :** périmètre **structure visuelle et spatiale** du shell ; **pas** de bus, pas d'agent mini/macro, pas de pipeline manifest → rendu dynamique complet (stories 3.2–3.3).
 
 ---
 
@@ -24,7 +24,7 @@
 **Implications directes pour 3.1 :**
 
 - Grille globale **CSS Grid** + **zones nommées** dans des fichiers `.module.css` (ou `.css` dédiés au shell), avec **design tokens** (`var(--pn-…)` depuis `src/styles/tokens.css`) — **pas** de valeurs magiques hors tokens.
-- **Mantine v8** : composants riches (titres, texte, listes, champs…) OK ; **interdit** pour le **layout structurel du shell** : pas de `Stack`, `Group`, `SimpleGrid`, `Flex` Mantine comme substitut à la grille / au positionnement spatial du cadre d’application (aligné instruction P1 / story 3.0).
+- **Mantine v8** : composants riches (titres, texte, listes, champs…) OK ; **interdit** pour le **layout structurel du shell** : pas de `Stack`, `Group`, `SimpleGrid`, `Flex` Mantine comme substitut à la grille / au positionnement spatial du cadre d'application (aligné instruction P1 / story 3.0).
 
 ---
 
@@ -56,16 +56,16 @@
 |----------|--------|
 | `NavigationManifest` | **Pas** de chargement ni de routes métier codées en dur comme substitut — le shell peut afficher des **labels de démo** ou des **placeholders** de zones (ex. « zone nav ») **sans** inventer une hiérarchie de routes commanditaire. |
 | `PageManifest` | Idem : pas de pages métier inventées en dur ; zone **main** / **content** comme conteneur neutre. |
-| `ContextEnvelope` | Inchangé : mocks / stubs structurels acceptables (Piste A) jusqu’à Convergence 1 ; **pas** d’obligation d’enrichir l’adaptateur dans 3.1. |
+| `ContextEnvelope` | Inchangé : mocks / stubs structurels acceptables (Piste A) jusqu'à Convergence 1 ; **pas** d'obligation d'enrichir l'adaptateur dans 3.1. |
 | `UserRuntimePrefs` | Pas de nouvelle source de vérité métier ; préférences UI éventuelles **hors** permissions / navigation. |
 
-**Règle d’or :** hiérarchie OpenAPI / `ContextEnvelope` / manifests / `UserRuntimePrefs` — voir `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` (Data Boundaries).
+**Règle d'or :** hiérarchie OpenAPI / `ContextEnvelope` / manifests / `UserRuntimePrefs` — voir `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` (Data Boundaries).
 
 ---
 
 ## Frontières repo (Piste A) et boundaries structurels
 
-- **Mocks jusqu’à Convergence 1** : OK pour données backend / enveloppe ; le shell reste **présentation + structure**.
+- **Mocks jusqu'à Convergence 1** : OK pour données backend / enveloppe ; le shell reste **présentation + structure**.
 - **Aucun import runtime** depuis `references/` — documentation uniquement hors bundle applicatif.
 - **`registry/` et `runtime/`** : **ne pas fusionner** sans story + ADR ; le shell vit typiquement sous `src/app/` (layouts, providers) — respecter `project-structure-boundaries.md`.
 
@@ -73,7 +73,7 @@
 
 ## Flows cashflow (a) / (b) — note de cadrage
 
-La Story 3.1 **ne tranche pas** l’implémentation métier caisse / réception (`wizard`/`tabbed` vs `type: "cashflow"` natif).
+La Story 3.1 **ne tranche pas** l'implémentation métier caisse / réception (`wizard`/`tabbed` vs `type: "cashflow"` natif).
 
 - Règles et fondations : `references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md` §7 ; clôture documentaire / ordre des merges : `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md` §16.
 - Le dev **ne doit pas** introduire dans le shell une logique caisse / cashflow ou un second pipeline de rendu métier sous prétexte de « zones » — si le sujet apparaît, **renvoi explicite** aux documents ci-dessus et stories dédiées.
@@ -96,7 +96,7 @@ So that **pages can be composed in named zones** before business modules are mig
 
 ---
 
-## Critères d’acceptation (BDD — source epics)
+## Critères d'acceptation (BDD — source epics)
 
 **Given** CSS Grid is mandatory for the v2 layout engine  
 **When** the shell foundation is implemented  
@@ -120,11 +120,11 @@ So that **pages can be composed in named zones** before business modules are mig
 
 ## Tâches / sous-tâches
 
-- [x] **T1** — Introduire un **RootShell** (ou équivalent) : composant racine qui enveloppe le contenu de l’app et applique la **grille CSS** (zones nommées documentées en commentaire court dans le module CSS si utile).
-- [x] **T2** — Définir **au minimum** des régions stables (exemples indicatifs : `header`, `nav`, `main`, `aside`, `footer` — ajuster au besoin tant que les zones sont **nommées**, **visibles** et **extensibles** pour futurs slots ; pas d’obligation d’implémenter toutes les zones métier finales).
+- [x] **T1** — Introduire un **RootShell** (ou équivalent) : composant racine qui enveloppe le contenu de l'app et applique la **grille CSS** (zones nommées documentées en commentaire court dans le module CSS si utile).
+- [x] **T2** — Définir **au minimum** des régions stables (exemples indicatifs : `header`, `nav`, `main`, `aside`, `footer` — ajuster au besoin tant que les zones sont **nommées**, **visibles** et **extensibles** pour futurs slots ; pas d'obligation d'implémenter toutes les zones métier finales).
 - [x] **T3** — Styliser exclusivement via **CSS Modules + variables** de `tokens.css` (espacements, couleurs de fond/bordure des zones de démo).
-- [x] **T4** — Brancher le shell depuis le point d’entrée UI (`App.tsx` ou `main.tsx`) sans casser les scripts existants ; conserver Mantine provider si déjà présent.
-- [x] **T5** — Tests : au moins un test **Vitest** + **Testing Library** qui montre que les **zones** (ex. `data-testid="shell-zone-main"`) sont **présentes** dans le DOM au rendu racine — **ou** documenter équivalent vérifiable ; ne pas sur-vendre l’E2E (Playwright reste N/A sauf story dédiée).
+- [x] **T4** — Brancher le shell depuis le point d'entrée UI (`App.tsx` ou `main.tsx`) sans casser les scripts existants ; conserver Mantine provider si déjà présent.
+- [x] **T5** — Tests : au moins un test **Vitest** + **Testing Library** qui montre que les **zones** (ex. `data-testid="shell-zone-main"`) sont **présentes** dans le DOM au rendu racine — **ou** documenter équivalent vérifiable ; ne pas sur-vendre l'E2E (Playwright reste N/A sauf story dédiée).
 
 ---
 
@@ -199,7 +199,7 @@ Cursor Agent (bmad-dev-story / sous-agent Task Story Runner), 2026-04-02.
 | Périmètre vs 3.0 / 3.2 / 3.3 | § Périmètre Story 3.1 vs stories adjacentes |
 | Quatre artefacts (pas de substitut contrats) | § Les quatre artefacts |
 | P1 layout shell (Grid + modules, pas Stack/Group shell) | § Primauté ADR + Stack P1 |
-| Frontières Piste A / pas d’import `references/` | § Frontières repo |
+| Frontières Piste A / pas d'import `references/` | § Frontières repo |
 | Boundaries `registry/` / `runtime/` | § Frontières repo |
 | Cashflow (a)/(b) + pipeline §16 | § Flows cashflow |
 | Critères de done testables (`peintre-nano/`) | § Critères de done testables |

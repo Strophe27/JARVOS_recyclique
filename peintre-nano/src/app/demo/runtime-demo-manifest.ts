@@ -15,7 +15,28 @@
  * Story 5.3 : quatre PageManifest transverses (listings + consultation) sous `contracts/creos/manifests/`,
  * référencés par `navigation-transverse-served.json`.
  *
- * Story 5.4 : lot admin transverse (`page-transverse-admin-placeholder` enrichi + access + site).
+ * Story 5.4 : lot admin transverse (hub `/admin` + access + site).
+ * Story 18.1 : entrée manifestée `transverse-admin` sur `/admin` → `page-transverse-admin-reports-hub.json` (hub rapports,
+ * gap K explicite, liens vers routes déjà manifestées + legacy). Pas de route nav officielle `/admin/reports` dans le
+ * bundle servi ; alias SPA éventuel → `/admin` dans `RuntimeDemoApp` (pas d’`id` nav absent du manifeste).
+ *
+ * Story 17.1 : page `transverse-admin-pending` (`/admin/pending`) — placeholder honnête sans `data_contract` tant que
+ * `GET /v1/admin/users/pending` est absent du OpenAPI canon (Epic 16).
+ *
+ * Story 17.2 : pages `transverse-admin-cash-registers` (`/admin/cash-registers`) et `transverse-admin-sites`
+ * (`/admin/sites`) — même discipline rail U (gaps G-OA-02 → Epic 16).
+ *
+ * Story 18.2 : page `transverse-admin-session-manager` (`/admin/session-manager`) — liste sessions gap **K**,
+ * détail session inchangé (`page-admin-cash-session-detail`), exports classe **B** exclus à l'UI.
+ *
+ * Story 19.1 : page `transverse-admin-reception-stats` (`/admin/reception-stats`) — agrégats `recyclique_stats_*` + gap K nominatif.
+ *
+ * Story 19.2 : `transverse-admin-reception-sessions` (`/admin/reception-sessions`) + `admin-reception-ticket-detail`
+ * (`/admin/reception-tickets/:id`) — lectures `recyclique_reception_listTickets` / `recyclique_reception_getTicketDetail`.
+ *
+ * Story 19.3 : paquet de preuve pilotage réception (matrice + tests + doc § 19.3) ; exports **B** et
+ * `/admin/reception-reports` hors critère succès **19.x** mais nommés ; MCP navigateur **NEEDS_HITL** si indisponible au DS
+ * (`references/artefacts/2026-04-12_08_preuve-parite-pilotage-reception-19-3-needs-hitl.md`).
  *
  * Story 5.5 : `label_key` transverses préfixés `nav.transverse.*` ; libellés affichés via `ContextEnvelopeStub.presentationLabels`
  * (aligné OpenAPI `presentation_labels`) dans `FilteredNavEntries`.
@@ -30,7 +51,14 @@ import pageDemoHome from '../../../../contracts/creos/manifests/page-demo-home.j
 import pageDemoUnknownWidget from '../../../../contracts/creos/manifests/page-demo-unknown-widget.json';
 import pageTransverseAdminAccessOverview from '../../../../contracts/creos/manifests/page-transverse-admin-access-overview.json';
 import pageTransverseAdminPlaceholder from '../../../../contracts/creos/manifests/page-transverse-admin-placeholder.json';
+import pageTransverseAdminReportsHub from '../../../../contracts/creos/manifests/page-transverse-admin-reports-hub.json';
 import pageTransverseAdminSiteOverview from '../../../../contracts/creos/manifests/page-transverse-admin-site-overview.json';
+import pageTransverseAdminPending from '../../../../contracts/creos/manifests/page-transverse-admin-pending.json';
+import pageTransverseAdminCashRegisters from '../../../../contracts/creos/manifests/page-transverse-admin-cash-registers.json';
+import pageTransverseAdminSites from '../../../../contracts/creos/manifests/page-transverse-admin-sites.json';
+import pageTransverseAdminReceptionSessions from '../../../../contracts/creos/manifests/page-transverse-admin-reception-sessions.json';
+import pageTransverseAdminReceptionStats from '../../../../contracts/creos/manifests/page-transverse-admin-reception-stats.json';
+import pageTransverseAdminSessionManager from '../../../../contracts/creos/manifests/page-transverse-admin-session-manager.json';
 import pageTransverseConsultationArticle from '../../../../contracts/creos/manifests/page-transverse-consultation-article.json';
 import pageTransverseConsultationDon from '../../../../contracts/creos/manifests/page-transverse-consultation-don.json';
 import pageTransverseDashboard from '../../../../contracts/creos/manifests/page-transverse-dashboard.json';
@@ -40,6 +68,7 @@ import pageTransverseListingDons from '../../../../contracts/creos/manifests/pag
 import pageCashflowNominal from '../../../../contracts/creos/manifests/page-cashflow-nominal.json';
 import pageCashflowRefund from '../../../../contracts/creos/manifests/page-cashflow-refund.json';
 import pageAdminCashSessionDetail from '../../../../contracts/creos/manifests/page-admin-cash-session-detail.json';
+import pageAdminReceptionTicketDetail from '../../../../contracts/creos/manifests/page-admin-reception-ticket-detail.json';
 import pageCashflowClose from '../../../../contracts/creos/manifests/page-cashflow-close.json';
 import pageReceptionNominal from '../../../../contracts/creos/manifests/page-reception-nominal.json';
 import pageLoginPublic from '../../../../contracts/creos/manifests/page-login-public.json';
@@ -125,6 +154,13 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseAdminPlaceholder),
     JSON.stringify(pageTransverseAdminAccessOverview),
     JSON.stringify(pageTransverseAdminSiteOverview),
+    JSON.stringify(pageTransverseAdminPending),
+    JSON.stringify(pageTransverseAdminCashRegisters),
+    JSON.stringify(pageTransverseAdminSites),
+    JSON.stringify(pageTransverseAdminSessionManager),
+    JSON.stringify(pageTransverseAdminReceptionStats),
+    JSON.stringify(pageTransverseAdminReceptionSessions),
+    JSON.stringify(pageTransverseAdminReportsHub),
     JSON.stringify(pageTransverseListingArticles),
     JSON.stringify(pageTransverseListingDons),
     JSON.stringify(pageTransverseConsultationArticle),
@@ -133,6 +169,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageCashflowRefund),
     JSON.stringify(pageCashflowClose),
     JSON.stringify(pageAdminCashSessionDetail),
+    JSON.stringify(pageAdminReceptionTicketDetail),
     JSON.stringify(pageReceptionNominal),
     JSON.stringify(pageLoginPublic),
   ],
@@ -151,6 +188,13 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-admin-placeholder.json',
           'contracts/creos/manifests/page-transverse-admin-access-overview.json',
           'contracts/creos/manifests/page-transverse-admin-site-overview.json',
+          'contracts/creos/manifests/page-transverse-admin-pending.json',
+          'contracts/creos/manifests/page-transverse-admin-cash-registers.json',
+          'contracts/creos/manifests/page-transverse-admin-sites.json',
+          'contracts/creos/manifests/page-transverse-admin-session-manager.json',
+          'contracts/creos/manifests/page-transverse-admin-reception-stats.json',
+          'contracts/creos/manifests/page-transverse-admin-reception-sessions.json',
+          'contracts/creos/manifests/page-transverse-admin-reports-hub.json',
           'contracts/creos/manifests/page-transverse-listing-articles.json',
           'contracts/creos/manifests/page-transverse-listing-dons.json',
           'contracts/creos/manifests/page-transverse-consultation-article.json',
@@ -159,6 +203,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-cashflow-refund.json',
           'contracts/creos/manifests/page-cashflow-close.json',
           'contracts/creos/manifests/page-admin-cash-session-detail.json',
+          'contracts/creos/manifests/page-admin-reception-ticket-detail.json',
           'contracts/creos/manifests/page-reception-nominal.json',
           'contracts/creos/manifests/page-login-public.json',
         ] as const

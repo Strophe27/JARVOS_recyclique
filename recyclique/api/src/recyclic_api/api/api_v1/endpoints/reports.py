@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,14 @@ from recyclic_api.utils.export_error_handler import handle_export_errors_with_lo
 from recyclic_api.utils.date_utils import parse_iso_datetime
 from recyclic_api.core.audit import log_cash_session_access, log_admin_access
 from recyclic_api.core.auth import require_role_strict
+from recyclic_api.core.redis import get_redis
+from recyclic_api.core.step_up import (
+    IDEMPOTENCY_KEY_HEADER,
+    SENSITIVE_OPERATION_REPORTS_CASH_SESSIONS_EXPORT_BULK,
+    SENSITIVE_OPERATION_REPORTS_RECEPTION_TICKETS_EXPORT_BULK,
+    STEP_UP_PIN_HEADER,
+    verify_step_up_pin_header,
+)
 from recyclic_api.core.config import settings, get_browser_api_v1_prefix
 from recyclic_api.core.database import get_db
 from recyclic_api.models.cash_session import CashSession
@@ -23,12 +31,42 @@ from recyclic_api.schemas.report import ReportEntry, ReportListResponse
 from recyclic_api.schemas.cash_session import CashSessionFilters
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal
-from uuid import UUID
-from datetime import datetime
 
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
+
+
+def _require_bulk_export_step_up_and_idempotency(
+    request: Request,
+    current_user: User,
+    redis_client,
+    *,
+    operation: str,
+) -> str:
+    """
+    Story 16.4 — exports massifs : preuve PIN (Epic 2.4) + en-tête Idempotency-Key obligatoire.
+
+    La réponse reste un flux (CSV/XLSX) : la clé sert à corrélation client / audit et discipline
+    d'appel ; pas de cache de corps de réponse côté serveur pour ces routes.
+    """
+    verify_step_up_pin_header(
+        user=current_user,
+        pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+        redis_client=redis_client,
+        operation=operation,
+    )
+    idem_raw = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+    if not idem_raw or not str(idem_raw).strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "IDEMPOTENCY_KEY_REQUIRED",
+                "message": "En-tête Idempotency-Key requis pour les exports bulk (Story 16.4).",
+            },
+        )
+    return str(idem_raw).strip()
+
 
 # UUID de session : avant le suffixe _<timestamp>.csv (évite les échecs si opérateur/site
 # contiennent des underscores dans le nom de fichier).
@@ -379,6 +417,11 @@ class BulkReceptionExportRequest(BaseModel):
     
     **Permissions** : ADMIN ou SUPER_ADMIN uniquement
     **Limite** : Maximum 10 000 sessions par export
+
+    **Story 16.4 — sécurité** :
+    - En-tête ``X-Step-Up-Pin`` obligatoire (même modèle que fermeture caisse / export base).
+    - En-tête ``Idempotency-Key`` obligatoire (corrélation audit ; pas de rejouer corps binaire en cache).
+    - **Audit** : ``log_admin_access`` après génération réussie (via gestionnaire d'erreurs d'export).
     """
 )
 def export_bulk_cash_sessions(
@@ -386,8 +429,20 @@ def export_bulk_cash_sessions(
     request: Request,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db),
+    redis_client=Depends(get_redis),
 ):
     """Exporte toutes les sessions de caisse filtrées en CSV ou Excel."""
+    idem_key = _require_bulk_export_step_up_and_idempotency(
+        request,
+        current_user,
+        redis_client,
+        operation=SENSITIVE_OPERATION_REPORTS_CASH_SESSIONS_EXPORT_BULK,
+    )
+    logger.info(
+        "bulk_export_cash_sessions_start user_id=%s idempotency_key_prefix=%s",
+        current_user.id,
+        idem_key[:12],
+    )
     from recyclic_api.services.report_service import (
         generate_bulk_cash_sessions_csv,
         generate_bulk_cash_sessions_excel
@@ -455,6 +510,8 @@ def export_bulk_cash_sessions(
     
     **Permissions** : ADMIN ou SUPER_ADMIN uniquement
     **Limite** : Maximum 10 000 tickets par export
+
+    **Story 16.4** : ``X-Step-Up-Pin`` + ``Idempotency-Key`` obligatoires ; ``log_admin_access`` sur succès.
     """
 )
 def export_bulk_reception_tickets(
@@ -462,8 +519,20 @@ def export_bulk_reception_tickets(
     request: Request,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db),
+    redis_client=Depends(get_redis),
 ):
     """Exporte tous les tickets de réception filtrés en CSV ou Excel."""
+    idem_key = _require_bulk_export_step_up_and_idempotency(
+        request,
+        current_user,
+        redis_client,
+        operation=SENSITIVE_OPERATION_REPORTS_RECEPTION_TICKETS_EXPORT_BULK,
+    )
+    logger.info(
+        "bulk_export_reception_tickets_start user_id=%s idempotency_key_prefix=%s",
+        current_user.id,
+        idem_key[:12],
+    )
     from recyclic_api.services.report_service import (
         generate_bulk_reception_tickets_csv,
         generate_bulk_reception_tickets_excel

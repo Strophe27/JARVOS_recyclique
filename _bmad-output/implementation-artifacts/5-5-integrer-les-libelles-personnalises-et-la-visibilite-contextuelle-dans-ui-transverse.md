@@ -12,24 +12,24 @@ afin que le **shell recomposé** paraisse **aligné sur l'organisation locale** 
 
 ## Acceptance Criteria
 
-1. **Libellés backend, présentation uniquement** — Étant donné que les intitulés peuvent varier par ressourcerie, quand le shell transverse et les entrées de navigation / zones pertinentes sont rendus, alors le runtime peut **afficher** des libellés fournis par le **backend** (via l’instance **`ContextEnvelope`** alignée OpenAPI, ou extension **reviewable** du schéma) pour résoudre des **`label_key`** déclarés dans les contrats CREOS ; ces libellés restent **strictement présentation** et **ne remplacent jamais** les **clés stables** de permission, de route, de `page_key` ni les identifiants techniques utilisés pour la garde d’accès. [Source : `epics.md` — Story 5.5 ; `navigation-structure-contract.md` — Truth Hierarchy]
+1. **Libellés backend, présentation uniquement** — Étant donné que les intitulés peuvent varier par ressourcerie, quand le shell transverse et les entrées de navigation / zones pertinentes sont rendus, alors le runtime peut **afficher** des libellés fournis par le **backend** (via l'instance **`ContextEnvelope`** alignée OpenAPI, ou extension **reviewable** du schéma) pour résoudre des **`label_key`** déclarés dans les contrats CREOS ; ces libellés restent **strictement présentation** et **ne remplacent jamais** les **clés stables** de permission, de route, de `page_key` ni les identifiants techniques utilisés pour la garde d'accès. [Source : `epics.md` — Story 5.5 ; `navigation-structure-contract.md` — Truth Hierarchy]
 
-2. **Résolution déterministe `label_key` → texte affichable** — Étant donné que `NavigationManifest` porte déjà un champ optionnel `label_key` (JSON `label_key`) consommé tel quel aujourd’hui dans `FilteredNavEntries`, quand cette story est livrée, alors le rendu transverse applique une **résolution explicite** : si l’enveloppe (ou le contrat convenu) fournit une entrée pour la clé, afficher ce texte ; **sinon** fallback **documenté** (ex. clé elle-même ou libellé manifeste statique **déjà** porté par le contrat — **sans** inventer de texte métier côté `peintre-nano`). [Source : `peintre-nano/src/types/navigation-manifest.ts` ; `peintre-nano/src/app/FilteredNavEntries.tsx`]
+2. **Résolution déterministe `label_key` → texte affichable** — Étant donné que `NavigationManifest` porte déjà un champ optionnel `label_key` (JSON `label_key`) consommé tel quel aujourd'hui dans `FilteredNavEntries`, quand cette story est livrée, alors le rendu transverse applique une **résolution explicite** : si l'enveloppe (ou le contrat convenu) fournit une entrée pour la clé, afficher ce texte ; **sinon** fallback **documenté** (ex. clé elle-même ou libellé manifeste statique **déjà** porté par le contrat — **sans** inventer de texte métier côté `peintre-nano`). [Source : `peintre-nano/src/types/navigation-manifest.ts` ; `peintre-nano/src/app/FilteredNavEntries.tsx`]
 
-3. **Politique unifiée : navigation structurelle masquée vs accès page / action bloqués avec feedback** — Étant donné que certaines zones dépendent du contexte ou des permissions, quand l’UI transverse décide quoi montrer, alors : (a) les **entrées de navigation structurelles** non autorisées restent **filtrées hors rendu** via `filterNavigation` (pas de « fantômes » cliquables) ; (b) lorsqu’une **page** est sélectionnée mais **non autorisée** par l’intersection enveloppe + `PageManifest`, le blocage reste porté par **`resolvePageAccess`** + **`PageAccessBlocked`** avec **message explicite** et **traçabilité** `reportRuntimeFallback` ; (c) si le schéma OpenAPI expose un **`restriction_message`** (ou équivalent) pour les états `degraded` / `forbidden`, le runtime **peut** l’**exposer** dans la zone shell / bannière de contexte **sans** en faire une source d’autorisation. [Source : `epics.md` — Story 5.5 ; `resolve-page-access.ts` ; `PageAccessBlocked.tsx` ; `contracts/openapi/recyclique-api.yaml` — `ContextEnvelope.restriction_message`]
+3. **Politique unifiée : navigation structurelle masquée vs accès page / action bloqués avec feedback** — Étant donné que certaines zones dépendent du contexte ou des permissions, quand l'UI transverse décide quoi montrer, alors : (a) les **entrées de navigation structurelles** non autorisées restent **filtrées hors rendu** via `filterNavigation` (pas de « fantômes » cliquables) ; (b) lorsqu'une **page** est sélectionnée mais **non autorisée** par l'intersection enveloppe + `PageManifest`, le blocage reste porté par **`resolvePageAccess`** + **`PageAccessBlocked`** avec **message explicite** et **traçabilité** `reportRuntimeFallback` ; (c) si le schéma OpenAPI expose un **`restriction_message`** (ou équivalent) pour les états `degraded` / `forbidden`, le runtime **peut** l'**exposer** dans la zone shell / bannière de contexte **sans** en faire une source d'autorisation. [Source : `epics.md` — Story 5.5 ; `resolve-page-access.ts` ; `PageAccessBlocked.tsx` ; `contracts/openapi/recyclique-api.yaml` — `ContextEnvelope.restriction_message`]
 
-4. **Cohérence avec l’enveloppe active** — Étant donné un **`ContextEnvelope`** `ok`, `degraded`, `forbidden` ou périmé (`STALE_CONTEXT`), quand l’utilisatrice parcourt le transverse, alors le comportement de **filtrage nav**, **garde page** et **messages** reste **aligné** sur les **mêmes** règles que les stories **5.1**–**5.4** ; **aucun** recalcul de permissions « au feeling » dans `peintre-nano`. [Source : `filter-navigation-for-context.ts` ; `2026-04-07_03_checklist-pr-peintre-sans-metier.md` — points 5, 8]
+4. **Cohérence avec l'enveloppe active** — Étant donné un **`ContextEnvelope`** `ok`, `degraded`, `forbidden` ou périmé (`STALE_CONTEXT`), quand l'utilisatrice parcourt le transverse, alors le comportement de **filtrage nav**, **garde page** et **messages** reste **aligné** sur les **mêmes** règles que les stories **5.1**–**5.4** ; **aucun** recalcul de permissions « au feeling » dans `peintre-nano`. [Source : `filter-navigation-for-context.ts` ; `2026-04-07_03_checklist-pr-peintre-sans-metier.md` — points 5, 8]
 
 5. **`UserRuntimePrefs` inchangés sur la sémantique** — Étant donné la story **3.5**, quand les libellés contextuels sont ajoutés, alors les **prefs locales** ne participent **toujours pas** à `filterNavigation` ni à `resolvePageAccess` ; toute personnalisation **locale** reste **hors** périmètre des libellés **ressourcerie** portés par le backend. [Source : `_bmad-output/implementation-artifacts/3-5-borner-userruntimeprefs-a-la-personnalisation-locale-non-metier.md`]
 
-6. **Contrats nommés et hiérarchie de vérité** — Étant donné la checklist PR, quand la PR est rédigée, elle cite explicitement les évolutions **`contracts/openapi/recyclique-api.yaml`** (champs présentation sur `ContextEnvelope` ou sous-objet dédié **additive**) et, si besoin, **`contracts/creos/manifests/`** (ex. harmonisation `label_key` sur un lot transverse **déjà** servi) + adaptation **`ContextEnvelopeStub`** / adaptateur démo ; **pas** d’édition manuelle des **fichiers générés** pour contourner le contrat. [Source : checklist PR — points 3, 9, 11]
+6. **Contrats nommés et hiérarchie de vérité** — Étant donné la checklist PR, quand la PR est rédigée, elle cite explicitement les évolutions **`contracts/openapi/recyclique-api.yaml`** (champs présentation sur `ContextEnvelope` ou sous-objet dédié **additive**) et, si besoin, **`contracts/creos/manifests/`** (ex. harmonisation `label_key` sur un lot transverse **déjà** servi) + adaptation **`ContextEnvelopeStub`** / adaptateur démo ; **pas** d'édition manuelle des **fichiers générés** pour contourner le contrat. [Source : checklist PR — points 3, 9, 11]
 
-7. **Jeux de règles stables pour les epics suivants** — Étant donné l’objectif Epic 5, quand cette story est terminée, alors la **politique** (masquage nav vs blocage page + messages) et le **mécanisme de libellés** sont **documentés** dans le story file / code (commentaires ciblés ou petit module `resolvePresentationLabel`) de façon **réutilisable** par **5.6**–**5.8** et les epics **6**–**9** sans refonte écran par écran. [Source : `epics.md` — Story 5.5]
+7. **Jeux de règles stables pour les epics suivants** — Étant donné l'objectif Epic 5, quand cette story est terminée, alors la **politique** (masquage nav vs blocage page + messages) et le **mécanisme de libellés** sont **documentés** dans le story file / code (commentaires ciblés ou petit module `resolvePresentationLabel`) de façon **réutilisable** par **5.6**–**5.8** et les epics **6**–**9** sans refonte écran par écran. [Source : `epics.md` — Story 5.5]
 
 ## Tasks / Subtasks
 
 - [x] **Contrat OpenAPI + stub runtime** (AC: 1, 2, 6)
-  - [x] Proposer et figer une extension **additive** au schéma `ContextEnvelope` pour porter les libellés présentation (ex. propriété nommée `presentation_labels` avec map `label_key` → chaîne UTF-8, ou objet `presentation_copy` versionné) — **review** dans `contracts/openapi/recyclique-api.yaml` ; **attention** : le schéma actuel impose `additionalProperties: false` sur `ContextEnvelope` : ajouter des clés **déclarées** sous `properties` (pas de champs dynamiques à la racine de l’objet) ; documenter la rétrocompatibilité (champs optionnels).
+  - [x] Proposer et figer une extension **additive** au schéma `ContextEnvelope` pour porter les libellés présentation (ex. propriété nommée `presentation_labels` avec map `label_key` → chaîne UTF-8, ou objet `presentation_copy` versionné) — **review** dans `contracts/openapi/recyclique-api.yaml` ; **attention** : le schéma actuel impose `additionalProperties: false` sur `ContextEnvelope` : ajouter des clés **déclarées** sous `properties` (pas de champs dynamiques à la racine de l'objet) ; documenter la rétrocompatibilité (champs optionnels).
   - [x] Étendre `ContextEnvelopeStub` (`peintre-nano/src/types/context-envelope.ts`) + mapping adaptateur auth / démo (`default-demo-auth-adapter.ts` ou couche unique) pour refléter le schéma sans inférer de permissions.
   - [x] Enrichir `createDefaultDemoEnvelope` avec **au moins un** couple `label_key` / valeur pour prouver la résolution sur la nav transverse servie.
 
@@ -39,11 +39,11 @@ afin que le **shell recomposé** paraisse **aligné sur l'organisation locale** 
 
 - [x] **Visibilité, restriction_message, cohérence UX** (AC: 3, 4, 7)
   - [x] Cartographier les chemins existants : nav filtrée, `PageAccessBlocked`, enveloppe `degraded` / `forbidden` / stale — **aucune** régression sur les tests **5.1**–**5.4**.
-  - [x] Si `restriction_message` est ajouté au stub : l’afficher dans un emplacement shell **non bloquant** (ex. bandeau contexte sous le shell démo) **uniquement** quand l’enveloppe l’expose, sans court-circuiter `resolvePageAccess`.
+  - [x] Si `restriction_message` est ajouté au stub : l'afficher dans un emplacement shell **non bloquant** (ex. bandeau contexte sous le shell démo) **uniquement** quand l'enveloppe l'expose, sans court-circuiter `resolvePageAccess`.
 
 - [x] **Tests** (AC: 1–7)
-  - [x] Tests **unitaires** : résolution libellé (présent / absent), absence d’effet des `UserRuntimePrefs` sur la résolution autorisation.
-  - [x] Tests **contract** / **e2e** : au moins un libellé démo résolu depuis l’enveloppe sur une entrée nav transverse ; scénario permission manquante inchangé (nav masquée ou page bloquée selon le parcours).
+  - [x] Tests **unitaires** : résolution libellé (présent / absent), absence d'effet des `UserRuntimePrefs` sur la résolution autorisation.
+  - [x] Tests **contract** / **e2e** : au moins un libellé démo résolu depuis l'enveloppe sur une entrée nav transverse ; scénario permission manquante inchangé (nav masquée ou page bloquée selon le parcours).
   - [ ] `npm run lint` et `npm test` dans `peintre-nano/` — **gates shell** (non exécuté dans le spawn DS ; à valider en CI / terminal).
 
 ## Dev Notes
@@ -52,7 +52,7 @@ afin que le **shell recomposé** paraisse **aligné sur l'organisation locale** 
 
 Relire intégralement `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md` : pas de seconde vérité métier dans le front, pas de permissions déduites, hiérarchie `OpenAPI` > `ContextEnvelope` > `NavigationManifest` > `PageManifest` > `UserRuntimePrefs`.
 
-**Périmètre checklist §3 (widgets / `operation_id`)** : cette story ne livre pas de nouveau widget métier chargé par données ; si un correctif touche un widget existant, chaque `data_contract.operation_id` doit rester résolu dans `contracts/openapi/recyclique-api.yaml` (pas d’endpoint implicite).
+**Périmètre checklist §3 (widgets / `operation_id`)** : cette story ne livre pas de nouveau widget métier chargé par données ; si un correctif touche un widget existant, chaque `data_contract.operation_id` doit rester résolu dans `contracts/openapi/recyclique-api.yaml` (pas d'endpoint implicite).
 
 **Alignement `epics.md` Story 5.5 :** libellés **présentation** ; politique **nav masquée** (filtrage) **vs** **blocage page / feedback explicite** ; cohérence avec **`ContextEnvelope`** actif.
 
@@ -79,12 +79,12 @@ Relire intégralement `references/artefacts/2026-04-07_03_checklist-pr-peintre-s
 
 ### Stories adjacentes (ne pas absorber)
 
-- **5.6** : templates / layouts réutilisables — **hors** périmètre sauf si un tout petit hook d’affichage bandeau contexte partagé est nécessaire ; pas de refonte layout.
+- **5.6** : templates / layouts réutilisables — **hors** périmètre sauf si un tout petit hook d'affichage bandeau contexte partagé est nécessaire ; pas de refonte layout.
 - **5.7** : états vides / chargement / erreurs transverses — ne pas remplacer par cette story ; seulement **câbler** les messages déjà prévus (ex. `restriction_message`) si pertinent.
 
 ### Conformité stack
 
-- React 18, Vite 6, TypeScript ~5.7, Vitest 3 — pas d’upgrade majeure implicite.
+- React 18, Vite 6, TypeScript ~5.7, Vitest 3 — pas d'upgrade majeure implicite.
 - CSS Grid / ADR P1 pour tout nouveau placement shell.
 
 ### Références

@@ -1,8 +1,8 @@
-# Index — references/migration-paeco/
+# Index — references/migration-paheko/
 
-Matiere de travail sur la migration Paheko / RecyClique : guides, presentations, TODO, comptes-rendus, decla eco-organismes, **audits**. Contexte pour le refactor JARVOS Recyclique.
+Matiere de travail sur la migration Paheko / RecyClique : guides, presentations, TODO, comptes-rendus, decla eco-organismes, **audits**, specifications d'integration avec services tiers (ex. HelloAsso). Contexte pour le refactor JARVOS Recyclique.
 
-> Charger si : session sur integration Paheko, vision plateforme, decla eco-organismes, ou historique decisions RecyClique.
+> Charger si : session sur integration Paheko, vision plateforme, decla eco-organismes, historique decisions RecyClique, ou cadrage module **HelloAsso** / paiements en ligne tiers.
 
 **Voir aussi (2026-03-31) :** croiser avec le **backlog technique** et les audits code dans [consolidation-1.4.5/](../consolidation-1.4.5/) ; synthese transversale des dossiers `references/` : [artefacts/2026-03-31_02_audit-references-00-synthese-globale.md](../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md).
 
@@ -24,5 +24,7 @@ Matiere de travail sur la migration Paheko / RecyClique : guides, presentations,
 | `categories-decla-eco-organismes.md` | Filières REP, classification, outils ADEME/eco-organismes — matière module decla eco-organismes |
 | `2025-12-05_todo-christophe-recyclique-paheko.md` | TODO post-réunion (bugs, features) — à croiser avec 1.4.4 déjà implémenté |
 | `2025-12-05_compte-rendu-reunion-recyclique.md` | Compte-rendu réunion 5 déc. 2025 (décisions, participants, transcription) |
+| `2026-04-12_specification-integration-helloasso-recyclique-paheko.md` | Spec d'integration **HelloAsso** ↔ RecyClique ↔ Paheko (roles, flux, webhooks, modeles de donnees, securite) — matiere pour un futur module RecyClique |
+| `2026-04-12_brouillon-arbitrage-helloasso-et-promesse-recyclique-paheko.md` | **Brouillon** : arbitrage express (voie API, Paheko local) + **promesse produit** en langage plancher (parcours adherent/donateur, admin asso, effets Paheko, phases 1–3) — pour valider story 9.4 et communication interne |
 
 **Ailleurs :** Archive RAG → **references/vision-projet/** ; matière première présentations → **references/vision-projet/** ; version épurée pour envoi → **doc/** (racine, communication publique).

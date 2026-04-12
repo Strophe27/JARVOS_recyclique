@@ -11,7 +11,7 @@ inputDocuments:
   - references/artefacts/2026-02-25_06_point-global-avant-prd.md
   - references/artefacts/2026-02-25_07_decisions-push-redis-source-eee.md
   - references/artefacts/2026-02-25_08_session-confrontation-recyclic-paheko.md
-  - references/migration-paeco/audits/matrice-correspondance-caisse-poids.md
+  - references/migration-paheko/audits/matrice-correspondance-caisse-poids.md
   - references/artefacts/2026-02-26_01_analyse-separation-frontend-backend-recyclic.md
   - references/artefacts/2026-02-26_02_track-enterprise-multi-utilisateur.md
 workflowType: 'prd'
@@ -106,7 +106,7 @@ JARVOS Recyclique est la refonte complète de RecyClique (v1.4.4) au service des
 - **Roadmap v0.1.0 → v1.0.0** : premier découpage (socle, caisse, réception, auth/users/admin, éco-organismes, prod) ; à **revoir** avec la technique actuelle (ex. backend RecyClique existant). Développement **couche par couche** jusqu'à v1, en un même long run.
 - **Structure de livraison** : les versions (v0.1, v0.2, …) sont des **grandes étapes** ; chacune peut contenir **plusieurs epics** et **nombreuses stories** ; stories complexes à **sous-découper** ; identifier le **parallélisable**.
 - **UX v1** : mêmes écrans que 1.4.4 (copy + consolidate + security), pas de refonte UX pour la v1. Référence : `_bmad-output/planning-artifacts/ux-design-specification.md`.
-- **Hors périmètre v1** : fonctionnalités Paheko non couvertes en RecyClique 1.4.4 (ardoises, porte-monnaie membre, code-barres produit, produits liés, gestion stock, reçu PDF, etc.) — à ignorer en v1 ou à traiter en v0.2+ selon priorisation. **Réception hors ligne** (saisie différée, template CSV, etc.) : module complémentaire à développer après v1, pas dans le scope initial. Source : `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md` section 4.
+- **Hors périmètre v1** : fonctionnalités Paheko non couvertes en RecyClique 1.4.4 (ardoises, porte-monnaie membre, code-barres produit, produits liés, gestion stock, reçu PDF, etc.) — à ignorer en v1 ou à traiter en v0.2+ selon priorisation. **Réception hors ligne** (saisie différée, template CSV, etc.) : module complémentaire à développer après v1, pas dans le scope initial. Source : `references/migration-paheko/audits/matrice-correspondance-caisse-poids.md` section 4.
 
 ### Growth Features (Post-MVP)
 
@@ -451,7 +451,7 @@ Cette section détaille la stratégie MVP et le découpage en phases, en cohére
 ## Références projet
 
 - **Versioning** : `references/versioning.md` (v0.1.0 → v1.0.0).
-- **Matrice correspondance caisse/poids** : `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md`.
+- **Matrice correspondance caisse/poids** : `references/migration-paheko/audits/matrice-correspondance-caisse-poids.md`.
 - **Grille confrontation** : `references/artefacts/2026-02-25_05_grille-confrontation-recyclic-paheko.md`.
 - **Checklist import 1.4.4** : `references/ancien-repo/checklist-import-1.4.4.md` (copy, consolidate, security à chaque pioche).
 - **Vision module décla éco-organismes** : `references/vision-projet/vision-module-decla-eco-organismes.md`.

@@ -45,7 +45,7 @@ from recyclic_api.models.category import Category
 from recyclic_api.services.reception_service import ReceptionService
 from recyclic_api.services.reception_stats_service import ReceptionLiveStatsService
 from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
-from recyclic_api.core.audit import log_audit
+from recyclic_api.core.audit import log_audit, log_admin_access
 from recyclic_api.models.audit_log import AuditActionType
 from recyclic_api.core.config import settings
 
@@ -737,5 +737,12 @@ async def get_live_reception_stats(
 
     service = ReceptionLiveStatsService(db)
     stats = await service.get_live_stats(site_id=site_id)
+    log_admin_access(
+        str(current_user.id),
+        current_user.username or "Unknown",
+        "/reception/stats/live",
+        success=True,
+        db=db,
+    )
     return ReceptionLiveStatsResponse(**stats)
 

@@ -1,0 +1,30 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-session-manager",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Gestionnaire de sessions (supervision caisse)",
+        "title_level": "1",
+        "body": "Route legacy observable `/admin/session-manager` (`SessionManager.tsx`). Shell admin transverse (Epic 14.1) : meme famille de navigation et permissions manifestees que les autres entrees `/admin/*`."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.contract-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Ecart OpenAPI canon (rail U — liste et KPIs sessions)",
+        "body": "Le legacy consomme notamment `GET /v1/cash-sessions/` (liste paginee) et `GET /v1/cash-sessions/stats/summary` (KPIs). Sous `contracts/openapi/recyclique-api.yaml` au DS 2026-04-12, ces operations ne sont pas publiees (seuls `GET /v1/cash-sessions/current`, `GET /v1/cash-sessions/{session_id}`, `POST /v1/cash-sessions/{session_id}/close`, plus exports admin classe B). Tout binding live type client genere pour liste ou agregats attend la fermeture **Epic 16** (rail **K**)."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.session-manager.demo",
+      "widget_props": {}
+    }
+  ]
+}

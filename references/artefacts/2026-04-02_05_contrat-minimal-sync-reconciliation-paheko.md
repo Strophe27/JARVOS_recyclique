@@ -16,7 +16,7 @@
 | `2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` | **Bénévole** vs **admin** ; PIN ; step-up ; **qui** peut débloquer quoi — base pour §6 ci-dessous. |
 | `2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` | Erreurs JSON, `correlation_id`, OpenAPI reviewable — aligné §4. |
 
-**Compléments :** `contracts/README.md`, `contracts/openapi/recyclique-api.yaml`, `_bmad-output/planning-artifacts/epics.md` (FR23–FR25, FR39, AR8, AR11, AR17, AR21, AR24), `references/paheko/index.md`, `references/migration-paeco/index.md`.
+**Compléments :** `contracts/README.md`, `contracts/openapi/recyclique-api.yaml`, `_bmad-output/planning-artifacts/epics.md` (FR23–FR25, FR39, AR8, AR11, AR17, AR21, AR24), `references/paheko/index.md`, `references/migration-paheko/index.md`.
 
 **Suite documentaire :** Story **1.6** — matrice opération → API Paheko réelle et liste des gaps.
 
@@ -58,7 +58,7 @@
 
 - Implémentation PostgreSQL outbox, consommateurs, backoff concret, UI quarantaine : **Epic 2** / **Epic 8**.
 - Détail des **endpoints** Recyclique exposant chaque transition d'état : évolution de `contracts/openapi/recyclique-api.yaml` dans les stories dédiées ; ce document **ne** duplique **pas** une seconde source HTTP.
-- Matrice **opération par opération** et arbitrage API officielle / plugin / SQL : **Story 1.6** et références `references/paheko/liste-endpoints-api-paheko.md`, audits `references/migration-paeco/audits/`.
+- Matrice **opération par opération** et arbitrage API officielle / plugin / SQL : **Story 1.6** et références `references/paheko/liste-endpoints-api-paheko.md`, audits `references/migration-paheko/audits/`.
 
 ---
 
@@ -216,7 +216,7 @@ Pour **éviter** qu'Epics 6–7 attendent Epic 8 pour le **vocabulaire**, le con
 
 - Paheko expose une API sous **`/api`** avec préfixes documentés (`accounting`, `user`, `web`, etc.) et niveaux d'accès ; comptabilité : création de transactions, journal, exports — voir `references/paheko/analyse-brownfield-paheko.md` et `references/paheko/liste-endpoints-api-paheko.md`.
 - Limites déjà notées : **pas** d'upload fichier générique simple via API documentée pour tous les cas ; chemins possibles via plugins, WebDAV, ou extensions — **à** classer en **1.6**.
-- Audits caisse / poids et matrice de correspondance : `references/migration-paeco/audits/index.md`.
+- Audits caisse / poids et matrice de correspondance : `references/migration-paheko/audits/index.md`.
 
 **Hypothèses de travail (à valider en 1.6).**
 

@@ -2,7 +2,7 @@
 
 ## Contexte
 
-La story **10.6c** livre un **runbook** et des **preuves documentaires** de spike (hors changement de tags `postgres:*` et hors workflows — réservé **10.6d**). Il n’y a **pas** de parcours UI à couvrir en E2E navigateur pour cette story.
+La story **10.6c** livre un **runbook** et des **preuves documentaires** de spike (hors changement de tags `postgres:*` et hors workflows — réservé **10.6d**). Il n'y a **pas** de parcours UI à couvrir en E2E navigateur pour cette story.
 
 ## Stratégie QA
 
@@ -31,12 +31,12 @@ La story **10.6c** livre un **runbook** et des **preuves documentaires** de spik
 
 ## Prochaines étapes
 
-- Exécuter `python -m pytest tests/infra` en CI si un job couvre déjà la racine du mono-repo ; sinon l’ajouter au pipeline ciblé (hors périmètre de cette tâche QA générée).
+- Exécuter `python -m pytest tests/infra` en CI si un job couvre déjà la racine du mono-repo ; sinon l'ajouter au pipeline ciblé (hors périmètre de cette tâche QA générée).
 - Après merge **10.6d** / **10.6e** : étendre la stratégie avec tests applicatifs sur image PG 17.
 
 ## Validation checklist (workflow Quinn)
 
-- Tests générés : doc smoke + pas d’E2E UI imposé — conforme au bornage story.
+- Tests générés : doc smoke + pas d'E2E UI imposé — conforme au bornage story.
 - Tous les tests `tests/infra` passent localement après ajout.
 
 ---
@@ -45,7 +45,7 @@ La story **10.6c** livre un **runbook** et des **preuves documentaires** de spik
 
 ## Contexte
 
-Story **13.1** : parité UI **adjacente** au kiosque nominal — routage legacy **`/cash-register/session/open`** vers le même `page_key` **`cashflow-nominal`** que le hub `/caisse`, **sans** mode kiosque (nav visible). Les tests unitaires existants ciblent `RuntimeDemoApp` ; cette synthèse documente l’extension **E2E Vitest/jsdom** sur l’arbre **`App` + `RootProviders`** (même convention que `tests/e2e/README.md`).
+Story **13.1** : parité UI **adjacente** au kiosque nominal — routage legacy **`/cash-register/session/open`** vers le même `page_key` **`cashflow-nominal`** que le hub `/caisse`, **sans** mode kiosque (nav visible). Les tests unitaires existants ciblent `RuntimeDemoApp` ; cette synthèse documente l'extension **E2E Vitest/jsdom** sur l'arbre **`App` + `RootProviders`** (même convention que `tests/e2e/README.md`).
 
 ## Tests générés / étendus
 
@@ -58,7 +58,7 @@ Story **13.1** : parité UI **adjacente** au kiosque nominal — routage legacy 
 
 ### Tests API
 
-- [ ] Non ajoutés (inchangé : pas d’endpoint dédié story 13.1).
+- [ ] Non ajoutés (inchangé : pas d'endpoint dédié story 13.1).
 
 ## Couverture (indicatif)
 
@@ -127,7 +127,7 @@ Story **13.3** : parité UI **fermeture de caisse** — alias runtime Peintre po
 ### Unitaires (`peintre-nano/tests/unit/`)
 
 - [x] `runtime-demo-cash-register-session-close-13-3.test.tsx` — `RuntimeDemoApp` : sans session → `replaceState`/`popstate` vers **`/caisse`** ; avec session mockée → surface **`cash-register-session-close-surface`** + heading Fermeture.
-- [x] (régression) `caisse-brownfield-dashboard-6-7.test.tsx` — CTA **Clôturer la session** → navigation **`/cash-register/session/close`** (remplace l’ancienne cible `/caisse/cloture`).
+- [x] (régression) `caisse-brownfield-dashboard-6-7.test.tsx` — CTA **Clôturer la session** → navigation **`/cash-register/session/close`** (remplace l'ancienne cible `/caisse/cloture`).
 
 ### E2E (Vitest + `App`, `peintre-nano/tests/e2e/`)
 
@@ -182,3 +182,194 @@ Story **13.4** : parité observable **hub caisse** — checklist RCN-01, ligne m
 - [x] Preuves DevTools legacy + Peintre documentées dans la story (sans secrets).
 - [x] Synthèse mise à jour dans ce fichier.
 - [x] Cas automatisables jsdom : hub + états **chargement** et **liste vide** (`aria-busy`, `caisse-hub-empty-register-list`) — hors AC réseau MCP / matrice (manuel).
+
+---
+
+# Synthèse automatisation des tests — Story 17.1 (`/admin/pending`, admin transverse)
+
+## Contexte
+
+Story **17.1** : entrée nav transverse **Utilisateurs en attente**, route **`/admin/pending`**, shell admin (hub, famille `admin`), page manifest **`transverse-admin-pending`** avec widgets placeholder (gap OpenAPI **`GET /v1/admin/users/pending`** — pas de binding live inventé).
+
+## Tests existants couvrant 17.1 (revue grep `pending` / `transverse-admin-pending` / `/admin/pending`)
+
+### E2E (Vitest + Testing Library, `peintre-nano/tests/e2e/`)
+
+- [x] `peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx` — Lot **Story 5.4** : libellé nav **Utilisateurs en attente** ; **parcours** clic → `/admin/pending` + `data-transverse-family="admin"` + titre H1 + `widget-admin-pending-users-demo` + texte gap OpenAPI ; **URL profonde** `/admin/pending` → `aria-current` + placeholder.
+
+### Contrat / manifest servi (`peintre-nano/tests/contract/`)
+
+- [x] `peintre-nano/tests/contract/navigation-transverse-served-5-1.test.ts` — Résolution nav/page `transverse-admin-pending`, `path` `/admin/pending`, slots widget attendus, garde **`transverse.admin.view`**.
+
+### Unitaires complémentaires
+
+- [x] `peintre-nano/tests/unit/transverse-templates-5-6.test.tsx` — Mode layout hub pour `transverse-admin-pending`.
+- [x] `peintre-nano/tests/unit/prune-navigation-for-live-toolbar.test.ts` — Sélection toolbar live pour entrée pending.
+
+## Couverture AC (indicatif)
+
+- Route + `page_key` + nav label : **oui** (e2e + contract).
+- Shell admin (hub / famille) : **oui** (e2e `transverse-page-shell`, `data-transverse-family`).
+- Placeholder honnête (mention endpoint absent) : **oui** (e2e + widget `data-testid`).
+- Pas de tests inventant un fetch live pending : **respecté** (placeholder statique uniquement).
+
+## Exécution locale (2026-04-12, QA — bmad-qa-generate-e2e-tests, sous-agent Task)
+
+```powershell
+Set-Location peintre-nano
+npm run test
+```
+
+Résultat Vitest : **89** fichiers, **403** tests, **tous passés**, durée ~**118 s** (Vitest 3.2.4).
+
+## Validation checklist (workflow Quinn) — Story 17.1
+
+- [x] E2E UI : parcours + deep link + libellés (patterns alignés `navigation-transverse-5-1.e2e.test.tsx`).
+- [x] Contract tests : manifest / permissions alignés story.
+- [x] Suite complète `npm run test` : OK — **aucun** fichier de test modifié dans cette passe (couverture déjà suffisante).
+
+## Lacunes éventuelles
+
+- **E2E navigateur Playwright** : non requis par le périmètre actuel (stack = Vitest/jsdom comme le reste de `tests/e2e/`).
+- **Binding API réel** (`GET /v1/admin/users/pending`) : explicitement hors scope jusqu'à fermeture gap OpenAPI (Epic 16) — pas de test API à ajouter ici.
+
+---
+
+# Synthèse automatisation des tests — Story 13.7 (blueprint portage kiosque, doc-only)
+
+## Contexte
+
+Story **13.7** : blueprint et matrice **documentaires** (legacy kiosque → cibles CREOS / 13.8). **Aucune** implémentation kiosque dans ce lot (**13.8**). Acceptation : **relecture PO** ; pas de suite pytest/vitest **obligatoire** pour 13.7.
+
+## Stratégie QA (bmad-qa-generate-e2e-tests)
+
+| Volet | Approche |
+|--------|-----------|
+| **Nouveaux tests** | **Aucun** — pas de delta code ; les E2E/unitaires existants (caisse, hub RCN, kiosque 13.6, etc.) restent la preuve de non-régression sur `peintre-nano`. |
+| **Contrat markdown / smoke doc** | **Non ajouté** — volontairement minimal ; le livrable est la **qualité documentaire** (PO), pas des assertions structurelles sur le markdown du blueprint. |
+
+## Gates locaux (`peintre-nano/`, 2026-04-12)
+
+- **1er passage QA :** `npm run lint` (`tsc -b`) **OK** ; `npm run test` **OK** — 90 fichiers, 411 tests (Vitest 3.2.4).
+- **2e passage QA** (après correctifs doc + **alignement statuts AC** dans les livrables 13.7) : mêmes commandes — **lint OK**, **test OK** (90 fichiers, 411 tests, tous passés).
+
+## Détail
+
+Voir [`13-7-blueprint-kiosque-doc-qa-summary.md`](./13-7-blueprint-kiosque-doc-qa-summary.md) (section *2e passage*).
+
+## Validation checklist (workflow Quinn) — Story 13.7
+
+- Synthèse créée ; pas de génération API/E2E supplémentaire — conforme au bornage story et au blueprint.
+- **2e passe** : doc et AC recadrés ; gates `peintre-nano` inchangés et toujours verts.
+
+---
+
+# Synthèse automatisation des tests — Story 18.2 (session-manager + cash-sessions détail)
+
+## Contexte
+
+Story **18.2** : surfaces **`/admin/session-manager`** et **`/admin/cash-sessions/:id`** alignées CREOS, gap **K** explicite, exports sensibles classe **B** exclus visuellement. Tests principalement dans le lot transverse **5.1** (contrat + E2E jsdom).
+
+## Fichiers
+
+- `peintre-nano/tests/contract/navigation-transverse-served-5-1.test.ts`
+- `peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx` (renfort QA 2026-04-12 : assertion textuelle des deux gaps liste + KPIs dans le parcours session-manager)
+
+## Détail et mapping AC
+
+Voir [`test-summary-story-18-2-qa.md`](./test-summary-story-18-2-qa.md).
+
+## Validation checklist (workflow Quinn) — Story 18.2
+
+- `vitest run` sur les deux fichiers ci-dessus : **70** tests **OK** (2026-04-12, phase QA).
+
+---
+
+# Synthèse automatisation des tests — Story 19.1 (réception-stats + supervision nominative)
+
+## Contexte
+
+Story **19.1** : stats réception et blocs de supervision sous **`/admin/reception-stats`**, entrée nav **`transverse-admin-reception-stats`**, widget **`admin.reception.stats.supervision`**, gap **K** nominatif explicite ; lien hub **`admin-hub-link-reception-stats`** (18.1).
+
+## Fichiers
+
+- `peintre-nano/tests/contract/navigation-transverse-served-5-1.test.ts`
+- `peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx`
+- `peintre-nano/tests/unit/admin-reception-stats-supervision-widget.test.tsx`
+
+## Détail
+
+Voir [`test-summary-story-19-1-qa.md`](./test-summary-story-19-1-qa.md).
+
+## Validation checklist (workflow Quinn) — Story 19.1
+
+- `npm test` ciblant les **3** fichiers ci-dessus : **79** tests **OK** (2026-04-12, phase QA Task — cas erreur **403** unitaire ajouté).
+
+### Revalidation (2026-04-12, sous-agent Task `resume_at: QA`)
+
+```powershell
+Set-Location "D:/users/Strophe/Documents/1-IA/La Clique Qui Recycle/JARVOS_recyclique/peintre-nano"
+npm test -- tests/contract/navigation-transverse-served-5-1.test.ts tests/e2e/navigation-transverse-5-1.e2e.test.tsx tests/unit/admin-reception-stats-supervision-widget.test.tsx
+```
+
+Résultat : **3** fichiers, **79** tests, **tous passés** (exit code **0**), durée ~**18 s** — extension **`admin-reception-stats-supervision-widget.test.tsx`** : alerte défensive **403** sur `GET /v1/stats/reception/summary` (checklist Quinn, cas d’erreur critique).
+
+### Revalidation antérieure (2026-04-12, worker `resume_at: DS`)
+
+Résultat historique : **78** tests sans le cas **403** unitaire.
+
+---
+
+# Synthèse automatisation des tests — Story 19.2 (reception-sessions + reception-tickets/:id)
+
+## Contexte
+
+Story **19.2** : liste tickets admin **`/admin/reception-sessions`**, détail **`/admin/reception-tickets/:id`**, mocks `fetch` alignés `recyclique_reception_listTickets` / `recyclique_reception_getTicketDetail` ; pas de tests API backend dans ce volet (UI jsdom uniquement).
+
+## Fichiers touchés (phase QA `bmad-qa-generate-e2e-tests`)
+
+- `peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx` — ajout parcours **drill-down** liste → clic **Détail** → URL canonique + widget détail + ancrage `getTicketDetail` (complète les cas nav / URL profonde / hub déjà livrés par le DS).
+
+## Couverture (indicatif)
+
+- **E2E** : nav, URL profonde sessions, URL profonde ticket, hub → sessions, **drill-down** ligne → détail (nouveau).
+- **Contrat** : inchangé par cette passe QA (`navigation-transverse-served-5-1.test.ts` déjà étendu en DS).
+- **Gaps acceptables** : erreurs API liste/détail (4xx/5xx) hors parcours happy path ; mutations / export classe **B** (hors scope story, exclusion UI non rejouée ici).
+
+## Validation checklist (workflow Quinn) — Story 19.2
+
+- `npm test` dans **`peintre-nano`** : suite complète **OK** (exit code **0**, 2026-04-12, phase QA Task) après ajout du test drill-down.
+
+---
+
+# Synthèse automatisation des tests — Story 19.3 (pilotage réception, exports B hors critère)
+
+## Contexte
+
+Story **19.3** : parité observable **stats réception** + **sessions tickets** + **détail ticket** ; pas de nav **`/admin/reception-reports`** ; dettes export **B** et gap manifestes **visibles** ; pas d'`operation_id` inventés hors OpenAPI. Preuve navigateur MCP : **NEEDS_HITL** déjà consigné dans la story et `references/artefacts/2026-04-12_08_preuve-parite-pilotage-reception-19-3-needs-hitl.md`.
+
+## Fichiers de tests validés (phase QA `bmad-qa-generate-e2e-tests`, sous-agent Task)
+
+- [x] `peintre-nano/tests/contract/navigation-transverse-served-5-1.test.ts` — `describe('Story 19.3 — pilotage réception (bundle CREOS)')` : absence nav `/admin/reception-reports`, texte **contract-gap** `recyclique_admin_reports_receptionTicketsExportBulk` + **Epic 16**.
+- [x] `peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx` — `Story 19.3 — hub → stats → hub → sessions` : chaîne hub → stats (gap **K** nominatif) → hub → sessions (export **B** nommé, `admin-reception-tickets-scope-note`), absence `nav-entry-transverse-admin-reception-reports`.
+
+## Exécution locale (2026-04-12, QA — ciblé, sans gate npm complet)
+
+```powershell
+Set-Location "d:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\peintre-nano"
+npm test -- tests/contract/navigation-transverse-served-5-1.test.ts tests/e2e/navigation-transverse-5-1.e2e.test.tsx
+```
+
+Résultat Vitest : **2** fichiers, **88** tests, **tous passés** (exit code **0**), durée ~**16 s**.
+
+## Couverture (indicatif)
+
+- **Contrat CREOS** : pas d'entrée nav réception-reports ; gap liste sessions cite l'export bulk documenté.
+- **E2E jsdom** : parcours observable hub ↔ stats ↔ sessions + marqueurs dette **B** / scope note ; pas d'activation d'exports **B** comme critère de succès implicite.
+
+## Validation checklist (workflow Quinn) — Story 19.3
+
+- [x] E2E + contrat : chemins et assertions alignés AC **19.3** (rail **U**).
+- [x] Tests exécutés avec succès sur le périmètre ciblé.
+- [x] Synthèse ajoutée dans ce fichier.
+- **MCP `user-chrome-devtools`** : hors exécution automatisée — voir **NEEDS_HITL** story / artefact **08** (AC3).

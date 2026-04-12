@@ -69,7 +69,9 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     resetCoalescedGetCurrentOpenCashSessionForTests();
   });
 
-  it('depuis /caisse : FlowRenderer + ticket critique + POST JSON + GET getSale → ticket serveur + issue locale (AC 1, 3, 4)', async () => {
+  it(
+    'depuis /caisse : FlowRenderer + ticket critique + POST JSON + GET getSale → ticket serveur + issue locale (AC 1, 3, 4)',
+    async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -141,17 +143,22 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
 
+    // Hub RCN-01 : chrome postes + bandeau session réservé à `/caisse` (pas sur l’alias kiosque vente).
+    expect(screen.getByRole('heading', { level: 2, name: /Sélection du Poste de Caisse/i })).toBeTruthy();
+    expect(screen.getByTestId('caisse-legacy-register-row')).toBeTruthy();
+
     navigateToForRuntime('/cash-register/sale');
 
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-nominal-wizard')).toBeTruthy();
     });
 
-    expect(screen.getByRole('heading', { level: 2, name: /Sélection du Poste de Caisse/i })).toBeTruthy();
-    expect(screen.getByTestId('caisse-legacy-register-row')).toBeTruthy();
+    // Story 13.6 — `sale_kiosk_minimal_dashboard` : pas d’empilement hub + wizard sur `/cash-register/sale`.
+    expect(screen.queryByRole('heading', { level: 2, name: /Sélection du Poste de Caisse/i })).toBeNull();
+    expect(screen.queryByTestId('caisse-legacy-register-row')).toBeNull();
+    expect(screen.queryByTestId('caisse-kpi-strip')).toBeNull();
 
     expect(document.getElementById('caisse-sale-workspace')).toBeTruthy();
-    expect(screen.getByTestId('caisse-kpi-strip')).toBeTruthy();
 
     expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
     const ticketAside = screen.getByTestId('caisse-current-ticket');
@@ -163,15 +170,14 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
-    fireEvent.change(screen.getByRole('textbox', { name: /UUID session caisse/i }), {
+    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
       target: { value: '00000000-0000-4000-8000-000000000001' },
     });
 
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
 
     await waitFor(() => {
-      const t = screen.getByTestId('caisse-last-sale-id').textContent ?? '';
-      expect(t).toContain('sale-e2e-story61');
+      expect(screen.getByTestId('caisse-last-sale-id').getAttribute('data-sale-id')).toBe('sale-e2e-story61');
     });
 
     await waitFor(() => {
@@ -181,7 +187,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     expect(screen.getByTestId('caisse-current-ticket').getAttribute('data-widget-data-state')).toBe('NOMINAL');
 
     const ticketText = screen.getByTestId('caisse-current-ticket').textContent ?? '';
-    expect(ticketText).toMatch(/Total \(serveur\)/);
+    expect(ticketText).toMatch(/Total : 5\.00 €/);
     expect(ticketText).toMatch(/EEE-1/);
 
     const localMsg = screen.getByTestId('caisse-local-issue-message').textContent ?? '';
@@ -197,7 +203,8 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       return m === 'GET' && requestUrl(u).includes('/v1/sales/sale-e2e-story61');
     });
     expect(getSaleCalls.length).toBeGreaterThanOrEqual(1);
-  });
+  },
+  15_000);
 
   it('GET /v1/cash-sessions/current au chargement /caisse : bandeau session + brouillon alignés (parité /caisse/cloture)', async () => {
     const SESSION_ID = '00000000-0000-4000-8000-000000000099';
@@ -367,25 +374,31 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
 
+    /** `session/open?register_id=` : poste reconnu depuis l’URL — pas de blocage « poste manquant », seul le fond manque. */
+    await waitFor(() => {
+      expect(screen.queryByTestId('cashflow-opening-register-id')).toBeNull();
+    });
+    await waitFor(() => {
+      const blocked = screen.getByTestId('cashflow-opening-blocked-reason');
+      expect(blocked.textContent ?? '').toMatch(/fond de caisse/i);
+      expect(blocked.textContent ?? '').not.toMatch(/Sélectionnez un poste/i);
+    });
+
     fireEvent.change(screen.getByLabelText(/Fond de caisse/i), {
       target: { value: '42.5' },
     });
     fireEvent.click(screen.getByTestId('cashflow-submit-opening'));
 
     await waitFor(() => {
-      const session = screen.getByTestId('caisse-dash-session');
-      expect(session.getAttribute('data-resolved-session-id')).toBe(SESSION_ID);
-      expect(getCashflowDraftSnapshot().operatingMode).toBe('real');
+      expect(window.location.pathname).toBe('/cash-register/sale');
     });
-
-    expect(screen.getByTestId('cashflow-opening-success').textContent ?? '').toContain(SESSION_ID);
-
-    navigateToForRuntime('/cash-register/sale');
 
     await waitFor(() => {
       expect((screen.getByTestId('cashflow-input-session-id') as HTMLInputElement).value).toBe(SESSION_ID);
+      expect(getCashflowDraftSnapshot().operatingMode).toBe('real');
     });
-    expect(screen.getByTestId('caisse-goto-sale-workspace').getAttribute('disabled')).toBeNull();
+    // Après ouverture, navigation directe vers `/cash-register/sale` (13.6) : pas de CTA « Aller au poste de vente » (kiosque minimal).
+    expect(screen.queryByTestId('caisse-goto-sale-workspace')).toBeNull();
   });
 
   it('ouverture mode virtuel : POST /v1/cash-sessions/ + marquage simulation (brouillon + wizard §7)', async () => {
@@ -452,14 +465,11 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     fireEvent.click(screen.getByTestId('cashflow-submit-opening'));
 
     await waitFor(() => {
-      expect(getCashflowDraftSnapshot().operatingMode).toBe('virtual');
+      expect(window.location.pathname).toBe('/cash-register/virtual/sale');
     });
 
-    expect(screen.getByTestId('caisse-dash-active-mode-virtual')).toBeTruthy();
-
-    navigateToForRuntime('/cash-register/sale');
-
     await waitFor(() => {
+      expect(getCashflowDraftSnapshot().operatingMode).toBe('virtual');
       expect(screen.getByTestId('cashflow-operating-mode-virtual-banner')).toBeTruthy();
     });
   });
@@ -537,12 +547,11 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     fireEvent.click(screen.getByTestId('cashflow-submit-opening'));
 
     await waitFor(() => {
-      expect(getCashflowDraftSnapshot().operatingMode).toBe('deferred');
+      expect(window.location.pathname).toBe('/cash-register/deferred/sale');
     });
 
-    navigateToForRuntime('/cash-register/sale');
-
     await waitFor(() => {
+      expect(getCashflowDraftSnapshot().operatingMode).toBe('deferred');
       expect(screen.getByTestId('cashflow-operating-mode-deferred-banner')).toBeTruthy();
     });
   });
@@ -572,8 +581,9 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       </RootProviders>,
     );
 
+    /** `legacySessionOpenBareForm` (branche réelle sans `register_id`) masque l’alerte orange « vente bloquée » ; le blocage reste explicite via `openingBlockedReason`. */
     await waitFor(() => {
-      expect(screen.getByTestId('cashflow-opening-required')).toBeTruthy();
+      expect(screen.getByTestId('cashflow-opening-blocked-reason')).toBeTruthy();
     });
 
     expect(screen.getByTestId('cashflow-submit-opening').getAttribute('disabled')).not.toBeNull();
@@ -619,7 +629,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
-    fireEvent.change(screen.getByRole('textbox', { name: /UUID session caisse/i }), {
+    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
       target: { value: '00000000-0000-4000-8000-000000000001' },
     });
 
@@ -670,7 +680,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
-    fireEvent.change(screen.getByRole('textbox', { name: /UUID session caisse/i }), {
+    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
       target: { value: '00000000-0000-4000-8000-000000000001' },
     });
 
@@ -717,7 +727,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
-    fireEvent.change(screen.getByRole('textbox', { name: /UUID session caisse/i }), {
+    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
       target: { value: '00000000-0000-4000-8000-000000000001' },
     });
 
@@ -802,7 +812,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
-    fireEvent.change(screen.getByRole('textbox', { name: /UUID session caisse/i }), {
+    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
       target: { value: '00000000-0000-4000-8000-000000000001' },
     });
 

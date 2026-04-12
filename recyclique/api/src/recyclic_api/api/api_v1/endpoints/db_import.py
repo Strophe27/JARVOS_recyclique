@@ -13,16 +13,30 @@ import time
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse, unquote
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
-from recyclic_api.core.database import get_db
+from recyclic_api.core.database import get_db, SessionLocal
 from recyclic_api.core.auth import require_super_admin_role
 from recyclic_api.core.config import settings
+from recyclic_api.core.redis import get_redis
+from recyclic_api.core.step_up import (
+    SENSITIVE_OPERATION_DB_IMPORT,
+    STEP_UP_PIN_HEADER,
+    verify_step_up_pin_header,
+)
 from recyclic_api.models.user import User
 from recyclic_api.core.audit import log_system_action
 from recyclic_api.models.audit_log import AuditActionType
+from recyclic_api.services.idempotency_support import (
+    body_fingerprint_db_import,
+    get_cached_idempotent_close,
+    redis_key_db_import_idempotent,
+    store_idempotent_close,
+    validate_or_raise_idempotency_conflict,
+)
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -35,9 +49,11 @@ logger = logging.getLogger(__name__)
     status_code=status.HTTP_200_OK
 )
 async def import_database(
+    request: Request,
     file: UploadFile = File(..., description="Fichier .dump de sauvegarde PostgreSQL à importer"),
     current_user: User = Depends(require_super_admin_role()),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    redis_client=Depends(get_redis),
 ):
     """
     Importe un fichier .dump de sauvegarde PostgreSQL et remplace la base de données existante.
@@ -54,6 +70,23 @@ async def import_database(
     - Sauvegarde automatique avant import (format .dump dans /backups)
     - Exécution via pg_restore (outil système éprouvé)
     """
+    verify_step_up_pin_header(
+        user=current_user,
+        pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+        redis_client=redis_client,
+        operation=SENSITIVE_OPERATION_DB_IMPORT,
+    )
+    idem_raw = request.headers.get("Idempotency-Key")
+    if not idem_raw or not str(idem_raw).strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "IDEMPOTENCY_KEY_REQUIRED",
+                "message": "En-tête Idempotency-Key requis pour l'import de base (Story 16.3).",
+            },
+        )
+    idempotency_key = str(idem_raw).strip()
+
     # Capturer le temps de début pour calculer la durée
     start_time = time.time()
     file_size = 0
@@ -80,6 +113,13 @@ async def import_database(
         # Vérifier la taille du fichier (limite à 500MB pour les dumps compressés)
         file_content = await file.read()
         file_size = len(file_content)
+
+        body_fp = body_fingerprint_db_import(file.filename, file_size)
+        rkey = redis_key_db_import_idempotent(str(current_user.id), idempotency_key)
+        cached = get_cached_idempotent_close(redis_client, rkey)
+        if cached:
+            status_c, body = validate_or_raise_idempotency_conflict(cached, body_fp)
+            return JSONResponse(status_code=status_c, content=body)
         if file_size > 500 * 1024 * 1024:  # 500MB
             error_message = f"Le fichier est trop volumineux (limite: 500MB, reçu: {file_size / (1024*1024):.2f}MB)"
             raise HTTPException(
@@ -158,8 +198,8 @@ async def import_database(
             )
 
             if validate_result.returncode != 0:
-                error_message = f"Le fichier .dump n'est pas valide ou corrompu: {validate_result.stderr}"
-                logger.error(f"Dump file validation failed: {validate_result.stderr}")
+                error_message = "Le fichier .dump n'est pas valide ou est corrompu."
+                logger.error("Dump file validation failed: %s", validate_result.stderr)
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=error_message
@@ -203,8 +243,8 @@ async def import_database(
             )
 
             if backup_result.returncode != 0:
-                error_message = f"Impossible de créer une sauvegarde automatique: {backup_result.stderr}"
-                logger.error(f"Backup creation failed: {backup_result.stderr}")
+                error_message = "Impossible de créer la sauvegarde automatique avant import."
+                logger.error("Backup creation failed: %s", backup_result.stderr)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=error_message
@@ -317,8 +357,11 @@ async def import_database(
                 else:
                     # Vraie erreur
                     restore_success = False
-                    error_message = f"Erreur lors de la restauration de la base de données: {restore_result.stderr[:1000] if restore_result.stderr else 'Unknown error'}. Un backup de sécurité est disponible dans {backup_path}"
-                    logger.error(f"Database restore failed: {restore_result.stderr[:1000] if restore_result.stderr else 'Unknown error'}")
+                    error_message = "La restauration de la base de données a échoué. Consulter les journaux serveur."
+                    logger.error(
+                        "Database restore failed (stderr excerpt): %s",
+                        (restore_result.stderr or "")[:2000],
+                    )
                     # En cas d'échec, le backup de sécurité est disponible dans /backups
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -338,18 +381,15 @@ async def import_database(
             
             logger.warning(f"Database import completed successfully by user {current_user.id}")
             
-            # IMPORTANT: La restauration peut avoir fermé la connexion DB
-            # Créer une nouvelle session pour enregistrer l'audit
+            # La restauration peut invalider la session ORM injectée par FastAPI : audit sur session dédiée si besoin.
+            audit_db = db
+            own_audit_session = False
             try:
-                # Tester si la session actuelle est encore valide
                 db.execute(text("SELECT 1"))
             except Exception:
-                # La session est fermée, en créer une nouvelle
-                logger.warning("Database session closed after restore, creating new session for audit")
-                from recyclic_api.core.database import get_db
-                db = next(get_db())
-            
-            # Enregistrer l'audit en cas de succès
+                logger.warning("Database session unusable after restore; opening SessionLocal for audit")
+                audit_db = SessionLocal()
+                own_audit_session = True
             try:
                 log_system_action(
                     action_type=AuditActionType.DB_IMPORT,
@@ -365,20 +405,26 @@ async def import_database(
                         "success": True
                     },
                     description=f"Import de base de données réussi: {file.filename} ({round(file_size / (1024 * 1024), 2)}MB) en {round(duration_seconds, 2)}s",
-                    db=db
+                    db=audit_db
                 )
             except Exception as audit_error:
-                # Si l'enregistrement de l'audit échoue, on log mais on ne fait pas échouer l'import
-                logger.error(f"Failed to log audit entry after successful import: {audit_error}")
-                # Ne pas lever d'exception, l'import a réussi même si l'audit a échoué
+                logger.error("Failed to log audit entry after successful import: %s", audit_error)
+            finally:
+                if own_audit_session:
+                    audit_db.close()
             
-            return {
+            success_payload = {
                 "message": "Import de la base de données effectué avec succès",
                 "imported_file": file.filename,
                 "backup_created": backup_filename,
                 "backup_path": backup_path,
                 "timestamp": datetime.utcnow().isoformat()
             }
+            try:
+                store_idempotent_close(redis_client, rkey, body_fp, 200, success_payload)
+            except Exception as idem_err:
+                logger.warning("idempotency store failed after import success: %s", type(idem_err).__name__)
+            return success_payload
 
         finally:
             # Nettoyer le fichier temporaire
@@ -389,7 +435,10 @@ async def import_database(
 
     except subprocess.TimeoutExpired:
         duration_seconds = time.time() - start_time
-        error_message = "L'import de la base de données a pris trop de temps (timeout après 10 minutes)"
+        error_message = (
+            "L'import de la base de données a dépassé la limite de temps autorisée pour une étape (timeout). "
+            "Les opérations de validation, sauvegarde ou restauration peuvent être longues ; consulter les journaux serveur."
+        )
         logger.error("Database import timed out")
         
         # Enregistrer l'audit en cas de timeout
@@ -463,5 +512,5 @@ async def import_database(
         
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de l'import de la base de données: {error_message}"
+            detail="Une erreur inattendue s'est produite lors de l'import. Consulter les journaux serveur.",
         )

@@ -2,7 +2,7 @@
 
 ## Decisions prises
 
-**Reunion terrain (5 dec. 2025, documente le 6 dec.)** — `references/migration-paeco/2025-12-05_compte-rendu-reunion-recyclique.md`
+**Reunion terrain (5 dec. 2025, documente le 6 dec.)** — `references/migration-paheko/2025-12-05_compte-rendu-reunion-recyclique.md`
 
 - **Tarification caisse** : prix a **0 par defaut**, montant global negocie en fin de transaction (option parametrable).
 - **Categories** : renommage **Electromenager vers EEE** ; sous-categories normees (PAM, Ecrans, Gros hors froid, Gros froid) ; categorie **jardin thermique** ; sous-categorie **Cycles** (velos).
@@ -10,7 +10,7 @@
 - **Paheko** : **vision partagee** backend futur ; **report** de la discussion approfondie apres **2–3 mois** de routine comptable manuelle (automatisation pas immediate).
 - Autres : cheques comptabilises a l'encaissement ; adhesion volontaire (RGPD) ; Perplexity Pro pour veille legale/compta.
 
-**TODO post-reunion (6 dec. 2025)** — `references/migration-paeco/2025-12-05_todo-christophe-recyclique-paheko.md`
+**TODO post-reunion (6 dec. 2025)** — `references/migration-paheko/2025-12-05_todo-christophe-recyclique-paheko.md`
 
 - Integration Paheko : fil Discord / collecte **correspondances Recyclic vers Paheko** ; reunion Paheko **apres** routine stabilisee ; connexion auto et push en **long terme**.
 
@@ -36,7 +36,7 @@
 - **Auth** : **v0.1** auth separee (API Paheko + JWT FastAPI terrain) ; **v0.2** SSO a documenter.
 - **Securite push** : **secret partage** + HTTPS ; bonnes pratiques secrets (env / secrets manager).
 
-**Matrice correspondance (25 fev. 2026)** — `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md`
+**Matrice correspondance (25 fev. 2026)** — `references/migration-paheko/audits/matrice-correspondance-caisse-poids.md`
 
 - **1 session caisse RecyClique = 1 session Paheko** ; ouverture/cloture alignees ; conversion **kg vers g** au push si besoin (Paheko caisse souvent en g).
 
@@ -76,13 +76,13 @@
 
 ## Fichiers sources cites (chemins)
 
-- `references/migration-paeco/index.md`
-- `references/migration-paeco/2025-12-05_compte-rendu-reunion-recyclique.md`
-- `references/migration-paeco/2025-12-05_todo-christophe-recyclique-paheko.md`
-- `references/migration-paeco/2025-11_paheko-recyclique-integration-first-search.md`
-- `references/migration-paeco/2025-11_v1.3.17_recyclique-guide-complet.md`
-- `references/migration-paeco/audits/index.md`
-- `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md`
+- `references/migration-paheko/index.md`
+- `references/migration-paheko/2025-12-05_compte-rendu-reunion-recyclique.md`
+- `references/migration-paheko/2025-12-05_todo-christophe-recyclique-paheko.md`
+- `references/migration-paheko/2025-11_paheko-recyclique-integration-first-search.md`
+- `references/migration-paheko/2025-11_v1.3.17_recyclique-guide-complet.md`
+- `references/migration-paheko/audits/index.md`
+- `references/migration-paheko/audits/matrice-correspondance-caisse-poids.md`
 - `references/paheko/index.md`, `README.md`, `analyse-brownfield-paheko.md`, `liste-endpoints-api-paheko.md`
 - `references/artefacts/index.md` et artefacts 09, 05, 07, 08, 06 (fev. 2026)
 - `references/dumps/schema-paheko-dev.md` (mention matrice)

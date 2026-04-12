@@ -8,7 +8,7 @@ Mission : cartographier `references/` (y compris zones **gitignore** : vrac, eco
 |---------|-----------------|
 | `00-etat-des-lieux/` | Structure, index, fichiers pivots |
 | `01-idees-suivi/` | Kanban, todo, ou-on-en-est |
-| `02-migration-paheko/` | migration-paeco/, paheko/ (hors repo) |
+| `02-migration-paheko/` | migration-paheko/, paheko/ (hors repo) |
 | `03-vision-consolidation-recherche/` | vision-projet, consolidation-1.4.5, recherche/, ancien-repo (docs) |
 | `04-vrac-ecosysteme-depot/` | vrac/, ecosysteme/, _depot/, dumps/ (metadonnees si BDD) |
 | `99-synthese-orchestrateur/` | Synthese transversale (agent principal) |

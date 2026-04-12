@@ -1,0 +1,8 @@
+{
+  "url": "http://localhost:4444/cash-register/sale",
+  "hasKioskTestId": true,
+  "hasCategoryGrid": true,
+  "hasWizardStep": false,
+  "title": "Peintre_nano — socle v2",
+  "textSample": "Poste\n\n— (non résolu par le serveur)\n\nSession\n\nSession non ouverte côté serveur\n\nSite\n\n6abc4e67-577b-4e6b-ae0d-fe8760285f91\n\nRafraîchir session (serveur)\nAller à l’aide « ouverture / session »\nAller au poste de vente\nClôturer la session\n\nSynchronisation opérationnelle (aperçu serveur) : Résolu — source joignable.\n\nL’entrée « Don » (actions sociales) nécessite la permission caisse.social_encaissement (émise par le serveur).\n\nLes encaissements « Don (sans article) » et « Adhésion / cotisation » nécessitent la permission caisse.special_encaissement (émise par le serveur).\n\nLignes\nTotal\nPaiement\nTicket\n\nCatégories\n\n(ABJ) Articles de bricolage et de jardin\nAuto\n(ABJTH) Articles de bricolage et de jardin thermiques\nAnimalerie\nArticles de sport et de loisir (ASL)\nBijoux\ncintres\n🍽️ Cuisine\n💡 Décoration\n⚡ EEE\nEléments d'ameublement ménagers (EA)\nJeux et jouets (JJ)\n📖 Livres\n🏀 Loisirs\nLuminaires\nOutillage\nPapeterie\nPuericulture\n👕 Textiles\n\nIndiquez une session caisse (enveloppe ou champ) pour lister les tickets en attente.\n\nSélectionnez une catégorie ci-dessus, ajustez quantité / poids / prix puis ajoutez la ligne.\n\nCode catégorie (grille ou saisie)\nQuantité\nPoids (kg)\nPrix unitaire / ligne (€)\nAjouter la ligne\n\nLignes : 0\n\nMettre en attente (POST recyclique_sales_createHeldSale)\nPrécédent\nSuivant"
+}

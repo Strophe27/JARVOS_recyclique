@@ -9,7 +9,7 @@
       "widget_type": "demo.text.block",
       "widget_props": {
         "title": "Détail session caisse (admin / journal)",
-        "body": "Brownfield `/admin/cash-sessions/:id` — liste des ventes de la session. Correction sensible (Story 6.8) : action par ligne, wizard step-up PIN + motif, périmètre liste fermée côté API (`recyclique_sales_correctSaleSensitive`). Pas d’entrée transverse caisse isolée."
+        "body": "Brownfield `/admin/cash-sessions/:id` — liste des ventes de la session. Correction sensible (Story 6.8) : action par ligne, wizard step-up PIN + motif, périmètre liste fermée côté API (`recyclique_sales_correctSaleSensitive`). Pas d’entrée transverse caisse isolée. Liste paginée des sessions sur `/admin/session-manager` : Story **18.2** (gaps **K** sur collection / KPIs tant que l’OpenAPI ne les porte pas)."
       }
     },
     {

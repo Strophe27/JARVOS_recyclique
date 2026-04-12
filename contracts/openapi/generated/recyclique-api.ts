@@ -135,6 +135,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des utilisateurs (admin)
+         * @description **G-OA-03** (Story 16.1) : session authentifiée **et** rôle ADMIN ou SUPER_ADMIN requis (`require_admin_role`).
+         *     Trace : `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md` section 4.
+         *     Même famille d'autorité que `GET /v1/admin/users` (lecture admin).
+         */
+        get: operations["recyclique_users_listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail utilisateur par id (admin)
+         * @description **G-OA-03** (Story 16.1) : `require_admin_role` sur la route ; fermeture gap sécurité liste/détail users.
+         *     Trace : `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md` section 4.
+         */
+        get: operations["recyclique_users_getUserById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cash-sessions/current": {
         parameters: {
             query?: never;
@@ -928,10 +971,854 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/reports/cash-sessions/export-bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export bulk des sessions de caisse (CSV ou Excel)
+         * @description **Story 16.4** (classe B, rail K — 15.6). **Rôles** : ADMIN ou SUPER_ADMIN.
+         *     **Step-up** : `X-Step-Up-Pin` obligatoire (`reports.cash_sessions.export_bulk`).
+         *     **Idempotence** : `Idempotency-Key` obligatoire (traçabilité client ; pas de cache de flux binaire côté serveur).
+         *     **Audit** : `log_admin_access` sur succès. **Risque** : fuite de masse / charge (jusqu'à 10k lignes).
+         *     Filtre `site_id` optionnel : les ADMIN non super-admin doivent rester alignés sur la portée site côté service métier.
+         */
+        post: operations["recyclique_admin_reports_cashSessionsExportBulk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/reports/reception-tickets/export-bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export bulk des tickets de réception (CSV ou Excel)
+         * @description **Story 16.4**. **Rôles** : ADMIN ou SUPER_ADMIN.
+         *     **Step-up** : `X-Step-Up-Pin` (`reports.reception_tickets.export_bulk`).
+         *     **Idempotence** : `Idempotency-Key` obligatoire.
+         *     **Audit** : `log_admin_access` sur succès.
+         */
+        post: operations["recyclique_admin_reports_receptionTicketsExportBulk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stats/reception/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Résumé agrégé réception (admin)
+         * @description **Story 16.4** : **ADMIN** ou **SUPER_ADMIN** uniquement (alignement 15.2 vs legacy admin).
+         *     Agrégats **cross-site** ; **audit** `log_admin_access` sur lecture réussie.
+         */
+        get: operations["recyclique_stats_receptionSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stats/reception/by-category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statistiques réception par catégorie (admin)
+         * @description **Story 16.4** : **ADMIN** ou **SUPER_ADMIN** ; agrégats cross-site ; audit `log_admin_access`.
+         */
+        get: operations["recyclique_stats_receptionByCategory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stats/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statistiques live unifiées (caisse + réception)
+         * @description KPIs live ; **ADMIN** ou **SUPER_ADMIN**. **Audit** `log_admin_access` (16.4).
+         *     Paramètres `period_type` (`daily` \| `24h`) et `site_id` optionnel.
+         */
+        get: operations["recyclique_stats_unifiedLive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reception/stats/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statistiques live réception (déprécié)
+         * @description **Déprécié** — utiliser `GET /v1/stats/live`. **ADMIN** ou **SUPER_ADMIN** ; audit `log_admin_access` (16.4).
+         *     En-têtes `Deprecation` / `Link` vers le successeur (impl FastAPI).
+         */
+        get: operations["recyclique_reception_statsLiveDeprecated"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/groups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des groupes (admin)
+         * @description **G-OA-01** (Story 16.2 ; trace 15.2 §4) : contrat canon pour la famille `groups`.
+         *     **Autorité** : `require_admin_role` — jeton via `Authorization: Bearer` **ou** cookie httpOnly (`resolve_access_token`) ; rôle ADMIN ou SUPER_ADMIN.
+         *     Sans jeton : **401** ; USER authentifié : **403**.
+         *     **Lecture** : pagination `skip`/`limit` ; champ `site_id` sur un groupe = portée multi-site (futur bornage d'affichage ContextEnvelope, pas de vérité permission côté client — 15.5 §1).
+         */
+        get: operations["adminGroupsList"];
+        put?: never;
+        /**
+         * Créer un groupe (admin)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role` (Bearer ou cookie, voir `adminGroupsList`).
+         *     Conflit nom ou clé unique : **409**.
+         */
+        post: operations["adminGroupsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail d'un groupe (admin)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+         */
+        get: operations["adminGroupsGetById"];
+        /**
+         * Mettre à jour un groupe (admin)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`. `site_id` nullable (chaîne vide pour effacer).
+         */
+        put: operations["adminGroupsUpdate"];
+        post?: never;
+        /**
+         * Supprimer un groupe (admin)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`. **204** si suppression OK.
+         */
+        delete: operations["adminGroupsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/groups/{group_id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ajouter des permissions à un groupe
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+         */
+        post: operations["adminGroupsAddPermissions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/groups/{group_id}/permissions/{permission_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Retirer une permission d'un groupe
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+         */
+        delete: operations["adminGroupsRemovePermission"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/groups/{group_id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ajouter des utilisateurs à un groupe
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+         */
+        post: operations["adminGroupsAddUsers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/groups/{group_id}/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Retirer un utilisateur d'un groupe
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+         */
+        delete: operations["adminGroupsRemoveUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/users/{user_id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remplacer les groupes d'un utilisateur (admin)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role` (même transport Bearer/cookie que les routes `groups` ci-dessus).
+         *     Mutation ACL : audit applicatif `log_admin_access` + `log_role_change` côté serveur.
+         */
+        put: operations["adminUsersGroupsPut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/transaction-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Logs transactionnels JSON (admin, lecture transverse)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role_strict()` via `get_current_user_strict` :
+         *     en-tête Bearer **ou** cookie d'accès obligatoire — **403** « Not authenticated » si les deux absents (diffère de `require_admin_role` qui renvoie plutôt **401** sans jeton).
+         *     **Lecture transverse** fichiers log (pas de filtre site dans le handler ; 15.2 §2).
+         *     Rate limit serveur : 30 requêtes/minute (**429** possible).
+         */
+        get: operations["adminTransactionLogsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Journal d'audit applicatif (admin, lecture transverse)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role_strict()` (voir `adminTransactionLogsList`).
+         *     **Lecture transverse** table `AuditLog` ; filtres query documentés alignés sur le handler.
+         *     Rate limit : 30/minute (**429**).
+         */
+        get: operations["adminAuditLogList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings/alert-thresholds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Seuils d'alerte dashboard (ADMIN ou SUPER_ADMIN)
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([ADMIN, SUPER_ADMIN])` via `get_current_user`
+         *     (JWT **Bearer** ou cookie d'accès v2, même transport que le reste de l'API).
+         *     **Contexte** : paramètres optionnellement **par site** (`site_id` query) ; pas de `ContextEnvelope` dans le handler
+         *     (contrôle global + site_id explicite). **Step-up PIN** : **non** requis sur GET/PUT (décision Story 16.3 :
+         *     mutations bornées à des seuils numériques, audit `log_admin_access`, friction opérationnelle vs risque résiduel
+         *     accepté — clients futurs peuvent ajouter une couche produit). Rate limit conditionnel serveur.
+         */
+        get: operations["adminSettingsAlertThresholdsGet"];
+        /**
+         * Mettre à jour les seuils d'alerte
+         * @description **G-OA-01** (Story 16.3). Même **autorité** et **contexte** que `adminSettingsAlertThresholdsGet`.
+         *     **Step-up PIN** : **non** (même justification documentaire que le GET).
+         */
+        put: operations["adminSettingsAlertThresholdsPut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paramètres de session JWT (SUPER_ADMIN)
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([SUPER_ADMIN])` (Bearer/cookie).
+         *     **Contexte** : réglage **global** instance (durée tokens) ; **N/A** `ContextEnvelope` dans le handler.
+         *     **Step-up PIN** : **non** sur GET/PUT (décision tracée 16.3 : super-admin déjà requis ; audit `log_admin_access` ;
+         *     éviter rupture clients admin existants — risque résiduel assumé vs opérations DB destructive).
+         */
+        get: operations["adminSettingsSessionGet"];
+        /**
+         * Mettre à jour les paramètres de session
+         * @description **G-OA-01** (Story 16.3). Même **autorité** / **contexte** / absence step-up que `adminSettingsSessionGet` (justification identique).
+         */
+        put: operations["adminSettingsSessionPut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Configuration email Brevo (SUPER_ADMIN)
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([SUPER_ADMIN])`.
+         *     **Contexte** : configuration **globale** expéditeur ; pas de `ContextEnvelope` dans le handler.
+         *     **Step-up PIN** : **non** sur GET/PUT/POST test (décision 16.3 : pas de fuite secrets dans l'audit existant ;
+         *     envoi test reste sous rate limit ; alternative step-up envisageable en durcissement ultérieur).
+         */
+        get: operations["adminSettingsEmailGet"];
+        /**
+         * Mettre à jour la configuration email
+         * @description **G-OA-01** (Story 16.3). Voir `adminSettingsEmailGet` pour autorité, contexte, absence step-up.
+         */
+        put: operations["adminSettingsEmailPut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings/email/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Envoyer un email de test (SUPER_ADMIN)
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([SUPER_ADMIN])`.
+         *     **Audit** : `log_admin_access` (pas `AuditLog` structuré sur cette route seule).
+         *     **Step-up** : **non** (voir description `adminSettingsEmailGet`).
+         */
+        post: operations["adminSettingsEmailTestPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings/activity-threshold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Seuil d'activité « en ligne » (ADMIN ou SUPER_ADMIN)
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_admin_role` (ADMIN **ou** SUPER_ADMIN ; transport Bearer/cookie).
+         *     **Écart UI/API (15.2)** : l'écran legacy « settings » peut n'exposer cette action qu'aux SUPER_ADMIN alors que l'API
+         *     accepte les ADMIN — documenter la divergence pour le portage Peintre.
+         *     **Contexte** : paramètre **global** (`Setting.key` = `activity_threshold_minutes`) ; pas de `ContextEnvelope`.
+         *     **Step-up** : **non** (mutation non destructive bornée 1–1440 min ; `log_audit` + `SETTING_UPDATED`).
+         *     Rate limit slowapi 30/minute (**429** possible).
+         */
+        get: operations["adminSettingsActivityThresholdGet"];
+        /**
+         * Mettre à jour le seuil d'activité
+         * @description **G-OA-01** (Story 16.3). Même **autorité**, **écart 15.2**, **contexte** et absence **step-up** que le GET.
+         */
+        put: operations["adminSettingsActivityThresholdPut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/db/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export pg_dump binaire (.dump), SUPER_ADMIN + step-up PIN
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_super_admin_role()` (JWT Bearer ou cookie).
+         *     **Contexte** : opération **globale instance** (connexion via `DATABASE_URL` serveur) ; pas de filtre site ni `ContextEnvelope`.
+         *     **Step-up** : **obligatoire** — en-tête `X-Step-Up-Pin` (opération serveur `db.export`, constante `SENSITIVE_OPERATION_DB_EXPORT`).
+         *     **Idempotency-Key** : **non exigé** côté serveur (réponse fichier binaire : pas de rejouabilité JSON stockée ;
+         *     décision tracée — double clic = second export complet ; mitigation : step-up + rôle super-admin).
+         *     **Audit** : `log_system_action` avec `AuditActionType.DB_EXPORT` (succès/échecs) — jamais d'URL DB ni secrets.
+         */
+        post: operations["adminDbExportPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/db/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import pg_restore (.dump), SUPER_ADMIN + step-up + Idempotency-Key
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_super_admin_role()`.
+         *     **Contexte** : restauration **base complète** instance (`DATABASE_URL`) ; pas de `ContextEnvelope`.
+         *     **Step-up** : **obligatoire** (`X-Step-Up-Pin`, opération `db.import`).
+         *     **Idempotency-Key** : **obligatoire** ; rejeu même clé + même fichier (nom + taille) → même réponse **200** ;
+         *     clé réutilisée avec fichier différent → **409** `IDEMPOTENCY_KEY_CONFLICT`.
+         *     **Audit** : `AuditActionType.DB_IMPORT` inchangé (`log_system_action`).
+         */
+        post: operations["adminDbImportPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/db/purge-transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Purge données transactionnelles, SUPER_ADMIN + step-up + Idempotency-Key
+         * @description **G-OA-01** (Story 16.3). **Autorité** : `require_super_admin_role()`.
+         *     **Contexte** : purge **globale** tables ventes/réception/caisse listées dans le handler ; pas de `ContextEnvelope`.
+         *     **Step-up** : **obligatoire** (`db.purge_transactions`).
+         *     **Idempotency-Key** : **obligatoire** ; rejeu même clé → même JSON **200**.
+         *     **Audit** : `AuditActionType.DB_PURGE` via `log_system_action` (comptes supprimés, pas de PII).
+         */
+        post: operations["adminDbPurgeTransactionsPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/email-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des logs d'emails envoyés (admin, lecture transverse)
+         * @description **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role_strict()` (voir `adminTransactionLogsList`).
+         *     Données via **serveur** `EmailLogService` — ne pas reproduire l'anti-pattern **client** legacy `emailLogService`
+         *     (fetch parallèle, `localStorage`, baseUrl ad hoc ; 15.2 §5) : les futurs clients doivent consommer **uniquement**
+         *     ce contrat `/v1/admin/email-logs` avec la même session que le reste de l'API v2 (Bearer/cookie).
+         *     **Lecture transverse** ; rate limit 30/minute (**429**).
+         */
+        get: operations["adminEmailLogsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        AdminBulkExportFormat: "csv" | "excel";
+        AdminBulkCashSessionsExportRequest: {
+            /** @description Filtres sessions (dates ISO, statut, site_id, etc.) */
+            filters: {
+                [key: string]: unknown;
+            };
+            format: components["schemas"]["AdminBulkExportFormat"];
+        };
+        AdminBulkReceptionTicketsExportRequest: {
+            /** @description Filtres tickets réception */
+            filters: {
+                [key: string]: unknown;
+            };
+            format: components["schemas"]["AdminBulkExportFormat"];
+        };
+        /** @description Corps JSON `UserResponse` (routes `GET /v1/users/` et `GET /v1/users/{user_id}`). Story 16.1 / G-OA-03. */
+        UserV1Response: {
+            /** Format: uuid */
+            id: string;
+            username: string;
+            first_name?: string | null;
+            last_name?: string | null;
+            /** Format: email */
+            email?: string | null;
+            phone_number?: string | null;
+            address?: string | null;
+            notes?: string | null;
+            skills?: string | null;
+            availability?: string | null;
+            /** @enum {string} */
+            role: "super-admin" | "admin" | "user";
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "active";
+            is_active: boolean;
+            /** Format: uuid */
+            site_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Permission (réponse groupe détail) — Story 16.2. */
+        AdminPermissionV1: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Élément liste groupes (`GroupResponse`) — Story 16.2. */
+        AdminGroupListItem: {
+            /** Format: uuid */
+            id: string;
+            key: string;
+            name: string;
+            display_name?: string | null;
+            /** Format: uuid */
+            site_id?: string | null;
+            description?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            user_ids: string[];
+            permission_ids: string[];
+        };
+        /** @description Détail groupe (`GroupDetailResponse`) — Story 16.2. */
+        AdminGroupDetail: {
+            /** Format: uuid */
+            id: string;
+            key: string;
+            name: string;
+            display_name?: string | null;
+            /** Format: uuid */
+            site_id?: string | null;
+            description?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            users: components["schemas"]["UserV1Response"][];
+            permissions: components["schemas"]["AdminPermissionV1"][];
+        };
+        AdminGroupCreate: {
+            name: string;
+            description?: string | null;
+            key?: string | null;
+            display_name?: string | null;
+            /** @description UUID site ou null/absent pour global */
+            site_id?: string | null;
+        };
+        AdminGroupUpdate: {
+            name?: string;
+            description?: string | null;
+            display_name?: string | null;
+            /** @description UUID ou chaîne vide pour effacer */
+            site_id?: string | null;
+        };
+        AdminAssignPermissionIdsRequest: {
+            permission_ids: string[];
+        };
+        AdminAssignUserIdsRequest: {
+            user_ids: string[];
+        };
+        AdminUserGroupUpdateRequest: {
+            group_ids: string[];
+        };
+        AdminSettingsAlertThresholdsNumbers: {
+            cashDiscrepancy: number;
+            lowInventory: number;
+        };
+        AdminSettingsAlertThresholdsEnvelope: {
+            thresholds: components["schemas"]["AdminSettingsAlertThresholdsNumbers"];
+            siteId?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        AdminSettingsAlertThresholdsUpdateBody: {
+            thresholds: components["schemas"]["AdminSettingsAlertThresholdsNumbers"];
+            siteId?: string | null;
+        };
+        /** @description Aligné `SessionSettingsResponse`. */
+        AdminSettingsSessionEnvelope: {
+            token_expiration_minutes?: number;
+        };
+        AdminSettingsSessionUpdateBody: {
+            token_expiration_minutes: number;
+        };
+        AdminSettingsEmailEnvelope: {
+            from_name?: string;
+            /** Format: email */
+            from_address?: string;
+            default_recipient?: string | null;
+            has_api_key?: boolean;
+            webhook_secret_configured?: boolean;
+        };
+        AdminSettingsEmailUpdateBody: {
+            from_name?: string;
+            from_address?: string;
+            default_recipient?: string | null;
+        };
+        AdminSettingsEmailTestRequest: {
+            /** Format: email */
+            to_email: string;
+        };
+        AdminSettingsEmailTestResponse: {
+            success?: boolean;
+            message?: string;
+            to_email?: string;
+            from_email?: string;
+            from_name?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        AdminActivityThresholdResponse: {
+            activity_threshold_minutes?: number;
+            description?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        AdminActivityThresholdUpdateBody: {
+            activity_threshold_minutes: number;
+        };
+        AdminActivityThresholdPutResponse: {
+            message?: string;
+            activity_threshold_minutes?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        AdminDbImportSuccessResponse: {
+            message?: string;
+            imported_file?: string;
+            backup_created?: string;
+            backup_path?: string;
+            timestamp?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        AdminDbPurgeSuccessResponse: {
+            message?: string;
+            deleted_records?: {
+                [key: string]: number;
+            };
+            timestamp?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Réponse standard admin (`AdminResponse`) — PUT groupes utilisateur. */
+        AdminMutationEnvelope: {
+            data?: {
+                [key: string]: unknown;
+            } | null;
+            message: string;
+            success: boolean;
+        };
+        AdminPaginationStandard: {
+            page: number;
+            page_size: number;
+            total_count: number;
+            total_pages: number;
+            has_next: boolean;
+            has_prev: boolean;
+        };
+        AdminTransactionLogsPage: {
+            entries: {
+                [key: string]: unknown;
+            }[];
+            pagination: components["schemas"]["AdminPaginationStandard"];
+        };
+        /** @description Ligne journal d'audit (handler admin_observability). */
+        AdminAuditLogEntry: {
+            id: string;
+            /** Format: date-time */
+            timestamp: string;
+            actor_id?: string | null;
+            actor_username?: string | null;
+            action_type: string;
+            target_id?: string | null;
+            target_username?: string | null;
+            target_type?: string | null;
+            details?: unknown;
+            description: string | null;
+            ip_address?: string | null;
+            user_agent?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        AdminAuditLogFiltersApplied: {
+            [key: string]: unknown;
+        };
+        AdminAuditLogPage: {
+            entries: components["schemas"]["AdminAuditLogEntry"][];
+            pagination: components["schemas"]["AdminPaginationStandard"];
+            filters_applied: components["schemas"]["AdminAuditLogFiltersApplied"];
+        };
+        /** @description Entrée `EmailLogResponse` (champs principaux). */
+        AdminEmailLogRow: {
+            /** Format: uuid */
+            id: string;
+            recipient_email: string;
+            recipient_name?: string | null;
+            subject: string;
+            body_text?: string | null;
+            body_html?: string | null;
+            email_type: string;
+            status: string;
+            external_id?: string | null;
+            error_message?: string | null;
+            /** Format: date-time */
+            sent_at?: string | null;
+            /** Format: date-time */
+            delivered_at?: string | null;
+            /** Format: date-time */
+            opened_at?: string | null;
+            /** Format: date-time */
+            clicked_at?: string | null;
+            /** Format: date-time */
+            bounced_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: uuid */
+            user_id?: string | null;
+            additional_data?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        AdminEmailLogListResponse: {
+            email_logs: components["schemas"]["AdminEmailLogRow"][];
+            total: number;
+            page: number;
+            per_page: number;
+            total_pages: number;
+        };
         /**
          * @description Enveloppe d'erreur JSON stable (AR21). Propriétés en snake_case ; dates ailleurs en ISO 8601.
          *     Le champ `correlation_id` reprend la valeur de corrélation (alignée sur `X-Request-Id`, Story 2.5).
@@ -1258,6 +2145,8 @@ export interface components {
             /**
              * @description Map `label_key` (declare dans les manifests CREOS, ex. navigation) vers libelle affichable UTF-8.
              *     Presentation uniquement : le runtime n'utilise pas ce champ pour autoriser ou masquer des entrees.
+             *     Cle supplementaire serveur (Epic 14.1) : `context.active_site_display_name` — nom convivial du site
+             *     d'exploitation courant lorsque `context.site_id` est resolu en base (pas d'UUID expose en UI).
              */
             presentation_labels?: {
                 [key: string]: string;
@@ -1826,6 +2715,96 @@ export interface operations {
             };
             /** @description Non authentifié */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_users_listUsers: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste des utilisateurs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserV1Response"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Authentifié mais sans rôle administrateur */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_users_getUserById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Utilisateur trouvé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserV1Response"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Authentifié mais sans rôle administrateur */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Utilisateur inconnu */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4057,6 +5036,1827 @@ export interface operations {
             };
             /** @description Story 7.2 — refus liste catégories (permission `reception.access` ou site affecté pour les USER). */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_admin_reports_cashSessionsExportBulk: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminBulkCashSessionsExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Fichier généré (CSV ou XLSX) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            /** @description Idempotency-Key manquant ou validation filtres */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant, PIN step-up manquant/invalide, ou PIN non configuré */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide (Pydantic) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rate limit ou verrouillage step-up PIN */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_admin_reports_receptionTicketsExportBulk: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminBulkReceptionTicketsExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Fichier généré (CSV ou XLSX) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            /** @description Idempotency-Key manquant ou validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant ou step-up refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rate limit ou lockout PIN */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_stats_receptionSummary: {
+        parameters: {
+            query?: {
+                start_date?: string;
+                end_date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Totaux réception */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Plage de dates invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle non administrateur */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rate limit */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_stats_receptionByCategory: {
+        parameters: {
+            query?: {
+                start_date?: string;
+                end_date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste par catégorie */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Plage de dates invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle non administrateur */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rate limit */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_stats_unifiedLive: {
+        parameters: {
+            query?: {
+                period_type?: "24h" | "daily";
+                site_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agrégats live */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_reception_statsLiveDeprecated: {
+        parameters: {
+            query?: {
+                site_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description KPIs réception (legacy) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsList: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste de groupes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupListItem"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminGroupCreate"];
+            };
+        };
+        responses: {
+            /** @description Groupe créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupDetail"];
+                };
+            };
+            /** @description Paramètre site_id invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Nom ou clé de groupe déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsGetById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Détail avec utilisateurs et permissions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupDetail"];
+                };
+            };
+            /** @description UUID groupe invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Groupe introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminGroupUpdate"];
+            };
+        };
+        responses: {
+            /** @description Groupe mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupDetail"];
+                };
+            };
+            /** @description UUID ou site_id invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Groupe introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Nom déjà pris */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Supprimé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description UUID invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Groupe introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsAddPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminAssignPermissionIdsRequest"];
+            };
+        };
+        responses: {
+            /** @description Groupe mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupDetail"];
+                };
+            };
+            /** @description UUID invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Groupe ou permission introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsRemovePermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+                permission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Groupe mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupDetail"];
+                };
+            };
+            /** @description UUID invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Groupe ou permission absente du groupe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsAddUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminAssignUserIdsRequest"];
+            };
+        };
+        responses: {
+            /** @description Groupe mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupDetail"];
+                };
+            };
+            /** @description UUID invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Groupe ou utilisateur introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminGroupsRemoveUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Groupe mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGroupDetail"];
+                };
+            };
+            /** @description UUID invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Groupe ou utilisateur absent du groupe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminUsersGroupsPut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserGroupUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Groupes mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMutationEnvelope"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Utilisateur ou groupe introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminTransactionLogsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                event_type?: string;
+                user_id?: string;
+                session_id?: string;
+                start_date?: string;
+                end_date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entrées paginées (objets JSON libres par ligne de log) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTransactionLogsPage"];
+                };
+            };
+            /** @description Non authentifié (transport strict) ou rôle non admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminAuditLogList: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                action_type?: string;
+                actor_username?: string;
+                target_type?: string;
+                start_date?: string;
+                end_date?: string;
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entrées d'audit et pagination */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuditLogPage"];
+                };
+            };
+            /** @description Transport strict ou rôle non admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsAlertThresholdsGet: {
+        parameters: {
+            query?: {
+                site_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Seuils courants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsAlertThresholdsEnvelope"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsAlertThresholdsPut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSettingsAlertThresholdsUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description Seuils mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsAlertThresholdsEnvelope"];
+                };
+            };
+            /** @description Validation métier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsSessionGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paramètres session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsSessionEnvelope"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle SUPER_ADMIN requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsSessionPut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSettingsSessionUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsSessionEnvelope"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle SUPER_ADMIN requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsEmailGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paramètres email (sans clé API en clair) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsEmailEnvelope"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle SUPER_ADMIN requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsEmailPut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSettingsEmailUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsEmailEnvelope"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle SUPER_ADMIN requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsEmailTestPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSettingsEmailTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Envoi déclenché */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsEmailTestResponse"];
+                };
+            };
+            /** @description Configuration ou validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle SUPER_ADMIN requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Échec envoi */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsActivityThresholdGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Seuil courant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminActivityThresholdResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle admin requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSettingsActivityThresholdPut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminActivityThresholdUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description Seuil mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminActivityThresholdPutResponse"];
+                };
+            };
+            /** @description Validation (1–1440) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle admin requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminDbExportPost: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description PIN métier utilisateur (hash vérifié serveur, non journalisé). */
+                "X-Step-Up-Pin": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fichier `.dump` (octet-stream) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Non authentifié ou non super-admin */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description PIN step-up manquant/invalide / PIN non configuré */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Verrouillage temporaire step-up (trop d'échecs PIN) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description pg_dump ou configuration */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Timeout pg_dump */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminDbImportPost: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Fichier .dump PostgreSQL custom format
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Import réussi (JSON) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDbImportSuccessResponse"];
+                };
+            };
+            /** @description Fichier invalide ou Idempotency-Key absent */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description PIN step-up / super-admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit idempotence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Fichier trop volumineux */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Step-up verrouillé */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur restauration */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminDbPurgeTransactionsPost: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Purge terminée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDbPurgeSuccessResponse"];
+                };
+            };
+            /** @description Idempotency-Key absent */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description PIN / super-admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit idempotence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Step-up verrouillé */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur purge */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminEmailLogsList: {
+        parameters: {
+            query?: {
+                recipient_email?: string;
+                status?: string;
+                email_type?: string;
+                user_id?: string;
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logs paginés */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminEmailLogListResponse"];
+                };
+            };
+            /** @description Filtre status ou email_type invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Transport strict ou rôle non admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

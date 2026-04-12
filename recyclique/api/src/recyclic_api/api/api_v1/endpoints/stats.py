@@ -10,7 +10,8 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from recyclic_api.core.database import get_db
-from recyclic_api.core.auth import get_current_user, require_admin_role, require_role_strict
+from recyclic_api.core.auth import get_current_user, require_role_strict
+from recyclic_api.core.audit import log_admin_access
 from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.services.stats_service import StatsService
@@ -44,9 +45,16 @@ limiter = Limiter(key_func=get_remote_address)
 @router.get(
     "/reception/summary",
     response_model=ReceptionSummaryStats,
-    summary="Get reception summary statistics",
-    description="Retrieve summary statistics (total weight, items, categories) for reception data. "
-                "Optionally filter by date range. Available to all authenticated users."
+    summary="Statistiques agrégées réception (résumé)",
+    description="""
+    Agrégats globaux réception (poids, lignes, catégories distinctes), filtre date optionnel.
+
+    **Story 16.4** : alignement avec l'admin legacy (15.2) — **ADMIN** ou **SUPER_ADMIN** uniquement
+    (plus d'accès « tout utilisateur authentifié » sur ces agrégats).
+    **Audit** : `log_admin_access` sur succès (`/stats/reception/summary`).
+    **Contexte** : agrégat **cross-site** côté service (pas de borne `site_id` sur cette route) ;
+    réservé aux rôles administration.
+    """,
 )
 @limiter.limit("60/minute")
 def get_reception_summary(
@@ -60,17 +68,10 @@ def get_reception_summary(
         description="End date (inclusive) in ISO 8601 format"
     ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)  # Changed: Allow all authenticated users
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ) -> ReceptionSummaryStats:
     """
-    Get summary statistics for reception data.
-
-    This endpoint aggregates data from ligne_depot and provides:
-    - Total weight in kg
-    - Total number of items
-    - Number of unique categories
-
-    Available to all authenticated users.
+    Statistiques réception — périmètre admin-only (16.4).
     """
     logger.info(
         f"User {current_user.id} requesting reception summary stats "
@@ -78,20 +79,33 @@ def get_reception_summary(
     )
 
     stats_service = StatsService(db)
-    return _run_stats_service(
+    out = _run_stats_service(
         lambda: stats_service.get_reception_summary(
             start_date=start_date,
             end_date=end_date,
         )
     )
+    log_admin_access(
+        str(current_user.id),
+        current_user.username or "Unknown",
+        "/stats/reception/summary",
+        success=True,
+        db=db,
+    )
+    return out
 
 
 @router.get(
     "/reception/by-category",
     response_model=List[CategoryStats],
-    summary="Get reception statistics by category",
-    description="Retrieve reception statistics grouped by category. "
-                "Optionally filter by date range. Available to all authenticated users."
+    summary="Statistiques réception par catégorie",
+    description="""
+    Statistiques groupees par categorie (poids, nombre d'articles), filtre date optionnel.
+
+    **Story 16.4** : **ADMIN** ou **SUPER_ADMIN** uniquement (alignement 15.2).
+    **Audit** : `log_admin_access` sur succès (`/stats/reception/by-category`).
+    **Contexte** : agrégat **cross-site** ; rôles administration uniquement.
+    """,
 )
 @limiter.limit("60/minute")
 def get_reception_by_category(
@@ -105,19 +119,10 @@ def get_reception_by_category(
         description="End date (inclusive) in ISO 8601 format"
     ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)  # Changed: Allow all authenticated users
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ) -> List[CategoryStats]:
     """
-    Get reception statistics grouped by category.
-
-    This endpoint aggregates data from ligne_depot by category and provides:
-    - Category name
-    - Total weight in kg for that category
-    - Total number of items for that category
-
-    Results are sorted by total weight (descending).
-
-    Available to all authenticated users.
+    Stats réception par catégorie — admin-only (16.4).
     """
     logger.info(
         f"User {current_user.id} requesting reception by category stats "
@@ -125,12 +130,20 @@ def get_reception_by_category(
     )
 
     stats_service = StatsService(db)
-    return _run_stats_service(
+    out = _run_stats_service(
         lambda: stats_service.get_reception_by_category(
             start_date=start_date,
             end_date=end_date,
         )
     )
+    log_admin_access(
+        str(current_user.id),
+        current_user.username or "Unknown",
+        "/stats/reception/by-category",
+        success=True,
+        db=db,
+    )
+    return out
 
 
 @router.get(
@@ -180,7 +193,18 @@ def get_sales_by_category(
     )
 
 
-@router.get("/live", response_model=UnifiedLiveStatsResponse)
+@router.get(
+    "/live",
+    response_model=UnifiedLiveStatsResponse,
+    summary="Statistiques live unifiées (caisse + réception)",
+    description="""
+    KPIs live caisse et réception (période `daily` ou `24h`), filtre `site_id` optionnel.
+
+    **Permissions** : ADMIN ou SUPER_ADMIN.
+    **Audit** : `log_admin_access` sur lecture réussie (Story 16.4).
+    **Note** : successeur de `GET /v1/reception/stats/live` (déprécié).
+    """,
+)
 async def get_unified_live_stats(
     period_type: Literal["24h", "daily"] = Query("daily", description="Type de période (daily=minuit-minuit, 24h=24h glissantes)"),
     site_id: Optional[str] = Query(None, description="Filtrer par ID de site (optionnel)"),
@@ -207,5 +231,12 @@ async def get_unified_live_stats(
     stats = await service.get_unified_live_stats(
         period_type=period_type,
         site_id=site_id
+    )
+    log_admin_access(
+        str(current_user.id),
+        current_user.username or "Unknown",
+        "/stats/live",
+        success=True,
+        db=db,
     )
     return UnifiedLiveStatsResponse(**stats)

@@ -90,7 +90,7 @@ Brief disponible : `_bmad-output/planning-artifacts/product-brief-JARVOS_recycli
 
 2026-02-25 — Décisions matrice caisse/poids (session=session, manques v0.2+, compatibilité Paheko).
 
-Matrice [references/migration-paeco/audits/matrice-correspondance-caisse-poids.md](migration-paeco/audits/matrice-correspondance-caisse-poids.md) mise à jour : 1 session RecyClique = 1 session Paheko (ouverture → clôture) ; clôture RecyClique déclenche clôture Paheko (contrôle totaux + syncAccounting) ; section 2.5 unité de poids (kg ↔ g, convention PRD) ; section 4 fonctionnalités Paheko absentes (v0.1 ignorer, v0.2+ à développer) ; section 5 principe de compatibilité Paheko (config Paheko = référence). Grille 05 axe 6 (module correspondance) → statut décidé.
+Matrice [references/migration-paheko/audits/matrice-correspondance-caisse-poids.md](migration-paheko/audits/matrice-correspondance-caisse-poids.md) mise à jour : 1 session RecyClique = 1 session Paheko (ouverture → clôture) ; clôture RecyClique déclenche clôture Paheko (contrôle totaux + syncAccounting) ; section 2.5 unité de poids (kg ↔ g, convention PRD) ; section 4 fonctionnalités Paheko absentes (v0.1 ignorer, v0.2+ à développer) ; section 5 principe de compatibilité Paheko (config Paheko = référence). Grille 05 axe 6 (module correspondance) → statut décidé.
 
 ---
 

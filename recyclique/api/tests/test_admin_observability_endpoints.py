@@ -23,8 +23,9 @@ def test_register_admin_observability_importable():
     ["transaction-logs", "audit-log", "email-logs"],
 )
 def test_observability_endpoints_require_auth(client: TestClient, subpath: str):
+    """Sans Bearer ni cookie : `require_admin_role_strict` → 403 (contrat Story 16.2 / OpenAPI adminSessionStrict)."""
     r = client.get(f"{_V1}/{subpath}")
-    assert r.status_code in (401, 403), subpath
+    assert r.status_code == 403, subpath
 
 
 @pytest.mark.skipif(

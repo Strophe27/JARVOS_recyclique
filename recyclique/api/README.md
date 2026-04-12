@@ -7,6 +7,18 @@ Backend FastAPI du livrable **1.4.4** (package défini dans `pyproject.toml` à 
 - API HTTP (schémas Pydantic, services, endpoints).
 - Migrations SQL gérées par **Alembic** (`migrations/`, `alembic.ini`).
 
+## Surfaces sensibles admin (Story 16.4)
+
+| Surface | Rôles | Audit / garde-fous |
+|--------|--------|---------------------|
+| `POST /v1/admin/reports/cash-sessions/export-bulk` | ADMIN, SUPER_ADMIN | `X-Step-Up-Pin` + `Idempotency-Key` obligatoires ; `log_admin_access` après succès ; risque **fuite de masse** CSV/XLSX. |
+| `POST /v1/admin/reports/reception-tickets/export-bulk` | ADMIN, SUPER_ADMIN | Idem. |
+| `GET /v1/stats/reception/summary`, `GET /v1/stats/reception/by-category` | ADMIN, SUPER_ADMIN | Agrégats **cross-site** ; `log_admin_access` sur lecture réussie. Décision 16.4 : **plus** d’accès USER (écart 15.2 vs `/admin/reception-stats` legacy). |
+| `GET /v1/stats/live` | ADMIN, SUPER_ADMIN | `log_admin_access` sur succès. |
+| `GET /v1/reception/stats/live` | ADMIN, SUPER_ADMIN (déprécié → `/v1/stats/live`) | `log_admin_access` sur succès. |
+
+Références cartographie : `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md`.
+
 ## Runtime Python : Docker vs local
 
 - **Image Docker** (`Dockerfile`) : **Python 3.11** (`FROM python:3.11-slim`). C’est la référence d’exécution en compose / prod.

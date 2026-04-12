@@ -2,6 +2,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from recyclic_api.core.config import settings
+from recyclic_api.core.security import hash_password
+from recyclic_api.models.user import User, UserRole, UserStatus
 
 # Aligné sur API_V1_STR (souvent /v1), pas /api/v1 codé en dur.
 _V1 = settings.API_V1_STR.rstrip("/")
@@ -46,8 +48,37 @@ def test_api_v1_health(client, mock_redis):
     assert data["version"] == "v1"
 
 def test_database_connection(client):
-    """Test database connection"""
-    response = client.get(f"{_V1}/users")
+    """Test database connection through an authenticated admin query."""
+    username = "infra_admin@test.local"
+    password = "Password1!Aa"
+
+    user = User(
+        username=username,
+        hashed_password=hash_password(password),
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    from tests.conftest import TestingSessionLocal
+
+    db = TestingSessionLocal()
+    try:
+        db.add(user)
+        db.commit()
+    finally:
+        db.close()
+
+    login = client.post(
+        f"{_V1}/auth/login",
+        json={"username": username, "password": password},
+    )
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+
+    response = client.get(
+        f"{_V1}/users/",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)

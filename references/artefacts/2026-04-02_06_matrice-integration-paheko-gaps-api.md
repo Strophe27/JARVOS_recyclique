@@ -18,7 +18,7 @@
 | 2 | `2026-04-02_01_surface-travail-v2-mode-reference-paheko.md` | **Où** tourne Paheko en dev (Docker, etc.) — utile pour **valider** les preuves (liste endpoints, code plugin) contre **ta** instance de référence (**1.1**). |
 | 3 | `2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` | **Recyclique** expose le futur contrat HTTP reviewable ; la matrice **ne crée pas** de routes Recyclique — elle classe **Paheko** (côté cible). Cohérence erreurs JSON / `correlation_id` (**AR21**, **1.4**). |
 | **Sources de preuve Paheko** | `references/paheko/liste-endpoints-api-paheko.md`, `references/paheko/analyse-brownfield-paheko.md` | Inventaire **documenté** — toute route citée en §2 doit **s’y retrouver** ou être marquée **[à valider]** / **gap** (§4). |
-| **Audits migration** | `references/migration-paeco/audits/` (ex. matrice caisse / poids, audit caisse) | Décisions brownfield + plugin Caisse — **pas** une API REST inventée. |
+| **Audits migration** | `references/migration-paheko/audits/` (ex. matrice caisse / poids, audit caisse) | Décisions brownfield + plugin Caisse — **pas** une API REST inventée. |
 | **Recyclique v2 surface** | `contracts/openapi/recyclique-api.yaml` | **Distinct** de cette matrice : ici on regarde **Paheko** comme cible d’intégration. |
 | **Recherche remboursements / compta asso** | `references/recherche/2026-04-02_remboursements-compta-associations-loi-1901_perplexity_reponse.md` | Synthèse **§6 bis** : avoirs, conservation pièces, contre-passation Paheko, périmètre expert-comptable. |
 | **Suite Epic 1 — Story 1.7** | `references/artefacts/2026-04-02_07_signaux-exploitation-bandeau-live-premiers-slices.md` | **Après** cette matrice : signaux **bandeau live** (F1–F6), autorité backend vs runtime local, cas limites, alignement OpenAPI / **Epic 4** — **sans** rouvrir la sémantique sync (**05**) ni le contexte (**03**). |
@@ -167,7 +167,7 @@ Cette section **prime** sur les lignes du tableau qui décrivent encore l’**hi
 ## 6. Références
 
 - `references/paheko/liste-endpoints-api-paheko.md`, `references/paheko/analyse-brownfield-paheko.md`
-- `references/migration-paeco/audits/` (index et audits caisse / poids)
+- `references/migration-paheko/audits/` (index et audits caisse / poids)
 - `references/artefacts/2026-04-02_05_contrat-minimal-sync-reconciliation-paheko.md`
 - `references/artefacts/2026-04-02_01_surface-travail-v2-mode-reference-paheko.md`
 - `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md`

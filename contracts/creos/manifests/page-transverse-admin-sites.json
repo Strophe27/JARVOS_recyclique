@@ -1,0 +1,30 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-sites",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Sites (CRUD legacy)",
+        "title_level": "1",
+        "body": "Route legacy observable `/admin/sites` (`Sites.tsx`). Shell admin transverse (Epic 14.1) : meme famille de navigation et permissions manifestees que les autres entrees `/admin/*`. **Coexistence** : le hub CREOS reviewable reste sur `/admin/site` (singulier, `page-transverse-admin-site-overview`) ; ce chemin **pluriel** `/admin/sites` porte l'intention legacy CRUD — pas de fusion silencieuse (doc `peintre-nano/docs/03-contrats-creos-et-donnees.md`, Story 17.2)."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.contract-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Ecart OpenAPI canon (rail U — G-OA-02 / gap Sites)",
+        "body": "Le legacy consomme des operations sur `/v1/sites/` et dependances (`cash-registers`, `cash-sessions`) absentes ou non alignees dans `contracts/openapi/recyclique-api.yaml` au DS 2026-04-12. Fermeture contractuelle prevue **Epic 16** (rail K) avant tout widget `data_contract` genere depuis le YAML."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.sites.demo",
+      "widget_props": {}
+    }
+  ]
+}

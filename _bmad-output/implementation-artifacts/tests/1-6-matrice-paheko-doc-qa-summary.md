@@ -27,7 +27,7 @@
 
 ---
 
-## Critères d’acceptation story ↔ artefact (revue statique)
+## Critères d'acceptation story ↔ artefact (revue statique)
 
 | Bloc AC (story 1.6) | Vérification (artefact) | Résultat |
 |---------------------|-------------------------|----------|
@@ -67,4 +67,4 @@ Grille **hitl_acceptance_note** : validation pair de la **justesse métier** des
 ## Retry DS / échec automatisé (si **FAIL** ultérieur)
 
 - **Causes typiques :** renommage artefact, scission §2–§5, retrait colonnes §4.
-- **Action :** corriger l’artefact ou ajuster les assertions, relancer `npm run test` dans `peintre-nano/`.
+- **Action :** corriger l'artefact ou ajuster les assertions, relancer `npm run test` dans `peintre-nano/`.

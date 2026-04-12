@@ -103,6 +103,15 @@ describe('E2E — alias `/cash-register/session/open` (écran adjacent pré-kios
     /** Story 13.2 — parité legacy : pas de champ « Poste » visible quand `register_id` est dans l’URL. */
     expect(screen.queryByRole('textbox', { name: /Poste de caisse/i })).toBeNull();
     expect(window.location.search).toContain('register_id=31d56e8f-08ec-4907-9163-2a5c49c5f2fe');
+    /** Régression `session/open?register_id=` : UUID lu dès le rendu (pas « poste manquant ») — seul le fond bloque. */
+    await waitFor(() => {
+      expect(screen.queryByTestId('cashflow-opening-register-id')).toBeNull();
+    });
+    await waitFor(() => {
+      const blocked = screen.getByTestId('cashflow-opening-blocked-reason');
+      expect(blocked.textContent ?? '').toMatch(/fond de caisse/i);
+      expect(blocked.textContent ?? '').not.toMatch(/Sélectionnez un poste/i);
+    });
   });
 
   it('normalise `/cash-register/session/open/` (slash final) comme l’alias adjacent', async () => {

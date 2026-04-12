@@ -2,7 +2,7 @@
 
 **Date :** 2026-02-26  
 **Objectif :** Document unique listant les entités métier et, pour chacune, où sont stockées les données (RecyClique uniquement, Paheko uniquement, ou les deux avec règle de source de vérité). À utiliser pour concevoir l'API RecyClique et les écrans avant de coder.  
-**Sources :** [Matrice correspondance caisse/poids](../migration-paeco/audits/matrice-correspondance-caisse-poids.md), [grille confrontation 2026-02-25_05](2026-02-25_05_grille-confrontation-recyclic-paheko.md), [session 08](2026-02-25_08_session-confrontation-recyclic-paheko.md), [audits caisse et réception](../migration-paeco/audits/), [data-models-api](../ancien-repo/data-models-api.md).
+**Sources :** [Matrice correspondance caisse/poids](../migration-paheko/audits/matrice-correspondance-caisse-poids.md), [grille confrontation 2026-02-25_05](2026-02-25_05_grille-confrontation-recyclic-paheko.md), [session 08](2026-02-25_08_session-confrontation-recyclic-paheko.md), [audits caisse et réception](../migration-paheko/audits/), [data-models-api](../ancien-repo/data-models-api.md).
 
 ---
 
@@ -136,11 +136,11 @@
 
 ## 4. Références
 
-- [Matrice correspondance caisse/poids](../migration-paeco/audits/matrice-correspondance-caisse-poids.md)
+- [Matrice correspondance caisse/poids](../migration-paheko/audits/matrice-correspondance-caisse-poids.md)
 - [Grille confrontation 2026-02-25_05](2026-02-25_05_grille-confrontation-recyclic-paheko.md)
 - [Session confrontation 2026-02-25_08](2026-02-25_08_session-confrontation-recyclic-paheko.md)
-- [Audit caisse RecyClique 1.4.4](../migration-paeco/audits/audit-caisse-recyclic-1.4.4.md)
-- [Audit réception et poids RecyClique 1.4.4](../migration-paeco/audits/audit-reception-poids-recyclic-1.4.4.md)
+- [Audit caisse RecyClique 1.4.4](../migration-paheko/audits/audit-caisse-recyclic-1.4.4.md)
+- [Audit réception et poids RecyClique 1.4.4](../migration-paheko/audits/audit-reception-poids-recyclic-1.4.4.md)
 - [Data models API](../ancien-repo/data-models-api.md)
 
 ---

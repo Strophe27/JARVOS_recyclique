@@ -79,7 +79,7 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 ### Pack contexte (Story Runner — Epic 2)
 
 - **Dépendances Epic 1 (done)** : spec multi-contextes / invariants d'autorisation ; gouvernance OpenAPI / CREOS / `ContextEnvelope` ; contrat sync Paheko ; signaux bandeau ; matrice Paheko.  
-- **Références typiques** : `_bmad-output/planning-artifacts/guide-pilotage-v2.md` ; `architecture/project-structure-boundaries.md` ; `contracts/README.md` ; `contracts/openapi/recyclique-api.yaml` ; `contracts/creos/` ; audit `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` (**§3.3 Auth**, **§5–§7** backlog B1 auth+contexte+permissions) ; `references/ancien-repo/v1.4.4-liste-endpoints-api.md` ; `references/paheko/` ; `references/migration-paeco/`.
+- **Références typiques** : `_bmad-output/planning-artifacts/guide-pilotage-v2.md` ; `architecture/project-structure-boundaries.md` ; `contracts/README.md` ; `contracts/openapi/recyclique-api.yaml` ; `contracts/creos/` ; audit `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` (**§3.3 Auth**, **§5–§7** backlog B1 auth+contexte+permissions) ; `references/ancien-repo/v1.4.4-liste-endpoints-api.md` ; `references/paheko/` ; `references/migration-paheko/`.
 
 ### Périmètre et hors scope
 
@@ -112,8 +112,8 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 ### Project Structure Notes
 
-- **Backend brownfield actuel** : `recyclique-1.4.4/api/` (FastAPI, `src/recyclic_api/`, tests sous `tests/`). C’est la cible par défaut des gates pytest tant que la migration n’est pas actée.
-- **Backend nominal architecture** : dossier canonique `recyclique/` à la racine du mono-repo — alignement attendu avec `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` ; **aucune** évolution parallèle non documentée (voir tâche « Décision d’implémentation »).
+- **Backend brownfield actuel** : `recyclique-1.4.4/api/` (FastAPI, `src/recyclic_api/`, tests sous `tests/`). C'est la cible par défaut des gates pytest tant que la migration n'est pas actée.
+- **Backend nominal architecture** : dossier canonique `recyclique/` à la racine du mono-repo — alignement attendu avec `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` ; **aucune** évolution parallèle non documentée (voir tâche « Décision d'implémentation »).
 - **Contrats** : `contracts/openapi/recyclique-api.yaml`, gouvernance `contracts/README.md` ; ne pas dupliquer la sémantique `ContextEnvelope` (réservé Story 2.2).
 - **Frontend** : `peintre-nano/` consomme les contrats ; hors périmètre sécurité / vérité contextuelle pour cette story.
 
@@ -126,7 +126,7 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 - [Source : `_bmad-output/planning-artifacts/guide-pilotage-v2.md` — pilotage v2]
 - [Source : `contracts/README.md`, `contracts/openapi/recyclique-api.yaml`, `contracts/creos/`]
 - [Source : `references/ancien-repo/v1.4.4-liste-endpoints-api.md` — comparaison endpoints hérités]
-- [Source : `references/paheko/`, `references/migration-paeco/` — intégration et sync (contexte adjacent)]
+- [Source : `references/paheko/`, `references/migration-paheko/` — intégration et sync (contexte adjacent)]
 
 ## Dev Agent Record
 

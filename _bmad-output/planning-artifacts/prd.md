@@ -474,6 +474,8 @@ L'integration HelloAsso est un connecteur metier du perimetre v2, pas une depend
   - usage ou adaptation du plugin HelloAsso existant cote Paheko ;
 - la voie retenue devra privilegier la solution la plus simple, la plus maintenable et la plus compatible avec les parcours `adherents` et la gouvernance `Recyclique` / `Paheko`.
 
+**Livrable d'arbitrage (trace 2026-04-12) :** le resultat ecrit de l'etude (decision, promesse produit, points dev) est consolide dans `references/migration-paheko/2026-04-12_specification-integration-helloasso-recyclique-paheko.md` et `references/migration-paheko/2026-04-12_brouillon-arbitrage-helloasso-et-promesse-recyclique-paheko.md` ; la recherche externe associee porte un **erratum** dans `references/recherche/2026-04-12_helloasso-api-v5-paheko-perimetre-recyclique_perplexity_reponse.md` (quotas OAuth vs interpretation initiale). La story **9.4** (`epics.md`) renvoie a ces chemins pour la preuve d'arbitrage.
+
 **Hors scope v2 :**
 
 - automatisation riche de bout en bout sur tous les cas HelloAsso ;

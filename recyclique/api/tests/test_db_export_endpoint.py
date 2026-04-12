@@ -11,10 +11,13 @@ from sqlalchemy.orm import Session
 
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import create_access_token
+from recyclic_api.core.step_up import STEP_UP_PIN_HEADER
 from tests.factories import UserFactory
 from tests.api_v1_paths import v1
 
 _DB_EXPORT = v1("/admin/db/export")
+
+_DB_EXPORT_HEADERS = {STEP_UP_PIN_HEADER: "1234"}
 
 # L’endpoint parse DATABASE_URL avant subprocess ; les tests utilisent SQLite par défaut.
 _PG_URL_FOR_DUMP_TESTS = "postgresql://pytest:pytest@127.0.0.1:5432/pytest_db_export"
@@ -56,7 +59,7 @@ class TestDatabaseExportEndpoint:
         )
 
         # Act
-        response = super_admin_client.post(_DB_EXPORT)
+        response = super_admin_client.post(_DB_EXPORT, headers=_DB_EXPORT_HEADERS)
 
         # Assert
         assert response.status_code == 200
@@ -70,6 +73,14 @@ class TestDatabaseExportEndpoint:
 
         # Assert
         assert response.status_code == 401
+
+    def test_export_database_requires_step_up_pin(
+        self, super_admin_client: TestClient, postgres_url_for_db_export
+    ):
+        """Story 16.3 : PIN step-up obligatoire avant pg_dump."""
+        r = super_admin_client.post(_DB_EXPORT)
+        assert r.status_code == 403
+        assert r.json().get("code") == "STEP_UP_PIN_REQUIRED"
 
     def test_export_database_requires_super_admin_role(
         self,
@@ -121,11 +132,12 @@ class TestDatabaseExportEndpoint:
         )
 
         # Act
-        response = super_admin_client.post(_DB_EXPORT)
+        response = super_admin_client.post(_DB_EXPORT, headers=_DB_EXPORT_HEADERS)
 
         # Assert
         assert response.status_code == 500
-        assert "Database export failed" in response.json()["detail"]
+        detail = response.json()["detail"].lower()
+        assert "export" in detail and "échou" in detail
 
     @patch('recyclic_api.api.api_v1.endpoints.db_export.subprocess.run')
     @patch('recyclic_api.api.api_v1.endpoints.db_export.os.path.exists')
@@ -143,11 +155,13 @@ class TestDatabaseExportEndpoint:
         mock_exists.return_value = False
 
         # Act
-        response = super_admin_client.post(_DB_EXPORT)
+        response = super_admin_client.post(_DB_EXPORT, headers=_DB_EXPORT_HEADERS)
 
         # Assert
         assert response.status_code == 500
-        assert "Export file was not created" in response.json()["detail"]
+        dexp = response.json()["detail"]
+        assert "export" in dexp.lower()
+        assert "pas été" in dexp or "pas ete" in dexp.lower()
 
     @patch('recyclic_api.api.api_v1.endpoints.db_export.subprocess.run')
     def test_export_database_timeout_returns_504(
@@ -163,7 +177,7 @@ class TestDatabaseExportEndpoint:
         mock_subprocess.side_effect = TimeoutExpired(cmd="pg_dump", timeout=300)
 
         # Act
-        response = super_admin_client.post(_DB_EXPORT)
+        response = super_admin_client.post(_DB_EXPORT, headers=_DB_EXPORT_HEADERS)
 
         # Assert
         assert response.status_code == 504
@@ -195,7 +209,7 @@ class TestDatabaseExportEndpoint:
         )
 
         # Act
-        response = super_admin_client.post(_DB_EXPORT)
+        response = super_admin_client.post(_DB_EXPORT, headers=_DB_EXPORT_HEADERS)
 
         # Assert
         assert response.status_code == 200
@@ -212,3 +226,25 @@ class TestDatabaseExportEndpoint:
         assert "c" in cmd_args[cmd_args.index("-F") + 1] if "-F" in cmd_args else False
         assert "-Z" in cmd_args
         assert "9" in cmd_args[cmd_args.index("-Z") + 1] if "-Z" in cmd_args else False
+
+
+class TestStory163DatabaseExportStepUpGuards:
+    """Story 16.3 — refus PIN invalide et lockout (même module step-up que l'import)."""
+
+    def test_export_step_up_wrong_pin_returns_403(
+        self, super_admin_client: TestClient, postgres_url_for_db_export
+    ):
+        r = super_admin_client.post(_DB_EXPORT, headers={STEP_UP_PIN_HEADER: "9999"})
+        assert r.status_code == 403
+        assert r.json().get("code") == "STEP_UP_PIN_INVALID"
+
+    @patch("recyclic_api.core.step_up._is_locked_out", return_value=True)
+    def test_export_step_up_locked_returns_429(
+        self,
+        _mock_lock: Mock,
+        super_admin_client: TestClient,
+        postgres_url_for_db_export,
+    ):
+        r = super_admin_client.post(_DB_EXPORT, headers=_DB_EXPORT_HEADERS)
+        assert r.status_code == 429
+        assert r.json().get("code") == "STEP_UP_LOCKED"

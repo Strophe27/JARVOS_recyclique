@@ -197,6 +197,7 @@ class TestContextEnvelope:
         assert isinstance(pl, dict)
         assert pl.get("nav.transverse.dashboard") == "Tableau de bord"
         assert pl.get("nav.reception.nominal") == "Réception"
+        assert pl.get("context.active_site_display_name") == "Site nav labels"
 
     def test_context_forbidden_no_presentation_labels(self, client: TestClient, db_session: Session):
         uid = uuid.uuid4()

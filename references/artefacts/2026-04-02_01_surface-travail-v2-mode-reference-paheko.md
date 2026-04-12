@@ -19,8 +19,8 @@
 
 **Obtenir le code / l’image :** le dépôt produit ne suppose pas un chemin magique. Références à suivre selon le contexte :
 
-- **Index Paheko :** `references/paheko/index.md` — archive dans `references/paheko/repo/` (souvent gitignore), procédure **locale** mentionnée sous `dev-tampon/paheko/` (racine projet ; **`dev-tampon/` est gitignore** : absent sur un clone nu — dans ce cas, utiliser une procédure Docker / image équivalente documentée par l’équipe ou les guides `references/migration-paeco/`, par ex. `2025-11_paheko-recyclique-integration-first-search.md`).
-- **Guides brownfield :** `references/migration-paeco/index.md` pour le contexte d’intégration historique.
+- **Index Paheko :** `references/paheko/index.md` — archive dans `references/paheko/repo/` (souvent gitignore), procédure **locale** mentionnée sous `dev-tampon/paheko/` (racine projet ; **`dev-tampon/` est gitignore** : absent sur un clone nu — dans ce cas, utiliser une procédure Docker / image équivalente documentée par l’équipe ou les guides `references/migration-paheko/`, par ex. `2025-11_paheko-recyclique-integration-first-search.md`).
+- **Guides brownfield :** `references/migration-paheko/index.md` pour le contexte d’intégration historique.
 
 ---
 
@@ -54,7 +54,7 @@
 
 ### 3.3 Séquence minimale de démarrage (chemin par défaut)
 
-1. S’assurer d’avoir une procédure Paheko Docker valide sur la machine : soit **`dev-tampon/paheko/README.md`** si le tampon existe, soit équivalent documenté (migration-paeco / procédure équipe).
+1. S’assurer d’avoir une procédure Paheko Docker valide sur la machine : soit **`dev-tampon/paheko/README.md`** si le tampon existe, soit équivalent documenté (migration-paheko / procédure équipe).
 2. Démarrer Paheko (compose ou commande documentée).
 3. Vérifier que l’**API HTTP** répond (ex. endpoint sous `/api/` selon `references/paheko/liste-endpoints-api-paheko.md`).
 4. Si la session implique le backend v2 : démarrer **PostgreSQL / Redis** puis **recyclique** selon l’ordre imposé par le compose ou le README du backend — **après** ou **en parallèle** de Paheko selon la configuration choisie, en gardant les URLs d’intégration cohérentes.
@@ -78,7 +78,7 @@
 **Dans le périmètre pour l’implémentation locale à ce stade Epic 1 :**
 
 - Faire tourner Paheko en **référence vivante** ; documenter et reproduire les **contrats d’appel** (HTTP) nécessaires aux analyses et aux futures stories (audit API, matrice d’intégration).
-- S’appuyer sur la documentation existante : `references/paheko/`, `references/migration-paeco/`, `references/consolidation-1.4.5/` pour le brownfield.
+- S’appuyer sur la documentation existante : `references/paheko/`, `references/migration-paheko/`, `references/consolidation-1.4.5/` pour le brownfield.
 - Respecter les emplacements **contrats** décrits dans `contracts/README.md` sans les dupliquer arbitrairement côté frontend.
 
 **Hors périmètre explicite (rappel story 1.1 / epics) :**
@@ -107,7 +107,7 @@
 | `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` | Stack cible, `infra/docker/paheko`, Piste B, `contracts/openapi/recyclique-api.yaml` (cible), frontières Paheko. |
 | `contracts/README.md` | Rôles OpenAPI / CREOS ; pas de contradiction avec un second writer. |
 | `references/paheko/index.md` | Brownfield, endpoints, `schema-paheko-dev.md`, `repo/`, `dev-tampon/paheko/`. |
-| `references/migration-paeco/index.md` | Guides intégration / Docker historiques. |
+| `references/migration-paheko/index.md` | Guides intégration / Docker historiques. |
 | `references/dumps/schema-paheko-dev.md` | Rétro-ingénierie schéma ; pas substitut au runtime. |
 | `references/INSTRUCTIONS-PROJET.md` | Conventions `references/artefacts/` et index. |
 

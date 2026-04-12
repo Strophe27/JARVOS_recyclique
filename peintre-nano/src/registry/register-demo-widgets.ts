@@ -1,3 +1,4 @@
+import { AdminLegacyDashboardHomeWidget } from '../widgets/admin/AdminLegacyDashboardHomeWidget';
 import { registerWidget } from './widget-registry';
 import { DemoCard } from '../widgets/demo/DemoCard';
 import { DemoLegacyAppTopstrip } from '../widgets/demo/DemoLegacyAppTopstrip';
@@ -19,4 +20,5 @@ export function registerDemoWidgets(): void {
   registerWidget('demo.legacy.app.topstrip', DemoLegacyAppTopstrip);
   registerWidget('demo.legacy.dashboard.workspace', LegacyDashboardWorkspaceWidget);
   registerWidget('demo.legacy.dashboard.personal', LegacyDashboardPersonalWidget);
+  registerWidget('admin.legacy.dashboard.home', AdminLegacyDashboardHomeWidget);
 }

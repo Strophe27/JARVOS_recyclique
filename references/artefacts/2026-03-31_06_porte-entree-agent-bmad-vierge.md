@@ -32,7 +32,7 @@
 | Fichier | Rôle |
 |---------|------|
 | `references/artefacts/2026-03-31_02_audit-references-00-synthese-globale.md` | Vue transversale : zones, tensions narratives, idées fondamentales vs complémentaires. |
-| `references/artefacts/2026-03-31_03_audit-references-01-zones-principales.md` | Détail artefacts, recherche, consolidation, migration-paeco. |
+| `references/artefacts/2026-03-31_03_audit-references-01-zones-principales.md` | Détail artefacts, recherche, consolidation, migration-paheko. |
 | `references/artefacts/2026-03-31_04_audit-references-02-ancien-vision-paheko-tri-racine.md` | Ancien-repo, vision, paheko, tri temporaire, Kanban, etc. |
 
 ---
@@ -56,7 +56,7 @@
 | `references/recherche/2026-02-25_affichage-dynamique-peintre-extension-points_bmad_recherche.md` | **Important** si le sujet touche UI dynamique, layout, JARVOS Mini / Peintre, FR26. |
 | `references/recherche/contexte-pour-recherche-externe.md` | Pour **nouvelles** recherches externes — **à mettre à jour** si la phase projet a changé (le fichier peut être partiellement obsolète). |
 
-**Paheko / éco-organismes / matrice caisse :** `references/migration-paeco/index.md` et `references/migration-paeco/audits/index.md`.
+**Paheko / éco-organismes / matrice caisse :** `references/migration-paheko/index.md` et `references/migration-paheko/audits/index.md`.
 
 **Vision long terme :** `references/vision-projet/index.md`.
 

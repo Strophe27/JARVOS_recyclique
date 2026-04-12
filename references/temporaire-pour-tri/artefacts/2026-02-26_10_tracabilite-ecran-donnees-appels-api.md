@@ -2,7 +2,7 @@
 
 **Date :** 2026-02-26  
 **Objectif :** Pour chaque écran / flux 1.4.4, documenter quelles données sont affichées, quels endpoints sont appelés au chargement, et pour chaque action utilisateur quel endpoint est appelé avec quel type de payload. Utilisable pour le refactor (conception avant de coder) et pour aligner l'API RecyClique v1 aux besoins réels des écrans.  
-**Sources :** [Fonctionnalités actuelles](../ancien-repo/fonctionnalites-actuelles.md), [audit caisse 1.4.4](../migration-paeco/audits/audit-caisse-recyclic-1.4.4.md), [audit réception 1.4.4](../migration-paeco/audits/audit-reception-poids-recyclic-1.4.4.md), [liste endpoints API v1.4.4](../ancien-repo/v1.4.4-liste-endpoints-api.md), [périmètre API v1](2026-02-26_09_perimetre-api-recyclique-v1.md).
+**Sources :** [Fonctionnalités actuelles](../ancien-repo/fonctionnalites-actuelles.md), [audit caisse 1.4.4](../migration-paheko/audits/audit-caisse-recyclic-1.4.4.md), [audit réception 1.4.4](../migration-paheko/audits/audit-reception-poids-recyclic-1.4.4.md), [liste endpoints API v1.4.4](../ancien-repo/v1.4.4-liste-endpoints-api.md), [périmètre API v1](2026-02-26_09_perimetre-api-recyclique-v1.md).
 
 ---
 
@@ -486,8 +486,8 @@ Pour chaque écran, les sous-sections suivantes sont renseignées :
 ## 9. Références
 
 - [Fonctionnalités actuelles](../ancien-repo/fonctionnalites-actuelles.md)
-- [Audit caisse RecyClique 1.4.4](../migration-paeco/audits/audit-caisse-recyclic-1.4.4.md)
-- [Audit réception et poids RecyClique 1.4.4](../migration-paeco/audits/audit-reception-poids-recyclic-1.4.4.md)
+- [Audit caisse RecyClique 1.4.4](../migration-paheko/audits/audit-caisse-recyclic-1.4.4.md)
+- [Audit réception et poids RecyClique 1.4.4](../migration-paheko/audits/audit-reception-poids-recyclic-1.4.4.md)
 - [Liste endpoints API v1.4.4](../ancien-repo/v1.4.4-liste-endpoints-api.md)
 - [Périmètre API RecyClique v1](2026-02-26_09_perimetre-api-recyclique-v1.md)
 - [Catalogue Qui stocke quoi](2026-02-26_08_catalogue-qui-stocke-quoi-recyclic-paheko.md)

@@ -2,6 +2,10 @@
   min-width: 0;
 }
 
+.rootKiosk {
+  width: 100%;
+}
+
 .step {
   max-width: 32rem;
 }
@@ -62,4 +66,46 @@
   border: 1px solid var(--mantine-color-teal-3);
   border-radius: var(--mantine-radius-sm);
   background: var(--mantine-color-teal-0);
+}
+
+/** Story 13.8 — workspace kiosque : grille catégories pleine largeur centre (intention legacy Sale). */
+.stepKiosk {
+  max-width: none;
+  width: 100%;
+}
+
+.kioskCategorySection {
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.kioskCategoryGrid {
+  width: 100%;
+}
+
+.kioskCategoryButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 3.25rem;
+  width: 100%;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: 1px solid var(--mantine-color-gray-4);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-gray-0);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.kioskCategoryButton:hover {
+  background: var(--mantine-color-green-0);
+  border-color: #2e7d32;
+}
+
+.kioskCategoryShortcut {
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
 }

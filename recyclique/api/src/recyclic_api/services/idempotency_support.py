@@ -47,6 +47,28 @@ def redis_key_idempotent_sale_correction(user_id: str, sale_id: str, idempotency
     return f"idem:v1:sale_correct:{user_id}:{sale_id}:{ik}"
 
 
+def body_fingerprint_db_import(filename: str, file_size: int) -> str:
+    """Story 16.3 — empreinte upload import (nom + taille) pour Idempotency-Key."""
+    payload = {"filename": filename or "", "size": int(file_size)}
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def body_fingerprint_sensitive_no_body() -> str:
+    """Story 16.3 — mutation sensible sans corps JSON (ex. purge DB)."""
+    return body_fingerprint_close_json({})
+
+
+def redis_key_db_import_idempotent(user_id: str, idempotency_key: str) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:db_import:{_norm_key_part(user_id)}:{ik}"
+
+
+def redis_key_db_purge_idempotent(user_id: str, idempotency_key: str) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:db_purge:{_norm_key_part(user_id)}:{ik}"
+
+
 def get_cached_idempotent_close(
     redis_client: redis.Redis, redis_key: str
 ) -> Optional[Dict[str, Any]]:

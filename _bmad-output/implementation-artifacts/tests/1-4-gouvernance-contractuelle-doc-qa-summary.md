@@ -19,7 +19,7 @@
 
 | Critère skill | Statut | Justification |
 |---------------|--------|----------------|
-| Tests API générés (si applicable) | **NA** | Aucun service HTTP nouveau à exécuter dans le périmètre 1.4 (endpoint ping = illustration contractuelle, pas d’API déployée requise). |
+| Tests API générés (si applicable) | **NA** | Aucun service HTTP nouveau à exécuter dans le périmètre 1.4 (endpoint ping = illustration contractuelle, pas d'API déployée requise). |
 | Tests E2E générés (si UI) | **NA** | Aucune UI livrée par la story. |
 | Framework / happy path / erreurs | **OK** | Vitest + parse YAML / JSON sur les fichiers canoniques du repo (`peintre-nano/tests/contract/recyclique-openapi-governance.test.ts`). |
 | Tous les tests automatisés passent | **OK** | `npm run test` dans `peintre-nano/` après ajout des tests contrat (inclut la suite existante). |
@@ -27,15 +27,15 @@
 
 ---
 
-## Critères d’acceptation story ↔ artefact (revue statique)
+## Critères d'acceptation story ↔ artefact (revue statique)
 
 | Bloc AC (story 1.4) | Vérification (artefact + contrats) | Résultat |
 |---------------------|-------------------------------------|----------|
 | Propriétaire, emplacement, frontière pour OpenAPI, ContextEnvelope, manifests, UserRuntimePrefs ; hiérarchie | **§1** (table AR39), **§2** (frontières) | **OK** |
 | Versionnement, drift, artefacts générés dérivés ; enums / permissions backend → UI | **§3**, **§4** | **OK** |
 | `recyclique-api.yaml` reviewable, `operationId` stables, lien `data_contract.operation_id` ; extension CREOS | **§2.1**, **§2.2**, **§5** ; YAML + `widget-declaration.schema.json` | **OK** |
-| Runtime Peintre_nano borné ; interdiction d’inventer routes / permissions / pages hors contrats | **§6** | **OK** |
-| Traçabilité AC → sections | Tableau en tête de l’artefact daté | **OK** |
+| Runtime Peintre_nano borné ; interdiction d'inventer routes / permissions / pages hors contrats | **§6** | **OK** |
+| Traçabilité AC → sections | Tableau en tête de l'artefact daté | **OK** |
 | Aucune donnée sensible | **§7** artefact + revue des livrables | **OK** (cohérent) |
 
 ---
@@ -66,4 +66,4 @@
 ## Retry DS / échec HITL (si **FAIL** ultérieur)
 
 - **Causes typiques :** contradiction entre artefact 1.4 et spec 1.3 ; trous sur propriétaires / emplacements ; YAML invalide ou `operationId` dupliqués.
-- **Action :** corriger l’artefact ou les fichiers sous `contracts/`, régénérer la table AC → sections, relancer `npm run test` dans `peintre-nano/`.
+- **Action :** corriger l'artefact ou les fichiers sous `contracts/`, régénérer la table AC → sections, relancer `npm run test` dans `peintre-nano/`.

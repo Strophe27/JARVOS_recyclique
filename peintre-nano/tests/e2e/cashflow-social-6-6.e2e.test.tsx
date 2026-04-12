@@ -2,13 +2,16 @@
 import '@mantine/core/styles.css';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { App } from '../../src/app/App';
 import {
   createDefaultDemoEnvelope,
   PERMISSION_CASHFLOW_SOCIAL_ENCAISSEMENT,
 } from '../../src/app/auth/default-demo-auth-adapter';
 import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import { RootProviders } from '../../src/app/providers/RootProviders';
+import { resetCoalescedGetCurrentOpenCashSessionForTests } from '../../src/domains/cashflow/caisse-current-session-coalesce';
+import { resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
+import { resetCashflowOperationalSyncNoticeCacheForTests } from '../../src/domains/cashflow/cashflow-operational-sync-notice';
+import { CashflowNominalWizard } from '../../src/domains/cashflow/CashflowNominalWizard';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
 
@@ -38,6 +41,19 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+function fetchWizardShell(): ReturnType<typeof vi.fn> {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = requestUrl(input);
+    if (url.includes('/v1/cash-sessions/current')) {
+      return { ok: true, status: 200, text: async () => 'null' } as Response;
+    }
+    if (url.includes('live-snapshot')) {
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    }
+    return { ok: true, status: 200, text: async () => '{}' } as Response;
+  });
+}
+
 describe('E2E — actions sociales Story 6.6', () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -48,6 +64,9 @@ describe('E2E — actions sociales Story 6.6', () => {
         disconnect(): void {}
       },
     );
+    resetCashflowDraft();
+    resetCoalescedGetCurrentOpenCashSessionForTests();
+    resetCashflowOperationalSyncNoticeCacheForTests();
   });
 
   afterEach(() => {
@@ -55,23 +74,19 @@ describe('E2E — actions sociales Story 6.6', () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     cleanup();
+    resetCashflowDraft();
+    resetCoalescedGetCurrentOpenCashSessionForTests();
+    resetCashflowOperationalSyncNoticeCacheForTests();
   });
 
-  it('workspace vente (`/cash-register/sale`) : bouton Don → wizard social (Story 6.6 brownfield)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '{}',
-      }),
-    );
+  it('workspace vente (wizard nominal hors kiosque) : bouton Don → wizard social (Story 6.6 brownfield)', async () => {
+    vi.stubGlobal('fetch', fetchWizardShell());
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    window.history.pushState({}, '', '/');
 
     render(
       <RootProviders disableUserPrefsPersistence>
-        <App />
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 
@@ -104,11 +119,11 @@ describe('E2E — actions sociales Story 6.6', () => {
       }),
     });
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    window.history.pushState({}, '', '/');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
-        <App />
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 
@@ -122,6 +137,12 @@ describe('E2E — actions sociales Story 6.6', () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/cash-sessions/current')) {
+        return Promise.resolve({ ok: true, status: 200, text: async () => 'null' } as Response);
+      }
+      if (url.includes('live-snapshot')) {
+        return Promise.resolve({ ok: true, status: 200, text: async () => '{}' } as Response);
+      }
       if (method === 'POST' && url.includes('/v1/sales/') && !url.includes('reversals')) {
         const raw = init?.body != null ? String(init.body) : '{}';
         const body = JSON.parse(raw) as Record<string, unknown>;
@@ -158,11 +179,11 @@ describe('E2E — actions sociales Story 6.6', () => {
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
     });
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    window.history.pushState({}, '', '/');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
-        <App />
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 

@@ -12,7 +12,7 @@ inputDocuments:
   - references/artefacts/2026-02-25_06_point-global-avant-prd.md
   - references/artefacts/2026-02-25_07_decisions-push-redis-source-eee.md
   - references/artefacts/2026-02-25_08_session-confrontation-recyclic-paheko.md
-  - references/migration-paeco/audits/matrice-correspondance-caisse-poids.md
+  - references/migration-paheko/audits/matrice-correspondance-caisse-poids.md
   - references/artefacts/2026-02-26_01_analyse-separation-frontend-backend-recyclic.md
   - references/artefacts/2026-02-26_02_track-enterprise-multi-utilisateur.md
 validationStepsCompleted: [step-v-01-discovery, step-v-02-format-detection, step-v-03-density-validation, step-v-04-brief-coverage-validation, step-v-05-measurability-validation, step-v-06-traceability-validation, step-v-07-implementation-leakage-validation, step-v-08-domain-compliance-validation, step-v-09-project-type-validation, step-v-10-smart-validation, step-v-11-holistic-quality-validation, step-v-12-completeness-validation]

@@ -60,6 +60,9 @@ describe('toolbarSelectedEntryIdFromResolved', () => {
   it('remonte les sous-routes admin vers transverse-admin', () => {
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-access', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-site', true)).toBe('transverse-admin');
+    expect(toolbarSelectedEntryIdFromResolved('transverse-admin-pending', true)).toBe('transverse-admin');
+    expect(toolbarSelectedEntryIdFromResolved('transverse-admin-cash-registers', true)).toBe('transverse-admin');
+    expect(toolbarSelectedEntryIdFromResolved('transverse-admin-sites', true)).toBe('transverse-admin');
   });
 
   it('remonte remboursement / clôture vers cashflow-nominal', () => {

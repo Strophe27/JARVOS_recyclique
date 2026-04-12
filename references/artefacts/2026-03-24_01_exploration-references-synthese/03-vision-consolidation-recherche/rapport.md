@@ -34,7 +34,7 @@
 3. Audits backend/frontend detailles du meme dossier (2026-03-23).
 4. `references/recherche/2026-02-24_extension-saisie-poids-paheko_perplexity_reponse.md` et `2026-02-24_version-paheko-stable_perplexity_reponse.md`
 5. `references/artefacts/2026-02-24_07_design-systeme-modules.md` et `2026-02-24_08_decision-architecture-max-paheko.md`
-6. `references/migration-paeco/categories-decla-eco-organismes.md`
+6. `references/migration-paheko/categories-decla-eco-organismes.md`
 7. `references/ancien-repo/api-contracts-api.md`, `data-models-api.md`, `v1.4.4-liste-endpoints-api.md`
 
 ## Meta

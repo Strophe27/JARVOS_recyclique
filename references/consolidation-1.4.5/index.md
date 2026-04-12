@@ -4,7 +4,7 @@ Référentiel durable pour l'audit brownfield et l'assainissement de la base act
 
 > Charger cet index pour toute session d'audit, de consolidation, de priorisation technique ou de préparation d'une refonte fondée sur l'existant.
 
-**Voir aussi (2026-03-31) :** interop Paheko, matrice caisse/poids, TODO reunion et **eco-organismes** dans [migration-paeco/](../migration-paeco/) ; audit global des dossiers `references/` : [artefacts/2026-03-31_02_audit-references-00-synthese-globale.md](../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md).
+**Voir aussi (2026-03-31) :** interop Paheko, matrice caisse/poids, TODO reunion et **eco-organismes** dans [migration-paheko/](../migration-paheko/) ; audit global des dossiers `references/` : [artefacts/2026-03-31_02_audit-references-00-synthese-globale.md](../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md).
 
 Les rapports datés **2026-03-23** décrivent un audit brownfield de la base active `recyclique-1.4.4/` (backend + frontend): constats reformules, chemins indicatifs, recommandations ordonnees. La synthese et le backlog servent de point d'entree pour la planification; valider tout chiffre ou chemin sur l'arbre source avant implementation.
 

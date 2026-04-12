@@ -11,6 +11,6 @@ alwaysApply: true
 python "C:\Users\Strophe\.cursor\skills\normalize-typographic-chars\scripts\normalize_typographic_chars.py" CHEMIN_DOSSIER --write --backup
 ```
 
-Cibler le dossier du fichier (ex. `references/migration-paeco/audits/`), pas la racine. Si échec (fichier verrouillé), essayer un parent. `--all` si guillemets courbes / NBSP.
+Cibler le dossier du fichier (ex. `references/migration-paheko/audits/`), pas la racine. Si échec (fichier verrouillé), essayer un parent. `--all` si guillemets courbes / NBSP.
 
 Skill : `~/.cursor/skills/normalize-typographic-chars/SKILL.md`

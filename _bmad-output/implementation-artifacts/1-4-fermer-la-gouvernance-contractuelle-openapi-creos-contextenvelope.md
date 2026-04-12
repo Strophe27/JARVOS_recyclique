@@ -8,26 +8,26 @@
 
 ## Story
 
-En tant qu’**architecte plateforme**,  
+En tant qu'**architecte plateforme**,  
 je veux que la **gouvernance des contrats** (données backend et composition UI) soit **explicite et reviewable**,  
-afin qu’**Epic 2** et **Epic 3** s’appuient sur **une seule hiérarchie de vérité** au lieu d’inventer des modèles parallèles.
+afin qu'**Epic 2** et **Epic 3** s'appuient sur **une seule hiérarchie de vérité** au lieu d'inventer des modèles parallèles.
 
 ## Acceptance Criteria
 
 **Étant donné** que le projet utilise à la fois **OpenAPI** et **CREOS**  
 **Quand** les règles de gouvernance sont documentées  
-**Alors** la story énonce pour chaque artefact le **propriétaire autoritaire**, l’**emplacement canonique** et la **frontière d’usage** pour : `OpenAPI`, `ContextEnvelope`, `NavigationManifest`, `PageManifest`, et `UserRuntimePrefs`  
-**Et** elle formalise la **hiérarchie de vérité** déjà assumée par l’architecture.
+**Alors** la story énonce pour chaque artefact le **propriétaire autoritaire**, l'**emplacement canonique** et la **frontière d'usage** pour : `OpenAPI`, `ContextEnvelope`, `NavigationManifest`, `PageManifest`, et `UserRuntimePrefs`  
+**Et** elle formalise la **hiérarchie de vérité** déjà assumée par l'architecture.
 
 **Étant donné** que des agents et développeurs vont **générer**, **valider** et **consommer** ces artefacts  
 **Quand** la gouvernance contractuelle est fermée  
 **Alors** la story définit les **attentes de versionnement**, les **attentes de détection de dérive (drift)**, et la règle que les **artefacts frontend générés** sont des **copies dérivées**, jamais une **seconde source de vérité**  
 **Et** elle précise comment les **enums partagés**, **identifiants** et **clés de permission** **descendent** des contrats backend vers les contrats UI.
 
-**Étant donné** que les manifests widgets peuvent déclarer un **`data_contract`** lié à l’API  
+**Étant donné** que les manifests widgets peuvent déclarer un **`data_contract`** lié à l'API  
 **Quand** la gouvernance est fermée  
 **Alors** le projet désigne le fichier reviewable **`contracts/openapi/recyclique-api.yaml`** comme **source reviewable** de la surface API v2 (draft évolutif, writer **Recyclique**) et impose des **`operationId` stables** sur les opérations exposées, référencées par **`data_contract.operation_id`**  
-**Et** les schémas CREOS incluent l’**extension documentée** dans **`contracts/creos/schemas/widget-declaration.schema.json`**.
+**Et** les schémas CREOS incluent l'**extension documentée** dans **`contracts/creos/schemas/widget-declaration.schema.json`**.
 
 **Étant donné** que **Peintre_nano** ne doit **pas** devenir auteur de la structure métier  
 **Quand** les responsabilités du runtime sont précisées  
@@ -46,19 +46,19 @@ Un pair valide que la doc couvre : **propriétaires** et **emplacements canoniqu
 - [x] Section **hiérarchie AR39** : `OpenAPI` > `ContextEnvelope` > `NavigationManifest` > `PageManifest` > `UserRuntimePrefs` — pour chaque niveau : rôle, propriétaire, emplacement canonique (fichier ou dossier), ce qui est **normatif** vs **dérivé**.
 - [x] Section **OpenAPI (AR19)** : writer canonique **Recyclique** ; chemin unique versionné ; règles pour **`contracts/openapi/recyclique-api.yaml`** (draft, évolution sans casser les `operationId` publiés) ; lien avec codegen / `contracts/openapi/generated/` quand le pipeline existe.
 - [x] Section **CREOS** : périmètre `contracts/creos/` ; schémas reviewables dont **`widget-declaration.schema.json`** ; lien **`data_contract.operation_id`** ↔ **`operationId`** OpenAPI ; rappel **`data_contract.source`** / tags (alignement à formaliser en CI — voir `contracts/README.md`).
-- [x] Section **versionnement et drift** : qu’est-ce qui change en semver / PR ; qui valide ; **CI Epic 10** comme filet (référencer intention sans implémenter toute la CI ici) ; règle **copies générées = dérivées**.
+- [x] Section **versionnement et drift** : qu'est-ce qui change en semver / PR ; qui valide ; **CI Epic 10** comme filet (référencer intention sans implémenter toute la CI ici) ; règle **copies générées = dérivées**.
 - [x] Section **flux enums / clés permission** : ordre de vérité (OpenAPI / schémas partagés → manifests / runtime) ; cohérence avec la spec **1.3** (permissions calculées backend, UI non vérité sécurité).
-- [x] Section **Peintre_nano** : runtime **borné** — validation, merge, filtrage, rejet, rendu **autorisés** ; **interdit** : inventer routes/pages/permissions métier hors contrats commanditaires ; types TS / fixtures = **dérivés** ou **mocks** jusqu’à Convergence 1.
+- [x] Section **Peintre_nano** : runtime **borné** — validation, merge, filtrage, rejet, rendu **autorisés** ; **interdit** : inventer routes/pages/permissions métier hors contrats commanditaires ; types TS / fixtures = **dérivés** ou **mocks** jusqu'à Convergence 1.
 - [x] Mettre à jour **`contracts/README.md`** et/ou **`contracts/creos/schemas/README.md`** si la gouvernance y ajoute des règles manquantes (éviter la duplication : un doc pivot sous `references/artefacts/` daté + liens depuis `contracts/`).
-- [x] **Enrichir** `contracts/openapi/recyclique-api.yaml` **seulement** dans la mesure nécessaire pour **illustrer** la gouvernance (ex. squelette d’`operationId` + tags) **sans** prétendre couvrir tout le backend — ou documenter explicitement que le YAML reste vide jusqu’à stories Epic 2 si c’est le choix produit.
-- [x] Créer / mettre à jour l’**artefact daté** sous `references/artefacts/` (`YYYY-MM-DD_NN_…`) et **`references/artefacts/index.md`** (convention projet).
+- [x] **Enrichir** `contracts/openapi/recyclique-api.yaml` **seulement** dans la mesure nécessaire pour **illustrer** la gouvernance (ex. squelette d'`operationId` + tags) **sans** prétendre couvrir tout le backend — ou documenter explicitement que le YAML reste vide jusqu'à stories Epic 2 si c'est le choix produit.
+- [x] Créer / mettre à jour l'**artefact daté** sous `references/artefacts/` (`YYYY-MM-DD_NN_…`) et **`references/artefacts/index.md`** (convention projet).
 - [x] Vérifier **aucune donnée sensible** dans les livrables.
 
 ## Dev Notes
 
 ### Périmètre et anti-confusion
 
-- **Livrable principal** : documentation de gouvernance **reviewable** + alignement des fichiers **`contracts/`** existants ; **pas** d’implémentation backend complète (Epic 2).
+- **Livrable principal** : documentation de gouvernance **reviewable** + alignement des fichiers **`contracts/`** existants ; **pas** d'implémentation backend complète (Epic 2).
 - **Suite logique** après **1.3** (spec multi-contextes / auth) : 1.4 **ferme** le cadre contractuel que 1.3 a préparé sémantiquement (AR39 / AR19 rappelés en 1.3, détaillés ici).
 - **Story suivante** : **1.5** — contrat minimal sync / réconciliation Paheko.
 
@@ -91,7 +91,7 @@ Un pair valide que la doc couvre : **propriétaires** et **emplacements canoniqu
 ### Project Structure Notes
 
 - Ne **pas** inverser la hiérarchie : types / manifests dans **peintre-nano** restent **dérivés** ou **exemples** tant que le fichier OpenAPI et les manifests reviewables repo ne sont pas la référence unique pour un périmètre donné.
-- Toute évolution de **`widget-declaration.schema.json`** doit rester **cohérente** avec l’instruction contrats données et avec **`additionalProperties`** documentés dans le README CREOS.
+- Toute évolution de **`widget-declaration.schema.json`** doit rester **cohérente** avec l'instruction contrats données et avec **`additionalProperties`** documentés dans le README CREOS.
 
 ## Dev Agent Record
 

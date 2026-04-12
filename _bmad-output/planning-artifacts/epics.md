@@ -2077,6 +2077,11 @@ So that the project does not commit to a connector strategy before comparing the
 **Then** later connector implementation can proceed from an agreed direction
 **And** the epic preserves the rule that no broad `HelloAsso` rollout starts before the arbitration exists
 
+**Given** the arbitration must be traceable for implementation and reviews
+**When** story 9.4 is completed
+**Then** the written outcome is anchored in-repo under `references/migration-paheko/` (spec technique + brouillon promesse / arbitrage), including at minimum: direct `HelloAsso` API path vs `Paheko` cloud-only plugin path, OAuth rate limits per official `limitation-api` page, checkout `metadata` and redirect TTL, Paheko member deduplication (name vs email), and initial migration options (API vs export file)
+**And** FR47's comparison explicitly states when the `Paheko` plugin path is excluded (e.g. self-hosted `Paheko` without cloud extension parity)
+
 ### Story 9.5: Integrer le minimum utile de `HelloAsso` au parcours adherents
 
 As a responsible association user,
@@ -2470,7 +2475,7 @@ So that the project ends the epic sequence with an explicit go/no-go picture rat
 L'equipe peut reconstruire dans `Peintre_nano` un premier noyau de parcours legacy reellement observables, avec preuves terrain sur `localhost:4445`, sans casser le fil des Epics 1 a 10 ni transformer Epic 10 en fourre-tout.
 
 **Note agents (create-story / review) :** cet epic reste etroit. Il couvre uniquement les 3 parcours pilotes formalises dans les artefacts du 2026-04-10 (`login` public, `dashboard` standard, `caisse vente` kiosque) et leurs prerequis UI minimaux. Ne pas y glisser de nouvelles features metier, de refonte design globale, ni de dette backend non deja nommee comme gap de contrat.
-Pour la caisse, **Epic 6** reste la reference fonctionnelle metier ; **Epic 11** ne re-specifie pas le domaine caisse et traite uniquement la **parite UI observable** et l'alignement contractuel de rendu dans `Peintre_nano`.
+Pour la caisse, **Epic 6** reste la reference fonctionnelle metier ; **Epic 11** ne re-specifie pas le domaine caisse. La **Definition of Done** produit pour les slices parité est l'**equivalence utilisateur** avec le legacy sur les parcours listes dans la matrice, **rendue dans** Peintre (manifests CREOS, widgets, slots, donnees API) — pas de contournement contractuel ; detail et gate MCP : `guide-pilotage-v2.md` § *Règle caisse Peintre vs legacy (2026-04-12)* et [`sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md`](./sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md). Les ecarts **sans** derogation PO explicite (une ligne matrice = une decision) ne suffisent pas a fermer une story.
 
 **Repere de lecture operationnel :** charger d'abord `references/artefacts/2026-04-10_02_cadrage-parite-ui-legacy-peintre.md`, puis `references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md`, puis `references/artefacts/2026-04-10_04_story-seeds-parite-ui-pilotes-peintre.md`.
 
@@ -2610,7 +2615,7 @@ So that the migrated UI remains credible on the terrain-critical details that us
 
 L'equipe peut prolonger la parite UI amorcee par la story 11.3 sur les ecrans et variantes caisse encore critiques sur le terrain, toujours avec preuves legacy sur `localhost:4445`, sans respecifier le domaine caisse deja cadre par l'Epic 6.
 
-**Note agents (create-story / review) :** Epic 6 reste la reference fonctionnelle metier caisse. Cet epic couvre la **parite UI observable** des ecrans caisse restants et l'alignement contractuel de rendu dans `Peintre_nano`. Ne pas absorber de nouvelles regles caisse, ni traiter comme equivalent sans decision ecrite le slice CREOS `/caisse` et toute route legacy plus riche.
+**Note agents (create-story / review) :** Epic 6 reste la reference fonctionnelle metier caisse. Cet epic couvre l'**equivalence utilisateur** des ecrans caisse restants **dans** `Peintre_nano` (CREOS, widgets, slots, API), avec la meme **Definition of Done** que l'Epic 11 (voir `guide-pilotage-v2.md` § *Règle caisse Peintre vs legacy* et [`sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md`](./sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md)). Ne pas absorber de nouvelles regles caisse, ni traiter comme equivalent sans decision ecrite le slice CREOS `/caisse` et toute route legacy plus riche.
 
 **Repere de lecture operationnel :** repartir de la matrice et des preuves de l'Epic 11, puis ouvrir un pack dedie pour les extensions caisse encore visibles au legacy (variants, retours, cloture, signaux, raccourcis si confirmes).
 
@@ -2686,6 +2691,90 @@ So that I can see where I stand and how to enter a sale session without a mislea
 **Then** no new business rules are invented in the frontend; rendering stays anchored to OpenAPI, `ContextEnvelope`, manifests, and widgets per Peintre protocol
 **And** any mismatch between legacy route richness and the CREOS `/caisse` slice is written in `peintre-nano/docs/03-contrats-creos-et-donnees.md` and the parity matrix, not silently assumed
 
+### Story 13.5: Aligner la transition hub vers vente plein cadre avec la parite legacy observable (RCN-02)
+
+As a cashier with an active path from the cash hub to sale,
+I want the transition from the hub to the kiosk sale surface to match the legacy shell and viewport behavior,
+So that I do not land on an incoherent screen (double hub + sale, phantom nav, broken full-screen intent).
+
+**Acceptance Criteria:**
+
+**Given** the legacy sequence is observed from `http://localhost:4445/caisse` to the final sale URL (e.g. `/cash-register/sale`)
+**When** this story is delivered
+**Then** the documented URLs, redirects, disappearance of main transverse nav, and full-viewport framing match the legacy checklist or each gap is recorded on a dedicated matrix line with `Equiv. utilisateur / derogation PO` per project rules
+**And** DevTools MCP proof (`user-chrome-devtools`) is captured for legacy and for `Peintre_nano` on `http://localhost:4444` for the same user intent
+
+**Given** virtual and deferred variants are out of scope for this slice (RCN-V optional later)
+**When** the story is implemented
+**Then** only the real-cash path alignment is in scope unless the matrix explicitly extends the line
+**And** any structural difference in CREOS composition is written as an explicit accept / fix / defer decision in `peintre-nano/docs/03-contrats-creos-et-donnees.md` and the matrix
+
+**Given** Epic 6 remains the caisse business authority and Peintre remains contract-driven
+**When** the story is accepted
+**Then** no new business rules are invented in the frontend; routing and shell adjustments use manifests, widgets, and runtime aliases already allowed by the architecture
+**And** optional observability markers such as `data-testid="cash-register-sale-kiosk"` are used only as proof aids, not as a substitute for contract mapping
+
+**Repere decoupe produit :** `_bmad-output/implementation-artifacts/rattrapage-caisse-nominale-decoupe-stories-ui-observables-2026-04-12.md` (troncon **RCN-02**).
+
+### Story 13.6: Certifier l'equivalence utilisateur legacy de la caisse observable dans `Peintre_nano`
+
+As a product owner or terrain referent,
+I want the delivered caisse surface in `Peintre_nano` to be explicitly certified against the legacy reference,
+So that the team can claim a credible user-equivalent caisse experience instead of a merely partial observable alignment.
+
+**Acceptance Criteria:**
+
+**Given** the caisse parity scope retained by stories 11.x and 13.x is implemented
+**When** this certification story is reviewed
+**Then** `Peintre_nano` exposes a dedicated cash shell with credible user density and no misleading empty framing versus legacy
+**And** any remaining difference is either fixed or explicitly classified in the parity matrix
+
+**Given** the target is user equivalence and not technical showcase
+**When** the delivered caisse path is compared to legacy proof
+**Then** the operator-facing flow is free of avoidable technical noise, debug artefacts, or contract-internal wording
+**And** the proof pack records legacy vs `Peintre_nano` evidence for the same bounded scenarios
+
+**Given** certification cannot rest on implicit acceptance
+**When** the story is accepted
+**Then** the parity matrix contains zero unclassified gap for the retained caisse scope
+**And** any non-equivalent point still present is rejected from certification until classified by explicit decision
+
+### Story 13.7: Auditer et traduire le kiosque legacy vers un plan de portage `Peintre_nano`
+
+As a product and implementation team,
+I want the legacy kiosk sale surface to be audited and translated into a precise `Peintre_nano` target map,
+So that the next implementation story can reproduce the retained user experience without improvising the portage.
+
+**Acceptance Criteria:**
+
+**Given** the retained kiosk scope must be compared on legacy `localhost:4445` and `Peintre_nano` `localhost:4444`
+**When** this audit story is delivered
+**Then** every visible kiosk block, label, CTA, shortcut, and major state in scope is inventoried in a legacy -> Peintre translation checklist
+**And** each retained element is mapped to a target `PageManifest`, widget, slot, API contract, or explicit blocker/defer decision
+
+**Given** the goal is a credible translation inside Peintre rather than a pixel-copy outside architecture
+**When** the audit is accepted
+**Then** the story states what must be reproduced as user-equivalent, what may stay adapted in Peintre language, and what remains out of scope
+**And** no kiosk behavior is redefined as frontend business authority outside the existing caisse contracts
+
+### Story 13.8: Implementer la traduction kiosque legacy retenue dans `Peintre_nano`
+
+As a cashier using the sale kiosk,
+I want the retained legacy kiosk cues to be implemented in `Peintre_nano`,
+So that the in-frame sale experience feels like the legacy reference while staying contract-driven.
+
+**Acceptance Criteria:**
+
+**Given** the translation checklist from Story 13.7 is approved
+**When** this implementation story is delivered
+**Then** the retained kiosk layout, labels, CTA order, and visible empty/loading/error states are reproduced at a user-equivalent level in `Peintre_nano`
+**And** any residual gap is classified explicitly in the parity matrix instead of being left implicit
+
+**Given** the kiosk remains a Peintre surface
+**When** the story is accepted
+**Then** the delivered rendering stays implemented through manifests, widgets, slots, and API-fed contracts already allowed by the architecture
+**And** legacy embedding, parallel frontend shortcuts, or newly invented caisse business rules are not accepted as implementation strategies
+
 ## Epic 14: Etendre la parite UI legacy de l'administration dans `Peintre_nano`
 
 L'equipe peut retrouver dans `Peintre_nano` les vues d'administration legacy prioritaires pour le parametage quotidien et la supervision simple, avec selection de contexte explicite et preuves de rendu, sans contourner les regles de permissions, de step-up, ou de separation multi-contexte.
@@ -2747,4 +2836,377 @@ So that Peintre regains credible admin visibility without inventing a new report
 **When** the story is reviewed
 **Then** the delivered rendering shows explicit context anchoring and permission handling
 **And** residual cross-context risks are documented rather than ignored
+
+## Epic 15: Fonder le portage admin strict mutualise vers `Peintre_nano`
+
+L'equipe construit un socle d'audit, de mutualisation et de recommandation d'architecture pour porter l'administration legacy vers `Peintre_nano` avec une **parite stricte cote usages**, sans recopier les divergences historiques du code legacy ecran par ecran.
+
+**Note agents (create-story / review) :** cet epic est un chantier **transversal de fondation**. Il ne livre pas directement les ecrans admin finaux ; il produit les audits, matrices, recommandations et decoupages necessaires pour que les epics suivants portent l'admin de facon coherente, mutualisee et contract-driven. Capturer aussi les **patterns emergents** decouverts en cours d'audit, pas seulement ceux deja enumeres.
+
+**Repere de lecture operationnel :** croiser `recyclique-1.4.4/frontend/src/App.jsx`, `recyclique-1.4.4/frontend/src/config/adminRoutes.js`, les pages legacy admin, l'existant Epic 14, la matrice de parite, `peintre-nano/docs/03-contrats-creos-et-donnees.md`, puis utiliser le navigateur integre / Browser pour les preuves visuelles quand utile. Le MCP DevTools peut completer, mais n'est pas le seul canal de preuve.
+
+### Story 15.1: Auditer exhaustivement les surfaces admin legacy a porter vers `Peintre_nano`
+
+As a product and architecture team preparing a strict admin migration,
+I want a complete audit of the legacy admin surfaces, routes, screens, and visible behaviors,
+So that the migration scope is explicit before any new admin epic is launched.
+
+**Acceptance Criteria:**
+
+**Given** the legacy admin area spans multiple routes and page families
+**When** this story is delivered
+**Then** every retained admin route in scope is inventoried with its page component, key visible zones, and primary user intent
+**And** excluded or deferred routes are explicitly listed with reasons rather than silently omitted
+
+**Given** parity is expected at the user-observable level
+**When** the audit is reviewed
+**Then** each screen record states the legacy reference points that matter for parity (titles, navigation, controls, data blocks, exports, context cues)
+**And** the audit is actionable enough to support later story slicing without reopening discovery from scratch
+
+### Story 15.2: Cartographier les dependances API, permissions et contextes de ladmin legacy
+
+As a team preparing contract-driven migration work,
+I want the admin screens mapped to their endpoints, permissions, step-up needs, and context constraints,
+So that future CREOS slices stay anchored to real backend authority and not frontend guesswork.
+
+**Acceptance Criteria:**
+
+**Given** admin screens depend on heterogeneous APIs and permission regimes
+**When** this story is completed
+**Then** the retained admin screens have an explicit mapping to the main endpoints, contracts, permissions, roles, and context requirements they rely on
+**And** sensitive flows such as step-up, super-admin actions, exports, or cross-context reads are called out separately
+
+**Given** some screens may currently depend on unstable or implicit contracts
+**When** the mapping is reviewed
+**Then** each contract gap is named as an OpenAPI, ContextEnvelope, or CREOS gap
+**And** no missing authority is papered over as a frontend-only solution
+
+### Story 15.3: Identifier les patterns mutualisables et les anti-patterns du legacy admin
+
+As an architecture team aiming to reduce duplication,
+I want a dedicated audit of recurring admin UI patterns and historical inconsistencies,
+So that `Peintre_nano` can converge on reusable building blocks instead of cloning fragmented legacy implementations.
+
+**Acceptance Criteria:**
+
+**Given** the legacy admin contains lists, filters, detail views, editing flows, exports, and other repeated patterns built differently
+**When** this story is delivered
+**Then** a catalog of reusable pattern families is produced across the retained admin corpus
+**And** each family distinguishes reusable common behavior from true business-specific variation
+
+**Given** not all useful patterns are known in advance
+**When** the audit progresses
+**Then** newly discovered emergent patterns are added to the catalog as first-class findings
+**And** anti-patterns or accidental historical divergences are explicitly marked as behaviors not to replicate in Peintre
+
+### Story 15.4: Etendre la matrice de parite admin stricte et la couverture des preuves
+
+As a pilotage team,
+I want the admin parity matrix extended screen by screen or by coherent admin slice,
+So that equivalence, derogations, gaps, and proof obligations are tracked consistently before implementation.
+
+**Acceptance Criteria:**
+
+**Given** the current admin matrix coverage is partial
+**When** this story is completed
+**Then** the matrix contains one line per retained admin screen or coherent slice with explicit equivalence intent
+**And** each line records scope, proof source, contract status, and documented derogations if any
+
+**Given** visual and behavioral proof is required for strict migration decisions
+**When** the matrix is reviewed
+**Then** each retained line identifies the expected evidence source (legacy code, browser comparison, runtime proof, documentation)
+**And** unresolved proof debt remains visible as debt, not as implied validation
+
+### Story 15.5: Produire la recommandation darchitecture pour un admin `Peintre_nano` mutualise
+
+As a senior architecture team,
+I want a concrete recommendation for how admin screens should be assembled in CREOS and Peintre,
+So that future migration epics reuse stable patterns, contracts, and shared components instead of re-deciding structure per screen.
+
+**Acceptance Criteria:**
+
+**Given** the audits strict and mutualisation are available
+**When** this story is delivered
+**Then** it defines which recurring admin concerns should become shared widgets, presentation components, generators, shells, or contract conventions
+**And** it states the boundaries between screen-specific logic and reusable admin primitives
+
+**Given** future stories must stay contract-driven
+**When** the recommendation is reviewed
+**Then** it explains how OpenAPI, ContextEnvelope, NavigationManifest, PageManifest, and user prefs interact for admin screens
+**And** it rejects any architecture that would reintroduce hidden business logic or screen-by-screen duplication
+
+### Story 15.6: Preparer la passe d'analyse approfondie et le decoupage des futurs epics de portage admin
+
+As a BMAD planning team,
+I want a final foundation package that can be handed to a stronger analysis pass and converted into implementation epics,
+So that the next admin migration epics start from a validated architecture direction rather than raw notes.
+
+**Acceptance Criteria:**
+
+**Given** the audits, matrix, and recommendation are available
+**When** this story is completed
+**Then** a dedicated brief for a stronger model analysis pass is prepared with the exact source corpus, constraints, and expected outputs
+**And** the future admin migration epics are proposed in a prioritized order with explicit rationale
+
+**Given** BMAD execution should stay disciplined
+**When** the planning package is reviewed
+**Then** the proposed next epics and stories are specific enough to enter `sprint-status.yaml` and later `create-story` / `dev-story` flows
+**And** the foundation package clearly states what is ready, what remains uncertain, and what requires HITL or browser proof
+
+## Epic 16: Deverrouiller les contrats, permissions et garde-fous admin avant portage UI
+
+L'equipe ferme les gaps admin classes **B** identifies par l'Epic 15 afin de rendre les futurs portages `Peintre_nano` strictement contract-driven. Cet epic est **backend / OpenAPI / ContextEnvelope / securite** uniquement; il ne porte aucun ecran admin final.
+
+**Note agents (create-story / review) :** cet epic est le rail **K** de la fondation 15.6. Il traite les autorites backend, les `operation_id`, les permissions, le step-up, l'audit et les exports sensibles. Il ne doit pas absorber de composition JSX, de manifest UI final, ni d'arbitrage produit.
+
+### Story 16.1: Fermer le gap G-OA-03 et requalifier le portage futur de `users`
+
+As a contract-first admin migration team,
+I want the blocking gap `G-OA-03` closed and traced in backend and OpenAPI,
+So that the future `users` slice can move from partially blocked to portageable without frontend guesswork.
+
+**Acceptance Criteria:**
+
+**Given** the `users` family remains partially blocked in Epic 15
+**When** this story is completed
+**Then** the backend, OpenAPI, and permission model explicitly cover the missing authority named `G-OA-03`
+**And** the resulting contract is reviewable enough to support a future CREOS page without local business reconstruction
+
+### Story 16.2: Stabiliser les contrats et permissions pour `groups`, `audit-log` et `email-logs`
+
+As an admin platform team,
+I want the blocked governance and audit surfaces mapped to stable contracts and permissions,
+So that later UI work can consume explicit backend authority instead of historical coupling.
+
+**Acceptance Criteria:**
+
+**Given** these admin families are classed `B` by Epic 15
+**When** this story is delivered
+**Then** each family exposes or documents the required endpoints, security rules, and context constraints
+**And** the sensitive read scopes or audit rules stay visible as backend concerns, not UI conventions
+
+### Story 16.3: Encadrer `settings` et les surfaces super-admin par step-up et audit explicites
+
+As a security-conscious architecture team,
+I want super-admin settings flows bound to explicit step-up and audit requirements,
+So that no high-risk admin surface is ported before its authority chain is fully defined.
+
+**Acceptance Criteria:**
+
+**Given** `settings` and similar super-admin flows are sensitive
+**When** this story is reviewed
+**Then** the expected step-up, audit trail, and context restrictions are documented in contracts and security notes
+**And** no future Peintre story can claim parity on these surfaces without referencing those controls
+
+### Story 16.4: Contractualiser les exports bulk et les stats reception sensibles avant tout slice UI associe
+
+As a team sequencing admin migration safely,
+I want exports, bulk actions, and permissive reception stats treated as backend and contract work first,
+So that future UI epics do not hide unresolved authority or audit debt inside reusable components.
+
+**Acceptance Criteria:**
+
+**Given** exports and bulk actions are explicitly called out as sensitive in Epic 15
+**When** this story is completed
+**Then** each retained export or bulk capability has a named contract, permission, and audit expectation
+**And** unresolved items remain blocked for UI rather than silently folded into a generic admin console
+
+## Epic 17: Porter les surfaces admin classe A d'identite et de configuration stable dans `Peintre_nano`
+
+L'equipe livre le premier lot de portage UI admin strictement limite aux familles **A** deja suffisamment contractualisees, en mutualisant les briques `shell liste admin`, `guards d'acces`, `vue detail ressource` et variantes de formulaires simples.
+
+**Note agents (create-story / review) :** cet epic est le premier rail **U**. Il ne contient aucune remediation backend de fond; si un gap contractuel nouveau est decouvert, il repart vers l'Epic 16 ou un correct course documente.
+
+### Story 17.1: Porter `pending` comme premier slice CREOS admin observables et mutualisable
+
+As a migration team validating the admin UI rail,
+I want a first `pending` admin page rendered through manifests and shared widgets,
+So that the contract-driven shell can prove parity on a contained yet representative admin list flow.
+
+**Acceptance Criteria:**
+
+**Given** `pending` is classified `A` after minimal contractualisation
+**When** this story is delivered
+**Then** the page uses official manifests, shared list shell blocks, and explicit guards
+**And** the parity proof references the Epic 15 matrix rather than ad hoc screenshots alone
+
+### Story 17.2: Porter `cash-registers` et `sites` sur une meme ossature admin stable
+
+As an architecture team maximizing reuse,
+I want `cash-registers` and `sites` assembled from the same stable admin patterns,
+So that two nearby configuration surfaces validate the shared list/detail/form conventions without business duplication.
+
+**Acceptance Criteria:**
+
+**Given** both families are retained in the first admin UI wave
+**When** the story is completed
+**Then** the delivered pages share the same structural shell, guards, and contract-driven data binding principles
+**And** any true business-specific variation remains explicit instead of forking the page generator
+
+### Story 17.3: Consolider les briques mutualisees de shell liste admin, guards et detail simple
+
+As a senior UI architecture team,
+I want the first wave to leave behind reusable admin building blocks rather than page-specific code,
+So that later admin epics start from hardened primitives instead of another ad hoc layer.
+
+**Acceptance Criteria:**
+
+**Given** the first `A` pages reveal common structure
+**When** this story is reviewed
+**Then** the reusable shell, guard wiring, and simple detail conventions are documented and used by the delivered pages
+**And** no runtime config becomes a second source of business truth
+
+## Epic 18: Porter la supervision caisse et le hub rapports admin dans `Peintre_nano`
+
+L'equipe porte le domaine admin **A** de supervision caisse et rapports, en s'appuyant sur les mutualisations `hub de navigation secondaire`, `cartes KPI`, `shell liste admin` et `console export` uniquement pour les cas deja stabilises contractuellement.
+
+**Note agents (create-story / review) :** cet epic reste un rail **U**. Les exports bulk ou sensibles encore classes `B` restent hors perimetre jusqu'a fermeture explicite par le rail **K**.
+
+### Story 18.1: Porter le hub rapports admin et les points d'entree de supervision caisse
+
+As a pilotage team,
+I want the admin reports hub and its main navigation blocks rendered in Peintre,
+So that users recover the observable supervision entry points without reviving legacy route duplication.
+
+**Acceptance Criteria:**
+
+**Given** supervision begins from secondary navigation and summary blocks
+**When** this story is delivered
+**Then** the hub structure, labels, navigation cues, and visible grouping are restored through manifests and shared widgets
+**And** the route map stays aligned with a single official navigation authority
+
+### Story 18.2: Porter les listes et details de `session-manager` et `cash-sessions` hors export sensible
+
+As an admin supervision team,
+I want session manager and cash session detail flows available in Peintre,
+So that operational supervision regains its core list/detail capability before any sensitive export expansion.
+
+**Acceptance Criteria:**
+
+**Given** these flows depend on list/detail and KPI patterns already identified in Epic 15
+**When** the story is completed
+**Then** the rendered supervision views consume contracts and shared components rather than page-specific business code
+**And** excluded sensitive exports remain explicitly out of scope if their authority is still blocked
+
+### Story 18.3: Stabiliser la preuve de parite admin pour les surfaces caisse supervisees
+
+As a strict parity team,
+I want browser and matrix evidence for the delivered supervision surfaces,
+So that the second admin UI wave is validated against user-observable parity instead of implementation optimism.
+
+**Acceptance Criteria:**
+
+**Given** the supervision UI can drift subtly from legacy
+**When** this story is reviewed
+**Then** the parity matrix, browser proof, and residual derogations are updated together
+**And** unresolved differences remain explicit debt with rationale
+
+## Epic 19: Porter le pilotage admin de la reception dans `Peintre_nano`
+
+L'equipe porte les surfaces **A** de supervision reception sous `Peintre_nano`, en reutilisant `cartes KPI`, `shell liste admin`, `vue detail ressource` et en laissant hors scope tout export ou mutation sensible qui n'a pas encore ete contractualise.
+
+**Note agents (create-story / review) :** cet epic reste strictement UI **A**. Les stats permissives ou exports reception encore classes `B` ne peuvent pas etre absorbés ici.
+
+### Story 19.1: Porter les vues de `reception-stats` et de supervision reception nominative
+
+As a reception pilotage team,
+I want the main reception supervision stats and visible context blocks available in Peintre,
+So that the reception admin domain regains its first monitoring surface inside the canonical runtime.
+
+**Acceptance Criteria:**
+
+**Given** reception supervision needs contextual KPIs and stable framing
+**When** this story is completed
+**Then** the delivered stats pages use explicit contracts, context guards, and shared KPI blocks
+**And** any blocked metrics or sensitive aggregates remain flagged as contract debt rather than simulated in UI
+
+### Story 19.2: Porter `reception-sessions` et `reception-tickets/:id` avec detail ressource mutualise
+
+As an admin UX team,
+I want reception sessions and ticket detail pages built from the reusable list/detail conventions,
+So that this domain benefits from the same contract-driven architecture as the other admin rails.
+
+**Acceptance Criteria:**
+
+**Given** the reception domain includes list and detail surfaces
+**When** this story is delivered
+**Then** those surfaces reuse the shared admin shell and detail conventions identified by Epic 15
+**And** unsupported sensitive actions remain explicitly excluded from the scope
+
+### Story 19.3: Valider la parite observable du pilotage reception sans inclure les exports bloques
+
+As a strict migration team,
+I want browser-backed parity validation for the reception admin wave,
+So that the delivered UI remains aligned with retained legacy expectations while blocked flows stay out of scope.
+
+**Acceptance Criteria:**
+
+**Given** some reception admin behaviors remain deferred
+**When** this story is reviewed
+**Then** parity proof covers the retained screens and visible context cues
+**And** every excluded export or sensitive branch is still referenced as blocked by the contract rail
+
+## Epic 20: Arbitrer le perimetre admin classe C et les surfaces hors scope stabilise
+
+L'equipe tranche les surfaces admin classe **C** qui ne sont ni prêtes au portage UI ni stabilisees cote produit, afin d'eviter que de futures stories techniques absorbent silencieusement du legacy, du super-admin ou de l'experimentation non arbitree.
+
+**Note agents (create-story / review) :** cet epic est le rail **P**. Il produit des decisions, pas du code applicatif. S'il aboutit a de nouveaux perimetres retenus, ceux-ci devront re-rentrer dans la matrice et dans de nouveaux epics dedies.
+
+### Story 20.1: Arbitrer `quick-analysis`, `import/legacy` et les vues combinees super-admin
+
+As a product and architecture leadership team,
+I want the class `C` admin surfaces explicitly kept, postponed, or dropped,
+So that the migration plan stops carrying ambiguous legacy burden into technical implementation epics.
+
+**Acceptance Criteria:**
+
+**Given** class `C` surfaces remain outside the stabilized migration scope
+**When** this story is completed
+**Then** each surface has an explicit product decision and rationale
+**And** no unresolved class `C` branch is quietly folded into a UI backlog epic
+
+### Story 20.2: Reinjecter les arbitrages `C` dans la matrice, le backlog et les regles de preuve
+
+As a BMAD pilotage team,
+I want the product decisions about class `C` reflected in the planning system,
+So that future create-story runs start from an explicit scope baseline rather than stale ambiguity.
+
+**Acceptance Criteria:**
+
+**Given** product decisions are only useful if they shape execution
+**When** this story is reviewed
+**Then** the impacted matrix lines, backlog entries, and proof expectations are updated coherently
+**And** any newly retained surface is routed to a dedicated future epic instead of mixed into existing rails
+
+## Epic 21: Porter la gestion des utilisateurs admin dans `Peintre_nano` apres cloture des gaps bloquants
+
+L'equipe porte la famille `users` vers `Peintre_nano` uniquement apres fermeture de `G-OA-03` et stabilisation des autorites associees. Cet epic reste un rail **U** autonome, volontairement separe du rail contrat qui l'a precede.
+
+**Note agents (create-story / review) :** cet epic n'est activable qu'apres evidence reviewable issue de l'Epic 16. Toute regression vers une permission implicite ou un pseudo-role calcule cote front doit etre rejetee.
+
+### Story 21.1: Porter la liste `users` et ses etats de consultation sous CREOS
+
+As an admin migration team,
+I want the main users list and consultation flow rendered through official contracts and shared admin shells,
+So that the user management surface rejoins the canonical runtime without recreating legacy authority in frontend code.
+
+**Acceptance Criteria:**
+
+**Given** the blocking `users` contract gap has been closed first
+**When** this story is delivered
+**Then** the list and consultation flow consume explicit contracts, guards, and context signals
+**And** residual permissions or context restrictions remain backend-driven and visible
+
+### Story 21.2: Porter les actions utilisateur retenues dans le scope stabilise et en prouver la parite
+
+As a strict parity and security team,
+I want only the retained user actions ported and validated against the matrix,
+So that the final users epic delivers observable parity without smuggling unresolved sensitive behaviors into runtime prefs or local UI logic.
+
+**Acceptance Criteria:**
+
+**Given** user management combines visible controls and sensitive authority
+**When** this story is reviewed
+**Then** the retained actions are explicitly mapped to contracts, proof sources, and guards
+**And** any excluded or still-sensitive behavior remains named as debt or deferred scope rather than partially implemented
 

@@ -28,12 +28,15 @@ describe('widget-registry', () => {
     expect(types).toContain('cashflow-close-wizard');
     expect(types).toContain('cashflow-sale-correction-wizard');
     expect(types).toContain('admin-cash-session-detail');
+    expect(types).toContain('admin.reception.tickets.list');
+    expect(types).toContain('admin-reception-ticket-detail');
     expect(types).toContain('cashflow-special-don-wizard');
     expect(types).toContain('cashflow-special-adhesion-wizard');
     expect(types).toContain('cashflow-social-don-wizard');
     expect(types).toContain('reception-nominal-wizard');
     expect(types).toContain('reception-history-panel');
     expect(types).toContain('auth.live.public-login');
+    expect(types).toContain('admin.legacy.dashboard.home');
   });
 
   it('résout un type démo en composant', () => {

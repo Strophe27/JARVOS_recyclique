@@ -23,6 +23,8 @@ from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.core.security import hash_password
 
+from tests.bulk_sensitive_headers import bulk_export_post_headers
+
 
 @pytest.fixture
 def test_site(db_session: Session) -> Site:
@@ -146,6 +148,7 @@ class TestBulkExportCashSessionsCSV:
         """Test export CSV bulk avec succès."""
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -177,6 +180,7 @@ class TestBulkExportCashSessionsCSV:
 
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": date_from.isoformat(),
@@ -234,6 +238,7 @@ class TestBulkExportCashSessionsCSV:
         # Filtrer par site
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "site_id": str(test_site.id),
@@ -259,6 +264,7 @@ class TestBulkExportCashSessionsExcel:
         """Test export Excel bulk avec succès."""
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -307,6 +313,7 @@ class TestBulkExportCashSessionsExcel:
 
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": date_from.isoformat(),
@@ -332,6 +339,7 @@ class TestBulkExportCashSessionsExcel:
         """Test que la mise en forme (styles, couleurs, bordures) est appliquée."""
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -409,6 +417,7 @@ class TestBulkExportCashSessionsExcel:
         
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (now - timedelta(days=30)).isoformat(),
@@ -438,6 +447,7 @@ class TestBulkExportCashSessionsValidation:
         """Test avec format invalide."""
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {},
                 "format": "pdf"  # Format invalide
@@ -453,6 +463,7 @@ class TestBulkExportCashSessionsValidation:
         
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": future_date.isoformat()
@@ -470,6 +481,7 @@ class TestBulkExportCashSessionsValidation:
         
         response = admin_client.post(
             "/v1/admin/reports/cash-sessions/export-bulk",
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": far_future.isoformat(),
@@ -484,4 +496,38 @@ class TestBulkExportCashSessionsValidation:
         content = response.text
         lines = [l for l in content.split('\n') if l.strip()]
         assert len(lines) == 1  # Seulement headers
+
+
+class TestBulkExportCashSessionsStory164Security:
+    """Garde-fous step-up + Idempotency-Key (Story 16.4)."""
+
+    def test_export_bulk_requires_idempotency_key(self, admin_client, test_sessions):
+        from recyclic_api.core.step_up import STEP_UP_PIN_HEADER
+
+        response = admin_client.post(
+            "/v1/admin/reports/cash-sessions/export-bulk",
+            headers={STEP_UP_PIN_HEADER: "1234"},
+            json={"filters": {}, "format": "csv"},
+        )
+        assert response.status_code == 400
+        det = response.json().get("detail")
+        if isinstance(det, dict):
+            assert det.get("code") == "IDEMPOTENCY_KEY_REQUIRED"
+        else:
+            assert "IDEMPOTENCY_KEY_REQUIRED" in str(det).upper() or "IDEMPOTENCY" in str(det).upper()
+
+    def test_export_bulk_requires_step_up_pin(self, admin_client, test_sessions):
+        from recyclic_api.core.step_up import IDEMPOTENCY_KEY_HEADER
+
+        response = admin_client.post(
+            "/v1/admin/reports/cash-sessions/export-bulk",
+            headers={IDEMPOTENCY_KEY_HEADER: str(uuid4())},
+            json={"filters": {}, "format": "csv"},
+        )
+        assert response.status_code == 403
+        det = response.json().get("detail")
+        if isinstance(det, dict):
+            assert det.get("code") == "STEP_UP_PIN_REQUIRED"
+        else:
+            assert "STEP_UP_PIN_REQUIRED" in str(det).upper() or "STEP-UP" in str(det).upper()
 

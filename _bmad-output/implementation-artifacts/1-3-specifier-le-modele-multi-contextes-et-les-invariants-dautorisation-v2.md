@@ -8,9 +8,9 @@
 
 ## Story
 
-En tant qu’**équipe backend et produit** (Piste B),  
+En tant qu'**équipe backend et produit** (Piste B),  
 je veux une **spécification canonique v2** des contextes, rôles, groupes, permissions et revalidations sensibles,  
-afin que **tous les epics futurs** partagent le **même modèle d’isolation et d’autorisation**, sans double vérité côté UI.
+afin que **tous les epics futurs** partagent le **même modèle d'isolation et d'autorisation**, sans double vérité côté UI.
 
 ## Acceptance Criteria
 
@@ -20,11 +20,11 @@ afin que **tous les epics futurs** partagent le **même modèle d’isolation et
 **Et** elle énonce les **invariants de zéro fuite** et les **règles de changement de contexte** que les implémentations futures doivent préserver.
 
 **Étant donné** que les permissions en v2 sont **additives** et **calculées par Recyclique**  
-**Quand** le modèle d’autorisation est décrit  
-**Alors** la story formalise les **clés techniques stables**, les **libellés personnalisables**, l’**appartenance multi-groupes**, et l’**autorité backend** sur les permissions effectives  
+**Quand** le modèle d'autorisation est décrit  
+**Alors** la story formalise les **clés techniques stables**, les **libellés personnalisables**, l'**appartenance multi-groupes**, et l'**autorité backend** sur les permissions effectives  
 **Et** elle stipule que les **libellés UI ne sont jamais une vérité de sécurité**.
 
-**Étant donné** que les actions sensibles exigent des garanties **plus fortes** qu’un simple filtrage d’affichage  
+**Étant donné** que les actions sensibles exigent des garanties **plus fortes** qu'un simple filtrage d'affichage  
 **Quand** les règles de sécurité sont finalisées  
 **Alors** elles définissent les **comportements minimaux de step-up** : confirmation, PIN, revalidation de rôle  
 **Et** elles précisent **quand** le système doit **bloquer**, **dégrader** ou **forcer un recalcul explicite** du contexte.
@@ -49,10 +49,10 @@ Un pair valide que la spec couvre bien : entités minimales (site, caisse, sessi
 ## Tasks / Subtasks
 
 - [x] Rédiger le **document canonique** (livrable ci-dessous) en couvrant **explicitement** les trois blocs Given/When/Then (table de traçabilité AC → sections recommandée).
-- [x] Décrire pour chaque entité minimale : **identité**, **champs obligatoires**, **relations** (cardinalités et dépendances), **cycle de vie** succinct, et **liens** avec les domaines brownfield déjà cartographiés (caisse, réception, auth, permissions, contexte) — en s’appuyant sur l’audit 1.2 sans le recopier.
-- [x] Formaliser les **invariants d’isolation** (zéro fuite inter-site / inter-caisse / inter-session / inter-poste / entre opérateurs) et les **règles de bascule de contexte** (sélection site, ouverture session caisse, poste réception, etc.) : préconditions, effets, et cas d’**invalidation** ou de **recalcul**.
-- [x] Documenter le **modèle additif** des permissions : union / composition, **clés techniques stables** (convention de nommage, stabilité semver / évolution), **libellés** séparés des clés, **multi-appartenance aux groupes**, et **seule source effective** = calcul backend (rappel explicite : pas de confiance aux manifests ou à l’UI pour l’autorisation métier).
-- [x] Détailler le **step-up** minimal : quelles classes d’actions déclenchent **confirmation**, **PIN**, **revalidation** ; critères de **blocage** vs **mode dégradé** vs **recalcul forcé** du `ContextEnvelope` (sémantique métier — le schéma OpenAPI détaillé reste Story **1.4** / Epic **2**).
+- [x] Décrire pour chaque entité minimale : **identité**, **champs obligatoires**, **relations** (cardinalités et dépendances), **cycle de vie** succinct, et **liens** avec les domaines brownfield déjà cartographiés (caisse, réception, auth, permissions, contexte) — en s'appuyant sur l'audit 1.2 sans le recopier.
+- [x] Formaliser les **invariants d'isolation** (zéro fuite inter-site / inter-caisse / inter-session / inter-poste / entre opérateurs) et les **règles de bascule de contexte** (sélection site, ouverture session caisse, poste réception, etc.) : préconditions, effets, et cas d'**invalidation** ou de **recalcul**.
+- [x] Documenter le **modèle additif** des permissions : union / composition, **clés techniques stables** (convention de nommage, stabilité semver / évolution), **libellés** séparés des clés, **multi-appartenance aux groupes**, et **seule source effective** = calcul backend (rappel explicite : pas de confiance aux manifests ou à l'UI pour l'autorisation métier).
+- [x] Détailler le **step-up** minimal : quelles classes d'actions déclenchent **confirmation**, **PIN**, **revalidation** ; critères de **blocage** vs **mode dégradé** vs **recalcul forcé** du `ContextEnvelope` (sémantique métier — le schéma OpenAPI détaillé reste Story **1.4** / Epic **2**).
 - [x] Section **alignement contractuel** : rappeler **AR39** — `OpenAPI` > `ContextEnvelope` > `NavigationManifest` > `PageManifest` > `UserRuntimePrefs` ; le `ContextEnvelope` est une **instance runtime dérivée du backend**, pas une source parallèle. Rappeler **AR19** — writer OpenAPI canonique = **Recyclique**. Renvoyer vers `contracts/README.md`, `contracts/openapi/`, `contracts/creos/` pour **vocabulaire partagé** (enums, clés permission) **sans** dupliquer la gouvernance complète réservée à la Story **1.4**.
 - [x] Section **écarts éventuels** : comparer brièvement avec `peintre-nano/src/types/context-envelope.ts` (stub UI) — **non normatif** ; noter écarts ou champs « à aligner OpenAPI » pour éviter que le frontend ne fige une vérité métier.
 - [x] Mettre à jour **`references/artefacts/index.md`** (convention projet : obligatoire pour tout nouvel artefact daté).
@@ -62,9 +62,9 @@ Un pair valide que la spec couvre bien : entités minimales (site, caisse, sessi
 
 ### Périmètre et anti-confusion
 
-- **Livrable principal** : document de spécification sous `references/artefacts/` — **pas** d’implémentation backend, **pas** de modification de `peintre-nano/` pour satisfaire cette story.
+- **Livrable principal** : document de spécification sous `references/artefacts/` — **pas** d'implémentation backend, **pas** de modification de `peintre-nano/` pour satisfaire cette story.
 - **Story 1.4** : ne pas fermer ici la gouvernance OpenAPI/CREOS ni rédiger `contracts/openapi/recyclique-api.yaml` ; la spec 1.3 **prépare** et **aligne** sémantiquement les concepts que 1.4 formalisera en contrats reviewables.
-- **Epic 2** : les stories 2.2–2.4 **implémenteront** contexte, permissions effectives, step-up — la spec 1.3 est la **référence métier** qu’elles doivent respecter.
+- **Epic 2** : les stories 2.2–2.4 **implémenteront** contexte, permissions effectives, step-up — la spec 1.3 est la **référence métier** qu'elles doivent respecter.
 
 ### Livrable canonique
 
@@ -74,14 +74,14 @@ Un pair valide que la spec couvre bien : entités minimales (site, caisse, sessi
 
 ### Intelligence story précédente (1.2)
 
-- L’audit brownfield (`references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md`) identifie : agrégation de contexte aujourd’hui **implicite** via multiples appels ; **ContextEnvelope** unique en cible v2 ; permissions via `users/me/permissions` à **canonicaliser** (clés stables, union additive) ; surfaces **sûres en premier** (auth, me, sites, session courante, lecture réception) — la spec 1.3 doit **s’appuyer** sur ces constats pour prioriser les invariants et les règles de recalcul.
-- Backlog décisionnel **B1/B2** de l’audit : figer auth + contexte + permissions et publier ContextEnvelope minimal — la spec documente le **quoi** et le **pourquoi** avant le **comment** contractuel (1.4) et code (2.x).
+- L'audit brownfield (`references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md`) identifie : agrégation de contexte aujourd'hui **implicite** via multiples appels ; **ContextEnvelope** unique en cible v2 ; permissions via `users/me/permissions` à **canonicaliser** (clés stables, union additive) ; surfaces **sûres en premier** (auth, me, sites, session courante, lecture réception) — la spec 1.3 doit **s'appuyer** sur ces constats pour prioriser les invariants et les règles de recalcul.
+- Backlog décisionnel **B1/B2** de l'audit : figer auth + contexte + permissions et publier ContextEnvelope minimal — la spec documente le **quoi** et le **pourquoi** avant le **comment** contractuel (1.4) et code (2.x).
 
 ### Guardrails architecture / contrats
 
-- **AR39** (epics.md) : hiérarchie de vérité — toute exposition UI du contexte actif est une **projection** ; la décision d’accès reste **backend**.
+- **AR39** (epics.md) : hiérarchie de vérité — toute exposition UI du contexte actif est une **projection** ; la décision d'accès reste **backend**.
 - **AR19** : enums, clés permission, schémas — le **lieu reviewable** reste OpenAPI + CREOS ; la spec 1.3 définit la **sémantique** et les **invariants**, pas le YAML complet.
-- **Peintre_nano** : types `ContextEnvelopeStub` illustrent un alignement structurel transitoire ; les **noms de champs** et **statuts runtime** peuvent diverger jusqu’à convergence OpenAPI — le document 1.3 doit trancher ou lister les **intentions canoniques** (ex. statuts `ok` / `degraded` / `forbidden` comme vocabulaire produit si retenu).
+- **Peintre_nano** : types `ContextEnvelopeStub` illustrent un alignement structurel transitoire ; les **noms de champs** et **statuts runtime** peuvent diverger jusqu'à convergence OpenAPI — le document 1.3 doit trancher ou lister les **intentions canoniques** (ex. statuts `ok` / `degraded` / `forbidden` comme vocabulaire produit si retenu).
 
 ### Recherche technique « latest »
 
@@ -95,7 +95,7 @@ Un pair valide que la spec couvre bien : entités minimales (site, caisse, sessi
 ### Project Structure Notes
 
 - Cohérence avec `guide-pilotage-v2.md` : Piste B produit des contrats qui ancrent la Piste A ; la spec 1.3 évite toute **seconde source de vérité** côté UI.
-- Pour cadrage complémentaire : `references/migration-paeco/`, `references/vision-projet/` si besoin de relier postes caisse/réception au terrain réel — **sans** étendre le périmètre à la sync Paheko (Stories **1.5**, **1.6**, Epic **8**).
+- Pour cadrage complémentaire : `references/migration-paheko/`, `references/vision-projet/` si besoin de relier postes caisse/réception au terrain réel — **sans** étendre le périmètre à la sync Paheko (Stories **1.5**, **1.6**, Epic **8**).
 
 ### Références
 

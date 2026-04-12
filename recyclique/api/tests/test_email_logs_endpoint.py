@@ -19,6 +19,11 @@ _ADMIN_EMAIL = f"{settings.API_V1_STR.rstrip('/')}/admin/email-logs"
 class TestEmailLogsEndpoint:
     """Test the email logs endpoint functionality."""
 
+    def test_get_email_logs_unauthenticated_returns_403(self, client: TestClient):
+        """Aligné contrat 16.2 : `require_admin_role_strict` sans credentials → 403."""
+        response = client.get(_ADMIN_EMAIL)
+        assert response.status_code == 403
+
     def test_get_email_logs_requires_admin_role(self, client: TestClient, db_session: Session):
         """Test that email logs endpoint requires admin role."""
         # Create a regular user (not admin)

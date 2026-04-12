@@ -1,0 +1,30 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-cash-registers",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Caisses enregistrees (postes)",
+        "title_level": "1",
+        "body": "Route legacy observable `/admin/cash-registers` (`CashRegisters.tsx`). Shell admin transverse (Epic 14.1) : meme famille de navigation et permissions manifestees que les autres entrees `/admin/*`."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.contract-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Ecart OpenAPI canon (rail U — G-OA-02 / gap Registers)",
+        "body": "Le legacy s'appuie sur des operations type `GET/POST/PATCH/DELETE` sur `/v1/cash-registers/` (client genere brownfield). Sous `contracts/openapi/recyclique-api.yaml`, aucune operation alignee n'a ete trouvee au DS 2026-04-12 (recherche `cash-registers` vide). Tout binding live type client genere doit attendre la fermeture **Epic 16** (rail K)."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.cash-registers.demo",
+      "widget_props": {}
+    }
+  ]
+}

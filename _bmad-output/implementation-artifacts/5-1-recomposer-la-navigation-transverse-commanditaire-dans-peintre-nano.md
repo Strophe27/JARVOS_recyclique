@@ -117,7 +117,7 @@ Hierarchie de verite : `OpenAPI` > `ContextEnvelope` > `NavigationManifest` > `P
 
 1. Promouvoir un `NavigationManifest` unique reviewable (`navigation-transverse-served.json`) incluant démo + bandeau + entrées transverse.
 2. Promouvoir les `PageManifest` de base sous `contracts/creos/manifests/` et étendre le parseur + `filterNavigation` pour `visibility` CREOS.
-3. Brancher `runtimeServedManifestLoadResult` sur imports contrat ; étendre l’enveloppe démo avec les permissions transverse.
+3. Brancher `runtimeServedManifestLoadResult` sur imports contrat ; étendre l'enveloppe démo avec les permissions transverse.
 4. Tests contract + unitaires + stabilisation e2e.
 
 ### Agent Model Used
@@ -128,9 +128,9 @@ Composer (agent dev story BMAD), session 2026-04-07.
 
 ### Completion Notes List
 
-- **Navigation servie** : `runtimeServedManifestLoadResult` importe désormais `navigation-transverse-served.json` et les `PageManifest` associés sous `contracts/creos/manifests/` — fin de la fusion locale « fixtures démo + slice » pour l’app servie ; traçabilité Convergence 2 conservée (entrée bandeau dans le manifest unique, pages Epic 4 toujours sous contrat).
+- **Navigation servie** : `runtimeServedManifestLoadResult` importe désormais `navigation-transverse-served.json` et les `PageManifest` associés sous `contracts/creos/manifests/` — fin de la fusion locale « fixtures démo + slice » pour l'app servie ; traçabilité Convergence 2 conservée (entrée bandeau dans le manifest unique, pages Epic 4 toujours sous contrat).
 - **Filtrage** : `filterNavigation` applique `visibility.permission_any` et `contexts_all` / `contexts_any` en consommant uniquement `ContextEnvelope` + dérivation documentée des marqueurs (`resolveContextMarkersFromEnvelope`) — pas de recalcul de permissions côté UI.
-- **Transverse 5.2 / 5.4** : entrées `/dashboard` et `/admin` + placeholders `transverse-*-placeholder` dans les contrats ; permissions démo `transverse.dashboard.view` / `transverse.admin.view` ajoutées à l’enveloppe par défaut.
+- **Transverse 5.2 / 5.4** : entrées `/dashboard` et `/admin` + placeholders `transverse-*-placeholder` dans les contrats ; permissions démo `transverse.dashboard.view` / `transverse.admin.view` ajoutées à l'enveloppe par défaut.
 - **Tests** : contract `navigation-transverse-served-5-1.test.ts`, unités filtre + marqueurs ; stabilisation e2e bandeau (`waitFor` sur `module_disabled`).
 
 ### File List

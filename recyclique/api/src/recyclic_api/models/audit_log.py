@@ -51,6 +51,9 @@ class AuditActionType(str, enum.Enum):
     DATA_EXPORTED = "data_exported"
     BACKUP_CREATED = "backup_created"
     DB_IMPORT = "db_import"
+    # Story 16.3 — exports / purges base (cohérent avec DB_IMPORT, filtre audit-log action_type)
+    DB_EXPORT = "db_export"
+    DB_PURGE = "db_purge"
 
 class AuditLog(Base):
     """Journal d'audit centralisé pour toutes les actions importantes"""

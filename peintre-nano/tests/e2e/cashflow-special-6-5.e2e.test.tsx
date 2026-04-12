@@ -9,6 +9,11 @@ import {
 } from '../../src/app/auth/default-demo-auth-adapter';
 import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import { RootProviders } from '../../src/app/providers/RootProviders';
+import { resetCoalescedGetCurrentOpenCashSessionForTests } from '../../src/domains/cashflow/caisse-current-session-coalesce';
+import { resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
+import { resetCashflowOperationalSyncNoticeCacheForTests } from '../../src/domains/cashflow/cashflow-operational-sync-notice';
+import { CashflowNominalWizard } from '../../src/domains/cashflow/CashflowNominalWizard';
+import { CaisseCurrentTicketWidget } from '../../src/domains/cashflow/CaisseCurrentTicketWidget';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
 
@@ -38,6 +43,19 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+function fetchWizardShell(): ReturnType<typeof vi.fn> {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = requestUrl(input);
+    if (url.includes('/v1/cash-sessions/current')) {
+      return { ok: true, status: 200, text: async () => 'null' } as Response;
+    }
+    if (url.includes('live-snapshot')) {
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    }
+    return { ok: true, status: 200, text: async () => '{}' } as Response;
+  });
+}
+
 describe('E2E — encaissements spéciaux Story 6.5', () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -48,6 +66,9 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
         disconnect(): void {}
       },
     );
+    resetCashflowDraft();
+    resetCoalescedGetCurrentOpenCashSessionForTests();
+    resetCashflowOperationalSyncNoticeCacheForTests();
   });
 
   afterEach(() => {
@@ -55,23 +76,19 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     cleanup();
+    resetCashflowDraft();
+    resetCoalescedGetCurrentOpenCashSessionForTests();
+    resetCashflowOperationalSyncNoticeCacheForTests();
   });
 
-  it('workspace vente (`/cash-register/sale`) : bouton Don (sans article) ouvre le wizard sans changer de route', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '{}',
-      }),
-    );
+  it('workspace vente (wizard nominal hors kiosque) : bouton Don (sans article) ouvre le wizard', async () => {
+    vi.stubGlobal('fetch', fetchWizardShell());
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    window.history.pushState({}, '', '/');
 
     render(
       <RootProviders disableUserPrefsPersistence>
-        <App />
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 
@@ -82,16 +99,42 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-special-don-wizard')).toBeTruthy();
     });
-    expect(window.location.pathname).toBe('/cash-register/sale');
   });
 
   it('sans caisse.special_encaissement : entrées nav don / adhésion absentes', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '{}',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = requestUrl(input);
+        if (url.includes('/v1/cash-sessions/current')) {
+          return { ok: true, status: 200, text: async () => 'null' } as Response;
+        }
+        if (url.includes('live-snapshot')) {
+          return { ok: true, status: 200, text: async () => '{}' } as Response;
+        }
+        if (url.includes('/v1/categories/')) {
+          return { ok: true, status: 200, text: async () => '[]' } as Response;
+        }
+        if (url.includes('/v1/cash-registers/status')) {
+          return {
+            ok: true,
+            status: 200,
+            text: async () =>
+              JSON.stringify({
+                data: [
+                  {
+                    id: '31d56e8f-08ec-4907-9163-2a5c49c5f2fe',
+                    name: 'Caisse test',
+                    is_open: true,
+                    location: 'Entrée',
+                    enable_virtual: true,
+                    enable_deferred: true,
+                  },
+                ],
+              }),
+          } as Response;
+        }
+        return { ok: true, status: 200, text: async () => '{}' } as Response;
       }),
     );
 
@@ -120,8 +163,9 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     window.history.pushState({}, '', '/cash-register/sale');
     window.dispatchEvent(new PopStateEvent('popstate'));
     await waitFor(() => {
-      expect(screen.getByTestId('cashflow-special-encaissements-panel-no-perm')).toBeTruthy();
+      expect(screen.getByTestId('cashflow-nominal-wizard')).toBeTruthy();
     });
+    expect(screen.queryByTestId('cashflow-special-encaissements-panel-no-perm')).toBeNull();
     expect(screen.queryByTestId('cashflow-open-special-don')).toBeNull();
   });
 
@@ -129,6 +173,12 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/cash-sessions/current')) {
+        return Promise.resolve({ ok: true, status: 200, text: async () => 'null' } as Response);
+      }
+      if (url.includes('live-snapshot')) {
+        return Promise.resolve({ ok: true, status: 200, text: async () => '{}' } as Response);
+      }
       if (
         method === 'GET' &&
         url.includes(`/v1/sales/${encodeURIComponent(NEW_SALE_ID)}`) &&
@@ -183,11 +233,14 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
     });
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    window.history.pushState({}, '', '/');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
-        <App />
+        <>
+          <CashflowNominalWizard widgetProps={{}} />
+          <CaisseCurrentTicketWidget widgetProps={{}} />
+        </>
       </RootProviders>,
     );
 
@@ -205,25 +258,18 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       expect(screen.getByTestId('cashflow-special-don-wizard-success')).toBeTruthy();
     });
     await waitFor(() => {
-      expect(screen.getByTestId('caisse-last-sale-id').textContent ?? '').toContain(NEW_SALE_ID);
+      expect(screen.getByTestId('caisse-last-sale-id').getAttribute('data-sale-id')).toBe(NEW_SALE_ID);
     });
   });
 
-  it('workspace vente (`/cash-register/sale`) : bouton Adhésion / cotisation ouvre le wizard sans changer de route', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '{}',
-      }),
-    );
+  it('workspace vente (wizard nominal hors kiosque) : bouton Adhésion / cotisation ouvre le wizard', async () => {
+    vi.stubGlobal('fetch', fetchWizardShell());
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    window.history.pushState({}, '', '/');
 
     render(
       <RootProviders disableUserPrefsPersistence>
-        <App />
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 
@@ -234,13 +280,18 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-special-adhesion-wizard')).toBeTruthy();
     });
-    expect(window.location.pathname).toBe('/cash-register/sale');
   });
 
   it('POST createSale spécial adhésion : kind ADHESION_ASSOCIATION + montant > 0 (mocks)', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/cash-sessions/current')) {
+        return Promise.resolve({ ok: true, status: 200, text: async () => 'null' } as Response);
+      }
+      if (url.includes('live-snapshot')) {
+        return Promise.resolve({ ok: true, status: 200, text: async () => '{}' } as Response);
+      }
       if (
         method === 'GET' &&
         url.includes(`/v1/sales/${encodeURIComponent(NEW_SALE_ID)}`) &&
@@ -297,11 +348,14 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
     });
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    window.history.pushState({}, '', '/');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
-        <App />
+        <>
+          <CashflowNominalWizard widgetProps={{}} />
+          <CaisseCurrentTicketWidget widgetProps={{}} />
+        </>
       </RootProviders>,
     );
 
@@ -322,7 +376,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       expect(screen.getByTestId('cashflow-special-adhesion-wizard-success')).toBeTruthy();
     });
     await waitFor(() => {
-      expect(screen.getByTestId('caisse-last-sale-id').textContent ?? '').toContain(NEW_SALE_ID);
+      expect(screen.getByTestId('caisse-last-sale-id').getAttribute('data-sale-id')).toBe(NEW_SALE_ID);
     });
   });
 });

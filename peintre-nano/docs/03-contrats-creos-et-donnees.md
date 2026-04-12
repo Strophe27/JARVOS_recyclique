@@ -107,6 +107,8 @@ En observation sur le legacy (`http://localhost:4445/`), sans session, une redir
 
 **Decision Peintre_nano** : la route **`/cash-register/sale`** est un **alias runtime application** vers le **meme** `page_key` **`cashflow-nominal`** et les memes slots/widgets CREOS que **`/caisse`**, avec presentation **kiosque** (zone nav du `RootShell` masquee, bandeau bac a sable masque sur cet alias pour rapprocher le legacy ; le mode auth live `VITE_LIVE_AUTH` masque aussi le bandeau sur les autres routes), marqueur test `cash-register-sale-kiosk` sur le shell. Ce n’est **pas** un second manifeste CREOS : la verite contractuelle de composition reste **`/caisse`** + `cashflow-nominal` ; l’alias est borne et teste (`runtime-demo-cash-register-sale-kiosk-11-3`, `root-shell`). Ne pas assimiler implicitement « slice CREOS `/caisse` » et « route legacy `/cash-register/sale` » comme deux contrats reviewables distincts sans cette section.
 
+**Extension certification (Story 13.6)** : en **demo** hors `VITE_LIVE_AUTH`, **tous** les chemins `page_key` **`cashflow-nominal`** (hub `/caisse`, alias session open/close, hub virtuel, racine differee, ventes kiosque § 13.2) activent le meme **masquage** du bandeau bac a sable, du bandeau « manifests valides » et de la toolbar prefs, et un `RootShell` **`minimalChrome`** (aside/footer decoratifs masques) — fonction `isCashflowNominalCertificationPathRoute` dans `RuntimeDemoApp.tsx` ; tests `runtime-demo-cashflow-certification-chrome-13-6`. Les libelles des cartes virtuel / differe du widget `caisse-brownfield-dashboard` restent **metier** (sans mention contractuelle interne).
+
 ## Routage : ouverture de session legacy `/cash-register/session/open` (story 13.1)
 
 **Ce que CREOS reviewable couvre** : identique au hub caisse — `page_key` **`cashflow-nominal`** (`page-cashflow-nominal.json`) sur **`/caisse`** ; pas d’entree `NavigationManifest` pour la route SPA legacy **`/cash-register/session/open`**.
@@ -162,6 +164,137 @@ En observation sur le legacy (`http://localhost:4445/`), sans session, une redir
 - **Composition** : sur `/caisse`, `RuntimeDemoApp` **retire** le wizard + ticket latéral (`suppressCashflowNominalWorkspaceSaleAndAside`) pour l’intention « hub seul » (cohérent Story 13.1) ; même `page_key` reviewable.
 
 **Tests** : `runtime-demo-cash-register-hub-rcn-01-13-4`, `cash-register-hub-rcn-01-13-4.e2e`.
+
+## Transition hub → vente plein cadre RCN-02 (Story 13.5)
+
+**Tronçon** : passage **`/caisse`** → **`/cash-register/sale`** (branche **réelle** : préfixe **`/cash-register`** sans `/virtual` ni `/deferred`), aligné `_bmad-output/implementation-artifacts/rattrapage-caisse-nominale-decoupe-stories-ui-observables-2026-04-12.md` **RCN-02**.
+
+**Référence legacy** : `CashRegisterDashboard.tsx` — **`Reprendre`** / continuation vers `` `${basePath}/sale` `` avec `basePath` **`/cash-register`** ; `OpenCashSession.tsx` — `navigate(\`${basePath}/sale\`)` après ouverture ; `SaleWrapper.tsx` — shell vente plein cadre.
+
+**Décision Peintre_nano** : pas de second `PageManifest` pour `/cash-register/sale` — **alias runtime** vers le même `page_key` **`cashflow-nominal`** que le hub (§ 11.3). Depuis le hub, le widget `caisse-brownfield-dashboard` appelle **`spaNavigateTo(\`${cashRegisterHubBasePath}/sale\`)`** (`handleHubResumeRegister`, défaut **`/cash-register/sale`**). `RuntimeDemoApp` : `syncSelectionFromPath` + `resolvedPageKey` → **`cashflow-nominal`** ; **`hideNav={kioskSaleObservable}`** sur `RootShell` ; **`suppressCashflowNominalWorkspaceSaleAndAside`** est **false** sur `/cash-register/sale` — le wizard + ticket latéral du manifeste s’affichent (intention kiosque plein viewport métier, sans double chrome hub).
+
+**Extension Story 13.6** : le manifeste reviewable garde `presentation_surface: hub` sur le widget brownfield ; sur les chemins kiosque **`/cash-register/sale`** (et variantes **`/virtual/sale`**, **`/deferred/sale`**), `RuntimeDemoApp` fusionne **`sale_kiosk_minimal_dashboard: true`** (`withCashflowNominalKioskSaleDashboard`) afin qu’un **reload** ou un **deep link** ne réaffiche pas le bloc « Sélection du Poste » + modes + cartes variantes **au-dessus** du wizard (écran hybride) — toujours **sans** second `PageManifest`.
+
+**Extension Story 13.8** : sur les mêmes chemins kiosque, `RuntimeDemoApp` fusionne **`sale_kiosk_category_workspace: true`** sur le placement **`cashflow-nominal-wizard`** (`withCashflowNominalKioskSaleWizard`). Le widget **`CashflowNominalWizard`** affiche alors une **grille de catégories** alimentée par **`GET /v1/categories/`** via le client partagé **`fetchCategoriesList`** (`src/api/dashboard-legacy-stats-client.ts`), avec navigation racine → sous-catégories lorsque `parent_id` relie les lignes — **sans** second `PageManifest` ni iframe legacy. Les étapes **FlowRenderer** (Total, Paiement, etc.) restent le **langage Peintre** documenté au blueprint 13.7 (écart structurel volontaire vs tablist legacy).
+
+**Observables de parité** : sur le hub, **nav transverse** visible ; sur **`/cash-register/sale`**, zone nav **masquée**, marqueur test **`data-testid="cash-register-sale-kiosk"`**, bandeau bac à sable masqué en mode démo hors live auth sur l’alias kiosque. États **Chargement** intermédiaires : hérités du widget / flow (ex. overlay postes sur le hub — RCN-01) ; pas de seconde barre « hub + vente » empilée après navigation.
+
+**Tests** : `runtime-demo-cash-register-hub-to-sale-rcn-02-13-5`, `cash-register-hub-to-sale-rcn-02-13-5.e2e` ; complètent `runtime-demo-cash-register-sale-kiosk-11-3` (alias direct, **dont** scénario Story 13.8 grille catégories) et RCN-01 hub ; **`cashflow-nominal-wizard-kiosk-13-8`** (widget isolé).
+
+## Certification equivalence utilisateur caisse (Story 13.6)
+
+**Perimetre** : relecture transversale des lignes **`ui-pilote-03*`** dans `references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md` ; paquet de preuves navigateur **legacy `http://localhost:4445`** vs **Peintre `http://localhost:4444`** (MCP **`user-chrome-devtools`** : `list_pages` → `select_page` → `navigate_page` → `take_snapshot`). **Secrets** : compte recette **hors depot** (variables locales / runbook).
+
+**Slice livre dans ce run** : (1) **chrome demo** sur chemins `cashflow-nominal` borne et teste ; (2) **textes** cartes caisse sans vocabulaire contractuel visible ; (3) **matrice** : colonne **Equiv.** normalisee (**Derogation PO** avec ref. explicite ou **OK**) pour les lignes § perimetre story ; (4) **snapshots** apparies hub + kiosque dans `references/artefacts/2026-04-12_04_certification-13-6-preuves/` (voir synthese `references/artefacts/2026-04-12_04_certification-caisse-equivalence-legacy-13-6.md`).
+
+**Suite decoupee** (hors completude silencieuse) : parcours MCP **complet** pour **chaque** intention (session open POST, virtuel/deferred bout a bout, session close avec session ouverte, RCN-02 clic **Reprendre** appaire) ; captures reseau `list_network_requests` ; alignement badge **SIMULATION** / casse si exige PO ; preuve **POST /v1/sales/** kiosque authentifie (HITL ou MCP selon disponibilite).
+
+## Shell admin transverse — périmètre site visible (Epic 14.1)
+
+**Référence legacy** : `recyclique-1.4.4/frontend/src/components/AdminLayout.jsx` — barre supérieure verte (`#2e7d32`), marque **RecyClique**, liens **Tableau de bord** (`/`), **Caisse**, **Réception**, **Administration** (`/admin`), menu utilisateur (libellé + **Mon profil** / **Se déconnecter**). Le contenu des pages admin vit dans l’`<Outlet />` (ex. `DashboardHomePage.jsx` sur `/admin`).
+
+**Peintre_nano (auth live `VITE_LIVE_AUTH`)** : la barre horizontale verte est déjà portée par `RootShell` + `FilteredNavEntries` (`navPresentation=legacyToolbar`, `RootShell.module.css` `.navAppLegacyToolbar`). **Story 14.1** ajoute :
+
+1. **`LiveAdminPerimeterStrip`** — affiché pour toute URL sous **`/admin`** lorsque le bac à sable est masqué : lit **`presentation_labels.context.active_site_display_name`** sur le `ContextEnvelope` (`GET /v1/users/me/context`). Valeur **émise par le backend** (`context_envelope_service.build_context_envelope`, nom du `Site` lié à `user.site_id`). Si la clé est absente, bannière **gap** explicite (sans afficher d’UUID).
+2. **`TransverseHubLayout`** — variante **`shellAdmin`** (`family === 'admin'`) : carte principale blanche + ombre légère pour rapprocher le ressenti `AdminLayout` / `MainContent` legacy.
+
+**Décisions / écarts** :
+
+- **Tableau de bord** : legacy ancre le lien transverse sur **`/`** ; Peintre reste sur **`/dashboard`** (déjà documenté § routage 11.2).
+- **Mon profil** : route **`/profil`** non portée par le `NavigationManifest` servi — **gap** (hors Story 14.1 si non manifesté).
+- **Preuves Chrome DevTools MCP** : à réitérer dès que l’instance MCP n’est pas en conflit (`user-chrome-devtools` — session orchestrateur 2026-04-12 : erreur *browser already running*).
+
+## Admin legacy `/admin/cash-registers`, `/admin/sites` vs hub `/admin/site` (Story 17.2)
+
+**Référence legacy** : `recyclique-1.4.4/frontend/src/App.jsx` — routes `cash-registers` et `sites` sous le layout `adminOnly` → URLs **`/admin/cash-registers`** et **`/admin/sites`** (`CashRegisters.tsx`, `Sites.tsx`).
+
+**Ce que le manifeste CREOS servi couvre** : deux entrées **`transverse-admin-cash-registers`** et **`transverse-admin-sites`** dans `contracts/creos/manifests/navigation-transverse-served.json`, avec `page_key` **`transverse-admin-cash-registers`** et **`transverse-admin-sites`** (`page-transverse-admin-*.json`). Shell : même périmètre **`isTransverseAdminShellPath`** (`RuntimeDemoApp.tsx`) que **`/admin/pending`** — `LiveAdminPerimeterStrip` + `TransverseHubLayout` `family='admin'` en auth live.
+
+**OpenAPI canon** (`contracts/openapi/recyclique-api.yaml`) : au DS **2026-04-12**, recherche ciblée **`cash-registers`** sans opérations alignées sur le CRUD legacy admin ; famille **Sites** / **`/v1/sites/`** non matérialisée — gap **G-OA-02** (cartographie **15.2**). **Rail U** : widgets **`admin.cash-registers.demo`** et **`admin.sites.demo`** sans `data_contract` ni données simulées ; fermeture contractuelle → **Epic 16** (rail **K**).
+
+**Décision produit — coexistence `/admin/site` et `/admin/sites`** : le hub **singulier** **`/admin/site`** (Story **14.2**, `page-transverse-admin-site-overview.json`) reste l’intention « site et périmètre » transverse **léger**. Le chemin **pluriel** **`/admin/sites`** porte l’intention legacy **CRUD** observée sur le brownfield. Les deux coexistent dans la navigation servie ; ce n’est **pas** une fusion silencieuse des intentions (matrice **`ui-pilote-14-02-admin-parametres-simples`**, lignes **`ui-admin-15-4-sites`** / **`ui-admin-15-4-cash-registers`**).
+
+**Tests** : `navigation-transverse-served-5-1.test.ts` (contrat bundle) ; `navigation-transverse-5-1.e2e.test.tsx` (parcours nav + placeholders).
+
+## Hub rapports admin / supervision caisse (Story 18.1)
+
+**Périmètre rail U** : restituer la **structure** et les **points d'entrée** alignés sur le manifeste servi — **sans** seconde entrée nav dédiée (pas de **`/admin/reports`** tant que non arbitré) ni exports bulk classe **B** (rail **K** / **Epic 16**). La liste **session-manager** et le détail **cash-sessions** : **Story 18.2** (routes manifestées ou résolues par le runtime, gaps **K** nommés, pas de données simulées).
+
+**PageManifest** : `contracts/creos/manifests/page-transverse-admin-reports-hub.json` (`page_key` **`transverse-admin-reports-hub`**), référencé par l'entrée **`transverse-admin`** (`path` **`/admin`**). Slots **17.3** pour l'en-tête + l'écart contrat (`admin.transverse-list.*`), widget principal **`admin.reports.supervision.hub`** (gap **K**, cartes d'intention, liens **`spaNavigateTo`** vers chemins déjà manifestés, dont **`/admin/session-manager`** — **18.2**), puis **`admin.legacy.dashboard.home`** (dette données **14.3** inchangée).
+
+**Navigation** : une seule autorité — chemins dans **`navigation-transverse-served.json`** ; entrée **`transverse-admin-session-manager`** sur **`/admin/session-manager`** (`page_key` **`transverse-admin-session-manager`**, widget **`admin.session-manager.demo`**). Le détail **`/admin/cash-sessions/:id`** reste rendu via **`page-admin-cash-session-detail.json`** (`page_key` **`admin-cash-session-detail`**) avec sélection nav hub **`transverse-admin`** (pas d'entrée nav par `session_id`, pour éviter un second plan de routes).
+
+**Matrice** : **`ui-admin-15-4-home-index-dashboard`**, **`ui-pilote-14-03-admin-supervision-simple`**, ligne backlog **`ui-admin-15-4-reports-hub`** (`references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md`).
+
+**Fichier historique** : `page-transverse-admin-placeholder.json` reste dans le dépôt ; le bundle servi (`runtime-demo-manifest.ts`) pointe **`/admin`** vers **`transverse-admin-reports-hub`**.
+
+### Story 18.2 — session-manager (liste) et détail cash-session hors export sensible
+
+**Routes SPA** : **`/admin/session-manager`** — entrée nav **`transverse-admin-session-manager`**, `PageManifest` **`page-transverse-admin-session-manager.json`** (`page_key` **`transverse-admin-session-manager`**), slots **17.3** + widget **`admin.session-manager.demo`**. Synchronisation sélection nav : **`RuntimeDemoApp`** (`syncSelectionFromPath`, même périmètre **`isTransverseAdminShellPath`** que les autres **`/admin/*`**).
+
+**Gaps OpenAPI (rail K)** : pas de **`GET /v1/cash-sessions/`** ni **`GET /v1/cash-sessions/stats/summary`** dans **`contracts/openapi/recyclique-api.yaml`** au DS — message honnête à l’écran (pas de client parallèle, pas de **`dashboard-legacy-stats-client`** pour simuler liste ou KPIs). Fermeture → **Epic 16**.
+
+**Détail session** : **`/admin/cash-sessions/:id`** — inchangé côté contrat : widget **`admin-cash-session-detail`**, client **`cash-session-client.ts`** (`recyclique_cashSessions_getSessionDetail`). Améliorations UX bornées au contrat existant.
+
+**Exports exclus (classe B)** : pas d’appel UI à **`…/cash-sessions/by-session/:id`** (blob) ni à **`recyclique_admin_reports_cashSessionsExportBulk`** ; exclusion **visible** dans le widget liste (alerte + renvoi **Epic 16**).
+
+**Tests** : **`navigation-transverse-served-5-1.test.ts`**, **`navigation-transverse-5-1.e2e.test.tsx`** — présence nav **`/admin/session-manager`**, non-régression chemin **`/admin/cash-sessions/:id`**.
+
+### Story 19.1 — réception admin : stats et supervision nominative
+
+**Route canonique** : **`/admin/reception-stats`** — entrée nav **`transverse-admin-reception-stats`** dans **`contracts/creos/manifests/navigation-transverse-served.json`** (copie **`peintre-nano/public/manifests/navigation.json`**), `page_key` **`transverse-admin-reception-stats`**, manifeste **`page-transverse-admin-reception-stats.json`**, slots **`admin.transverse-list.*`** (Story **17.3**), widget principal **`admin.reception.stats.supervision`**. Synchronisation nav : **`RuntimeDemoApp.syncSelectionFromPath`** (même périmètre **`isTransverseAdminShellPath`**). Point d'entrée hub : bouton **`admin-hub-link-reception-stats`** dans **`AdminReportsSupervisionHubWidget`** (Story **18.1**).
+
+**`operation_id` consommés** (client unique `peintre-nano/src/api/dashboard-legacy-stats-client.ts`, pas de client parallèle) : **`recyclique_stats_receptionSummary`** (`GET /v1/stats/reception/summary`), **`recyclique_stats_receptionByCategory`** (`GET /v1/stats/reception/by-category`), **`recyclique_stats_unifiedLive`** (`GET /v1/stats/live`, paramètres `period_type`, `site_id` optionnel depuis le **ContextEnvelope**). **`recyclique_reception_statsLiveDeprecated`** (`GET /v1/reception/stats/live`) **non** appelé — préférence successeur explicite dans l'UI.
+
+**Écarts vs legacy `ReceptionDashboard.tsx`** : graphiques Recharts et métriques non couvertes par les schémas de réponse des trois GET ci-dessus = **dette nommée** (alerte jaune dans le widget, pas d'approximation silencieuse). **Supervision nominative** (classements par opérateur, tableaux hors champs des GET stats) : **aucun** `operation_id` stabilisé dans le périmètre **19.1** — carte **gap K** visible (`admin-reception-nominative-gap-k`). La **liste tickets + détail ticket** admin relève de la **Story 19.2** ; pas de masquage.
+
+**UserRuntimePrefs** : uniquement contrôles UI locaux hors métier (présets de période / `period_type` dans l'état React du widget, pas de cache d'autorisation ni d'agrégat métier persistant).
+
+**Tests** : **`navigation-transverse-served-5-1.test.ts`** (bundle + `resolvePageAccess`) ; **`navigation-transverse-5-1.e2e.test.tsx`** (nav + URL profonde + marqueurs `recyclique_stats_*`) ; unitaire **`admin-reception-stats-supervision-widget.test.tsx`**. Types de réponse : **`operations[…]`** générés depuis **`contracts/openapi/generated/recyclique-api.ts`** dans **`dashboard-legacy-stats-client.ts`**.
+
+### Réception admin — sessions liste + détail ticket (Story 19.2)
+
+**Routes canoniques** : **`/admin/reception-sessions`** — entrée nav **`transverse-admin-reception-sessions`** dans **`contracts/creos/manifests/navigation-transverse-served.json`** (copie **`peintre-nano/public/manifests/navigation.json`**), `page_key` **`transverse-admin-reception-sessions`**, manifeste **`page-transverse-admin-reception-sessions.json`**, slots **`admin.transverse-list.*`** (Story **17.3**), widget principal **`admin.reception.tickets.list`**. Détail ressource **`/admin/reception-tickets/:id`** (UUID ticket) : **`page-admin-reception-ticket-detail.json`**, `page_key` **`admin-reception-ticket-detail`**, widget **`admin-reception-ticket-detail`** — pas d'entrée `NavigationManifest` par `ticket_id` (même discipline que **`/admin/cash-sessions/:id`** / Story **18.2**) ; sous navigation profonde, **`RuntimeDemoApp`** (`ADMIN_RECEPTION_TICKET_PATH`, `resolvedPageKey`) retient le hub **`transverse-admin`** pour la surbrillance toolbar et résout le **`page_key`** détail.
+
+**`operation_id` de lecture utilisés** : **`recyclique_reception_listTickets`** et **`recyclique_reception_getTicketDetail`** exclusivement via **`peintre-nano/src/api/reception-client.ts`** (pas de client HTTP parallèle).
+
+**Drill-down liste → détail** : bouton « Détail » sur chaque ligne (`spaNavigateTo` vers **`/admin/reception-tickets/<uuid>`**). Colonnes liste strictement **`ReceptionTicketSummary`**.
+
+**Écarts vs legacy** : KPIs ou agrégats calculés côté client au-delà des champs de la réponse liste = **gap K** nommé dans le slot **`admin.transverse-list.contract-gap`** du manifeste (pas de contournement). Export bulk, jeton téléchargement / CSV ticket, fermeture ticket, patch poids ligne : **hors Story 19.2** — aucun branchement UI silencieux ; message explicite dans les widgets liste et détail (AC4, **Epic 16** / step-up).
+
+**Hub 18.1** : bouton **`admin-hub-link-reception-sessions`** dans **`AdminReportsSupervisionHubWidget`**.
+
+**Tests** : **`navigation-transverse-served-5-1.test.ts`** (bundle, guards, `admin-reception-ticket-detail`) ; **`navigation-transverse-5-1.e2e.test.tsx`** (nav, **`/admin/reception-sessions`**, **`/admin/reception-tickets/<uuid>`** avec mocks `fetch` optionnels).
+
+### Story 19.3 — preuve de parité observable (pilotage réception)
+
+**Paquet de preuve** : matrice `references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md` (lignes **`ui-admin-15-4-reception-stats`**, **`ui-admin-15-4-reception-sessions`**, **`ui-admin-15-4-reception-ticket-detail`** relues **2026-04-12** ; ligne **`ui-admin-15-4-reception-reports`** **hors critère** de succès parité **19.x** mais **conservée** explicitement — pas de fusion silencieuse avec stats/sessions) ; tests contrat **`peintre-nano/tests/contract/navigation-transverse-served-5-1.test.ts`** (bloc **Story 19.3** : absence d’entrée nav **`/admin/reception-reports`**, texte reviewable **export B** dans le slot **`admin.transverse-list.contract-gap`** du manifeste sessions) ; e2e **`peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx`** (parcours hub **18.1** → stats → hub → sessions avec **gap** + **`admin-reception-tickets-scope-note`** ; absence nav dédiée rapports réception) ; alignement manifestes **`page-transverse-admin-reception-stats.json`**, **`page-transverse-admin-reception-sessions.json`**, **`page-admin-reception-ticket-detail.json`**, **`navigation-transverse-served.json`**, **`page-transverse-admin-reports-hub.json`**. **Preuve navigateur** legacy **`http://localhost:4445`** vs Peintre **`http://localhost:4444`** (MCP **`user-chrome-devtools`**, compte autorisé) : **non exécutée** au DS — enregistrement **`references/artefacts/2026-04-12_08_preuve-parite-pilotage-reception-19-3-needs-hitl.md`** + bloc **NEEDS_HITL** dans le fichier story **19.3** (Dev Agent Record).
+
+**Exports et mutations bloqués par le rail contrat** (références **16.4** / **Epic 16** / placeholders **19.2**) — **non** critères verts de parité **19.x** : **`recyclique_admin_reports_receptionTicketsExportBulk`**, **`recyclique_reception_exportTicketCsv`**, **`recyclique_reception_createTicketDownloadToken`**, **`recyclique_reception_closeTicket`**, **`recyclique_reception_patchLigneWeight`** ; visibles dans le hub admin (rappel dette **K**), le slot **contract-gap** du manifeste sessions, l’alerte liste tickets, le bloc exclusions du widget détail — **sans** appel UI ni test qui simule un `operation_id` absent du **`contracts/openapi/recyclique-api.yaml`**.
+
+**Dettes résiduelles (branches legacy différées)** : route legacy **`/admin/reception-reports`** (`ReceptionReports.tsx`) — **Gap CREOS** ; rapports CSV / volumétrie — **15.2** ; toute différence legacy ↔ Peintre : **gap contrat** (rail **K**) ou **dérogation PO** datée en matrice — jamais simple absence UI sans mention du rail. Cartographie familles réception : **`references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md`**.
+
+### Story 18.3 — preuve de parité admin (surfaces caisse supervisées)
+
+**Paquet de preuve** : matrice `references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md` (lignes **`ui-admin-15-4-home-index-dashboard`**, **`ui-admin-15-4-reports-hub`**, **`ui-admin-15-4-session-manager`**, **`ui-admin-15-4-cash-session-detail`**) ; tests contrat **`peintre-nano/tests/contract/navigation-transverse-served-5-1.test.ts`** (bloc **Story 18.3** : co-présence des `page_key` **`transverse-admin-reports-hub`**, **`transverse-admin-session-manager`**, **`admin-cash-session-detail`** dans le bundle servi + absence d’entrée nav **`/admin/reports`**) ; e2e **`peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx`** (parcours hub → bouton **Sessions caisse (supervision)** → **`/admin/session-manager`** avec texte gap **K** explicite + marqueur dette export **B** `admin-session-manager-export-debt` → retour entrée nav **Administration** sur **`/admin`** ; non-régression URL profonde **`/admin/cash-sessions/:id`** ; gouvernance OpenAPI **`peintre-nano/tests/contract/recyclique-openapi-governance.test.ts`** (`recyclique_cashSessions_getSessionDetail`). **Preuve navigateur appariée** legacy **`http://localhost:4445`** vs Peintre **`http://localhost:4444`** (guide pilotage, compte autorisé, MCP **`user-chrome-devtools`**) : **non exécutée** dans le run DS Task — enregistrement **`references/artefacts/2026-04-12_07_preuve-parite-admin-surfaces-caisse-18-3-needs-hitl.md`** + bloc **NEEDS_HITL** dans le fichier story **`18-3-stabiliser-la-preuve-de-parite-admin-pour-les-surfaces-caisse-supervisees.md`** (Dev Agent Record).
+
+**Dettes résiduelles** : agrégats rapports / liste sessions / KPIs tant que **`GET /v1/cash-sessions/`**, **`GET /v1/cash-sessions/stats/summary`** et lectures **`/v1/admin/reports/`** ne sont pas dans le YAML canon — rail **K** / **Epic 16** ; corrélation détaillée familles **`cash-sessions`** dans **`references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md`**. Exports **B** (bulk) : **aucun** branchement UI tant que non contractualisés (Story **16.4**). Widget **`admin.legacy.dashboard.home`** sur le hub : dette données alignée **14.3** / **`ui-pilote-14-03`**, pas de contournement métier dans le moteur.
+
+### Primitive liste admin, guards et « détail simple » (Story 17.3, rail U)
+
+**Shell liste admin (React)** : `AdminListPageShell` (`peintre-nano/src/domains/admin-config/AdminListPageShell.tsx`) — structure partagée (titre, alerte d’écart contrat, liste d’état honnête **sans fetch**) consommée par les widgets CREOS **`admin.pending-users.demo`**, **`admin.cash-registers.demo`**, **`admin.sites.demo`**, **`admin.session-manager.demo`** (**18.2**). Les widgets **`admin.reception.stats.supervision`** (**19.1**) et **`admin.reception.tickets.list`** (**19.2**) réutilisent les mêmes **`slot_id`** dans le manifeste et le bandeau **`AdminDetailSimpleDemoStrip`** exporté depuis ce shell, avec des **fetch** contractuels dans le slot **main** (pas le placeholder « sans fetch » du shell liste). Aucune donnée métier ni cache dans **UserRuntimePrefs** ; les seuls textes « métier » restent ceux portés par les blocs `demo.text.block` des manifestes ou les réponses OpenAPI (écarts **K** / **G-OA-02** toujours explicites).
+
+**Slots CREOS homogènes** : les `PageManifest` liste admin (pending, caisses enregistrées, sites, session-manager, stats réception, **sessions tickets réception** — **17.1–17.3** + **18.2** + **19.1** + **19.2**) utilisent les mêmes `slot_id` dans le même ordre — **`admin.transverse-list.header`**, **`admin.transverse-list.contract-gap`**, **`admin.transverse-list.main`** (`admin-transverse-list-shell-slots.ts`). Le slot **main** héberge le widget démo, le widget stats **19.1**, ou le widget liste tickets **19.2** ; les deux premiers restent des `demo.text.block` reviewables (gaps + renvoi **Epic 16** / stories futures selon le cas).
+
+**Guards (manifeste + enveloppe)** : constantes documentées **`ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS`** (`admin-transverse-list-page-guards.ts`) — `required_permission_keys` = **`transverse.admin.view`**, `requires_site` = **true** ; alignement legacy **`adminOnly`** sans permission fantôme. Le runtime **filtre** à partir du **ContextEnvelope** et des champs CREOS déjà servis ; il ne recalcule pas une autorisation métier parallèle.
+
+**Convention « détail simple »** (préparation epics **18** / **19**) :
+
+1. **Liste** : slots principaux du manifeste (comme ci-dessus).
+2. **Détail** : soit **deuxième page** sous `page_key` **`transverse-admin-*`** lorsque l’OpenAPI portera la ressource, soit **panneau latéral / expansion** alimenté **uniquement** par des données **déjà** contractuelles (pas de seconde vérité dans **UserRuntimePrefs**).
+3. **Tant que** l’OpenAPI canon ne porte pas la ressource : **placeholder honnête** ou absence de drill-down — pas de CRUD simulé.
+
+**Illustration UI bornée** : le shell inclut un bandeau **`admin-detail-simple-demo-strip`** (libellé **Démo UI**) — texte statique, **sans** `data_contract`, rappelant que tout drill-down attend les opérations dans **`contracts/openapi/recyclique-api.yaml`**.
 
 ## Dashboard transverse : KPIs (`transverse-dashboard`)
 

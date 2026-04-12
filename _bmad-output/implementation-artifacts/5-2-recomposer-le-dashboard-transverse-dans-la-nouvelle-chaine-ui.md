@@ -40,7 +40,7 @@ afin de lire les **informations opérationnelles transverses principales** depui
   - [x] Étendre ou ajouter tests **contract** sur le bundle incluant le dashboard (pattern `navigation-transverse-served-5-1.test.ts`).
   - [x] Tests **unitaires** ciblés si nouvelle logique de résolution / props manifeste.
   - [x] **e2e** : parcours `/dashboard` avec enveloppe démo autorisée — rendu attendu, pas de régression nav 5.1 / bandeau Epic 4.
-- [x] `npm test` et `npm run build` dans `peintre-nano/` ; **pas** d'édition manuelle des fichiers **générés** (`generated/` ou équivalent pipeline) pour corriger un contrat — correction dans `contracts/` + codegen (checklist PR point 9, aligné story 5.1). _(Gates exécutées par l’orchestrateur parent selon le brief ; preuve servie validée ensuite manuellement sur l’application réellement servie.)_
+- [x] `npm test` et `npm run build` dans `peintre-nano/` ; **pas** d'édition manuelle des fichiers **générés** (`generated/` ou équivalent pipeline) pour corriger un contrat — correction dans `contracts/` + codegen (checklist PR point 9, aligné story 5.1). _(Gates exécutées par l'orchestrateur parent selon le brief ; preuve servie validée ensuite manuellement sur l'application réellement servie.)_
 
 ### Slots livrés (story 5.2 — ordre stable)
 
@@ -49,7 +49,7 @@ afin de lire les **informations opérationnelles transverses principales** depui
 | 1 | `dashboard.header` | `demo.text.block` | Synthèse transverse / hors workflows métier lourds |
 | 2 | `dashboard.overview` | `demo.text.block` | Rappel enveloppe + permissions backend (pas de logique UI) |
 | 3 | `dashboard.hints` | `demo.text.block` | Entrées futures via nav (5.3+, 5.4+) |
-| 4 | `dashboard.data-gap` | `demo.text.block` | Gap documenté : pas de `data_contract` tant qu’OpenAPI/backend KPI transverses ne sont pas prêts |
+| 4 | `dashboard.data-gap` | `demo.text.block` | Gap documenté : pas de `data_contract` tant qu'OpenAPI/backend KPI transverses ne sont pas prêts |
 
 ## Dev Notes
 
@@ -153,13 +153,13 @@ Aucun blocage.
 
 ### Completion Notes List
 
-- Manifest stable **`contracts/creos/manifests/page-transverse-dashboard.json`** : `page_key` **`transverse-dashboard`**, `required_permission_keys` + `requires_site` inchangés par rapport au placeholder ; **4 slots** `demo.text.block` uniquement ; bloc **`dashboard.data-gap`** documente l’absence de widgets `data_contract` / KPI jusqu’à OpenAPI+backend prêts (AC4).
+- Manifest stable **`contracts/creos/manifests/page-transverse-dashboard.json`** : `page_key` **`transverse-dashboard`**, `required_permission_keys` + `requires_site` inchangés par rapport au placeholder ; **4 slots** `demo.text.block` uniquement ; bloc **`dashboard.data-gap`** documente l'absence de widgets `data_contract` / KPI jusqu'à OpenAPI+backend prêts (AC4).
 - **`navigation-transverse-served.json`** : `page_key` aligné sur `transverse-dashboard` (route `/dashboard`, visibilité 5.1 inchangée).
 - **`runtime-demo-manifest.ts`** : import + `sourceLabels` + commentaire story 5.2.
 - **`RuntimeDemoApp`** / **`resolvePageAccess`** : aucun code spécifique — la page transverse suit le même pipeline que les autres `PageManifest` (garde permissions/site/fraîcheur déjà générique).
 - Tests **contract** étendus (`navigation-transverse-served-5-1.test.ts`) ; **e2e** 5.1 mis à jour pour les titres/textes dashboard (non exécuté en gate complète par ce sous-agent ; vitest ciblé contract+e2e transverse : OK).
 - Gates parent du brief exécutées : **`npm test`** puis **`npm run build`** dans `peintre-nano` → OK.
-- Preuve servie validée manuellement sur l’application réellement servie à **`http://127.0.0.1:4444`** : chargement de `/`, manifests CREOS réseau (`navigation-transverse-served.json`, `page-transverse-dashboard.json`, `page-transverse-admin-placeholder.json`), affichage attendu sur **`/dashboard`** et **`/admin`**, aucun message console visible.
+- Preuve servie validée manuellement sur l'application réellement servie à **`http://127.0.0.1:4444`** : chargement de `/`, manifests CREOS réseau (`navigation-transverse-served.json`, `page-transverse-dashboard.json`, `page-transverse-admin-placeholder.json`), affichage attendu sur **`/dashboard`** et **`/admin`**, aucun message console visible.
 
 ### File List
 

@@ -20,7 +20,7 @@ Fournir un point d'entree compact pour :
 - Il aide surtout a **comprendre le legacy fonctionnel** et a **retrouver des preuves historiques**.
 - La source de verite pour la v2 reste : `guide-pilotage-v2.md`, `epics.md`, le PRD, `contracts/openapi/`, `contracts/creos/` et les artefacts de gouvernance / checklist Peintre.
 - Pour la caisse (`epic-6`) et la reception (`epic-7`), les captures `11-0/` sont les plus utiles.
-- Pour la sync Paheko (`epic-8`), les modules complementaires (`epic-9`) et l'industrialisation (`epic-10`), les captures ne suffisent pas : il faut surtout lire les dossiers `migration-paeco/`, `paheko/`, `consolidation-1.4.5/` et les artefacts d'avril.
+- Pour la sync Paheko (`epic-8`), les modules complementaires (`epic-9`) et l'industrialisation (`epic-10`), les captures ne suffisent pas : il faut surtout lire les dossiers `migration-paheko/`, `paheko/`, `consolidation-1.4.5/` et les artefacts d'avril.
 - Le document jumeau `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md` sert de raccourci **story par story** pour BMAD et les reprises rapides.
 
 ## Cartographie rapide du corpus restaure
@@ -73,7 +73,7 @@ Captures les plus utiles :
 2. `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`
 3. `references/consolidation-1.4.5/index.md`
 4. `references/ancien-repo/fonctionnalites-actuelles.md`
-5. `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md`
+5. `references/migration-paheko/audits/matrice-correspondance-caisse-poids.md`
 
 Captures les plus utiles :
 
@@ -86,7 +86,7 @@ Captures les plus utiles :
 ### Epic 8 — Sync et reconciliation Paheko
 
 1. `epics.md` section Epic 8
-2. `references/migration-paeco/index.md`
+2. `references/migration-paheko/index.md`
 3. `references/paheko/index.md`
 4. `references/artefacts/2026-04-02_05_contrat-minimal-sync-reconciliation-paheko.md`
 5. `references/artefacts/2026-04-02_06_matrice-integration-paheko-gaps-api.md`
@@ -106,7 +106,7 @@ Captures d'appui utiles :
 
 1. `epics.md` section Epic 9
 2. `references/vision-projet/vision-module-decla-eco-organismes.md`
-3. `references/migration-paeco/categories-decla-eco-organismes.md`
+3. `references/migration-paheko/categories-decla-eco-organismes.md`
 4. `references/paheko/analyse-brownfield-paheko.md`
 5. `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`
 

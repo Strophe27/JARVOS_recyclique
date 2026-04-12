@@ -1,0 +1,35 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-reports-hub",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Rapports admin et supervision caisse",
+        "title_level": "1",
+        "body": "Story 18.1 — structure et entrées manifestées (rail U). Listes session-manager / cash-sessions : Story 18.2. Données supervision legacy (ligne matrice ui-pilote-14-03) : hors slice sans contrat lecture dédié."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.contract-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Écart OpenAPI (gap K) — préfixe /v1/admin/reports/",
+        "body": "Seuls POST documentés : recyclique_admin_reports_cashSessionsExportBulk, recyclique_admin_reports_receptionTicketsExportBulk (classe B, step-up). Aucun GET de synthèse pour un hub lecture seule — pas de fetch inventé côté UI. Fermeture lecture + exports sensibles : Epic 16 / rail K."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.reports.supervision.hub",
+      "widget_props": {}
+    },
+    {
+      "slot_id": "admin.dashboard.legacy",
+      "widget_type": "admin.legacy.dashboard.home",
+      "widget_props": {}
+    }
+  ]
+}

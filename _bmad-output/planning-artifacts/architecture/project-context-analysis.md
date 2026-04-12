@@ -100,7 +100,8 @@ Dependances structurantes encore a produire ou a verifier :
 - definition du contrat socle de sync et reconciliation ;
 - pipeline de validation des contrats (`OpenAPI`, schemas `CREOS`, smoke tests de rendu) ;
 - strategie de coexistence et de migration brownfield depuis `recyclique-1.4.4` ;
-- cadrage des dependances externes et secrets d'integration pour `HelloAsso` et les futurs connecteurs.
+- cadrage des dependances externes et secrets d'integration pour `HelloAsso` et les futurs connecteurs ;
+- **HelloAsso (maj. 2026-04-12) :** arbitrage et spec consolides sous `references/migration-paheko/` (`2026-04-12_specification-integration-helloasso-recyclique-paheko.md`, `2026-04-12_brouillon-arbitrage-helloasso-et-promesse-recyclique-paheko.md`) ; recherche Perplexity associee dans `references/recherche/` avec erratum sur les quotas API ; story **9.4** dans `epics.md` pour critere d'acceptation trace.
 
 ## Cross-Cutting Concerns Identified
 

@@ -53,7 +53,7 @@
       "id": "transverse-admin",
       "route_key": "transverse-admin",
       "path": "/admin",
-      "page_key": "transverse-admin-placeholder",
+      "page_key": "transverse-admin-reports-hub",
       "shortcut_id": "go-transverse-admin",
       "label_key": "nav.transverse.admin",
       "visibility": {
@@ -80,6 +80,78 @@
       "page_key": "transverse-admin-site-overview",
       "shortcut_id": "go-transverse-admin-site",
       "label_key": "nav.transverse.admin.site",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-pending",
+      "route_key": "transverse-admin-pending",
+      "path": "/admin/pending",
+      "page_key": "transverse-admin-pending",
+      "shortcut_id": "go-transverse-admin-pending",
+      "label_key": "nav.transverse.admin.pending",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-cash-registers",
+      "route_key": "transverse-admin-cash-registers",
+      "path": "/admin/cash-registers",
+      "page_key": "transverse-admin-cash-registers",
+      "shortcut_id": "go-transverse-admin-cash-registers",
+      "label_key": "nav.transverse.admin.cashRegisters",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-sites",
+      "route_key": "transverse-admin-sites",
+      "path": "/admin/sites",
+      "page_key": "transverse-admin-sites",
+      "shortcut_id": "go-transverse-admin-sites",
+      "label_key": "nav.transverse.admin.sites",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-session-manager",
+      "route_key": "transverse-admin-session-manager",
+      "path": "/admin/session-manager",
+      "page_key": "transverse-admin-session-manager",
+      "shortcut_id": "go-transverse-admin-session-manager",
+      "label_key": "nav.transverse.admin.sessionManager",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-reception-stats",
+      "route_key": "transverse-admin-reception-stats",
+      "path": "/admin/reception-stats",
+      "page_key": "transverse-admin-reception-stats",
+      "shortcut_id": "go-transverse-admin-reception-stats",
+      "label_key": "nav.transverse.admin.receptionStats",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-reception-sessions",
+      "route_key": "transverse-admin-reception-sessions",
+      "path": "/admin/reception-sessions",
+      "page_key": "transverse-admin-reception-sessions",
+      "shortcut_id": "go-transverse-admin-reception-sessions",
+      "label_key": "nav.transverse.admin.receptionSessions",
       "visibility": {
         "permission_any": ["transverse.admin.view"],
         "contexts_any": ["site"]

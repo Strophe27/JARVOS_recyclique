@@ -29,6 +29,15 @@ SENSITIVE_OPERATION_CASH_SESSION_CLOSE = "cash_session.close"
 # Story 6.8 — corrections sensibles vente (PIN step-up aligné clôture)
 SENSITIVE_OPERATION_CASH_SALE_CORRECT = "cash_sale.correct"
 
+# Story 16.3 — opérations base super-admin (alignement cash_session.close)
+SENSITIVE_OPERATION_DB_EXPORT = "db.export"
+SENSITIVE_OPERATION_DB_IMPORT = "db.import"
+SENSITIVE_OPERATION_DB_PURGE_TRANSACTIONS = "db.purge_transactions"
+
+# Story 16.4 — exports CSV/Excel massifs (fuite de données, charge)
+SENSITIVE_OPERATION_REPORTS_CASH_SESSIONS_EXPORT_BULK = "reports.cash_sessions.export_bulk"
+SENSITIVE_OPERATION_REPORTS_RECEPTION_TICKETS_EXPORT_BULK = "reports.reception_tickets.export_bulk"
+
 # Alignement approximatif avec le rate limit ``POST /auth/pin`` (5/min) : fenêtre Redis.
 _STEP_UP_FAIL_WINDOW_SEC = 60
 _STEP_UP_MAX_FAILS_PER_WINDOW = 5

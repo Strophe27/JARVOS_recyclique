@@ -19,9 +19,12 @@ export function TransverseHubLayout({ family, children, pageState }: TransverseH
   const [head, ...rest] = items;
   const trailFullWidth = rest.length > 0 && rest.length % 2 === 1;
 
+  const shellClass =
+    family === 'admin' ? `${classes.shell} ${classes.shellAdmin}` : classes.shell;
+
   return (
     <section
-      className={classes.shell}
+      className={shellClass}
       data-testid="transverse-page-shell"
       data-transverse-layout="hub"
       data-transverse-family={family}

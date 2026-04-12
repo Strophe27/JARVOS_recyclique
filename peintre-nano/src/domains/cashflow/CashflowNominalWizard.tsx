@@ -1,6 +1,10 @@
-import { Alert, Button, NumberInput, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Loader, NumberInput, SimpleGrid, Text, TextInput } from '@mantine/core';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { type RecycliqueClientFailure, recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
+import {
+  fetchCategoriesList,
+  type CategoryListItem,
+} from '../../api/dashboard-legacy-stats-client';
 import {
   getHeldSalesForSession,
   getSale,
@@ -233,7 +237,13 @@ function resolveCashSessionIdForHeldList(envelopeCashSessionId: string | null | 
   return isPlausibleCashSessionUuid(fromDraft) ? fromDraft : '';
 }
 
-function HeldTicketsPanel(): ReactNode {
+function shortRef(id: string): string {
+  const t = id.trim();
+  if (t.length <= 10) return t;
+  return `${t.slice(0, 8)}…`;
+}
+
+function HeldTicketsPanel({ kioskSurface }: { readonly kioskSurface: boolean }): ReactNode {
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
@@ -311,7 +321,7 @@ function HeldTicketsPanel(): ReactNode {
   if (!sessionId) {
     return (
       <Text size="sm" c="dimmed" mb="sm" data-testid="cashflow-held-panel-no-session">
-        Indiquez une session caisse (enveloppe ou champ) pour lister les tickets en attente.
+        {kioskSurface ? 'Session caisse requise pour les tickets en attente.' : 'Indiquez une session caisse (enveloppe ou champ) pour lister les tickets en attente.'}
       </Text>
     );
   }
@@ -319,7 +329,13 @@ function HeldTicketsPanel(): ReactNode {
   return (
     <div className={classes.heldPanel} data-testid="cashflow-held-tickets-panel">
       <Text size="sm" fw={600} mb="xs">
-        Tickets en attente (GET <code>recyclique_sales_listHeldSalesForSession</code>)
+        {kioskSurface ? (
+          'Tickets en attente'
+        ) : (
+          <>
+            Tickets en attente (GET <code>recyclique_sales_listHeldSalesForSession</code>)
+          </>
+        )}
       </Text>
       <CashflowClientErrorAlert
         error={heldFailure ? { kind: 'api', failure: heldFailure } : null}
@@ -333,8 +349,16 @@ function HeldTicketsPanel(): ReactNode {
         <ul className={classes.heldList}>
           {held.map((h) => (
             <li key={h.id} className={classes.heldRow}>
-              <Text size="sm" span>
-                {h.id.slice(0, 8)}… — {Number(h.total_amount).toFixed(2)} €
+              <Text size="sm" span data-held-sale-id={h.id}>
+                {kioskSurface ? (
+                  <>
+                    {Number(h.total_amount).toFixed(2)} € · réf. {shortRef(h.id)}
+                  </>
+                ) : (
+                  <>
+                    {h.id.slice(0, 8)}… — {Number(h.total_amount).toFixed(2)} €
+                  </>
+                )}
               </Text>
               <Button
                 size="xs"
@@ -362,13 +386,136 @@ function HeldTicketsPanel(): ReactNode {
         </ul>
       )}
       <Button size="xs" variant="default" onClick={() => void refresh()} data-testid="cashflow-refresh-held">
-        Rafraîchir la liste
+        {kioskSurface ? 'Actualiser' : 'Rafraîchir la liste'}
       </Button>
     </div>
   );
 }
 
-function LinesStep(): ReactNode {
+/**
+ * Story 13.8 — intention parcours catégorie → ligne (GET `/v1/categories/` reviewable, même client que stats legacy).
+ */
+function KioskCategoryWorkspace({
+  onPickCategoryCode,
+}: {
+  readonly onPickCategoryCode: (categoryCode: string) => void;
+}): ReactNode {
+  const auth = useAuthPort();
+  const [rows, setRows] = useState<CategoryListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchErr, setFetchErr] = useState<string | null>(null);
+  const [parentId, setParentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setFetchErr(null);
+      try {
+        const list = await fetchCategoriesList(auth);
+        if (!cancelled) setRows(list.filter((c) => c.is_active));
+      } catch (e) {
+        if (!cancelled) setFetchErr(e instanceof Error ? e.message : 'Chargement des catégories impossible.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [auth]);
+
+  const sortByDisplayOrder = useCallback((list: CategoryListItem[]) => [...list].sort((a, b) => a.display_order - b.display_order), []);
+
+  const roots = useMemo(
+    () => sortByDisplayOrder(rows.filter((c) => c.parent_id == null || c.parent_id === '')),
+    [rows, sortByDisplayOrder],
+  );
+
+  const children = useMemo(
+    () => (parentId ? sortByDisplayOrder(rows.filter((c) => c.parent_id === parentId)) : []),
+    [rows, parentId, sortByDisplayOrder],
+  );
+
+  const rowHasChildren = useCallback((id: string) => rows.some((r) => r.parent_id === id), [rows]);
+
+  if (loading) {
+    return (
+      <Group gap="sm" mb="md" data-testid="cashflow-kiosk-category-loading">
+        <Loader size="sm" />
+        <Text size="sm" c="dimmed">
+          Chargement des catégories…
+        </Text>
+      </Group>
+    );
+  }
+
+  if (fetchErr) {
+    return (
+      <Alert color="orange" mb="md" title="Catégories" data-testid="cashflow-kiosk-category-error">
+        {fetchErr}
+      </Alert>
+    );
+  }
+
+  const showList = parentId ? children : roots;
+
+  return (
+    <div className={classes.kioskCategorySection} data-testid="cashflow-kiosk-category-grid">
+      {parentId ? (
+        <Button
+          variant="subtle"
+          size="xs"
+          mb="sm"
+          onClick={() => setParentId(null)}
+          data-testid="cashflow-kiosk-category-back"
+        >
+          ← Catégories
+        </Button>
+      ) : null}
+      <Text size="sm" fw={600} mb="xs">
+        {parentId ? 'Sous-catégories' : 'Catégories'}
+      </Text>
+      {showList.length === 0 ? (
+        <Text size="sm" c="dimmed" mb="md" data-testid="cashflow-kiosk-category-empty">
+          Aucune catégorie renvoyée par le serveur pour cette session.
+        </Text>
+      ) : (
+        <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm" className={classes.kioskCategoryGrid} mb="md">
+          {showList.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={classes.kioskCategoryButton}
+              data-testid={`cashflow-kiosk-category-${c.id}`}
+              onClick={() => {
+                if (!parentId && rowHasChildren(c.id)) {
+                  setParentId(c.id);
+                  return;
+                }
+                onPickCategoryCode(c.id);
+              }}
+            >
+              <span>{c.name}</span>
+              {/*
+               * Raccourcis clavier (blueprint T4 / P1) : n'afficher l'indice que lorsque le handler
+               * AZERTY sera branché — évite une équivalence utilisateur trompeuse (revue 13.8).
+               */}
+            </button>
+          ))}
+        </SimpleGrid>
+      )}
+    </div>
+  );
+}
+
+function LinesStep({
+  kioskCategoryWorkspace,
+  kioskSurface,
+}: {
+  readonly kioskCategoryWorkspace: boolean;
+  readonly kioskSurface: boolean;
+}): ReactNode {
   const draft = useCashflowDraft();
   const auth = useAuthPort();
   const [category, setCategory] = useState('EEE-1');
@@ -422,13 +569,22 @@ function LinesStep(): ReactNode {
   };
 
   return (
-    <div className={classes.step}>
-      <HeldTicketsPanel />
+    <div className={`${classes.step}${kioskCategoryWorkspace ? ` ${classes.stepKiosk}` : ''}`}>
+      {kioskCategoryWorkspace ? (
+        <KioskCategoryWorkspace
+          onPickCategoryCode={(code) => {
+            setCategory(code);
+          }}
+        />
+      ) : null}
+      <HeldTicketsPanel kioskSurface={kioskSurface} />
       <Text size="sm" mb="md">
-        Saisie ou scan (code catégorie) : les montants effectifs suivent la réponse API au moment du POST.
+        {kioskCategoryWorkspace
+          ? 'Sélectionnez une catégorie ci-dessus, ajustez quantité / poids / prix puis ajoutez la ligne.'
+          : 'Saisie ou scan (code catégorie) : les montants effectifs suivent la réponse API au moment du POST.'}
       </Text>
       <TextInput
-        label="Catégorie / code"
+        label={kioskCategoryWorkspace ? 'Code catégorie (grille ou saisie)' : 'Catégorie / code'}
         value={category}
         onChange={(e) => setCategory(e.currentTarget.value)}
         data-testid="cashflow-input-category"
@@ -459,7 +615,7 @@ function LinesStep(): ReactNode {
         loading={holdBusy}
         data-testid="cashflow-put-on-hold"
       >
-        Mettre en attente (POST recyclique_sales_createHeldSale)
+        {kioskSurface ? 'Mettre en attente' : 'Mettre en attente (POST recyclique_sales_createHeldSale)'}
       </Button>
     </div>
   );
@@ -494,7 +650,7 @@ function TotalStep(): ReactNode {
   );
 }
 
-function PaymentStep(): ReactNode {
+function PaymentStep({ kioskSurface }: { readonly kioskSurface: boolean }): ReactNode {
   const draft = useCashflowDraft();
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
@@ -558,14 +714,22 @@ function PaymentStep(): ReactNode {
 
   return (
     <div className={classes.step}>
-      <Text size="sm" mb="md">
-        Choix du paiement — bloqué si le widget ticket critique est en DATA_STALE.
-        {draft.activeHeldSaleId
-          ? ' Reprise : finalisation via recyclique_sales_finalizeHeldSale (même garde-fou stale).'
-          : ''}
-      </Text>
+      {!kioskSurface ? (
+        <Text size="sm" mb="md">
+          Choix du paiement — bloqué si le widget ticket critique est en DATA_STALE.
+          {draft.activeHeldSaleId
+            ? ' Reprise : finalisation via recyclique_sales_finalizeHeldSale (même garde-fou stale).'
+            : ''}
+        </Text>
+      ) : (
+        <Text size="sm" mb="md">
+          {draft.activeHeldSaleId
+            ? 'Finalisez le ticket repris après vérification du montant à droite.'
+            : 'Choisissez le mode de paiement puis validez la vente.'}
+        </Text>
+      )}
       <TextInput
-        label="UUID session caisse (ContextEnvelope ou collage terrain)"
+        label={kioskSurface ? 'Session caisse' : 'UUID session caisse (ContextEnvelope ou collage terrain)'}
         value={draft.cashSessionIdInput}
         onChange={(e) => setCashSessionIdInput(e.currentTarget.value)}
         data-testid="cashflow-input-session-id"
@@ -582,18 +746,22 @@ function PaymentStep(): ReactNode {
           <option value="card">Carte</option>
         </select>
       </Text>
-      <Button
-        mt="md"
-        variant="light"
-        color="orange"
-        onClick={() => setCashflowWidgetDataState('DATA_STALE')}
-        data-testid="cashflow-trigger-stale"
-      >
-        Marquer données périmées (DATA_STALE) — test / démo
-      </Button>
-      <Button mt="xs" variant="subtle" onClick={() => setCashflowWidgetDataState('NOMINAL')}>
-        Repasser en NOMINAL
-      </Button>
+      {!kioskSurface ? (
+        <>
+          <Button
+            mt="md"
+            variant="light"
+            color="orange"
+            onClick={() => setCashflowWidgetDataState('DATA_STALE')}
+            data-testid="cashflow-trigger-stale"
+          >
+            Marquer données périmées (DATA_STALE) — test / démo
+          </Button>
+          <Button mt="xs" variant="subtle" onClick={() => setCashflowWidgetDataState('NOMINAL')}>
+            Repasser en NOMINAL
+          </Button>
+        </>
+      ) : null}
       <CashflowClientErrorAlert error={draft.submitError} />
       <Button
         mt="lg"
@@ -603,29 +771,37 @@ function PaymentStep(): ReactNode {
         data-testid="cashflow-submit-sale"
       >
         {draft.activeHeldSaleId
-          ? 'Finaliser le ticket en attente (POST …/finalize-held)'
-          : 'Enregistrer la vente (POST /v1/sales/)'}
+          ? kioskSurface
+            ? 'Valider le ticket'
+            : 'Finaliser le ticket en attente (POST …/finalize-held)'
+          : kioskSurface
+            ? 'Enregistrer la vente'
+            : 'Enregistrer la vente (POST /v1/sales/)'}
       </Button>
     </div>
   );
 }
 
-function TicketStep(): ReactNode {
+function TicketStep({ kioskSurface }: { readonly kioskSurface: boolean }): ReactNode {
   const draft = useCashflowDraft();
   return (
     <div className={classes.step}>
       <Text size="sm">
-        Après enregistrement, le message de statut apparaît dans le panneau ticket (aside). Vous pouvez revenir aux
-        lignes pour un nouveau ticket.
+        {kioskSurface
+          ? 'Le récapitulatif et la référence de vente figurent dans le panneau de droite. Revenez aux lignes pour un nouveau ticket.'
+          : 'Après enregistrement, le message de statut apparaît dans le panneau ticket (aside). Vous pouvez revenir aux lignes pour un nouveau ticket.'}
       </Text>
       <Text
         mt="md"
         fw={draft.lastSaleId ? 600 : undefined}
         c={draft.lastSaleId ? undefined : 'dimmed'}
         data-testid="cashflow-ticket-sale-id"
+        data-sale-id={draft.lastSaleId ?? ''}
       >
         {draft.lastSaleId
-          ? `Réf. vente : ${draft.lastSaleId}`
+          ? kioskSurface
+            ? `Réf. vente : ${shortRef(draft.lastSaleId)}`
+            : `Réf. vente : ${draft.lastSaleId}`
           : 'Aucune vente finalisée sur cette session d’écran.'}
       </Text>
     </div>
@@ -635,7 +811,10 @@ function TicketStep(): ReactNode {
 /**
  * Parcours nominal caisse v2 — FlowRenderer + appels API (`recyclique_sales_createSale`).
  */
-export function CashflowNominalWizard(_props: RegisteredWidgetProps): ReactNode {
+export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
+  const saleKioskCategoryWorkspace = props.widgetProps?.sale_kiosk_category_workspace === true;
+  /** Surface vente kiosque unifiée (alias `/cash-register/sale` + grille catégories) : chrome métier, sans panneaux techniques. */
+  const kioskSaleSurface = saleKioskCategoryWorkspace;
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
@@ -656,12 +835,18 @@ export function CashflowNominalWizard(_props: RegisteredWidgetProps): ReactNode 
 
   const panels = useMemo(
     () => [
-      { id: 'lines', title: 'Lignes', content: <LinesStep /> },
+      {
+        id: 'lines',
+        title: 'Lignes',
+        content: (
+          <LinesStep kioskCategoryWorkspace={saleKioskCategoryWorkspace} kioskSurface={kioskSaleSurface} />
+        ),
+      },
       { id: 'total', title: 'Total', content: <TotalStep /> },
-      { id: 'pay', title: 'Paiement', content: <PaymentStep /> },
-      { id: 'ticket', title: 'Ticket', content: <TicketStep /> },
+      { id: 'pay', title: 'Paiement', content: <PaymentStep kioskSurface={kioskSaleSurface} /> },
+      { id: 'ticket', title: 'Ticket', content: <TicketStep kioskSurface={kioskSaleSurface} /> },
     ],
-    [],
+    [saleKioskCategoryWorkspace, kioskSaleSurface],
   );
 
   const onNext = useCallback(() => {
@@ -676,7 +861,7 @@ export function CashflowNominalWizard(_props: RegisteredWidgetProps): ReactNode 
     return (
       <div
         id="caisse-sale-workspace"
-        className={classes.root}
+        className={`${classes.root}${saleKioskCategoryWorkspace ? ` ${classes.rootKiosk}` : ''}`}
         data-testid="cashflow-nominal-wizard"
       >
         <Alert color="red" title={entry.title} data-testid="cashflow-context-blocked">
@@ -687,21 +872,37 @@ export function CashflowNominalWizard(_props: RegisteredWidgetProps): ReactNode 
   }
 
   return (
-    <div id="caisse-sale-workspace" className={classes.root} data-testid="cashflow-nominal-wizard">
-      <CashflowOperationalSyncNotice auth={auth} />
+    <div
+      id="caisse-sale-workspace"
+      className={`${classes.root}${saleKioskCategoryWorkspace ? ` ${classes.rootKiosk}` : ''}`}
+      data-testid="cashflow-nominal-wizard"
+    >
+      {!kioskSaleSurface ? <CashflowOperationalSyncNotice auth={auth} /> : null}
       {draft.operatingMode === 'virtual' ? (
-        <Alert color="teal" title="Mode simulation (virtuel)" mb="sm" data-testid="cashflow-operating-mode-virtual-banner">
-          Session ouverte depuis « Mode virtuel » sur le tableau de poste : même cadre API et permissions qu’une caisse
-          réelle ; distinguez bien l’usage terrain (formation, tests).
-        </Alert>
+        kioskSaleSurface ? (
+          <Text size="sm" c="dimmed" mb="sm" data-testid="cashflow-operating-mode-virtual-banner">
+            Mode simulation (formation / tests).
+          </Text>
+        ) : (
+          <Alert color="teal" title="Mode simulation (virtuel)" mb="sm" data-testid="cashflow-operating-mode-virtual-banner">
+            Session ouverte depuis « Mode virtuel » sur le tableau de poste : même cadre API et permissions qu’une caisse
+            réelle ; distinguez bien l’usage terrain (formation, tests).
+          </Alert>
+        )
       ) : null}
       {draft.operatingMode === 'deferred' ? (
-        <Alert color="blue" title="Saisie différée" mb="sm" data-testid="cashflow-operating-mode-deferred-banner">
-          Session ouverte avec une date / heure réelle d’ouverture (permission <code>caisse.deferred.access</code>).
-        </Alert>
+        kioskSaleSurface ? (
+          <Text size="sm" c="dimmed" mb="sm" data-testid="cashflow-operating-mode-deferred-banner">
+            Saisie différée (date d’ouverture réelle).
+          </Text>
+        ) : (
+          <Alert color="blue" title="Saisie différée" mb="sm" data-testid="cashflow-operating-mode-deferred-banner">
+            Session ouverte avec une date / heure réelle d’ouverture (permission <code>caisse.deferred.access</code>).
+          </Alert>
+        )
       ) : null}
-      <SocialEncaissementPanel />
-      <SpecialEncaissementsPanel />
+      {!kioskSaleSurface ? <SocialEncaissementPanel /> : null}
+      {!kioskSaleSurface ? <SpecialEncaissementsPanel /> : null}
       <FlowRenderer
         flowId="cashflow-nominal"
         panels={panels}

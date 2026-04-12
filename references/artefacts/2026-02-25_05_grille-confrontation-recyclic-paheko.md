@@ -62,7 +62,7 @@
 | Interface caisse terrain | RecyClique : UI dédiée workflows terrain. | Paheko natif : accès super-admin. | Claire séparation : terrain = RecyClique ; compta / admin = Paheko. | décidé |
 | **Interfaces compta / admin** | **Objectif** : tout faire depuis RecyClique (bilan, factures, rapprochement bancaire, traçabilité). Plus d'accès admin Paheko en idéal. Plus tard JARVOS Nano/Mini. | Paheko = backend compta. | Décision : vues et workflows compta dans RecyClique. | décidé |
 | Utilisateurs / auth | v0.1.0 : auth séparée (compte Paheko + compte FastAPI/JWT). SSO reporté v0.2. | Comptes Paheko, API credentials. | **v0.1** : auth séparée (Paheko pour admin/API, JWT FastAPI pour app terrain). **v0.2** : SSO à documenter. Figer dans PRD ; voir references/recherche pour recherche existante. | décidé |
-| Module correspondance | Middleware RecyClique : traducteur domaine RecyClique → API Paheko (sessions, ventes, catégories → comptes/catégories Paheko). | Pas de module correspondance côté Paheko ; plugin recyclique reçoit le push et écrit. | **Décidé** : périmètre et règles détaillés dans la [matrice correspondance caisse/poids](../migration-paeco/audits/matrice-correspondance-caisse-poids.md) et les audits `migration-paeco/audits/`. Champs et règles exacts à préciser avec dumps BDD + instance dev + analyste. | décidé |
+| Module correspondance | Middleware RecyClique : traducteur domaine RecyClique → API Paheko (sessions, ventes, catégories → comptes/catégories Paheko). | Pas de module correspondance côté Paheko ; plugin recyclique reçoit le push et écrit. | **Décidé** : périmètre et règles détaillés dans la [matrice correspondance caisse/poids](../migration-paheko/audits/matrice-correspondance-caisse-poids.md) et les audits `migration-paheko/audits/`. Champs et règles exacts à préciser avec dumps BDD + instance dev + analyste. | décidé |
 
 ---
 
@@ -90,7 +90,7 @@ Lors d'une session de confrontation ou après validation (instance dev, BDD, dé
 
 ## Historique des mises à jour
 
-- **2026-02-25** : Décisions matrice (plan dd736e79) : axe 6 module correspondance → **décidé** ; renvoi à la [matrice correspondance caisse/poids](../migration-paeco/audits/matrice-correspondance-caisse-poids.md) et audits migration-paeco/audits/.
+- **2026-02-25** : Décisions matrice (plan dd736e79) : axe 6 module correspondance → **décidé** ; renvoi à la [matrice correspondance caisse/poids](../migration-paheko/audits/matrice-correspondance-caisse-poids.md) et audits migration-paheko/audits/.
 - **2026-02-25** : Session de confrontation (agent) : montants/devises (centimes), catégories caisse (plugin à la volée), stockage poids (RecyClique source de vérité), données déclaratives (RecyClique produit et conserve), auth v0.1 (figer en PRD), module correspondance (en cours — dumps BDD + analyste), sécurité canal push (secret partagé + HTTPS), données sensibles (bonnes pratiques), fichiers (en cours — chantier 02). Détail dans [artefact 08](2026-02-25_08_session-confrontation-recyclic-paheko.md).
 - **2026-02-25** : Décisions push par ticket, Redis Streams (file d'attente), source EEE RecyClique, réception/poids sans sync manuelle, interfaces compta dans RecyClique. Grille mise à jour ; questions restantes dans [artefact 07](2026-02-25_07_decisions-push-redis-source-eee.md).
 

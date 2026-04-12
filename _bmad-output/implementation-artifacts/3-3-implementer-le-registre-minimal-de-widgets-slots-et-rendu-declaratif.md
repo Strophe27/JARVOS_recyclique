@@ -17,10 +17,10 @@
 
 ## Identité Story 3.3
 
-- **Story :** 3.3 — **registre minimal** `widgetType` → composant React, **placement déclaratif** des widgets dans des **slots** nommés issus du `PageManifest`, et **rendu** d’un **catalogue starter** (infra runtime, pas UI métier déguisée).
+- **Story :** 3.3 — **registre minimal** `widgetType` → composant React, **placement déclaratif** des widgets dans des **slots** nommés issus du `PageManifest`, et **rendu** d'un **catalogue starter** (infra runtime, pas UI métier déguisée).
 - **Clé de fichier (exacte, obligatoire) :** `3-3-implementer-le-registre-minimal-de-widgets-slots-et-rendu-declaratif` — toute autre variante de slug est **incorrecte** pour les chemins `implementation-artifacts` et `sprint-status.yaml`.
 - **Epic :** epic-3 — runtime UI v2 minimal mais réel.
-- **Prérequis livrés :** 3.2 fournit chargement + validation du bundle manifests ; l’allowlist des `widgetType` doit être **la même source** que le registre (`peintre-nano/src/validation/allowed-widget-types.ts` importe `getRegisteredWidgetTypeSet` depuis `src/registry/`) — **aucune** deuxième liste parallèle non synchronisée.
+- **Prérequis livrés :** 3.2 fournit chargement + validation du bundle manifests ; l'allowlist des `widgetType` doit être **la même source** que le registre (`peintre-nano/src/validation/allowed-widget-types.ts` importe `getRegisteredWidgetTypeSet` depuis `src/registry/`) — **aucune** deuxième liste parallèle non synchronisée.
 
 ---
 
@@ -31,15 +31,15 @@
 **Implications directes pour 3.3 :**
 
 - Chaque widget du catalogue starter = **composant React** + **`.module.css`** ; style interne + **tokens** `var(--pn-…)` ; **pas** de valeurs magiques hors tokens.
-- **Mantine v8** : utilisable **à l’intérieur** d’un widget (composants riches), comme en ADR ; **interdit** comme substitut au **layout spatial** du shell (`RootShell` reste grille CSS — story 3.1).
+- **Mantine v8** : utilisable **à l'intérieur** d'un widget (composants riches), comme en ADR ; **interdit** comme substitut au **layout spatial** du shell (`RootShell` reste grille CSS — story 3.1).
 - Le **placement sur la page** (slots / grille) reste **hors** des modules widget : le moteur de composition (registre + renderer de page) applique la structure ; les widgets ne se positionnent pas eux-mêmes sur le shell global.
 
 ---
 
 ## Contexte nano → mini → macro
 
-- **Nano :** registre + résolution + rendu déclaratif à partir de manifests **déjà validés** (3.2) ; **pas** de bus, **pas** d’agent SDUI, **pas** de `FlowRenderer` complet sauf si déjà imposé ailleurs (hors périmètre par défaut).
-- **Mini / macro :** hors périmètre — pas de pipeline agent, pas d’enrichissement automatique des manifests.
+- **Nano :** registre + résolution + rendu déclaratif à partir de manifests **déjà validés** (3.2) ; **pas** de bus, **pas** d'agent SDUI, **pas** de `FlowRenderer` complet sauf si déjà imposé ailleurs (hors périmètre par défaut).
+- **Mini / macro :** hors périmètre — pas de pipeline agent, pas d'enrichissement automatique des manifests.
 
 ---
 
@@ -49,7 +49,7 @@
 |------|-----------|----------------------------------|
 | Registre `widgetType` → composant, props sérialisables | **Oui** | — |
 | Rendu des `slots` du `PageManifest` dans le shell (zones nommées ou sous-grille documentée) | **Oui** | — |
-| Chargement HTTP / parse JSON / règles collisions nav-page-widget allowlist | **Réutilisation** (3.2) | Ne pas supprimer la validation ; **brancher** l’allowlist sur le registre |
+| Chargement HTTP / parse JSON / règles collisions nav-page-widget allowlist | **Réutilisation** (3.2) | Ne pas supprimer la validation ; **brancher** l'allowlist sur le registre |
 | Filtrage nav par permissions / `ContextEnvelope` réel | — | **3.4** |
 | `UserRuntimePrefs` (densité, panneaux) | — | **3.5** |
 | Bandeau live, `data_contract`, hooks OpenAPI | — | **Epic 4** / Convergence 2 |
@@ -68,13 +68,13 @@
 | `ContextEnvelope` | **Non** branché sur les widgets starter (pas de données backend obligatoires pour cette story). |
 | `UserRuntimePrefs` | **Ne pas** utiliser pour injecter des widgets ou contourner le manifest. |
 
-**Règle d’or :** OpenAPI / `ContextEnvelope` → manifests → `UserRuntimePrefs` — `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` (Data Boundaries, flux § Data Flow).
+**Règle d'or :** OpenAPI / `ContextEnvelope` → manifests → `UserRuntimePrefs` — `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` (Data Boundaries, flux § Data Flow).
 
 ---
 
 ## Frontières repo (Piste A) et boundaries structurels
 
-- **Mocks jusqu’à Convergence 1 :** composants et registre sous `peintre-nano/` ; **aucun** `import` runtime depuis `references/`.
+- **Mocks jusqu'à Convergence 1 :** composants et registre sous `peintre-nano/` ; **aucun** `import` runtime depuis `references/`.
 - **`registry/`**, **`widgets/`**, **`runtime/`**, **`validation/`** : **ne pas fusionner** les dossiers — le **registre** vit sous `peintre-nano/src/registry/` ; les **implémentations** de widgets starter sous `peintre-nano/src/widgets/` (ou sous-dossiers par famille) ; la **validation** reste sous `validation/` et **appelle** ou **importe** la liste des types enregistrés plutôt que maintenir une liste parallèle non synchronisée.
 - **Schéma CREOS :** `contracts/creos/schemas/widget-declaration.schema.json` — les props exposées au manifest restent **JSON-serializables** (objets plats / tableaux / scalaires) ; pas de fonctions dans les props runtime.
 
@@ -92,7 +92,7 @@ La story 3.3 **ne tranche pas** les parcours caisse / réception ni le format na
 ## Stack P1 / versions
 
 - **P1** : CSS Modules + `tokens.css` + Mantine v8 (usage conforme ADR).
-- **React / TypeScript / Vite** : alignés sur `peintre-nano/package.json` existant — pas d’ajout de Tailwind, pas de CSS-in-JS runtime pour le shell.
+- **React / TypeScript / Vite** : alignés sur `peintre-nano/package.json` existant — pas d'ajout de Tailwind, pas de CSS-in-JS runtime pour le shell.
 
 ---
 
@@ -104,7 +104,7 @@ So that **page manifests can render a first catalogue of safe UI blocks**.
 
 ---
 
-## Critères d’acceptation (BDD — source epics)
+## Critères d'acceptation (BDD — source epics)
 
 **Given** the v2 runtime depends on slots and widget declarations  
 **When** the minimal registry is implemented  
@@ -130,11 +130,11 @@ So that **page manifests can render a first catalogue of safe UI blocks**.
 1. **API du registre (minimal mais propre)**  
    - Enregistrement explicite : `widgetType` (string stable, alignée CREOS) → fabrique ou composant.  
    - Fonction de résolution : `resolveWidget(type)` → `React.ComponentType` ou rendu + **erreur structurée** si inconnu (testable).  
-   - Export d’un **ensemble** (ou liste) des types enregistrés pour **réutilisation par** `validate-bundle-rules` / allowlist — **remplacer** le pattern « deux listes » hérité de 3.2.
+   - Export d'un **ensemble** (ou liste) des types enregistrés pour **réutilisation par** `validate-bundle-rules` / allowlist — **remplacer** le pattern « deux listes » hérité de 3.2.
 
 2. **Props**  
    - `PageSlotPlacement` porte déjà `widgetProps` optionnel (`PageWidgetProps`), alimenté par **`widget_props`** côté JSON après ingest (story 3.2) — **vérifier** cohérence loader / fixtures / schéma plutôt que dupliquer un second champ.  
-   - Documenter le mapping `widget_props` → `widgetProps` dans `peintre-nano/src/types/README.md` si ce n’est pas déjà explicite.
+   - Documenter le mapping `widget_props` → `widgetProps` dans `peintre-nano/src/types/README.md` si ce n'est pas déjà explicite.
 
 3. **Slots → UI**  
    - Mapper `slot_id` du manifest vers des **régions du shell** ou une **sous-grille** dans `main` (documenter la table de correspondance dans `src/registry/README.md` ou `src/slots/README.md`).  
@@ -151,12 +151,12 @@ So that **page manifests can render a first catalogue of safe UI blocks**.
 
 ## Tâches / sous-tâches
 
-- [x] **T1** — Définir l’API TypeScript du registre (`src/registry/`) + tests unitaires (résolution, type inconnu, liste des types).
+- [x] **T1** — Définir l'API TypeScript du registre (`src/registry/`) + tests unitaires (résolution, type inconnu, liste des types).
 - [x] **T2** — Implémenter les **widgets starter** + CSS Modules + tokens ; enregistrer chaque `widgetType` au registre.
 - [x] **T3** — Étendre les **types** `PageManifest` / placements de slots pour **props** optionnelles ; mettre à jour fixtures **valid** + éventuellement jeux invalides si nouvelles règles.
 - [x] **T4** — **Refactor** : `allowed-widget-types` / validation bundle consomme **uniquement** les clés du registre (ou module unique exporté par `registry/` importé par `validation/` — respecter la séparation des dossiers).
-- [x] **T5** — **PageRenderer** : à partir d’un `PageManifest` validé + registre, rendre les slots dans le shell ; brancher depuis `App.tsx` — **fichier cible actuel :** `peintre-nano/src/app/PageRenderer.tsx`.
-- [x] **T6** — **Tests** : Vitest — rendu d’au moins un widget par type starter ; slot inconnu / widget inconnu → comportement explicite observable (`data-testid` ou erreur structurée) ; e2e existants mis à jour si nécessaire. **Garde-fou Testing Library :** ne pas utiliser un `getByRole('list')` **global** ou ambigu lorsque la composition ajoute des `<ul>` / `<ol>` (ex. widget liste + `List` Mantine pour les quatre artefacts) — scoper avec `within`, `*AllBy*` + choix explicite, ou `data-testid` / `aria-label` sur la liste « artefacts ».
+- [x] **T5** — **PageRenderer** : à partir d'un `PageManifest` validé + registre, rendre les slots dans le shell ; brancher depuis `App.tsx` — **fichier cible actuel :** `peintre-nano/src/app/PageRenderer.tsx`.
+- [x] **T6** — **Tests** : Vitest — rendu d'au moins un widget par type starter ; slot inconnu / widget inconnu → comportement explicite observable (`data-testid` ou erreur structurée) ; e2e existants mis à jour si nécessaire. **Garde-fou Testing Library :** ne pas utiliser un `getByRole('list')` **global** ou ambigu lorsque la composition ajoute des `<ul>` / `<ol>` (ex. widget liste + `List` Mantine pour les quatre artefacts) — scoper avec `within`, `*AllBy*` + choix explicite, ou `data-testid` / `aria-label` sur la liste « artefacts ».
 - [x] **T7** — README : `src/registry/`, `src/widgets/` (si créé), `src/types/` — brefs ; pas de roman.
 
 ---
@@ -209,13 +209,13 @@ So that **page manifests can render a first catalogue of safe UI blocks**.
 - `ManifestErrorBanner` + `manifest-bundle-ok` : conserver le contrat de test existant pour les bundles invalides.
 - Normalisation des clés : réutiliser `key-normalize` / conventions du loader si extension des champs JSON.
 
-### État d’implémentation (post dev-story — 2026-04-02)
+### État d'implémentation (post dev-story — 2026-04-02)
 
 - Tâches T1–T7 cochées ; README `registry/`, `widgets/`, `types/` ; tests liste artefacts via `data-testid="four-artifacts-list"` (garde-fou T6).
 
 ### Reuse / extension
 
-- Préparer le registre pour **enregistrement ultérieur** du widget Epic 4 (même API `register` / map) sans l’implémenter ici.
+- Préparer le registre pour **enregistrement ultérieur** du widget Epic 4 (même API `register` / map) sans l'implémenter ici.
 
 ---
 
@@ -260,11 +260,11 @@ Cursor agent (implémentation story 3.3 — dev-story workflow).
 | Périmètre vs 3.2 / 3.4 / 3.6 / Epic 4 | § Périmètre Story 3.3 vs stories adjacentes |
 | Quatre artefacts (pas de substitut contrats) | § Les quatre artefacts |
 | P1 (pas Stack/Group pour layout shell) | § Primauté ADR |
-| Frontières Piste A / pas d’import `references/` | § Frontières repo |
+| Frontières Piste A / pas d'import `references/` | § Frontières repo |
 | Boundaries `registry/` / `widgets/` / `validation/` / `runtime/` | § Frontières repo + Notes dev |
 | Cashflow (a)/(b) + pipeline §16 | § Flows cashflow |
 | Critères de done testables (`peintre-nano/`) | § Critères de done testables |
-| Critères epics BDD + exigences techniques | § Critères d’acceptation + § Exigences techniques détaillées |
+| Critères epics BDD + exigences techniques | § Critères d'acceptation + § Exigences techniques détaillées |
 
 **Note fin create-story (CS) :** enchaîner **VS** (validate-create-story) selon le pipeline parent Story Runner.
 

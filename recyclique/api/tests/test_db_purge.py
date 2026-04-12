@@ -3,6 +3,7 @@ Tests pour l'endpoint de purge des données transactionnelles.
 """
 
 import os
+import uuid
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -10,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.sale import Sale, PaymentMethod
@@ -22,10 +23,18 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.category import Category
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
 from recyclic_api.core.security import hash_password
+from recyclic_api.core.step_up import IDEMPOTENCY_KEY_HEADER, STEP_UP_PIN_HEADER
 
 from tests.api_v1_paths import v1
 
 PURGE_URL = v1("/admin/db/purge-transactions")
+
+
+def _purge_sensitive_headers(*, idempotency_key: str | None = None) -> dict[str, str]:
+    return {
+        STEP_UP_PIN_HEADER: "1234",
+        IDEMPOTENCY_KEY_HEADER: idempotency_key or str(uuid.uuid4()),
+    }
 
 
 @pytest.fixture
@@ -34,6 +43,7 @@ def super_admin_user(db_session: Session):
     user = User(
         username="superadmin@test.com",
         hashed_password=hash_password("testpassword"),
+        hashed_pin=hash_password("1234"),
         role=UserRole.SUPER_ADMIN,
         status=UserStatus.ACTIVE,
         first_name="Super",
@@ -161,12 +171,14 @@ class TestDatabasePurge:
 
         response = client.post(
             PURGE_URL,
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {token}", **_purge_sensitive_headers()},
         )
 
         assert response.status_code == 403
         body = response.json()
-        assert "super-admin" in body.get("detail", "").lower()
+        detail = body.get("detail", "")
+        detail_s = detail.lower() if isinstance(detail, str) else str(detail).lower()
+        assert "super-admin" in detail_s
 
     def test_purge_requires_authentication(self, client: TestClient):
         """Test que l'authentification est requise."""
@@ -190,7 +202,7 @@ class TestDatabasePurge:
 
         response = client.post(
             PURGE_URL,
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {token}", **_purge_sensitive_headers()},
         )
 
         assert response.status_code == 200
@@ -218,7 +230,7 @@ class TestDatabasePurge:
 
         response = client.post(
             PURGE_URL,
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {token}", **_purge_sensitive_headers()},
         )
 
         assert response.status_code == 200
@@ -234,12 +246,15 @@ class TestDatabasePurge:
 
         # Même fichier SQLite partagé entre fonctions de test : normaliser d'abord pour que
         # ce test vérifie le comportement « déjà vide », sans dépendre du résidu d'un test précédent.
-        norm = client.post(PURGE_URL, headers={"Authorization": f"Bearer {token}"})
+        norm = client.post(
+            PURGE_URL,
+            headers={"Authorization": f"Bearer {token}", **_purge_sensitive_headers()},
+        )
         assert norm.status_code == 200
 
         response = client.post(
             PURGE_URL,
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {token}", **_purge_sensitive_headers()},
         )
 
         assert response.status_code == 200
@@ -297,7 +312,7 @@ class TestDatabasePurge:
         with patch.object(db_session, "execute", side_effect=execute_fail_on_cash_sessions_delete):
             response = client.post(
                 PURGE_URL,
-                headers={"Authorization": f"Bearer {token}"},
+                headers={"Authorization": f"Bearer {token}", **_purge_sensitive_headers()},
             )
 
             assert response.status_code == 500
@@ -307,3 +322,84 @@ class TestDatabasePurge:
                 text("SELECT COUNT(*) FROM cash_sessions")
             ).scalar_one()
             assert final_count == initial_count
+
+    def test_purge_requires_idempotency_key(self, client: TestClient, db_session: Session, super_admin_user: User):
+        from recyclic_api.core.auth import create_access_token
+
+        token = create_access_token(data={"sub": str(super_admin_user.id)})
+        r = client.post(
+            PURGE_URL,
+            headers={
+                "Authorization": f"Bearer {token}",
+                STEP_UP_PIN_HEADER: "1234",
+            },
+        )
+        assert r.status_code == 400
+        assert r.json()["code"] == "IDEMPOTENCY_KEY_REQUIRED"
+
+    def test_purge_requires_step_up_pin(self, client: TestClient, db_session: Session, super_admin_user: User):
+        from recyclic_api.core.auth import create_access_token
+
+        token = create_access_token(data={"sub": str(super_admin_user.id)})
+        r = client.post(
+            PURGE_URL,
+            headers={
+                "Authorization": f"Bearer {token}",
+                IDEMPOTENCY_KEY_HEADER: str(uuid.uuid4()),
+            },
+        )
+        assert r.status_code == 403
+        assert r.json()["code"] == "STEP_UP_PIN_REQUIRED"
+
+    def test_purge_idempotent_replay(
+        self, client: TestClient, db_session: Session, super_admin_user: User, sample_transactional_data
+    ):
+        from recyclic_api.core.auth import create_access_token
+
+        token = create_access_token(data={"sub": str(super_admin_user.id)})
+        ik = str(uuid.uuid4())
+        h = {"Authorization": f"Bearer {token}", **_purge_sensitive_headers(idempotency_key=ik)}
+        r1 = client.post(PURGE_URL, headers=h)
+        r2 = client.post(PURGE_URL, headers=h)
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r1.json() == r2.json()
+
+
+class TestStory163DatabasePurgeStepUpGuards:
+    """Story 16.3 — refus PIN invalide et lockout sur purge."""
+
+    def test_purge_step_up_wrong_pin_returns_403(
+        self, client: TestClient, db_session: Session, super_admin_user: User
+    ):
+        from recyclic_api.core.auth import create_access_token
+
+        token = create_access_token(data={"sub": str(super_admin_user.id)})
+        r = client.post(
+            PURGE_URL,
+            headers={
+                "Authorization": f"Bearer {token}",
+                STEP_UP_PIN_HEADER: "9999",
+                IDEMPOTENCY_KEY_HEADER: str(uuid.uuid4()),
+            },
+        )
+        assert r.status_code == 403
+        assert r.json().get("code") == "STEP_UP_PIN_INVALID"
+
+    @patch("recyclic_api.core.step_up._is_locked_out", return_value=True)
+    def test_purge_step_up_locked_returns_429(
+        self,
+        _mock_lock: Mock,
+        client: TestClient,
+        db_session: Session,
+        super_admin_user: User,
+    ):
+        from recyclic_api.core.auth import create_access_token
+
+        token = create_access_token(data={"sub": str(super_admin_user.id)})
+        r = client.post(
+            PURGE_URL,
+            headers={"Authorization": f"Bearer {token}", **_purge_sensitive_headers()},
+        )
+        assert r.status_code == 429
+        assert r.json().get("code") == "STEP_UP_LOCKED"

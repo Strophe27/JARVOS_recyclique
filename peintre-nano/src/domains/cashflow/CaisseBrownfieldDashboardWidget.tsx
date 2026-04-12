@@ -15,7 +15,7 @@ import {
   Title,
 } from '@mantine/core';
 import { Calendar, PlayCircle, Wallet } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { postOpenCashSession, resolveCashSessionOpeningIds } from '../../api/cash-session-client';
 import { recycliqueClientFailureFromSalesHttp, type RecycliqueClientFailure } from '../../api/recyclique-api-error';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
@@ -47,12 +47,26 @@ function legacyCashRegisterSessionOpenBase(): string {
   return '/cash-register/session/open';
 }
 
+/** Story 13.6 — après POST d’ouverture, même cible que le legacy (`OpenCashSession` → `…/sale`). */
+function legacyCashRegisterSalePathFromPathname(pathname: string): string {
+  const p = pathnameNoTrailingSlash(pathname);
+  if (p.startsWith('/cash-register/deferred')) return '/cash-register/deferred/sale';
+  if (p.startsWith('/cash-register/virtual')) return '/cash-register/virtual/sale';
+  return '/cash-register/sale';
+}
+
 /** Aligné `OpenCashSession.tsx` (`basePath` / route) — source de vérité pour le périmètre formulaire. */
 function sessionOpenBranchFromPath(pathname: string): 'real' | 'virtual' | 'deferred' {
   const p = pathnameNoTrailingSlash(pathname);
   if (p.startsWith('/cash-register/deferred')) return 'deferred';
   if (p.startsWith('/cash-register/virtual')) return 'virtual';
   return 'real';
+}
+
+/** `register_id` dans la query — même source que `syncFromLocation` (évite premier rendu vide avant effet). */
+function registerIdFromWindowSearch(): string {
+  if (typeof window === 'undefined') return '';
+  return new URLSearchParams(window.location.search).get('register_id')?.trim() ?? '';
 }
 
 /** Permissions brownfield modes caisse (legacy — alignement `recyclique-1.4.4` / groupes). */
@@ -178,6 +192,8 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
   const submitSessionLabel = widgetString(wp, 'submit_session_label', 'Ouvrir la session');
   const registerRowHeading = widgetString(wp, 'register_row_heading', 'Poste de caisse');
   const openRegisterCtaLabel = widgetString(wp, 'open_register_cta_label', 'Ouvrir');
+  /** Story 13.6 — alias kiosque `…/sale` : retirer le chrome hub du même `page_key` (reload / deep link). */
+  const saleKioskMinimal = widgetBool(wp, 'sale_kiosk_minimal_dashboard');
 
   const draft = useCashflowDraft();
   const auth = useAuthPort();
@@ -187,7 +203,9 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
   const authSession = auth.getSession();
   const keys = envelope.permissions.permissionKeys;
   const [openingMode, setOpeningMode] = useState<OpeningMode>('real');
-  const [registerIdInput, setRegisterIdInput] = useState('');
+  const [registerIdInput, setRegisterIdInput] = useState(() =>
+    isSessionOpenSurface ? registerIdFromWindowSearch() : '',
+  );
   const [initialAmountInput, setInitialAmountInput] = useState<number | ''>(() =>
     (_props.widgetProps ?? {}).presentation_surface === 'session_open' ? '' : 20,
   );
@@ -205,7 +223,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
     if (typeof window === 'undefined') return;
     const pathname = window.location.pathname;
     setUrlBranch(sessionOpenBranchFromPath(pathname));
-    const rid = new URLSearchParams(window.location.search).get('register_id')?.trim();
+    const rid = registerIdFromWindowSearch();
     if (rid) setRegisterIdInput(rid);
     if (!isSessionOpenSurface) return;
     const branch = sessionOpenBranchFromPath(pathname);
@@ -218,7 +236,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
     }
   }, [isSessionOpenSurface]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     syncFromLocation();
     window.addEventListener('popstate', syncFromLocation);
     return () => window.removeEventListener('popstate', syncFromLocation);
@@ -263,7 +281,9 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
 
   const envSessionId = envelope.cashSessionId?.trim() ?? '';
   const serverSessionId = serverSession?.id?.trim() ?? '';
-  const resolvedSessionId = envSessionId || serverSessionId || openedSessionId.trim();
+  const draftSessionId = draft.cashSessionIdInput?.trim() ?? '';
+  const resolvedSessionId =
+    envSessionId || serverSessionId || openedSessionId.trim() || draftSessionId;
   const sessionLabel =
     serverSessionLoading && !resolvedSessionId
       ? 'Résolution session serveur…'
@@ -372,6 +392,13 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
         openingMode === 'deferred' ? 'deferred' : openingMode === 'virtual' ? 'virtual' : 'real',
       );
       refresh();
+      /**
+       * Story 13.6 — parité legacy : ne pas laisser l’opératrice sur `…/session/open` avec formulaire + alerte succès
+       * (état hybride) alors que la session est ouverte côté API ; atterrissage direct sur le poste de vente nominal.
+       */
+      if (typeof window !== 'undefined' && isSessionOpenSurface) {
+        spaNavigateTo(legacyCashRegisterSalePathFromPathname(window.location.pathname));
+      }
     } finally {
       setOpeningBusy(false);
     }
@@ -380,6 +407,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
     envelope.siteId,
     initialAmountInput,
     openedAtInput,
+    isSessionOpenSurface,
     openingBlockedReason,
     openingMode,
     refresh,
@@ -392,14 +420,18 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
   }, []);
 
   /**
-   * Parité legacy **après clic hub** (`?register_id=`) : formulaire seul tant que la session n’est pas ouverte.
-   * Sans `register_id` (cas Epic 6 / atelier), l’UI complète reste disponible.
-   * Après ouverture, réafficher le bandeau poste/session (tests / continuité brownfield).
+   * Parité legacy sur `session_open` : chrome debug/hub masqué tant que la session n’est pas ouverte.
+   * Après clic hub (`?register_id=`) : idem. Sur poste réel nominal (`/cash-register/session/open`), même sans
+   * `register_id` (deep link / reload), aligner le legacy 4445 — pas l’atelier virtuel/différé sans poste.
    */
   const legacySessionOpenBareForm =
-    legacySessionOpenForm && Boolean(registerIdInput.trim()) && !resolvedSessionId;
+    legacySessionOpenForm &&
+    !resolvedSessionId &&
+    (Boolean(registerIdInput.trim()) || urlBranch === 'real');
 
-  const hideRegisterFieldSessionOpen = legacySessionOpenBareForm;
+  /** Masquer le champ UUID poste seulement quand le poste est déjà fourni (hub / query). */
+  const hideRegisterFieldSessionOpen =
+    legacySessionOpenForm && Boolean(registerIdInput.trim()) && !resolvedSessionId;
 
   /** Postes réels : manifeste CREOS (`register_cards`) si présent, sinon lignes OpenAPI `GET /v1/cash-registers/status` (parité legacy `/caisse`). */
   const hubRegisterCards: RegisterCardSpec[] = useMemo(() => {
@@ -594,7 +626,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
                   Mode d&apos;entraînement sans impact sur les données réelles
                 </Text>
                 <Text size="xs" c="dimmed" mb="md" style={{ fontStyle: 'italic' }}>
-                  Hérite des options de workflow de la caisse source sélectionnée (contrat — pas de liste serveur ici).
+                  Hérite des options de workflow de la caisse source sélectionnée
                 </Text>
                 <Group justify="flex-end">
                   <Button
@@ -636,7 +668,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
                   Saisir des ventes d&apos;anciens cahiers avec leur date réelle de vente
                 </Text>
                 <Text size="xs" c="dimmed" mb="md" style={{ fontStyle: 'italic' }}>
-                  Hérite des options de workflow de la caisse source sélectionnée (contrat — pas de liste serveur ici).
+                  Hérite des options de workflow de la caisse source sélectionnée
                 </Text>
                 <Group justify="flex-end">
                   <Button
@@ -671,6 +703,18 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
     );
   }
 
+  const showPosteSessionSitePaper = saleKioskMinimal || (!isCaisseHubCompact && !legacySessionOpenBareForm);
+  /** Kiosque vente (`…/sale`) : ne pas empiler le wizard d’ouverture complet sans session (hybride) — garder le strip Poste/Session/Site + vente. */
+  const showFullOpeningPaper =
+    !isCaisseHubCompact &&
+    (isSessionOpenSurface || !saleKioskMinimal) &&
+    (!saleKioskMinimal || resolvedSessionId.length === 0);
+  const showSaleKioskSessionStrip =
+    saleKioskMinimal && resolvedSessionId.length > 0 && !isSessionOpenSurface;
+  const showDashboardChromeAfterOpening =
+    !isCaisseHubCompact && !legacySessionOpenBareForm && !(saleKioskMinimal && resolvedSessionId.length > 0);
+  const showKpiStrip = !isCaisseHubCompact && !legacySessionOpenBareForm && !saleKioskMinimal;
+
   return (
     <Stack
       gap="md"
@@ -678,7 +722,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
       data-testid="caisse-brownfield-dashboard"
       data-runtime-status={envelope.runtimeStatus}
     >
-      {!isSessionOpenSurface ? (
+      {!isSessionOpenSurface && !saleKioskMinimal ? (
         <div data-testid="caisse-workspace-heading-block">
           <Title order={2} data-testid="caisse-workspace-heading">
             {workspaceHeading}
@@ -689,7 +733,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
         </div>
       ) : null}
 
-      {!hideRegisterSelectionRow ? (
+      {!hideRegisterSelectionRow && !saleKioskMinimal ? (
         <Paper
           withBorder
           p="sm"
@@ -731,7 +775,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
         </Paper>
       ) : null}
 
-      {!isSessionOpenSurface ? (
+      {!isSessionOpenSurface && !saleKioskMinimal ? (
         <div data-testid="caisse-mode-badges">
           <Text size="xs" fw={600} mb={4}>
             {modesSectionTitle}
@@ -762,7 +806,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
         </div>
       ) : null}
 
-      {!hideVariantEntrypointCards ? (
+      {!hideVariantEntrypointCards && !saleKioskMinimal ? (
         <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm" data-testid="caisse-variant-entrypoints">
           <Paper withBorder p="sm" radius="md" data-testid="caisse-entry-real">
             <Text size="sm" fw={600}>
@@ -791,7 +835,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
         </SimpleGrid>
       ) : null}
 
-      {!isCaisseHubCompact && !legacySessionOpenBareForm ? (
+      {showPosteSessionSitePaper ? (
       <Paper withBorder p="sm" radius="md">
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
           <div
@@ -835,7 +879,36 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
       </Paper>
       ) : null}
 
-      {!isCaisseHubCompact ? (
+      {showSaleKioskSessionStrip ? (
+        <Stack gap="sm" data-testid="caisse-sale-kiosk-session-strip">
+          {openingFailure ? (
+            <Alert color="red" title="Ouverture refusée" data-testid="cashflow-opening-error-strip">
+              {openingFailure.message}
+            </Alert>
+          ) : null}
+          {resolvedSessionId && draft.operatingMode === 'virtual' && !legacySessionOpenBareForm ? (
+            <Alert color="teal" variant="light" data-testid="caisse-dash-active-mode-virtual-strip">
+              Mode actif côté poste : <strong>virtuel (simulation)</strong>.
+            </Alert>
+          ) : null}
+          {resolvedSessionId && draft.operatingMode === 'deferred' && !legacySessionOpenBareForm ? (
+            <Alert color="blue" variant="light" data-testid="caisse-dash-active-mode-deferred-strip">
+              Mode actif côté poste : <strong>saisie différée</strong> (date d’ouverture portée par la session serveur).
+            </Alert>
+          ) : null}
+          <Alert color="green" title="Session ouverte" data-testid="cashflow-opening-success-strip">
+            Session active: <code>{resolvedSessionId}</code>
+          </Alert>
+          <Group gap="sm">
+            <Button type="button" variant="default" size="sm" onClick={() => refresh()} data-testid="caisse-refresh-current-session-strip">
+              Rafraîchir session (serveur)
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={goToClose} data-testid="caisse-goto-close-strip">
+              Clôturer la session
+            </Button>
+          </Group>
+        </Stack>
+      ) : showFullOpeningPaper ? (
       <Paper
         id={isSessionOpenSurface ? undefined : 'caisse-session-open-hint'}
         withBorder
@@ -1015,7 +1088,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
       </Paper>
       ) : null}
 
-      {!isCaisseHubCompact && !legacySessionOpenBareForm ? (
+      {showDashboardChromeAfterOpening ? (
       <Group gap="sm">
         <Button type="button" variant="default" size="sm" onClick={() => refresh()} data-testid="caisse-refresh-current-session">
           Rafraîchir session (serveur)
@@ -1044,7 +1117,7 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
       </Group>
       ) : null}
 
-      {!isCaisseHubCompact && !legacySessionOpenBareForm ? (
+      {showKpiStrip ? (
       <div className={classes.kpiStrip} data-testid="caisse-kpi-strip">
         <Text size="xs" c="dimmed">
           Indicateurs de séance — pilotés par le backend ; la ligne détaillée suit le poste de vente (Epic 6).

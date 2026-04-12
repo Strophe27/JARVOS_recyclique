@@ -7,16 +7,24 @@ import logging
 import os
 import subprocess
 import tempfile
+import time
 from datetime import datetime
-from pathlib import Path
 from urllib.parse import urlparse, unquote
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import require_super_admin_role
 from recyclic_api.core.config import settings
+from recyclic_api.core.redis import get_redis
+from recyclic_api.core.step_up import (
+    SENSITIVE_OPERATION_DB_EXPORT,
+    STEP_UP_PIN_HEADER,
+    verify_step_up_pin_header,
+)
+from recyclic_api.core.audit import log_system_action
+from recyclic_api.models.audit_log import AuditActionType
 from recyclic_api.models.user import User
 
 router = APIRouter(tags=["admin"])
@@ -30,8 +38,10 @@ logger = logging.getLogger(__name__)
     response_class=FileResponse
 )
 async def export_database(
+    request: Request,
     current_user: User = Depends(require_super_admin_role()),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    redis_client=Depends(get_redis),
 ):
     """
     Génère un export de la base de données PostgreSQL et le retourne en tant que fichier téléchargeable.
@@ -40,6 +50,16 @@ async def export_database(
     - Accessible uniquement aux Super-Admins
     - Peut être une opération longue pour les bases de données volumineuses
     """
+    verify_step_up_pin_header(
+        user=current_user,
+        pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+        redis_client=redis_client,
+        operation=SENSITIVE_OPERATION_DB_EXPORT,
+    )
+    start_time = time.time()
+    _ip = request.client.host if request.client else None
+    _ua = request.headers.get("user-agent")
+
     try:
         logger.info(f"Database export requested by user {current_user.id} ({current_user.username})")
 
@@ -129,20 +149,67 @@ async def export_database(
         )
 
         if result.returncode != 0:
-            logger.error(f"pg_dump failed with return code {result.returncode}: {result.stderr}")
+            logger.error(
+                "pg_dump failed with return code %s: %s",
+                result.returncode,
+                result.stderr,
+            )
+            log_system_action(
+                action_type=AuditActionType.DB_EXPORT,
+                actor=current_user,
+                target_type="database",
+                details={
+                    "success": False,
+                    "error_type": "pg_dump_failed",
+                    "duration_seconds": round(time.time() - start_time, 2),
+                },
+                description="Échec export base (pg_dump)",
+                ip_address=_ip,
+                user_agent=_ua,
+                db=db,
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database export failed: {result.stderr}"
+                detail="L'export de la base de données a échoué. Consulter les journaux serveur pour le détail technique.",
             )
 
         # Check if file was created
         if not os.path.exists(export_path):
+            log_system_action(
+                action_type=AuditActionType.DB_EXPORT,
+                actor=current_user,
+                target_type="database",
+                details={
+                    "success": False,
+                    "error_type": "file_not_created",
+                    "duration_seconds": round(time.time() - start_time, 2),
+                },
+                description="Échec export base (fichier absent)",
+                ip_address=_ip,
+                user_agent=_ua,
+                db=db,
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Export file was not created"
+                detail="Le fichier d'export n'a pas été généré. Consulter les journaux serveur.",
             )
 
         logger.info(f"Database export successful: {export_path}")
+
+        log_system_action(
+            action_type=AuditActionType.DB_EXPORT,
+            actor=current_user,
+            target_type="database",
+            details={
+                "success": True,
+                "filename": filename,
+                "duration_seconds": round(time.time() - start_time, 2),
+            },
+            description=f"Export base réussi : {filename}",
+            ip_address=_ip,
+            user_agent=_ua,
+            db=db,
+        )
 
         # Return file as download
         return FileResponse(
@@ -159,6 +226,23 @@ async def export_database(
 
     except subprocess.TimeoutExpired:
         logger.error("Database export timed out after 10 minutes")
+        try:
+            log_system_action(
+                action_type=AuditActionType.DB_EXPORT,
+                actor=current_user,
+                target_type="database",
+                details={
+                    "success": False,
+                    "error_type": "timeout",
+                    "duration_seconds": round(time.time() - start_time, 2),
+                },
+                description="Échec export base (timeout)",
+                ip_address=_ip,
+                user_agent=_ua,
+                db=db,
+            )
+        except Exception:
+            pass
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="L'export de la base de données a pris trop de temps (timeout après 10 minutes). La base est peut-être trop volumineuse."
@@ -167,7 +251,24 @@ async def export_database(
         raise
     except Exception as e:
         logger.error(f"Unexpected error during database export: {str(e)}", exc_info=True)
+        try:
+            log_system_action(
+                action_type=AuditActionType.DB_EXPORT,
+                actor=current_user,
+                target_type="database",
+                details={
+                    "success": False,
+                    "error_type": "unexpected",
+                    "duration_seconds": round(time.time() - start_time, 2),
+                },
+                description="Échec export base (erreur inattendue)",
+                ip_address=_ip,
+                user_agent=_ua,
+                db=db,
+            )
+        except Exception:
+            pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de l'export de la base de données: {str(e)}"
+            detail="Une erreur inattendue s'est produite lors de l'export. Consulter les journaux serveur.",
         )

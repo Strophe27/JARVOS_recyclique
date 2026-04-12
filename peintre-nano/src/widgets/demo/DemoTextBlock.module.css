@@ -10,6 +10,13 @@
   color: var(--pn-color-text);
 }
 
+/* Titre principal de page (ex. hub admin Epic 14 — alignement hiérarchie legacy h1) */
+.title[data-demo-text-title-level='1'] {
+  font-size: var(--pn-font-size-xl, 1.35rem);
+  font-weight: 700;
+  text-align: center;
+}
+
 .body {
   margin: 0;
   font-size: var(--pn-font-size-sm);

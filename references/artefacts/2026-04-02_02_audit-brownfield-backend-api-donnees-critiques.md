@@ -25,7 +25,7 @@
 
 ## 1. Résumé exécutif
 
-Le brownfield **1.4.4** expose une **API REST FastAPI** riche et **documentée par inventaire** sous `references/ancien-repo/` (liste d'endpoints, modèles, architecture). Les domaines **caisse / ventes / sessions** et **réception / tickets / lignes** sont les **cœurs métier** les plus structurés côté routes et BDD ; les audits **migration-paeco** en donnent la traçabilité fine vers les tables (`cash_sessions`, `sales`, `sale_items`, `payment_transactions`, postes et tickets réception, `ligne_depot`, etc.).
+Le brownfield **1.4.4** expose une **API REST FastAPI** riche et **documentée par inventaire** sous `references/ancien-repo/` (liste d'endpoints, modèles, architecture). Les domaines **caisse / ventes / sessions** et **réception / tickets / lignes** sont les **cœurs métier** les plus structurés côté routes et BDD ; les audits **migration-paheko** en donnent la traçabilité fine vers les tables (`cash_sessions`, `sales`, `sale_items`, `payment_transactions`, postes et tickets réception, `ligne_depot`, etc.).
 
 Les **risques structurels** identifiés dans la consolidation **1.4.5** restent pertinents : frontières transactionnelles floues, gros fichiers d'endpoints, **schéma / migrations** historiquement mal ancrés (avec un **chantier DB ultérieur** documenté jusqu'à exécution contrôlée locale dans `references/consolidation-1.4.5/`), couplage services / `HTTPException`, santé dupliquée. Pour le frontend v2, la priorité est de **s'appuyer sur des surfaces HTTP stables et des DTO explicites** plutôt que sur des détails d'implémentation internes.
 
@@ -110,7 +110,7 @@ Les **risques structurels** identifiés dans la consolidation **1.4.5** restent 
 | `references/ancien-repo/data-models-api.md`, `architecture-brownfield.md`, `api-contracts-api.md` | Compléments structurels (à charger si besoin de détail schémas). |
 | `references/dumps/schema-recyclic-dev.md` | Schéma BDD dev — référencé par les audits Paeco ; dossier **`references/dumps/`** en **gitignore** : ne pas commiter de secrets ni dumps bruts. |
 | `references/consolidation-1.4.5/` (synthèse + audits `2026-03-23_*`, chantiers DB `2026-03-27_*`) | **Constats architecture / données / ops / tests** et historique d'assainissement. |
-| `references/migration-paeco/audits/` | Traçabilité **caisse** et **réception/poids** ↔ API ↔ tables ; matrice Recyclique ↔ Paheko. |
+| `references/migration-paheko/audits/` | Traçabilité **caisse** et **réception/poids** ↔ API ↔ tables ; matrice Recyclique ↔ Paheko. |
 | `references/paheko/index.md`, `liste-endpoints-api-paheko.md`, `analyse-brownfield-paheko.md` | Frontière **Paheko** (pas le cœur Recyclique, mais contrainte Epic 8). |
 | `references/artefacts/2026-03-31_01_handoff-nettoyage-stabilisation-recyclique-1.4.4.md` | Posture **OpenAPI / tests alignés `API_V1_STR`**, nettoyages récents. |
 | `references/artefacts/2026-04-02_01_surface-travail-v2-mode-reference-paheko.md` | Mode référence Paheko (Story 1.1) pour enchaînements Epic 1. |
@@ -128,7 +128,7 @@ Les **risques structurels** identifiés dans la consolidation **1.4.5** restent 
 | Élément | Contenu |
 |---------|---------|
 | **Points d'entrée** | Préfixe `/v1/cash-sessions`, `/v1/cash-registers`, `/v1/sales`, `/v1/presets`, `/v1/transactions` ; workflow session (`/step`, ouverture/fermeture, différée `deferred/check`) ; ventes avec lignes et paiements multiples ; correctifs admin ciblés (`/v1/admin/cash-sessions/fix-blocked-deferred`, `merge-duplicate-deferred`). |
-| **Données / tables** | `cash_sessions`, `sales`, `sale_items`, `payment_transactions`, `preset_buttons`, postes `cash_registers` ; détail : `references/migration-paeco/audits/audit-caisse-recyclic-1.4.4.md`. |
+| **Données / tables** | `cash_sessions`, `sales`, `sale_items`, `payment_transactions`, `preset_buttons`, postes `cash_registers` ; détail : `references/migration-paheko/audits/audit-caisse-recyclic-1.4.4.md`. |
 | **Flux nominal** | Ouverture session → étapes entry/sale/exit → `POST /v1/sales` (lignes, `payments[]`, `sale_date` pour différé) → clôture session ; presets actifs `GET /v1/presets/active`. |
 | **Dépendances** | Permissions métier type `caisse.access` / virtuel / différé (côté modèle authz 1.4.4) ; **Paheko** : pas de push synchrone dans l'inventaire route ; alignement futur via Epic 8 et matrice Paeco. |
 
@@ -257,9 +257,9 @@ Ces surfaces alimentent **Convergence 1** (Peintre ↔ backend réel) sans absor
 - `references/consolidation-1.4.5/2026-03-23_synthese-audit-consolidation-1.4.5.md`  
 - `references/consolidation-1.4.5/2026-03-23_audit-backend-architecture-1.4.4.md`  
 - `references/consolidation-1.4.5/2026-03-23_audit-backend-data-1.4.4.md`  
-- `references/migration-paeco/audits/audit-caisse-recyclic-1.4.4.md`  
-- `references/migration-paeco/audits/audit-reception-poids-recyclic-1.4.4.md`  
-- `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md`  
+- `references/migration-paheko/audits/audit-caisse-recyclic-1.4.4.md`  
+- `references/migration-paheko/audits/audit-reception-poids-recyclic-1.4.4.md`  
+- `references/migration-paheko/audits/matrice-correspondance-caisse-poids.md`  
 - `contracts/README.md`, `contracts/creos/schemas/README.md`  
 - `_bmad-output/planning-artifacts/epics.md` (Epics 2, 3, 6, 7, 8)
 

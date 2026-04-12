@@ -374,6 +374,30 @@ class TestGroupEndpoints:
 
 
 # ============================================================================
+# PUT /admin/users/{id}/groups (Story 16.2 — contrat G-OA-01)
+# ============================================================================
+
+
+class TestAdminUsersGroupsContract:
+    """Autorité `require_admin_role` : 401 sans jeton, 403 si USER (Bearer)."""
+
+    def test_put_user_groups_requires_auth(self, client: TestClient, regular_user: User):
+        r = client.put(
+            f"/v1/admin/users/{regular_user.id}/groups",
+            json={"group_ids": []},
+        )
+        assert r.status_code == 401
+
+    def test_put_user_groups_requires_admin(self, client: TestClient, user_token: str, regular_user: User):
+        r = client.put(
+            f"/v1/admin/users/{regular_user.id}/groups",
+            json={"group_ids": []},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert r.status_code == 403
+
+
+# ============================================================================
 # Permission Check Tests
 # ============================================================================
 

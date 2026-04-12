@@ -110,7 +110,7 @@ Règle de lecture :
 ### 4. Construire la matrice d’intégration Paheko v2.0 et le contrat de synchronisation
 
 - Établir une matrice `opération métier -> API officielle / plugin minimal / SQL hors flux transactionnel / hors scope`.
-- Sources prioritaires : `[references/migration-paeco/audits/matrice-correspondance-caisse-poids.md](references/migration-paeco/audits/matrice-correspondance-caisse-poids.md)`, `[references/artefacts/2026-02-25_05_grille-confrontation-recyclic-paheko.md](references/artefacts/2026-02-25_05_grille-confrontation-recyclic-paheko.md)`, `[references/artefacts/2026-02-25_08_session-confrontation-recyclic-paheko.md](references/artefacts/2026-02-25_08_session-confrontation-recyclic-paheko.md)`, `[references/recherche/index.md](references/recherche/index.md)`.
+- Sources prioritaires : `[references/migration-paheko/audits/matrice-correspondance-caisse-poids.md](references/migration-paheko/audits/matrice-correspondance-caisse-poids.md)`, `[references/artefacts/2026-02-25_05_grille-confrontation-recyclic-paheko.md](references/artefacts/2026-02-25_05_grille-confrontation-recyclic-paheko.md)`, `[references/artefacts/2026-02-25_08_session-confrontation-recyclic-paheko.md](references/artefacts/2026-02-25_08_session-confrontation-recyclic-paheko.md)`, `[references/recherche/index.md](references/recherche/index.md)`.
 - Cette matrice doit couvrir au minimum : sessions de caisse, clôture, écritures, factures émises, factures reçues, justificatifs, bons, adhérents/utilisateurs si concernés, et politique de réconciliation en cas d’échec de sync.
 - Livrables clés :
   - une liste des manques API réels avant toute décision plugin ;
@@ -203,7 +203,7 @@ Règle de lecture :
 - Cette passe doit aussi mettre à jour les points d’entrée documentaires qui orientent les futurs agents :
   - `[references/index.md](references/index.md)` ;
   - `[references/ou-on-en-est.md](references/ou-on-en-est.md)` ;
-  - `[references/migration-paeco/index.md](references/migration-paeco/index.md)` ;
+  - `[references/migration-paheko/index.md](references/migration-paheko/index.md)` ;
   - `[references/paheko/index.md](references/paheko/index.md)` ;
   - et toute page portant encore un récit incompatible sans bandeau de contexte.
 - Les règles de maintenance documentaire doivent rester alignées sur `[references/INSTRUCTIONS-PROJET.md](references/INSTRUCTIONS-PROJET.md)`.

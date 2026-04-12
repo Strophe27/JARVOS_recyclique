@@ -14,7 +14,7 @@ Fournir une base pour **re-modéliser** `references/` : que garder, archiver, re
 | Fichier | Contenu |
 |---------|---------|
 | `2026-03-31_02_audit-references-00-synthese-globale.md` | Ce fichier : carte globale, tensions narratives, plan de tri, index modifiés. |
-| `2026-03-31_03_audit-references-01-zones-principales.md` | Artefacts, recherche, consolidation 1.4.5, migration-paeco (détail). |
+| `2026-03-31_03_audit-references-01-zones-principales.md` | Artefacts, recherche, consolidation 1.4.5, migration-paheko (détail). |
 | `2026-03-31_04_audit-references-02-ancien-vision-paheko-tri-racine.md` | Ancien-repo, vision-projet, paheko, temporaire-pour-tri, racine, dépôt, vrac, ecosysteme, Kanban. |
 
 ---
@@ -25,7 +25,7 @@ Fournir une base pour **re-modéliser** `references/` : que garder, archiver, re
 |------|----------------|---------------------------------------------------------------------------|
 | **`consolidation-1.4.5/`** | Audit code, backlog technique, DB locale, journal | **Canon actuel** pour l’état du repo et la dette technique. |
 | **`artefacts/`** | Handoffs, décisions spirale Paheko/BMAD, paquets consolidation, blueprint | **Mars 2026** = très pertinent ; **fév. 2026** = historique décisionnel / vision long terme. |
-| **`migration-paeco/`** | Interop RecyClique ↔ Paheko, audits caisse/poids, matrice, REP | **Toujours central** pour sync, mapping, futur module décla. |
+| **`migration-paheko/`** | Interop RecyClique ↔ Paheko, audits caisse/poids, matrice, REP | **Toujours central** pour sync, mapping, futur module décla. |
 | **`recherche/`** | Perplexity 2026-02-24 (plugins, Paheko API, SSO…) | **Utile** mais figé ; `contexte-pour-recherche-externe.md` probablement **dépassé** (« pas de code »). |
 | **`ancien-repo/`** | Document-project 1.4.4, checklist import | **Référence brownfield** ; narratif « nouveau backend v0.1 » à **réconcilier** avec « on évolue sur 1.4.4 ». |
 | **`vision-projet/`** | RAG, Nano/Mini, décla, présentations | **Direction produit** ; orthogonal au détail implémentation. |
@@ -57,7 +57,7 @@ Trois « vérités » possibles dans les docs :
 **Fondamentales pour la suite proche**
 
 - Stabilité **multi-sites / multi-caisses** (métier + données) — voir audits, TODO Christophe, backlog consolidation.  
-- **Matrice caisse/poids** + audits `migration-paeco/audits/` pour toute évolution Paheko.  
+- **Matrice caisse/poids** + audits `migration-paheko/audits/` pour toute évolution Paheko.  
 - **Modularité** (recherche Perplexity + artefact design modules + blueprint mars) — convergence à cadrer dans un seul doc de synthèse plus tard.  
 - **Chaîne DB Alembic** (notes mars 2026 dans consolidation).
 
@@ -79,8 +79,8 @@ Modifications **autorisées** par Strophe : **fichiers `index.md` uniquement** (
 | `references/recherche/index.md` | Section « hors tableau » pour artefacts `normalize_*` (outil). |
 | `references/temporaire-pour-tri/index.md` | Correction : pas de dossier `idees-kanban/` sur disque. |
 | `references/ancien-repo/index.md` | Lien `README.md` + note courte sur double narratif v0.1 vs évolution 1.4.4. |
-| `references/migration-paeco/index.md` | Renvoi vers consolidation + pack audit. |
-| `references/consolidation-1.4.5/index.md` | Renvoi vers migration-paeco + pack audit. |
+| `references/migration-paheko/index.md` | Renvoi vers consolidation + pack audit. |
+| `references/consolidation-1.4.5/index.md` | Renvoi vers migration-paheko + pack audit. |
 
 **Non modifié (règle projet) :** `references/idees-kanban/index.md` — à resynchroniser via **skill idees-kanban** (fiche `2026-03-01_workflow-evenements-caisse-recyclique-paheko.md` manquante au tableau).
 
@@ -96,4 +96,4 @@ Modifications **autorisées** par Strophe : **fichiers `index.md` uniquement** (
 
 ---
 
-*Explorations sources : agents explore sur `artefacts/`, `recherche/`, `consolidation-1.4.5` + `migration-paeco`, `ancien-repo` + `vision-projet`, `paheko` + `temporaire-pour-tri`, racine + Kanban + `_depot` + ecosysteme.*
+*Explorations sources : agents explore sur `artefacts/`, `recherche/`, `consolidation-1.4.5` + `migration-paheko`, `ancien-repo` + `vision-projet`, `paheko` + `temporaire-pour-tri`, racine + Kanban + `_depot` + ecosysteme.*

@@ -445,12 +445,15 @@ export type ListTicketsResult = { ok: true; data: ReceptionTicketListPayload } |
 
 export async function getReceptionTicketsList(
   auth: Pick<AuthContextPort, 'getAccessToken'>,
-  params?: { page?: number; per_page?: number },
+  params?: { page?: number; per_page?: number; status?: string },
 ): Promise<ListTicketsResult> {
   const base = getLiveSnapshotBasePrefix();
   const page = params?.page ?? 1;
   const perPage = params?.per_page ?? 20;
   const q = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+  if (params?.status?.trim()) {
+    q.set('status', params.status.trim());
+  }
   const url = `${base}/v1/reception/tickets?${q.toString()}`;
   let res: Response;
   try {

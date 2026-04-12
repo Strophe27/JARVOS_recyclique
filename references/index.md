@@ -64,7 +64,7 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`recherche/`** — Prompts et réponses de recherche externe (Perplexity, Claude.ai, GPT, etc.). Détail : **recherche/index.md**.
   _(Charger : fichiers mentionnés dans ou-on-en-est ou sur demande explicite.)_
 
-- **`consolidation-1.4.5/`** — Référentiel pour l’audit brownfield et l’assainissement de la base active `recyclique-1.4.4/`. Croiser avec **migration-paeco/** pour l’interop Paheko. Détail : **consolidation-1.4.5/index.md**.
+- **`consolidation-1.4.5/`** — Référentiel pour l’audit brownfield et l’assainissement de la base active `recyclique-1.4.4/`. Croiser avec **migration-paheko/** pour l’interop Paheko. Détail : **consolidation-1.4.5/index.md**.
   _(Charger : audit qualité/cohérence, priorisation technique, assainissement brownfield, DB/migrations locales.)_
 
 - **`ecosysteme/`** — Références JARVOS_ecosysteme et JARVOS_fondations. Confidentiel. Gitignore. Détail : **ecosysteme/index.md**. Les documents écosystème sont **références** (liens, index), jamais **copies** ailleurs.
@@ -76,11 +76,11 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`automatisation-bmad/`** — Recueil technique pour **orchestrer** le cycle BMAD dans Cursor (chemins, `sprint-status`, **mapping colonne CSV → skills Cursor**, anytime vs phase 4, HITL, graphe minimal, **§15 cadre : pas d'exécution automatique headless**). Spec runners : **automatisation-bmad/epic-story-runner-spec.md** ; agents **`.cursor/agents/bmad-epic-runner.md`** / **`bmad-story-runner.md`** ; skill **`bmad-epic-runner`**. Index : **automatisation-bmad/index.md**.
   _(Charger : skill orchestrateur, pipeline story par story, gates tests/CI, contrat d'exécution au-dessus de BMAD.)_
 
-- **`migration-paeco/`** — Guides Paheko/RecyClique, TODO, comptes-rendus, décla éco-organismes. Croiser avec **consolidation-1.4.5/** pour le code. Détail : **migration-paeco/index.md**.
-  _(Charger : intégration Paheko, décla éco-organismes, historique décisions.)_
+- **`migration-paheko/`** — Guides Paheko/RecyClique, TODO, comptes-rendus, décla éco-organismes, specs d'intégration tiers (ex. HelloAsso). Croiser avec **consolidation-1.4.5/** pour le code. Détail : **migration-paheko/index.md**.
+  _(Charger : intégration Paheko, décla éco-organismes, historique décisions, cadrage HelloAsso / paiements en ligne.)_
 
 - **`paheko/`** — Guide et référence Paheko : clone, doc officielle (Fossil). Code source dans **paheko/repo/** (gitignore). Détail : **paheko/index.md**.
-  _(Charger : intégration Paheko, analyse API/extensions ou croisement avec migration-paeco.)_
+  _(Charger : intégration Paheko, analyse API/extensions ou croisement avec migration-paheko.)_
 
 - **`peintre/`** — Travail et synthèses sur JARVOS Peintre (pipeline nano → macro, layout, commandes, widgets) ; complète **recherche/** (allers-retours IA externes) sans la remplacer. Détail : **peintre/index.md**.
   _(Charger : cadrage Peintre, macro affichage / agents, alignement `peintre-nano/` avec la vision long terme.)_

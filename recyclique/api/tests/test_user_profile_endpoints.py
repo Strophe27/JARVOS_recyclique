@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.user import UserUpdate, UserSelfUpdate
+from recyclic_api.core.security import hash_password
 from uuid import UUID
 
 from tests.api_v1_paths import v1
@@ -32,9 +33,30 @@ class TestUserProfileEndpoints:
         db_session.commit()
         db_session.refresh(user)
         user_id = str(user.id)
-        
-        # Test GET /users/{id}
-        response = client.get(v1(f"/users/{user_id}"))
+
+        admin = User(
+            username=f"admin_profile_gate_{user.id.hex[:12]}",
+            hashed_password=hash_password("Password1!Aa"),
+            first_name="Admin",
+            last_name="Profile",
+            role=UserRole.ADMIN,
+            status=UserStatus.APPROVED,
+            is_active=True,
+        )
+        db_session.add(admin)
+        db_session.commit()
+        db_session.refresh(admin)
+
+        login = client.post(
+            v1("/auth/login"),
+            json={"username": admin.username, "password": "Password1!Aa"},
+        )
+        assert login.status_code == 200
+        token = login.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Test GET /users/{id} (G-OA-03 : admin requis)
+        response = client.get(v1(f"/users/{user_id}"), headers=headers)
         assert response.status_code == 200
         
         user_data = response.json()

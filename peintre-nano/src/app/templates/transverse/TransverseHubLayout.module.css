@@ -9,6 +9,17 @@
   gap: var(--pn-space-md);
 }
 
+/**
+ * Hub admin (Epic 14.1) — rapproche la carte principale du legacy `AdminLayout` (`MainContent` blanche, ombre légère).
+ */
+.shellAdmin {
+  padding: var(--pn-space-lg);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
 .pageHeader {
   margin: 0;
   width: 100%;

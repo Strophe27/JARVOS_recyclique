@@ -37,7 +37,7 @@ Un pair valide : **matrice API-first** ; chaque **gap** lié à une **conséquen
 
 - [x] **Inventaire des opérations métier majeures** (AC : #1)  
   - [x] Couvrir au minimum les domaines alignés **Epic 1** / **FR39** / futures **Epics 6–8** : vente et encaissement, remboursement (si v2), session/clôture caisse, push comptable / écritures, correspondances **site / caisse / emplacement Paheko** (**FR41**), réception / flux matière (impact Paheko direct ou non), adhérents/membres si touchés par l'intégration comptable ou sociale minimale  
-  - [x] Éviter la liste arbitraire : s'appuyer sur **`epics.md`**, **`references/migration-paeco/`**, et le contrat **1.5** pour le vocabulaire sync (quarantaine, états) sans redéfinir ces états
+  - [x] Éviter la liste arbitraire : s'appuyer sur **`epics.md`**, **`references/migration-paheko/`**, et le contrat **1.5** pour le vocabulaire sync (quarantaine, états) sans redéfinir ces états
 
 - [x] **Construire la matrice** (table principale) (AC : #1, #3)  
   - [x] Colonnes suggérées : *Opération* | *Classification* | *Mécanisme Paheko* (endpoint `/api/...`, plugin nommé, SQL lecture-only / admin, N/A hors scope) | *Preuve / source* | *Notes*  
@@ -90,7 +90,7 @@ Un pair valide : **matrice API-first** ; chaque **gap** lié à une **conséquen
 - [Source : `references/paheko/index.md` — index intégration Paheko]  
 - [Source : `references/paheko/liste-endpoints-api-paheko.md` — inventaire routes `/api`]  
 - [Source : `references/paheko/analyse-brownfield-paheko.md` — API, plugins, WebDAV]  
-- [Source : `references/migration-paeco/` — audits brownfield Recyclique + Paheko]  
+- [Source : `references/migration-paheko/` — audits brownfield Recyclique + Paheko]  
 - [Source : `references/artefacts/2026-04-02_05_contrat-minimal-sync-reconciliation-paheko.md` — §9 hypothèses/gaps]
 
 ### Tests
@@ -109,7 +109,7 @@ Un pair valide : **matrice API-first** ; chaque **gap** lié à une **conséquen
 - [Source : `references/artefacts/2026-04-02_05_contrat-minimal-sync-reconciliation-paheko.md`]
 - [Source : `references/paheko/liste-endpoints-api-paheko.md`]
 - [Source : `references/paheko/analyse-brownfield-paheko.md`]
-- [Source : `references/migration-paeco/` — index et audits]
+- [Source : `references/migration-paheko/` — index et audits]
 - [Source : `contracts/openapi/recyclique-api.yaml` — surface v2 reviewable (pas fusionner avec la matrice comme source unique)]
 
 ## Dev Agent Record
@@ -124,7 +124,7 @@ Aucun — livrable documentaire uniquement.
 
 ### Completion Notes List
 
-- Artefact canonique `references/artefacts/2026-04-02_06_matrice-integration-paheko-gaps-api.md` : matrice opération × (API officielle | plugin minimal | SQL analyse-admin | hors scope v2), preuves croisées avec `liste-endpoints-api-paheko.md`, `analyse-brownfield-paheko.md`, audits `migration-paeco` ; §4 gaps/inconnues → backlog ; §5 garde-fous FR5/FR40/AR9.
+- Artefact canonique `references/artefacts/2026-04-02_06_matrice-integration-paheko-gaps-api.md` : matrice opération × (API officielle | plugin minimal | SQL analyse-admin | hors scope v2), preuves croisées avec `liste-endpoints-api-paheko.md`, `analyse-brownfield-paheko.md`, audits `migration-paheko` ; §4 gaps/inconnues → backlog ; §5 garde-fous FR5/FR40/AR9.
 - Index `references/artefacts/index.md` mis à jour.
 - Garde-fous reproductibles : test Vitest `peintre-nano/tests/contract/matrice-paheko-1-6-artefact.test.ts` ; synthèse QA `_bmad-output/implementation-artifacts/tests/1-6-matrice-paheko-doc-qa-summary.md` (aligné politique doc story 1.5).
 
@@ -141,7 +141,7 @@ Aucun — livrable documentaire uniquement.
 ### Review Findings (code review BMAD, 2026-04-02)
 
 - [x] [Review][Patch] Incohérence Dev Agent Record (« pas de test Vitest ») alors que le livrable inclut `matrice-paheko-1-6-artefact.test.ts` et la synthèse QA 1.6 — corrigé (Completion Notes, File List).
-- [x] [Review][Patch] Typo et traçabilité preuve caisse — « le alignement » corrigé en `l'alignement` ; référence `audit-caisse-paheko.md` complétée par le chemin repo dans l’artefact matrice.
+- [x] [Review][Patch] Typo et traçabilité preuve caisse — « le alignement » corrigé en `l'alignement` ; référence `audit-caisse-paheko.md` complétée par le chemin repo dans l'artefact matrice.
 
 ## Change Log
 

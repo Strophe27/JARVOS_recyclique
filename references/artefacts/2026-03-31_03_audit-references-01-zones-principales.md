@@ -81,7 +81,7 @@
 
 ---
 
-## D. `references/migration-paeco/`
+## D. `references/migration-paheko/`
 
 ### Structure
 
@@ -90,7 +90,7 @@
 
 ### Complémentarité vs consolidation
 
-| consolidation-1.4.5 | migration-paeco |
+| consolidation-1.4.5 | migration-paheko |
 |---------------------|-----------------|
 | Qualité / structure **code** 1.4.4 | **Interop** et **métier** caisse/réception/Paheko |
 | Backlog technique (IDs CFG, ARCH…) | Matrice + audits **correspondance** |

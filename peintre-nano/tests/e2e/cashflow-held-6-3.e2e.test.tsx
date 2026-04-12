@@ -199,15 +199,16 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('caisse-ticket-loading')).toBeNull();
     });
-    expect(screen.getByTestId('caisse-active-held-id').textContent ?? '').toContain(HELD_ID);
+    expect(screen.getByTestId('caisse-active-held-id').getAttribute('data-held-sale-id')).toBe(HELD_ID);
 
     fireEvent.click(screen.getByRole('tab', { name: /paiement/i }));
 
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
 
     await waitFor(() => {
-      const t = screen.getByTestId('cashflow-ticket-sale-id').textContent ?? '';
-      expect(t).toContain('bbbbbbbb-bbbb-4ccc-8ddd-222222222222');
+      expect(screen.getByTestId('cashflow-ticket-sale-id').getAttribute('data-sale-id')).toBe(
+        'bbbbbbbb-bbbb-4ccc-8ddd-222222222222',
+      );
     });
 
     const finalizeCalls = fetchMock.mock.calls.filter(([u, i]) => {

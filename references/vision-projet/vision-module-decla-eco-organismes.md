@@ -2,7 +2,7 @@
 
 **Objectif :** Fixer la vision du module (ou des modules) de déclarations aux éco-organismes pour RecyClique, en la distinguant du module unique « Saisie au poids » de Paheko.
 
-**Références :** [matiere_presentation-plateforme-recyclic.md](matiere_presentation-plateforme-recyclic.md) (section Module éco-organismes), [migration-paeco/categories-decla-eco-organismes.md](../migration-paeco/categories-decla-eco-organismes.md), [idees-kanban module correspondance](../idees-kanban/a-conceptualiser/2026-02-24_module-correspondance-paheko.md).
+**Références :** [matiere_presentation-plateforme-recyclic.md](matiere_presentation-plateforme-recyclic.md) (section Module éco-organismes), [migration-paheko/categories-decla-eco-organismes.md](../migration-paheko/categories-decla-eco-organismes.md), [idees-kanban module correspondance](../idees-kanban/a-conceptualiser/2026-02-24_module-correspondance-paheko.md).
 
 ---
 

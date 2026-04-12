@@ -164,7 +164,9 @@ describe('E2E — hub `/caisse` RCN-01 (Story 13.4)', () => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
 
-    expect(screen.getByText('Ouverte')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('Ouverte')).toBeTruthy();
+    });
     expect(screen.getByRole('button', { name: /^Reprendre$/i })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Ouvrir$/i })).toBeNull();
   });

@@ -10,7 +10,13 @@ export function toolbarSelectedEntryIdFromResolved(
 ): string | undefined {
   if (!useLiveToolbar || !resolvedEntryId) return resolvedEntryId;
   if (isLiveLegacyToolbarEntryId(resolvedEntryId)) return resolvedEntryId;
-  if (resolvedEntryId === 'transverse-admin-access' || resolvedEntryId === 'transverse-admin-site') {
+  if (
+    resolvedEntryId === 'transverse-admin-access' ||
+    resolvedEntryId === 'transverse-admin-site' ||
+    resolvedEntryId === 'transverse-admin-pending' ||
+    resolvedEntryId === 'transverse-admin-cash-registers' ||
+    resolvedEntryId === 'transverse-admin-sites'
+  ) {
     return 'transverse-admin';
   }
   if (resolvedEntryId === 'cashflow-refund' || resolvedEntryId === 'cashflow-close') {

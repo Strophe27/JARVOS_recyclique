@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.16-draft
+  version: 0.1.19-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -197,6 +197,100 @@ paths:
                 additionalProperties: false
         "401":
           description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/users/:
+    get:
+      operationId: recyclique_users_listUsers
+      tags:
+        - users
+        - admin
+      summary: Liste des utilisateurs (admin)
+      description: |
+        **G-OA-03** (Story 16.1) : session authentifiée **et** rôle ADMIN ou SUPER_ADMIN requis (`require_admin_role`).
+        Trace : `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md` section 4.
+        Même famille d'autorité que `GET /v1/admin/users` (lecture admin).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        "200":
+          description: Liste des utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Authentifié mais sans rôle administrateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/users/{user_id}:
+    get:
+      operationId: recyclique_users_getUserById
+      tags:
+        - users
+        - admin
+      summary: Détail utilisateur par id (admin)
+      description: |
+        **G-OA-03** (Story 16.1) : `require_admin_role` sur la route ; fermeture gap sécurité liste/détail users.
+        Trace : `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md` section 4.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Utilisateur trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Authentifié mais sans rôle administrateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Utilisateur inconnu
           content:
             application/json:
               schema:
@@ -2306,6 +2400,1734 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/reports/cash-sessions/export-bulk:
+    post:
+      operationId: recyclique_admin_reports_cashSessionsExportBulk
+      tags:
+        - admin
+        - reports
+      summary: Export bulk des sessions de caisse (CSV ou Excel)
+      description: |
+        **Story 16.4** (classe B, rail K — 15.6). **Rôles** : ADMIN ou SUPER_ADMIN.
+        **Step-up** : `X-Step-Up-Pin` obligatoire (`reports.cash_sessions.export_bulk`).
+        **Idempotence** : `Idempotency-Key` obligatoire (traçabilité client ; pas de cache de flux binaire côté serveur).
+        **Audit** : `log_admin_access` sur succès. **Risque** : fuite de masse / charge (jusqu'à 10k lignes).
+        Filtre `site_id` optionnel : les ADMIN non super-admin doivent rester alignés sur la portée site côté service métier.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminBulkCashSessionsExportRequest"
+      responses:
+        "200":
+          description: Fichier généré (CSV ou XLSX)
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Idempotency-Key manquant ou validation filtres
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant, PIN step-up manquant/invalide, ou PIN non configuré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide (Pydantic)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Rate limit ou verrouillage step-up PIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/reports/reception-tickets/export-bulk:
+    post:
+      operationId: recyclique_admin_reports_receptionTicketsExportBulk
+      tags:
+        - admin
+        - reports
+      summary: Export bulk des tickets de réception (CSV ou Excel)
+      description: |
+        **Story 16.4**. **Rôles** : ADMIN ou SUPER_ADMIN.
+        **Step-up** : `X-Step-Up-Pin` (`reports.reception_tickets.export_bulk`).
+        **Idempotence** : `Idempotency-Key` obligatoire.
+        **Audit** : `log_admin_access` sur succès.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminBulkReceptionTicketsExportRequest"
+      responses:
+        "200":
+          description: Fichier généré (CSV ou XLSX)
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Idempotency-Key manquant ou validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant ou step-up refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps JSON invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Rate limit ou lockout PIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/stats/reception/summary:
+    get:
+      operationId: recyclique_stats_receptionSummary
+      tags:
+        - stats
+      summary: Résumé agrégé réception (admin)
+      description: |
+        **Story 16.4** : **ADMIN** ou **SUPER_ADMIN** uniquement (alignement 15.2 vs legacy admin).
+        Agrégats **cross-site** ; **audit** `log_admin_access` sur lecture réussie.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Totaux réception
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Plage de dates invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle non administrateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Rate limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/stats/reception/by-category:
+    get:
+      operationId: recyclique_stats_receptionByCategory
+      tags:
+        - stats
+      summary: Statistiques réception par catégorie (admin)
+      description: |
+        **Story 16.4** : **ADMIN** ou **SUPER_ADMIN** ; agrégats cross-site ; audit `log_admin_access`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Liste par catégorie
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        "400":
+          description: Plage de dates invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle non administrateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Rate limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/stats/live:
+    get:
+      operationId: recyclique_stats_unifiedLive
+      tags:
+        - stats
+      summary: Statistiques live unifiées (caisse + réception)
+      description: |
+        KPIs live ; **ADMIN** ou **SUPER_ADMIN**. **Audit** `log_admin_access` (16.4).
+        Paramètres `period_type` (`daily` \| `24h`) et `site_id` optionnel.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: period_type
+          in: query
+          schema:
+            type: string
+            enum:
+              - 24h
+              - daily
+            default: daily
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: Agrégats live
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/reception/stats/live:
+    get:
+      operationId: recyclique_reception_statsLiveDeprecated
+      tags:
+        - reception
+        - stats
+      summary: Statistiques live réception (déprécié)
+      description: |
+        **Déprécié** — utiliser `GET /v1/stats/live`. **ADMIN** ou **SUPER_ADMIN** ; audit `log_admin_access` (16.4).
+        En-têtes `Deprecation` / `Link` vers le successeur (impl FastAPI).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: KPIs réception (legacy)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/groups/:
+    get:
+      operationId: adminGroupsList
+      tags:
+        - admin
+        - groups
+      summary: Liste des groupes (admin)
+      description: |
+        **G-OA-01** (Story 16.2 ; trace 15.2 §4) : contrat canon pour la famille `groups`.
+        **Autorité** : `require_admin_role` — jeton via `Authorization: Bearer` **ou** cookie httpOnly (`resolve_access_token`) ; rôle ADMIN ou SUPER_ADMIN.
+        Sans jeton : **401** ; USER authentifié : **403**.
+        **Lecture** : pagination `skip`/`limit` ; champ `site_id` sur un groupe = portée multi-site (futur bornage d'affichage ContextEnvelope, pas de vérité permission côté client — 15.5 §1).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        "200":
+          description: Liste de groupes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminGroupListItem"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    post:
+      operationId: adminGroupsCreate
+      tags:
+        - admin
+        - groups
+      summary: Créer un groupe (admin)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role` (Bearer ou cookie, voir `adminGroupsList`).
+        Conflit nom ou clé unique : **409**.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGroupCreate"
+      responses:
+        "201":
+          description: Groupe créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupDetail"
+        "400":
+          description: Paramètre site_id invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Nom ou clé de groupe déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/groups/{group_id}:
+    get:
+      operationId: adminGroupsGetById
+      tags:
+        - admin
+        - groups
+      summary: Détail d'un groupe (admin)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Détail avec utilisateurs et permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupDetail"
+        "400":
+          description: UUID groupe invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Groupe introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: adminGroupsUpdate
+      tags:
+        - admin
+        - groups
+      summary: Mettre à jour un groupe (admin)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`. `site_id` nullable (chaîne vide pour effacer).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGroupUpdate"
+      responses:
+        "200":
+          description: Groupe mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupDetail"
+        "400":
+          description: UUID ou site_id invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Groupe introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Nom déjà pris
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    delete:
+      operationId: adminGroupsDelete
+      tags:
+        - admin
+        - groups
+      summary: Supprimer un groupe (admin)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`. **204** si suppression OK.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Supprimé
+        "400":
+          description: UUID invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Groupe introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/groups/{group_id}/permissions:
+    post:
+      operationId: adminGroupsAddPermissions
+      tags:
+        - admin
+        - groups
+      summary: Ajouter des permissions à un groupe
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAssignPermissionIdsRequest"
+      responses:
+        "200":
+          description: Groupe mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupDetail"
+        "400":
+          description: UUID invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Groupe ou permission introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/groups/{group_id}/permissions/{permission_id}:
+    delete:
+      operationId: adminGroupsRemovePermission
+      tags:
+        - admin
+        - groups
+      summary: Retirer une permission d'un groupe
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: permission_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Groupe mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupDetail"
+        "400":
+          description: UUID invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Groupe ou permission absente du groupe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/groups/{group_id}/users:
+    post:
+      operationId: adminGroupsAddUsers
+      tags:
+        - admin
+        - groups
+      summary: Ajouter des utilisateurs à un groupe
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAssignUserIdsRequest"
+      responses:
+        "200":
+          description: Groupe mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupDetail"
+        "400":
+          description: UUID invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Groupe ou utilisateur introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/groups/{group_id}/users/{user_id}:
+    delete:
+      operationId: adminGroupsRemoveUser
+      tags:
+        - admin
+        - groups
+      summary: Retirer un utilisateur d'un groupe
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Groupe mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupDetail"
+        "400":
+          description: UUID invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Groupe ou utilisateur absent du groupe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/users/{user_id}/groups:
+    put:
+      operationId: adminUsersGroupsPut
+      tags:
+        - admin
+        - groups
+        - users
+      summary: Remplacer les groupes d'un utilisateur (admin)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role` (même transport Bearer/cookie que les routes `groups` ci-dessus).
+        Mutation ACL : audit applicatif `log_admin_access` + `log_role_change` côté serveur.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserGroupUpdateRequest"
+      responses:
+        "200":
+          description: Groupes mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMutationEnvelope"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Utilisateur ou groupe introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/transaction-logs:
+    get:
+      operationId: adminTransactionLogsList
+      tags:
+        - admin
+        - observability
+      summary: Logs transactionnels JSON (admin, lecture transverse)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role_strict()` via `get_current_user_strict` :
+        en-tête Bearer **ou** cookie d'accès obligatoire — **403** « Not authenticated » si les deux absents (diffère de `require_admin_role` qui renvoie plutôt **401** sans jeton).
+        **Lecture transverse** fichiers log (pas de filtre site dans le handler ; 15.2 §2).
+        Rate limit serveur : 30 requêtes/minute (**429** possible).
+      security:
+        - adminSessionStrict: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: event_type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: session_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Entrées paginées (objets JSON libres par ligne de log)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTransactionLogsPage"
+        "403":
+          description: Non authentifié (transport strict) ou rôle non admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/audit-log:
+    get:
+      operationId: adminAuditLogList
+      tags:
+        - admin
+        - observability
+      summary: Journal d'audit applicatif (admin, lecture transverse)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role_strict()` (voir `adminTransactionLogsList`).
+        **Lecture transverse** table `AuditLog` ; filtres query documentés alignés sur le handler.
+        Rate limit : 30/minute (**429**).
+      security:
+        - adminSessionStrict: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: action_type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: actor_username
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: target_type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Entrées d'audit et pagination
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuditLogPage"
+        "403":
+          description: Transport strict ou rôle non admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/settings/alert-thresholds:
+    get:
+      operationId: adminSettingsAlertThresholdsGet
+      tags:
+        - admin
+        - settings
+      summary: Seuils d'alerte dashboard (ADMIN ou SUPER_ADMIN)
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([ADMIN, SUPER_ADMIN])` via `get_current_user`
+        (JWT **Bearer** ou cookie d'accès v2, même transport que le reste de l'API).
+        **Contexte** : paramètres optionnellement **par site** (`site_id` query) ; pas de `ContextEnvelope` dans le handler
+        (contrôle global + site_id explicite). **Step-up PIN** : **non** requis sur GET/PUT (décision Story 16.3 :
+        mutations bornées à des seuils numériques, audit `log_admin_access`, friction opérationnelle vs risque résiduel
+        accepté — clients futurs peuvent ajouter une couche produit). Rate limit conditionnel serveur.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Seuils courants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsAlertThresholdsEnvelope"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: adminSettingsAlertThresholdsPut
+      tags:
+        - admin
+        - settings
+      summary: Mettre à jour les seuils d'alerte
+      description: |
+        **G-OA-01** (Story 16.3). Même **autorité** et **contexte** que `adminSettingsAlertThresholdsGet`.
+        **Step-up PIN** : **non** (même justification documentaire que le GET).
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsAlertThresholdsUpdateBody"
+      responses:
+        "200":
+          description: Seuils mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsAlertThresholdsEnvelope"
+        "400":
+          description: Validation métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/settings/session:
+    get:
+      operationId: adminSettingsSessionGet
+      tags:
+        - admin
+        - settings
+      summary: Paramètres de session JWT (SUPER_ADMIN)
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([SUPER_ADMIN])` (Bearer/cookie).
+        **Contexte** : réglage **global** instance (durée tokens) ; **N/A** `ContextEnvelope` dans le handler.
+        **Step-up PIN** : **non** sur GET/PUT (décision tracée 16.3 : super-admin déjà requis ; audit `log_admin_access` ;
+        éviter rupture clients admin existants — risque résiduel assumé vs opérations DB destructive).
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Paramètres session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsSessionEnvelope"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle SUPER_ADMIN requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: adminSettingsSessionPut
+      tags:
+        - admin
+        - settings
+      summary: Mettre à jour les paramètres de session
+      description: |
+        **G-OA-01** (Story 16.3). Même **autorité** / **contexte** / absence step-up que `adminSettingsSessionGet` (justification identique).
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsSessionUpdateBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsSessionEnvelope"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle SUPER_ADMIN requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/settings/email:
+    get:
+      operationId: adminSettingsEmailGet
+      tags:
+        - admin
+        - settings
+      summary: Configuration email Brevo (SUPER_ADMIN)
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([SUPER_ADMIN])`.
+        **Contexte** : configuration **globale** expéditeur ; pas de `ContextEnvelope` dans le handler.
+        **Step-up PIN** : **non** sur GET/PUT/POST test (décision 16.3 : pas de fuite secrets dans l'audit existant ;
+        envoi test reste sous rate limit ; alternative step-up envisageable en durcissement ultérieur).
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Paramètres email (sans clé API en clair)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsEmailEnvelope"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle SUPER_ADMIN requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: adminSettingsEmailPut
+      tags:
+        - admin
+        - settings
+      summary: Mettre à jour la configuration email
+      description: |
+        **G-OA-01** (Story 16.3). Voir `adminSettingsEmailGet` pour autorité, contexte, absence step-up.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsEmailUpdateBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsEmailEnvelope"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle SUPER_ADMIN requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/settings/email/test:
+    post:
+      operationId: adminSettingsEmailTestPost
+      tags:
+        - admin
+        - settings
+      summary: Envoyer un email de test (SUPER_ADMIN)
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_role_strict([SUPER_ADMIN])`.
+        **Audit** : `log_admin_access` (pas `AuditLog` structuré sur cette route seule).
+        **Step-up** : **non** (voir description `adminSettingsEmailGet`).
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsEmailTestRequest"
+      responses:
+        "200":
+          description: Envoi déclenché
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsEmailTestResponse"
+        "400":
+          description: Configuration ou validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle SUPER_ADMIN requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Échec envoi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/settings/activity-threshold:
+    get:
+      operationId: adminSettingsActivityThresholdGet
+      tags:
+        - admin
+        - settings
+      summary: Seuil d'activité « en ligne » (ADMIN ou SUPER_ADMIN)
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_admin_role` (ADMIN **ou** SUPER_ADMIN ; transport Bearer/cookie).
+        **Écart UI/API (15.2)** : l'écran legacy « settings » peut n'exposer cette action qu'aux SUPER_ADMIN alors que l'API
+        accepte les ADMIN — documenter la divergence pour le portage Peintre.
+        **Contexte** : paramètre **global** (`Setting.key` = `activity_threshold_minutes`) ; pas de `ContextEnvelope`.
+        **Step-up** : **non** (mutation non destructive bornée 1–1440 min ; `log_audit` + `SETTING_UPDATED`).
+        Rate limit slowapi 30/minute (**429** possible).
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Seuil courant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminActivityThresholdResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle admin requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: adminSettingsActivityThresholdPut
+      tags:
+        - admin
+        - settings
+      summary: Mettre à jour le seuil d'activité
+      description: |
+        **G-OA-01** (Story 16.3). Même **autorité**, **écart 15.2**, **contexte** et absence **step-up** que le GET.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminActivityThresholdUpdateBody"
+      responses:
+        "200":
+          description: Seuil mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminActivityThresholdPutResponse"
+        "400":
+          description: Validation (1–1440)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle admin requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/db/export:
+    post:
+      operationId: adminDbExportPost
+      tags:
+        - admin
+        - database
+      summary: Export pg_dump binaire (.dump), SUPER_ADMIN + step-up PIN
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_super_admin_role()` (JWT Bearer ou cookie).
+        **Contexte** : opération **globale instance** (connexion via `DATABASE_URL` serveur) ; pas de filtre site ni `ContextEnvelope`.
+        **Step-up** : **obligatoire** — en-tête `X-Step-Up-Pin` (opération serveur `db.export`, constante `SENSITIVE_OPERATION_DB_EXPORT`).
+        **Idempotency-Key** : **non exigé** côté serveur (réponse fichier binaire : pas de rejouabilité JSON stockée ;
+        décision tracée — double clic = second export complet ; mitigation : step-up + rôle super-admin).
+        **Audit** : `log_system_action` avec `AuditActionType.DB_EXPORT` (succès/échecs) — jamais d'URL DB ni secrets.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+          description: PIN métier utilisateur (hash vérifié serveur, non journalisé).
+      responses:
+        "200":
+          description: Fichier `.dump` (octet-stream)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Non authentifié ou non super-admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: PIN step-up manquant/invalide / PIN non configuré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Verrouillage temporaire step-up (trop d'échecs PIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: pg_dump ou configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "504":
+          description: Timeout pg_dump
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/db/import:
+    post:
+      operationId: adminDbImportPost
+      tags:
+        - admin
+        - database
+      summary: Import pg_restore (.dump), SUPER_ADMIN + step-up + Idempotency-Key
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_super_admin_role()`.
+        **Contexte** : restauration **base complète** instance (`DATABASE_URL`) ; pas de `ContextEnvelope`.
+        **Step-up** : **obligatoire** (`X-Step-Up-Pin`, opération `db.import`).
+        **Idempotency-Key** : **obligatoire** ; rejeu même clé + même fichier (nom + taille) → même réponse **200** ;
+        clé réutilisée avec fichier différent → **409** `IDEMPOTENCY_KEY_CONFLICT`.
+        **Audit** : `AuditActionType.DB_IMPORT` inchangé (`log_system_action`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Fichier .dump PostgreSQL custom format
+      responses:
+        "200":
+          description: Import réussi (JSON)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDbImportSuccessResponse"
+        "400":
+          description: Fichier invalide ou Idempotency-Key absent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: PIN step-up / super-admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit idempotence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "413":
+          description: Fichier trop volumineux
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Step-up verrouillé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur restauration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "504":
+          description: Timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/db/purge-transactions:
+    post:
+      operationId: adminDbPurgeTransactionsPost
+      tags:
+        - admin
+        - database
+      summary: Purge données transactionnelles, SUPER_ADMIN + step-up + Idempotency-Key
+      description: |
+        **G-OA-01** (Story 16.3). **Autorité** : `require_super_admin_role()`.
+        **Contexte** : purge **globale** tables ventes/réception/caisse listées dans le handler ; pas de `ContextEnvelope`.
+        **Step-up** : **obligatoire** (`db.purge_transactions`).
+        **Idempotency-Key** : **obligatoire** ; rejeu même clé → même JSON **200**.
+        **Audit** : `AuditActionType.DB_PURGE` via `log_system_action` (comptes supprimés, pas de PII).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 128
+      responses:
+        "200":
+          description: Purge terminée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDbPurgeSuccessResponse"
+        "400":
+          description: Idempotency-Key absent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: PIN / super-admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit idempotence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Step-up verrouillé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur purge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/email-logs:
+    get:
+      operationId: adminEmailLogsList
+      tags:
+        - admin
+        - observability
+      summary: Liste des logs d'emails envoyés (admin, lecture transverse)
+      description: |
+        **G-OA-01** (Story 16.2). **Autorité** : `require_admin_role_strict()` (voir `adminTransactionLogsList`).
+        Données via **serveur** `EmailLogService` — ne pas reproduire l'anti-pattern **client** legacy `emailLogService`
+        (fetch parallèle, `localStorage`, baseUrl ad hoc ; 15.2 §5) : les futurs clients doivent consommer **uniquement**
+        ce contrat `/v1/admin/email-logs` avec la même session que le reste de l'API v2 (Bearer/cookie).
+        **Lecture transverse** ; rate limit 30/minute (**429**).
+      security:
+        - adminSessionStrict: []
+      parameters:
+        - name: recipient_email
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Valeur enum `EmailStatus` (ex. pending, sent, delivered)
+        - name: email_type
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Valeur enum `EmailType` (ex. password_reset, welcome)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Logs paginés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEmailLogListResponse"
+        "400":
+          description: Filtre status ou email_type invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Transport strict ou rôle non admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
 components:
   securitySchemes:
     bearerOrCookie:
@@ -2314,7 +4136,659 @@ components:
       bearerFormat: JWT
       description: |
         JWT d'accès. Alternative same-origin : cookie httpOnly `recyclique_access` (nom par défaut serveur), sans duplication de la logique d'autorisation côté client.
+    adminSessionStrict:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Même transport JWT que `bearerOrCookie` (header **Authorization: Bearer** ou cookie httpOnly d'accès).
+        Story 16.2 : routes observabilité utilisent `require_admin_role_strict()` → `get_current_user_strict` :
+        **403** « Not authenticated » si ni Bearer ni cookie (au lieu du **401** typique de `require_admin_role` sans jeton).
+        Toujours exiger ensuite rôle ADMIN ou SUPER_ADMIN (403 « Accès refusé - rôle administrateur requis » si USER).
   schemas:
+    AdminBulkExportFormat:
+      type: string
+      enum:
+        - csv
+        - excel
+    AdminBulkCashSessionsExportRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - filters
+        - format
+      properties:
+        filters:
+          type: object
+          description: Filtres sessions (dates ISO, statut, site_id, etc.)
+          additionalProperties: true
+        format:
+          $ref: "#/components/schemas/AdminBulkExportFormat"
+    AdminBulkReceptionTicketsExportRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - filters
+        - format
+      properties:
+        filters:
+          type: object
+          description: Filtres tickets réception
+          additionalProperties: true
+        format:
+          $ref: "#/components/schemas/AdminBulkExportFormat"
+    UserV1Response:
+      type: object
+      description: |
+        Corps JSON `UserResponse` (routes `GET /v1/users/` et `GET /v1/users/{user_id}`). Story 16.1 / G-OA-03.
+      required:
+        - id
+        - username
+        - role
+        - status
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        first_name:
+          type: string
+          nullable: true
+        last_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        skills:
+          type: string
+          nullable: true
+        availability:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum:
+            - super-admin
+            - admin
+            - user
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+            - active
+        is_active:
+          type: boolean
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    AdminPermissionV1:
+      type: object
+      description: Permission (réponse groupe détail) — Story 16.2.
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    AdminGroupListItem:
+      type: object
+      description: Élément liste groupes (`GroupResponse`) — Story 16.2.
+      required:
+        - id
+        - key
+        - name
+        - created_at
+        - updated_at
+        - user_ids
+        - permission_ids
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        name:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        user_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        permission_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+    AdminGroupDetail:
+      type: object
+      description: Détail groupe (`GroupDetailResponse`) — Story 16.2.
+      required:
+        - id
+        - key
+        - name
+        - created_at
+        - updated_at
+        - users
+        - permissions
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        name:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserV1Response"
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminPermissionV1"
+      additionalProperties: false
+    AdminGroupCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        key:
+          type: string
+          nullable: true
+        display_name:
+          type: string
+          nullable: true
+        site_id:
+          type: string
+          nullable: true
+          description: UUID site ou null/absent pour global
+      additionalProperties: false
+    AdminGroupUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        display_name:
+          type: string
+          nullable: true
+        site_id:
+          type: string
+          nullable: true
+          description: UUID ou chaîne vide pour effacer
+      additionalProperties: false
+    AdminAssignPermissionIdsRequest:
+      type: object
+      required:
+        - permission_ids
+      properties:
+        permission_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+    AdminAssignUserIdsRequest:
+      type: object
+      required:
+        - user_ids
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+    AdminUserGroupUpdateRequest:
+      type: object
+      required:
+        - group_ids
+      properties:
+        group_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+    AdminSettingsAlertThresholdsNumbers:
+      type: object
+      required:
+        - cashDiscrepancy
+        - lowInventory
+      properties:
+        cashDiscrepancy:
+          type: number
+        lowInventory:
+          type: integer
+      additionalProperties: false
+    AdminSettingsAlertThresholdsEnvelope:
+      type: object
+      required:
+        - thresholds
+      properties:
+        thresholds:
+          $ref: "#/components/schemas/AdminSettingsAlertThresholdsNumbers"
+        siteId:
+          type: string
+          nullable: true
+      additionalProperties: true
+    AdminSettingsAlertThresholdsUpdateBody:
+      type: object
+      required:
+        - thresholds
+      properties:
+        thresholds:
+          $ref: "#/components/schemas/AdminSettingsAlertThresholdsNumbers"
+        siteId:
+          type: string
+          nullable: true
+      additionalProperties: false
+    AdminSettingsSessionEnvelope:
+      type: object
+      description: Aligné `SessionSettingsResponse`.
+      properties:
+        token_expiration_minutes:
+          type: integer
+      additionalProperties: false
+    AdminSettingsSessionUpdateBody:
+      type: object
+      required:
+        - token_expiration_minutes
+      properties:
+        token_expiration_minutes:
+          type: integer
+      additionalProperties: false
+    AdminSettingsEmailEnvelope:
+      type: object
+      properties:
+        from_name:
+          type: string
+        from_address:
+          type: string
+          format: email
+        default_recipient:
+          type: string
+          nullable: true
+        has_api_key:
+          type: boolean
+        webhook_secret_configured:
+          type: boolean
+      additionalProperties: false
+    AdminSettingsEmailUpdateBody:
+      type: object
+      properties:
+        from_name:
+          type: string
+        from_address:
+          type: string
+        default_recipient:
+          type: string
+          nullable: true
+      additionalProperties: false
+    AdminSettingsEmailTestRequest:
+      type: object
+      required:
+        - to_email
+      properties:
+        to_email:
+          type: string
+          format: email
+      additionalProperties: false
+    AdminSettingsEmailTestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        to_email:
+          type: string
+        from_email:
+          type: string
+        from_name:
+          type: string
+      additionalProperties: true
+    AdminActivityThresholdResponse:
+      type: object
+      properties:
+        activity_threshold_minutes:
+          type: integer
+        description:
+          type: string
+      additionalProperties: true
+    AdminActivityThresholdUpdateBody:
+      type: object
+      required:
+        - activity_threshold_minutes
+      properties:
+        activity_threshold_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+      additionalProperties: false
+    AdminActivityThresholdPutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        activity_threshold_minutes:
+          type: integer
+      additionalProperties: true
+    AdminDbImportSuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        imported_file:
+          type: string
+        backup_created:
+          type: string
+        backup_path:
+          type: string
+        timestamp:
+          type: string
+      additionalProperties: true
+    AdminDbPurgeSuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        deleted_records:
+          type: object
+          additionalProperties:
+            type: integer
+        timestamp:
+          type: string
+      additionalProperties: true
+    AdminMutationEnvelope:
+      type: object
+      description: Réponse standard admin (`AdminResponse`) — PUT groupes utilisateur.
+      required:
+        - message
+        - success
+      properties:
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+        message:
+          type: string
+        success:
+          type: boolean
+      additionalProperties: false
+    AdminPaginationStandard:
+      type: object
+      required:
+        - page
+        - page_size
+        - total_count
+        - total_pages
+        - has_next
+        - has_prev
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+      additionalProperties: false
+    AdminTransactionLogsPage:
+      type: object
+      required:
+        - entries
+        - pagination
+      properties:
+        entries:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        pagination:
+          $ref: "#/components/schemas/AdminPaginationStandard"
+      additionalProperties: false
+    AdminAuditLogEntry:
+      type: object
+      description: Ligne journal d'audit (handler admin_observability).
+      required:
+        - id
+        - timestamp
+        - action_type
+        - description
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        actor_id:
+          type: string
+          nullable: true
+        actor_username:
+          type: string
+          nullable: true
+        action_type:
+          type: string
+        target_id:
+          type: string
+          nullable: true
+        target_username:
+          type: string
+          nullable: true
+        target_type:
+          type: string
+          nullable: true
+        details:
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        ip_address:
+          type: string
+          nullable: true
+        user_agent:
+          type: string
+          nullable: true
+      additionalProperties: true
+    AdminAuditLogFiltersApplied:
+      type: object
+      additionalProperties: true
+    AdminAuditLogPage:
+      type: object
+      required:
+        - entries
+        - pagination
+        - filters_applied
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAuditLogEntry"
+        pagination:
+          $ref: "#/components/schemas/AdminPaginationStandard"
+        filters_applied:
+          $ref: "#/components/schemas/AdminAuditLogFiltersApplied"
+      additionalProperties: false
+    AdminEmailLogRow:
+      type: object
+      description: Entrée `EmailLogResponse` (champs principaux).
+      required:
+        - id
+        - recipient_email
+        - subject
+        - email_type
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipient_email:
+          type: string
+        recipient_name:
+          type: string
+          nullable: true
+        subject:
+          type: string
+        body_text:
+          type: string
+          nullable: true
+        body_html:
+          type: string
+          nullable: true
+        email_type:
+          type: string
+        status:
+          type: string
+        external_id:
+          type: string
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+        opened_at:
+          type: string
+          format: date-time
+          nullable: true
+        clicked_at:
+          type: string
+          format: date-time
+          nullable: true
+        bounced_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        additional_data:
+          type: string
+          nullable: true
+      additionalProperties: true
+    AdminEmailLogListResponse:
+      type: object
+      required:
+        - email_logs
+        - total
+        - page
+        - per_page
+        - total_pages
+      properties:
+        email_logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminEmailLogRow"
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
+      additionalProperties: false
     RecycliqueApiError:
       type: object
       description: |
@@ -2977,6 +5451,8 @@ components:
           description: |
             Map `label_key` (declare dans les manifests CREOS, ex. navigation) vers libelle affichable UTF-8.
             Presentation uniquement : le runtime n'utilise pas ce champ pour autoriser ou masquer des entrees.
+            Cle supplementaire serveur (Epic 14.1) : `context.active_site_display_name` — nom convivial du site
+            d'exploitation courant lorsque `context.site_id` est resolu en base (pas d'UUID expose en UI).
           additionalProperties:
             type: string
       additionalProperties: false

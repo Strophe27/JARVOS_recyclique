@@ -3,6 +3,8 @@ Tests pour l'endpoint d'import de base de données (Story B46-P2)
 Pattern: Mocks & Overrides (évite d'exécuter pg_restore réel en test)
 """
 
+import uuid
+
 import pytest
 import os
 from unittest.mock import Mock, patch, MagicMock
@@ -13,8 +15,23 @@ from io import BytesIO
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import create_access_token
 from recyclic_api.core.config import settings
+from recyclic_api.core.step_up import IDEMPOTENCY_KEY_HEADER, STEP_UP_PIN_HEADER
 from recyclic_api.api.api_v1.endpoints import db_import as db_import_endpoint
 from tests.factories import UserFactory
+
+
+def _import_sensitive_headers(*, idempotency_key: str | None = None) -> dict[str, str]:
+    return {
+        STEP_UP_PIN_HEADER: "1234",
+        IDEMPOTENCY_KEY_HEADER: idempotency_key or str(uuid.uuid4()),
+    }
+
+
+def _detail_text(response) -> str:
+    raw = response.json().get("detail")
+    if isinstance(raw, dict):
+        return (raw.get("message") or raw.get("code") or str(raw)).lower()
+    return str(raw).lower()
 
 _V1 = settings.API_V1_STR.rstrip("/")
 _DB_IMPORT_URL = f"{_V1}/admin/db/import"
@@ -57,7 +74,9 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 200
@@ -136,11 +155,13 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.txt", BytesIO(b"content"), "text/plain")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 400
-        assert ".dump" in response.json()["detail"]
+        assert ".dump" in _detail_text(response)
 
     def test_import_database_file_too_large_returns_413(self, super_admin_client: TestClient):
         """Teste qu'un fichier trop volumineux retourne une erreur 413."""
@@ -150,11 +171,13 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("large.dump", BytesIO(large_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 413
-        assert "trop volumineux" in response.json()["detail"]
+        assert "trop volumineux" in _detail_text(response)
 
     @patch('recyclic_api.api.api_v1.endpoints.db_import.subprocess.run')
     @patch('recyclic_api.api.api_v1.endpoints.db_import.os.makedirs')
@@ -177,11 +200,13 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 400
-        assert ".dump n'est pas valide" in response.json()["detail"]
+        assert ".dump n'est pas valide" in _detail_text(response)
 
     @patch('recyclic_api.api.api_v1.endpoints.db_import.subprocess.run')
     @patch('recyclic_api.api.api_v1.endpoints.db_import.os.makedirs')
@@ -210,11 +235,13 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 500
-        assert "sauvegarde automatique" in response.json()["detail"]
+        assert "sauvegarde automatique" in _detail_text(response)
 
     @patch('recyclic_api.api.api_v1.endpoints.db_import.subprocess.run')
     @patch('recyclic_api.api.api_v1.endpoints.db_import.os.makedirs')
@@ -240,11 +267,13 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 500
-        assert "restauration" in response.json()["detail"]
+        assert "restauration" in _detail_text(response)
 
     @patch('recyclic_api.api.api_v1.endpoints.db_import.subprocess.run')
     @patch('recyclic_api.api.api_v1.endpoints.db_import.os.makedirs')
@@ -272,11 +301,13 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 504
-        assert "timeout" in response.json()["detail"].lower()
+        assert "timeout" in _detail_text(response)
 
     @patch('recyclic_api.api.api_v1.endpoints.db_import.subprocess.run')
     @patch('recyclic_api.api.api_v1.endpoints.db_import.os.makedirs')
@@ -299,7 +330,9 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 200
@@ -341,9 +374,119 @@ class TestDatabaseImportEndpoint:
         files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
 
         # Act
-        response = super_admin_client.post(_DB_IMPORT_URL, files=files)
+        response = super_admin_client.post(
+            _DB_IMPORT_URL, files=files, headers=_import_sensitive_headers()
+        )
 
         # Assert
         assert response.status_code == 200
         # Vérifier que os.unlink a été appelé pour nettoyer le fichier temporaire
         assert mock_unlink.called
+
+
+class TestStory163DatabaseImportGuards:
+    """Story 16.3 — step-up PIN, Idempotency-Key, lockout."""
+
+    def test_import_requires_idempotency_key(self, super_admin_client: TestClient):
+        dump_content = b"PGDMP\x01\x00\x00\x00"
+        files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
+        r = super_admin_client.post(
+            _DB_IMPORT_URL,
+            files=files,
+            headers={STEP_UP_PIN_HEADER: "1234"},
+        )
+        assert r.status_code == 400
+        assert r.json()["code"] == "IDEMPOTENCY_KEY_REQUIRED"
+
+    def test_import_requires_step_up_pin(self, super_admin_client: TestClient):
+        dump_content = b"PGDMP\x01\x00\x00\x00"
+        files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
+        r = super_admin_client.post(
+            _DB_IMPORT_URL,
+            files=files,
+            headers={IDEMPOTENCY_KEY_HEADER: str(uuid.uuid4())},
+        )
+        assert r.status_code == 403
+        assert r.json()["code"] == "STEP_UP_PIN_REQUIRED"
+
+    def test_import_step_up_wrong_pin_returns_403(self, super_admin_client: TestClient):
+        dump_content = b"PGDMP\x01\x00\x00\x00"
+        files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
+        r = super_admin_client.post(
+            _DB_IMPORT_URL,
+            files=files,
+            headers={
+                STEP_UP_PIN_HEADER: "9999",
+                IDEMPOTENCY_KEY_HEADER: str(uuid.uuid4()),
+            },
+        )
+        assert r.status_code == 403
+        assert r.json()["code"] == "STEP_UP_PIN_INVALID"
+
+    @patch("recyclic_api.core.step_up._is_locked_out", return_value=True)
+    def test_import_step_up_locked_returns_429(
+        self,
+        _mock_lock: Mock,
+        super_admin_client: TestClient,
+    ):
+        dump_content = b"PGDMP\x01\x00\x00\x00"
+        files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
+        r = super_admin_client.post(
+            _DB_IMPORT_URL,
+            files=files,
+            headers=_import_sensitive_headers(),
+        )
+        assert r.status_code == 429
+        assert r.json()["code"] == "STEP_UP_LOCKED"
+
+    @patch("recyclic_api.api.api_v1.endpoints.db_import.subprocess.run")
+    @patch("recyclic_api.api.api_v1.endpoints.db_import.os.makedirs")
+    def test_import_idempotent_replay_same_payload(
+        self,
+        mock_makedirs: Mock,
+        mock_subprocess: Mock,
+        super_admin_client: TestClient,
+    ):
+        def side_effect(*args, **kwargs):
+            return MagicMock(returncode=0, stderr="", stdout="")
+
+        mock_subprocess.side_effect = side_effect
+        mock_makedirs.return_value = None
+        dump_content = b"PGDMP\x01\x00\x00\x00"
+        files = {"file": ("test.dump", BytesIO(dump_content), "application/octet-stream")}
+        ik = str(uuid.uuid4())
+        h = _import_sensitive_headers(idempotency_key=ik)
+        r1 = super_admin_client.post(_DB_IMPORT_URL, files=files, headers=h)
+        r2 = super_admin_client.post(_DB_IMPORT_URL, files=files, headers=h)
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r1.json() == r2.json()
+
+    @patch("recyclic_api.api.api_v1.endpoints.db_import.subprocess.run")
+    @patch("recyclic_api.api.api_v1.endpoints.db_import.os.makedirs")
+    def test_import_idempotency_key_conflict_different_file(
+        self,
+        mock_makedirs: Mock,
+        mock_subprocess: Mock,
+        super_admin_client: TestClient,
+    ):
+        def side_effect(*args, **kwargs):
+            return MagicMock(returncode=0, stderr="", stdout="")
+
+        mock_subprocess.side_effect = side_effect
+        mock_makedirs.return_value = None
+        ik = str(uuid.uuid4())
+        h = _import_sensitive_headers(idempotency_key=ik)
+        files1 = {"file": ("test.dump", BytesIO(b"PGDMP\x01\x00\x00\x00"), "application/octet-stream")}
+        r1 = super_admin_client.post(_DB_IMPORT_URL, files=files1, headers=h)
+        assert r1.status_code == 200
+        files2 = {
+            "file": (
+                "test.dump",
+                BytesIO(b"PGDMP\x02\x00\x00\x00" + b"x" * 50),
+                "application/octet-stream",
+            )
+        }
+        r2 = super_admin_client.post(_DB_IMPORT_URL, files=files2, headers=h)
+        assert r2.status_code == 409
+        assert r2.json()["code"] == "IDEMPOTENCY_KEY_CONFLICT"

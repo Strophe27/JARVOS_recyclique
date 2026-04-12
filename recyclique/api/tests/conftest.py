@@ -107,8 +107,8 @@ if "openpyxl" not in sys.modules:
             self.width = None
 
     class _DummyWorksheet:
-        def __init__(self):
-            self.title = ""
+        def __init__(self, title: str = ""):
+            self.title = title
             self._rows = []
             self.column_dimensions = {chr(ord('A') + i): _DummyColumn() for i in range(26)}
 
@@ -131,8 +131,29 @@ if "openpyxl" not in sys.modules:
                 yield [_DummyCell() for _ in row]
 
     class _DummyWorkbook:
+        """Minimal Workbook stub : ``sheetnames``, ``remove``, ``create_sheet`` (exports bulk Excel)."""
+
         def __init__(self):
-            self.active = _DummyWorksheet()
+            self._sheets: dict[str, _DummyWorksheet] = {"Sheet": _DummyWorksheet("Sheet")}
+            self.active = self._sheets["Sheet"]
+
+        @property
+        def sheetnames(self) -> list[str]:
+            return list(self._sheets.keys())
+
+        def __getitem__(self, name: str) -> _DummyWorksheet:
+            return self._sheets[name]
+
+        def remove(self, worksheet: _DummyWorksheet) -> None:
+            for key, ws in list(self._sheets.items()):
+                if ws is worksheet:
+                    del self._sheets[key]
+                    return
+
+        def create_sheet(self, title: str) -> _DummyWorksheet:
+            sh = _DummyWorksheet(title)
+            self._sheets[title] = sh
+            return sh
 
         def save(self, _buffer):
             pass
@@ -733,10 +754,16 @@ def admin_client(db_session: Session) -> Generator[TestClient, None, None]:
         admin_user = User(
             username=admin_username,
             hashed_password=hashed_password,
+            hashed_pin=hash_password("1234"),
             role=UserRole.ADMIN,
             status=UserStatus.ACTIVE,
             legacy_external_contact_id="999999999",
         )
+        db_session.add(admin_user)
+        db_session.commit()
+        db_session.refresh(admin_user)
+    elif not getattr(admin_user, "hashed_pin", None):
+        admin_user.hashed_pin = hash_password("1234")
         db_session.add(admin_user)
         db_session.commit()
         db_session.refresh(admin_user)
@@ -856,6 +883,7 @@ def super_admin_client(db_session: Session) -> Generator[TestClient, None, None]
     super_admin_user = User(
         username=super_admin_username,
         hashed_password=hashed_password,
+        hashed_pin=hash_password("1234"),
         role=UserRole.SUPER_ADMIN,
         status=UserStatus.ACTIVE,
         legacy_external_contact_id="888888888",

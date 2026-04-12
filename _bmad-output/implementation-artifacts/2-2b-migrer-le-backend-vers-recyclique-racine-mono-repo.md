@@ -8,22 +8,22 @@
 
 ## Story
 
-En tant qu’**équipe plateforme**,  
+En tant qu'**équipe plateforme**,  
 je veux que le **package API vivant** (FastAPI / `recyclic_api`) réside sous le dossier canonique **`recyclique/`** à la racine du mono-repo, avec **CI**, **Docker Compose** et **gates Story Runner** mis à jour,  
-afin d’**aligner** le dépôt sur `project-structure-boundaries.md` **avant** les stories lourdes en chemins (**2.6** contrats, **2.7** signaux) et d’**éviter** deux racines backend actives sans décision explicite.
+afin d'**aligner** le dépôt sur `project-structure-boundaries.md` **avant** les stories lourdes en chemins (**2.6** contrats, **2.7** signaux) et d'**éviter** deux racines backend actives sans décision explicite.
 
 ## Acceptance Criteria
 
 ### AC 1 — Emplacement unique pour le travail neuf
 
-**Étant donné** que l’architecture cible nomme `recyclique/` à la racine du dépôt ([Source : `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` — arborescence `recyclique/`, limites backend])  
+**Étant donné** que l'architecture cible nomme `recyclique/` à la racine du dépôt ([Source : `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` — arborescence `recyclique/`, limites backend])  
 **Quand** cette story est complétée  
-**Alors** le code applicatif, les tests et la configuration d’outillage **principale** pour Epic 2 pointent vers `recyclique/` (structure alignée sur ce document ; **équivalent documenté** acceptable si le `pyproject.toml` est à la racine de `recyclique/` plutôt que sous `recyclique/api/` — **une** vérité écrite dans le README de clôture)  
-**Et** `recyclique-1.4.4/api/` **n’est plus** la racine de développement actif pour le nouveau travail (bannière README, archive, lien explicite, ou contenu réduit à renvoi — **une** vérité pour les chemins neufs)
+**Alors** le code applicatif, les tests et la configuration d'outillage **principale** pour Epic 2 pointent vers `recyclique/` (structure alignée sur ce document ; **équivalent documenté** acceptable si le `pyproject.toml` est à la racine de `recyclique/` plutôt que sous `recyclique/api/` — **une** vérité écrite dans le README de clôture)  
+**Et** `recyclique-1.4.4/api/` **n'est plus** la racine de développement actif pour le nouveau travail (bannière README, archive, lien explicite, ou contenu réduit à renvoi — **une** vérité pour les chemins neufs)
 
 ### AC 2 — Docker / dev local
 
-**Étant donné** que compose et variables d’environnement référencent des chemins  
+**Étant donné** que compose et variables d'environnement référencent des chemins  
 **Quand** la migration est faite  
 **Alors** la procédure de démarrage local (et/ou Docker) est **documentée** pour la nouvelle racine  
 **Et** les secrets restent **hors dépôt** (`.env.example` à jour si des noms de variables ou chemins changent)
@@ -49,19 +49,19 @@ afin d’**aligner** le dépôt sur `project-structure-boundaries.md` **avant** 
   - [x] CI : workflows racine `.github/workflows/` (`deploy.yaml`, `alembic-check.yml`) ; suppression des doublons sous `recyclique-1.4.4/.github/workflows/`  
   - [x] Compose : `recyclique-1.4.4/docker-compose*.yml` → `context` / volumes `../recyclique/api`  
   - [x] Scripts utilitaires (`create_tables.py`, `reset-production-data.py`, `validate-qa-changes.sh`, `tests/test_rollback.sh`) pointent vers `recyclique/api`  
-  - [x] OpenAPI : aucun générateur sous `contracts/` ne codait un chemin vers l’ancien dossier (pas de changement requis)
+  - [x] OpenAPI : aucun générateur sous `contracts/` ne codait un chemin vers l'ancien dossier (pas de changement requis)
 
 - [x] **Migrer le package** vers `recyclique/` (AC : #1)  
   - [x] Déplacement physique `recyclique-1.4.4/api` → `recyclique/api` (Move-Item)  
-  - [x] Note d’implémentation dans `project-structure-boundaries.md` + `recyclique/README.md` (écart `pyproject` sous `api/`)
+  - [x] Note d'implémentation dans `project-structure-boundaries.md` + `recyclique/README.md` (écart `pyproject` sous `api/`)
 
-- [x] **Mettre à jour l’outillage** (AC : #2, #3)  
+- [x] **Mettre à jour l'outillage** (AC : #2, #3)  
   - [x] CI racine, `recyclique/README.md`, `recyclique-1.4.4/README.md`, brief `_runner-brief-story-2-2.md`, `epics.md`, `guide-pilotage-v2.md`, story **2.2** (chemins gate)
 
 - [x] **Clôturer la double vérité** (AC : #1)  
   - [x] Bannière + chemins doc dans `recyclique-1.4.4/README.md` ; plus de dossier `recyclique-1.4.4/api/`
 
-- [x] **Réviser l’artefact décision 2.1** (AC : #4)  
+- [x] **Réviser l'artefact décision 2.1** (AC : #4)  
   - [x] `references/artefacts/2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md` + entrée `references/artefacts/index.md`
 
 - [x] **Vérifier pytest** depuis la nouvelle racine (AC : #3) — smoke **DS**  
@@ -78,7 +78,7 @@ afin d’**aligner** le dépôt sur `project-structure-boundaries.md` **avant** 
 
 **Références** : `sprint-change-proposal-2026-04-03.md` ; `2026-04-03_01_decision-backend-story-2-1-recyclique-1.4.4-vs-canonical.md` (à réviser en fin de story) ; `contracts/openapi/recyclique-api.yaml` (chemins générateurs si touchés).
 
-**Phrase anti-dilution** : conserver cette annexe pour les workers CS/DS telle quelle dans les briefs ; le fichier story ci-dessus en est l’expansion opérationnelle.
+**Phrase anti-dilution** : conserver cette annexe pour les workers CS/DS telle quelle dans les briefs ; le fichier story ci-dessus en est l'expansion opérationnelle.
 
 ### Gate pytest (référence Story Runner — après migration DS)
 
@@ -92,7 +92,7 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 *(Ajuster `Set-Location` si la racine du package diffère — ex. `recyclique/` seul avec `tests/` au même niveau que `pyproject.toml`.)*
 
-**Note gate** : après migration DS, le package vivant doit être sous `recyclique/` ; même périmètre pytest qu’en fin de story **2.2**, avec extension **context envelope**. **Ne pas** lancer plusieurs pytest en parallèle sur le même fichier SQLite.
+**Note gate** : après migration DS, le package vivant doit être sous `recyclique/` ; même périmètre pytest qu'en fin de story **2.2**, avec extension **context envelope**. **Ne pas** lancer plusieurs pytest en parallèle sur le même fichier SQLite.
 
 ### Intelligence story 2.2 (continuité implémentation)
 
@@ -102,12 +102,12 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 ### Contraintes architecture
 
-- Backend nominal = **`recyclique/`** ; OpenAPI reviewable = **`contracts/openapi/recyclique-api.yaml`** ; pas d’import runtime vers `references/`.  
-- **Peintre_nano** reste hors périmètre sauf si un chemin de codegen côté frontend référence l’ancien dossier backend — aligner si nécessaire.
+- Backend nominal = **`recyclique/`** ; OpenAPI reviewable = **`contracts/openapi/recyclique-api.yaml`** ; pas d'import runtime vers `references/`.  
+- **Peintre_nano** reste hors périmètre sauf si un chemin de codegen côté frontend référence l'ancien dossier backend — aligner si nécessaire.
 
 ### État dépôt au passage create-story (2026-04-03)
 
-- Le dossier **`recyclique/`** à la racine du mono-repo **n’existait pas** encore sur l’arborescence analysée ; la story **crée le contexte dev** pour que **DS** réalise le déplacement effectif depuis `recyclique-1.4.4/api/`.
+- Le dossier **`recyclique/`** à la racine du mono-repo **n'existait pas** encore sur l'arborescence analysée ; la story **crée le contexte dev** pour que **DS** réalise le déplacement effectif depuis `recyclique-1.4.4/api/`.
 
 ### Project Structure Notes
 

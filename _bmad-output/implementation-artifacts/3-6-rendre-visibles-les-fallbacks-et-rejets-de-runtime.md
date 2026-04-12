@@ -30,15 +30,15 @@
 
 **Implications directes pour 3.6 :**
 
-- Tout **bloc UI** de fallback / erreur (bannières, panneaux d’état, placeholders de slot) : **CSS Modules** + **tokens** (`var(--pn-…)`) pour le code UI nouveau ou étendu ; **pas** de layout spatial du **shell** via **Stack / Group Mantine** comme moteur de composition globale (la grille `RootShell` reste la référence — story 3.1).
-- Mantine reste autorisée pour **composants riches** à l’intérieur de blocs (Alert, Text, etc.), conformément à l’ADR.
-- **P2 (PostgreSQL / config admin)** : hors périmètre — pas de persistance serveur des messages d’erreur dans 3.6.
+- Tout **bloc UI** de fallback / erreur (bannières, panneaux d'état, placeholders de slot) : **CSS Modules** + **tokens** (`var(--pn-…)`) pour le code UI nouveau ou étendu ; **pas** de layout spatial du **shell** via **Stack / Group Mantine** comme moteur de composition globale (la grille `RootShell` reste la référence — story 3.1).
+- Mantine reste autorisée pour **composants riches** à l'intérieur de blocs (Alert, Text, etc.), conformément à l'ADR.
+- **P2 (PostgreSQL / config admin)** : hors périmètre — pas de persistance serveur des messages d'erreur dans 3.6.
 
 ---
 
 ## Contexte nano → mini → macro
 
-- **Nano :** politique de visibilité runtime, composants / helpers de rendu d’état d’échec, hook ou façade de **reporting** structuré (ex. `console` en dev, point d’extension pour futur service de logs) — **pas** de bus métier, **pas** d’agent SDUI.
+- **Nano :** politique de visibilité runtime, composants / helpers de rendu d'état d'échec, hook ou façade de **reporting** structuré (ex. `console` en dev, point d'extension pour futur service de logs) — **pas** de bus métier, **pas** d'agent SDUI.
 - **Mini / macro :** hors périmètre sauf mention contraire dans une story dédiée.
 
 ---
@@ -49,13 +49,13 @@
 |------|-----------|----------------|
 | Taxonomie / sévérité des **échecs** (manifest invalide, widget inconnu, slot non mappé, accès page refusé, chargement bundle, etc.) | **Oui** | — |
 | UI **visible** : fallback vs **blocage** selon criticité | **Oui** | — |
-| **Information structurée** côté runtime (codes stables, champs alignés sur la trajectoire UX-DR8 : `code`, `detail`, `retryable`, `state`, `correlation_id` quand applicable) | **Oui** (implémentation **minimale** acceptable : sous-ensemble explicite documenté ; pas obligatoire d’implémenter toute la taxonomie sync/quarantaine Epic 8) | Pipeline sync Paheko, quarantaine réelle — **hors** 3.6 |
-| **Journalisation** : au minimum un chemin unique testable (ex. fonction `reportRuntimeRejection` ou équivalent appelée depuis les points d’échec) | **Oui** | Agrégation centralisée prod, SIEM — **hors** 3.6 |
-| **Isolation** : un widget en échec ne fait pas « disparaître » tout l’écran sans signal (UX-DR10) | **Oui** où pertinent | — |
+| **Information structurée** côté runtime (codes stables, champs alignés sur la trajectoire UX-DR8 : `code`, `detail`, `retryable`, `state`, `correlation_id` quand applicable) | **Oui** (implémentation **minimale** acceptable : sous-ensemble explicite documenté ; pas obligatoire d'implémenter toute la taxonomie sync/quarantaine Epic 8) | Pipeline sync Paheko, quarantaine réelle — **hors** 3.6 |
+| **Journalisation** : au minimum un chemin unique testable (ex. fonction `reportRuntimeRejection` ou équivalent appelée depuis les points d'échec) | **Oui** | Agrégation centralisée prod, SIEM — **hors** 3.6 |
+| **Isolation** : un widget en échec ne fait pas « disparaître » tout l'écran sans signal (UX-DR10) | **Oui** où pertinent | — |
 | Page **démo** runtime composé (parcours inspectable sandbox) | — | **3.7** |
 | Slice **bandeau live** bout-en-bout backend | — | **Epic 4 / Convergence 2** |
 
-**Continuité 3.5 :** les prefs **ne** changent **pas** la sévérité ni la nature d’un rejet ; elles peuvent seulement affecter la **présentation** (densité, etc.) des composants d’état déjà affichés.
+**Continuité 3.5 :** les prefs **ne** changent **pas** la sévérité ni la nature d'un rejet ; elles peuvent seulement affecter la **présentation** (densité, etc.) des composants d'état déjà affichés.
 
 **Continuité 3.7 :** 3.6 fournit les **mécanismes** ; 3.7 **orchestre** une page démo qui montrera au moins un chemin nominal **et** un chemin fallback visible (référence explicite dans les AC epics 3.7).
 
@@ -68,7 +68,7 @@
 | `NavigationManifest` | Les rejets liés à la nav restent fondés sur le **contrat** + résolution ; pas de routes ou permissions **en dur** pour « réparer » un échec. |
 | `PageManifest` | Idem — échecs de composition (widget inconnu, slot) = **signal** explicite, pas contournement local. |
 | `ContextEnvelope` | Garde page / contexte reste **autorité** ; les états « contexte restreint » restent **explicites** (aligné 3.4). |
-| `UserRuntimePrefs` | Ne **déclenchent** pas d’accès ni ne **masquent** des rejets contractuels. |
+| `UserRuntimePrefs` | Ne **déclenchent** pas d'accès ni ne **masquent** des rejets contractuels. |
 
 **Hiérarchie de vérité :** `OpenAPI` > `ContextEnvelope` > `NavigationManifest` > `PageManifest` > `UserRuntimePrefs` — [Source : `_bmad-output/planning-artifacts/epics.md` — AR39 ; `project-structure-boundaries.md` — Data Flow]
 
@@ -76,8 +76,8 @@
 
 ## Frontières repo (Piste A) et boundaries structurels
 
-- **Mocks jusqu’à Convergence 1 :** code sous `peintre-nano/` ; **aucun** `import` **runtime** depuis `references/`.
-- **`registry/`**, **`runtime/`**, **`validation/`** : **ne pas fusionner** les dossiers sans story + ADR — la politique de fallback peut vivre en **`runtime/`** (résolution, agrégation d’erreurs) et **`app/`** (composants visibles) ; le **registre** reste responsable de la **résolution** `widgetType` → composant, pas de la **taxonomie UX globale** si celle-ci est partagée (extraire un petit module partagé **dans** `peintre-nano/src` si nécessaire, sans violer les boundaries documentés).
+- **Mocks jusqu'à Convergence 1 :** code sous `peintre-nano/` ; **aucun** `import` **runtime** depuis `references/`.
+- **`registry/`**, **`runtime/`**, **`validation/`** : **ne pas fusionner** les dossiers sans story + ADR — la politique de fallback peut vivre en **`runtime/`** (résolution, agrégation d'erreurs) et **`app/`** (composants visibles) ; le **registre** reste responsable de la **résolution** `widgetType` → composant, pas de la **taxonomie UX globale** si celle-ci est partagée (extraire un petit module partagé **dans** `peintre-nano/src` si nécessaire, sans violer les boundaries documentés).
 - **Convergence 2** : Epic 4 réutilisera les mêmes patterns ; éviter les API **spécifiques bandeau** dans 3.6 — rester **générique** runtime.
 
 ---
@@ -103,7 +103,7 @@ So that **operators and developers can distinguish degraded UI from valid busine
 
 ---
 
-## Critères d’acceptation (BDD — source epics)
+## Critères d'acceptation (BDD — source epics)
 
 **Given** contract and rendering failures are expected during early assembly  
 **When** a manifest, route, slot, or widget cannot be resolved  
@@ -122,37 +122,37 @@ So that **operators and developers can distinguish degraded UI from valid busine
 
 [Source : `_bmad-output/planning-artifacts/epics.md` — Story 3.6]
 
-**Alignement UX (guidage non normatif pour l’implémentation) :** UX-DR8 / UX-DR10 (epics) — erreurs, fallbacks et blocages **visibles** et **distincts** ; isolation quand possible — [Source : epics.md — UX-DR8, UX-DR10]
+**Alignement UX (guidage non normatif pour l'implémentation) :** UX-DR8 / UX-DR10 (epics) — erreurs, fallbacks et blocages **visibles** et **distincts** ; isolation quand possible — [Source : epics.md — UX-DR8, UX-DR10]
 
 ---
 
 ## Exigences techniques détaillées (pour le dev)
 
-1. **Inventaire des points d’échec actuels**  
+1. **Inventaire des points d'échec actuels**  
    - Parcourir au minimum : chargement bundle manifests (`load-manifest-bundle` / `App`), validation (`ManifestValidationIssue` → `ManifestErrorBanner`), `PageRenderer` / `resolveWidget`, `resolvePageAccess` / `PageAccessBlocked`, navigation filtrée.  
-   - Lister les cas où l’UI est encore **trop silencieuse** ou **incohérente** (même nature d’échec, messages différents sans code stable).
+   - Lister les cas où l'UI est encore **trop silencieuse** ou **incohérente** (même nature d'échec, messages différents sans code stable).
 
 2. **Modèle minimal de sévérité**  
-   - Définir un petit ensemble **explicite** (ex. `info` | `degraded` | `blocked` — les noms exacts sont libres tant qu’ils sont **documentés** et **testés**).  
-   - Mapper chaque catégorie d’échec à une sévérité : ex. manifest invalide → **blocked** ou **degraded** selon décision documentée ; widget inconnu dans une page autorisée → **degraded** (zone isolée) vs page entière **blocked**.
+   - Définir un petit ensemble **explicite** (ex. `info` | `degraded` | `blocked` — les noms exacts sont libres tant qu'ils sont **documentés** et **testés**).  
+   - Mapper chaque catégorie d'échec à une sévérité : ex. manifest invalide → **blocked** ou **degraded** selon décision documentée ; widget inconnu dans une page autorisée → **degraded** (zone isolée) vs page entière **blocked**.
 
 3. **Composants / attributs stables**  
-   - Harmoniser `data-testid` / `data-*` pour les scénarios de test (ex. code d’erreur, sévérité) **sans** casser les tests existants sans migration contrôlée.  
+   - Harmoniser `data-testid` / `data-*` pour les scénarios de test (ex. code d'erreur, sévérité) **sans** casser les tests existants sans migration contrôlée.  
    - Réutiliser ou factoriser les styles via **CSS Modules** + tokens.
 
 4. **Chemin de reporting structuré**  
-   - Introduire une **fonction ou module unique** (ex. `reportRuntimeFallback`) appelé depuis les branches d’échec, qui :  
+   - Introduire une **fonction ou module unique** (ex. `reportRuntimeFallback`) appelé depuis les branches d'échec, qui :  
      - accepte un objet typé (`code`, `message`, `severity`, et champs optionnels `detail`, `retryable`, `correlationId` si disponibles) ;  
      - en environnement test : peut être mocké / espionné ;  
-     - en dev : peut utiliser `console.warn` / `console.error` de façon **contrôlée** (pas de spam non borné sur chaque render — préférer log côté **événement** d’échec, pas sur chaque commit React).
+     - en dev : peut utiliser `console.warn` / `console.error` de façon **contrôlée** (pas de spam non borné sur chaque render — préférer log côté **événement** d'échec, pas sur chaque commit React).
 
 5. **Pas de second chemin de vérité**  
    - Ne **pas** coder de routes ou permissions **en dur** pour « débloquer » une démo : les échecs restent alignés **NavigationManifest** / **PageManifest** / **ContextEnvelope**.
 
 6. **Tests (obligatoires)**  
-   - **Unitaires** : pour au moins **deux** catégories d’échec distinctes (ex. validation manifest + widget inconnu), vérifier présence d’un **signal UI** (testid / rôle) **et** appel au reporter (mock).  
+   - **Unitaires** : pour au moins **deux** catégories d'échec distinctes (ex. validation manifest + widget inconnu), vérifier présence d'un **signal UI** (testid / rôle) **et** appel au reporter (mock).  
    - **e2e ou intégration** : scénario où une page ou zone affiche un **fallback visible** (pas écran vide sans explication) ; scénario **blocage** explicite si le produit choisit cette voie pour manifest invalide.  
-   - Vérifier qu’un widget en échec **n’empêche** pas l’affichage d’un **signal global** de dégradation si les AC le exigent (selon mapping sévérité retenu).
+   - Vérifier qu'un widget en échec **n'empêche** pas l'affichage d'un **signal global** de dégradation si les AC le exigent (selon mapping sévérité retenu).
 
 7. **Fichiers & emplacements (indicatifs)**  
    - `peintre-nano/src/app/` — bannières / états (`ManifestErrorBanner`, `PageAccessBlocked`, facteurs communs éventuels)  
@@ -164,7 +164,7 @@ So that **operators and developers can distinguish degraded UI from valid busine
 
 ## Tâches / sous-tâches
 
-- [x] **T1** — Inventaire points d’échec + gaps silencieux ; proposition de mapping sévérité (court doc dans la story ou README ciblé).
+- [x] **T1** — Inventaire points d'échec + gaps silencieux ; proposition de mapping sévérité (court doc dans la story ou README ciblé).
 - [x] **T2** — Types / module `reportRuntimeFallback` (ou équivalent) + tests mock.
 - [x] **T3** — Harmoniser UI fallback / blocage (CSS Modules + tokens) ; `data-testid` stables.
 - [x] **T4** — Brancher le reporter sur validation manifest, résolution widget, accès page (et autres points retenus).
@@ -180,7 +180,7 @@ So that **operators and developers can distinguish degraded UI from valid busine
 1. `npm ci` (ou `npm install`) — succès.
 2. `npm run lint` — succès.
 3. `npm run build` — succès.
-4. `npm run test` — succès, avec tests couvrant **au moins deux** types d’échec runtime, **signal UI visible**, et **appel** au chemin de reporting structuré (mock / espion).
+4. `npm run test` — succès, avec tests couvrant **au moins deux** types d'échec runtime, **signal UI visible**, et **appel** au chemin de reporting structuré (mock / espion).
 5. Optionnel : `npm run dev` — vérifier visuellement bannière manifest, widget inconnu, page bloquée.
 
 **Gate Story Runner (référence brief parent) :** depuis `peintre-nano/` : `npm ci` ; `npm run lint` ; `npm run build` ; `npm run test` (timeout conseillé 900 s).

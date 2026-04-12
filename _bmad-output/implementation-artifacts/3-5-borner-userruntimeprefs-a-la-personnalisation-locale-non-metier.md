@@ -20,7 +20,7 @@
 - **Story :** 3.5 — formaliser **`UserRuntimePrefs`** comme couche **uniquement** de personnalisation **locale** (présentation, confort) **sans** altérer vérité métier, permissions, navigation commanditaire ou sens des écrans.
 - **Clé de fichier (exacte, obligatoire) :** `3-5-borner-userruntimeprefs-a-la-personnalisation-locale-non-metier` — toute autre variante de slug est **incorrecte** pour `implementation-artifacts` et `sprint-status.yaml`.
 - **Epic :** epic-3 — runtime UI v2 minimal mais réel.
-- **Prérequis livrés :** 3.1–3.4 (shell, manifests, registre + rendu, auth + `ContextEnvelope` + filtrage nav / garde page). Le type `UserRuntimePrefs` existe déjà dans `peintre-nano/src/types/user-runtime-prefs.ts` avec des champs minimaux ; cette story **borne** l’usage runtime, **expose** un provider / hooks stables et **garantit** par tests que les prefs **ne contournent** pas `filterNavigation` / `resolvePageAccess`.
+- **Prérequis livrés :** 3.1–3.4 (shell, manifests, registre + rendu, auth + `ContextEnvelope` + filtrage nav / garde page). Le type `UserRuntimePrefs` existe déjà dans `peintre-nano/src/types/user-runtime-prefs.ts` avec des champs minimaux ; cette story **borne** l'usage runtime, **expose** un provider / hooks stables et **garantit** par tests que les prefs **ne contournent** pas `filterNavigation` / `resolvePageAccess`.
 
 ---
 
@@ -31,14 +31,14 @@
 **Implications directes pour 3.5 :**
 
 - Tout **contrôle UI** lié aux prefs (toggles densité, panneaux, onboarding) : **CSS Modules** + **tokens** (`var(--pn-…)`) pour le code UI nouveau ; **pas** de layout spatial du **shell** via **Stack / Group Mantine** (la grille `RootShell` reste la référence — story 3.1).
-- Mantine reste autorisée pour **composants riches** à l’intérieur de blocs (Switch, Text, etc.), conformément à l’ADR, **sans** en faire le moteur de composition spatiale globale.
+- Mantine reste autorisée pour **composants riches** à l'intérieur de blocs (Switch, Text, etc.), conformément à l'ADR, **sans** en faire le moteur de composition spatiale globale.
 - **P2 (PostgreSQL pour config admin)** : hors périmètre — les prefs de cette story restent **locales par défaut** ; pas de persistance serveur ni table SQL dans 3.5.
 
 ---
 
 ## Contexte nano → mini → macro
 
-- **Nano :** provider / hooks **`UserRuntimePrefs`**, mise à jour locale, effets **purement présentationnels** — **pas** de bus métier, **pas** d’agent SDUI.
+- **Nano :** provider / hooks **`UserRuntimePrefs`**, mise à jour locale, effets **purement présentationnels** — **pas** de bus métier, **pas** d'agent SDUI.
 - **Mini / macro :** hors périmètre sauf mention contraire dans une story dédiée.
 
 ---
@@ -50,13 +50,13 @@
 | Définition / évolution du **type** `UserRuntimePrefs` (champs autorisés : densité, panneaux, onboarding, raccourcis **personnels** non structurels, etc.) | **Oui** (rétrocompatible si extension) | Clés de permission, `siteId`, routes — **jamais** dans les prefs |
 | **Provider React** + API stable (`useUserRuntimePrefs`, etc.) | **Oui** | — |
 | Persistance **locale** (ex. `localStorage` derrière une façade testable) | **Oui** (optionnel mais recommandé pour preuve « local by default ») | Endpoint backend, sync multi-appareil — **hors** 3.5 (futur endpoint **explicite** seulement, cf. AR43 epics) |
-| **Garantie** : prefs n’influencent **pas** `filterNavigation` / `resolvePageAccess` | **Oui** (tests obligatoires) | — |
+| **Garantie** : prefs n'influencent **pas** `filterNavigation` / `resolvePageAccess` | **Oui** (tests obligatoires) | — |
 | Application des prefs au **rendu** (classes CSS / data attributes / tokens) dans le shell ou widgets démo | **Oui** (minimal, testable) | Refonte visuelle complète |
 | Politique unifiée **fallbacks** runtime (severity, messages) | — | **3.6** |
 | Page démo runtime composé bout-en-bout | — | **3.7** |
-| Personnalisation transverse produit (Epic 5) | **Prépare** le mécanisme sûr | **Pas** l’implémentation Epic 5 |
+| Personnalisation transverse produit (Epic 5) | **Prépare** le mécanisme sûr | **Pas** l'implémentation Epic 5 |
 
-**Continuité 3.4 :** ne **pas** modifier la sémantique de `ContextEnvelope`, `filterNavigation` ou `resolvePageAccess` pour « aider » les prefs ; les consommateurs de prefs lisent l’état **après** résolution commanditaire + contexte.
+**Continuité 3.4 :** ne **pas** modifier la sémantique de `ContextEnvelope`, `filterNavigation` ou `resolvePageAccess` pour « aider » les prefs ; les consommateurs de prefs lisent l'état **après** résolution commanditaire + contexte.
 
 ---
 
@@ -64,20 +64,20 @@
 
 | Artefact | En 3.5 |
 |----------|--------|
-| `NavigationManifest` | **Inchangé** comme source structurelle ; les prefs **ne peuvent pas** ajouter d’entrées ni révéler des entrées filtrées par le contexte. |
+| `NavigationManifest` | **Inchangé** comme source structurelle ; les prefs **ne peuvent pas** ajouter d'entrées ni révéler des entrées filtrées par le contexte. |
 | `PageManifest` | Idem — **aucune** page supplémentaire via prefs. |
 | `ContextEnvelope` | **Autorité** inchangée ; prefs **ne** portent **pas** de permissions effectives. |
 | `UserRuntimePrefs` | **Objet de la story** — dernier maillon de la hiérarchie de vérité [AR39]. |
 
 **Hiérarchie de vérité :** `OpenAPI` > `ContextEnvelope` > `NavigationManifest` > `PageManifest` > `UserRuntimePrefs` — [Source : `_bmad-output/planning-artifacts/epics.md` — AR39 ; `project-structure-boundaries.md` — Data Flow]
 
-**Règle produit (UX-DR3, UX-DR12) :** les prefs n’ajustent que la **présentation locale** dans le périmètre déjà autorisé par contrats + contexte ; pas de route, page, permission ou visibilité métier supplémentaire — [Source : epics.md]
+**Règle produit (UX-DR3, UX-DR12) :** les prefs n'ajustent que la **présentation locale** dans le périmètre déjà autorisé par contrats + contexte ; pas de route, page, permission ou visibilité métier supplémentaire — [Source : epics.md]
 
 ---
 
 ## Frontières repo (Piste A) et boundaries structurels
 
-- **Mocks jusqu’à Convergence 1 :** code sous `peintre-nano/` ; **aucun** `import` **runtime** depuis `references/`.
+- **Mocks jusqu'à Convergence 1 :** code sous `peintre-nano/` ; **aucun** `import` **runtime** depuis `references/`.
 - **`registry/`**, **`runtime/`**, **`validation/`** : **ne pas fusionner** les dossiers sans story + ADR — un **`UserRuntimePrefsProvider`** vit typiquement sous `src/app/providers/` ou `src/app/context/` ; éviter de mélanger prefs et auth dans un seul fichier monolithique **sans** séparation claire des responsabilités.
 - **Convergence 1 :** un futur branchement backend pour prefs (si un jour endpoint dédié) ne doit **pas** obliger à réécrire les composants de présentation — seulement la **couche persistance** derrière une façade stable.
 
@@ -85,7 +85,7 @@
 
 ## Flows cashflow (a) / (b) — note de cadrage
 
-Cette story **ne tranche pas** le format des flows caisse. **Ne pas trancher silencieusement :** toute évolution qui toucherait aux flows ou à leur validation doit renvoyer explicitement aux fondations et au pipeline **§16** — [Source : `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md` §16]. Si le périmètre reste limité aux prefs UI du shell, **aucune** implémentation cashflow n’est requise.
+Cette story **ne tranche pas** le format des flows caisse. **Ne pas trancher silencieusement :** toute évolution qui toucherait aux flows ou à leur validation doit renvoyer explicitement aux fondations et au pipeline **§16** — [Source : `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md` §16]. Si le périmètre reste limité aux prefs UI du shell, **aucune** implémentation cashflow n'est requise.
 
 ---
 
@@ -104,7 +104,7 @@ So that **users gain comfort without compromising permissions, routes, or domain
 
 ---
 
-## Critères d’acceptation (BDD — source epics)
+## Critères d'acceptation (BDD — source epics)
 
 **Given** `UserRuntimePrefs` belongs to frontend runtime only  
 **When** local preferences are implemented  
@@ -129,10 +129,10 @@ So that **users gain comfort without compromising permissions, routes, or domain
 
 1. **Façade prefs (provider + hooks)**  
    - Exposer un contexte React : ex. `useUserRuntimePrefs()` retournant `{ prefs, setPrefs | updatePrefs }` avec mises à jour **immutables** et typées (`UserRuntimePrefs`).  
-   - Monter le provider sous `RootProviders` (ou équivalent) **sans** casser l’ordre existant auth / manifest.
+   - Monter le provider sous `RootProviders` (ou équivalent) **sans** casser l'ordre existant auth / manifest.
 
 2. **Type `UserRuntimePrefs`**  
-   - Conserver ou étendre `peintre-nano/src/types/user-runtime-prefs.ts` : seuls des champs **non métier** (densité UI, état panneau latéral, progression onboarding, préférences d’affichage).  
+   - Conserver ou étendre `peintre-nano/src/types/user-runtime-prefs.ts` : seuls des champs **non métier** (densité UI, état panneau latéral, progression onboarding, préférences d'affichage).  
    - **Interdit** dans le type : `permissionKeys`, `routes`, `siteId` métier, tout champ qui pourrait être confondu avec `ContextEnvelope`.
 
 3. **Effet présentationnel minimal**  
@@ -140,12 +140,12 @@ So that **users gain comfort without compromising permissions, routes, or domain
    - Documenter dans un README court (`src/app/providers/` ou `src/types/README.md` existant) que **seuls** les consommateurs de **présentation** lisent les prefs.
 
 4. **Séparation nette avec 3.4**  
-   - `filter-navigation-for-context.ts` et `resolve-page-access.ts` : **ne pas** accepter `UserRuntimePrefs` en paramètre pour décider masquage / accès. Si un refactor introduit un paramètre « options », documenter explicitement que les prefs **n’y figurent pas**.
+   - `filter-navigation-for-context.ts` et `resolve-page-access.ts` : **ne pas** accepter `UserRuntimePrefs` en paramètre pour décider masquage / accès. Si un refactor introduit un paramètre « options », documenter explicitement que les prefs **n'y figurent pas**.
 
 5. **Tests (obligatoires)**  
    - **Unitaires** : mise à jour des prefs ne change pas le résultat de `filterNavigation` / `resolvePageAccess` pour les mêmes entrées manifest + envelope (jeux de données fixes).  
-   - **e2e ou intégration** : scénario où une entrée nav est masquée par permissions insuffisantes — basculer une pref (ex. densité) **ne fait pas** réapparaître l’entrée (`data-testid` stable).  
-   - Optionnel : persistance `localStorage` avec clé namespacée (`peintre-nano:`) + test d’hydratation.
+   - **e2e ou intégration** : scénario où une entrée nav est masquée par permissions insuffisantes — basculer une pref (ex. densité) **ne fait pas** réapparaître l'entrée (`data-testid` stable).  
+   - Optionnel : persistance `localStorage` avec clé namespacée (`peintre-nano:`) + test d'hydratation.
 
 6. **Fichiers & emplacements (indicatifs)**  
    - `peintre-nano/src/types/user-runtime-prefs.ts`  
@@ -174,7 +174,7 @@ So that **users gain comfort without compromising permissions, routes, or domain
 2. `npm run lint` — succès.
 3. `npm run build` — succès.
 4. `npm run test` — succès, avec tests couvrant **indépendance prefs / autorisation** et au moins un **effet présentationnel** lié aux prefs.
-5. Optionnel : `npm run dev` — vérifier visuellement le toggle / l’état densité (ou équivalent).
+5. Optionnel : `npm run dev` — vérifier visuellement le toggle / l'état densité (ou équivalent).
 
 ---
 
@@ -214,7 +214,7 @@ _(aucun)_
 
 - `UserRuntimePrefsProvider` + `useUserRuntimePrefs` sous `AuthRuntimeProvider` ; persistance `localStorage` clé `peintre-nano:user-runtime-prefs`, désactivable en tests via `disableUserPrefsPersistence` sur `RootProviders`.
 - Type étendu avec `sidebarPanelOpen` ; `normalizeUserRuntimePrefs` pour hydratation sûre ; shell : `data-pn-ui-density`, `data-pn-sidebar-panel` + règles CSS Modules (tokens).
-- `FilterNavigationOptions` / `ResolvePageAccessOptions` documentés : pas de prefs sur les chemins d’autorisation.
+- `FilterNavigationOptions` / `ResolvePageAccessOptions` documentés : pas de prefs sur les chemins d'autorisation.
 - Tests : indépendance prefs / `filterNavigation`+`resolvePageAccess`, persistance, e2e toggle densité + entrée admin toujours absente.
 
 ### File List

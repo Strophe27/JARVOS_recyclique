@@ -135,7 +135,7 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
   if (failure && !session) {
     return (
       <Stack gap="md" className={classes.root} data-testid="cash-register-session-close-surface">
-        <Title order={1}>
+        <Title order={1} data-testid="cashflow-session-close-heading">
           <Group gap="xs">
             <Calculator size={28} aria-hidden />
             Fermeture de Caisse
@@ -159,7 +159,7 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
   if (loading || !session || session.status !== 'open') {
     return (
       <Stack gap="md" className={classes.root} data-testid="cash-register-session-close-surface">
-        <Title order={1}>
+        <Title order={1} data-testid="cashflow-session-close-heading">
           <Group gap="xs">
             <Calculator size={28} aria-hidden />
             Fermeture de Caisse

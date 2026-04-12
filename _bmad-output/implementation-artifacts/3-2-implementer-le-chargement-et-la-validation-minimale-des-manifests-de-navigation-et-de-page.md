@@ -20,7 +20,7 @@
 - **Story :** 3.2 — **chargement** (parse + hydratation typée) et **validation minimale** de `NavigationManifest` et `PageManifest`, avec **rejets explicites** (collisions, liens non résolus, widgets inconnus, structure invalide) — sans inventer la structure métier côté frontend.
 - **Clé de fichier (exacte, obligatoire) :** `3-2-implementer-le-chargement-et-la-validation-minimale-des-manifests-de-navigation-et-de-page` — toute autre variante de slug est **incorrecte** pour les chemins `implementation-artifacts` et `sprint-status.yaml`.
 - **Epic :** epic-3 — runtime UI v2 minimal mais réel.
-- **Nano + CREOS :** périmètre **contrat commanditaire → runtime** ; **pas** de bus, pas d’agent mini/macro ; **pas** de registre de rendu complet des widgets (**3.3**).
+- **Nano + CREOS :** périmètre **contrat commanditaire → runtime** ; **pas** de bus, pas d'agent mini/macro ; **pas** de registre de rendu complet des widgets (**3.3**).
 
 ---
 
@@ -31,7 +31,7 @@
 **Implications directes pour 3.2 :**
 
 - Toute **UI** liée aux erreurs de manifest (bandeau, zone dédiée, console de dev uniquement si story trop large — **préférer** erreurs **structurées** + tests) reste stylée **CSS Modules + tokens** (`var(--pn-…)`) si des composants visuels sont ajoutés ; **pas** de `Stack` / `Group` Mantine pour **positionner** le shell (déjà posé en 3.1).
-- **Mantine v8** : OK pour composants riches **dans** une zone existante du shell si besoin d’afficher une erreur lisible ; **interdit** comme substitut au **layout spatial** du cadre d’application.
+- **Mantine v8** : OK pour composants riches **dans** une zone existante du shell si besoin d'afficher une erreur lisible ; **interdit** comme substitut au **layout spatial** du cadre d'application.
 
 ---
 
@@ -48,7 +48,7 @@
 |------|-----------|----------------------------------|
 | Chargement JSON/YAML → types, validation structurelle + règles collisions / liens / widgets connus | **Oui** | — |
 | Shell CSS Grid, zones nommées | **Réutilisation** (3.1) | Ne pas refondre le shell sauf branchement minimal (ex. affichage état erreur dans `main`). |
-| Registre widgets, rendu déclaratif catalogue, résolution `widgetType` → composant | **Non** (sauf **liste d’autorisation minimale** pour valider « widget connu » — voir Dev Notes) | **3.3** |
+| Registre widgets, rendu déclaratif catalogue, résolution `widgetType` → composant | **Non** (sauf **liste d'autorisation minimale** pour valider « widget connu » — voir Dev Notes) | **3.3** |
 | Adaptateur auth/session, filtrage nav par `ContextEnvelope` réel | — | **3.4** |
 | `UserRuntimePrefs` comme source de vérité métier | — | **3.5** (et rappel : jamais substitut commanditaire) |
 | Fallbacks runtime **visuels** métier | — | **3.6** (ici : **rejeter** plutôt que masquer silencieusement) |
@@ -63,24 +63,24 @@
 |----------|--------|
 | `NavigationManifest` | **Chargement + validation** ; **aucune** arborescence métier inventée en dur dans le code applicatif. Les **fixtures** de démo / tests sont des **fichiers** simulant le commanditaire, pas une seconde source de vérité compile-time. |
 | `PageManifest` | Idem. |
-| `ContextEnvelope` | **Pas** d’intégration nouvelle ; mocks 3.0 / 3.4 inchangés pour cette story. |
+| `ContextEnvelope` | **Pas** d'intégration nouvelle ; mocks 3.0 / 3.4 inchangés pour cette story. |
 | `UserRuntimePrefs` | **Pas** de nouveau rôle ; ne pas utiliser pour « réparer » un manifest invalide. |
 
-**Règle d’or :** OpenAPI / `ContextEnvelope` → manifests → `UserRuntimePrefs` — `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` (Data Boundaries, flux § Data Flow).
+**Règle d'or :** OpenAPI / `ContextEnvelope` → manifests → `UserRuntimePrefs` — `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` (Data Boundaries, flux § Data Flow).
 
 ---
 
 ## Frontières repo (Piste A) et boundaries structurels
 
-- **Mocks jusqu’à Convergence 1 :** les manifests peuvent être servis comme **fichiers statiques** (`peintre-nano/public/...`) ou **imports** de JSON sous `peintre-nano/src/...` (ex. dossier `fixtures/` / `mocks/`) — **jamais** `import` depuis `references/` au runtime bundle.
-- **`contracts/creos/manifests/`** : cible canonique **repo** ; si le dossier n’existe pas encore, la story **n’impose pas** de le créer seule pour débloquer : **copier** les exemples reviewables dans le package `peintre-nano` ou référencer un chemin `public/` **à documenter** pour le handoff Piste B. **Ne pas** bloquer la story sur l’existence physique de `contracts/creos/manifests/` si le skill livre des fixtures internes au package.
-- **`registry/`** et **`runtime/`** : **ne pas fusionner** les responsabilités — la **validation pure** (fonctions, types d’erreur) vit plutôt sous `peintre-nano/src/validation/` ; le **chargement** (fetch, parse) peut vivre sous `peintre-nano/src/runtime/` en **appelant** la validation, sans y mettre la logique métier des widgets (**3.3**).
+- **Mocks jusqu'à Convergence 1 :** les manifests peuvent être servis comme **fichiers statiques** (`peintre-nano/public/...`) ou **imports** de JSON sous `peintre-nano/src/...` (ex. dossier `fixtures/` / `mocks/`) — **jamais** `import` depuis `references/` au runtime bundle.
+- **`contracts/creos/manifests/`** : cible canonique **repo** ; si le dossier n'existe pas encore, la story **n'impose pas** de le créer seule pour débloquer : **copier** les exemples reviewables dans le package `peintre-nano` ou référencer un chemin `public/` **à documenter** pour le handoff Piste B. **Ne pas** bloquer la story sur l'existence physique de `contracts/creos/manifests/` si le skill livre des fixtures internes au package.
+- **`registry/`** et **`runtime/`** : **ne pas fusionner** les responsabilités — la **validation pure** (fonctions, types d'erreur) vit plutôt sous `peintre-nano/src/validation/` ; le **chargement** (fetch, parse) peut vivre sous `peintre-nano/src/runtime/` en **appelant** la validation, sans y mettre la logique métier des widgets (**3.3**).
 
 ---
 
 ## Flows cashflow (a) / (b) — note de cadrage
 
-La story 3.2 **ne tranche pas** l’implémentation métier caisse / réception ni le format natif des flows.
+La story 3.2 **ne tranche pas** l'implémentation métier caisse / réception ni le format natif des flows.
 
 - Fondations : `references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md` §7 ; ordre des merges / pipeline : `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md` §16.
 - Si un manifest de démo touche au domaine caisse, rester sur des **clés neutres** de démo — **pas** de second moteur de rendu métier.
@@ -103,7 +103,7 @@ So that **navigation and page composition come from reviewable contracts instead
 
 ---
 
-## Critères d’acceptation (BDD — source epics)
+## Critères d'acceptation (BDD — source epics)
 
 **Given** `recyclique` remains author of structural business information  
 **When** manifest loading is implemented  
@@ -130,11 +130,11 @@ Les libellés ci-dessous suivent la **sémantique epics** ; le **format JSON** p
 
 1. **Structure :** JSON parseable ; champs requis présents (`version`, arborescence / entrées nav, `page_key` + `slots` pour chaque page manifest chargé, etc.) ; types cohérents (tableaux, chaînes non vides pour clés stables).
 2. **Navigation — unicité :** pas deux entrées avec le même `route_key` ; pas deux `path` identiques si le champ `path` est présent dans le modèle retenu.
-3. **Pages — unicité :** dans l’ensemble des `PageManifest` considérés pour une activation donnée, **un seul** manifest par `page_key`.
+3. **Pages — unicité :** dans l'ensemble des `PageManifest` considérés pour une activation donnée, **un seul** manifest par `page_key`.
 4. **Raccourcis :** si des raccourcis clavier (ou identifiants de raccourci) sont modélisés, **détecter les collisions** entre entrées.
-5. **Liens nav → page :** toute référence de navigation vers une `page_key` **doit** résoudre vers un `PageManifest` chargé dans le même lot (jeu de manifests « coactivés » défini par la story d’implémentation — ex. paire nav + N pages).
-6. **Widgets :** chaque `widgetType` référencé dans un `PageManifest` doit être **autorisé** par une **liste minimale explicite** (fichier TS ou JSON dans `peintre-nano`, documenté) jusqu’à ce que le **registre** (**3.3**) devienne la source unique. **Rejet explicite** si inconnu — pas de fallback silencieux.
-7. **Erreurs :** type ou union d’erreurs **structurées** (code + message + détail optionnel : clé en conflit, ligne/champ si pertinent) ; pas seulement `console.error` sans signal testable.
+5. **Liens nav → page :** toute référence de navigation vers une `page_key` **doit** résoudre vers un `PageManifest` chargé dans le même lot (jeu de manifests « coactivés » défini par la story d'implémentation — ex. paire nav + N pages).
+6. **Widgets :** chaque `widgetType` référencé dans un `PageManifest` doit être **autorisé** par une **liste minimale explicite** (fichier TS ou JSON dans `peintre-nano`, documenté) jusqu'à ce que le **registre** (**3.3**) devienne la source unique. **Rejet explicite** si inconnu — pas de fallback silencieux.
+7. **Erreurs :** type ou union d'erreurs **structurées** (code + message + détail optionnel : clé en conflit, ligne/champ si pertinent) ; pas seulement `console.error` sans signal testable.
 
 **Preuve testable :** tests unitaires Vitest couvrant au moins : manifest **valide** accepté ; collision `route_key` / `page_key` ; lien nav vers `page_key` manquant ; `widgetType` inconnu ; JSON mal formé.
 
@@ -145,7 +145,7 @@ Les libellés ci-dessous suivent la **sémantique epics** ; le **format JSON** p
 - [x] **T1** — Finaliser le **modèle de données** TS et/ou le **contrat JSON** minimal (étendre `NavigationEntry` / `NavigationManifest` / `PageManifest` si nécessaire pour `path`, cible de page, raccourcis) — en restant aligné epics et schémas CREOS lorsque publiés.
 - [x] **T2** — Implémenter **parse + normalisation** (snake_case → camelCase si applicable) dans `peintre-nano/src/validation/` (module dédié manifests) avec fonctions pures testables.
 - [x] **T3** — Implémenter le **chargement** pour la Piste A : `fetch` vers `public/` ou `import` de fixtures — **aucun** chemin vers `references/`.
-- [x] **T4** — Implémenter la **validation croisée** (nav + ensemble de pages + allowlist widgets) et exposer un **résultat** `ok | err` (ou `Result` typé) consommable par `App` / shell (affichage minimal d’erreur dans la zone `main` **optionnel** mais **erreur doit être observable en test** sans navigateur si possible).
+- [x] **T4** — Implémenter la **validation croisée** (nav + ensemble de pages + allowlist widgets) et exposer un **résultat** `ok | err` (ou `Result` typé) consommable par `App` / shell (affichage minimal d'erreur dans la zone `main` **optionnel** mais **erreur doit être observable en test** sans navigateur si possible).
 - [x] **T5** — Fournir **fixtures** : au moins un jeu **valide** et plusieurs jeux **invalides** (collision, lien cassé, widget inconnu, JSON cassé).
 - [x] **T6** — **Tests** : Vitest + couverture des règles § « Règles de validation minimales » ; `npm run lint`, `npm run build`, `npm run test` depuis `peintre-nano/`.
 - [x] **T7** — Mettre à jour les README concernés (`src/validation/`, `src/runtime/`, `src/types/` si besoin) — bref, pas de roman.
@@ -160,7 +160,7 @@ Les libellés ci-dessous suivent la **sémantique epics** ; le **format JSON** p
 2. `npm run lint` — succès.
 3. `npm run build` — succès.
 4. `npm run test` — succès, avec tests **manifest loader / validation** verts (assertions sur rejets explicites, pas seulement smoke).
-5. Vérification manuelle optionnelle : `npm run dev` — si fixtures servies par `public/`, le chargement ne **échoue pas silencieusement** (comportement observable ou log d’erreur structuré en dev — sans dépendre de `references/`).
+5. Vérification manuelle optionnelle : `npm run dev` — si fixtures servies par `public/`, le chargement ne **échoue pas silencieusement** (comportement observable ou log d'erreur structuré en dev — sans dépendre de `references/`).
 
 ---
 
@@ -193,7 +193,7 @@ Les libellés ci-dessous suivent la **sémantique epics** ; le **format JSON** p
 ### Reuse / extension
 
 - Étendre les types existants plutôt que dupliquer des DTO parallèles.
-- Centraliser les messages / codes d’erreur de validation pour réutilisation par **3.6** (fallbacks visuels) plus tard.
+- Centraliser les messages / codes d'erreur de validation pour réutilisation par **3.6** (fallbacks visuels) plus tard.
 
 ---
 
@@ -253,11 +253,11 @@ _(aucun blocage)_ — gates `npm ci`, `npm run lint`, `npm run build`, `npm run 
 | Périmètre vs 3.1 / 3.3 / 3.4 | § Périmètre Story 3.2 vs stories adjacentes |
 | Quatre artefacts (pas de substitut contrats) | § Les quatre artefacts |
 | P1 (pas Stack/Group pour layout shell) | § Primauté ADR |
-| Frontières Piste A / pas d’import `references/` | § Frontières repo |
+| Frontières Piste A / pas d'import `references/` | § Frontières repo |
 | Boundaries `registry/` / `runtime/` / `validation/` | § Frontières repo + Notes dev |
 | Cashflow (a)/(b) + pipeline §16 | § Flows cashflow |
 | Critères de done testables (`peintre-nano/`) | § Critères de done testables |
-| Critères epics BDD + règles validation détaillées | § Critères d’acceptation + § Règles de validation minimales |
+| Critères epics BDD + règles validation détaillées | § Critères d'acceptation + § Règles de validation minimales |
 
 **Note fin create-story (CS) :** enchaîner **VS** (validate-create-story) selon le pipeline parent Story Runner.
 

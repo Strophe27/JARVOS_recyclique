@@ -1,7 +1,7 @@
 # Story 2.2 : Implémenter le `ContextEnvelope` backend minimal et le recalcul explicite de contexte
 
 **Clé fichier (obligatoire) :** `2-2-implementer-le-contextenvelope-backend-minimal-et-le-recalcul-explicite-de-contexte`  
-**Epic :** epic-2 — **Piste B** (implémentation backend réel : `ContextEnvelope`, permissions, contextes) — **ne pas** déplacer la **vérité contextuelle** dans **Peintre_nano (Epic 3)** : le frontend ne fait qu’afficher / demander ; **Recyclique** calcule et impose.  
+**Epic :** epic-2 — **Piste B** (implémentation backend réel : `ContextEnvelope`, permissions, contextes) — **ne pas** déplacer la **vérité contextuelle** dans **Peintre_nano (Epic 3)** : le frontend ne fait qu'afficher / demander ; **Recyclique** calcule et impose.  
 **Statut :** done
 
 <!-- Validation optionnelle : exécuter validate-create-story avant dev-story. -->
@@ -18,54 +18,54 @@ afin que le client ne rende que ce qui est **valide** pour le **site, caisse, se
 
 **Étant donné** que la hiérarchie de vérité v2 exige un **contexte détenu par le backend** ([Source : `references/artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md` — §1 principe 1, §7 ; `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` — §1 AR39])  
 **Quand** le **`ContextEnvelope` minimal** est implémenté  
-**Alors** il expose les **champs canoniques** de contexte (identifiants site / caisse / session caisse / poste réception selon le modèle 1.3), l’**état runtime** attendu pour l’UI (`ok` / `degraded` / `forbidden` ou équivalent **figé dans OpenAPI** — spec **§4.2**), et les **permissions effectives** ou leur emplacement contractuel **aligné** sur ce que la story autorise comme « minimal » (voir **découpage avec Story 2.3** ci-dessous)  
+**Alors** il expose les **champs canoniques** de contexte (identifiants site / caisse / session caisse / poste réception selon le modèle 1.3), l'**état runtime** attendu pour l'UI (`ok` / `degraded` / `forbidden` ou équivalent **figé dans OpenAPI** — spec **§4.2**), et les **permissions effectives** ou leur emplacement contractuel **aligné** sur ce que la story autorise comme « minimal » (voir **découpage avec Story 2.3** ci-dessous)  
 **Et** le **schéma et les opérations HTTP** sont publiés via le chemin **reviewable** `contracts/openapi/recyclique-api.yaml` avec des **`operationId` stables** et cohérents `contracts/README.md` / politique **B4** (pas de second fichier source parallèle sans lien OpenAPI)
 
 ### AC 2 — Recalcul explicite ; pas de bascule « surprise »
 
-**Étant donné** qu’un changement de contexte **sensible** ne doit **jamais** être implicite ([Source : spec 1.3 — §4.0, §4.1 tableau bascules, FR12–FR13 `epics.md`])  
-**Quand** l’utilisateur ou le système provoque un changement de **site, caisse, session caisse ou poste de réception** (ou invalidation équivalente côté serveur)  
-**Alors** le backend **recalcule** l’enveloppe côté serveur (login, refresh, **endpoint dédié** de rafraîchissement contexte — spec **§4.2**, à figer en OpenAPI dans cette story ou extension documentée)  
-**Et** le client **ne construit pas** l’enveloppe à partir de manifests ou de libellés ; il **consomme** la réponse serveur
+**Étant donné** qu'un changement de contexte **sensible** ne doit **jamais** être implicite ([Source : spec 1.3 — §4.0, §4.1 tableau bascules, FR12–FR13 `epics.md`])  
+**Quand** l'utilisateur ou le système provoque un changement de **site, caisse, session caisse ou poste de réception** (ou invalidation équivalente côté serveur)  
+**Alors** le backend **recalcule** l'enveloppe côté serveur (login, refresh, **endpoint dédié** de rafraîchissement contexte — spec **§4.2**, à figer en OpenAPI dans cette story ou extension documentée)  
+**Et** le client **ne construit pas** l'enveloppe à partir de manifests ou de libellés ; il **consomme** la réponse serveur
 
 ### AC 3 — Contexte ambigu ou incomplet → état restreint explicite
 
-**Étant donné** qu’un contexte **ambigu** ou **incomplet** ne doit pas produire une supposition silencieuse ([Source : spec 1.3 — §4.0 fin, FR64 ; AC Story 2.2 `epics.md`])  
-**Quand** les prérequis d’exploitation ne sont pas réunis (ex. site non choisi, session douteuse, incohérence détectée — **à préciser dans l’implémentation** selon brownfield)  
+**Étant donné** qu'un contexte **ambigu** ou **incomplet** ne doit pas produire une supposition silencieuse ([Source : spec 1.3 — §4.0 fin, FR64 ; AC Story 2.2 `epics.md`])  
+**Quand** les prérequis d'exploitation ne sont pas réunis (ex. site non choisi, session douteuse, incohérence détectée — **à préciser dans l'implémentation** selon brownfield)  
 **Alors** la réponse porte un état **`degraded`** ou **`forbidden`** (noms **exactement** ceux du contrat OpenAPI) avec une **sémantique documentée** : ce qui reste autorisé vs bloqué **côté serveur**  
 **Et** **aucune** expansion silencieuse des droits ou du périmètre métier
 
 ### AC 4 — Continuité epics UI sans modèle parallèle
 
-**Étant donné** que **Epic 3** et **Epic 5** doivent s’appuyer sur **une seule** charge utile de contexte autoritaire  
+**Étant donné** que **Epic 3** et **Epic 5** doivent s'appuyer sur **une seule** charge utile de contexte autoritaire  
 **Quand** cette story est livrée  
-**Alors** les consommateurs peuvent s’appuyer sur le **contrat publié** (types générés ultérieurement — **Story 2.6** pour le versionnage / codegen complet si besoin)  
-**Et** les epics ultérieurs **n’inventent pas** un second modèle de contexte métier côté frontend ([Source : `epics.md` — Story 2.2 dernier bloc AC])
+**Alors** les consommateurs peuvent s'appuyer sur le **contrat publié** (types générés ultérieurement — **Story 2.6** pour le versionnage / codegen complet si besoin)  
+**Et** les epics ultérieurs **n'inventent pas** un second modèle de contexte métier côté frontend ([Source : `epics.md` — Story 2.2 dernier bloc AC])
 
 ### Validation humaine (HITL) — critères de relecture
 
-Un pair valide : **autorité serveur** sur le contenu de l’enveloppe ; **pas de fuite** inter-site / inter-contexte ; **OpenAPI** à jour ; **secrets** absents des livrables ; **logs** sans données sensibles ; alignement **§3** isolation (spec 1.3).
+Un pair valide : **autorité serveur** sur le contenu de l'enveloppe ; **pas de fuite** inter-site / inter-contexte ; **OpenAPI** à jour ; **secrets** absents des livrables ; **logs** sans données sensibles ; alignement **§3** isolation (spec 1.3).
 
 ## Tasks / Subtasks
 
-- [x] **Cartographier l’existant brownfield vs cible `ContextEnvelope`** (AC : #1, #2)  
+- [x] **Cartographier l'existant brownfield vs cible `ContextEnvelope`** (AC : #1, #2)  
   - [x] Relire `GET /v1/users/me`, `GET /v1/users/me/permissions`, modèle `User` (ex. `site_id`), routes caisses / sessions / postes réception déjà présentes — [Source : `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` — §3.1–3.5, backlog B1]  
   - [x] Identifier ce qui est **déjà** exposé vs ce qui doit entrer dans **un** schéma `ContextEnvelope` (agrégation vs nouvel endpoint — **choix à documenter** dans les notes de complétion)
 
 - [x] **Définir / compléter les schémas OpenAPI** (AC : #1)  
   - [x] Étendre ou introduire dans `contracts/openapi/recyclique-api.yaml` le schéma **`ContextEnvelope`** (et sous-objets si nécessaire), en réutilisant / reliant `ExploitationContextIds` si pertinent — fichier YAML actuel : commentaire « ContextEnvelope lorsque exposé » sous `ExploitationContextIds`  
-  - [x] Ajouter ou mettre à jour les **`operationId`** pour : émission / rafraîchissement de l’enveloppe (ex. `GET` dédié ou évolution contrôlée d’une route existante) — **sans casser** les références existantes sans politique **B4**
+  - [x] Ajouter ou mettre à jour les **`operationId`** pour : émission / rafraîchissement de l'enveloppe (ex. `GET` dédié ou évolution contrôlée d'une route existante) — **sans casser** les références existantes sans politique **B4**
 
 - [x] **Implémenter le calcul serveur minimal** dans `recyclique/api/` (AC : #1–#3)  
-  - [x] Service ou couche dédiée (ex. sous `core/` ou `services/`) qui **agrège** contexte + indicateur d’état (`ok` / `degraded` / `forbidden`) + **placeholder ou jeu minimal** de `permissionKeys` si le calcul additif complet est reporté à **Story 2.3** — **expliciter** dans le code / story completion ce qui est **minimal** vs reporté  
+  - [x] Service ou couche dédiée (ex. sous `core/` ou `services/`) qui **agrège** contexte + indicateur d'état (`ok` / `degraded` / `forbidden`) + **placeholder ou jeu minimal** de `permissionKeys` si le calcul additif complet est reporté à **Story 2.3** — **expliciter** dans le code / story completion ce qui est **minimal** vs reporté  
   - [x] Respecter **Story 2.1** : résolution JWT **Bearer ou cookie** via `get_current_user` / `resolve_access_token` — pas de contournement auth
 
 - [x] **Recalcul explicite** (AC : #2)  
-  - [x] Après opérations de **changement de contexte** métier (sélection site, ouverture / clôture session, etc.), garantir que la **prochaine** lecture de l’enveloppe reflète l’état serveur ; implémenter ou brancher l’**endpoint de rafraîchissement** mentionné spec **§4.2**  
+  - [x] Après opérations de **changement de contexte** métier (sélection site, ouverture / clôture session, etc.), garantir que la **prochaine** lecture de l'enveloppe reflète l'état serveur ; implémenter ou brancher l'**endpoint de rafraîchissement** mentionné spec **§4.2**  
   - [x] Éviter les mises à jour **silencieuses** qui contrediraient §4.0 (message / statut explicite côté payload si le serveur invalide un contexte)
 
 - [x] **États dégradés** (AC : #3)  
-  - [x] Mapper les cas d’ambiguïté aux enums / champs du contrat ; documenter dans OpenAPI (`description`) la sémantique minimale livrée dans cette story
+  - [x] Mapper les cas d'ambiguïté aux enums / champs du contrat ; documenter dans OpenAPI (`description`) la sémantique minimale livrée dans cette story
 
 - [x] **Tests** (AC : #1–#4)  
   - [x] Tests pytest ciblés (nouveau fichier ou extension) : enveloppe **cohérente** pour un utilisateur de test ; cas **degraded** / **forbidden** minimal ; pas de régression sur `/users/me` et permissions si routes modifiées
@@ -79,14 +79,14 @@ $env:TESTING = 'true'
 python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py tests/test_auth_logging.py tests/test_auth_inactive_user_middleware.py tests/test_auth_login_username_password.py tests/test_admin_user_status_endpoint.py tests/api/test_admin_user_management.py tests/test_refresh_token_service.py tests/test_refresh_token_endpoint.py -v --tb=short
 ```
 
-  - [x] Si échec pour **indisponibilité d’environnement** (Redis, Postgres, Docker, EPERM) : **NEEDS_HITL** avec cause — ne pas marquer PASS fragile ([Source : brief Story Runner]) — *N/A sur gate locale 2026-04-03 (succès).*
+  - [x] Si échec pour **indisponibilité d'environnement** (Redis, Postgres, Docker, EPERM) : **NEEDS_HITL** avec cause — ne pas marquer PASS fragile ([Source : brief Story Runner]) — *N/A sur gate locale 2026-04-03 (succès).*
 
 ## Dev Notes
 
 ### Découpage avec Story 2.3 (permissions additives complètes)
 
 - **Story 2.2** : **enveloppe** canonique, **recalcul explicite**, **états** `ok` / `degraded` / `forbidden`, exposition **contractuelle** ; le **calcul additif complet** rôles + groupes + union stable est **Story 2.3** (`epics.md` Story 2.3).  
-- Si cette story ne livre qu’un **sous-ensemble** de `permissionKeys`, le comportement doit être **documenté** (OpenAPI + notes dev) pour éviter que le client suppose l’union finale avant 2.3.
+- Si cette story ne livre qu'un **sous-ensemble** de `permissionKeys`, le comportement doit être **documenté** (OpenAPI + notes dev) pour éviter que le client suppose l'union finale avant 2.3.
 
 ### Pack contexte (Story Runner — Epic 2)
 
@@ -104,7 +104,7 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 - **Session web v2** : cookies httpOnly optionnels (`use_web_session_cookies`) ; `resolve_access_token` : **Bearer prioritaire**, puis cookie ; `get_current_user` inchangé pour les dépendances.  
 - **Fichiers touchés récemment (référence)** : `core/auth.py`, `core/web_session_cookies.py`, `core/config.py`, `schemas/auth.py`, `endpoints/auth.py`, `contracts/openapi/recyclique-api.yaml`.  
-- **Endpoint existant utile** : `GET /v1/users/me/permissions` appelle `get_user_permissions` — **point d’ancrage** ou **refactor** vers enveloppe unifiée selon design retenu.
+- **Endpoint existant utile** : `GET /v1/users/me/permissions` appelle `get_user_permissions` — **point d'ancrage** ou **refactor** vers enveloppe unifiée selon design retenu.
 
 ### Stack et versions
 
@@ -122,12 +122,12 @@ python -m pytest tests/test_infrastructure.py tests/test_auth_login_endpoint.py 
 
 - **Backend actif** : `recyclique/api/` (dossier canonique post–story 2.2b).  
 - **Contrat canonique** : `contracts/openapi/recyclique-api.yaml` — **writer** Recyclique (AR19).  
-- **Frontend** : `peintre-nano/` consomme ; **mocks** alignés schéma jusqu’à Convergence 1 — pas de duplication de vérité.
+- **Frontend** : `peintre-nano/` consomme ; **mocks** alignés schéma jusqu'à Convergence 1 — pas de duplication de vérité.
 
 ### Synthèse create-story (CS) — 2026-04-03
 
 - **Primauté** : `_bmad-output/planning-artifacts/epics.md` (Epic 2, Story 2.2) + `sprint-status.yaml` ; pack Epic 2 du Story Runner intégré en tête de fichier et en « Pack contexte ».
-- **Sprint** : clé `2-2-…` est en **`review`** — la mise à jour create-story *backlog → ready-for-dev* (workflow étape 6) **ne s’applique pas** tant que la story n’est pas replanifiée en backlog ; le fichier sert à la fois de **spec contexte dev** et de **trace d’implémentation**.
+- **Sprint** : clé `2-2-…` est en **`review`** — la mise à jour create-story *backlog → ready-for-dev* (workflow étape 6) **ne s'applique pas** tant que la story n'est pas replanifiée en backlog ; le fichier sert à la fois de **spec contexte dev** et de **trace d'implémentation**.
 - **Alignement gate CI / `run_tests.sh`** : le script `recyclique/api/run_tests.sh` inclut `tests/test_context_envelope.py` (aligné gate Story Runner 2.2 / 2.2b).
 - **`project-context.md`** : aucun fichier `project-context.md` repéré à la racine du dépôt lors du passage CS (optionnel ; si créé plus tard, référencer ici le chemin).
 

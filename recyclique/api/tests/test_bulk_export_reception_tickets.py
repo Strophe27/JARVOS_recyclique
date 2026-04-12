@@ -22,6 +22,7 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.category import Category
 from recyclic_api.core.security import hash_password
 from tests.api_v1_paths import v1
+from tests.bulk_sensitive_headers import bulk_export_post_headers
 
 RECEPTION_TICKETS_EXPORT_BULK = v1("/admin/reports/reception-tickets/export-bulk")
 
@@ -156,6 +157,7 @@ class TestBulkExportReceptionTicketsCSV:
         """Test export CSV bulk avec succès."""
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -185,6 +187,7 @@ class TestBulkExportReceptionTicketsCSV:
         now = datetime.now(timezone.utc)
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     # Fenêtre large : évite l'écart entre ``now`` fixture et ``now`` à l'assertion
@@ -242,6 +245,7 @@ class TestBulkExportReceptionTicketsCSV:
         # Filtrer par bénévole
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "benevole_id": str(test_benevole.id),
@@ -267,6 +271,7 @@ class TestBulkExportReceptionTicketsExcel:
         """Test export Excel bulk avec succès."""
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -313,6 +318,7 @@ class TestBulkExportReceptionTicketsExcel:
         now = datetime.now(timezone.utc)
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (now - timedelta(days=5)).isoformat(),
@@ -338,6 +344,7 @@ class TestBulkExportReceptionTicketsExcel:
         """Test que la mise en forme (styles, couleurs, bordures) est appliquée."""
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
@@ -412,6 +419,7 @@ class TestBulkExportReceptionTicketsExcel:
         
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": (now - timedelta(days=30)).isoformat(),
@@ -441,6 +449,7 @@ class TestBulkExportReceptionTicketsValidation:
         """Test avec format invalide."""
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {},
                 "format": "pdf"  # Format invalide
@@ -455,6 +464,7 @@ class TestBulkExportReceptionTicketsValidation:
         
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json={
                 "filters": {
                     "date_from": far_future.isoformat(),
@@ -487,6 +497,7 @@ class TestBulkExportReceptionTicketsValidation:
         
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json=payload
         )
         
@@ -518,6 +529,7 @@ class TestBulkExportReceptionTicketsValidation:
         
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json=payload
         )
         
@@ -537,6 +549,7 @@ class TestBulkExportReceptionTicketsValidation:
         
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json=payload
         )
         
@@ -557,6 +570,7 @@ class TestBulkExportReceptionTicketsValidation:
         
         response = admin_client.post(
             RECEPTION_TICKETS_EXPORT_BULK,
+            headers=bulk_export_post_headers(),
             json=payload
         )
         

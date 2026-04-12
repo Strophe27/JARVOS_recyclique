@@ -18,6 +18,8 @@ import {
 } from '../../src/app/auth/default-demo-auth-adapter';
 import { filterNavigation } from '../../src/runtime/filter-navigation-for-context';
 import { resolveNavEntryDisplayLabel } from '../../src/runtime/resolve-nav-entry-display-label';
+import { ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS } from '../../src/domains/admin-config/admin-transverse-list-page-guards';
+import { ADMIN_TRANSVERSE_LIST_SHELL_SLOT_IDS } from '../../src/domains/admin-config/admin-transverse-list-shell-slots';
 import { resolvePageAccess } from '../../src/runtime/resolve-page-access';
 
 /**
@@ -69,6 +71,12 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).toContain('transverse-admin');
     expect(ids).toContain('transverse-admin-access');
     expect(ids).toContain('transverse-admin-site');
+    expect(ids).toContain('transverse-admin-pending');
+    expect(ids).toContain('transverse-admin-cash-registers');
+    expect(ids).toContain('transverse-admin-sites');
+    expect(ids).toContain('transverse-admin-session-manager');
+    expect(ids).toContain('transverse-admin-reception-stats');
+    expect(ids).toContain('transverse-admin-reception-sessions');
     expect(ids).toContain('transverse-listing-articles');
     expect(ids).toContain('transverse-listing-dons');
     expect(ids).toContain('transverse-consultation-article');
@@ -272,7 +280,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
   });
 
   /**
-   * Story 5.4 : trois PageManifest admin, chemins /admin, /admin/access, /admin/site ; même permission + site.
+   * Story 5.4 + 18.1 : hub `/admin` → `transverse-admin-reports-hub` ; `/admin/access`, `/admin/site` inchangés.
    */
   it('résout le lot admin transverse (story 5.4)', () => {
     expect(runtimeServedManifestLoadResult.ok).toBe(true);
@@ -280,19 +288,27 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     const { bundle } = runtimeServedManifestLoadResult;
     const expected = [
       {
-        pageKey: 'transverse-admin-placeholder',
+        pageKey: 'transverse-admin-reports-hub',
         path: '/admin',
-        slotIds: ['admin.header', 'admin.overview', 'admin.subpages', 'admin.boundaries', 'admin.data-gap'],
+        slotIds: [
+          'admin.transverse-list.header',
+          'admin.transverse-list.contract-gap',
+          'admin.transverse-list.main',
+          'admin.dashboard.legacy',
+        ],
+        widgetTypes: ['demo.text.block', 'demo.text.block', 'admin.reports.supervision.hub', 'admin.legacy.dashboard.home'],
       },
       {
         pageKey: 'transverse-admin-access-overview',
         path: '/admin/access',
         slotIds: ['admin.access.header', 'admin.access.scope', 'admin.access.not-matrix', 'admin.access.data-gap'],
+        widgetTypes: ['demo.text.block', 'demo.text.block', 'demo.text.block', 'demo.text.block'],
       },
       {
         pageKey: 'transverse-admin-site-overview',
         path: '/admin/site',
         slotIds: ['admin.site.header', 'admin.site.scope', 'admin.site.not-sync', 'admin.site.data-gap'],
+        widgetTypes: ['demo.text.block', 'demo.text.block', 'demo.text.block', 'demo.text.block'],
       },
     ] as const;
 
@@ -312,13 +328,133 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(page.requiredPermissionKeys).toEqual(['transverse.admin.view']);
       expect(page.requiresSite).toBe(true);
       expect(page.slots.map((s) => s.slotId)).toEqual([...spec.slotIds]);
-      for (const s of page.slots) {
-        expect(s.widgetType).toBe('demo.text.block');
-      }
+      expect(page.slots.map((s) => s.widgetType)).toEqual([...spec.widgetTypes]);
     }
   });
 
-  it('masque les trois entrées admin si transverse.admin.view est absente (story 5.4)', () => {
+  /**
+   * Story 18.1 : entrée unique `transverse-admin` sur `/admin` → `transverse-admin-reports-hub`
+   * (pas de seconde entrée nav `/admin/reports` — collision `page_key`).
+   */
+  it('résout le hub rapports admin sur /admin (Story 18.1)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+      return [e, ...(e.children?.flatMap(walk) ?? [])];
+    });
+    expect(flat.some((e) => e.id === 'transverse-admin-reports')).toBe(false);
+    const nav = flat.find((e) => e.pageKey === 'transverse-admin-reports-hub');
+    expect(nav?.path).toBe('/admin');
+    expect(nav?.id).toBe('transverse-admin');
+
+    const page = bundle.pages.find((p) => p.pageKey === 'transverse-admin-reports-hub');
+    expect(page).toBeDefined();
+    if (!page) return;
+    expect(page.requiredPermissionKeys).toEqual(['transverse.admin.view']);
+    expect(page.requiresSite).toBe(true);
+    expect(page.slots.map((s) => s.slotId)).toEqual([
+      'admin.transverse-list.header',
+      'admin.transverse-list.contract-gap',
+      'admin.transverse-list.main',
+      'admin.dashboard.legacy',
+    ]);
+    expect(page.slots.map((s) => s.widgetType)).toEqual([
+      'demo.text.block',
+      'demo.text.block',
+      'admin.reports.supervision.hub',
+      'admin.legacy.dashboard.home',
+    ]);
+  });
+
+  it('ne manifeste aucune entrée nav sur le chemin SPA /admin/reports (alias runtime → /admin ; Story 18.1 CR)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+      return [e, ...(e.children?.flatMap(walk) ?? [])];
+    });
+    expect(flat.some((e) => e.path === '/admin/reports')).toBe(false);
+    expect(flat.some((e) => e.id === 'transverse-admin-reports')).toBe(false);
+    const hub = flat.find((e) => e.pageKey === 'transverse-admin-reports-hub');
+    expect(hub?.path).toBe('/admin');
+    expect(hub?.id).toBe('transverse-admin');
+  });
+
+  /**
+   * Stories 17.1–17.3 : `/admin/pending`, `/admin/cash-registers`, `/admin/sites` — `page_key` `transverse-admin*`,
+   * slots homogènes `admin.transverse-list.*`, guards documentés (`admin-transverse-list-page-guards.ts`),
+   * widgets démo sans `data_contract` ; gaps OpenAPI inchangés (rail U).
+   */
+  it('résout les pages admin liste transverse (stories 17.1–17.3)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+      return [e, ...(e.children?.flatMap(walk) ?? [])];
+    });
+
+    const cases = [
+      {
+        pageKey: 'transverse-admin-pending',
+        path: '/admin/pending',
+        navId: 'transverse-admin-pending',
+        mainWidget: 'admin.pending-users.demo',
+      },
+      {
+        pageKey: 'transverse-admin-cash-registers',
+        path: '/admin/cash-registers',
+        navId: 'transverse-admin-cash-registers',
+        mainWidget: 'admin.cash-registers.demo',
+      },
+      {
+        pageKey: 'transverse-admin-sites',
+        path: '/admin/sites',
+        navId: 'transverse-admin-sites',
+        mainWidget: 'admin.sites.demo',
+      },
+      {
+        pageKey: 'transverse-admin-session-manager',
+        path: '/admin/session-manager',
+        navId: 'transverse-admin-session-manager',
+        mainWidget: 'admin.session-manager.demo',
+      },
+      {
+        pageKey: 'transverse-admin-reception-stats',
+        path: '/admin/reception-stats',
+        navId: 'transverse-admin-reception-stats',
+        mainWidget: 'admin.reception.stats.supervision',
+      },
+      {
+        pageKey: 'transverse-admin-reception-sessions',
+        path: '/admin/reception-sessions',
+        navId: 'transverse-admin-reception-sessions',
+        mainWidget: 'admin.reception.tickets.list',
+      },
+    ] as const;
+
+    for (const spec of cases) {
+      const nav = flat.find((e) => e.pageKey === spec.pageKey);
+      expect(nav?.path).toBe(spec.path);
+      expect(nav?.id).toBe(spec.navId);
+
+      const page = bundle.pages.find((p) => p.pageKey === spec.pageKey);
+      expect(page).toBeDefined();
+      if (!page) continue;
+      expect(page.requiredPermissionKeys).toEqual([
+        ...ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS.requiredPermissionKeys,
+      ]);
+      expect(page.requiresSite).toBe(ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS.requiresSite);
+      expect(page.slots.map((s) => s.slotId)).toEqual([...ADMIN_TRANSVERSE_LIST_SHELL_SLOT_IDS]);
+      expect(page.slots.map((s) => s.widgetType)).toEqual([
+        'demo.text.block',
+        'demo.text.block',
+        spec.mainWidget,
+      ]);
+    }
+  });
+
+  it('masque les entrées admin si transverse.admin.view est absente (story 5.4 + 17.1)', () => {
     expect(runtimeServedManifestLoadResult.ok).toBe(true);
     if (!runtimeServedManifestLoadResult.ok) return;
     const filtered = filterNavigation(
@@ -339,6 +475,13 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).not.toContain('transverse-admin');
     expect(ids).not.toContain('transverse-admin-access');
     expect(ids).not.toContain('transverse-admin-site');
+    expect(ids).not.toContain('transverse-admin-pending');
+    expect(ids).not.toContain('transverse-admin-cash-registers');
+    expect(ids).not.toContain('transverse-admin-sites');
+    expect(ids).not.toContain('transverse-admin-session-manager');
+    expect(ids).not.toContain('transverse-admin-reception-stats');
+    expect(ids).not.toContain('transverse-admin-reception-sessions');
+    expect(ids).not.toContain('transverse-admin-reports');
   });
 
   it('ne sert plus d’entrées nav dédiées don / adhésion spéciaux (Story 6.5 — variantes dans /caisse)', () => {
@@ -420,7 +563,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(runtimeServedManifestLoadResult.ok).toBe(true);
     if (!runtimeServedManifestLoadResult.ok) return;
     const page = runtimeServedManifestLoadResult.bundle.pages.find(
-      (p) => p.pageKey === 'transverse-admin-placeholder',
+      (p) => p.pageKey === 'transverse-admin-reports-hub',
     );
     expect(page).toBeDefined();
     if (!page) return;
@@ -429,12 +572,156 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
   });
 
+  it('resolvePageAccess refuse /admin/pending sans transverse.admin.view (story 17.1)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find(
+      (p) => p.pageKey === 'transverse-admin-pending',
+    );
+    expect(page).toBeDefined();
+    if (!page) return;
+    const denied = resolvePageAccess(page, envelopeSansAdminView);
+    expect(denied.allowed).toBe(false);
+    if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
+  });
+
+  it('resolvePageAccess refuse /admin/cash-registers sans transverse.admin.view (story 17.2)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find(
+      (p) => p.pageKey === 'transverse-admin-cash-registers',
+    );
+    expect(page).toBeDefined();
+    if (!page) return;
+    const denied = resolvePageAccess(page, envelopeSansAdminView);
+    expect(denied.allowed).toBe(false);
+    if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
+  });
+
+  it('resolvePageAccess refuse /admin/sites sans transverse.admin.view (story 17.2)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find((p) => p.pageKey === 'transverse-admin-sites');
+    expect(page).toBeDefined();
+    if (!page) return;
+    const denied = resolvePageAccess(page, envelopeSansAdminView);
+    expect(denied.allowed).toBe(false);
+    if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
+  });
+
+  it('resolvePageAccess refuse /admin/session-manager sans transverse.admin.view (story 18.2)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find(
+      (p) => p.pageKey === 'transverse-admin-session-manager',
+    );
+    expect(page).toBeDefined();
+    if (!page) return;
+    const denied = resolvePageAccess(page, envelopeSansAdminView);
+    expect(denied.allowed).toBe(false);
+    if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
+  });
+
+  it('resolvePageAccess refuse /admin/reception-stats sans transverse.admin.view (story 19.1)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find(
+      (p) => p.pageKey === 'transverse-admin-reception-stats',
+    );
+    expect(page).toBeDefined();
+    if (!page) return;
+    const denied = resolvePageAccess(page, envelopeSansAdminView);
+    expect(denied.allowed).toBe(false);
+    if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
+  });
+
+  it('resolvePageAccess refuse /admin/reception-sessions sans transverse.admin.view (story 19.2)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find(
+      (p) => p.pageKey === 'transverse-admin-reception-sessions',
+    );
+    expect(page).toBeDefined();
+    if (!page) return;
+    const denied = resolvePageAccess(page, envelopeSansAdminView);
+    expect(denied.allowed).toBe(false);
+    if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
+  });
+
+  /**
+   * Story 18.3 — détail session caisse admin : PageManifest reviewable + widget unique
+   * (données live uniquement via `recyclique_cashSessions_getSessionDetail` côté client, pas d’`operationId` inventé).
+   */
+  it('résout la page admin-cash-session-detail du bundle servi (Story 18.3)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find((p) => p.pageKey === 'admin-cash-session-detail');
+    expect(page, 'PageManifest admin-cash-session-detail absente du bundle servi').toBeDefined();
+    if (!page) return;
+    expect(page.requiredPermissionKeys).toEqual(['transverse.admin.view']);
+    expect(page.requiresSite).toBe(true);
+    expect(page.slots.map((s) => s.slotId)).toEqual(['header', 'main']);
+    expect(page.slots.map((s) => s.widgetType)).toEqual(['demo.text.block', 'admin-cash-session-detail']);
+    expect(resolvePageAccess(page, envelopeSansAdminView).allowed).toBe(false);
+  });
+
+  it('résout la page admin-reception-ticket-detail du bundle servi (Story 19.2)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find(
+      (p) => p.pageKey === 'admin-reception-ticket-detail',
+    );
+    expect(page, 'PageManifest admin-reception-ticket-detail absente du bundle servi').toBeDefined();
+    if (!page) return;
+    expect(page.requiredPermissionKeys).toEqual(['transverse.admin.view']);
+    expect(page.requiresSite).toBe(true);
+    expect(page.slots.map((s) => s.slotId)).toEqual(['header', 'main']);
+    expect(page.slots.map((s) => s.widgetType)).toEqual(['demo.text.block', 'admin-reception-ticket-detail']);
+    expect(resolvePageAccess(page, envelopeSansAdminView).allowed).toBe(false);
+  });
+
+  /**
+   * Story 19.2 — AC 10 : présence manifeste liste `/admin/reception-sessions` + page détail ticket
+   * (`/admin/reception-tickets/<uuid>` résolu au runtime, sans entrée nav statique — cf. e2e).
+   */
+  it('AC 10 (Story 19.2) — entrée nav liste réception + PageManifest détail ticket accessibles (démo)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+      return [e, ...(e.children?.flatMap(walk) ?? [])];
+    });
+    expect(
+      flat.some(
+        (e) => e.pageKey === 'transverse-admin-reception-sessions' && e.path === '/admin/reception-sessions',
+      ),
+    ).toBe(true);
+    const listPage = bundle.pages.find((p) => p.pageKey === 'transverse-admin-reception-sessions');
+    const detailPage = bundle.pages.find((p) => p.pageKey === 'admin-reception-ticket-detail');
+    expect(listPage).toBeDefined();
+    expect(detailPage).toBeDefined();
+    if (!listPage || !detailPage) return;
+    expect(resolvePageAccess(listPage, createDefaultDemoEnvelope()).allowed).toBe(true);
+    expect(resolvePageAccess(detailPage, createDefaultDemoEnvelope()).allowed).toBe(true);
+  });
+
   it('resolvePageAccess refuse /admin/site sans transverse.admin.view (story 5.4)', () => {
     expect(runtimeServedManifestLoadResult.ok).toBe(true);
     if (!runtimeServedManifestLoadResult.ok) return;
     const page = runtimeServedManifestLoadResult.bundle.pages.find(
       (p) => p.pageKey === 'transverse-admin-site-overview',
     );
+    expect(page).toBeDefined();
+    if (!page) return;
+    const denied = resolvePageAccess(page, envelopeSansAdminView);
+    expect(denied.allowed).toBe(false);
+    if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
+  });
+
+  it('resolvePageAccess refuse le hub /admin (rapports) sans transverse.admin.view (Story 18.1)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const page = runtimeServedManifestLoadResult.bundle.pages.find((p) => p.pageKey === 'transverse-admin-reports-hub');
     expect(page).toBeDefined();
     if (!page) return;
     const denied = resolvePageAccess(page, envelopeSansAdminView);
@@ -457,6 +744,12 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         'transverse-admin',
         'transverse-admin-access',
         'transverse-admin-site',
+        'transverse-admin-pending',
+        'transverse-admin-cash-registers',
+        'transverse-admin-sites',
+        'transverse-admin-session-manager',
+        'transverse-admin-reception-stats',
+        'transverse-admin-reception-sessions',
         'transverse-listing-articles',
         'transverse-listing-dons',
         'transverse-consultation-article',
@@ -479,6 +772,65 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(resolveNavEntryDisplayLabel(dash, createDefaultDemoEnvelope())).toBe(
         DEMO_PRESENTATION_LABEL_TRANSVERSE_DASHBOARD,
       );
+    });
+  });
+
+  /**
+   * Story 18.3 — ancrage contrat bundle : hub `/admin`, session-manager, détail cash-session ;
+   * preuve machine lisible pour la matrice (sans simulation d’API hors OpenAPI).
+   */
+  describe('Story 18.3 — surfaces admin supervision caisse (CREOS bundle)', () => {
+    it('embarque hub rapports + session-manager + reception-stats + reception-sessions + pages détail session / ticket dans le bundle servi', () => {
+      expect(runtimeServedManifestLoadResult.ok).toBe(true);
+      if (!runtimeServedManifestLoadResult.ok) return;
+      const { bundle } = runtimeServedManifestLoadResult;
+      const pageKeys = new Set(bundle.pages.map((p) => p.pageKey));
+      expect(pageKeys.has('transverse-admin-reports-hub')).toBe(true);
+      expect(pageKeys.has('transverse-admin-session-manager')).toBe(true);
+      expect(pageKeys.has('transverse-admin-reception-stats')).toBe(true);
+      expect(pageKeys.has('transverse-admin-reception-sessions')).toBe(true);
+      expect(pageKeys.has('admin-cash-session-detail')).toBe(true);
+      expect(pageKeys.has('admin-reception-ticket-detail')).toBe(true);
+      const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+        return [e, ...(e.children?.flatMap(walk) ?? [])];
+      });
+      expect(flat.some((e) => e.path === '/admin' && e.pageKey === 'transverse-admin-reports-hub')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/session-manager')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/reception-stats')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/reception-sessions')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/reports')).toBe(false);
+    });
+  });
+
+  /**
+   * Story 19.3 — pilotage réception : pas de nav CREOS pour `/admin/reception-reports` (ligne matrice isolée) ;
+   * branches export **B** restent documentées dans le manifeste liste (slot contract-gap), sans activation UI.
+   */
+  describe('Story 19.3 — pilotage réception (bundle CREOS)', () => {
+    it('ne manifeste aucune entrée nav sur /admin/reception-reports (exports legacy hors rail U prouvé)', () => {
+      expect(runtimeServedManifestLoadResult.ok).toBe(true);
+      if (!runtimeServedManifestLoadResult.ok) return;
+      const { bundle } = runtimeServedManifestLoadResult;
+      const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+        return [e, ...(e.children?.flatMap(walk) ?? [])];
+      });
+      expect(flat.some((e) => e.path === '/admin/reception-reports')).toBe(false);
+      expect(flat.some((e) => e.id === 'transverse-admin-reception-reports')).toBe(false);
+    });
+
+    it('expose le texte reviewable export B / Epic 16 dans le slot contract-gap du manifeste reception-sessions', () => {
+      expect(runtimeServedManifestLoadResult.ok).toBe(true);
+      if (!runtimeServedManifestLoadResult.ok) return;
+      const page = runtimeServedManifestLoadResult.bundle.pages.find(
+        (p) => p.pageKey === 'transverse-admin-reception-sessions',
+      );
+      expect(page).toBeDefined();
+      if (!page) return;
+      const gap = page.slots.find((s) => s.slotId === 'admin.transverse-list.contract-gap');
+      expect(gap).toBeDefined();
+      const body = typeof gap?.widgetProps?.body === 'string' ? gap.widgetProps.body : '';
+      expect(body).toContain('recyclique_admin_reports_receptionTicketsExportBulk');
+      expect(body).toContain('Epic 16');
     });
   });
 });

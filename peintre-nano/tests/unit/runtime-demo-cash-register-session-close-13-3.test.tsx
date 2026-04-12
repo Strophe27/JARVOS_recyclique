@@ -103,9 +103,11 @@ describe('RuntimeDemoApp — alias `…/session/close` (Story 13.3)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cash-register-session-close-surface')).toBeTruthy();
     });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-session-close-back-to-sale')).toBeTruthy();
+    });
     expect(screen.queryByTestId('cash-register-sale-kiosk')).toBeNull();
     expect(screen.getByTestId('shell-zone-nav')).toBeTruthy();
     expect(screen.getByTestId('cashflow-session-close-heading').textContent).toMatch(/Fermeture de Caisse/i);
-    expect(screen.getByTestId('cashflow-session-close-back-to-sale')).toBeTruthy();
   });
 });

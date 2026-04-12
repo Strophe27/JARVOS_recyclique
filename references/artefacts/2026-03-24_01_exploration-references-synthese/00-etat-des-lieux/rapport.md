@@ -16,7 +16,7 @@
 | `consolidation-1.4.5/` | Non | Referentiel durable audit brownfield et assainissement de `recyclique-1.4.4/` vers 1.4.5 : synthese, backlog, journal, protocole de journalisation, rapports dates backend/frontend. |
 | `ecosysteme/` | **Oui** (dossier entier) | References confidentielles JARVOS ecosysteme / fondations ; index avec apercu court et document long ; chargement sur demande explicite uniquement. |
 | `ancien-repo/` | `repo/` **Oui** | Documentation brownfield referentielle Recyclique 1.4.4 (apercu, stack, API, modeles, UI, integration, checklist import) ; clone source dans `repo/` ignore par Git. |
-| `migration-paeco/` | Non | Guides Paheko/RecyClique, TODO, CR reunion, declarations eco-organismes ; sous-dossier `audits/` (correspondances caisse/poids, matrice) avec son propre index. |
+| `migration-paheko/` | Non | Guides Paheko/RecyClique, TODO, CR reunion, declarations eco-organismes ; sous-dossier `audits/` (correspondances caisse/poids, matrice) avec son propre index. |
 | `paheko/` | `repo/` **Oui** | Guide Paheko, analyse brownfield, liste endpoints API ; schema BDD decrit sous `references/dumps/` ; code distribution clone dans `repo/` (ignore). |
 | `vision-projet/` | Non | Matiere vision / Brief / PRD / presentations (RAG, nano-mini, module decla eco-organismes) ; regle de ne pas dupliquer ecosysteme. |
 | `_depot/` | Contenu (`*`) **Oui** (sauf `.gitkeep`) | Depot de fichiers en attente de ventilation ; skill traiter-depot / agent depot-specialist. |
@@ -38,7 +38,7 @@
 - **Recherche externe** : `references/recherche/index.md` + `contexte-pour-recherche-externe.md` si nouveau prompt.
 - **Audit / consolidation 1.4.5** : `references/consolidation-1.4.5/index.md` (synthese, backlog, journal selon le besoin).
 - **Brownfield 1.4.4 referentiel** : `references/ancien-repo/index.md`.
-- **Paheko / migration** : `references/migration-paeco/index.md`, `references/paheko/index.md`, `audits/index.md` si correspondances caisse/poids.
+- **Paheko / migration** : `references/migration-paheko/index.md`, `references/paheko/index.md`, `audits/index.md` si correspondances caisse/poids.
 - **Vision produit / Brief** : `references/vision-projet/index.md`.
 - **Ecosysteme confidentiel** : `references/ecosysteme/index.md` (sur demande explicite).
 - **Ventilation inbox** : skill traiter-depot ; `_depot/` (contenu non versionne sauf `.gitkeep`).

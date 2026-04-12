@@ -4,3 +4,8 @@
   border-radius: var(--mantine-radius-md);
   background: var(--mantine-color-body);
 }
+
+.rootUnified {
+  border-color: var(--mantine-color-gray-4);
+  background: var(--mantine-color-gray-0);
+}

@@ -65,7 +65,7 @@
 | Schémas / notes BDD (non sensibles) | `references/dumps/` (`schema-*.md`) | Résumé dans `references/index.md` |
 | Décisions courtes, handoffs agents | `references/artefacts/` (`YYYY-MM-DD_NN_…`) | `references/artefacts/index.md` **obligatoire à chaque nouvel artefact** |
 | Recherche externe | `references/recherche/` | `references/recherche/index.md` à l'ajout |
-| Interop Paheko / éco-organismes | `references/migration-paeco/`, `references/paheko/` | Index de chaque dossier |
+| Interop Paheko / éco-organismes | `references/migration-paheko/`, `references/paheko/` | Index de chaque dossier |
 | PRD, archi, epics, readiness, **ce guide** | `_bmad-output/planning-artifacts/` | `_bmad-output/README.md` ; archi : `planning-artifacts/architecture/index.md` |
 | Stories / sprint | `_bmad-output/implementation-artifacts/` | `sprint-status.yaml` |
 | **Tests (code)** | Backend API : **`recyclique/api/`** (gates Story Runner, pytest) ; stack Docker locale : **`docker-compose.yml` à la racine du mono-repo** (point d’entrée unique ; build API depuis `recyclique/api/`) ; raccourci compat. `recyclique-1.4.4/docker-compose.yml` (include du compose racine) ; front v2 **`peintre-nano/`** (`frontend`, port `4444`) + front transitoire **legacy** (`frontend-legacy`, port `4445`) contre la même API | — |
@@ -131,6 +131,11 @@ Avant toute validation terrain Epic 6, verifier explicitement :
 - Proposition liée au correct course Epic 6 brownfield-first : [`sprint-change-proposal-2026-04-08-epic-6-brownfield-first-correct-course.md`](./sprint-change-proposal-2026-04-08-epic-6-brownfield-first-correct-course.md)
 - Workflow BMAD : skill **bmad-correct-course** ; alignement procédure habituelle du dépôt.
 
+### Règle caisse Peintre vs legacy (2026-04-12)
+
+- **En bref** : équivalence utilisateur legacy → **traduite dans** Peintre (CREOS, widgets, slots, API) — pas de contournement du modèle contractuel ; texte complet et DoD : [`sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md`](./sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md).
+- **Preuve visuelle / structurelle (gate stories parité caisse)** : outil MCP Cursor **`user-chrome-devtools`** (flux `list_pages` → `select_page` → `navigate_page` → `take_snapshot` ; réseau seulement si requêtes listées) — **obligatoire à chaque PR** qui touche une ligne `ui-pilote-03*` caisse, `ui-pilote-03a`–`03e`, ou une story **Epic 11 / Epic 13** caisse ; exécution **locale ou CI** selon disponibilité MCP. Optionnel : même scénario sur **`main`** en **nightly** si la chaîne CI expose le MCP (sinon gate manuel documenté).
+
 ---
 
 ## Liens rapides
@@ -145,3 +150,4 @@ Avant toute validation terrain Epic 6, verifier explicitement :
 | Index references | `../../references/index.md` |
 | Pack lecture Epics 6-10 | `../../references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md` |
 | Tableau ultra operationnel Epics 6-10 | `../../references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md` |
+| Correct course parité caisse (DoD + Peintre / CREOS) | [`./sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md`](./sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md) |

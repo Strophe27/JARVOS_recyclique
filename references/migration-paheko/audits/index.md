@@ -1,4 +1,4 @@
-# Index — references/migration-paeco/audits/
+# Index — references/migration-paheko/audits/
 
 Audits et traçabilité pour la migration RecyClique ↔ Paheko (caisse, saisie au poids, correspondances BDD).
 

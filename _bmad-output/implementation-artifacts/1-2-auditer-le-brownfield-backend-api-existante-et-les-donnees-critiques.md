@@ -68,7 +68,7 @@ Le rapport est considéré comme **acceptable** si un pair confirme qu'il couvre
 - **Matériel de travail / sources** (à citer dans le rapport, pas tout recopier) :
   - `references/ancien-repo/` — clone et analyse brownfield Recyclique 1.4.4 (`repo/` souvent gitignore).
   - `references/consolidation-1.4.5/` — audits, journaux, assainissement baseline 1.4.x.
-  - `references/migration-paeco/` — interop, audits caisse / poids, guides (voir `audits/index.md`).
+  - `references/migration-paheko/` — interop, audits caisse / poids, guides (voir `audits/index.md`).
   - `references/paheko/` — frontières API Paheko, analyse brownfield Paheko, endpoints.
   - `_bmad-output/planning-artifacts/epics.md` — Epics 2, 6, 7, 8 pour formulation des conséquences.
   - `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` — Piste B, OpenAPI, Convergences.
@@ -108,7 +108,7 @@ Le rapport est considéré comme **acceptable** si un pair confirme qu'il couvre
 - [Source : `_bmad-output/implementation-artifacts/1-1-cadrer-la-surface-de-travail-v2-et-le-mode-de-reference-paheko.md` — enchaînement Epic 1]
 - [Source : `references/ancien-repo/README.md`, `references/ancien-repo/index.md` — brownfield 1.4.4]
 - [Source : `references/consolidation-1.4.5/index.md` — audits / journaux 1.4.x]
-- [Source : `references/migration-paeco/index.md`, `references/migration-paeco/audits/index.md`]
+- [Source : `references/migration-paheko/index.md`, `references/migration-paheko/audits/index.md`]
 - [Source : `references/paheko/index.md` — API et analyse Paheko]
 - [Source : `references/INSTRUCTIONS-PROJET.md` — conventions artefacts]
 
@@ -126,7 +126,7 @@ Sous-agent Task — exécution **bmad-dev-story** (DS), story documentaire ; gat
 
 - Livrable canonique : `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` (dont **§1 bis** alignement OpenAPI live `recyclic-local` vs inventaire) ; snapshot schéma : `references/artefacts/2026-04-02_08_openapi-recyclique-live-recyclic-local.json`.
 - Inventaire et contrats brownfield alignés : `references/ancien-repo/v1.4.4-liste-endpoints-api.md`, `api-contracts-api.md`, `references/ancien-repo/README.md`, `references/ancien-repo/index.md`.
-- Index artefacts : entrée `2026-04-02_02_…` rafraîchie ; **references/index.md** : entrée `ancien-repo/` pointe vers l’artefact §1 bis (continuité inventaire ↔ OpenAPI live).
+- Index artefacts : entrée `2026-04-02_02_…` rafraîchie ; **references/index.md** : entrée `ancien-repo/` pointe vers l'artefact §1 bis (continuité inventaire ↔ OpenAPI live).
 - Sprint : story `1-2-…` **done** (cohérent avec `sprint-status.yaml` ; en-tête YAML commenté pour la continuité OpenAPI 2026-04-02).
 
 ### File List
@@ -144,5 +144,5 @@ Sous-agent Task — exécution **bmad-dev-story** (DS), story documentaire ; gat
 ## Change Log
 
 - 2026-04-02 : Story créée (workflow bmad-create-story / CS) — contexte dev pour audit brownfield 1.2, statut `ready-for-dev`.
-- 2026-04-02 : Implémentation DS — rapport d’audit livré, index artefacts, sprint `review`, story `review`.
+- 2026-04-02 : Implémentation DS — rapport d'audit livré, index artefacts, sprint `review`, story `review`.
 - 2026-04-02 : Mise à jour **continuité** — §1 bis artefact (OpenAPI live), alignement `v1.4.4-liste-endpoints-api.md`, `api-contracts-api.md`, README/index `ancien-repo`, **references/index.md**, commentaire `sprint-status.yaml`, archive **`2026-04-02_08_openapi-…json`**, story `done`.

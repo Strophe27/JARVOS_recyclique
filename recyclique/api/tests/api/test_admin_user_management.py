@@ -463,6 +463,15 @@ def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Sess
     )
     assert response.status_code == 403
 
+    response = client.get(f"{_V1}/users/", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
+
+    response = client.get(
+        f"{_V1}/users/{normal_user.id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
 
 def test_get_user_response_excludes_hashed_password(client: TestClient, db_session: Session):
     """Test que hashed_password n'est pas inclus dans GET users/{id} (préfixe API depuis settings)."""
@@ -481,7 +490,30 @@ def test_get_user_response_excludes_hashed_password(client: TestClient, db_sessi
     db_session.commit()
     db_session.refresh(test_user)
 
-    response = client.get(f"{_V1}/users/{test_user.id}")
+    admin_user = User(
+        username=f"mgmt_get_one_admin_{tid}",
+        hashed_password=hash_password("Password1!Aa"),
+        first_name="Admin",
+        last_name="Getter",
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(admin_user)
+    db_session.commit()
+    db_session.refresh(admin_user)
+
+    login_admin = client.post(
+        f"{_V1}/auth/login",
+        json={"username": admin_user.username, "password": "Password1!Aa"},
+    )
+    assert login_admin.status_code == 200
+    admin_token = login_admin.json()["access_token"]
+
+    response = client.get(
+        f"{_V1}/users/{test_user.id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -510,7 +542,30 @@ def test_get_users_list_excludes_hashed_password(client: TestClient, db_session:
     db_session.add(test_user)
     db_session.commit()
 
-    response = client.get(f"{_V1}/users/")
+    admin_user = User(
+        username=f"mgmt_get_list_admin_{tid}",
+        hashed_password=hash_password("Password1!Aa"),
+        first_name="Admin",
+        last_name="Lister",
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED,
+        is_active=True,
+    )
+    db_session.add(admin_user)
+    db_session.commit()
+    db_session.refresh(admin_user)
+
+    login_admin = client.post(
+        f"{_V1}/auth/login",
+        json={"username": admin_user.username, "password": "Password1!Aa"},
+    )
+    assert login_admin.status_code == 200
+    admin_token = login_admin.json()["access_token"]
+
+    response = client.get(
+        f"{_V1}/users/",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
 
     assert response.status_code == 200
     users = response.json()

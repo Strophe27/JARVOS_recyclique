@@ -24,7 +24,7 @@ import {
   fetchReceptionByCategory,
   fetchReceptionStatsSummary,
   fetchSalesByCategory,
-  type ReceptionStatsSummary,
+  type ReceptionStatsSummaryResponse,
 } from '../../api/dashboard-legacy-stats-client';
 import { useAuthPort, useAuthSession } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
@@ -95,7 +95,7 @@ export function LegacyDashboardWorkspaceWidget({ widgetProps }: RegisteredWidget
   const personalPath = readString(widgetProps?.personalDashboardPath) ?? '/dashboard/benevole';
 
   const [salesStats, setSalesStats] = useState<CashSessionStatsSummary | null>(null);
-  const [receptionStats, setReceptionStats] = useState<ReceptionStatsSummary | null>(null);
+  const [receptionStats, setReceptionStats] = useState<ReceptionStatsSummaryResponse | null>(null);
   const [receptionByCategoryRaw, setReceptionByCategoryRaw] = useState<CategoryStatRow[]>([]);
   const [salesByCategory, setSalesByCategory] = useState<CategoryStatRow[]>([]);
   const [mainCategories, setMainCategories] = useState<string[]>([]);
@@ -416,7 +416,7 @@ export function LegacyDashboardWorkspaceWidget({ widgetProps }: RegisteredWidget
                 </div>
                 <div className={classes.statContent}>
                   <div className={classes.statValue} data-testid="stat-reception-items">
-                    {receptionStats?.total_items ?? 0}
+                    {receptionStats?.total_items != null ? String(receptionStats.total_items) : '0'}
                   </div>
                   <div className={classes.statLabel}>Lignes de réception</div>
                 </div>

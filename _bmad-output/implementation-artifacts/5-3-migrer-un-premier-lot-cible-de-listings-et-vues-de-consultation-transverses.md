@@ -120,7 +120,7 @@ Points critiques pour **5.3** :
 
 ### Agent Model Used
 
-Composer (agent d’implémentation BMAD dev-story), 2026-04-07.
+Composer (agent d'implémentation BMAD dev-story), 2026-04-07.
 
 ### Debug Log References
 

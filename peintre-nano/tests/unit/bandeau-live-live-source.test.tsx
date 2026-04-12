@@ -382,13 +382,17 @@ describe('bandeau-live source live HTTP (Story 4.3)', () => {
     expect(screen.getByTestId('widget-bandeau-live').getAttribute('data-runtime-code')).toBe(
       'BANDEAU_LIVE_MODULE_DISABLED',
     );
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        code: 'BANDEAU_LIVE_MODULE_DISABLED',
-        severity: 'info',
-        state: 'bandeau_live_module_disabled',
-      }),
-    );
+    // reportRuntimeFallback est déclenché dans useEffect (BandeauLiveModuleDisabled) : attendre
+    // pour éviter une course avec waitFor sur le seul DOM (suite parallèle / charge CPU).
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'BANDEAU_LIVE_MODULE_DISABLED',
+          severity: 'info',
+          state: 'bandeau_live_module_disabled',
+        }),
+      );
+    });
 
     await new Promise((r) => setTimeout(r, 400));
     expect(fetchMock).toHaveBeenCalledTimes(1);

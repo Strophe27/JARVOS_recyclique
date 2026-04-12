@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, noload
 from recyclic_api.core.auth import get_user_permissions
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
+from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.context_envelope import (
     ContextEnvelopeResponse,
@@ -131,11 +132,18 @@ def build_context_envelope(db: Session, user_id: uuid.UUID) -> ContextEnvelopeRe
         permission_keys.append("caisse.sale_correct")
     permission_keys = sorted(set(permission_keys))
 
+    presentation_labels = dict(CREOS_NAV_PRESENTATION_LABELS)
+    # Epic 14 — parité admin : libellé site reviewable (présentation uniquement), sans exposer d’UUID en UI.
+    if site_id_val is not None:
+        site_row = db.get(Site, site_id_val)
+        if site_row is not None and getattr(site_row, "name", None):
+            presentation_labels["context.active_site_display_name"] = site_row.name
+
     return ContextEnvelopeResponse(
         runtime_state=runtime_state,
         context=ctx,
         permission_keys=permission_keys,
         computed_at=_utc_now(),
         restriction_message=restriction_message,
-        presentation_labels=dict(CREOS_NAV_PRESENTATION_LABELS),
+        presentation_labels=presentation_labels,
     )

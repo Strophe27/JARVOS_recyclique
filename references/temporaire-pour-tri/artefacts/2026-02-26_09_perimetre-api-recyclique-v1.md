@@ -336,7 +336,7 @@ Tous **RecyClique** (données et logs côté app). Aucun endpoint admin ne lit d
 - [Catalogue Qui stocke quoi](2026-02-26_08_catalogue-qui-stocke-quoi-recyclic-paheko.md)
 - [Liste endpoints API v1.4.4](../ancien-repo/v1.4.4-liste-endpoints-api.md)
 - [Fonctionnalités actuelles](../ancien-repo/fonctionnalites-actuelles.md)
-- [Matrice correspondance caisse/poids](../migration-paeco/audits/matrice-correspondance-caisse-poids.md)
+- [Matrice correspondance caisse/poids](../migration-paheko/audits/matrice-correspondance-caisse-poids.md)
 
 ---
 

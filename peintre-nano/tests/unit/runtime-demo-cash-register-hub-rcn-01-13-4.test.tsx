@@ -105,10 +105,13 @@ describe('RuntimeDemoApp — hub `/caisse` RCN-01 (Story 13.4)', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: /Sélection du Poste de Caisse/i }),
     ).toBeTruthy();
-    expect(screen.getAllByTestId('caisse-hub-register-card').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('button', { name: /^Ouvrir$/i })).toBeTruthy();
-    expect(screen.getByTestId('caisse-hub-card-virtual')).toBeTruthy();
-    expect(screen.getByTestId('caisse-hub-card-deferred')).toBeTruthy();
+    // GET postes asynchrone : le dashboard apparaît avant la résolution de `GET /v1/cash-registers/status`.
+    await waitFor(() => {
+      expect(screen.getAllByTestId('caisse-hub-register-card').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByRole('button', { name: /^Ouvrir$/i })).toBeTruthy();
+      expect(screen.getByTestId('caisse-hub-card-virtual')).toBeTruthy();
+      expect(screen.getByTestId('caisse-hub-card-deferred')).toBeTruthy();
+    });
   });
 
   it('affiche Reprendre et le badge Ouverte lorsque le poste signale une session ouverte (is_open)', async () => {
@@ -160,7 +163,10 @@ describe('RuntimeDemoApp — hub `/caisse` RCN-01 (Story 13.4)', () => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
 
-    expect(screen.getByText('Ouverte')).toBeTruthy();
+    // GET postes asynchrone : attendre la fin de chargement avant d’assert le badge (aligné e2e `cash-register-hub-rcn-01-13-4`).
+    await waitFor(() => {
+      expect(screen.getByText('Ouverte')).toBeTruthy();
+    });
     expect(screen.getByRole('button', { name: /^Reprendre$/i })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Ouvrir$/i })).toBeNull();
   });

@@ -240,9 +240,9 @@ export function CashflowCloseWizard(_props: RegisteredWidgetProps): ReactNode {
               Supervision admin (prolongement exploitable)
             </Text>
             <Text size="xs" c="dimmed">
-              Cible brownfield : gestionnaire de sessions (`/admin/session-manager`) puis détail (`/admin/cash-sessions/:id`). La
-              navigation démo expose encore des placeholders transverses — aucun état Paheko ni sync inventée ; parité complète
-              visée en 6.10.
+              Cible brownfield : gestionnaire de sessions (`/admin/session-manager`, entrée nav manifestée —{' '}
+              <strong>Story 18.2</strong>) puis détail (`/admin/cash-sessions/:id`, <code>PageManifest</code>{' '}
+              <code>admin-cash-session-detail</code>). Aucun état Paheko ni sync inventée ; parité complète visée en 6.10.
             </Text>
             <Group gap="sm">
               <Button size="xs" variant="light" onClick={() => spaNavigateTo('/admin')} data-testid="cashflow-close-admin-zone">
@@ -263,8 +263,9 @@ export function CashflowCloseWizard(_props: RegisteredWidgetProps): ReactNode {
               </Button>
             </Group>
             <Text size="xs" c="dimmed" data-testid="cashflow-close-admin-detail-hint">
-              Chemin cible équivalent legacy : `/admin/cash-sessions/:id` — non résolu dans la nav démo ; évite une
-              `pushState` SPA sans entrée manifeste (cohérence RuntimeDemoApp).
+              Chemin legacy <code>/admin/cash-sessions/:id</code> : rendu via manifeste <code>admin-cash-session-detail</code>{' '}
+              (sélection nav hub <code>transverse-admin</code> — pas d&apos;entrée nav par ligne, pour éviter un plan de routes
+              parallèle hors CREOS).
             </Text>
           </Stack>
         ) : (
