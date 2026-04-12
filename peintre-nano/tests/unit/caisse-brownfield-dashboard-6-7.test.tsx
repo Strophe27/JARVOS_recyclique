@@ -38,7 +38,7 @@ describe('Story 6.7 — dashboard brownfield → clôture (continuum)', () => {
     );
   });
 
-  it('expose un CTA « Clôturer la session » qui navigue vers /caisse/cloture (SPA)', () => {
+  it('expose un CTA « Clôturer la session » qui navigue vers l’alias legacy `/cash-register/session/close` (Story 13.3)', () => {
     const pushState = vi.spyOn(window.history, 'pushState');
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u1' },
@@ -51,7 +51,7 @@ describe('Story 6.7 — dashboard brownfield → clôture (continuum)', () => {
     );
     fireEvent.click(screen.getByTestId('caisse-goto-close'));
     expect(pushState).toHaveBeenCalled();
-    const args = pushState.mock.calls.find((c) => String(c[2]) === '/caisse/cloture');
+    const args = pushState.mock.calls.find((c) => String(c[2]) === '/cash-register/session/close');
     expect(args).toBeTruthy();
   });
 

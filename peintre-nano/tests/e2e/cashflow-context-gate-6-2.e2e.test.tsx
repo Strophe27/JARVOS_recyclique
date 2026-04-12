@@ -140,7 +140,7 @@ describe('E2E — contexte caisse et blocages sécurité (Story 6.2)', () => {
       }),
     });
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>

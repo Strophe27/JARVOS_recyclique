@@ -54,7 +54,7 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     resetCashflowOperationalSyncNoticeCacheForTests();
   });
 
-  it('bandeau sync différée (a_reessayer) sur /caisse quand le live-snapshot le signale', async () => {
+  it('bandeau sync différée (a_reessayer) sur le workspace vente quand le live-snapshot le signale', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -76,7 +76,7 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -109,7 +109,7 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -161,7 +161,7 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>

@@ -57,7 +57,7 @@ describe('E2E — actions sociales Story 6.6', () => {
     cleanup();
   });
 
-  it('workspace /caisse : bouton Don → wizard social (Story 6.6 brownfield)', async () => {
+  it('workspace vente (`/cash-register/sale`) : bouton Don → wizard social (Story 6.6 brownfield)', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -67,7 +67,7 @@ describe('E2E — actions sociales Story 6.6', () => {
       }),
     );
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -104,7 +104,7 @@ describe('E2E — actions sociales Story 6.6', () => {
       }),
     });
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
@@ -158,7 +158,7 @@ describe('E2E — actions sociales Story 6.6', () => {
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
     });
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>

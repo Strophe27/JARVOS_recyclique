@@ -229,7 +229,7 @@ export type CashSessionClientHttpErrorFields = {
   readonly networkError?: boolean;
 };
 
-type CashSessionHttpError = { ok: false; status: number; detail: string } & CashSessionClientHttpErrorFields;
+export type CashSessionHttpError = { ok: false; status: number; detail: string } & CashSessionClientHttpErrorFields;
 
 export type GetCurrentCashSessionResult =
   | { ok: true; session: CashSessionCurrentV1 | null }
@@ -317,6 +317,83 @@ export async function getCurrentOpenCashSession(
   }
 
   return { ok: true, session: json as CashSessionCurrentV1 };
+}
+
+/** Ligne `GET /v1/cash-registers/status` — aligné legacy `cashRegisterDashboardService.getRegistersStatus` / backend `list_cash_registers_status`. */
+export type CashRegisterStatusRowV1 = {
+  id: string;
+  name: string;
+  is_open: boolean;
+  enable_virtual?: boolean;
+  enable_deferred?: boolean;
+  location?: string | null;
+};
+
+export type GetCashRegistersStatusResult =
+  | { ok: true; rows: CashRegisterStatusRowV1[] }
+  | CashSessionHttpError;
+
+/**
+ * GET /v1/cash-registers/status — liste des postes actifs + `is_open` (session en cours sur le poste).
+ */
+export async function getCashRegistersStatus(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<GetCashRegistersStatusResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-registers/status`;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'GET', credentials: 'include', headers });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  let parseFailed = false;
+  try {
+    json = text ? JSON.parse(text) : undefined;
+  } catch {
+    parseFailed = true;
+    json = undefined;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (parseFailed) {
+    return sessionHttpError(res.status, json, 'Réponse JSON invalide (statut postes caisse)');
+  }
+
+  if (typeof json !== 'object' || json === null) {
+    return { ok: true, rows: [] };
+  }
+
+  const data = (json as { data?: unknown }).data;
+  if (!Array.isArray(data)) {
+    return { ok: true, rows: [] };
+  }
+
+  const rows: CashRegisterStatusRowV1[] = [];
+  for (const item of data) {
+    if (typeof item !== 'object' || item === null || !('id' in item) || !('name' in item)) continue;
+    const o = item as Record<string, unknown>;
+    rows.push({
+      id: String(o.id).trim(),
+      name: String(o.name).trim(),
+      is_open: Boolean(o.is_open),
+      enable_virtual: typeof o.enable_virtual === 'boolean' ? o.enable_virtual : undefined,
+      enable_deferred: typeof o.enable_deferred === 'boolean' ? o.enable_deferred : undefined,
+      location: o.location == null || o.location === '' ? null : String(o.location),
+    });
+  }
+  return { ok: true, rows };
 }
 
 /**

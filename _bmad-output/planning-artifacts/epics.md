@@ -2668,6 +2668,24 @@ So that the extended caisse surface remains coherent from sale to end-of-session
 **Then** DevTools proof, contract mapping, and residual gaps are all recorded explicitly
 **And** no ambiguous completion state is left undocumented
 
+### Story 13.4: Aligner le hub caisse (`/caisse`) avec la parite UI legacy observable (RCN-01)
+
+As a cashier or supervisor,
+I want the cash register hub (`/caisse`) to expose the same observable structure, labels, and affordances as the legacy reference,
+So that I can see where I stand and how to enter a sale session without a misleading gap between legacy and `Peintre_nano`.
+
+**Acceptance Criteria:**
+
+**Given** the legacy hub is observed on `localhost:4445/caisse`
+**When** this story is delivered
+**Then** `Peintre_nano` on `localhost:4444/caisse` exposes an equivalent checklist of visible elements (post titles, register cards, open/resume actions, shell cues) or documents each gap with an explicit matrix line and contract note
+**And** DevTools MCP proof (`user-chrome-devtools`: navigate + snapshot + network when relevant) is recorded for legacy and Peintre
+
+**Given** Epic 6 remains the caisse business authority
+**When** the story is accepted
+**Then** no new business rules are invented in the frontend; rendering stays anchored to OpenAPI, `ContextEnvelope`, manifests, and widgets per Peintre protocol
+**And** any mismatch between legacy route richness and the CREOS `/caisse` slice is written in `peintre-nano/docs/03-contrats-creos-et-donnees.md` and the parity matrix, not silently assumed
+
 ## Epic 14: Etendre la parite UI legacy de l'administration dans `Peintre_nano`
 
 L'equipe peut retrouver dans `Peintre_nano` les vues d'administration legacy prioritaires pour le parametage quotidien et la supervision simple, avec selection de contexte explicite et preuves de rendu, sans contourner les regles de permissions, de step-up, ou de separation multi-contexte.

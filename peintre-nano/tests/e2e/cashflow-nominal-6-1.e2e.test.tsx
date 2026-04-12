@@ -33,6 +33,12 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+/** Aligné sur `RuntimeDemoApp` : `pushState` seul ne recharge pas l’arbre ; `popstate` synchronise `pathRoute`. */
+function navigateToForRuntime(path: string): void {
+  window.history.pushState({}, '', path);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
 /** GET courante sans session ouverte — corps valide pour le client (évite `{}` → erreur parse). */
 function fetchResponseCashSessionsCurrentNoSession(): Promise<Response> {
   return Promise.resolve({
@@ -134,9 +140,15 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
+
+    navigateToForRuntime('/cash-register/sale');
+
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-nominal-wizard')).toBeTruthy();
     });
+
+    expect(screen.getByRole('heading', { level: 2, name: /Sélection du Poste de Caisse/i })).toBeTruthy();
+    expect(screen.getByTestId('caisse-legacy-register-row')).toBeTruthy();
 
     expect(document.getElementById('caisse-sale-workspace')).toBeTruthy();
     expect(screen.getByTestId('caisse-kpi-strip')).toBeTruthy();
@@ -229,10 +241,12 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
 
     await waitFor(() => {
-      const dash = screen.getByTestId('caisse-dash-session');
-      expect(dash.getAttribute('data-resolved-session-id')).toBe(SESSION_ID);
-      expect(dash.getAttribute('data-server-session-loading')).toBe('false');
+      const row = screen.getByTestId('caisse-legacy-register-row');
+      expect(row.getAttribute('data-resolved-session-id')).toBe(SESSION_ID);
+      expect(row.getAttribute('data-server-session-loading')).toBe('false');
     });
+
+    navigateToForRuntime('/cash-register/sale');
 
     await waitFor(() => {
       const input = screen.getByTestId('cashflow-input-session-id') as HTMLInputElement;
@@ -278,9 +292,9 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     );
 
     await waitFor(() => {
-      const poste = screen.getByTestId('caisse-dash-poste');
-      expect(poste.getAttribute('data-resolved-poste-id')).toBe(REGISTER_ID);
-      expect(poste.getAttribute('data-server-poste-loading')).toBe('false');
+      const row = screen.getByTestId('caisse-legacy-register-row');
+      expect(row.getAttribute('data-resolved-poste-id')).toBe(REGISTER_ID);
+      expect(row.getAttribute('data-server-poste-loading')).toBe('false');
     });
   });
 
@@ -336,7 +350,12 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState(
+      {},
+      '',
+      `/cash-register/session/open?register_id=${encodeURIComponent(REGISTER_ID)}`,
+    );
+    window.dispatchEvent(new PopStateEvent('popstate'));
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -348,9 +367,6 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
 
-    fireEvent.change(screen.getByTestId('cashflow-opening-register-id'), {
-      target: { value: REGISTER_ID },
-    });
     fireEvent.change(screen.getByLabelText(/Fond de caisse/i), {
       target: { value: '42.5' },
     });
@@ -363,7 +379,12 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
 
     expect(screen.getByTestId('cashflow-opening-success').textContent ?? '').toContain(SESSION_ID);
-    expect((screen.getByTestId('cashflow-input-session-id') as HTMLInputElement).value).toBe(SESSION_ID);
+
+    navigateToForRuntime('/cash-register/sale');
+
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-input-session-id') as HTMLInputElement).value).toBe(SESSION_ID);
+    });
     expect(screen.getByTestId('caisse-goto-sale-workspace').getAttribute('disabled')).toBeNull();
   });
 
@@ -408,7 +429,12 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState(
+      {},
+      '',
+      `/cash-register/virtual/session/open?register_id=${encodeURIComponent(REGISTER_ID)}`,
+    );
+    window.dispatchEvent(new PopStateEvent('popstate'));
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -420,10 +446,6 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByTestId('cashflow-open-mode-virtual'));
-    fireEvent.change(screen.getByTestId('cashflow-opening-register-id'), {
-      target: { value: REGISTER_ID },
-    });
     fireEvent.change(screen.getByLabelText(/Fond de caisse/i), {
       target: { value: '10' },
     });
@@ -435,6 +457,8 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
 
     expect(screen.getByTestId('caisse-dash-active-mode-virtual')).toBeTruthy();
 
+    navigateToForRuntime('/cash-register/sale');
+
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-operating-mode-virtual-banner')).toBeTruthy();
     });
@@ -443,7 +467,8 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
   it('ouverture saisie différée : POST /v1/cash-sessions/ avec opened_at ISO', async () => {
     const SESSION_ID = '00000000-0000-4000-8000-000000000077';
     const REGISTER_ID = '00000000-0000-4000-8000-000000000066';
-    const openedAtLocal = '2026-02-01T09:30';
+    const openedAtDateOnly = '2026-02-01';
+    const openedAtExpectedIso = new Date(`${openedAtDateOnly}T12:00:00`).toISOString();
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -461,7 +486,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       if (url.includes('/v1/cash-sessions/') && method === 'POST') {
         const raw = init?.body != null ? String(init.body) : '{}';
         const body = JSON.parse(raw) as { opened_at?: string };
-        expect(body.opened_at).toBe(new Date(openedAtLocal).toISOString());
+        expect(body.opened_at).toBe(openedAtExpectedIso);
         return Promise.resolve({
           ok: true,
           status: 201,
@@ -486,7 +511,12 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState(
+      {},
+      '',
+      `/cash-register/deferred/session/open?register_id=${encodeURIComponent(REGISTER_ID)}`,
+    );
+    window.dispatchEvent(new PopStateEvent('popstate'));
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -498,21 +528,19 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByTestId('cashflow-open-mode-deferred'));
-    fireEvent.change(screen.getByTestId('cashflow-opening-register-id'), {
-      target: { value: REGISTER_ID },
-    });
     fireEvent.change(screen.getByLabelText(/Fond de caisse/i), {
       target: { value: '0' },
     });
     fireEvent.change(screen.getByTestId('cashflow-opening-opened-at'), {
-      target: { value: openedAtLocal },
+      target: { value: openedAtDateOnly },
     });
     fireEvent.click(screen.getByTestId('cashflow-submit-opening'));
 
     await waitFor(() => {
       expect(getCashflowDraftSnapshot().operatingMode).toBe('deferred');
     });
+
+    navigateToForRuntime('/cash-register/sale');
 
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-operating-mode-deferred-banner')).toBeTruthy();
@@ -535,7 +563,8 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       }),
     );
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/session/open');
+    window.dispatchEvent(new PopStateEvent('popstate'));
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -549,7 +578,6 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
 
     expect(screen.getByTestId('cashflow-submit-opening').getAttribute('disabled')).not.toBeNull();
     expect(screen.getByTestId('cashflow-opening-blocked-reason').textContent ?? '').toMatch(/poste de caisse/i);
-    expect(screen.getByTestId('caisse-goto-sale-workspace').getAttribute('disabled')).not.toBeNull();
   });
 
   it('échec GET getSale après vente : DATA_STALE sur le widget ticket (AC 4)', async () => {
@@ -577,7 +605,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -628,7 +656,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -675,7 +703,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -735,6 +763,9 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('caisse-brownfield-dashboard')).toBeTruthy();
     });
+    expect(screen.queryByTestId('cashflow-nominal-wizard')).toBeNull();
+
+    navigateToForRuntime('/cash-register/sale');
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-nominal-wizard')).toBeTruthy();
     });
@@ -757,7 +788,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>

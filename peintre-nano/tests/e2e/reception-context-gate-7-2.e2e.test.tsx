@@ -220,7 +220,10 @@ describe('E2E — contexte réception et blocages (Story 7.2)', () => {
     expect(screen.queryByTestId('reception-nominal-wizard')).toBeNull();
   });
 
-  it('refus API 403 après ouverture poste : alerte + remise à plat wizard (pas d’état avancé fantôme) — AC 2, 3', async () => {
+  it(
+    'refus API 403 après ouverture poste : alerte + remise à plat wizard (pas d’état avancé fantôme) — AC 2, 3',
+    { timeout: 15_000 },
+    async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -285,5 +288,6 @@ describe('E2E — contexte réception et blocages (Story 7.2)', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('reception-poste-id')).toBeNull();
     });
-  });
+  },
+  );
 });

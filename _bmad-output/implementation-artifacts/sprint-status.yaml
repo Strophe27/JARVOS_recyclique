@@ -26,6 +26,13 @@
 # last_updated: 2026-04-11 — story 10.6c Story Runner : CS→VS→DS→gates→QA→CR ; 10-6c → done (runbook operations, pytest infra smoke)
 # last_updated: 2026-04-11 — story 10.6c DS bmad-dev-story (Task) : 10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy ready-for-dev → review (runbook operations + preuve spike Docker)
 # last_updated: 2026-04-11 — story 10.6c CS bmad-create-story : 10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy backlog → ready-for-dev (fichier story + sprint-status) ; epic-10 reste in-progress
+# last_updated: 2026-04-11 — story 13.2 VS bmad-create-story validate PASS + cadrage Story Runner (variantes virtuel/differe hors matrice lignes dediees)
+# last_updated: 2026-04-11 — story 13.2 CS bmad-create-story : 13-2-retrouver-les-variantes-caisse-explicitement-retenues-dans-la-matrice-de-parite backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-12 — story 13.4 CS bmad-create-story : 13-4-aligner-le-hub-caisse-avec-la-parite-legacy-rcn-01 backlog → ready-for-dev (fichier story RCN-01)
+# last_updated: 2026-04-12 — story 13.3 VS bmad-create-story validate PASS (story : section DevTools MCP chemins + intelligence 13.1) ; development_status 13-3 inchangé ready-for-dev
+# last_updated: 2026-04-12 — story 13.3 CS bmad-create-story : 13-3-retrouver-la-cloture-ou-fin-de-session-caisse-observable-dans-peintre-nano backlog → ready-for-dev (fichier story + sprint-status)
+# last_updated: 2026-04-11 — story 13.1 Story Runner : CS→VS→DS→gates→QA→CR PASS ; 13-1-retrouver-les-ecrans-caisse-adjacents-au-kiosque-observable-dans-peintre-nano review → done
+# last_updated: 2026-04-11 — story 13.1 CS bmad-create-story : epic-13 backlog → in-progress ; 13-1-retrouver-les-ecrans-caisse-adjacents-au-kiosque-observable-dans-peintre-nano backlog → ready-for-dev (fichier story + sprint-status)
 # last_updated: 2026-04-11 — planning BMAD : ajout des epics 12 a 14 (reception, caisse extension, administration) dans `epics.md` et synchronisation `sprint-status.yaml` en backlog
 # last_updated: 2026-04-10 — story 11.3 DS (Task) : alias /cash-register/sale kiosque + matrice ui-pilote-03 ; gates peintre-nano lint/test PASS ; 11-3 → review
 # last_updated: 2026-04-10 — story 11.2 DS (Task) : dashboard post-login /dashboard + matrice ui-pilote-02 ; gates peintre-nano lint/test PASS ; 11-2 → review
@@ -118,7 +125,10 @@
 
 generated: "2026-04-01"
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
-last_updated: "2026-04-11" # epic-11-retrospective → done (epic-11-retro-2026-04-11.md) ; 10-6e Story Runner (Plan B) → done
+last_updated: "2026-04-12" # story 13.4 Story Runner : review → done (gates+QA, CR, correctif libellé FR, CR2 APPROVED) ; epic-13 → done
+# last_updated: "2026-04-12" # story 13.3 Story Runner BMAD : review → done (DevTools legacy/Peintre, gates, QA, CR, correctif titres h1/h2/h3)
+# last_updated: "2026-04-12" # story 13.3 DS bmad-dev-story (Task) : ready-for-dev → review (alias session/close, surface clôture, matrice 03d, gates OK)
+# last_updated: "2026-04-11" # epic-11-retrospective → done (epic-11-retro-2026-04-11.md) ; 10-6e Story Runner (Plan B) → done
 # last_updated: "2026-04-11" # story 10.6d Story Runner : gates docker compose + pytest infra OK ; 10-6d-aligner-le-compose-racine-et-la-ci-non-legacy-sur-postgresql-17 → done
 # last_updated: "2026-04-11" # story 10.6c Story Runner : gates docker compose OK ; QA pytest infra OK ; CR APPROVED ; 10-6c → done
 # last_updated: "2026-04-10" # story 8.1 Story Runner DS→gates→QA→CR : 8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko review → done
@@ -256,10 +266,11 @@ development_status:
   12-3-retrouver-la-mesure-et-la-qualification-reception-observables-dans-peintre-nano: backlog
   epic-12-retrospective: optional
 
-  epic-13: backlog
-  13-1-retrouver-les-ecrans-caisse-adjacents-au-kiosque-observable-dans-peintre-nano: backlog
-  13-2-retrouver-les-variantes-caisse-explicitement-retenues-dans-la-matrice-de-parite: backlog
-  13-3-retrouver-la-cloture-ou-fin-de-session-caisse-observable-dans-peintre-nano: backlog
+  epic-13: done
+  13-1-retrouver-les-ecrans-caisse-adjacents-au-kiosque-observable-dans-peintre-nano: done
+  13-2-retrouver-les-variantes-caisse-explicitement-retenues-dans-la-matrice-de-parite: done
+  13-3-retrouver-la-cloture-ou-fin-de-session-caisse-observable-dans-peintre-nano: done
+  13-4-aligner-le-hub-caisse-avec-la-parite-legacy-rcn-01: done
   epic-13-retrospective: optional
 
   epic-14: backlog

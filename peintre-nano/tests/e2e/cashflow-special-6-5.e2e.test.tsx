@@ -57,7 +57,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     cleanup();
   });
 
-  it('workspace /caisse : bouton Don (sans article) ouvre le wizard sans changer de route', async () => {
+  it('workspace vente (`/cash-register/sale`) : bouton Don (sans article) ouvre le wizard sans changer de route', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -67,7 +67,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       }),
     );
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -82,7 +82,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-special-don-wizard')).toBeTruthy();
     });
-    expect(window.location.pathname).toBe('/caisse');
+    expect(window.location.pathname).toBe('/cash-register/sale');
   });
 
   it('sans caisse.special_encaissement : entrées nav don / adhésion absentes', async () => {
@@ -117,7 +117,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     expect(within(nav).queryByTestId('nav-entry-cashflow-special-don')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-cashflow-special-adhesion')).toBeNull();
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
     window.dispatchEvent(new PopStateEvent('popstate'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-special-encaissements-panel-no-perm')).toBeTruthy();
@@ -183,7 +183,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
     });
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
@@ -209,7 +209,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     });
   });
 
-  it('workspace /caisse : bouton Adhésion / cotisation ouvre le wizard sans changer de route', async () => {
+  it('workspace vente (`/cash-register/sale`) : bouton Adhésion / cotisation ouvre le wizard sans changer de route', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -219,7 +219,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       }),
     );
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -234,7 +234,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-special-adhesion-wizard')).toBeTruthy();
     });
-    expect(window.location.pathname).toBe('/caisse');
+    expect(window.location.pathname).toBe('/cash-register/sale');
   });
 
   it('POST createSale spécial adhésion : kind ADHESION_ASSOCIATION + montant > 0 (mocks)', async () => {
@@ -297,7 +297,7 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
     });
 
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
 
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>

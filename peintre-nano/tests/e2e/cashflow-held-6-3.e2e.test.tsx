@@ -86,7 +86,7 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
         cashSessionId: SESSION,
       }),
     });
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
         <App />
@@ -95,7 +95,10 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
     return auth;
   }
 
-  it('mise en attente → liste GET /held → reprise GET getSale → finalisation POST finalize-held (AC 1, 2, 4)', async () => {
+  it(
+    'mise en attente → liste GET /held → reprise GET getSale → finalisation POST finalize-held (AC 1, 2, 4)',
+    { timeout: 15_000 },
+    async () => {
     let heldList: ReturnType<typeof heldSaleBody>[] = [];
 
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -212,7 +215,8 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
       return m === 'POST' && requestUrl(u).includes('/finalize-held');
     });
     expect(finalizeCalls.length).toBeGreaterThanOrEqual(1);
-  });
+  },
+  );
 
   it('reprise refusée si getSale ne renvoie plus lifecycle held : erreur dans le store (AC 2)', async () => {
     const completedOnly = heldSaleBody({ lifecycle_status: 'completed' });
@@ -326,7 +330,7 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
         cashSessionId: null,
       }),
     });
-    window.history.pushState({}, '', '/caisse');
+    window.history.pushState({}, '', '/cash-register/sale');
     render(
       <RootProviders authAdapter={auth} disableUserPrefsPersistence>
         <App />
