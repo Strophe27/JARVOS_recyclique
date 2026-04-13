@@ -429,7 +429,13 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
             minRows={2}
           />
           <Box>
-            <UnstyledButton type="button" onClick={() => setCreateOptionsOpen((o) => !o)} py={4}>
+            <UnstyledButton
+              type="button"
+              aria-expanded={createOptionsOpen}
+              aria-controls="admin-groups-create-extra-fields"
+              onClick={() => setCreateOptionsOpen((o) => !o)}
+              py={4}
+            >
               <Group gap={6} wrap="nowrap">
                 {createOptionsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <Text size="sm" fw={500}>
@@ -438,13 +444,15 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
               </Group>
             </UnstyledButton>
             <Collapse in={createOptionsOpen}>
-              <TextInput
-                mt="xs"
-                label="Code court du groupe"
-                description="Réservé aux cas particuliers déjà documentés pour votre association."
-                value={createKey}
-                onChange={(e) => setCreateKey(e.currentTarget.value)}
-              />
+              <div id="admin-groups-create-extra-fields">
+                <TextInput
+                  mt="xs"
+                  label="Code court du groupe"
+                  description="Réservé aux cas particuliers déjà documentés pour votre association."
+                  value={createKey}
+                  onChange={(e) => setCreateKey(e.currentTarget.value)}
+                />
+              </div>
             </Collapse>
           </Box>
           <Button loading={busy} onClick={() => void onCreate()}>
@@ -532,7 +540,12 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
 
               <Tabs.Panel value="permissions" pt="md">
                 <Stack gap="sm">
-                  <Table striped withTableBorder data-testid="admin-groups-detail-permissions">
+                  <Table
+                    id="admin-groups-detail-perms-refs-region"
+                    striped
+                    withTableBorder
+                    data-testid="admin-groups-detail-permissions"
+                  >
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th>Droit</Table.Th>
@@ -594,7 +607,13 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
                         ))}
                     </Table.Tbody>
                   </Table>
-                  <UnstyledButton type="button" onClick={() => setShowPermissionRefs((o) => !o)} py={4}>
+                  <UnstyledButton
+                    type="button"
+                    aria-expanded={showPermissionRefs}
+                    aria-controls="admin-groups-detail-perms-refs-region"
+                    onClick={() => setShowPermissionRefs((o) => !o)}
+                    py={4}
+                  >
                     <Group gap={6} wrap="nowrap">
                       {showPermissionRefs ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                       <Text size="sm">
@@ -604,7 +623,13 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
                   </UnstyledButton>
 
                   <Box>
-                    <UnstyledButton type="button" onClick={() => setAdvancedAddPermsOpen((o) => !o)} py={4}>
+                    <UnstyledButton
+                      type="button"
+                      aria-expanded={advancedAddPermsOpen}
+                      aria-controls="admin-groups-detail-add-perms-panel"
+                      onClick={() => setAdvancedAddPermsOpen((o) => !o)}
+                      py={4}
+                    >
                       <Group gap={6} wrap="nowrap">
                         {advancedAddPermsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         <Text size="sm" fw={500}>
@@ -613,19 +638,21 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
                       </Group>
                     </UnstyledButton>
                     <Collapse in={advancedAddPermsOpen}>
-                      <Text size="xs" c="dimmed" mb="xs">
-                        Une valeur par ligne, ou plusieurs séparées par une virgule. À utiliser seulement si une
-                        personne référente vous a transmis la liste exacte attendue.
-                      </Text>
-                      <Textarea
-                        aria-label="Saisie manuelle des droits à ajouter"
-                        value={permLines}
-                        onChange={(e) => setPermLines(e.currentTarget.value)}
-                        minRows={3}
-                      />
-                      <Button mt="xs" size="xs" loading={detailBusy} onClick={() => void onAddPermissions()}>
-                        Ajouter à partir de la saisie
-                      </Button>
+                      <div id="admin-groups-detail-add-perms-panel">
+                        <Text size="xs" c="dimmed" mb="xs">
+                          Une valeur par ligne, ou plusieurs séparées par une virgule. À utiliser seulement si une
+                          personne référente vous a transmis la liste exacte attendue.
+                        </Text>
+                        <Textarea
+                          aria-label="Saisie manuelle des droits à ajouter"
+                          value={permLines}
+                          onChange={(e) => setPermLines(e.currentTarget.value)}
+                          minRows={3}
+                        />
+                        <Button mt="xs" size="xs" loading={detailBusy} onClick={() => void onAddPermissions()}>
+                          Ajouter à partir de la saisie
+                        </Button>
+                      </div>
                     </Collapse>
                   </Box>
                 </Stack>
@@ -703,7 +730,13 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
                   </Table>
 
                   <Box>
-                    <UnstyledButton type="button" onClick={() => setAdvancedAddUsersOpen((o) => !o)} py={4}>
+                    <UnstyledButton
+                      type="button"
+                      aria-expanded={advancedAddUsersOpen}
+                      aria-controls="admin-groups-detail-add-users-panel"
+                      onClick={() => setAdvancedAddUsersOpen((o) => !o)}
+                      py={4}
+                    >
                       <Group gap={6} wrap="nowrap">
                         {advancedAddUsersOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         <Text size="sm" fw={500}>
@@ -712,19 +745,21 @@ export function AdminGroupsWidget(_: RegisteredWidgetProps): ReactNode {
                       </Group>
                     </UnstyledButton>
                     <Collapse in={advancedAddUsersOpen}>
-                      <Text size="xs" c="dimmed" mb="xs">
-                        Une valeur par ligne, ou plusieurs séparées par une virgule. Reprenez exactement ce que la
-                        personne référente vous a indiqué pour chaque compte.
-                      </Text>
-                      <Textarea
-                        aria-label="Saisie manuelle des membres à ajouter"
-                        value={userLines}
-                        onChange={(e) => setUserLines(e.currentTarget.value)}
-                        minRows={3}
-                      />
-                      <Button mt="xs" size="xs" loading={detailBusy} onClick={() => void onAddUsers()}>
-                        Ajouter à partir de la saisie
-                      </Button>
+                      <div id="admin-groups-detail-add-users-panel">
+                        <Text size="xs" c="dimmed" mb="xs">
+                          Une valeur par ligne, ou plusieurs séparées par une virgule. Reprenez exactement ce que la
+                          personne référente vous a indiqué pour chaque compte.
+                        </Text>
+                        <Textarea
+                          aria-label="Saisie manuelle des membres à ajouter"
+                          value={userLines}
+                          onChange={(e) => setUserLines(e.currentTarget.value)}
+                          minRows={3}
+                        />
+                        <Button mt="xs" size="xs" loading={detailBusy} onClick={() => void onAddUsers()}>
+                          Ajouter à partir de la saisie
+                        </Button>
+                      </div>
                     </Collapse>
                   </Box>
                 </Stack>

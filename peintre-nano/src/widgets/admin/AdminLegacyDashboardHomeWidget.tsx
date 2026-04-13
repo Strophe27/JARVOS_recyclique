@@ -279,16 +279,19 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                   ) : null}
                 </Group>
                 <Button
+                  type="button"
                   variant="subtle"
                   size="xs"
+                  aria-expanded={alertsOpen}
+                  aria-controls="admin-legacy-dashboard-notifications-panel"
                   onClick={() => setAlertsOpen((o) => !o)}
                   rightSection={alertsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 >
-                  {alertsOpen ? 'Masquer' : 'Voir'}
+                  {alertsOpen ? 'Masquer les notifications' : 'Voir les notifications'}
                 </Button>
               </Group>
               <Collapse in={alertsOpen}>
-                <Stack gap="xs" mt="sm">
+                <Stack id="admin-legacy-dashboard-notifications-panel" gap="xs" mt="sm" role="region" aria-label="Liste des notifications">
                   {alertsLoading ? (
                     <Group justify="center" p="sm">
                       <Loader size="sm" />
@@ -374,17 +377,20 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                 </Group>
                 {connectedUsers.length > 0 ? (
                   <Button
+                    type="button"
                     variant="subtle"
                     size="xs"
+                    aria-expanded={usersOpen}
+                    aria-controls="admin-legacy-dashboard-connected-users-panel"
                     onClick={() => setUsersOpen((o) => !o)}
                     rightSection={usersOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   >
-                    {usersOpen ? 'Masquer' : 'Voir'}
+                    {usersOpen ? 'Masquer les utilisateurs connectés' : 'Voir les utilisateurs connectés'}
                   </Button>
                 ) : null}
               </Group>
               <Collapse in={usersOpen}>
-                <Stack gap="xs" mt="sm">
+                <Stack id="admin-legacy-dashboard-connected-users-panel" gap="xs" mt="sm" role="region" aria-label="Utilisateurs actuellement connectés">
                   {usersLoading ? (
                     <Group justify="center" p="sm">
                       <Text size="sm" c="dimmed">

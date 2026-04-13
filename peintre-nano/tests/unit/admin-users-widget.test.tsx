@@ -127,6 +127,13 @@ function postUrlsContaining(fetchMock: ReturnType<typeof adminUsersFetchMock>, n
   });
 }
 
+function putUrlsContaining(fetchMock: ReturnType<typeof adminUsersFetchMock>, needle: string): boolean {
+  return fetchMock.mock.calls.some(([inp, init]) => {
+    const m = fetchCallMethod(inp as RequestInfo, init as RequestInit | undefined);
+    return m === 'PUT' && fetchCallUrl(inp as RequestInfo).includes(needle);
+  });
+}
+
 function adminUsersFetchMock(opts?: { readonly meRole?: string }): typeof fetch {
   const meRole = opts?.meRole ?? 'admin';
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -147,6 +154,9 @@ function adminUsersFetchMock(opts?: { readonly meRole?: string }): typeof fetch 
     }
     if (method === 'POST' && url.includes('/force-password')) {
       return okJson({ message: 'Mot de passe mis à jour', success: true });
+    }
+    if (method === 'PUT' && url.includes(`/v1/admin/users/${userRow.id}/groups`)) {
+      return okJson({ message: 'Groupes mis à jour', success: true });
     }
     if (url.includes(`/v1/users/${userRow.id}`)) return okJson(userDetail);
     if (url.includes('/v1/admin/users') && !url.includes('/statuses') && !url.includes('/history')) {
@@ -193,6 +203,14 @@ function wrap(ui: ReactElement) {
 }
 
 describe('AdminUsersWidget', () => {
+  it('affiche le filtre dossier (paramètre user_status OpenAPI)', async () => {
+    vi.stubGlobal('fetch', adminUsersFetchMock());
+    render(wrap(<AdminUsersWidget widgetProps={{}} />));
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-users-filter-user-status')).toBeTruthy();
+    });
+  });
+
   it('affiche le tableau apres GET /v1/admin/users 200', async () => {
     vi.stubGlobal('fetch', adminUsersFetchMock());
     render(wrap(<AdminUsersWidget widgetProps={{}} />));
@@ -227,6 +245,22 @@ describe('AdminUsersWidget', () => {
       expect(screen.getByTestId('admin-users-detail-groups')).toBeTruthy();
     });
     expect(screen.getByText('Volontaires')).toBeTruthy();
+  });
+
+  it('envoie PUT /v1/admin/users/{id}/groups depuis la modale groupes', async () => {
+    const fetchMock = adminUsersFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    render(wrap(<AdminUsersWidget widgetProps={{}} />));
+    await waitFor(() => screen.getByTestId(`admin-users-row-${userRow.id}`));
+    fireEvent.click(screen.getByTestId(`admin-users-row-${userRow.id}`));
+    await waitFor(() => screen.getByTestId('admin-users-groups-edit-open'));
+    fireEvent.click(screen.getByTestId('admin-users-groups-edit-open'));
+    await waitFor(() => screen.getByTestId('admin-users-groups-multiselect'));
+    fireEvent.click(screen.getByTestId('admin-users-groups-save'));
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-users-feedback').textContent).toMatch(/groupes|mis à jour/i);
+    });
+    expect(putUrlsContaining(fetchMock, `/v1/admin/users/${userRow.id}/groups`)).toBe(true);
   });
 
   it('affiche une erreur defensive sur 403', async () => {

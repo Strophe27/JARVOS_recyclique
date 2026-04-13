@@ -10,6 +10,10 @@ export type AdminHealthSystemPayload =
 export type AdminSessionMetricsEnvelope =
   operations['adminSessionsMetricsGet']['responses'][200]['content']['application/json'];
 
+/** `POST /v1/admin/health/test-notifications` — `adminHealthTestNotificationsPost` (réponse documentée « désactivé »). */
+export type AdminHealthTestNotificationsPayload =
+  operations['adminHealthTestNotificationsPost']['responses'][200]['content']['application/json'];
+
 export class AdminSystemHealthApiError extends Error {
   constructor(
     readonly status: number,
@@ -92,4 +96,22 @@ export async function fetchAdminSessionMetrics(
     signal: args.signal,
   });
   return parseJsonOk<AdminSessionMetricsEnvelope>(res);
+}
+
+/**
+ * Ancien test de notifications — le serveur renvoie un statut informatif (pas d’envoi réel).
+ * **Autorité** : session admin stricte (peut répondre 403 si le transport courant ne suffit pas).
+ */
+export async function postAdminHealthTestNotifications(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  signal?: AbortSignal,
+): Promise<AdminHealthTestNotificationsPayload> {
+  const url = buildApiUrl('/v1/admin/health/test-notifications');
+  const res = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+    headers: authHeaders(auth),
+    signal,
+  });
+  return parseJsonOk<AdminHealthTestNotificationsPayload>(res);
 }

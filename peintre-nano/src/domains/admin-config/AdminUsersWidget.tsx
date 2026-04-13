@@ -7,7 +7,9 @@ import {
   Divider,
   Grid,
   Group,
+  Loader,
   Modal,
+  MultiSelect,
   Paper,
   Select,
   Skeleton,
@@ -37,7 +39,11 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { getAdminGroupDisplayNamesForUser } from '../../api/admin-groups-client';
+import {
+  getAdminGroupMembershipsForUser,
+  getAdminGroupsList,
+  type AdminGroupMembershipRowDto,
+} from '../../api/admin-groups-client';
 import { fetchUsersMeForAdminDashboard } from '../../api/admin-legacy-dashboard-client';
 import {
   canonicalUserIdForPresence,
@@ -50,6 +56,7 @@ import {
   postAdminUserResetPassword,
   postAdminUserResetPin,
   putAdminUserActivation,
+  putAdminUserGroups,
   putAdminUserRole,
   updateUserV1,
   type AdminUserActivityEventDto,
@@ -110,6 +117,17 @@ const HISTORY_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'VENTE', label: 'Vente' },
   { value: 'DEPOT', label: 'Dépôt' },
 ];
+
+const USER_STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'Tous les dossiers' },
+  { value: 'pending', label: STATUS_LABEL.pending },
+  { value: 'approved', label: STATUS_LABEL.approved },
+  { value: 'rejected', label: STATUS_LABEL.rejected },
+  { value: 'active', label: STATUS_LABEL.active },
+];
+
+const GROUPS_CATALOG_PAGE = 500;
+const GROUPS_CATALOG_SAFETY_MAX = 8000;
 
 function dayStartIso(d: string): string | undefined {
   const t = d.trim();
@@ -274,6 +292,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [roleFilter, setRoleFilter] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selected, setSelected] = useState<AdminUserListRowDto | null>(null);
@@ -312,10 +331,16 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
   const [fReason, setFReason] = useState('');
   const [fPwdErr, setFPwdErr] = useState<string | null>(null);
 
-  const [userGroupNames, setUserGroupNames] = useState<readonly string[]>([]);
+  const [userGroupMemberships, setUserGroupMemberships] = useState<readonly AdminGroupMembershipRowDto[]>([]);
   const [userGroupsBusy, setUserGroupsBusy] = useState(false);
   const [userGroupsErr, setUserGroupsErr] = useState<string | null>(null);
   const [userGroupsPartial, setUserGroupsPartial] = useState(false);
+
+  const [groupsModalOpen, setGroupsModalOpen] = useState(false);
+  const [groupsSelectOptions, setGroupsSelectOptions] = useState<{ value: string; label: string }[]>([]);
+  const [groupsCatalogBusy, setGroupsCatalogBusy] = useState(false);
+  const [groupsSaveBusy, setGroupsSaveBusy] = useState(false);
+  const [groupsDraftIds, setGroupsDraftIds] = useState<string[]>([]);
 
   const [feedback, setFeedback] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [mutationBusy, setMutationBusy] = useState(false);
@@ -327,11 +352,19 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
   const [cFirst, setCFirst] = useState('');
   const [cLast, setCLast] = useState('');
   const [cEmail, setCEmail] = useState('');
+  const [cPhone, setCPhone] = useState('');
+  const [cAddress, setCAddress] = useState('');
+  const [cNotes, setCNotes] = useState('');
+  const [cSkills, setCSkills] = useState('');
+  const [cAvail, setCAvail] = useState('');
+  const [cSiteId, setCSiteId] = useState('');
+  const [cActive, setCActive] = useState(true);
   const [cRole, setCRole] = useState('user');
   const [cStatus, setCStatus] = useState('active');
 
   const [editOpen, setEditOpen] = useState(false);
   const [editBusy, setEditBusy] = useState(false);
+  const [eUsername, setEUsername] = useState('');
   const [eFirst, setEFirst] = useState('');
   const [eLast, setELast] = useState('');
   const [eEmail, setEEmail] = useState('');
@@ -376,6 +409,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
       skip,
       limit: PAGE_LIMIT,
       role: roleFilter || undefined,
+      user_status: userStatusFilter || undefined,
     });
     if (!res.ok) {
       setRows([]);
@@ -385,7 +419,63 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     }
     setRows(res.data);
     setBusy(false);
-  }, [auth, skip, roleFilter]);
+  }, [auth, skip, roleFilter, userStatusFilter]);
+
+  const loadGroupsCatalog = useCallback(async () => {
+    setGroupsCatalogBusy(true);
+    const next: { value: string; label: string }[] = [];
+    let skipCat = 0;
+    while (skipCat < GROUPS_CATALOG_SAFETY_MAX) {
+      const res = await getAdminGroupsList(auth, { skip: skipCat, limit: GROUPS_CATALOG_PAGE });
+      if (!res.ok) {
+        setFeedback({ kind: 'error', text: res.detail });
+        setGroupsCatalogBusy(false);
+        return;
+      }
+      for (const g of res.data) {
+        const base =
+          g.display_name?.trim() || g.name?.trim() || g.key?.trim() || g.id;
+        const k = g.key?.trim();
+        const label = k && k !== base ? `${base} (${k})` : base;
+        next.push({ value: g.id, label });
+      }
+      if (res.data.length < GROUPS_CATALOG_PAGE) break;
+      skipCat += GROUPS_CATALOG_PAGE;
+    }
+    next.sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+    setGroupsSelectOptions(next);
+    setGroupsCatalogBusy(false);
+  }, [auth]);
+
+  const openGroupsModal = useCallback(() => {
+    setGroupsDraftIds(userGroupMemberships.map((m) => m.id));
+    setGroupsModalOpen(true);
+    void loadGroupsCatalog();
+  }, [loadGroupsCatalog, userGroupMemberships]);
+
+  const handleSaveGroups = useCallback(async () => {
+    if (!selected) return;
+    setFeedback(null);
+    setGroupsSaveBusy(true);
+    const res = await putAdminUserGroups(auth, selected.id, { group_ids: groupsDraftIds });
+    setGroupsSaveBusy(false);
+    if (!res.ok) {
+      setFeedback({ kind: 'error', text: res.detail });
+      return;
+    }
+    setFeedback({ kind: 'ok', text: res.message });
+    setGroupsModalOpen(false);
+    setUserGroupsBusy(true);
+    const m = await getAdminGroupMembershipsForUser(auth, selected.id);
+    setUserGroupsBusy(false);
+    if (m.ok) {
+      setUserGroupMemberships(m.memberships);
+      setUserGroupsPartial(m.partial);
+      setUserGroupsErr(null);
+    } else {
+      setUserGroupsErr(m.detail);
+    }
+  }, [auth, groupsDraftIds, selected]);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([loadList(), loadStatuses()]);
@@ -417,7 +507,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
 
   useEffect(() => {
     setSelected(null);
-  }, [skip, roleFilter]);
+  }, [skip, roleFilter, userStatusFilter]);
 
   useEffect(() => {
     setHistSkip(0);
@@ -433,7 +523,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
 
   useEffect(() => {
     if (!selected) {
-      setUserGroupNames([]);
+      setUserGroupMemberships([]);
       setUserGroupsErr(null);
       setUserGroupsPartial(false);
       setUserGroupsBusy(false);
@@ -443,14 +533,14 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     setUserGroupsBusy(true);
     setUserGroupsErr(null);
     void (async () => {
-      const res = await getAdminGroupDisplayNamesForUser(auth, selected.id);
+      const res = await getAdminGroupMembershipsForUser(auth, selected.id);
       if (cancelled) return;
       setUserGroupsBusy(false);
       if (res.ok) {
-        setUserGroupNames(res.names);
+        setUserGroupMemberships(res.memberships);
         setUserGroupsPartial(res.partial);
       } else {
-        setUserGroupNames([]);
+        setUserGroupMemberships([]);
         setUserGroupsErr(res.detail);
         setUserGroupsPartial(false);
       }
@@ -529,6 +619,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
 
   const openEditModal = useCallback(() => {
     if (!detail) return;
+    setEUsername(detail.username ?? '');
     setEFirst(detail.first_name ?? '');
     setELast(detail.last_name ?? '');
     setEEmail(detail.email ?? '');
@@ -557,9 +648,15 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
       first_name: cFirst.trim() || null,
       last_name: cLast.trim() || null,
       email: cEmail.trim() || null,
+      phone_number: cPhone.trim() || null,
+      address: cAddress.trim() || null,
+      notes: cNotes.trim() || null,
+      skills: cSkills.trim() || null,
+      availability: cAvail.trim() || null,
       role: cRole,
       status: cStatus,
-      is_active: true,
+      is_active: cActive,
+      ...(SITE_UUID_RE.test(cSiteId.trim()) ? { site_id: cSiteId.trim() } : {}),
     });
     setCreateBusy(false);
     if (!res.ok) {
@@ -573,10 +670,34 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     setCFirst('');
     setCLast('');
     setCEmail('');
+    setCPhone('');
+    setCAddress('');
+    setCNotes('');
+    setCSkills('');
+    setCAvail('');
+    setCSiteId('');
+    setCActive(true);
     setCRole('user');
     setCStatus('active');
     await refreshAll();
-  }, [auth, cEmail, cFirst, cLast, cPassword, cRole, cStatus, cUsername, refreshAll]);
+  }, [
+    auth,
+    cActive,
+    cAddress,
+    cAvail,
+    cEmail,
+    cFirst,
+    cLast,
+    cNotes,
+    cPassword,
+    cPhone,
+    cRole,
+    cSiteId,
+    cSkills,
+    cStatus,
+    cUsername,
+    refreshAll,
+  ]);
 
   const createSubmitDisabled =
     !cUsername.trim() || createPasswordIssues.length > 0 || createBusy;
@@ -585,7 +706,10 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     if (!selected || !detail) return;
     setFeedback(null);
     setEditBusy(true);
+    const usernameNext = eUsername.trim();
+    const usernamePrev = (detail.username ?? '').trim();
     const res = await updateUserV1(auth, selected.id, {
+      ...(usernameNext !== usernamePrev ? { username: usernameNext || null } : {}),
       first_name: eFirst.trim() || null,
       last_name: eLast.trim() || null,
       email: eEmail.trim() || null,
@@ -604,7 +728,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     setFeedback({ kind: 'ok', text: 'Fiche mise à jour.' });
     setEditOpen(false);
     await loadList();
-  }, [auth, detail, eAddress, eAvail, eEmail, eFirst, eLast, eNotes, ePhone, eSkills, loadList, selected]);
+  }, [auth, detail, eAddress, eAvail, eEmail, eFirst, eLast, eNotes, ePhone, eSkills, eUsername, loadList, selected]);
 
   const handleApplyRole = useCallback(async () => {
     if (!selected) return;
@@ -898,6 +1022,18 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
           clearable
           data-testid="admin-users-filter-role"
         />
+        <Select
+          label="Filtrer par dossier"
+          placeholder="Tous les dossiers"
+          data={USER_STATUS_FILTER_OPTIONS.filter((o) => o.value !== '')}
+          value={userStatusFilter || null}
+          onChange={(v) => {
+            setUserStatusFilter(v ?? '');
+            setSkip(0);
+          }}
+          clearable
+          data-testid="admin-users-filter-user-status"
+        />
       </Group>
 
       <Grid gutter="md">
@@ -1154,16 +1290,16 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
                           Les groupes n'ont pas pu être affichés.
                         </Text>
                       ) : null}
-                      {!userGroupsBusy && !userGroupsErr && userGroupNames.length === 0 ? (
+                      {!userGroupsBusy && !userGroupsErr && userGroupMemberships.length === 0 ? (
                         <Text size="sm" c="dimmed">
                           Aucun groupe pour le moment.
                         </Text>
                       ) : null}
-                      {!userGroupsBusy && !userGroupsErr && userGroupNames.length > 0 ? (
+                      {!userGroupsBusy && !userGroupsErr && userGroupMemberships.length > 0 ? (
                         <Group gap="xs">
-                          {userGroupNames.map((n) => (
-                            <Badge key={n} variant="light" size="sm">
-                              {n}
+                          {userGroupMemberships.map((m) => (
+                            <Badge key={m.id} variant="light" size="sm">
+                              {m.label}
                             </Badge>
                           ))}
                         </Group>
@@ -1172,6 +1308,17 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
                         <Text size="xs" c="dimmed">
                           La liste des groupes peut être incomplète.
                         </Text>
+                      ) : null}
+                      {selected ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          disabled={userGroupsBusy}
+                          onClick={() => void openGroupsModal()}
+                          data-testid="admin-users-groups-edit-open"
+                        >
+                          Gérer les groupes…
+                        </Button>
                       ) : null}
                     </Stack>
                     {detail && !detailLoading ? (
@@ -1436,6 +1583,27 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
           <TextInput label="Prénom" value={cFirst} onChange={(e) => setCFirst(e.currentTarget.value)} />
           <TextInput label="Nom" value={cLast} onChange={(e) => setCLast(e.currentTarget.value)} />
           <TextInput label="Courriel" value={cEmail} onChange={(e) => setCEmail(e.currentTarget.value)} />
+          <TextInput label="Téléphone" value={cPhone} onChange={(e) => setCPhone(e.currentTarget.value)} />
+          <Textarea label="Adresse" value={cAddress} onChange={(e) => setCAddress(e.currentTarget.value)} minRows={2} />
+          <Textarea label="Compétences" value={cSkills} onChange={(e) => setCSkills(e.currentTarget.value)} minRows={2} />
+          <Textarea
+            label="Disponibilités"
+            value={cAvail}
+            onChange={(e) => setCAvail(e.currentTarget.value)}
+            minRows={2}
+          />
+          <Textarea label="Notes" value={cNotes} onChange={(e) => setCNotes(e.currentTarget.value)} minRows={2} />
+          <TextInput
+            label="Rattachement site (UUID, optionnel)"
+            description="Laisser vide si inconnu ; doit être un UUID valide pour être envoyé."
+            value={cSiteId}
+            onChange={(e) => setCSiteId(e.currentTarget.value)}
+            data-testid="admin-users-create-site-id"
+          />
+          <Group justify="space-between" wrap="nowrap" gap="md">
+            <Text size="sm">Compte autorisé à se connecter dès la création</Text>
+            <Switch checked={cActive} onChange={(e) => setCActive(e.currentTarget.checked)} />
+          </Group>
           <Select
             label="Rôle"
             data={ROLE_OPTIONS.filter((o) => o.value !== '')}
@@ -1466,6 +1634,13 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
 
       <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Coordonnées et informations" size="md">
         <Stack gap="sm">
+          <TextInput
+            label="Identifiant"
+            description="Changer l'identifiant peut être refusé si déjà pris (409 côté API)."
+            value={eUsername}
+            onChange={(e) => setEUsername(e.currentTarget.value)}
+            data-testid="admin-users-edit-username"
+          />
           <TextInput label="Prénom" value={eFirst} onChange={(e) => setEFirst(e.currentTarget.value)} />
           <TextInput label="Nom" value={eLast} onChange={(e) => setELast(e.currentTarget.value)} />
           <TextInput label="Courriel" value={eEmail} onChange={(e) => setEEmail(e.currentTarget.value)} />
@@ -1514,6 +1689,47 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
               data-testid="admin-users-reset-pin-confirm"
             >
               Confirmer
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={groupsModalOpen}
+        onClose={() => {
+          if (!groupsSaveBusy) setGroupsModalOpen(false);
+        }}
+        title="Groupes de l'utilisateur"
+        size="md"
+      >
+        <Stack gap="sm">
+          <MultiSelect
+            label="Groupes"
+            placeholder="Choisir un ou plusieurs groupes"
+            description={
+              groupsCatalogBusy
+                ? 'Chargement de la liste des groupes disponibles…'
+                : "L'enregistrement remplace l'ensemble des affectations aux groupes pour ce compte."
+            }
+            data={groupsSelectOptions}
+            value={groupsDraftIds}
+            onChange={setGroupsDraftIds}
+            searchable
+            nothingFoundMessage="Aucun groupe"
+            disabled={groupsSaveBusy}
+            rightSection={groupsCatalogBusy ? <Loader size="xs" /> : null}
+            data-testid="admin-users-groups-multiselect"
+          />
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" disabled={groupsSaveBusy} onClick={() => setGroupsModalOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              loading={groupsSaveBusy}
+              onClick={() => void handleSaveGroups()}
+              data-testid="admin-users-groups-save"
+            >
+              Enregistrer
             </Button>
           </Group>
         </Stack>

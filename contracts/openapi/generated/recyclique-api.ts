@@ -1138,7 +1138,12 @@ export interface paths {
          */
         get: operations["recyclique_categories_listCategories"];
         put?: never;
-        post?: never;
+        /**
+         * Création d'une catégorie (admin)
+         * @description `POST /v1/categories/` — aligné sur le handler FastAPI (`CategoryCreate`).
+         *     Rôles **ADMIN** ou **SUPER_ADMIN** (`require_role_strict`).
+         */
+        post: operations["recyclique_categories_createCategory"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1177,6 +1182,317 @@ export interface paths {
          * @description Toutes les fiches actives utiles à la caisse (l'ordre affiché suit l'ordre ticket vente).
          */
         get: operations["recyclique_categories_listForSaleTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/hierarchy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Arbre des catégories (configuration site)
+         * @description `GET /v1/categories/hierarchy` — même implémentation que le backend 1.4.4 / `recyclique` actif
+         *     (`CategoryWithChildren`). Filtre optionnel `is_active`.
+         */
+        get: operations["recyclique_categories_getHierarchy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/actions/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export catégories (PDF, Excel ou CSV)
+         * @description `GET /v1/categories/actions/export` — flux binaire (`StreamingResponse`), aligné handler FastAPI.
+         *     Paramètre **format** obligatoire : `pdf`, `xls` ou `csv`. Rôles **ADMIN** ou **SUPER_ADMIN**.
+         *     Les corps PDF/XLS sont générés côté serveur ; le CSV est encodé UTF-8.
+         */
+        get: operations["recyclique_categories_exportCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Modèle CSV d'import des catégories
+         * @description `GET /v1/categories/import/template` — fichier modèle (colonnes requises pour `import/analyze`).
+         *     Rôles **ADMIN** ou **SUPER_ADMIN**.
+         */
+        get: operations["recyclique_categories_downloadCategoriesImportTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/import/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyse d'un CSV d'import catégories
+         * @description `POST /v1/categories/import/analyze` — `multipart/form-data` avec champ **file** (`.csv` uniquement).
+         *     Stocke une session Redis (~30 min) pour `POST …/import/execute`. Rôles **ADMIN** ou **SUPER_ADMIN**.
+         */
+        post: operations["recyclique_categories_analyzeCategoriesImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/import/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exécution d'un import catégories (session d'analyse)
+         * @description `POST /v1/categories/import/execute` — upsert transactionnel à partir de `session_id` retourné par **analyze**.
+         *     Option `delete_existing` : purge large (voir impl. backend). Rôles **ADMIN** ou **SUPER_ADMIN**.
+         */
+        post: operations["recyclique_categories_executeCategoriesImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'une catégorie par id */
+        get: operations["recyclique_categories_getCategoryById"];
+        /**
+         * Mise à jour d'une catégorie (admin)
+         * @description `PUT /v1/categories/{category_id}` — corps partiel `CategoryUpdate` : nom, `parent_id` (reclassement),
+         *     `price` / `max_price`, `is_active`, ordres d'affichage, visibilité réception, etc.
+         *     Rôles **ADMIN** ou **SUPER_ADMIN**.
+         */
+        put: operations["recyclique_categories_updateCategory"];
+        post?: never;
+        /**
+         * Archivage logique d'une catégorie (admin)
+         * @description `DELETE /v1/categories/{category_id}` — pose `deleted_at` (soft delete / archive), aligné Story B48-P1.
+         *     Rôles **ADMIN** ou **SUPER_ADMIN**.
+         */
+        delete: operations["recyclique_categories_softDeleteCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restauration d'une catégorie archivée (admin)
+         * @description `POST /v1/categories/{category_id}/restore` — remet `deleted_at` à null. Rôles **ADMIN** ou **SUPER_ADMIN**.
+         */
+        post: operations["recyclique_categories_restoreCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Visibilité réception pour une catégorie (admin)
+         * @description `PUT /v1/categories/{category_id}/visibility` — tickets dépôt / ENTRY uniquement.
+         *     Rôles **ADMIN** ou **SUPER_ADMIN**.
+         */
+        put: operations["recyclique_categories_updateCategoryVisibility"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/display-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Ordre d'affichage caisse / vente (admin) */
+        put: operations["recyclique_categories_updateCategoryDisplayOrder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/display-order-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Ordre d'affichage dépôt / ENTRY (admin, B48-P4) */
+        put: operations["recyclique_categories_updateCategoryDisplayOrderEntry"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/hard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Suppression définitive d'une catégorie (admin)
+         * @description `DELETE /v1/categories/{category_id}/hard` — suppression permanente si pas d'enfants (sinon **422**).
+         *     Rôles **ADMIN** ou **SUPER_ADMIN**. Réponse **204** sans corps.
+         */
+        delete: operations["recyclique_categories_hardDeleteCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/has-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Indicateur d'usage d'une catégorie (hard-delete)
+         * @description `GET /v1/categories/{category_id}/has-usage` — indique si la fiche est référencée (transactions, enfants, etc.).
+         *     Aligné sur `CategoryService.has_usage` ; tout utilisateur authentifié.
+         */
+        get: operations["recyclique_categories_getCategoryUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/children": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Enfants directs d'une catégorie
+         * @description `GET /v1/categories/{category_id}/children` — liste plate des enfants directs (`CategoryRead`).
+         */
+        get: operations["recyclique_categories_listCategoryChildren"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/parent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Parent direct d'une catégorie
+         * @description `GET /v1/categories/{category_id}/parent` — **404** si racine ou parent introuvable.
+         */
+        get: operations["recyclique_categories_getCategoryParent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{category_id}/breadcrumb": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fil d'Ariane racine → catégorie
+         * @description `GET /v1/categories/{category_id}/breadcrumb` — chemin ordonné des ancêtres + fiche courante.
+         */
+        get: operations["recyclique_categories_getCategoryBreadcrumb"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3414,6 +3730,79 @@ export interface components {
             updated_at: string;
             /** Format: date-time */
             deleted_at?: string | null;
+        };
+        CategoryV1WithChildren: components["schemas"]["CategoryV1Read"] & {
+            children: components["schemas"]["CategoryV1WithChildren"][];
+        };
+        CategoryV1CreateRequest: {
+            name: string;
+            official_name?: string | null;
+            /** Format: uuid */
+            parent_id?: string | null;
+            /** Format: double */
+            price?: number | null;
+            /** Format: double */
+            max_price?: number | null;
+            /** @default 0 */
+            display_order: number;
+            /** @default 0 */
+            display_order_entry: number;
+            /** @default true */
+            is_visible: boolean;
+            shortcut_key?: string | null;
+        };
+        CategoryV1UpdateRequest: {
+            name?: string;
+            official_name?: string | null;
+            is_active?: boolean;
+            /** Format: uuid */
+            parent_id?: string | null;
+            /** Format: double */
+            price?: number | null;
+            /** Format: double */
+            max_price?: number | null;
+            display_order?: number;
+            display_order_entry?: number;
+            is_visible?: boolean;
+            shortcut_key?: string | null;
+        };
+        CategoryV1VisibilityPatchRequest: {
+            is_visible: boolean;
+        };
+        CategoryV1DisplayOrderPatchRequest: {
+            display_order: number;
+        };
+        CategoryV1DisplayOrderEntryPatchRequest: {
+            display_order_entry: number;
+        };
+        CategoryV1ImportAnalyzeResponse: {
+            /** @description Identifiant de session Redis ; null si analyse impossible (ex. en-têtes CSV manquants). */
+            session_id: string | null;
+            /** @description Agrégats d'analyse (clés alignées sur le backend, ex. total, roots, subs, to_create, to_update). */
+            summary: {
+                [key: string]: unknown;
+            };
+            /** @description Échantillon de lignes normalisées (structure libre selon version backend). */
+            sample: {
+                [key: string]: unknown;
+            }[];
+            errors: string[];
+            /** @description Liste d'avertissements non bloquants (le handler FastAPI applique des défauts Pydantic si absent en entrée service). */
+            warnings: string[];
+        };
+        CategoryV1ImportExecuteRequest: {
+            session_id: string;
+            /** @default false */
+            delete_existing: boolean;
+        };
+        CategoryV1ImportExecuteResult: {
+            imported: number;
+            updated: number;
+            errors: string[];
+        };
+        CategoryV1UsageCheckResponse: {
+            has_usage: boolean;
+            can_hard_delete: boolean;
         };
         ReceptionCategoryRow: {
             id: string;
@@ -6755,6 +7144,57 @@ export interface operations {
             };
         };
     };
+    recyclique_categories_createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryV1CreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Catégorie créée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Validation métier (ex. tarif sur branche non feuille) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_categories_listForEntryTickets: {
         parameters: {
             query?: {
@@ -6808,6 +7248,854 @@ export interface operations {
             };
             /** @description Non authentifié */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_getHierarchy: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1WithChildren"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_exportCategories: {
+        parameters: {
+            query: {
+                /** @description Format d'export. */
+                format: "pdf" | "xls" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fichier téléchargeable (en-tête `Content-Disposition` attachment) */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "text/csv": string;
+                };
+            };
+            /** @description Format invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_downloadCategoriesImportTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fichier CSV modèle */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_analyzeCategoriesImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Rapport d'analyse (session absente si erreurs bloquantes) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1ImportAnalyzeResponse"];
+                };
+            };
+            /** @description Fichier non CSV ou rejet parse */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_executeCategoriesImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryV1ImportExecuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Compteurs import / erreurs métier */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1ImportExecuteResult"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_getCategoryById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_updateCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryV1UpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Validation métier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit hiérarchique ou règle métier (ex. cycle parent) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_softDeleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fiche archivée (corps = état catégorie après archivage) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit (ex. enfants ou usage empêchant l'archivage) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_restoreCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Validation (ex. restauration impossible) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_updateCategoryVisibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryV1VisibilityPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Règle « au moins une catégorie visible » ou conflit métier */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_updateCategoryDisplayOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryV1DisplayOrderPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_updateCategoryDisplayOrderEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryV1DisplayOrderEntryPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_hardDeleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Supprimée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation métier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Sous-catégories présentes ou usage bloquant */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_getCategoryUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1UsageCheckResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_listCategoryChildren: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_getCategoryParent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Pas de parent */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_getCategoryBreadcrumb: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Catégorie introuvable */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

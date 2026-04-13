@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import '@mantine/core/styles.css';
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminSystemHealthWidget } from '../../src/domains/admin-config/AdminSystemHealthWidget';
 import { getDefaultDemoAuthAdapter } from '../../src/app/auth/default-demo-auth-adapter';
 import { RootProviders } from '../../src/app/providers/RootProviders';
-import { fetchAdminHealthSystem } from '../../src/api/admin-system-health-client';
+import { fetchAdminHealthSystem, postAdminHealthTestNotifications } from '../../src/api/admin-system-health-client';
 import { fetchLiveSnapshot } from '../../src/api/live-snapshot-client';
 import '../../src/registry';
 
@@ -18,20 +18,11 @@ vi.mock('../../src/api/live-snapshot-client', () => ({
   }),
 }));
 
-vi.mock('../../src/api/admin-system-health-client', () => ({
-  AdminSystemHealthApiError: class extends Error {
-    constructor(
-      readonly status: number,
-      message: string,
-    ) {
-      super(message);
-      this.name = 'AdminSystemHealthApiError';
-    }
-  },
-  fetchAdminHealthSystem: vi.fn().mockResolvedValue({
-    status: 'success',
+const { defaultFetchAdminHealthSystemPayload } = vi.hoisted(() => ({
+  defaultFetchAdminHealthSystemPayload: {
+    status: 'success' as const,
     system_health: {
-      overall_status: 'healthy',
+      overall_status: 'healthy' as const,
       anomalies_detected: 0,
       critical_anomalies: 0,
       scheduler_running: false,
@@ -45,8 +36,25 @@ vi.mock('../../src/api/admin-system-health-client', () => ({
       classification_anomalies: [],
       timestamp: '2026-04-13T12:00:00Z',
     },
-    recommendations: [],
-    scheduler_status: { running: false, tasks: [], total_tasks: 0 },
+    recommendations: [] as { type: string; priority: string; title: string; description: string; actions: unknown[] }[],
+    scheduler_status: { running: false, tasks: [] as { name: string; enabled: boolean; last_run?: string }[], total_tasks: 0 },
+  },
+}));
+
+vi.mock('../../src/api/admin-system-health-client', () => ({
+  AdminSystemHealthApiError: class extends Error {
+    constructor(
+      readonly status: number,
+      message: string,
+    ) {
+      super(message);
+      this.name = 'AdminSystemHealthApiError';
+    }
+  },
+  fetchAdminHealthSystem: vi.fn().mockResolvedValue(defaultFetchAdminHealthSystemPayload),
+  postAdminHealthTestNotifications: vi.fn().mockResolvedValue({
+    status: 'unavailable',
+    message: 'Fonction documentée comme désactivée sur le serveur.',
   }),
   fetchAdminSessionMetrics: vi.fn().mockResolvedValue({
     success: true,
@@ -112,6 +120,11 @@ afterEach(() => {
   vi.mocked(fetchLiveSnapshot).mockResolvedValue(defaultLiveSnapshotResult);
 });
 
+beforeEach(() => {
+  vi.mocked(fetchAdminHealthSystem).mockReset();
+  vi.mocked(fetchAdminHealthSystem).mockResolvedValue(defaultFetchAdminHealthSystemPayload);
+});
+
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -149,10 +162,10 @@ describe('AdminSystemHealthWidget', () => {
   });
 
   it('humanise les noms de tâches planifiées et formate les dates de diagnostic', async () => {
-    vi.mocked(fetchAdminHealthSystem).mockResolvedValueOnce({
-      status: 'success',
+    const healthPayload = {
+      status: 'success' as const,
       system_health: {
-        overall_status: 'healthy',
+        overall_status: 'healthy' as const,
         anomalies_detected: 0,
         critical_anomalies: 0,
         scheduler_running: true,
@@ -172,7 +185,8 @@ describe('AdminSystemHealthWidget', () => {
         tasks: [{ name: 'anomaly_detection', enabled: true, last_run: '2026-04-13T14:00:00.000Z' }],
         total_tasks: 1,
       },
-    });
+    };
+    vi.mocked(fetchAdminHealthSystem).mockResolvedValue(healthPayload);
     const adapter = {
       ...getDefaultDemoAuthAdapter(),
       getAccessToken: () => 'test-token',
@@ -187,6 +201,137 @@ describe('AdminSystemHealthWidget', () => {
     expect(screen.queryByText(/anomaly_detection/)).toBeNull();
     expect(screen.queryByText('2026-04-13T15:30:00.000Z')).toBeNull();
     expect(screen.queryByText('2026-04-13T14:00:00.000Z')).toBeNull();
+  });
+
+  it('affiche les priorités de recommandation en français (contrat OpenAPI)', async () => {
+    vi.mocked(fetchAdminHealthSystem).mockResolvedValue({
+      status: 'success',
+      system_health: {
+        overall_status: 'healthy',
+        anomalies_detected: 0,
+        critical_anomalies: 0,
+        scheduler_running: false,
+        active_tasks: 0,
+        timestamp: '2026-04-13T12:00:00Z',
+      },
+      anomalies: {
+        cash_anomalies: [],
+        sync_anomalies: [],
+        auth_anomalies: [],
+        classification_anomalies: [],
+        timestamp: '2026-04-13T12:00:00Z',
+      },
+      recommendations: [
+        {
+          type: 'ops',
+          priority: 'low',
+          title: 'Vérifier les sauvegardes',
+          description: 'Planifier une restauration test.',
+          actions: [],
+        },
+        {
+          type: 'ops',
+          priority: 'high',
+          title: 'Action urgente',
+          description: 'À traiter.',
+          actions: [],
+        },
+      ],
+      scheduler_status: { running: false, tasks: [], total_tasks: 0 },
+    });
+    const adapter = {
+      ...getDefaultDemoAuthAdapter(),
+      getAccessToken: () => 'test-token',
+    };
+    render(
+      <RootProviders authAdapter={adapter}>
+        <AdminSystemHealthWidget />
+      </RootProviders>,
+    );
+    await screen.findByTestId('admin-system-health-legacy-panel');
+    expect(screen.getByText(/priorité faible/i)).toBeTruthy();
+    expect(screen.getByText(/priorité haute/i)).toBeTruthy();
+    expect(screen.queryByText(/\blow\b/i)).toBeNull();
+    expect(screen.queryByText(/\bhigh\b/i)).toBeNull();
+  });
+
+  it('affiche les anomalies détaillées et les actions de recommandation', async () => {
+    vi.mocked(fetchAdminHealthSystem).mockResolvedValue({
+      status: 'success',
+      system_health: {
+        overall_status: 'degraded',
+        anomalies_detected: 1,
+        critical_anomalies: 0,
+        scheduler_running: true,
+        active_tasks: 2,
+        timestamp: '2026-04-13T12:00:00Z',
+      },
+      anomalies: {
+        cash_anomalies: [
+          {
+            type: 'latency',
+            severity: 'high',
+            description: 'Délai anormal sur une opération caisse',
+            details: { hint: 'vérifier charge' },
+          },
+        ],
+        sync_anomalies: [],
+        timestamp: '2026-04-13T12:00:00Z',
+      },
+      recommendations: [
+        {
+          type: 'ops',
+          priority: 'medium',
+          title: 'Surveiller la file',
+          description: 'Augmenter la vigilance.',
+          actions: ['Ouvrir le journal des tickets', 'Contacter le site concerné'],
+        },
+      ],
+      scheduler_status: {
+        running: true,
+        total_tasks: 1,
+        tasks: [
+          {
+            name: 'cleanup',
+            enabled: true,
+            last_run: null,
+            next_run: '2026-04-14T06:00:00Z',
+            running: false,
+            interval_minutes: 60,
+          },
+        ],
+      },
+    });
+    const adapter = {
+      ...getDefaultDemoAuthAdapter(),
+      getAccessToken: () => 'test-token',
+    };
+    render(
+      <RootProviders authAdapter={adapter}>
+        <AdminSystemHealthWidget />
+      </RootProviders>,
+    );
+    await screen.findByTestId('admin-system-health-anomalies');
+    expect(screen.getByText(/Délai anormal sur une opération caisse/)).toBeTruthy();
+    expect(screen.getByText(/Gravité élevée/)).toBeTruthy();
+    expect(screen.getByText(/Ouvrir le journal des tickets/)).toBeTruthy();
+    expect(screen.getByText(/prochaine fenêtre/)).toBeTruthy();
+  });
+
+  it('affiche la réponse serveur après le contrôle test-notifications', async () => {
+    const adapter = {
+      ...getDefaultDemoAuthAdapter(),
+      getAccessToken: () => 'test-token',
+    };
+    render(
+      <RootProviders authAdapter={adapter}>
+        <AdminSystemHealthWidget />
+      </RootProviders>,
+    );
+    await screen.findByTestId('admin-system-health-test-notifications');
+    fireEvent.click(screen.getByTestId('admin-system-health-test-notifications'));
+    expect(await screen.findByText(/Fonction documentée comme désactivée sur le serveur/)).toBeTruthy();
+    expect(vi.mocked(postAdminHealthTestNotifications)).toHaveBeenCalled();
   });
 
   it('abrège les UUID de corrélation tout en gardant la valeur complète au survol', async () => {

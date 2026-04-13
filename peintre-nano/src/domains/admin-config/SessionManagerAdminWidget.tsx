@@ -404,6 +404,8 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
 
   const thSort = (field: SortField, label: string) => (
     <Table.Th
+      scope="col"
+      aria-sort={sortField === field ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
       style={{ cursor: 'pointer', userSelect: 'none', textTransform: 'uppercase', fontSize: '0.85rem' }}
       onClick={() => handleSort(field)}
     >
@@ -500,7 +502,9 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
 
           <Accordion variant="separated">
             <Accordion.Item value="adv">
-              <Accordion.Control>Filtres avancés</Accordion.Control>
+              <Accordion.Control data-testid="admin-session-manager-advanced-filters">
+                Filtres avancés
+              </Accordion.Control>
               <Accordion.Panel>
                 <Stack gap="sm">
                   <Group grow>
@@ -737,7 +741,9 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
             {thSort('total_sales', 'Total ventes')}
             {thSort('total_donations', 'Total dons')}
             {thSort('variance', 'Écart')}
-            <Table.Th style={{ textTransform: 'uppercase', fontSize: '0.85rem' }}>Actions</Table.Th>
+            <Table.Th scope="col" style={{ textTransform: 'uppercase', fontSize: '0.85rem' }}>
+              Actions
+            </Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>

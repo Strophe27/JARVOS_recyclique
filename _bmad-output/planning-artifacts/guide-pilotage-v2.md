@@ -2,7 +2,7 @@
 
 **Rôle** : document **opérationnel** pour Strophe et les agents (BMAD, PM, help). Il complète le PRD, les epics et l'architecture sans les remplacer : **source de vérité produit** = `prd.md` ; **grain fin des stories** = `implementation-artifacts/sprint-status.yaml` et fichiers story.
 
-**Mise à jour** : cocher les cases **aux jalons** (fin d'une Convergence, clôture d'un epic majeur, gate bandeau), pas à chaque story. Si `epics.md` change (nombre ou titres d'epics), revenir aligner la section 3 de ce guide.
+**Mise à jour** : cocher les cases **aux jalons** (fin d'une Convergence, clôture d'un epic majeur, gate bandeau), pas à chaque story. Si `epics.md` change (nombre ou titres d'epics), revenir aligner la section 3 de ce guide. *2026-04-13 : cases Epics 1 à 8 recalées sur `implementation-artifacts/sprint-status.yaml` (tous `done`) ; Convergences 1 et 3 inchangées faute de critère objectif unique dans le YAML.*
 
 ---
 
@@ -40,16 +40,14 @@
 
 ### Epics 1 à 10 (titres de référence — alignés sur `epics.md`)
 
-- [ ] **Epic 1** — Prérequis structurants, modèle multi-contextes, gouvernance OpenAPI/CREOS (jalon FR73 / schémas minimaux selon epics).
-- [ ] **Epic 2** — Socle backend brownfield v2 (auth, contexte, permissions, persistance, signaux bandeau).
-- [ ] **Epic 3** — Socle Peintre_nano (shell, slots, validation CREOS, mocks permis avant C1).
+- [x] **Epic 1** — Prérequis structurants, modèle multi-contextes, gouvernance OpenAPI/CREOS (jalon FR73 / schémas minimaux selon epics). *Statut epic : `done` dans `sprint-status.yaml`.*
+- [x] **Epic 2** — Socle backend brownfield v2 (auth, contexte, permissions, persistance, signaux bandeau). *Idem.*
+- [x] **Epic 3** — Socle Peintre_nano (shell, slots, validation CREOS, mocks permis avant C1). *Idem.*
 - [x] **Epic 4** — Preuve chaîne modulaire **bandeau live**.
 - [x] **Epic 5** — Shell, dashboard, admin transverses dans Peintre.
-- [ ] **Epic 6** — Caisse v2 exploitable.
-  Gate de lecture : tant que la caisse v2 ne restitue pas un **workflow brownfield operatoire** comparable au legacy (dashboard poste, ouverture, vente continue, cloture, supervision admin session), Epic 6 reste **in-progress** et `6.10` ne peut pas etre consideree `done`.
-  Des stories `6.x` peuvent rester `done` au sens technique (`keep`) sans fermer l'epic tant que ce gate brownfield n'est pas franchi.
-- [ ] **Epic 7** — Réception v2 exploitable.
-- [ ] **Epic 8** — Articulation comptable réelle Paheko.
+- [x] **Epic 6** — Caisse v2 exploitable. *Epic clos dans `sprint-status.yaml` ; le critère brownfield qui a structuré le pilotage reste rappelé en §7 (gate + registre `2026-04-08_04_caisse-v2-exploitabilite-terrain-epic6.md`).*
+- [x] **Epic 7** — Réception v2 exploitable. *Statut epic : `done` dans `sprint-status.yaml`.*
+- [x] **Epic 8** — Articulation comptable réelle Paheko. *Idem.*
 - [ ] **Epic 9** — Modules complémentaires (éco-organismes, adhérents, HelloAsso, config admin simple).
 - [ ] **Epic 10** — Industrialisation, CI, déployabilité, gates de sortie.
 

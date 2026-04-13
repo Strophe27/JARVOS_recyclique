@@ -266,18 +266,29 @@ function userIdEquals(a: string, b: string): boolean {
 const GROUPS_MEMBERSHIP_PAGE = 500;
 const GROUPS_MEMBERSHIP_MAX = 8000;
 
+export type AdminGroupMembershipRowDto = {
+  readonly id: string;
+  readonly label: string;
+};
+
+export type AdminGroupMembershipsForUserResult =
+  | { ok: true; memberships: readonly AdminGroupMembershipRowDto[]; partial: boolean }
+  | AdminGroupsHttpError;
+
 export type AdminGroupNamesForUserResult =
   | { ok: true; names: readonly string[]; partial: boolean }
   | AdminGroupsHttpError;
 
-/**
- * Parcourt `GET /v1/admin/groups/` (pagination) et retourne les noms affichables des groupes
- * dont `user_ids` contient l'utilisateur (lecture seule, même principe que l'ancien front).
- */
-export async function getAdminGroupDisplayNamesForUser(
+function groupLabelForListItem(g: AdminGroupListItemDto): string {
+  const d = g.display_name?.trim();
+  const n = g.name?.trim();
+  const k = g.key?.trim();
+  return d || n || k || g.id;
+}
+
+async function collectAllGroupsForMembershipScan(
   auth: Pick<AuthContextPort, 'getAccessToken'>,
-  userId: string,
-): Promise<AdminGroupNamesForUserResult> {
+): Promise<{ ok: true; groups: readonly AdminGroupListItemDto[]; partial: boolean } | AdminGroupsHttpError> {
   const collected: AdminGroupListItemDto[] = [];
   let skip = 0;
   let partial = false;
@@ -292,19 +303,38 @@ export async function getAdminGroupDisplayNamesForUser(
       break;
     }
   }
+  return { ok: true, groups: collected, partial };
+}
 
+/**
+ * Parcourt `GET /v1/admin/groups/` (pagination) et retourne les groupes
+ * dont `user_ids` contient l'utilisateur (lecture seule, même principe que l'ancien front).
+ */
+export async function getAdminGroupMembershipsForUser(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  userId: string,
+): Promise<AdminGroupMembershipsForUserResult> {
+  const bag = await collectAllGroupsForMembershipScan(auth);
+  if (!bag.ok) return bag;
   const needle = userId.trim().toLowerCase();
-  const names = collected
+  const memberships = bag.groups
     .filter((g) => g.user_ids.some((uid) => userIdEquals(uid, needle)))
-    .map((g) => {
-      const d = g.display_name?.trim();
-      const n = g.name?.trim();
-      const k = g.key?.trim();
-      return d || n || k || g.id;
-    })
-    .sort((a, b) => a.localeCompare(b, 'fr'));
+    .map((g) => ({ id: g.id, label: groupLabelForListItem(g) }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+  return { ok: true, memberships, partial: bag.partial };
+}
 
-  return { ok: true, names, partial };
+/**
+ * Parcourt `GET /v1/admin/groups/` (pagination) et retourne les noms affichables des groupes
+ * dont `user_ids` contient l'utilisateur (lecture seule, même principe que l'ancien front).
+ */
+export async function getAdminGroupDisplayNamesForUser(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  userId: string,
+): Promise<AdminGroupNamesForUserResult> {
+  const res = await getAdminGroupMembershipsForUser(auth, userId);
+  if (!res.ok) return res;
+  return { ok: true, names: res.memberships.map((m) => m.label), partial: res.partial };
 }
 
 /** `GET /v1/admin/groups/{group_id}` — `adminGroupsGetById`. */

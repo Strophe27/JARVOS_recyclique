@@ -56,7 +56,7 @@ const child = {
 };
 
 function okJson(body: unknown, status = 200) {
-  return { ok: true, status, text: async () => JSON.stringify(body) };
+  return { ok: status >= 200 && status < 300, status, text: async () => JSON.stringify(body) };
 }
 
 function categoriesFetchMock(includeArchived: boolean): typeof fetch {
@@ -67,8 +67,68 @@ function categoriesFetchMock(includeArchived: boolean): typeof fetch {
         { ...child, id: 'cccccccc-cccc-cccc-cccc-cccccccccccc', name: 'Ancienne', deleted_at: '2026-01-03T00:00:00.000Z' },
       ]
     : [parent, child];
-  return vi.fn(async (input: RequestInfo | URL) => {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const method = (init?.method ?? 'GET').toUpperCase();
+
+    if (method === 'PUT' && url.includes('/v1/categories/')) {
+      const idMatch = /\/v1\/categories\/([^/?]+)/.exec(url);
+      const id = idMatch?.[1] ?? child.id;
+      const baseRow = [parent, child].find((r) => r.id === id) ?? child;
+      let patch: Record<string, unknown> = {};
+      try {
+        patch = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+      } catch {
+        patch = {};
+      }
+      return okJson({ ...baseRow, ...patch }, 200);
+    }
+    if (method === 'POST' && /\/v1\/categories\/[^/]+\/restore/.test(url.split('?')[0])) {
+      const idMatch = /\/v1\/categories\/([^/?]+)\/restore/.exec(url);
+      const id = idMatch?.[1] ?? child.id;
+      const baseRow = [parent, child].find((r) => r.id === id) ?? child;
+      return okJson({ ...baseRow, deleted_at: null }, 200);
+    }
+    const pathNoQuery = url.split('?')[0];
+    const isCreatePost =
+      method === 'POST' &&
+      pathNoQuery.endsWith('/v1/categories/') &&
+      !pathNoQuery.includes('/restore');
+    if (isCreatePost) {
+      let body: Record<string, unknown> = {};
+      try {
+        body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+      } catch {
+        body = {};
+      }
+      return okJson(
+        {
+          ...parent,
+          id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+          name: String(body.name ?? 'Sans nom'),
+          official_name: body.official_name ?? null,
+          parent_id: body.parent_id ?? null,
+          price: body.price ?? null,
+          max_price: body.max_price ?? null,
+          display_order: typeof body.display_order === 'number' ? body.display_order : 0,
+          display_order_entry: typeof body.display_order_entry === 'number' ? body.display_order_entry : 0,
+          is_visible: typeof body.is_visible === 'boolean' ? body.is_visible : true,
+          shortcut_key: body.shortcut_key ?? null,
+          is_active: true,
+          created_at: parent.created_at,
+          updated_at: parent.updated_at,
+          deleted_at: null,
+        },
+        201,
+      );
+    }
+    if (method === 'DELETE' && url.includes('/v1/categories/')) {
+      const idMatch = /\/v1\/categories\/([^/?]+)/.exec(url);
+      const id = idMatch?.[1] ?? child.id;
+      const baseRow = [parent, child].find((r) => r.id === id) ?? child;
+      return okJson({ ...baseRow, deleted_at: '2026-01-05T00:00:00.000Z' }, 200);
+    }
+
     if (url.includes('sale-tickets') || url.includes('entry-tickets')) {
       return okJson([parent, child]);
     }
@@ -112,6 +172,12 @@ describe('AdminCategoriesWidget', () => {
     vi.restoreAllMocks();
   });
 
+  it('affiche un rappel pour retrouver les fiches archivées et la restauration (vue configuration)', async () => {
+    vi.stubGlobal('fetch', categoriesFetchMock(false));
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByTestId('categories-restore-hint')).toBeTruthy());
+  });
+
   it('affiche la hiérarchie et les tarifs après chargement', async () => {
     vi.stubGlobal('fetch', categoriesFetchMock(false));
     render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
@@ -125,7 +191,7 @@ describe('AdminCategoriesWidget', () => {
     vi.stubGlobal('fetch', categoriesFetchMock(false));
     render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
     await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
-    expect(screen.getByRole('heading', { name: 'Gestion des catégories' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Catégories et tarifs' })).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Recherche catégories'), { target: { value: 'port' } });
     expect(screen.getByText('Portable')).toBeTruthy();
     expect(screen.queryByText('Écrans')).toBeTruthy();
@@ -145,6 +211,165 @@ describe('AdminCategoriesWidget', () => {
     await waitFor(() => expect(screen.getByText('Ancienne')).toBeTruthy());
     const root = screen.getByTestId('widget-admin-categories-demo');
     expect(within(root).getByText('Archivée')).toBeTruthy();
+    expect(screen.getByTestId('categories-restore-active-hint')).toBeTruthy();
+  });
+
+  it('restaure une fiche archivée via le menu (POST …/restore)', async () => {
+    const archivedId = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'POST' && url.includes(`/v1/categories/${archivedId}/restore`)) {
+        return okJson(
+          {
+            ...child,
+            id: archivedId,
+            name: 'Ancienne',
+            deleted_at: null,
+          },
+          200,
+        );
+      }
+      if (url.includes('include_archived=true')) {
+        return okJson([
+          parent,
+          child,
+          { ...child, id: archivedId, name: 'Ancienne', deleted_at: '2026-01-03T00:00:00.000Z' },
+        ]);
+      }
+      return okJson([parent, child]);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    fireEvent.click(screen.getByRole('switch', { name: /Afficher les éléments archivés/i }));
+    await waitFor(() => expect(screen.getByText('Ancienne')).toBeTruthy());
+    fireEvent.click(screen.getByTestId(`category-row-actions-${archivedId}`));
+    await waitFor(() => expect(screen.getByTestId(`category-restore-${archivedId}`)).toBeTruthy());
+    fireEvent.click(screen.getByTestId(`category-restore-${archivedId}`));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          (c) =>
+            String(c[0]).includes(`/v1/categories/${archivedId}/restore`) &&
+            String((c[1] as RequestInit)?.method ?? 'GET').toUpperCase() === 'POST',
+        ),
+      ).toBe(true),
+    );
+  });
+
+  it('ouvre le reclassement avec enregistrement depuis le menu (vue configuration)', async () => {
+    vi.stubGlobal('fetch', categoriesFetchMock(false));
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    fireEvent.click(screen.getByTestId(`category-row-actions-${child.id}`));
+    await waitFor(() => expect(screen.getByText('Reclasser')).toBeTruthy());
+    fireEvent.click(screen.getByText('Reclasser'));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: /Reclasser une catégorie/i })).toBeTruthy());
+    expect(screen.queryByTestId('category-reparent-readonly-notice')).toBeNull();
+    expect(screen.getByTestId('category-reparent-apply')).toBeTruthy();
+  });
+
+  it('passe is_active au chargement lorsque le filtre Actives est choisi', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes('/v1/categories/') && url.includes('is_active=true')) {
+        return okJson([parent, child]);
+      }
+      return okJson([parent, child]);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    fireEvent.click(within(screen.getByTestId('categories-activation-filter')).getByText('Actives'));
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('is_active=true'))).toBe(true);
+    });
+  });
+
+  it('ouvre le formulaire de modification depuis le menu', async () => {
+    vi.stubGlobal('fetch', categoriesFetchMock(false));
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    fireEvent.click(screen.getByTestId(`category-row-actions-${child.id}`));
+    await waitFor(() => expect(screen.getByText('Modifier')).toBeTruthy());
+    fireEvent.click(screen.getByText('Modifier'));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: /Modifier la catégorie/i })).toBeTruthy());
+    expect(screen.getByTestId('category-admin-form')).toBeTruthy();
+    expect(screen.getByTestId('category-form-name')).toBeTruthy();
+  });
+
+  it('ouvre le formulaire de création', async () => {
+    vi.stubGlobal('fetch', categoriesFetchMock(false));
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('categories-new-button'));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: /Nouvelle catégorie/i })).toBeTruthy());
+    expect(screen.getByTestId('category-admin-form')).toBeTruthy();
+  });
+
+  it('affiche le raccourci Importer et le parcours import en vue configuration', async () => {
+    vi.stubGlobal('fetch', categoriesFetchMock(false));
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    const importBtn = screen.getByTestId('categories-import-csv-button');
+    expect(importBtn).toBeTruthy();
+    expect(importBtn.textContent?.replace(/\s+/g, ' ').trim()).toMatch(/^Importer$/i);
+    expect(screen.getByTestId('categories-import-journey')).toBeTruthy();
+    expect(screen.getByTestId('categories-import-template-download')).toBeTruthy();
+  });
+
+  it('affiche les étapes et les zones vérification/enregistrement avant sélection de fichier', async () => {
+    vi.stubGlobal('fetch', categoriesFetchMock(false));
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    expect(screen.queryByTestId('categories-import-contract-strip')).toBeNull();
+    expect(screen.getByTestId('categories-import-analyze-zone').textContent).toContain('En attente du fichier');
+    expect(screen.getByTestId('categories-import-execute-zone').textContent).toContain('En attente du résultat');
+  });
+
+  it('affiche le menu Exporter, le modèle CSV et enchaîne analyse puis exécution import', async () => {
+    const baseFetch = categoriesFetchMock(false);
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'POST' && url.includes('/v1/categories/import/analyze')) {
+        return okJson({
+          session_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          summary: { to_create: 0, to_update: 1 },
+          sample: [],
+          errors: [],
+          warnings: [],
+        });
+      }
+      if (method === 'POST' && url.includes('/v1/categories/import/execute')) {
+        return okJson({ imported: 0, updated: 1, errors: [] });
+      }
+      return baseFetch(input, init);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(wrap(<AdminCategoriesWidget widgetId="w" pageManifest={{ page_key: 'x', slots: [] }} />));
+    await waitFor(() => expect(screen.getByText('Portable')).toBeTruthy());
+    const root = screen.getByTestId('widget-admin-categories-demo');
+    expect(within(root).getByRole('button', { name: /^Exporter$/i })).toBeTruthy();
+    expect(within(root).getByTestId('categories-import-journey')).toBeTruthy();
+
+    const csv = new File(['id,name\n'], 'test-import.csv', { type: 'text/csv' });
+    fireEvent.change(screen.getByTestId('categories-import-csv-input'), {
+      target: { files: [csv] },
+    });
+    await waitFor(() => expect(screen.getByText(/Fichier sélectionné :/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/test-import\.csv/)).toBeTruthy());
+    fireEvent.click(screen.getByTestId('categories-import-confirm'));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          (c) =>
+            String(c[0]).includes('/v1/categories/import/execute') &&
+            String((c[1] as RequestInit)?.method ?? 'GET').toUpperCase() === 'POST',
+        ),
+      ).toBe(true),
+    );
   });
 
   it('appelle sale-tickets lorsque la vue Caisse est sélectionnée', async () => {

@@ -42,6 +42,17 @@ import {
   receptionStatusPresentation,
 } from './reception-admin-display';
 
+/** Affichage discret des identifiants longs (UUID, etc.) : version courte + infobulle pour copie / support. */
+function receptionCompactIdDisplay(raw: string): { display: string; title?: string } {
+  const s = raw.trim();
+  if (!s) return { display: '—' };
+  const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  if (uuidLike || s.length > 22) {
+    return { display: `${s.slice(0, 8)}…`, title: s };
+  }
+  return { display: s };
+}
+
 function resolveSameOriginDownloadUrl(downloadUrl: string): string {
   if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
     return downloadUrl;
@@ -69,7 +80,7 @@ const DEST_OPTIONS = [
 ];
 
 /**
- * Liste admin des tickets réception (`/admin/reception-sessions`) — lecture, filtres serveur, drill-down.
+ * Liste admin des sessions de réception (`/admin/reception-sessions`) — filtres, synthèses, exports.
  */
 export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): ReactNode {
   const auth = useAuthPort();
@@ -243,10 +254,12 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
     <div data-testid="widget-admin-reception-tickets-list">
       <Stack gap="md">
         <div>
-          <Title order={3}>Sessions de réception</Title>
+          <Title order={1} size="h2">
+            Sessions de réception
+          </Title>
           <Text size="sm" c="dimmed" mt={4} data-testid="admin-reception-tickets-operation-anchors">
-            Filtres serveur, synthèse des poids sur la page courante, export unitaire (CSV) ou export groupé (CSV / Excel,
-            code administrateur).
+            Parcourez la liste, affinez-la avec les filtres, consultez les totaux de poids pour la page affichée, puis
+            exportez un ticket en CSV ou lancez un export groupé (CSV ou Excel, code administrateur).
           </Text>
         </div>
 
@@ -292,7 +305,9 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
             </Group>
             <Accordion variant="contained">
               <Accordion.Item value="adv">
-                <Accordion.Control>Filtres avancés</Accordion.Control>
+                <Accordion.Control data-testid="admin-reception-tickets-advanced-filters">
+                  Filtres avancés
+                </Accordion.Control>
                 <Accordion.Panel>
                   <Grid gutter="sm">
                     <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
@@ -361,7 +376,8 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
                 Export groupé
               </Text>
               <Text size="xs" c="dimmed">
-                Même périmètre que les filtres ci-dessus, dans la limite serveur. Code administrateur obligatoire.
+                Mêmes critères que les filtres ci-dessus. Les exports très volumineux peuvent être limités côté
+                serveur. Code administrateur obligatoire.
               </Text>
               <PasswordInput
                 label="Code administrateur"
@@ -397,27 +413,32 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
           </Stack>
         </Paper>
 
-        <Grid gutter="xs">
-          {(
-            [
-              { k: 'total', label: 'Poids total traité (page)', value: pageMetrics.poidsTotal, c: undefined },
-              { k: 'ent', label: 'Total entré en boutique (page)', value: pageMetrics.entree, c: 'green' as const },
-              { k: 'dir', label: 'Total recyclé / déchetterie direct (page)', value: pageMetrics.direct, c: 'orange' as const },
-              { k: 'sor', label: 'Total sorti de boutique (page)', value: pageMetrics.sortie, c: 'red' as const },
-            ] as const
-          ).map((card) => (
-            <Grid.Col key={card.k} span={{ base: 6, md: 3 }}>
-              <Paper withBorder p="sm" radius="md">
-                <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                  {card.label}
-                </Text>
-                <Text fw={700} size="lg" c={card.c}>
-                  {formatReceptionWeightKgOrDash(card.value)}
-                </Text>
-              </Paper>
-            </Grid.Col>
-          ))}
-        </Grid>
+        <Stack gap={6}>
+          <Text size="xs" c="dimmed" data-testid="admin-reception-tickets-page-metrics-scope">
+            Totaux calculés à partir des tickets listés ci-dessous (page affichée uniquement).
+          </Text>
+          <Grid gutter="xs">
+            {(
+              [
+                { k: 'total', label: 'Poids total traité', value: pageMetrics.poidsTotal, c: undefined },
+                { k: 'ent', label: 'Entrée boutique', value: pageMetrics.entree, c: 'green' as const },
+                { k: 'dir', label: 'Recyclage / déchetterie', value: pageMetrics.direct, c: 'orange' as const },
+                { k: 'sor', label: 'Sortie boutique', value: pageMetrics.sortie, c: 'red' as const },
+              ] as const
+            ).map((card) => (
+              <Grid.Col key={card.k} span={{ base: 6, md: 3 }}>
+                <Paper withBorder p="sm" radius="md">
+                  <Text size="xs" c="dimmed" fw={600}>
+                    {card.label}
+                  </Text>
+                  <Text fw={700} size="lg" c={card.c}>
+                    {formatReceptionWeightKgOrDash(card.value)}
+                  </Text>
+                </Paper>
+              </Grid.Col>
+            ))}
+          </Grid>
+        </Stack>
 
         <Group gap="sm" wrap="wrap" align="flex-end">
           <Button type="button" size="xs" variant="light" loading={busy} onClick={() => void load()}>
@@ -463,6 +484,7 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
             </Table.Thead>
             <Table.Tbody>
               {rows.map((t) => {
+                const posteDisplay = receptionCompactIdDisplay(t.poste_id);
                 const st = receptionStatusPresentation(t.status);
                 const dotColor =
                   st.color === 'green'
@@ -504,8 +526,8 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
                       <Text size="sm">{t.benevole_username?.trim() || '—'}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" ff="monospace">
-                        {t.poste_id}
+                      <Text size="xs" c="dimmed" title={posteDisplay.title}>
+                        {posteDisplay.display}
                       </Text>
                     </Table.Td>
                     <Table.Td>{t.total_lignes}</Table.Td>

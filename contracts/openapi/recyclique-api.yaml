@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.21-draft
+  version: 0.1.23-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -3184,6 +3184,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+    post:
+      operationId: recyclique_categories_createCategory
+      tags:
+        - categories
+      summary: Création d'une catégorie (admin)
+      description: |
+        `POST /v1/categories/` — aligné sur le handler FastAPI (`CategoryCreate`).
+        Rôles **ADMIN** ou **SUPER_ADMIN** (`require_role_strict`).
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryV1CreateRequest"
+      responses:
+        "201":
+          description: Catégorie créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "400":
+          description: Validation métier (ex. tarif sur branche non feuille)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/categories/entry-tickets:
     get:
       operationId: recyclique_categories_listForEntryTickets
@@ -3242,6 +3283,763 @@ paths:
                   $ref: "#/components/schemas/CategoryV1Read"
         "401":
           description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/hierarchy:
+    get:
+      operationId: recyclique_categories_getHierarchy
+      tags:
+        - categories
+      summary: Arbre des catégories (configuration site)
+      description: |
+        `GET /v1/categories/hierarchy` — même implémentation que le backend 1.4.4 / `recyclique` actif
+        (`CategoryWithChildren`). Filtre optionnel `is_active`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: is_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryV1WithChildren"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/actions/export:
+    get:
+      operationId: recyclique_categories_exportCategories
+      tags:
+        - categories
+      summary: Export catégories (PDF, Excel ou CSV)
+      description: |
+        `GET /v1/categories/actions/export` — flux binaire (`StreamingResponse`), aligné handler FastAPI.
+        Paramètre **format** obligatoire : `pdf`, `xls` ou `csv`. Rôles **ADMIN** ou **SUPER_ADMIN**.
+        Les corps PDF/XLS sont générés côté serveur ; le CSV est encodé UTF-8.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: format
+          in: query
+          required: true
+          description: Format d'export.
+          schema:
+            type: string
+            enum:
+              - pdf
+              - xls
+              - csv
+      responses:
+        "200":
+          description: Fichier téléchargeable (en-tête `Content-Disposition` attachment)
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Format invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/import/template:
+    get:
+      operationId: recyclique_categories_downloadCategoriesImportTemplate
+      tags:
+        - categories
+      summary: Modèle CSV d'import des catégories
+      description: |
+        `GET /v1/categories/import/template` — fichier modèle (colonnes requises pour `import/analyze`).
+        Rôles **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Fichier CSV modèle
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/import/analyze:
+    post:
+      operationId: recyclique_categories_analyzeCategoriesImport
+      tags:
+        - categories
+      summary: Analyse d'un CSV d'import catégories
+      description: |
+        `POST /v1/categories/import/analyze` — `multipart/form-data` avec champ **file** (`.csv` uniquement).
+        Stocke une session Redis (~30 min) pour `POST …/import/execute`. Rôles **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+              additionalProperties: false
+      responses:
+        "200":
+          description: Rapport d'analyse (session absente si erreurs bloquantes)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1ImportAnalyzeResponse"
+        "400":
+          description: Fichier non CSV ou rejet parse
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/import/execute:
+    post:
+      operationId: recyclique_categories_executeCategoriesImport
+      tags:
+        - categories
+      summary: Exécution d'un import catégories (session d'analyse)
+      description: |
+        `POST /v1/categories/import/execute` — upsert transactionnel à partir de `session_id` retourné par **analyze**.
+        Option `delete_existing` : purge large (voir impl. backend). Rôles **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryV1ImportExecuteRequest"
+      responses:
+        "200":
+          description: Compteurs import / erreurs métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1ImportExecuteResult"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}:
+    get:
+      operationId: recyclique_categories_getCategoryById
+      tags:
+        - categories
+      summary: Détail d'une catégorie par id
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: recyclique_categories_updateCategory
+      tags:
+        - categories
+      summary: Mise à jour d'une catégorie (admin)
+      description: |
+        `PUT /v1/categories/{category_id}` — corps partiel `CategoryUpdate` : nom, `parent_id` (reclassement),
+        `price` / `max_price`, `is_active`, ordres d'affichage, visibilité réception, etc.
+        Rôles **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryV1UpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "400":
+          description: Validation métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Conflit hiérarchique ou règle métier (ex. cycle parent)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    delete:
+      operationId: recyclique_categories_softDeleteCategory
+      tags:
+        - categories
+      summary: Archivage logique d'une catégorie (admin)
+      description: |
+        `DELETE /v1/categories/{category_id}` — pose `deleted_at` (soft delete / archive), aligné Story B48-P1.
+        Rôles **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Fiche archivée (corps = état catégorie après archivage)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Conflit (ex. enfants ou usage empêchant l'archivage)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/restore:
+    post:
+      operationId: recyclique_categories_restoreCategory
+      tags:
+        - categories
+      summary: Restauration d'une catégorie archivée (admin)
+      description: |
+        `POST /v1/categories/{category_id}/restore` — remet `deleted_at` à null. Rôles **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "400":
+          description: Validation (ex. restauration impossible)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/visibility:
+    put:
+      operationId: recyclique_categories_updateCategoryVisibility
+      tags:
+        - categories
+      summary: Visibilité réception pour une catégorie (admin)
+      description: |
+        `PUT /v1/categories/{category_id}/visibility` — tickets dépôt / ENTRY uniquement.
+        Rôles **ADMIN** ou **SUPER_ADMIN**.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryV1VisibilityPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Règle « au moins une catégorie visible » ou conflit métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/display-order:
+    put:
+      operationId: recyclique_categories_updateCategoryDisplayOrder
+      tags:
+        - categories
+      summary: Ordre d'affichage caisse / vente (admin)
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryV1DisplayOrderPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/display-order-entry:
+    put:
+      operationId: recyclique_categories_updateCategoryDisplayOrderEntry
+      tags:
+        - categories
+      summary: Ordre d'affichage dépôt / ENTRY (admin, B48-P4)
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryV1DisplayOrderEntryPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/hard:
+    delete:
+      operationId: recyclique_categories_hardDeleteCategory
+      tags:
+        - categories
+      summary: Suppression définitive d'une catégorie (admin)
+      description: |
+        `DELETE /v1/categories/{category_id}/hard` — suppression permanente si pas d'enfants (sinon **422**).
+        Rôles **ADMIN** ou **SUPER_ADMIN**. Réponse **204** sans corps.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Supprimée
+        "400":
+          description: Validation métier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Sous-catégories présentes ou usage bloquant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/has-usage:
+    get:
+      operationId: recyclique_categories_getCategoryUsage
+      tags:
+        - categories
+      summary: Indicateur d'usage d'une catégorie (hard-delete)
+      description: |
+        `GET /v1/categories/{category_id}/has-usage` — indique si la fiche est référencée (transactions, enfants, etc.).
+        Aligné sur `CategoryService.has_usage` ; tout utilisateur authentifié.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1UsageCheckResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/children:
+    get:
+      operationId: recyclique_categories_listCategoryChildren
+      tags:
+        - categories
+      summary: Enfants directs d'une catégorie
+      description: |
+        `GET /v1/categories/{category_id}/children` — liste plate des enfants directs (`CategoryRead`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/parent:
+    get:
+      operationId: recyclique_categories_getCategoryParent
+      tags:
+        - categories
+      summary: Parent direct d'une catégorie
+      description: |
+        `GET /v1/categories/{category_id}/parent` — **404** si racine ou parent introuvable.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Pas de parent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/{category_id}/breadcrumb:
+    get:
+      operationId: recyclique_categories_getCategoryBreadcrumb
+      tags:
+        - categories
+      summary: Fil d'Ariane racine → catégorie
+      description: |
+        `GET /v1/categories/{category_id}/breadcrumb` — chemin ordonné des ancêtres + fiche courante.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Catégorie introuvable
           content:
             application/json:
               schema:
@@ -8648,6 +9446,180 @@ components:
           type: string
           format: date-time
           nullable: true
+      additionalProperties: false
+    CategoryV1WithChildren:
+      allOf:
+        - $ref: "#/components/schemas/CategoryV1Read"
+        - type: object
+          required:
+            - children
+          properties:
+            children:
+              type: array
+              items:
+                $ref: "#/components/schemas/CategoryV1WithChildren"
+          additionalProperties: false
+    CategoryV1CreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        official_name:
+          type: string
+          nullable: true
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        price:
+          type: number
+          format: double
+          nullable: true
+        max_price:
+          type: number
+          format: double
+          nullable: true
+        display_order:
+          type: integer
+          default: 0
+        display_order_entry:
+          type: integer
+          default: 0
+        is_visible:
+          type: boolean
+          default: true
+        shortcut_key:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CategoryV1UpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        official_name:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        price:
+          type: number
+          format: double
+          nullable: true
+        max_price:
+          type: number
+          format: double
+          nullable: true
+        display_order:
+          type: integer
+        display_order_entry:
+          type: integer
+        is_visible:
+          type: boolean
+        shortcut_key:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CategoryV1VisibilityPatchRequest:
+      type: object
+      required:
+        - is_visible
+      properties:
+        is_visible:
+          type: boolean
+      additionalProperties: false
+    CategoryV1DisplayOrderPatchRequest:
+      type: object
+      required:
+        - display_order
+      properties:
+        display_order:
+          type: integer
+      additionalProperties: false
+    CategoryV1DisplayOrderEntryPatchRequest:
+      type: object
+      required:
+        - display_order_entry
+      properties:
+        display_order_entry:
+          type: integer
+      additionalProperties: false
+    CategoryV1ImportAnalyzeResponse:
+      type: object
+      required:
+        - session_id
+        - summary
+        - sample
+        - errors
+        - warnings
+      properties:
+        session_id:
+          type: string
+          nullable: true
+          description: Identifiant de session Redis ; null si analyse impossible (ex. en-têtes CSV manquants).
+        summary:
+          type: object
+          description: Agrégats d'analyse (clés alignées sur le backend, ex. total, roots, subs, to_create, to_update).
+          additionalProperties: true
+        sample:
+          type: array
+          description: Échantillon de lignes normalisées (structure libre selon version backend).
+          items:
+            type: object
+            additionalProperties: true
+        errors:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          description: Liste d'avertissements non bloquants (le handler FastAPI applique des défauts Pydantic si absent en entrée service).
+          items:
+            type: string
+      additionalProperties: false
+    CategoryV1ImportExecuteRequest:
+      type: object
+      required:
+        - session_id
+      properties:
+        session_id:
+          type: string
+        delete_existing:
+          type: boolean
+          default: false
+      additionalProperties: false
+    CategoryV1ImportExecuteResult:
+      type: object
+      required:
+        - imported
+        - updated
+        - errors
+      properties:
+        imported:
+          type: integer
+        updated:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    CategoryV1UsageCheckResponse:
+      type: object
+      required:
+        - has_usage
+        - can_hard_delete
+      properties:
+        has_usage:
+          type: boolean
+        can_hard_delete:
+          type: boolean
       additionalProperties: false
     ReceptionCategoryRow:
       type: object

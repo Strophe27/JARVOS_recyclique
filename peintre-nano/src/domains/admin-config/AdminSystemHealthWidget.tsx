@@ -1,10 +1,11 @@
-import { Alert, Badge, Button, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { Activity, HeartPulse, RefreshCw, Server } from 'lucide-react';
+import { Alert, Badge, Button, Divider, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Activity, Bell, HeartPulse, RefreshCw, Server } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AdminSystemHealthApiError,
   fetchAdminHealthSystem,
   fetchAdminSessionMetrics,
+  postAdminHealthTestNotifications,
   type AdminHealthSystemPayload,
   type AdminSessionMetricsEnvelope,
 } from '../../api/admin-system-health-client';
@@ -73,6 +74,15 @@ function humanizeAdminOverallHealth(status: string): string {
   return status;
 }
 
+/** Valeurs contrat OpenAPI `AdminHealthRecommendation.priority` — affichage opérateur uniquement. */
+function humanizeRecommendationPriority(priority: string): string {
+  const k = priority.trim().toLowerCase();
+  if (k === 'high') return 'haute';
+  if (k === 'medium') return 'moyenne';
+  if (k === 'low') return 'faible';
+  return priority.trim() || '—';
+}
+
 function humanizeOpenState(v: string): string {
   const m: Record<string, string> = {
     open: 'Ouvert',
@@ -103,6 +113,72 @@ function humanizeSyncWorstState(v: string): string {
     rejete: 'Rejeté',
   };
   return m[v] ?? v;
+}
+
+const ANOMALY_BUCKET_LABELS_FR: Record<string, string> = {
+  cash_anomalies: 'Caisse',
+  sync_anomalies: 'Synchronisation',
+  auth_anomalies: 'Authentification',
+  classification_anomalies: 'Classification',
+};
+
+/** Gravité contrat `AdminHealthAnomalyItem.severity` — libellé opérateur. */
+function humanizeAnomalySeverity(severity: string): string {
+  const k = severity.trim().toLowerCase();
+  if (k === 'critical') return 'critique';
+  if (k === 'high') return 'élevée';
+  if (k === 'medium') return 'modérée';
+  if (k === 'low') return 'faible';
+  return severity.trim() || '—';
+}
+
+function anomalySeverityBadgeColor(
+  severity: string,
+): 'red' | 'orange' | 'yellow' | 'gray' {
+  const k = severity.trim().toLowerCase();
+  if (k === 'critical') return 'red';
+  if (k === 'high') return 'orange';
+  if (k === 'medium') return 'yellow';
+  return 'gray';
+}
+
+type AnomalyDisplayRow = {
+  bucketKey: string;
+  bucketLabel: string;
+  type: string;
+  severity: string;
+  description: string;
+  details: Record<string, unknown>;
+};
+
+function collectAnomalyRows(anomalies: AdminHealthSystemPayload['anomalies'] | undefined): AnomalyDisplayRow[] {
+  if (!anomalies || typeof anomalies !== 'object') return [];
+  const rows: AnomalyDisplayRow[] = [];
+  for (const [bucketKey, rawVal] of Object.entries(anomalies)) {
+    if (!Array.isArray(rawVal)) continue;
+    const bucketLabel =
+      ANOMALY_BUCKET_LABELS_FR[bucketKey] ??
+      bucketKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toLocaleUpperCase('fr-FR'));
+    for (const item of rawVal) {
+      if (!item || typeof item !== 'object') continue;
+      const o = item as Record<string, unknown>;
+      const severity = typeof o.severity === 'string' ? o.severity : 'low';
+      const description =
+        typeof o.description === 'string' ? o.description : 'Anomalie signalée par le serveur';
+      const type = typeof o.type === 'string' ? o.type : '—';
+      const details =
+        o.details && typeof o.details === 'object' && !Array.isArray(o.details)
+          ? (o.details as Record<string, unknown>)
+          : {};
+      rows.push({ bucketKey, bucketLabel, type, severity, description, details });
+    }
+  }
+  return rows;
+}
+
+function formatLatencyMs(n: unknown): string {
+  if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
+  return `${Math.round(n)} ms`;
 }
 
 function formatObservedAt(raw: string): string {
@@ -234,6 +310,10 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
   const [sessionMetrics, setSessionMetrics] = useState<AdminSessionMetricsEnvelope | null>(null);
   const [sessionMetricsError, setSessionMetricsError] = useState<string | null>(null);
 
+  const [testNotifBusy, setTestNotifBusy] = useState(false);
+  const [testNotifMessage, setTestNotifMessage] = useState<string | null>(null);
+  const [testNotifError, setTestNotifError] = useState<string | null>(null);
+
   const loadSignals = useCallback(
     async (signal: AbortSignal) => {
       setSnapshotError(null);
@@ -353,6 +433,29 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
     }
   }, [loadSignals]);
 
+  const onTestNotificationsInfo = useCallback(async () => {
+    setTestNotifMessage(null);
+    setTestNotifError(null);
+    setTestNotifBusy(true);
+    try {
+      const ac = new AbortController();
+      const r = await postAdminHealthTestNotifications(auth, ac.signal);
+      setTestNotifMessage(r.message);
+    } catch (e) {
+      const msg =
+        e instanceof AdminSystemHealthApiError
+          ? e.status === 403
+            ? `${e.message} (403) — cette vérification peut exiger une session administrateur renforcée côté serveur.`
+            : `${e.message} (${e.status})`
+          : e instanceof Error
+            ? e.message
+            : 'Erreur inconnue';
+      setTestNotifError(msg);
+    } finally {
+      setTestNotifBusy(false);
+    }
+  }, [auth]);
+
   const syncSummary = snapshot?.sync_operational_summary;
   const liveStatRows = useMemo(() => {
     if (!liveStats || typeof liveStats !== 'object') return [];
@@ -372,7 +475,34 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
     [envelope, lastRefreshedEnvelope],
   );
 
-  const schedulerTasksPreview = adminHealth?.scheduler_status?.tasks?.slice(0, 12) ?? [];
+  const anomalyRows = useMemo(
+    () => collectAnomalyRows(adminHealth?.anomalies),
+    [adminHealth?.anomalies],
+  );
+
+  const schedulerTasks = adminHealth?.scheduler_status?.tasks ?? [];
+
+  const sessionMetricExtras = useMemo(() => {
+    const m = sessionMetrics?.metrics;
+    if (!m) return null;
+    const lat = m.latency_metrics;
+    const hasLatency =
+      lat &&
+      typeof lat === 'object' &&
+      ('min_ms' in lat || 'max_ms' in lat || 'avg_ms' in lat);
+    const errEntries = Object.entries(m.error_breakdown ?? {}).filter(([, c]) => (c ?? 0) > 0);
+    const ipEntries = Object.entries(m.ip_breakdown ?? {})
+      .filter(([, c]) => (c ?? 0) > 0)
+      .sort((a, b) => (b[1] as number) - (a[1] as number));
+    const siteEntries = Object.entries(m.site_breakdown ?? {});
+    return {
+      hasLatency,
+      lat,
+      errEntries,
+      ipEntries,
+      siteEntries,
+    };
+  }, [sessionMetrics?.metrics]);
 
   return (
     <Stack gap="md" data-testid="admin-system-health-widget">
@@ -459,19 +589,25 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
           </Button>
         </Group>
         {snapshotMeta ? (
-          <Group gap="xs" mb="sm">
-            <Text
-              size="xs"
-              c="dimmed"
+          <Group gap="xs" mb="sm" align="flex-start">
+            <Stack
+              gap={2}
               title={
                 snapshotMeta.correlationId
                   ? `Identifiant complet (à transmettre au support si besoin) : ${snapshotMeta.correlationId}`
                   : undefined
               }
             >
-              Référence de la dernière lecture :{' '}
-              {operatorDisplayField(snapshotMeta.correlationId || null).text}
-            </Text>
+              <Text size="xs" c="dimmed">
+                Repère de cette actualisation :{' '}
+                {operatorDisplayField(snapshotMeta.correlationId || null).text}
+              </Text>
+              {snapshotMeta.correlationId && STANDARD_UUID_RE.test(snapshotMeta.correlationId.trim()) ? (
+                <Text size="xs" c="dimmed">
+                  Survolez ce bloc pour voir l’identifiant complet.
+                </Text>
+              ) : null}
+            </Stack>
             {snapshotMeta.degradedEmpty ? (
               <Badge size="xs" color="yellow">
                 Données partielles
@@ -556,13 +692,35 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
       </Paper>
 
       <Paper p="md" withBorder data-testid="admin-system-health-legacy-panel">
-        <Text fw={600} mb="xs">
-          Synthèse santé (super-admin)
-        </Text>
-        <Text size="xs" c="dimmed" mb="sm">
-          Agrégats renvoyés par le serveur Recyclique : anomalies signalées, planificateur interne et indicateurs de
-          sessions récentes. Il s’agit toujours d’une vue applicative, pas d’un diagnostic matériel ou réseau.
-        </Text>
+        <Group justify="space-between" align="flex-start" mb="xs" wrap="wrap">
+          <div>
+            <Text fw={600}>Synthèse santé (super-admin)</Text>
+            <Text size="xs" c="dimmed" mt={4} maw={720}>
+              Agrégats renvoyés par le serveur Recyclique : anomalies détaillées, recommandations, planificateur interne
+              et indicateurs de sessions récentes. Vue applicative uniquement (pas d’infrastructure « bas niveau »).
+            </Text>
+          </div>
+          <Button
+            size="xs"
+            variant="light"
+            leftSection={<Bell size={14} />}
+            loading={testNotifBusy}
+            onClick={() => void onTestNotificationsInfo()}
+            data-testid="admin-system-health-test-notifications"
+          >
+            Vérifier l’endpoint « test notifications »
+          </Button>
+        </Group>
+        {testNotifMessage ? (
+          <Alert color="gray" mb="sm" title="Réponse serveur">
+            {testNotifMessage}
+          </Alert>
+        ) : null}
+        {testNotifError ? (
+          <Alert color="red" mb="sm" title="Contrôle notification">
+            {testNotifError}
+          </Alert>
+        ) : null}
         {adminHealthError ? (
           <Text size="sm" c="red" mb="xs">
             Synthèse santé : {adminHealthError}
@@ -574,72 +732,174 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
           </Text>
         ) : null}
         {adminHealth ? (
-          <Stack gap="sm" mb={sessionMetrics ? 'md' : 0}>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
-              <div>
+          <Stack gap="md" mb={sessionMetrics ? 'md' : 0}>
+            <Alert
+              color={
+                adminHealth.system_health.overall_status === 'healthy'
+                  ? 'teal'
+                  : adminHealth.system_health.overall_status === 'critical'
+                    ? 'red'
+                    : 'yellow'
+              }
+              title={`État global : ${humanizeAdminOverallHealth(adminHealth.system_health.overall_status)}`}
+            >
+              <Text size="sm">
+                {adminHealth.system_health.overall_status === 'healthy'
+                  ? 'Les agrégats courants ne signalent pas de situation critique côté application.'
+                  : adminHealth.system_health.overall_status === 'critical'
+                    ? 'Des anomalies critiques figurent dans la liste ci-dessous : priorisez leur examen ou contactez le support avec ce contexte.'
+                    : 'Certaines anomalies ou tâches méritent attention sans blocage immédiat apparent.'}
+              </Text>
+            </Alert>
+            <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+              <Paper p="sm" withBorder>
+                <Text size="xl" fw={700}>
+                  {adminHealth.system_health.anomalies_detected}
+                </Text>
                 <Text size="xs" c="dimmed">
-                  État global (agrégat)
+                  Anomalies listées
                 </Text>
-                <Text size="sm">
-                  {humanizeAdminOverallHealth(adminHealth.system_health.overall_status)}
+              </Paper>
+              <Paper p="sm" withBorder>
+                <Text size="xl" fw={700}>
+                  {adminHealth.system_health.critical_anomalies}
                 </Text>
-              </div>
-              <div>
                 <Text size="xs" c="dimmed">
-                  Anomalies (agrégat serveur)
+                  Anomalies critiques (décompte serveur)
                 </Text>
-                <Text size="sm">
-                  {adminHealth.system_health.anomalies_detected} point(s) listé(s) ;{' '}
-                  {adminHealth.system_health.critical_anomalies} famille(s) avec au moins une entrée
+              </Paper>
+              <Paper p="sm" withBorder>
+                <Text size="xl" fw={700}>
+                  {adminHealth.system_health.active_tasks}
                 </Text>
-              </div>
-              <div>
                 <Text size="xs" c="dimmed">
-                  Planificateur de tâches
+                  Tâches planifiées suivies
                 </Text>
-                <Text size="sm">
-                  {adminHealth.system_health.scheduler_running ? 'actif' : 'inactif'} —{' '}
-                  {adminHealth.system_health.active_tasks} tâche(s) configurée(s)
+              </Paper>
+              <Paper p="sm" withBorder>
+                <Text size="xl" fw={700}>
+                  {adminHealth.system_health.scheduler_running ? 'Oui' : 'Non'}
                 </Text>
-              </div>
-              <div>
                 <Text size="xs" c="dimmed">
-                  Dernière passe anomalies (serveur)
+                  Planificateur actif
                 </Text>
-                <Text size="sm">{formatAdminDiagnosticInstant(adminHealth.system_health.timestamp)}</Text>
-              </div>
+              </Paper>
             </SimpleGrid>
-            {adminHealth.recommendations?.length ? (
-              <div>
-                <Text size="xs" c="dimmed" mb={4}>
-                  Recommandations
+            <div>
+              <Text size="xs" c="dimmed" mb={6}>
+                Dernière passe de détection (serveur)
+              </Text>
+              <Text size="sm">{formatAdminDiagnosticInstant(adminHealth.system_health.timestamp)}</Text>
+            </div>
+            <Divider label="Anomalies signalées" labelPosition="left" />
+            <div data-testid="admin-system-health-anomalies">
+              {anomalyRows.length === 0 ? (
+                <Text size="sm" c="teal" fs="italic">
+                  Aucune anomalie structurée dans la dernière passe (ou listes vides renvoyées par le serveur).
                 </Text>
-                <Stack gap={6}>
-                  {adminHealth.recommendations.slice(0, 8).map((r) => (
-                    <Text key={`${r.type}-${r.title}`} size="sm">
-                      <strong>{r.title}</strong> ({r.priority}) — {r.description}
-                    </Text>
+              ) : (
+                <Stack gap="sm">
+                  {anomalyRows.map((row, idx) => (
+                    <Paper key={`${row.bucketKey}-${row.type}-${idx}`} p="sm" withBorder>
+                      <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+                        <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
+                          <Text size="xs" c="dimmed">
+                            {row.bucketLabel}
+                          </Text>
+                          <Text size="sm" fw={500}>
+                            {row.description}
+                          </Text>
+                          <Badge size="xs" variant="light" color={anomalySeverityBadgeColor(row.severity)}>
+                            Gravité {humanizeAnomalySeverity(row.severity)}
+                          </Badge>
+                        </Stack>
+                      </Group>
+                      <details style={{ marginTop: 8 }}>
+                        <summary style={{ cursor: 'pointer', fontSize: 12 }}>
+                          <Text span size="xs" c="dimmed" component="span">
+                            Détails (support / diagnostic)
+                          </Text>
+                        </summary>
+                        <Text
+                          component="pre"
+                          size="xs"
+                          mt={8}
+                          style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                        >
+                          {JSON.stringify(row.details, null, 2)}
+                        </Text>
+                      </details>
+                    </Paper>
                   ))}
                 </Stack>
-              </div>
-            ) : null}
-            {schedulerTasksPreview.length > 0 ? (
-              <div>
-                <Text size="xs" c="dimmed" mb={4}>
-                  Tâches planifiées (aperçu)
-                </Text>
-                <Stack gap={4}>
-                  {schedulerTasksPreview.map((t) => (
+              )}
+            </div>
+            <Divider label="Recommandations" labelPosition="left" />
+            {adminHealth.recommendations?.length ? (
+              <Stack gap="sm">
+                {adminHealth.recommendations.map((r) => (
+                  <Paper key={`${r.type}-${r.title}`} p="sm" withBorder>
+                    <Badge size="xs" variant="light" color="gray" mb={6}>
+                      Priorité {humanizeRecommendationPriority(r.priority)}
+                    </Badge>
+                    <Text fw={600} size="sm">
+                      {r.title}
+                    </Text>
+                    <Text size="sm" mt={6}>
+                      {r.description}
+                    </Text>
+                    {Array.isArray(r.actions) && r.actions.filter(Boolean).length > 0 ? (
+                      <Stack gap={4} mt="sm">
+                        <Text size="xs" c="dimmed" fw={600}>
+                          Pistes d’action
+                        </Text>
+                        {r.actions.filter((a): a is string => typeof a === 'string' && a.trim().length > 0).map((a, i) => (
+                          <Text key={i} size="sm" pl="sm" style={{ borderLeft: '2px solid var(--mantine-color-gray-4)' }}>
+                            {a}
+                          </Text>
+                        ))}
+                      </Stack>
+                    ) : null}
+                  </Paper>
+                ))}
+              </Stack>
+            ) : (
+              <Text size="sm" c="teal" fs="italic">
+                Aucune recommandation active renvoyée par le serveur.
+              </Text>
+            )}
+            <Divider label="Planificateur de tâches" labelPosition="left" />
+            <div>
+              <Text size="sm" mb="xs">
+                État d’ensemble :{' '}
+                <strong>{adminHealth.scheduler_status.running ? 'en service' : 'à l’arrêt'}</strong> —{' '}
+                {adminHealth.scheduler_status.total_tasks} tâche(s) référencée(s)
+              </Text>
+              {schedulerTasks.length > 0 ? (
+                <Stack gap={8}>
+                  {schedulerTasks.map((t) => (
                     <Text key={t.name} size="sm">
-                      {humanizeSchedulerTaskName(t.name)} — {t.enabled ? 'activée' : 'désactivée'}
-                      {t.last_run != null && t.last_run !== ''
-                        ? ` · dernière exécution ${formatAdminDiagnosticInstant(t.last_run)}`
+                      {humanizeSchedulerTaskName(t.name)} — {t.enabled ? 'activée' : 'mise en pause'}
+                      {' · '}
+                      {t.running === true ? 'exécution en cours' : 'pas d’exécution en cours'}
+                      {typeof t.interval_minutes === 'number' && t.interval_minutes > 0
+                        ? ` · fréquence indicative ~${t.interval_minutes} min`
+                        : ''}
+                      {t.last_run != null && String(t.last_run).trim() !== ''
+                        ? ` · dernière passe ${formatAdminDiagnosticInstant(t.last_run)}`
+                        : ''}
+                      {t.next_run != null && String(t.next_run).trim() !== ''
+                        ? ` · prochaine fenêtre ${formatAdminDiagnosticInstant(t.next_run)}`
                         : ''}
                     </Text>
                   ))}
                 </Stack>
-              </div>
-            ) : null}
+              ) : (
+                <Text size="sm" c="dimmed">
+                  Aucune ligne de tâche dans la réponse (normal si le planificateur n’expose pas encore le détail).
+                </Text>
+              )}
+            </div>
           </Stack>
         ) : !adminHealthError ? (
           <Text size="sm" c="dimmed" mb="sm">
@@ -647,50 +907,153 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
           </Text>
         ) : null}
         {sessionMetrics?.metrics ? (
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="xs">
-            <div>
-              <Text size="xs" c="dimmed">
-                Opérations suivies (période)
-              </Text>
-              <Text size="sm">{sessionMetrics.metrics.total_operations}</Text>
-            </div>
-            <div>
-              <Text size="xs" c="dimmed">
-                Rafraîchissements réussis / échoués
-              </Text>
-              <Text size="sm">
-                {sessionMetrics.metrics.refresh_success_count} /{' '}
-                {sessionMetrics.metrics.refresh_failure_count}
-              </Text>
-            </div>
-            <div>
-              <Text size="xs" c="dimmed">
-                Taux de succès des rafraîchissements
-              </Text>
-              <Text size="sm">{sessionMetrics.metrics.refresh_success_rate_percent} %</Text>
-            </div>
-            <div>
-              <Text size="xs" c="dimmed">
-                Sessions actives (estimation)
-              </Text>
-              <Text size="sm">{sessionMetrics.metrics.active_sessions_estimate}</Text>
-            </div>
-            <div>
-              <Text size="xs" c="dimmed">
-                Déconnexions forcées / manuelles
-              </Text>
-              <Text size="sm">
-                {sessionMetrics.metrics.logout_forced_count} /{' '}
-                {sessionMetrics.metrics.logout_manual_count}
-              </Text>
-            </div>
-            <div>
-              <Text size="xs" c="dimmed">
-                Fenêtre (heures)
-              </Text>
-              <Text size="sm">{sessionMetrics.metrics.time_period_hours}</Text>
-            </div>
-          </SimpleGrid>
+          <>
+            <Divider label="Sessions et rafraîchissements" labelPosition="left" my="md" />
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="xs">
+              <div>
+                <Text size="xs" c="dimmed">
+                  Opérations suivies (période)
+                </Text>
+                <Text size="sm">{sessionMetrics.metrics.total_operations}</Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">
+                  Rafraîchissements réussis / échoués
+                </Text>
+                <Text size="sm">
+                  {sessionMetrics.metrics.refresh_success_count} /{' '}
+                  {sessionMetrics.metrics.refresh_failure_count}
+                </Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">
+                  Taux de succès des rafraîchissements
+                </Text>
+                <Text size="sm">{sessionMetrics.metrics.refresh_success_rate_percent} %</Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">
+                  Sessions actives (estimation)
+                </Text>
+                <Text size="sm">{sessionMetrics.metrics.active_sessions_estimate}</Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">
+                  Déconnexions forcées / manuelles
+                </Text>
+                <Text size="sm">
+                  {sessionMetrics.metrics.logout_forced_count} /{' '}
+                  {sessionMetrics.metrics.logout_manual_count}
+                </Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">
+                  Fenêtre (heures)
+                </Text>
+                <Text size="sm">{sessionMetrics.metrics.time_period_hours}</Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">
+                  Relevé métriques sessions
+                </Text>
+                <Text size="sm">{formatAdminDiagnosticInstant(sessionMetrics.metrics.timestamp)}</Text>
+              </div>
+            </SimpleGrid>
+            {sessionMetricExtras?.hasLatency ? (
+              <Paper p="sm" withBorder mt="sm">
+                <Text size="xs" c="dimmed" mb={4}>
+                  Latences de rafraîchissement (min / max / moyenne)
+                </Text>
+                <Text size="sm">
+                  {formatLatencyMs(
+                    sessionMetricExtras.lat && typeof sessionMetricExtras.lat === 'object'
+                      ? (sessionMetricExtras.lat as { min_ms?: unknown }).min_ms
+                      : undefined,
+                  )}{' '}
+                  /{' '}
+                  {formatLatencyMs(
+                    sessionMetricExtras.lat && typeof sessionMetricExtras.lat === 'object'
+                      ? (sessionMetricExtras.lat as { max_ms?: unknown }).max_ms
+                      : undefined,
+                  )}{' '}
+                  /{' '}
+                  {formatLatencyMs(
+                    sessionMetricExtras.lat && typeof sessionMetricExtras.lat === 'object'
+                      ? (sessionMetricExtras.lat as { avg_ms?: unknown }).avg_ms
+                      : undefined,
+                  )}
+                </Text>
+              </Paper>
+            ) : null}
+            {sessionMetricExtras && sessionMetricExtras.errEntries.length > 0 ? (
+              <div data-testid="admin-system-health-session-errors" style={{ marginTop: 12 }}>
+                <Text size="xs" c="dimmed" mb={6}>
+                  Rappels d’erreurs par type (fenêtre courante)
+                </Text>
+                <Stack gap={6}>
+                  {sessionMetricExtras.errEntries.map(([code, count]) => (
+                    <Group key={code} justify="space-between" wrap="nowrap">
+                      <Text size="sm" style={{ wordBreak: 'break-word' }}>
+                        {code}
+                      </Text>
+                      <Badge size="sm" color="orange" variant="light">
+                        {String(count)}
+                      </Badge>
+                    </Group>
+                  ))}
+                </Stack>
+              </div>
+            ) : null}
+            {sessionMetricExtras && sessionMetricExtras.ipEntries.length > 0 ? (
+              <div data-testid="admin-system-health-session-ip" style={{ marginTop: 12 }}>
+                <Text size="xs" c="dimmed" mb={6}>
+                  Principales adresses IP associées à des échecs (aperçu)
+                </Text>
+                <Stack gap={6}>
+                  {sessionMetricExtras.ipEntries.slice(0, 8).map(([ip, count]) => (
+                    <Group key={ip} justify="space-between" wrap="nowrap">
+                      <Text size="sm" ff="monospace">
+                        {ip}
+                      </Text>
+                      <Badge size="sm" color="gray" variant="light">
+                        {String(count)}
+                      </Badge>
+                    </Group>
+                  ))}
+                </Stack>
+              </div>
+            ) : null}
+            {sessionMetricExtras && sessionMetricExtras.siteEntries.length > 0 ? (
+              <div data-testid="admin-system-health-session-sites" style={{ marginTop: 12 }}>
+                <Text size="xs" c="dimmed" mb={6}>
+                  Répartition par site (succès / échecs)
+                </Text>
+                <Stack gap={6}>
+                  {sessionMetricExtras.siteEntries.map(([siteId, pair]) => {
+                    const disp = operatorDisplayField(siteId);
+                    const success =
+                      pair && typeof pair === 'object' && 'success' in pair
+                        ? Number((pair as { success: unknown }).success)
+                        : 0;
+                    const failure =
+                      pair && typeof pair === 'object' && 'failure' in pair
+                        ? Number((pair as { failure: unknown }).failure)
+                        : 0;
+                    return (
+                      <Group key={siteId} justify="space-between" wrap="nowrap" align="flex-start">
+                        <Text size="sm" title={disp.full}>
+                          {disp.text}
+                        </Text>
+                        <Text size="sm">
+                          {success} ok / {failure} en échec
+                        </Text>
+                      </Group>
+                    );
+                  })}
+                </Stack>
+              </div>
+            ) : null}
+          </>
         ) : !sessionMetricsError ? (
           <Text size="sm" c="dimmed">
             Aucune métrique de session renvoyée pour cette période.

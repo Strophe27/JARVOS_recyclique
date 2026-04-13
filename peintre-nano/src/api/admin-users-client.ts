@@ -669,6 +669,43 @@ function parseResetPinResponse(json: unknown): { message: string } | null {
   return { message };
 }
 
+export type AdminUserGroupsPutBody = {
+  readonly group_ids: readonly string[];
+};
+
+/** `PUT /v1/admin/users/{user_id}/groups` — `adminUsersGroupsPut` (remplace l'ensemble des groupes). */
+export async function putAdminUserGroups(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  userId: string,
+  body: AdminUserGroupsPutBody,
+): Promise<AdminMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/admin/users/${encodeURIComponent(userId)}/groups`;
+  const headers = authHeaders(auth, { 'Content-Type': 'application/json' });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'PUT',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({ group_ids: [...body.group_ids] }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return adminUsersHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  if (!res.ok) {
+    return adminUsersHttpError(res.status, json, text || res.statusText);
+  }
+  const parsed = parseAdminMutation(json);
+  if (!parsed) {
+    return adminUsersHttpError(res.status, json, 'Réponse serveur invalide');
+  }
+  return { ok: true, message: parsed.message, success: parsed.success };
+}
+
 /** `POST /v1/admin/users/{user_id}/reset-pin` — réponse `{ message, … }`. */
 export async function postAdminUserResetPin(
   auth: Pick<AuthContextPort, 'getAccessToken'>,

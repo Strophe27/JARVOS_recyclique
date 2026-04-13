@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchAdminHealthSystem, fetchAdminSessionMetrics } from '../../src/api/admin-system-health-client';
+import {
+  fetchAdminHealthSystem,
+  fetchAdminSessionMetrics,
+  postAdminHealthTestNotifications,
+} from '../../src/api/admin-system-health-client';
 
 describe('admin-system-health-client', () => {
   afterEach(() => {
@@ -34,6 +38,25 @@ describe('admin-system-health-client', () => {
     const auth = { getAccessToken: () => 'tok' };
     const r = await fetchAdminHealthSystem(auth);
     expect(r.system_health.active_tasks).toBe(2);
+  });
+
+  it('postAdminHealthTestNotifications parse la réponse 200', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        expect(url).toMatch(/\/v1\/admin\/health\/test-notifications$/);
+        expect(init?.method).toBe('POST');
+        return new Response(
+          JSON.stringify({ status: 'unavailable', message: 'Aucun envoi (documenté).' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }),
+    );
+    const auth = { getAccessToken: () => 'tok' };
+    const r = await postAdminHealthTestNotifications(auth);
+    expect(r.status).toBe('unavailable');
+    expect(r.message).toMatch(/Aucun envoi/);
   });
 
   it('fetchAdminSessionMetrics lève AdminSystemHealthApiError sur 403', async () => {

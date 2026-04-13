@@ -181,6 +181,72 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     expect(p?.get?.tags).toContain("categories");
   });
 
+  it("expose les mutations catégories reviewables (contrat admin / parité observable)", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string; tags?: string[] }>>;
+    expect(paths["/v1/categories/"]?.post?.operationId).toBe("recyclique_categories_createCategory");
+    expect(paths["/v1/categories/hierarchy"]?.get?.operationId).toBe("recyclique_categories_getHierarchy");
+    expect(paths["/v1/categories/{category_id}"]?.get?.operationId).toBe("recyclique_categories_getCategoryById");
+    expect(paths["/v1/categories/{category_id}"]?.put?.operationId).toBe("recyclique_categories_updateCategory");
+    expect(paths["/v1/categories/{category_id}"]?.delete?.operationId).toBe(
+      "recyclique_categories_softDeleteCategory",
+    );
+    expect(paths["/v1/categories/{category_id}/restore"]?.post?.operationId).toBe(
+      "recyclique_categories_restoreCategory",
+    );
+    expect(paths["/v1/categories/{category_id}/visibility"]?.put?.operationId).toBe(
+      "recyclique_categories_updateCategoryVisibility",
+    );
+    expect(paths["/v1/categories/{category_id}/display-order"]?.put?.operationId).toBe(
+      "recyclique_categories_updateCategoryDisplayOrder",
+    );
+    expect(paths["/v1/categories/{category_id}/display-order-entry"]?.put?.operationId).toBe(
+      "recyclique_categories_updateCategoryDisplayOrderEntry",
+    );
+    expect(paths["/v1/categories/"]?.post?.tags).toContain("categories");
+    expect(paths["/v1/categories/hierarchy"]?.get?.tags).toContain("categories");
+    expect(paths["/v1/categories/{category_id}"]?.get?.tags).toContain("categories");
+    expect(paths["/v1/categories/{category_id}"]?.put?.tags).toContain("categories");
+    expect(paths["/v1/categories/{category_id}"]?.delete?.tags).toContain("categories");
+    expect(paths["/v1/categories/{category_id}/restore"]?.post?.tags).toContain("categories");
+    expect(paths["/v1/categories/{category_id}/visibility"]?.put?.tags).toContain("categories");
+    expect(paths["/v1/categories/{category_id}/display-order"]?.put?.tags).toContain("categories");
+    expect(paths["/v1/categories/{category_id}/display-order-entry"]?.put?.tags).toContain(
+      "categories",
+    );
+  });
+
+  it("expose import/export catégories et helpers hiérarchie (parité backend recyclique)", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string; tags?: string[] }>>;
+    expect(paths["/v1/categories/actions/export"]?.get?.operationId).toBe(
+      "recyclique_categories_exportCategories",
+    );
+    expect(paths["/v1/categories/actions/export"]?.get?.tags).toContain("categories");
+    expect(paths["/v1/categories/import/template"]?.get?.operationId).toBe(
+      "recyclique_categories_downloadCategoriesImportTemplate",
+    );
+    expect(paths["/v1/categories/import/analyze"]?.post?.operationId).toBe(
+      "recyclique_categories_analyzeCategoriesImport",
+    );
+    expect(paths["/v1/categories/import/execute"]?.post?.operationId).toBe(
+      "recyclique_categories_executeCategoriesImport",
+    );
+    expect(paths["/v1/categories/{category_id}/hard"]?.delete?.operationId).toBe(
+      "recyclique_categories_hardDeleteCategory",
+    );
+    expect(paths["/v1/categories/{category_id}/has-usage"]?.get?.operationId).toBe(
+      "recyclique_categories_getCategoryUsage",
+    );
+    expect(paths["/v1/categories/{category_id}/children"]?.get?.operationId).toBe(
+      "recyclique_categories_listCategoryChildren",
+    );
+    expect(paths["/v1/categories/{category_id}/parent"]?.get?.operationId).toBe(
+      "recyclique_categories_getCategoryParent",
+    );
+    expect(paths["/v1/categories/{category_id}/breadcrumb"]?.get?.operationId).toBe(
+      "recyclique_categories_getCategoryBreadcrumb",
+    );
+  });
+
   it("expose recyclique_admin_reports_cashSessionsDownloadBySession sur GET …/by-session/{session_id}", () => {
     const paths = doc.paths as Record<
       string,
@@ -322,6 +388,22 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     expect(rm).toBeDefined();
     expect(rm?.type).toBe("string");
     expect(rm?.nullable).toBe(true);
+  });
+
+  it("expose les routes catégories import/export (export PDF/XLS/CSV, template, analyze, execute)", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string }>>;
+    expect(paths["/v1/categories/actions/export"]?.get?.operationId).toBe(
+      "recyclique_categories_exportCategories",
+    );
+    expect(paths["/v1/categories/import/template"]?.get?.operationId).toBe(
+      "recyclique_categories_downloadCategoriesImportTemplate",
+    );
+    expect(paths["/v1/categories/import/analyze"]?.post?.operationId).toBe(
+      "recyclique_categories_analyzeCategoriesImport",
+    );
+    expect(paths["/v1/categories/import/execute"]?.post?.operationId).toBe(
+      "recyclique_categories_executeCategoriesImport",
+    );
   });
 });
 
