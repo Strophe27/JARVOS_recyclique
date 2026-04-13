@@ -201,6 +201,24 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     expect(live?.get?.tags).toContain("exploitation");
   });
 
+  it("expose la famille admin health + sessions/metrics (parité legacy / observabilité)", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    expect(paths["/v1/admin/health-test"]?.get?.operationId).toBe("adminHealthTestEndpointGet");
+    expect(paths["/v1/admin/health/public"]?.get?.operationId).toBe("adminHealthPublicGet");
+    expect(paths["/v1/admin/health/database"]?.get?.operationId).toBe("adminHealthDatabaseGet");
+    expect(paths["/v1/admin/health"]?.get?.operationId).toBe("adminHealthSystemGet");
+    expect(paths["/v1/admin/health/anomalies"]?.get?.operationId).toBe("adminHealthAnomaliesGet");
+    expect(paths["/v1/admin/health/scheduler"]?.get?.operationId).toBe("adminHealthSchedulerGet");
+    expect(paths["/v1/admin/health/test-notifications"]?.post?.operationId).toBe(
+      "adminHealthTestNotificationsPost",
+    );
+    expect(paths["/v1/admin/sessions/metrics"]?.get?.operationId).toBe("adminSessionsMetricsGet");
+    expect(paths["/v1/admin/health"]?.get?.tags).toEqual(expect.arrayContaining(["admin", "observability"]));
+  });
+
   it("déclare une réponse 503 sur live-snapshot (source externe indisponible, Story 1.7)", () => {
     const paths = doc.paths as Record<
       string,

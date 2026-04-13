@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.20-draft
+  version: 0.1.21-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -4741,6 +4741,264 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/health-test:
+    get:
+      operationId: adminHealthTestEndpointGet
+      tags:
+        - admin
+        - observability
+      summary: Sonde minimale « admin joignable »
+      description: |
+        Handler `test_admin_endpoint` (`admin_health.py`). **Sans auth** ; rate limit **10/minute** côté serveur.
+        Utile pour vérifier que le préfixe `/v1/admin` répond derrière un reverse-proxy.
+      responses:
+        "200":
+          description: Message de confirmation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHealthTestMessageResponse"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/health/public:
+    get:
+      operationId: adminHealthPublicGet
+      tags:
+        - admin
+        - observability
+      summary: Health check public (monitoring externe)
+      description: |
+        `get_public_health` — **sans auth** ; statut nominal du service API (Docker / LB).
+      responses:
+        "200":
+          description: Statut nominal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHealthPublicStatusResponse"
+  /v1/admin/health/database:
+    get:
+      operationId: adminHealthDatabaseGet
+      tags:
+        - admin
+        - observability
+      summary: Sonde connectivité base de données
+      description: |
+        `get_database_health` — **sans auth** ; exécute `SELECT 1` via la session SQLAlchemy.
+        Réponse **200** même si la base est dégradée (champ `status` = `unhealthy` dans le corps).
+      responses:
+        "200":
+          description: Rapport de connectivité
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHealthDatabaseStatusResponse"
+  /v1/admin/health:
+    get:
+      operationId: adminHealthSystemGet
+      tags:
+        - admin
+        - observability
+      summary: Synthèse santé système (anomalies + scheduler)
+      description: |
+        `get_system_health` — **Autorité** : `require_admin_role` (JWT Bearer **ou** cookie d’accès, comme `GET /v1/admin/users`).
+        Agrège détection d’anomalies (`AnomalyDetectionService`), recommandations et état du scheduler.
+        Rate limit **20/minute** côté serveur.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Synthèse
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHealthSystemResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur (détection ou agrégation)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/health/anomalies:
+    get:
+      operationId: adminHealthAnomaliesGet
+      tags:
+        - admin
+        - observability
+      summary: Anomalies détectées (même passe que la synthèse complète)
+      description: |
+        `get_anomalies` — **Autorité** : `require_admin_role`. Ré-exécute la détection (pas de cache HTTP dédié).
+        Rate limit **15/minute** côté serveur.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Anomalies et résumé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHealthAnomaliesResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/health/scheduler:
+    get:
+      operationId: adminHealthSchedulerGet
+      tags:
+        - admin
+        - observability
+      summary: Statut du scheduler de tâches planifiées
+      description: |
+        `get_scheduler_status` — **Autorité** : `require_admin_role_strict()` (même famille que `GET /v1/admin/transaction-logs` : transport strict).
+        Rate limit **10/minute** côté serveur.
+      security:
+        - adminSessionStrict: []
+      responses:
+        "200":
+          description: Statut scheduler
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHealthSchedulerEnvelopeResponse"
+        "403":
+          description: Transport strict ou rôle non admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/health/test-notifications:
+    post:
+      operationId: adminHealthTestNotificationsPost
+      tags:
+        - admin
+        - observability
+      summary: Ancien test de notifications (désactivé)
+      description: |
+        `test_notifications` (`admin.py`) — **ne déclenche aucun envoi** ; réponse informative uniquement.
+        **Autorité** : `require_admin_role_strict()`. Rate limit **5/minute** côté serveur.
+      security:
+        - adminSessionStrict: []
+      responses:
+        "200":
+          description: Indisponibilité documentée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHealthTestNotificationsDisabledResponse"
+        "403":
+          description: Transport strict ou rôle non admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requêtes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/sessions/metrics:
+    get:
+      operationId: adminSessionsMetricsGet
+      tags:
+        - admin
+        - observability
+      summary: Métriques de sessions (rafraîchissements, déconnexions)
+      description: |
+        `get_admin_session_metrics` (`admin_session_metrics.py`, story B42-P4). **Autorité** : `require_admin_role`.
+        Agrégats mémoire processus (`SessionMetricsCollector`) sur la fenêtre `hours` (1–168).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: hours
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            default: 24
+          description: Fenêtre glissante en heures
+      responses:
+        "200":
+          description: Métriques agrégées
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSessionMetricsEnvelopeResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/admin/settings/alert-thresholds:
     get:
       operationId: adminSettingsAlertThresholdsGet
@@ -6296,6 +6554,360 @@ components:
           $ref: "#/components/schemas/AdminPaginationStandard"
         filters_applied:
           $ref: "#/components/schemas/AdminAuditLogFiltersApplied"
+      additionalProperties: false
+    AdminHealthTestMessageResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Admin endpoint accessible
+      additionalProperties: false
+    AdminHealthPublicStatusResponse:
+      type: object
+      required:
+        - status
+        - service
+        - timestamp
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: recyclic-api
+        timestamp:
+          type: string
+          format: date-time
+      additionalProperties: false
+    AdminHealthDatabaseStatusResponse:
+      type: object
+      required:
+        - status
+        - database
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - unhealthy
+        database:
+          type: string
+          enum:
+            - connected
+            - disconnected
+        error:
+          type: string
+          description: Présent lorsque `status` = `unhealthy`
+        timestamp:
+          type: string
+          format: date-time
+      additionalProperties: false
+    AdminHealthAnomalyItem:
+      type: object
+      required:
+        - type
+        - severity
+        - description
+        - details
+      properties:
+        type:
+          type: string
+        severity:
+          type: string
+          enum:
+            - high
+            - medium
+            - low
+            - critical
+        description:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+    AdminHealthRecommendation:
+      type: object
+      required:
+        - type
+        - priority
+        - title
+        - description
+        - actions
+      properties:
+        type:
+          type: string
+        priority:
+          type: string
+          enum:
+            - high
+            - medium
+            - low
+        title:
+          type: string
+        description:
+          type: string
+        actions:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    AdminHealthSystemHealthBlock:
+      type: object
+      required:
+        - overall_status
+        - anomalies_detected
+        - critical_anomalies
+        - scheduler_running
+        - active_tasks
+        - timestamp
+      properties:
+        overall_status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - critical
+        anomalies_detected:
+          type: integer
+          minimum: 0
+        critical_anomalies:
+          type: integer
+          minimum: 0
+        scheduler_running:
+          type: boolean
+        active_tasks:
+          type: integer
+          minimum: 0
+        timestamp:
+          type: string
+          description: Horodatage issu du résultat de détection d’anomalies (ISO 8601).
+      additionalProperties: false
+    AdminSchedulerTaskStatusRow:
+      type: object
+      required:
+        - name
+        - enabled
+        - last_run
+        - next_run
+        - running
+        - interval_minutes
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        last_run:
+          type: string
+          format: date-time
+          nullable: true
+        next_run:
+          type: string
+          format: date-time
+          nullable: true
+        running:
+          type: boolean
+        interval_minutes:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+    AdminSchedulerOverview:
+      type: object
+      required:
+        - running
+        - tasks
+        - total_tasks
+      properties:
+        running:
+          type: boolean
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminSchedulerTaskStatusRow"
+        total_tasks:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+    AdminHealthSystemResponse:
+      type: object
+      required:
+        - status
+        - system_health
+        - anomalies
+        - recommendations
+        - scheduler_status
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+        system_health:
+          $ref: "#/components/schemas/AdminHealthSystemHealthBlock"
+        anomalies:
+          type: object
+          description: |
+            Buckets d’anomalies (`cash_anomalies`, `sync_anomalies`, etc.) et éventuellement `timestamp`
+            de détection ; forme alignée sur `AnomalyDetectionService.run_anomaly_detection()["anomalies"]`.
+          additionalProperties: true
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminHealthRecommendation"
+        scheduler_status:
+          $ref: "#/components/schemas/AdminSchedulerOverview"
+      additionalProperties: false
+    AdminHealthAnomalySummary:
+      type: object
+      required:
+        - total_anomalies
+        - critical_anomalies
+      properties:
+        total_anomalies:
+          type: integer
+          minimum: 0
+        critical_anomalies:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+    AdminHealthAnomaliesResponse:
+      type: object
+      required:
+        - status
+        - anomalies
+        - summary
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+        anomalies:
+          type: object
+          additionalProperties: true
+        summary:
+          $ref: "#/components/schemas/AdminHealthAnomalySummary"
+        timestamp:
+          type: string
+          description: Horodatage ISO 8601 de la passe de détection
+      additionalProperties: false
+    AdminHealthSchedulerEnvelopeResponse:
+      type: object
+      required:
+        - status
+        - scheduler
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+        scheduler:
+          $ref: "#/components/schemas/AdminSchedulerOverview"
+      additionalProperties: false
+    AdminHealthTestNotificationsDisabledResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum:
+            - unavailable
+        message:
+          type: string
+      additionalProperties: false
+    AdminSessionMetricsSummary:
+      type: object
+      required:
+        - total_operations
+        - refresh_success_count
+        - refresh_failure_count
+        - refresh_success_rate_percent
+        - logout_forced_count
+        - logout_manual_count
+        - active_sessions_estimate
+        - latency_metrics
+        - error_breakdown
+        - ip_breakdown
+        - site_breakdown
+        - time_period_hours
+        - timestamp
+      properties:
+        total_operations:
+          type: integer
+          minimum: 0
+        refresh_success_count:
+          type: integer
+          minimum: 0
+        refresh_failure_count:
+          type: integer
+          minimum: 0
+        refresh_success_rate_percent:
+          type: number
+        logout_forced_count:
+          type: integer
+          minimum: 0
+        logout_manual_count:
+          type: integer
+          minimum: 0
+        active_sessions_estimate:
+          type: integer
+          minimum: 0
+        latency_metrics:
+          description: |
+            Bloc `min_ms` / `max_ms` / `avg_ms` lorsque des rafraîchissements sont présents ;
+            objet vide lorsque aucune opération dans la fenêtre.
+          type: object
+          properties:
+            min_ms:
+              type: number
+            max_ms:
+              type: number
+            avg_ms:
+              type: number
+          additionalProperties: false
+        error_breakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        ip_breakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        site_breakdown:
+          type: object
+          additionalProperties:
+            type: object
+            required:
+              - success
+              - failure
+            properties:
+              success:
+                type: integer
+                minimum: 0
+              failure:
+                type: integer
+                minimum: 0
+            additionalProperties: false
+        time_period_hours:
+          type: integer
+          minimum: 1
+        timestamp:
+          type: number
+          description: Horodatage Unix (secondes) du calcul côté collecteur
+      additionalProperties: false
+    AdminSessionMetricsEnvelopeResponse:
+      type: object
+      required:
+        - success
+        - metrics
+      properties:
+        success:
+          type: boolean
+        metrics:
+          $ref: "#/components/schemas/AdminSessionMetricsSummary"
       additionalProperties: false
     AdminEmailLogRow:
       type: object

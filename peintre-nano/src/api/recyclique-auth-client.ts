@@ -195,6 +195,64 @@ export async function fetchRecycliqueContextEnvelope(accessToken: string): Promi
 }
 
 /**
+ * `POST /v1/users/me/context/refresh` — `operationId` `recyclique_users_refreshContextEnvelope`.
+ * Même charge utile que le GET contexte ; déclenche un recalcul serveur explicite.
+ */
+export async function postRecycliqueContextEnvelopeRefresh(
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<FetchContextEnvelopeResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/users/me/context/refresh`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: '{}',
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return { ok: false, status: 0, message: `${msg} (POST /v1/users/me/context/refresh)` };
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    const detail =
+      typeof json === 'object' && json !== null && 'detail' in json
+        ? String((json as { detail: unknown }).detail)
+        : text || res.statusText;
+    return {
+      ok: false,
+      status: res.status,
+      message:
+        res.status === 401
+          ? `Session expirée ou non authentifié (401). ${detail}`
+          : `POST /v1/users/me/context/refresh a échoué (${res.status}) : ${detail}`,
+    };
+  }
+
+  const envelope = contextEnvelopeStubFromApi(json);
+  if (!envelope) {
+    return { ok: false, status: res.status, message: 'Réponse contexte invalide (schéma inattendu).' };
+  }
+  return { ok: true, envelope };
+}
+
+/**
  * `POST /v1/auth/logout` — best-effort (ignore erreurs réseau).
  */
 export async function postRecycliqueLogout(accessToken: string): Promise<void> {

@@ -415,6 +415,16 @@ export function RuntimeDemoApp() {
         setSearchSnapshot(window.location.search);
         return;
       }
+      if (pathForMatch === '/admin/health') {
+        setSelectedEntryId('transverse-admin-health');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/sites-and-registers') {
+        setSelectedEntryId('transverse-admin-sites-and-registers');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
       if (pathForMatch === '/admin/access') {
         setSelectedEntryId('transverse-admin-access');
         setSearchSnapshot(window.location.search);
@@ -542,6 +552,12 @@ export function RuntimeDemoApp() {
     }
     if (adminPath === '/admin/settings') {
       return 'transverse-admin-settings';
+    }
+    if (adminPath === '/admin/health') {
+      return 'transverse-admin-health';
+    }
+    if (adminPath === '/admin/sites-and-registers') {
+      return 'transverse-admin-sites-and-registers';
     }
     if (ADMIN_RECEPTION_TICKET_PATH.test(pathRoute)) {
       return 'admin-reception-ticket-detail';

@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  HeartPulse,
   Euro,
   LayoutList,
   Package,
@@ -258,6 +259,9 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
 
   return (
     <Stack data-testid="admin-legacy-dashboard-home" className={classes.root} style={{ gap: 8 }}>
+      <Title order={1} size="h2" ta="center" mb={4} mt={0} fw={700}>
+        Tableau de bord d&apos;administration
+      </Title>
       <Paper p="md" withBorder bg="gray.0">
         <Grid align="center">
           <Grid.Col span={{ base: 12, sm: 4 }}>
@@ -590,27 +594,19 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
             <Title order={2} size="h3" mb="xs" c="dimmed">
               Administration Super-Admin
             </Title>
+            <Text size="sm" c="dimmed">
+              Outils réservés au super-admin : santé de l’exploitation, réglages avancés, sites et caisses.
+            </Text>
             <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
                 <Button
                   variant="default"
                   className={classes.superAdminButton}
-                  leftSection={<Building2 size={20} />}
-                  onClick={() => handleNavigation('/admin/sites')}
-                  data-testid="admin-legacy-nav-sites"
+                  leftSection={<HeartPulse size={20} />}
+                  onClick={() => handleNavigation('/admin/health')}
+                  data-testid="admin-legacy-nav-system-health"
                 >
-                  Sites enregistrés
-                </Button>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-                <Button
-                  variant="default"
-                  className={classes.superAdminButton}
-                  leftSection={<Banknote size={20} />}
-                  onClick={() => handleNavigation('/admin/cash-registers')}
-                  data-testid="admin-legacy-nav-cash-registers"
-                >
-                  Caisses enregistrées
+                  Santé système
                 </Button>
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
@@ -622,6 +618,17 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                   data-testid="admin-legacy-nav-advanced-settings"
                 >
                   Paramètres avancés
+                </Button>
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+                <Button
+                  variant="default"
+                  className={classes.superAdminButton}
+                  leftSection={<Building2 size={20} />}
+                  onClick={() => handleNavigation('/admin/sites-and-registers')}
+                  data-testid="admin-legacy-nav-sites-and-registers"
+                >
+                  Sites et caisses
                 </Button>
               </Grid.Col>
             </Grid>

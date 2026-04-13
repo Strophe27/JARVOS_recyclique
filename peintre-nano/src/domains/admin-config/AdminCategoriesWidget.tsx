@@ -128,13 +128,13 @@ function statusBadge(c: CategoryAdminListRowDto): ReactNode {
   if (!c.is_active) {
     return (
       <Badge color="orange" variant="light">
-        Inactive
+        Inactivée
       </Badge>
     );
   }
   return (
     <Badge color="green" variant="light">
-      Active
+      Activée
     </Badge>
   );
 }

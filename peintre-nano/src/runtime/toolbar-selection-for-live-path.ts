@@ -19,8 +19,10 @@ export function toolbarSelectedEntryIdFromResolved(
     resolvedEntryId === 'transverse-admin-audit-log' ||
     resolvedEntryId === 'transverse-admin-cash-registers' ||
     resolvedEntryId === 'transverse-admin-sites' ||
+    resolvedEntryId === 'transverse-admin-sites-and-registers' ||
     resolvedEntryId === 'transverse-admin-session-manager' ||
     resolvedEntryId === 'transverse-admin-settings' ||
+    resolvedEntryId === 'transverse-admin-health' ||
     resolvedEntryId === 'transverse-admin-reception-stats' ||
     resolvedEntryId === 'transverse-admin-reception-sessions'
   ) {

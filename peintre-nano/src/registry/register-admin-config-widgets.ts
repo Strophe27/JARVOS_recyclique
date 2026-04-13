@@ -8,7 +8,9 @@ import { AdminReceptionStatsSupervisionWidget } from '../domains/admin-config/Ad
 import { AdminReportsSupervisionHubWidget } from '../domains/admin-config/AdminReportsSupervisionHubWidget';
 import { AdminUsersWidget } from '../domains/admin-config/AdminUsersWidget';
 import { AdminCashRegistersWidget } from '../domains/admin-config/AdminCashRegistersWidget';
+import { AdminSitesAndRegistersHubWidget } from '../domains/admin-config/AdminSitesAndRegistersHubWidget';
 import { AdminSitesWidget } from '../domains/admin-config/AdminSitesWidget';
+import { AdminSystemHealthWidget } from '../domains/admin-config/AdminSystemHealthWidget';
 import { SessionManagerAdminWidget } from '../domains/admin-config/SessionManagerAdminWidget';
 import { registerWidget } from './widget-registry';
 
@@ -17,6 +19,8 @@ export function registerAdminConfigWidgets(): void {
   registerWidget('admin.users.demo', AdminUsersWidget);
   /** Paramètres session JWT super-admin (`adminSettingsSessionGet` / `adminSettingsSessionPut`). */
   registerWidget('admin.advanced.settings.demo', AdminAdvancedSettingsWidget);
+  /** Santé exploitation — contexte + live-snapshot + stats live (contrat OpenAPI servi uniquement). */
+  registerWidget('admin.system.health', AdminSystemHealthWidget);
   /** Story 14.5 — liste/détail/mutations `adminGroups*` (`admin-groups-client.ts`). */
   registerWidget('admin.groups.demo', AdminGroupsWidget);
   registerWidget('admin.categories.demo', AdminCategoriesWidget);
@@ -25,6 +29,8 @@ export function registerAdminConfigWidgets(): void {
   /** Postes de caisse et sites — listes et mutations branchées sur l’API v1. */
   registerWidget('admin.cash-registers.demo', AdminCashRegistersWidget);
   registerWidget('admin.sites.demo', AdminSitesWidget);
+  /** Parité legacy — hub intermédiaire Sites & Caisses (`/admin/sites-and-registers`). */
+  registerWidget('admin.sites.and.registers.hub', AdminSitesAndRegistersHubWidget);
   /** Accès secondaires admin (slot placeholder / compact ; `/admin` = legacy seul). */
   registerWidget('admin.reports.supervision.hub', AdminReportsSupervisionHubWidget);
   /** Story 18.2 — session manager (liste, KPIs, export par session + export groupé borné). */

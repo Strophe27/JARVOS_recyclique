@@ -1,12 +1,12 @@
 {
   "version": "1",
-  "page_key": "transverse-admin-settings",
+  "page_key": "transverse-admin-sites-and-registers",
   "required_permission_keys": ["transverse.admin.view", "caisse.sale_correct"],
   "requires_site": true,
   "slots": [
     {
       "slot_id": "admin.transverse-list.main",
-      "widget_type": "admin.advanced.settings.demo",
+      "widget_type": "admin.sites.and.registers.hub",
       "widget_props": {}
     }
   ]

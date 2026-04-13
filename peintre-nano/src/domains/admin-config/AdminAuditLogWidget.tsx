@@ -56,6 +56,9 @@ const ACTION_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'system_config_changed', label: 'Configuration système modifiée' },
   { value: 'data_exported', label: 'Données exportées' },
   { value: 'backup_created', label: 'Sauvegarde créée' },
+  { value: 'db_import', label: 'Restauration base (import)' },
+  { value: 'db_export', label: 'Export base (sauvegarde)' },
+  { value: 'db_purge', label: 'Purge données transactionnelles' },
 ];
 
 function formatTimestamp(iso: string): string {
@@ -99,7 +102,7 @@ const EMPTY_FILTERS: AuditFilterForm = {
 };
 
 function exportPageToCsv(data: AdminAuditLogPageDto): void {
-  const headers = ['Timestamp', 'Acteur', 'Action', 'Cible', 'Description', 'IP', 'Détails'];
+  const headers = ['Horodatage', 'Acteur', 'Action', 'Cible', 'Description', 'Adresse IP', 'Détails'];
   const rows = data.entries.map((entry) => [
     formatTimestamp(entry.timestamp),
     entry.actor_username || 'Système',

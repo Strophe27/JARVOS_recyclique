@@ -37,7 +37,7 @@ beforeAll(() => {
 });
 
 describe('AdminReportsSupervisionHubWidget', () => {
-  it('n’expose pas de raccourci utilisateurs ; trois liens cohérents avec la nav transverse', () => {
+  it('n’expose pas de raccourci utilisateurs ; quatre liens cohérents avec la nav transverse', () => {
     render(
       <RootProviders>
         <AdminReportsSupervisionHubWidget widgetProps={{ presentation: 'compact' }} />
@@ -47,8 +47,11 @@ describe('AdminReportsSupervisionHubWidget', () => {
     expect(screen.getByTestId('admin-hub-link-cash-registers')).toBeTruthy();
     expect(screen.getByTestId('admin-hub-link-sites')).toBeTruthy();
     expect(screen.getByTestId('admin-hub-link-reception-stats')).toBeTruthy();
+    expect(screen.getByTestId('admin-hub-link-reception-sessions')).toBeTruthy();
     fireEvent.click(screen.getByTestId('admin-hub-link-reception-stats'));
     expect(spaNavigateMock).toHaveBeenCalledWith('/admin/reception-stats');
+    fireEvent.click(screen.getByTestId('admin-hub-link-reception-sessions'));
+    expect(spaNavigateMock).toHaveBeenCalledWith('/admin/reception-sessions');
   });
 
   it('présentation strip par défaut : mêmes testids', () => {

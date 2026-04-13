@@ -53,10 +53,12 @@ import pageTransverseAdminReportsHub from '../../../../contracts/creos/manifests
 import pageTransverseAdminSiteOverview from '../../../../contracts/creos/manifests/page-transverse-admin-site-overview.json';
 import pageTransverseAdminUsers from '../../../../contracts/creos/manifests/page-transverse-admin-users.json';
 import pageTransverseAdminGroups from '../../../../contracts/creos/manifests/page-transverse-admin-groups.json';
+import pageTransverseAdminHealth from '../../../../contracts/creos/manifests/page-transverse-admin-health.json';
 import pageTransverseAdminCategories from '../../../../contracts/creos/manifests/page-transverse-admin-categories.json';
 import pageTransverseAdminAuditLog from '../../../../contracts/creos/manifests/page-transverse-admin-audit-log.json';
 import pageTransverseAdminCashRegisters from '../../../../contracts/creos/manifests/page-transverse-admin-cash-registers.json';
 import pageTransverseAdminSites from '../../../../contracts/creos/manifests/page-transverse-admin-sites.json';
+import pageTransverseAdminSitesAndRegisters from '../../../../contracts/creos/manifests/page-transverse-admin-sites-and-registers.json';
 import pageTransverseAdminReceptionSessions from '../../../../contracts/creos/manifests/page-transverse-admin-reception-sessions.json';
 import pageTransverseAdminReceptionStats from '../../../../contracts/creos/manifests/page-transverse-admin-reception-stats.json';
 import pageTransverseAdminSessionManager from '../../../../contracts/creos/manifests/page-transverse-admin-session-manager.json';
@@ -162,8 +164,10 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseAdminAuditLog),
     JSON.stringify(pageTransverseAdminCashRegisters),
     JSON.stringify(pageTransverseAdminSites),
+    JSON.stringify(pageTransverseAdminSitesAndRegisters),
     JSON.stringify(pageTransverseAdminSessionManager),
     JSON.stringify(pageTransverseAdminSettings),
+    JSON.stringify(pageTransverseAdminHealth),
     JSON.stringify(pageTransverseAdminReceptionStats),
     JSON.stringify(pageTransverseAdminReceptionSessions),
     JSON.stringify(pageTransverseAdminReportsHub),
@@ -200,8 +204,10 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-admin-audit-log.json',
           'contracts/creos/manifests/page-transverse-admin-cash-registers.json',
           'contracts/creos/manifests/page-transverse-admin-sites.json',
+          'contracts/creos/manifests/page-transverse-admin-sites-and-registers.json',
           'contracts/creos/manifests/page-transverse-admin-session-manager.json',
           'contracts/creos/manifests/page-transverse-admin-settings.json',
+          'contracts/creos/manifests/page-transverse-admin-health.json',
           'contracts/creos/manifests/page-transverse-admin-reception-stats.json',
           'contracts/creos/manifests/page-transverse-admin-reception-sessions.json',
           'contracts/creos/manifests/page-transverse-admin-reports-hub.json',

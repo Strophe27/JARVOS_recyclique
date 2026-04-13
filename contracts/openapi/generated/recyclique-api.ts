@@ -1174,7 +1174,7 @@ export interface paths {
         };
         /**
          * Liste catégories pour tickets de vente / caisse
-         * @description Toutes les fiches actives utiles à la caisse (l’ordre affiché suit l’ordre ticket vente).
+         * @description Toutes les fiches actives utiles à la caisse (l'ordre affiché suit l'ordre ticket vente).
          */
         get: operations["recyclique_categories_listForSaleTickets"];
         put?: never;
@@ -1673,6 +1673,174 @@ export interface paths {
          *     Rate limit : 30/minute (**429**).
          */
         get: operations["adminAuditLogList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/health-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sonde minimale « admin joignable »
+         * @description Handler `test_admin_endpoint` (`admin_health.py`). **Sans auth** ; rate limit **10/minute** côté serveur.
+         *     Utile pour vérifier que le préfixe `/v1/admin` répond derrière un reverse-proxy.
+         */
+        get: operations["adminHealthTestEndpointGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/health/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health check public (monitoring externe)
+         * @description `get_public_health` — **sans auth** ; statut nominal du service API (Docker / LB).
+         */
+        get: operations["adminHealthPublicGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/health/database": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sonde connectivité base de données
+         * @description `get_database_health` — **sans auth** ; exécute `SELECT 1` via la session SQLAlchemy.
+         *     Réponse **200** même si la base est dégradée (champ `status` = `unhealthy` dans le corps).
+         */
+        get: operations["adminHealthDatabaseGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Synthèse santé système (anomalies + scheduler)
+         * @description `get_system_health` — **Autorité** : `require_admin_role` (JWT Bearer **ou** cookie d’accès, comme `GET /v1/admin/users`).
+         *     Agrège détection d’anomalies (`AnomalyDetectionService`), recommandations et état du scheduler.
+         *     Rate limit **20/minute** côté serveur.
+         */
+        get: operations["adminHealthSystemGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/health/anomalies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Anomalies détectées (même passe que la synthèse complète)
+         * @description `get_anomalies` — **Autorité** : `require_admin_role`. Ré-exécute la détection (pas de cache HTTP dédié).
+         *     Rate limit **15/minute** côté serveur.
+         */
+        get: operations["adminHealthAnomaliesGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/health/scheduler": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statut du scheduler de tâches planifiées
+         * @description `get_scheduler_status` — **Autorité** : `require_admin_role_strict()` (même famille que `GET /v1/admin/transaction-logs` : transport strict).
+         *     Rate limit **10/minute** côté serveur.
+         */
+        get: operations["adminHealthSchedulerGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/health/test-notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ancien test de notifications (désactivé)
+         * @description `test_notifications` (`admin.py`) — **ne déclenche aucun envoi** ; réponse informative uniquement.
+         *     **Autorité** : `require_admin_role_strict()`. Rate limit **5/minute** côté serveur.
+         */
+        post: operations["adminHealthTestNotificationsPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/sessions/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Métriques de sessions (rafraîchissements, déconnexions)
+         * @description `get_admin_session_metrics` (`admin_session_metrics.py`, story B42-P4). **Autorité** : `require_admin_role`.
+         *     Agrégats mémoire processus (`SessionMetricsCollector`) sur la fenêtre `hours` (1–168).
+         */
+        get: operations["adminSessionsMetricsGet"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2280,6 +2448,145 @@ export interface components {
             entries: components["schemas"]["AdminAuditLogEntry"][];
             pagination: components["schemas"]["AdminPaginationStandard"];
             filters_applied: components["schemas"]["AdminAuditLogFiltersApplied"];
+        };
+        AdminHealthTestMessageResponse: {
+            /** @example Admin endpoint accessible */
+            message: string;
+        };
+        AdminHealthPublicStatusResponse: {
+            /** @example healthy */
+            status: string;
+            /** @example recyclic-api */
+            service: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminHealthDatabaseStatusResponse: {
+            /** @enum {string} */
+            status: "healthy" | "unhealthy";
+            /** @enum {string} */
+            database: "connected" | "disconnected";
+            /** @description Présent lorsque `status` = `unhealthy` */
+            error?: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminHealthAnomalyItem: {
+            type: string;
+            /** @enum {string} */
+            severity: "high" | "medium" | "low" | "critical";
+            description: string;
+            details: {
+                [key: string]: unknown;
+            };
+        };
+        AdminHealthRecommendation: {
+            type: string;
+            /** @enum {string} */
+            priority: "high" | "medium" | "low";
+            title: string;
+            description: string;
+            actions: string[];
+        };
+        AdminHealthSystemHealthBlock: {
+            /** @enum {string} */
+            overall_status: "healthy" | "degraded" | "critical";
+            anomalies_detected: number;
+            critical_anomalies: number;
+            scheduler_running: boolean;
+            active_tasks: number;
+            /** @description Horodatage issu du résultat de détection d’anomalies (ISO 8601). */
+            timestamp: string;
+        };
+        AdminSchedulerTaskStatusRow: {
+            name: string;
+            enabled: boolean;
+            /** Format: date-time */
+            last_run: string | null;
+            /** Format: date-time */
+            next_run: string | null;
+            running: boolean;
+            interval_minutes: number;
+        };
+        AdminSchedulerOverview: {
+            running: boolean;
+            tasks: components["schemas"]["AdminSchedulerTaskStatusRow"][];
+            total_tasks: number;
+        };
+        AdminHealthSystemResponse: {
+            /** @enum {string} */
+            status: "success";
+            system_health: components["schemas"]["AdminHealthSystemHealthBlock"];
+            /**
+             * @description Buckets d’anomalies (`cash_anomalies`, `sync_anomalies`, etc.) et éventuellement `timestamp`
+             *     de détection ; forme alignée sur `AnomalyDetectionService.run_anomaly_detection()["anomalies"]`.
+             */
+            anomalies: {
+                [key: string]: unknown;
+            };
+            recommendations: components["schemas"]["AdminHealthRecommendation"][];
+            scheduler_status: components["schemas"]["AdminSchedulerOverview"];
+        };
+        AdminHealthAnomalySummary: {
+            total_anomalies: number;
+            critical_anomalies: number;
+        };
+        AdminHealthAnomaliesResponse: {
+            /** @enum {string} */
+            status: "success";
+            anomalies: {
+                [key: string]: unknown;
+            };
+            summary: components["schemas"]["AdminHealthAnomalySummary"];
+            /** @description Horodatage ISO 8601 de la passe de détection */
+            timestamp: string;
+        };
+        AdminHealthSchedulerEnvelopeResponse: {
+            /** @enum {string} */
+            status: "success";
+            scheduler: components["schemas"]["AdminSchedulerOverview"];
+        };
+        AdminHealthTestNotificationsDisabledResponse: {
+            /** @enum {string} */
+            status: "unavailable";
+            message: string;
+        };
+        AdminSessionMetricsSummary: {
+            total_operations: number;
+            refresh_success_count: number;
+            refresh_failure_count: number;
+            refresh_success_rate_percent: number;
+            logout_forced_count: number;
+            logout_manual_count: number;
+            active_sessions_estimate: number;
+            /**
+             * @description Bloc `min_ms` / `max_ms` / `avg_ms` lorsque des rafraîchissements sont présents ;
+             *     objet vide lorsque aucune opération dans la fenêtre.
+             */
+            latency_metrics: {
+                min_ms?: number;
+                max_ms?: number;
+                avg_ms?: number;
+            };
+            error_breakdown: {
+                [key: string]: number;
+            };
+            ip_breakdown: {
+                [key: string]: number;
+            };
+            site_breakdown: {
+                [key: string]: {
+                    success: number;
+                    failure: number;
+                };
+            };
+            time_period_hours: number;
+            /** @description Horodatage Unix (secondes) du calcul côté collecteur */
+            timestamp: number;
+        };
+        AdminSessionMetricsEnvelopeResponse: {
+            success: boolean;
+            metrics: components["schemas"]["AdminSessionMetricsSummary"];
         };
         /** @description Entrée `EmailLogResponse` (champs principaux). */
         AdminEmailLogRow: {
@@ -8027,6 +8334,322 @@ export interface operations {
             };
             /** @description Trop de requêtes */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminHealthTestEndpointGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Message de confirmation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHealthTestMessageResponse"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminHealthPublicGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statut nominal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHealthPublicStatusResponse"];
+                };
+            };
+        };
+    };
+    adminHealthDatabaseGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rapport de connectivité */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHealthDatabaseStatusResponse"];
+                };
+            };
+        };
+    };
+    adminHealthSystemGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Synthèse */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHealthSystemResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur (détection ou agrégation) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminHealthAnomaliesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Anomalies et résumé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHealthAnomaliesResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminHealthSchedulerGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statut scheduler */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHealthSchedulerEnvelopeResponse"];
+                };
+            };
+            /** @description Transport strict ou rôle non admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminHealthTestNotificationsPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Indisponibilité documentée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHealthTestNotificationsDisabledResponse"];
+                };
+            };
+            /** @description Transport strict ou rôle non admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requêtes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminSessionsMetricsGet: {
+        parameters: {
+            query?: {
+                /** @description Fenêtre glissante en heures */
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Métriques agrégées */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSessionMetricsEnvelopeResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

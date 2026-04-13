@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button, Grid, Paper, Stack, Text, Title } from '@mantine/core';
-import { Banknote, Recycle } from 'lucide-react';
+import { Banknote, Recycle, Ticket } from 'lucide-react';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 
@@ -18,7 +18,7 @@ function isSecondaryStripPresentation(widgetProps: Readonly<Record<string, unkno
 function HorsGrilleAdminSecondaryLinks(): ReactNode {
   return (
     <Grid gutter="sm">
-      <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
         <Button
           variant="light"
           color="teal"
@@ -30,7 +30,7 @@ function HorsGrilleAdminSecondaryLinks(): ReactNode {
           Caisses enregistrées
         </Button>
       </Grid.Col>
-      <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
         <Button
           variant="light"
           color="gray"
@@ -41,7 +41,7 @@ function HorsGrilleAdminSecondaryLinks(): ReactNode {
           Sites enregistrés
         </Button>
       </Grid.Col>
-      <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
         <Button
           variant="light"
           color="green"
@@ -51,6 +51,18 @@ function HorsGrilleAdminSecondaryLinks(): ReactNode {
           data-testid="admin-hub-link-reception-stats"
         >
           Statistiques réception (supervision)
+        </Button>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+        <Button
+          variant="light"
+          color="cyan"
+          fullWidth
+          leftSection={<Ticket size={18} />}
+          onClick={() => spaNavigateTo('/admin/reception-sessions')}
+          data-testid="admin-hub-link-reception-sessions"
+        >
+          Sessions de réception (tickets)
         </Button>
       </Grid.Col>
     </Grid>
@@ -92,7 +104,8 @@ export function AdminReportsSupervisionHubWidget({ widgetProps }: RegisteredWidg
     );
   }
 
-  const strip = isSecondaryStripPresentation(widgetProps) || widgetProps?.presentation == null;
+  const strip =
+    isSecondaryStripPresentation(widgetProps) || (widgetProps?.presentation ?? null) === null;
 
   if (!strip) {
     return (
@@ -119,7 +132,7 @@ export function AdminReportsSupervisionHubWidget({ widgetProps }: RegisteredWidg
         Liens complémentaires
       </Title>
       <Text size="sm" c="dimmed">
-        Les mêmes intentions que dans la navigation transverse (caisses, sites, stats réception) sont regroupées ici pour les gabarits compact / démo.
+        Les mêmes intentions que dans la navigation transverse (caisses, sites, stats et tickets réception) sont regroupées ici pour les gabarits compact / démo.
       </Text>
       <HorsGrilleAdminSecondaryLinks />
     </Stack>
