@@ -617,7 +617,7 @@ export function AdminAuditLogWidget(_: RegisteredWidgetProps): ReactNode {
     <Stack gap="md" data-testid="widget-admin-audit-log">
       <div data-testid="admin-audit-log-operation-anchor">
         <Title order={1} mb="xl">
-          Journal d&apos;Audit
+          Journal d&apos;audit
         </Title>
       </div>
 

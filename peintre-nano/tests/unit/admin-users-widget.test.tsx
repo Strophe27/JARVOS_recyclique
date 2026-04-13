@@ -101,15 +101,53 @@ const historyPage = {
 };
 
 function okJson(body: unknown, status = 200) {
-  return { ok: true, status, text: async () => JSON.stringify(body) };
+  const bodyStr = JSON.stringify(body);
+  return {
+    ok: true,
+    status,
+    text: async () => bodyStr,
+    json: async () => JSON.parse(bodyStr) as unknown,
+  };
 }
 
-function adminUsersFetchMock(): typeof fetch {
-  return vi.fn(async (input: RequestInfo | URL) => {
+function fetchCallUrl(input: RequestInfo | URL): string {
+  return typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+}
+
+function fetchCallMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  return (
+    init?.method ?? (typeof Request !== 'undefined' && input instanceof Request ? input.method : 'GET')
+  ).toUpperCase();
+}
+
+function postUrlsContaining(fetchMock: ReturnType<typeof adminUsersFetchMock>, needle: string): boolean {
+  return fetchMock.mock.calls.some(([inp, init]) => {
+    const m = fetchCallMethod(inp as RequestInfo, init as RequestInit | undefined);
+    return m === 'POST' && fetchCallUrl(inp as RequestInfo).includes(needle);
+  });
+}
+
+function adminUsersFetchMock(opts?: { readonly meRole?: string }): typeof fetch {
+  const meRole = opts?.meRole ?? 'admin';
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const method = (
+      init?.method ??
+      (typeof Request !== 'undefined' && input instanceof Request ? input.method : 'GET')
+    ).toUpperCase();
+    if (url.includes('/v1/users/me')) return okJson({ role: meRole });
     if (url.includes('/v1/admin/users/statuses')) return okJson(statusesBundle);
     if (url.includes('/v1/admin/groups')) return okJson([groupRow]);
     if (url.includes('/history')) return okJson(historyPage);
+    if (method === 'POST' && url.includes('/reset-password')) {
+      return okJson({ message: 'E-mail de réinitialisation envoyé', success: true });
+    }
+    if (method === 'POST' && url.includes('/reset-pin')) {
+      return okJson({ message: 'PIN réinitialisé', user_id: userRow.id, username: 'volunteer1' });
+    }
+    if (method === 'POST' && url.includes('/force-password')) {
+      return okJson({ message: 'Mot de passe mis à jour', success: true });
+    }
     if (url.includes(`/v1/users/${userRow.id}`)) return okJson(userDetail);
     if (url.includes('/v1/admin/users') && !url.includes('/statuses') && !url.includes('/history')) {
       return okJson([userRow]);
@@ -163,7 +201,9 @@ describe('AdminUsersWidget', () => {
     });
     expect(screen.getByRole('heading', { name: /Gestion des Utilisateurs/i })).toBeTruthy();
     const table = screen.getByTestId('admin-users-table');
-    expect(within(table).getByTestId(`admin-users-row-${userRow.id}`)).toBeTruthy();
+    await waitFor(() => {
+      expect(within(table).getByTestId(`admin-users-row-${userRow.id}`)).toBeTruthy();
+    });
     expect(screen.getByText('Jean Dupont')).toBeTruthy();
     expect(within(table).getByText("Statut d'activité")).toBeTruthy();
     await waitFor(() => {
@@ -215,5 +255,80 @@ describe('AdminUsersWidget', () => {
       expect(screen.getByTestId('admin-users-history-list')).toBeTruthy();
     });
     expect(screen.getByText('Connexion enregistrée')).toBeTruthy();
+  });
+
+  it('affiche le forçage mot de passe pour super-admin (GET /v1/users/me)', async () => {
+    vi.stubGlobal('fetch', adminUsersFetchMock({ meRole: 'super-admin' }));
+    render(wrap(<AdminUsersWidget widgetProps={{}} />));
+    await waitFor(() => screen.getByTestId(`admin-users-row-${userRow.id}`));
+    fireEvent.click(screen.getByTestId(`admin-users-row-${userRow.id}`));
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-users-force-password-open')).toBeTruthy();
+    });
+  });
+
+  it('déclenche POST reset-password depuis la fiche', async () => {
+    const fetchMock = adminUsersFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    render(wrap(<AdminUsersWidget widgetProps={{}} />));
+    await waitFor(() => screen.getByTestId(`admin-users-row-${userRow.id}`));
+    fireEvent.click(screen.getByTestId(`admin-users-row-${userRow.id}`));
+    await waitFor(() => screen.getByTestId('admin-users-reset-password'));
+    fireEvent.click(screen.getByTestId('admin-users-reset-password'));
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-users-feedback').textContent).toContain('E-mail');
+    });
+    expect(postUrlsContaining(fetchMock, 'reset-password')).toBe(true);
+  });
+
+  it('affiche la grille locale et bloque la création si le mot de passe est incomplet', async () => {
+    vi.stubGlobal('fetch', adminUsersFetchMock());
+    render(wrap(<AdminUsersWidget widgetProps={{}} />));
+    fireEvent.click(screen.getByTestId('admin-users-create-open'));
+    const dlg = await screen.findByRole('dialog', { name: /Créer un utilisateur/i });
+    fireEvent.change(within(dlg).getByRole('textbox', { name: /Identifiant/i }), { target: { value: 'nouveau_user' } });
+    const pwdField = within(dlg).getByTestId('admin-users-create-password');
+    const pwdInput = pwdField instanceof HTMLInputElement ? pwdField : pwdField.querySelector('input');
+    expect(pwdInput).toBeTruthy();
+    fireEvent.change(pwdInput!, { target: { value: 'password' } });
+    await waitFor(() => {
+      expect(within(dlg).getByTestId('admin-users-create-password-policy')).toBeTruthy();
+    });
+    const submit = within(dlg).getByTestId('admin-users-create-submit') as HTMLButtonElement;
+    expect(submit.disabled || submit.getAttribute('data-disabled') === 'true').toBe(true);
+  });
+
+  it('déclenche POST reset-pin après confirmation', async () => {
+    const fetchMock = adminUsersFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    render(wrap(<AdminUsersWidget widgetProps={{}} />));
+    await waitFor(() => screen.getByTestId(`admin-users-row-${userRow.id}`));
+    fireEvent.click(screen.getByTestId(`admin-users-row-${userRow.id}`));
+    await waitFor(() => screen.getByTestId('admin-users-reset-pin-open'));
+    fireEvent.click(screen.getByTestId('admin-users-reset-pin-open'));
+    await waitFor(() => screen.getByTestId('admin-users-reset-pin-confirm'));
+    fireEvent.click(screen.getByTestId('admin-users-reset-pin-confirm'));
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-users-feedback').textContent).toContain('PIN');
+    });
+    expect(postUrlsContaining(fetchMock, 'reset-pin')).toBe(true);
+  });
+
+  it('déclenche POST force-password depuis la modale super-admin', async () => {
+    const fetchMock = adminUsersFetchMock({ meRole: 'super-admin' });
+    vi.stubGlobal('fetch', fetchMock);
+    render(wrap(<AdminUsersWidget widgetProps={{}} />));
+    await waitFor(() => screen.getByTestId(`admin-users-row-${userRow.id}`));
+    fireEvent.click(screen.getByTestId(`admin-users-row-${userRow.id}`));
+    await waitFor(() => screen.getByTestId('admin-users-force-password-open'));
+    fireEvent.click(screen.getByTestId('admin-users-force-password-open'));
+    await waitFor(() => screen.getByTestId('admin-users-force-password-field'));
+    fireEvent.change(screen.getByTestId('admin-users-force-password-field'), { target: { value: 'Valid1!x' } });
+    fireEvent.change(screen.getByTestId('admin-users-force-password-confirm'), { target: { value: 'Valid1!x' } });
+    fireEvent.click(screen.getByTestId('admin-users-force-password-submit'));
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-users-feedback').textContent).toMatch(/mot de passe|mis à jour|succès/i);
+    });
+    expect(postUrlsContaining(fetchMock, 'force-password')).toBe(true);
   });
 });

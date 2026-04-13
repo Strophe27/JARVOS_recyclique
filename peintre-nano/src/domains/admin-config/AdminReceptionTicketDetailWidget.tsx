@@ -162,7 +162,7 @@ export function AdminReceptionTicketDetailWidget(_props: RegisteredWidgetProps):
               Rafraîchir
             </Button>
             <Button type="button" size="xs" variant="filled" loading={exportBusy} onClick={() => void onExport()}>
-              Exporter le ticket
+              Télécharger CSV
             </Button>
           </Group>
         </Group>
@@ -291,8 +291,7 @@ export function AdminReceptionTicketDetailWidget(_props: RegisteredWidgetProps):
         ) : null}
 
         <Text size="xs" c="dimmed" data-testid="admin-reception-ticket-sensitive-note">
-          La fermeture du ticket et la modification du poids d&apos;une ligne se font depuis l&apos;administration
-          complète, avec les droits adaptés.
+          Fermeture du ticket et modification du poids d&apos;une ligne : administration complète (droits adaptés).
         </Text>
       </Stack>
     </div>

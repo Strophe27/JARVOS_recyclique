@@ -65,7 +65,7 @@ Story Runner / exécution directe (session 2026-04-12).
 
 ### Completion Notes List
 
-- **2026-04-13 (BMAD)** : note de synchronisation pilotage — statut **review** maintenu jusqu'a validation humaine ou CR pour passage **done** ; cette passe BMAD n'a pas rejoue les gates ni les tests.
+- **2026-04-13 (BMAD)** : note de synchronisation pilotage — statut **review** maintenu en attendant validation humaine ou CR pour passage **done** ; cette passe BMAD n'a pas rejoué les gates ni les tests.
 - Widget **`AdminGroupsWidget`** + client **`admin-groups-client.ts`** : liste `adminGroupsList`, détail `adminGroupsGetById`, CRUD groupe, rattachements permissions/utilisateurs alignés OpenAPI 16.2.
 - Écarts legacy nommés : pas de GET catalogue permissions / liste utilisateurs admin dans le périmètre YAML pour MultiSelect ; POST add via saisie UUID ; `adminUsersGroupsPut` hors 14.5.
 - Placeholder **`AdminGroupsDemoPlaceholder`** retiré ; type CREOS **`admin.groups.demo`** conservé pour e2e (`widget-admin-groups-demo`).

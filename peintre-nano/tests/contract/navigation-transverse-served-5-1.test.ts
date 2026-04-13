@@ -72,9 +72,13 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).toContain('transverse-admin-access');
     expect(ids).toContain('transverse-admin-site');
     expect(ids).toContain('transverse-admin-users');
+    expect(ids).toContain('transverse-admin-groups');
+    expect(ids).toContain('transverse-admin-categories');
+    expect(ids).toContain('transverse-admin-audit-log');
     expect(ids).toContain('transverse-admin-cash-registers');
     expect(ids).toContain('transverse-admin-sites');
     expect(ids).toContain('transverse-admin-session-manager');
+    expect(ids).toContain('transverse-admin-settings');
     expect(ids).toContain('transverse-admin-reception-stats');
     expect(ids).toContain('transverse-admin-reception-sessions');
     expect(ids).toContain('transverse-listing-articles');
@@ -400,6 +404,24 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         mainWidget: 'admin.users.demo',
       },
       {
+        pageKey: 'transverse-admin-groups',
+        path: '/admin/groups',
+        navId: 'transverse-admin-groups',
+        mainWidget: 'admin.groups.demo',
+      },
+      {
+        pageKey: 'transverse-admin-categories',
+        path: '/admin/categories',
+        navId: 'transverse-admin-categories',
+        mainWidget: 'admin.categories.demo',
+      },
+      {
+        pageKey: 'transverse-admin-audit-log',
+        path: '/admin/audit-log',
+        navId: 'transverse-admin-audit-log',
+        mainWidget: 'admin.audit-log.demo',
+      },
+      {
         pageKey: 'transverse-admin-cash-registers',
         path: '/admin/cash-registers',
         navId: 'transverse-admin-cash-registers',
@@ -416,6 +438,12 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         path: '/admin/session-manager',
         navId: 'transverse-admin-session-manager',
         mainWidget: 'admin.session-manager.demo',
+      },
+      {
+        pageKey: 'transverse-admin-settings',
+        path: '/admin/settings',
+        navId: 'transverse-admin-settings',
+        mainWidget: 'admin.advanced.settings.demo',
       },
       {
         pageKey: 'transverse-admin-reception-stats',
@@ -445,9 +473,13 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(page.requiresSite).toBe(ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS.requiresSite);
       if (
         spec.pageKey === 'transverse-admin-users' ||
+        spec.pageKey === 'transverse-admin-groups' ||
+        spec.pageKey === 'transverse-admin-categories' ||
+        spec.pageKey === 'transverse-admin-audit-log' ||
         spec.pageKey === 'transverse-admin-cash-registers' ||
         spec.pageKey === 'transverse-admin-sites' ||
         spec.pageKey === 'transverse-admin-session-manager' ||
+        spec.pageKey === 'transverse-admin-settings' ||
         spec.pageKey === 'transverse-admin-reception-sessions'
       ) {
         expect(page.slots.map((s) => s.slotId)).toEqual(['admin.transverse-list.main']);
@@ -485,9 +517,13 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).not.toContain('transverse-admin-access');
     expect(ids).not.toContain('transverse-admin-site');
     expect(ids).not.toContain('transverse-admin-users');
+    expect(ids).not.toContain('transverse-admin-groups');
+    expect(ids).not.toContain('transverse-admin-categories');
+    expect(ids).not.toContain('transverse-admin-audit-log');
     expect(ids).not.toContain('transverse-admin-cash-registers');
     expect(ids).not.toContain('transverse-admin-sites');
     expect(ids).not.toContain('transverse-admin-session-manager');
+    expect(ids).not.toContain('transverse-admin-settings');
     expect(ids).not.toContain('transverse-admin-reception-stats');
     expect(ids).not.toContain('transverse-admin-reception-sessions');
     expect(ids).not.toContain('transverse-admin-reports');
@@ -754,9 +790,13 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         'transverse-admin-access',
         'transverse-admin-site',
         'transverse-admin-users',
+        'transverse-admin-groups',
+        'transverse-admin-categories',
+        'transverse-admin-audit-log',
         'transverse-admin-cash-registers',
         'transverse-admin-sites',
         'transverse-admin-session-manager',
+        'transverse-admin-settings',
         'transverse-admin-reception-stats',
         'transverse-admin-reception-sessions',
         'transverse-listing-articles',
@@ -798,6 +838,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(pageKeys.has('transverse-admin-session-manager')).toBe(true);
       expect(pageKeys.has('transverse-admin-reception-stats')).toBe(true);
       expect(pageKeys.has('transverse-admin-reception-sessions')).toBe(true);
+      expect(pageKeys.has('transverse-admin-settings')).toBe(true);
       expect(pageKeys.has('admin-cash-session-detail')).toBe(true);
       expect(pageKeys.has('admin-reception-ticket-detail')).toBe(true);
       const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
@@ -807,6 +848,10 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(flat.some((e) => e.path === '/admin/session-manager')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/reception-stats')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/reception-sessions')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/settings')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/groups')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/categories')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/audit-log')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/reports')).toBe(false);
       expect(flat.some((e) => e.path === '/admin/pending')).toBe(false);
     });

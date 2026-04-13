@@ -100,7 +100,8 @@ export async function listCashRegistersForAdmin(
   if (query.site_id && query.site_id.trim() !== '') sp.set('site_id', query.site_id.trim());
   if (query.only_active === true || query.only_active === false) sp.set('only_active', String(query.only_active));
   const qs = sp.toString();
-  const url = `${base}/v1/cash-registers${qs ? `?${qs}` : ''}`;
+  /** Slash final aligné OpenAPI `GET /v1/cash-registers/` et `admin-sites-client` — évite 404 proxy / routage strict. */
+  const url = `${base}/v1/cash-registers/${qs ? `?${qs}` : ''}`;
   let res: Response;
   try {
     res = await fetch(url, { method: 'GET', credentials: 'include', headers: authHeaders(auth), signal });

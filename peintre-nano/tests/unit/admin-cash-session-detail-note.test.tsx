@@ -123,6 +123,7 @@ describe('AdminCashSessionDetailWidget — note ticket', () => {
     await waitFor(() => {
       expect(screen.getByTestId('admin-cash-session-sales-table')).toBeTruthy();
     });
+    expect(screen.getByTestId('admin-cash-session-title').textContent).toContain('Détail de la session de caisse');
 
     fireEvent.click(screen.getByTestId(`admin-cash-session-view-ticket-${SALE_ID}`));
 
@@ -138,6 +139,16 @@ describe('AdminCashSessionDetailWidget — note ticket', () => {
     await waitFor(() => {
       expect(screen.getByText('Note terrain')).toBeTruthy();
     });
+
+    const sessionDetailGets = fetchMock.mock.calls.filter(([input, init]) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+      return (
+        url.includes(`/v1/cash-sessions/${SESSION_ID}`) &&
+        !url.includes('/close') &&
+        ((init as RequestInit | undefined)?.method ?? 'GET') === 'GET'
+      );
+    });
+    expect(sessionDetailGets.length).toBe(1);
   });
 
   it('masque le bouton note sans permission vue admin', async () => {

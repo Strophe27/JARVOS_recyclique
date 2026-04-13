@@ -3,6 +3,7 @@ import {
   Badge,
   Box,
   Button,
+  Divider,
   Grid,
   Group,
   MultiSelect,
@@ -244,51 +245,10 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
         <div>
           <Title order={3}>Sessions de réception</Title>
           <Text size="sm" c="dimmed" mt={4} data-testid="admin-reception-tickets-operation-anchors">
-            Comme les rapports historiques : export en tête, filtres, puis tableau et pagination.
+            Filtres serveur, synthèse des poids sur la page courante, export unitaire (CSV) ou export groupé (CSV / Excel,
+            code administrateur).
           </Text>
         </div>
-
-        <Paper withBorder p="sm" data-testid="admin-reception-tickets-bulk-export">
-          <Stack gap="xs">
-            <Text size="sm" fw={600}>
-              Export groupé
-            </Text>
-            <Text size="xs" c="dimmed">
-              Porte sur tous les tickets qui correspondent aux filtres ci-dessous (dans la limite fixée par le serveur).
-              Un code administrateur est demandé pour confirmer.
-            </Text>
-            <PasswordInput
-              label="Code administrateur"
-              description="Requis pour lancer un export groupé"
-              size="xs"
-              value={bulkAdminPin}
-              onChange={(e) => setBulkAdminPin(e.currentTarget.value)}
-              style={{ maxWidth: 280 }}
-            />
-            <Group gap="xs" wrap="wrap">
-              <Button
-                type="button"
-                size="sm"
-                variant="filled"
-                loading={bulkExportBusy === 'csv'}
-                disabled={!!bulkExportBusy && bulkExportBusy !== 'csv'}
-                onClick={() => void triggerBulkDownload('csv')}
-              >
-                Exporter en CSV
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="default"
-                loading={bulkExportBusy === 'excel'}
-                disabled={!!bulkExportBusy && bulkExportBusy !== 'excel'}
-                onClick={() => void triggerBulkDownload('excel')}
-              >
-                Exporter en Excel
-              </Button>
-            </Group>
-          </Stack>
-        </Paper>
 
         <Paper withBorder p="md">
           <Stack gap="sm">
@@ -393,16 +353,57 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
                 </Accordion.Panel>
               </Accordion.Item>
             </Accordion>
+
+            <Divider my="xs" />
+
+            <Stack gap="xs" data-testid="admin-reception-tickets-bulk-export">
+              <Text size="sm" fw={600}>
+                Export groupé
+              </Text>
+              <Text size="xs" c="dimmed">
+                Même périmètre que les filtres ci-dessus, dans la limite serveur. Code administrateur obligatoire.
+              </Text>
+              <PasswordInput
+                label="Code administrateur"
+                description="Requis pour lancer un export groupé"
+                size="xs"
+                value={bulkAdminPin}
+                onChange={(e) => setBulkAdminPin(e.currentTarget.value)}
+                style={{ maxWidth: 280 }}
+              />
+              <Group gap="xs" wrap="wrap">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="filled"
+                  loading={bulkExportBusy === 'csv'}
+                  disabled={!!bulkExportBusy && bulkExportBusy !== 'csv'}
+                  onClick={() => void triggerBulkDownload('csv')}
+                >
+                  Exporter en CSV
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="default"
+                  loading={bulkExportBusy === 'excel'}
+                  disabled={!!bulkExportBusy && bulkExportBusy !== 'excel'}
+                  onClick={() => void triggerBulkDownload('excel')}
+                >
+                  Exporter en Excel
+                </Button>
+              </Group>
+            </Stack>
           </Stack>
         </Paper>
 
         <Grid gutter="xs">
           {(
             [
-              { k: 'total', label: 'Poids total (page)', value: pageMetrics.poidsTotal, c: undefined },
-              { k: 'ent', label: 'Entrée boutique (page)', value: pageMetrics.entree, c: 'green' as const },
-              { k: 'dir', label: 'Recyclage direct (page)', value: pageMetrics.direct, c: 'orange' as const },
-              { k: 'sor', label: 'Sortie boutique (page)', value: pageMetrics.sortie, c: 'red' as const },
+              { k: 'total', label: 'Poids total traité (page)', value: pageMetrics.poidsTotal, c: undefined },
+              { k: 'ent', label: 'Total entré en boutique (page)', value: pageMetrics.entree, c: 'green' as const },
+              { k: 'dir', label: 'Total recyclé / déchetterie direct (page)', value: pageMetrics.direct, c: 'orange' as const },
+              { k: 'sor', label: 'Total sorti de boutique (page)', value: pageMetrics.sortie, c: 'red' as const },
             ] as const
           ).map((card) => (
             <Grid.Col key={card.k} span={{ base: 6, md: 3 }}>
@@ -439,7 +440,7 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
 
         {!busy && !error && rows.length === 0 ? (
           <Text size="sm" c="dimmed" data-testid="admin-reception-tickets-list-empty">
-            Aucun ticket sur cette page.
+            Aucun ticket trouvé.
           </Text>
         ) : null}
 
@@ -449,10 +450,11 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
               <Table.Tr>
                 <Table.Th>Statut</Table.Th>
                 <Table.Th>Date de création</Table.Th>
+                <Table.Th>Date de fermeture</Table.Th>
                 <Table.Th>Bénévole</Table.Th>
                 <Table.Th>Poste</Table.Th>
-                <Table.Th>Lignes</Table.Th>
-                <Table.Th>Poids total</Table.Th>
+                <Table.Th>Nb lignes</Table.Th>
+                <Table.Th>Poids total (kg)</Table.Th>
                 <Table.Th>Entrée</Table.Th>
                 <Table.Th>Direct</Table.Th>
                 <Table.Th>Sortie</Table.Th>
@@ -496,6 +498,9 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
                       <Text size="sm">{formatReceptionDateTimeFr(t.created_at)}</Text>
                     </Table.Td>
                     <Table.Td>
+                      <Text size="sm">{formatReceptionDateTimeFr(t.closed_at)}</Text>
+                    </Table.Td>
+                    <Table.Td>
                       <Text size="sm">{t.benevole_username?.trim() || '—'}</Text>
                     </Table.Td>
                     <Table.Td>
@@ -529,7 +534,7 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
                           onClick={() => spaNavigateTo(`/admin/reception-tickets/${encodeURIComponent(t.id)}`)}
                           data-testid={`admin-reception-ticket-open-${t.id}`}
                         >
-                          Détail
+                          Voir détail
                         </Button>
                         <Button
                           type="button"
@@ -538,7 +543,7 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
                           loading={exportingId === t.id}
                           onClick={(e) => void onExportRow(t.id, e)}
                         >
-                          Exporter
+                          Télécharger CSV
                         </Button>
                       </Group>
                     </Table.Td>
@@ -602,8 +607,7 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
         ) : null}
 
         <Text size="xs" c="dimmed" data-testid="admin-reception-tickets-sensitive-note">
-          La fermeture d&apos;un ticket et la modification d&apos;une ligne restent réservées à l&apos;administration
-          complète.
+          Fermeture de ticket et modification de ligne : administration complète uniquement.
         </Text>
       </Stack>
     </div>

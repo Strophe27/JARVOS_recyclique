@@ -287,6 +287,7 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
       const kpiRes = await kpiPromise;
       setKpis(kpiRes);
 
+      const tieId = (a: CashSessionListItemV1, b: CashSessionListItemV1) => String(a.id).localeCompare(String(b.id));
       const sorted = [...collected].sort((a, b) => {
         let aVal: string | number = 0;
         let bVal: string | number = 0;
@@ -294,10 +295,11 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
           aVal = new Date(a.opened_at).getTime();
           bVal = new Date(b.opened_at).getTime();
         } else if (sortField === 'operator_id') {
-            const cmp = resolveOperatorLabel(a.operator_id).localeCompare(resolveOperatorLabel(b.operator_id), 'fr', {
-              sensitivity: 'base',
-            });
-            return sortDirection === 'asc' ? cmp : -cmp;
+          const cmp = resolveOperatorLabel(a.operator_id).localeCompare(resolveOperatorLabel(b.operator_id), 'fr', {
+            sensitivity: 'base',
+          });
+          if (cmp !== 0) return sortDirection === 'asc' ? cmp : -cmp;
+          return tieId(a, b);
         } else if (sortField === 'status') {
           aVal = a.status;
           bVal = b.status;
@@ -308,11 +310,15 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
           bVal = typeof bk === 'number' ? bk : Number(bk) || 0;
         }
         if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+          const diff = sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+          if (diff !== 0) return diff;
+          return tieId(a, b);
         }
         const as = String(aVal);
         const bs = String(bVal);
-        return sortDirection === 'asc' ? as.localeCompare(bs, 'fr') : bs.localeCompare(as, 'fr');
+        const strCmp = sortDirection === 'asc' ? as.localeCompare(bs, 'fr') : bs.localeCompare(as, 'fr');
+        if (strCmp !== 0) return strCmp;
+        return tieId(a, b);
       });
 
       const labelMap: Record<string, string> = {};
@@ -335,7 +341,7 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
     } finally {
       setLoading(false);
     }
-  }, [auth, getUserName, sortDirection, sortField, toListFiltersBase, ui]);
+  }, [auth, sortDirection, sortField, toListFiltersBase, ui]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -461,7 +467,7 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
               value={ui.status}
               onChange={(e) => onFilterPatch({ status: (e.currentTarget.value || '') as UiFilters['status'] })}
               data={[
-                { value: '', label: 'Tous statuts' },
+                { value: '', label: 'Tous les statuts' },
                 { value: 'open', label: 'Ouvertes' },
                 { value: 'closed', label: 'Fermées' },
               ]}
@@ -470,7 +476,7 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
               label="Opérateur"
               value={ui.operator_id}
               onChange={(e) => onFilterPatch({ operator_id: e.currentTarget.value })}
-              data={[{ value: '', label: 'Tous opérateurs' }, ...users.map((u) => ({ value: u.id, label: userLabel(u) }))]}
+              data={[{ value: '', label: 'Tous les opérateurs' }, ...users.map((u) => ({ value: u.id, label: userLabel(u) }))]}
             />
           </Group>
           <Group grow align="flex-end">
@@ -478,7 +484,7 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
               label="Site"
               value={ui.site_id}
               onChange={(e) => onFilterPatch({ site_id: e.currentTarget.value })}
-              data={[{ value: '', label: 'Tous sites' }, ...sites.map((s) => ({ value: s.id, label: s.name }))]}
+              data={[{ value: '', label: 'Tous les sites' }, ...sites.map((s) => ({ value: s.id, label: s.name }))]}
             />
             <TextInput
               label="Recherche"
@@ -590,6 +596,64 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
         </Stack>
       </Paper>
 
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 5 }} spacing="sm">
+        <Paper withBorder p="md">
+          <Group gap="sm" wrap="nowrap">
+            <Euro size={20} />
+            <div>
+              <Text size="xs" c="dimmed">
+                Chiffre d'affaires total
+              </Text>
+              <Text fw={700}>{formatCurrency(kpis?.total_sales ?? 0)}</Text>
+            </div>
+          </Group>
+        </Paper>
+        <Paper withBorder p="md">
+          <Group gap="sm" wrap="nowrap">
+            <ShoppingCart size={20} />
+            <div>
+              <Text size="xs" c="dimmed">
+                Nombre de ventes
+              </Text>
+              <Text fw={700}>{kpis?.number_of_sales ?? 0}</Text>
+            </div>
+          </Group>
+        </Paper>
+        <Paper withBorder p="md">
+          <Group gap="sm" wrap="nowrap">
+            <Scale size={20} />
+            <div>
+              <Text size="xs" c="dimmed">
+                Poids total vendu
+              </Text>
+              <Text fw={700}>{(kpis?.total_weight_sold ?? 0).toLocaleString('fr-FR')} kg</Text>
+            </div>
+          </Group>
+        </Paper>
+        <Paper withBorder p="md">
+          <Group gap="sm" wrap="nowrap">
+            <Euro size={20} />
+            <div>
+              <Text size="xs" c="dimmed">
+                Total des dons
+              </Text>
+              <Text fw={700}>{formatCurrency(kpis?.total_donations ?? 0)}</Text>
+            </div>
+          </Group>
+        </Paper>
+        <Paper withBorder p="md">
+          <Group gap="sm" wrap="nowrap">
+            <Users size={20} />
+            <div>
+              <Text size="xs" c="dimmed">
+                Nombre de sessions
+              </Text>
+              <Text fw={700}>{kpis?.total_sessions ?? 0}</Text>
+            </div>
+          </Group>
+        </Paper>
+      </SimpleGrid>
+
       <Paper withBorder p="md" data-testid="admin-session-manager-bulk-export">
         <Stack gap="sm">
           <Text fw={600} size="sm">
@@ -654,64 +718,6 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
         </Alert>
       ) : null}
 
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 5 }} spacing="sm">
-        <Paper withBorder p="md">
-          <Group gap="sm" wrap="nowrap">
-            <Euro size={20} />
-            <div>
-              <Text size="xs" c="dimmed">
-                Chiffre d'affaires total
-              </Text>
-              <Text fw={700}>{formatCurrency(kpis?.total_sales ?? 0)}</Text>
-            </div>
-          </Group>
-        </Paper>
-        <Paper withBorder p="md">
-          <Group gap="sm" wrap="nowrap">
-            <ShoppingCart size={20} />
-            <div>
-              <Text size="xs" c="dimmed">
-                Nombre de ventes
-              </Text>
-              <Text fw={700}>{kpis?.number_of_sales ?? 0}</Text>
-            </div>
-          </Group>
-        </Paper>
-        <Paper withBorder p="md">
-          <Group gap="sm" wrap="nowrap">
-            <Scale size={20} />
-            <div>
-              <Text size="xs" c="dimmed">
-                Poids total vendu
-              </Text>
-              <Text fw={700}>{(kpis?.total_weight_sold ?? 0).toLocaleString('fr-FR')} kg</Text>
-            </div>
-          </Group>
-        </Paper>
-        <Paper withBorder p="md">
-          <Group gap="sm" wrap="nowrap">
-            <Euro size={20} />
-            <div>
-              <Text size="xs" c="dimmed">
-                Total des dons
-              </Text>
-              <Text fw={700}>{formatCurrency(kpis?.total_donations ?? 0)}</Text>
-            </div>
-          </Group>
-        </Paper>
-        <Paper withBorder p="md">
-          <Group gap="sm" wrap="nowrap">
-            <Users size={20} />
-            <div>
-              <Text size="xs" c="dimmed">
-                Nombre de sessions
-              </Text>
-              <Text fw={700}>{kpis?.total_sessions ?? 0}</Text>
-            </div>
-          </Group>
-        </Paper>
-      </SimpleGrid>
-
       {loading && !loadError ? (
         <Group justify="center" py="xl">
           <Loader size="sm" />
@@ -775,7 +781,7 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap" onClick={(e) => e.stopPropagation()}>
                     <Button size="xs" variant="light" onClick={() => spaNavigateTo(`/admin/cash-sessions/${encodeURIComponent(row.id)}`)}>
-                      Détail
+                      Voir Détail
                     </Button>
                     <Button
                       size="xs"
@@ -784,7 +790,7 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
                       loading={csvBusyId === row.id}
                       onClick={(e) => void downloadCsv(row.id, e)}
                     >
-                      Fichier
+                      Télécharger CSV
                     </Button>
                   </Group>
                 </Table.Td>

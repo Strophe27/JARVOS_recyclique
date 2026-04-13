@@ -25,6 +25,7 @@ import {
 import {
   AlertCircle,
   History,
+  KeyRound,
   LogIn,
   RefreshCw,
   Search,
@@ -37,6 +38,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getAdminGroupDisplayNamesForUser } from '../../api/admin-groups-client';
+import { fetchUsersMeForAdminDashboard } from '../../api/admin-legacy-dashboard-client';
 import {
   canonicalUserIdForPresence,
   createUserV1,
@@ -44,9 +46,13 @@ import {
   getAdminUserHistory,
   getAdminUsersList,
   getAdminUsersStatuses,
+  postAdminUserForcePassword,
+  postAdminUserResetPassword,
+  postAdminUserResetPin,
   putAdminUserActivation,
   putAdminUserRole,
   updateUserV1,
+  type AdminUserActivityEventDto,
   type AdminUserDetailV1Dto,
   type AdminUserHistoryPageDto,
   type AdminUserListRowDto,
@@ -224,13 +230,48 @@ function formatField(v: string | null | undefined): string {
   return String(v).trim();
 }
 
+const SITE_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Affichage sobre : pas d'UUID complet en brut dans la fiche. */
+function formatSiteRefForProfile(siteId: string | null | undefined): string {
+  const t = siteId?.trim();
+  if (!t) return '—';
+  if (SITE_UUID_RE.test(t)) {
+    return `Réf. interne ${t.slice(0, 4)}…${t.slice(-4)}`;
+  }
+  return t;
+}
+
+/**
+ * Même grille que le forçage super-admin côté UI (alignée sur la validation serveur Recyclique).
+ * Ne garantit pas l'acceptation : le serveur reste autorité (ex. mot de passe trop commun).
+ */
+function passwordPolicyLocalIssues(pwd: string): string[] {
+  const errors: string[] = [];
+  if (pwd.length < 8) errors.push('au moins 8 caractères');
+  if (!/[A-Z]/.test(pwd)) errors.push('une majuscule');
+  if (!/[a-z]/.test(pwd)) errors.push('une minuscule');
+  if (!/\d/.test(pwd)) errors.push('un chiffre');
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) errors.push('un caractère spécial (! @ # …)');
+  return errors;
+}
+
+function historyEventsMatchQuery(ev: AdminUserActivityEventDto, q: string): boolean {
+  const n = q.trim().toLowerCase();
+  if (!n) return true;
+  const hay = `${ev.event_type} ${ev.description}`.toLowerCase();
+  return hay.includes(n);
+}
+
 export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
   const auth = useAuthPort();
   useContextEnvelope();
 
   const [skip, setSkip] = useState(0);
   const [rows, setRows] = useState<readonly AdminUserListRowDto[]>([]);
-  const [busy, setBusy] = useState(false);
+  /** true au montage : évite le libellé « aucun compte » avant le premier chargement. */
+  const [busy, setBusy] = useState(true);
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [roleFilter, setRoleFilter] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
@@ -258,6 +299,18 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     readonly date_to?: string;
     readonly event_type?: string;
   }>({});
+  const [histTextFilter, setHistTextFilter] = useState('');
+
+  const [viewerSuperAdmin, setViewerSuperAdmin] = useState(false);
+  const [resetPwdBusy, setResetPwdBusy] = useState(false);
+  const [resetPinBusy, setResetPinBusy] = useState(false);
+  const [resetPinConfirmOpen, setResetPinConfirmOpen] = useState(false);
+  const [forcePwdOpen, setForcePwdOpen] = useState(false);
+  const [forcePwdBusy, setForcePwdBusy] = useState(false);
+  const [fPwd, setFPwd] = useState('');
+  const [fPwd2, setFPwd2] = useState('');
+  const [fReason, setFReason] = useState('');
+  const [fPwdErr, setFPwdErr] = useState<string | null>(null);
 
   const [userGroupNames, setUserGroupNames] = useState<readonly string[]>([]);
   const [userGroupsBusy, setUserGroupsBusy] = useState(false);
@@ -343,6 +396,19 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
   }, [refreshAll]);
 
   useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const me = await fetchUsersMeForAdminDashboard(auth);
+      if (cancelled) return;
+      const r = me?.role?.trim().toLowerCase().replace(/_/g, '-');
+      setViewerSuperAdmin(r === 'super-admin');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [auth]);
+
+  useEffect(() => {
     presencePollRef.current = window.setInterval(() => void loadStatuses(), 30_000);
     return () => {
       if (presencePollRef.current != null) window.clearInterval(presencePollRef.current);
@@ -362,6 +428,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     setHistDraftTo('');
     setHistDraftType(null);
     setHistApplied({});
+    setHistTextFilter('');
   }, [selected?.id]);
 
   useEffect(() => {
@@ -473,8 +540,16 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     setEditOpen(true);
   }, [detail]);
 
+  const createPasswordIssues = useMemo(() => passwordPolicyLocalIssues(cPassword), [cPassword]);
+
   const handleCreateUser = useCallback(async () => {
     setFeedback(null);
+    const pwdIssues = passwordPolicyLocalIssues(cPassword);
+    if (pwdIssues.length) {
+      setFeedback({ kind: 'error', text: `Mot de passe insuffisant : ${pwdIssues.join(', ')}.` });
+      return;
+    }
+    if (!cUsername.trim()) return;
     setCreateBusy(true);
     const res = await createUserV1(auth, {
       username: cUsername.trim(),
@@ -502,6 +577,9 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     setCStatus('active');
     await refreshAll();
   }, [auth, cEmail, cFirst, cLast, cPassword, cRole, cStatus, cUsername, refreshAll]);
+
+  const createSubmitDisabled =
+    !cUsername.trim() || createPasswordIssues.length > 0 || createBusy;
 
   const handleSaveProfile = useCallback(async () => {
     if (!selected || !detail) return;
@@ -580,6 +658,63 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     if (d.ok) setDetail(d.data);
   }, [auth, editWorkflow, loadList, selected]);
 
+  const handleResetPasswordEmail = useCallback(async () => {
+    if (!selected) return;
+    setFeedback(null);
+    setResetPwdBusy(true);
+    const res = await postAdminUserResetPassword(auth, selected.id);
+    setResetPwdBusy(false);
+    if (!res.ok) {
+      setFeedback({ kind: 'error', text: res.detail });
+      return;
+    }
+    setFeedback({ kind: 'ok', text: res.message });
+  }, [auth, selected]);
+
+  const handleConfirmResetPin = useCallback(async () => {
+    if (!selected) return;
+    setFeedback(null);
+    setResetPinBusy(true);
+    const res = await postAdminUserResetPin(auth, selected.id);
+    setResetPinBusy(false);
+    setResetPinConfirmOpen(false);
+    if (!res.ok) {
+      setFeedback({ kind: 'error', text: res.detail });
+      return;
+    }
+    setFeedback({ kind: 'ok', text: res.message });
+  }, [auth, selected]);
+
+  const handleSubmitForcePassword = useCallback(async () => {
+    if (!selected) return;
+    setFPwdErr(null);
+    const errs = passwordPolicyLocalIssues(fPwd);
+    if (errs.length) {
+      setFPwdErr(`Exigences : ${errs.join(', ')}.`);
+      return;
+    }
+    if (fPwd !== fPwd2) {
+      setFPwdErr('Les deux saisies du mot de passe ne correspondent pas.');
+      return;
+    }
+    setFeedback(null);
+    setForcePwdBusy(true);
+    const res = await postAdminUserForcePassword(auth, selected.id, {
+      new_password: fPwd,
+      reason: fReason.trim() || null,
+    });
+    setForcePwdBusy(false);
+    if (!res.ok) {
+      setFeedback({ kind: 'error', text: res.detail });
+      return;
+    }
+    setFeedback({ kind: 'ok', text: res.message });
+    setForcePwdOpen(false);
+    setFPwd('');
+    setFPwd2('');
+    setFReason('');
+  }, [auth, fPwd, fPwd2, fReason, selected]);
+
   const applySearch = useCallback(() => {
     setAppliedSearch(searchDraft.trim());
   }, [searchDraft]);
@@ -606,13 +741,24 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
     [histApplied.date_from, histApplied.date_to, histApplied.event_type],
   );
 
+  const displayedHistoryEvents = useMemo(() => {
+    if (!historyPage) return [];
+    return historyPage.events.filter((ev) => historyEventsMatchQuery(ev, histTextFilter));
+  }, [historyPage, histTextFilter]);
+
   const filteredRows = useMemo(
     () => rows.filter((u) => matchesSearch(u, appliedSearch)),
     [rows, appliedSearch],
   );
 
   const rangeLabel =
-    rows.length === 0 ? 'Aucun compte à afficher pour cette page' : `Lignes ${skip + 1} à ${skip + rows.length}`;
+    busy && rows.length === 0
+      ? 'Chargement...'
+      : rows.length === 0
+        ? 'Aucun compte à afficher pour cette page'
+        : appliedSearch.trim()
+          ? `${filteredRows.length} affiché(s) sur ${rows.length} chargé(s) (tranche ${skip + 1}–${skip + rows.length})`
+          : `Lignes ${skip + 1} à ${skip + rows.length}`;
 
   const canNext = rows.length === PAGE_LIMIT;
   const canPrev = skip >= PAGE_LIMIT;
@@ -930,11 +1076,74 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
                       notes={mergedNotes}
                       skills={mergedSkills}
                       availability={mergedAvail}
-                      siteId={mergedSite}
+                      siteDisplay={formatSiteRefForProfile(mergedSite)}
                       isActive={mergedActive}
                       createdAt={mergedCreated}
                       updatedAt={mergedUpdated}
                     />
+                    {detail && !detailLoading ? (
+                      <Paper withBorder p="sm" mt="md" data-testid="admin-users-security-actions">
+                        <Stack gap="sm">
+                          <Group gap="xs">
+                            <KeyRound size={16} />
+                            <Text size="sm" fw={600}>
+                              Sécurité du compte
+                            </Text>
+                          </Group>
+                          <Text size="xs" c="dimmed">
+                            E-mail de réinitialisation, effacement du PIN, forçage du mot de passe (super-admin,
+                            vérifié côté serveur).
+                          </Text>
+                          <Group gap="xs" wrap="wrap">
+                            <Tooltip
+                              label="Un courriel valide est nécessaire pour envoyer le lien de réinitialisation."
+                              disabled={!!mergedEmail?.trim()}
+                              withArrow
+                            >
+                              <span>
+                                <Button
+                                  size="xs"
+                                  variant="light"
+                                  loading={resetPwdBusy}
+                                  onClick={() => void handleResetPasswordEmail()}
+                                  disabled={!mergedEmail?.trim()}
+                                  data-testid="admin-users-reset-password"
+                                >
+                                  E-mail réinit. mot de passe
+                                </Button>
+                              </span>
+                            </Tooltip>
+                            <Button
+                              size="xs"
+                              variant="light"
+                              color="orange"
+                              onClick={() => setResetPinConfirmOpen(true)}
+                              disabled={resetPinBusy}
+                              data-testid="admin-users-reset-pin-open"
+                            >
+                              Réinitialiser le PIN
+                            </Button>
+                            {viewerSuperAdmin ? (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="red"
+                                onClick={() => {
+                                  setFPwd('');
+                                  setFPwd2('');
+                                  setFReason('');
+                                  setFPwdErr(null);
+                                  setForcePwdOpen(true);
+                                }}
+                                data-testid="admin-users-force-password-open"
+                              >
+                                Forcer un mot de passe
+                              </Button>
+                            ) : null}
+                          </Group>
+                        </Stack>
+                      </Paper>
+                    ) : null}
                     <Stack gap="xs" mt="md" data-testid="admin-users-detail-groups">
                       <Text size="xs" fw={600} tt="uppercase" c="dimmed">
                         Groupes
@@ -1077,6 +1286,14 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
                             Appliquer
                           </Button>
                         </Group>
+                        <TextInput
+                          label="Filtrer sur la page affichée"
+                          description="Recherche locale dans les événements déjà chargés (aucun appel API supplémentaire)."
+                          value={histTextFilter}
+                          onChange={(e) => setHistTextFilter(e.currentTarget.value)}
+                          leftSection={<Search size={14} />}
+                          data-testid="admin-users-history-text-filter"
+                        />
                       </Stack>
                     </Paper>
 
@@ -1102,14 +1319,22 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
                           : 'Aucune activité enregistrée pour cet utilisateur.'}
                       </Alert>
                     ) : null}
-                    {historyPage && historyPage.events.length > 0 ? (
+                    {!histBusy &&
+                    historyPage &&
+                    historyPage.events.length > 0 &&
+                    displayedHistoryEvents.length === 0 ? (
+                      <Alert color="gray" icon={<AlertCircle size={18} />} title="Aucun résultat sur cette page">
+                        Aucun événement chargé ne correspond au texte saisi. Modifiez le filtre ou changez de page.
+                      </Alert>
+                    ) : null}
+                    {historyPage && displayedHistoryEvents.length > 0 ? (
                       <Timeline
                         active={-1}
                         bulletSize={24}
                         lineWidth={2}
                         data-testid="admin-users-history-list"
                       >
-                        {historyPage.events.map((ev) => (
+                        {displayedHistoryEvents.map((ev) => (
                           <Timeline.Item
                             key={`${ev.id}-${ev.date}`}
                             bullet={eventHistoryBullet(ev.event_type)}
@@ -1156,6 +1381,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
                           {historyPage.total_count === 0
                             ? '—'
                             : `${histSkip + 1}–${Math.min(histSkip + historyPage.events.length, historyPage.total_count)} sur ${historyPage.total_count}`}
+                          {histTextFilter.trim() ? ` · ${displayedHistoryEvents.length} affiché(s)` : null}
                         </Text>
                         <Button
                           size="xs"
@@ -1179,8 +1405,13 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
       <Modal opened={createOpen} onClose={() => setCreateOpen(false)} title="Créer un utilisateur" size="md">
         <Stack gap="sm">
           <Text size="xs" c="dimmed">
-            Mot de passe : au moins 8 caractères, avec une majuscule, une minuscule, un chiffre et un signe (par ex. ! ou
-            ?).
+            Mot de passe attendu (même grille que la validation serveur et le forçage super-admin) : au moins 8
+            caractères, une majuscule, une minuscule, un chiffre et un caractère spécial parmi ceux listés côté API
+            (ex. ! ? # @).
+          </Text>
+          <Text size="xs" c="dimmed">
+            Le serveur peut encore refuser un mot de passe jugé inacceptable (ex. trop simple), même si la grille
+            locale est respectée.
           </Text>
           <TextInput
             label="Identifiant"
@@ -1197,6 +1428,11 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
             onChange={(e) => setCPassword(e.currentTarget.value)}
             data-testid="admin-users-create-password"
           />
+          {cPassword.length > 0 && createPasswordIssues.length > 0 ? (
+            <Text size="xs" c="orange" data-testid="admin-users-create-password-policy">
+              Il manque encore : {createPasswordIssues.join(', ')}.
+            </Text>
+          ) : null}
           <TextInput label="Prénom" value={cFirst} onChange={(e) => setCFirst(e.currentTarget.value)} />
           <TextInput label="Nom" value={cLast} onChange={(e) => setCLast(e.currentTarget.value)} />
           <TextInput label="Courriel" value={cEmail} onChange={(e) => setCEmail(e.currentTarget.value)} />
@@ -1219,7 +1455,7 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
             <Button
               loading={createBusy}
               onClick={() => void handleCreateUser()}
-              disabled={!cUsername.trim() || cPassword.length < 8}
+              disabled={createSubmitDisabled}
               data-testid="admin-users-create-submit"
             >
               Créer le compte
@@ -1253,6 +1489,77 @@ export function AdminUsersWidget(_: RegisteredWidgetProps): ReactNode {
           </Group>
         </Stack>
       </Modal>
+
+      <Modal
+        opened={resetPinConfirmOpen}
+        onClose={() => {
+          if (!resetPinBusy) setResetPinConfirmOpen(false);
+        }}
+        title="Réinitialiser le PIN"
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Le PIN sera effacé ; la personne devra en définir un nouveau à la prochaine utilisation des fonctions qui en
+            exigent un.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" disabled={resetPinBusy} onClick={() => setResetPinConfirmOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              color="orange"
+              loading={resetPinBusy}
+              onClick={() => void handleConfirmResetPin()}
+              data-testid="admin-users-reset-pin-confirm"
+            >
+              Confirmer
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal opened={forcePwdOpen} onClose={() => setForcePwdOpen(false)} title="Forcer un mot de passe" size="md">
+        <Stack gap="sm">
+          <Text size="xs" c="dimmed">
+            Opération réservée au super-admin côté API. Règles habituelles : 8 caractères minimum, majuscule,
+            minuscule, chiffre, caractère spécial.
+          </Text>
+          {fPwdErr ? (
+            <Text size="sm" c="red">
+              {fPwdErr}
+            </Text>
+          ) : null}
+          <TextInput
+            label="Nouveau mot de passe"
+            type="password"
+            value={fPwd}
+            onChange={(e) => setFPwd(e.currentTarget.value)}
+            data-testid="admin-users-force-password-field"
+          />
+          <TextInput
+            label="Confirmer"
+            type="password"
+            value={fPwd2}
+            onChange={(e) => setFPwd2(e.currentTarget.value)}
+            data-testid="admin-users-force-password-confirm"
+          />
+          <TextInput label="Motif (optionnel)" value={fReason} onChange={(e) => setFReason(e.currentTarget.value)} />
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={() => setForcePwdOpen(false)} disabled={forcePwdBusy}>
+              Annuler
+            </Button>
+            <Button
+              color="red"
+              loading={forcePwdBusy}
+              onClick={() => void handleSubmitForcePassword()}
+              data-testid="admin-users-force-password-submit"
+            >
+              Appliquer
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }
@@ -1267,7 +1574,7 @@ function ProfileFields(props: {
   readonly notes?: string | null;
   readonly skills?: string | null;
   readonly availability?: string | null;
-  readonly siteId?: string | null;
+  readonly siteDisplay: string;
   readonly isActive?: boolean;
   readonly createdAt?: string;
   readonly updatedAt?: string;
@@ -1282,7 +1589,7 @@ function ProfileFields(props: {
     { label: 'Compétences', value: formatField(props.skills) },
     { label: 'Disponibilités', value: formatField(props.availability) },
     { label: 'Notes', value: formatField(props.notes) },
-    { label: 'Site', value: formatField(props.siteId) },
+    { label: 'Rattachement site', value: formatField(props.siteDisplay) },
     {
       label: 'Compte activé',
       value: props.isActive === undefined ? '—' : props.isActive ? 'Oui' : 'Non',

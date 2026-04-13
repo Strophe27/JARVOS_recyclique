@@ -214,38 +214,53 @@ function parseAdminUserDetailV1(row: unknown): AdminUserDetailV1Dto | null {
   };
 }
 
+function parseMinutesSinceLogin(v: unknown): number | null | undefined {
+  if (v === null) return null;
+  if (v === undefined) return undefined;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
 function parseStatusRow(row: unknown): AdminUserStatusOnlineRowDto | null {
   if (!isRecord(row)) return null;
-  const user_id = row.user_id;
+  const rawId = row.user_id;
   const is_online = row.is_online;
-  if (typeof user_id !== 'string' || typeof is_online !== 'boolean') return null;
+  const user_id =
+    typeof rawId === 'string' ? rawId.trim() : rawId != null && String(rawId).trim() ? String(rawId).trim() : '';
+  if (!user_id || typeof is_online !== 'boolean') return null;
   return {
     user_id,
     is_online,
     last_login: typeof row.last_login === 'string' || row.last_login === null ? row.last_login : undefined,
-    minutes_since_login:
-      typeof row.minutes_since_login === 'number' || row.minutes_since_login === null
-        ? row.minutes_since_login
-        : undefined,
+    minutes_since_login: parseMinutesSinceLogin(row.minutes_since_login),
   };
 }
 
 function parseStatusesBundle(json: unknown): AdminUserStatusesBundleDto | null {
   if (!isRecord(json)) return null;
   const raw = json.user_statuses;
-  const total_count = json.total_count;
-  const online_count = json.online_count;
-  const offline_count = json.offline_count;
-  const timestamp = json.timestamp;
   if (!Array.isArray(raw)) return null;
-  if (typeof total_count !== 'number' || typeof online_count !== 'number' || typeof offline_count !== 'number')
-    return null;
-  if (typeof timestamp !== 'string') return null;
   const user_statuses: AdminUserStatusOnlineRowDto[] = [];
   for (const r of raw) {
     const row = parseStatusRow(r);
     if (row) user_statuses.push(row);
   }
+  const onlineFromRows = user_statuses.filter((s) => s.is_online).length;
+  const total_count =
+    typeof json.total_count === 'number' && Number.isFinite(json.total_count)
+      ? json.total_count
+      : user_statuses.length;
+  const online_count =
+    typeof json.online_count === 'number' && Number.isFinite(json.online_count) ? json.online_count : onlineFromRows;
+  const offline_count =
+    typeof json.offline_count === 'number' && Number.isFinite(json.offline_count)
+      ? json.offline_count
+      : Math.max(0, total_count - online_count);
+  const timestamp = typeof json.timestamp === 'string' ? json.timestamp : new Date().toISOString();
   return { user_statuses, total_count, online_count, offline_count, timestamp };
 }
 
@@ -578,4 +593,104 @@ export async function putAdminUserActivation(
     return adminUsersHttpError(res.status, json, 'Réponse serveur invalide');
   }
   return { ok: true, message: parsed.message, success: parsed.success };
+}
+
+/** `POST /v1/admin/users/{user_id}/reset-password` — envoi e-mail réinit. (admin). */
+export async function postAdminUserResetPassword(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  userId: string,
+): Promise<AdminMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/admin/users/${encodeURIComponent(userId)}/reset-password`;
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'POST', credentials: 'include', headers: authHeaders(auth) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return adminUsersHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  if (!res.ok) {
+    return adminUsersHttpError(res.status, json, text || res.statusText);
+  }
+  const parsed = parseAdminMutation(json);
+  if (!parsed) {
+    return adminUsersHttpError(res.status, json, 'Réponse serveur invalide');
+  }
+  return { ok: true, message: parsed.message, success: parsed.success };
+}
+
+export type ForcePasswordBody = {
+  readonly new_password: string;
+  readonly reason?: string | null;
+};
+
+/** `POST /v1/admin/users/{user_id}/force-password` — super-admin uniquement côté API. */
+export async function postAdminUserForcePassword(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  userId: string,
+  body: ForcePasswordBody,
+): Promise<AdminMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/admin/users/${encodeURIComponent(userId)}/force-password`;
+  const headers = authHeaders(auth, { 'Content-Type': 'application/json' });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({
+        new_password: body.new_password,
+        reason: body.reason ?? null,
+      }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return adminUsersHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  if (!res.ok) {
+    return adminUsersHttpError(res.status, json, text || res.statusText);
+  }
+  const parsed = parseAdminMutation(json);
+  if (!parsed) {
+    return adminUsersHttpError(res.status, json, 'Réponse serveur invalide');
+  }
+  return { ok: true, message: parsed.message, success: parsed.success };
+}
+
+function parseResetPinResponse(json: unknown): { message: string } | null {
+  if (!isRecord(json)) return null;
+  const message = json.message;
+  if (typeof message !== 'string') return null;
+  return { message };
+}
+
+/** `POST /v1/admin/users/{user_id}/reset-pin` — réponse `{ message, … }`. */
+export async function postAdminUserResetPin(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  userId: string,
+): Promise<AdminMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/admin/users/${encodeURIComponent(userId)}/reset-pin`;
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'POST', credentials: 'include', headers: authHeaders(auth) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return adminUsersHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  if (!res.ok) {
+    return adminUsersHttpError(res.status, json, text || res.statusText);
+  }
+  const parsed = parseResetPinResponse(json);
+  if (!parsed) {
+    return adminUsersHttpError(res.status, json, 'Réponse serveur invalide');
+  }
+  return { ok: true, message: parsed.message, success: true };
 }

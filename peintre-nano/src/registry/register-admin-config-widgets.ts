@@ -1,3 +1,4 @@
+import { AdminAdvancedSettingsWidget } from '../domains/admin-config/AdminAdvancedSettingsWidget';
 import { AdminAuditLogWidget } from '../domains/admin-config/AdminAuditLogWidget';
 import { AdminCategoriesWidget } from '../domains/admin-config/AdminCategoriesWidget';
 import { AdminGroupsWidget } from '../domains/admin-config/AdminGroupsWidget';
@@ -14,6 +15,8 @@ import { registerWidget } from './widget-registry';
 /** Stories 17.1–17.3 — widgets admin mutualisables (`admin-config/`), allowlist CREOS ; coquille `AdminListPageShell`. */
 export function registerAdminConfigWidgets(): void {
   registerWidget('admin.users.demo', AdminUsersWidget);
+  /** Paramètres session JWT super-admin (`adminSettingsSessionGet` / `adminSettingsSessionPut`). */
+  registerWidget('admin.advanced.settings.demo', AdminAdvancedSettingsWidget);
   /** Story 14.5 — liste/détail/mutations `adminGroups*` (`admin-groups-client.ts`). */
   registerWidget('admin.groups.demo', AdminGroupsWidget);
   registerWidget('admin.categories.demo', AdminCategoriesWidget);

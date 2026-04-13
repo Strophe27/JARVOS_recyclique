@@ -60,6 +60,7 @@ import pageTransverseAdminSites from '../../../../contracts/creos/manifests/page
 import pageTransverseAdminReceptionSessions from '../../../../contracts/creos/manifests/page-transverse-admin-reception-sessions.json';
 import pageTransverseAdminReceptionStats from '../../../../contracts/creos/manifests/page-transverse-admin-reception-stats.json';
 import pageTransverseAdminSessionManager from '../../../../contracts/creos/manifests/page-transverse-admin-session-manager.json';
+import pageTransverseAdminSettings from '../../../../contracts/creos/manifests/page-transverse-admin-settings.json';
 import pageTransverseConsultationArticle from '../../../../contracts/creos/manifests/page-transverse-consultation-article.json';
 import pageTransverseConsultationDon from '../../../../contracts/creos/manifests/page-transverse-consultation-don.json';
 import pageTransverseDashboard from '../../../../contracts/creos/manifests/page-transverse-dashboard.json';
@@ -162,6 +163,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseAdminCashRegisters),
     JSON.stringify(pageTransverseAdminSites),
     JSON.stringify(pageTransverseAdminSessionManager),
+    JSON.stringify(pageTransverseAdminSettings),
     JSON.stringify(pageTransverseAdminReceptionStats),
     JSON.stringify(pageTransverseAdminReceptionSessions),
     JSON.stringify(pageTransverseAdminReportsHub),
@@ -199,6 +201,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-admin-cash-registers.json',
           'contracts/creos/manifests/page-transverse-admin-sites.json',
           'contracts/creos/manifests/page-transverse-admin-session-manager.json',
+          'contracts/creos/manifests/page-transverse-admin-settings.json',
           'contracts/creos/manifests/page-transverse-admin-reception-stats.json',
           'contracts/creos/manifests/page-transverse-admin-reception-sessions.json',
           'contracts/creos/manifests/page-transverse-admin-reports-hub.json',

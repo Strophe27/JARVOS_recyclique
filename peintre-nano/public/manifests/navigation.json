@@ -98,6 +98,42 @@
       }
     },
     {
+      "id": "transverse-admin-groups",
+      "route_key": "transverse-admin-groups",
+      "path": "/admin/groups",
+      "page_key": "transverse-admin-groups",
+      "shortcut_id": "go-transverse-admin-groups",
+      "label_key": "nav.transverse.admin.groups",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-categories",
+      "route_key": "transverse-admin-categories",
+      "path": "/admin/categories",
+      "page_key": "transverse-admin-categories",
+      "shortcut_id": "go-transverse-admin-categories",
+      "label_key": "nav.transverse.admin.categories",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-audit-log",
+      "route_key": "transverse-admin-audit-log",
+      "path": "/admin/audit-log",
+      "page_key": "transverse-admin-audit-log",
+      "shortcut_id": "go-transverse-admin-audit-log",
+      "label_key": "nav.transverse.admin.auditLog",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "transverse-admin-cash-registers",
       "route_key": "transverse-admin-cash-registers",
       "path": "/admin/cash-registers",
@@ -128,6 +164,18 @@
       "page_key": "transverse-admin-session-manager",
       "shortcut_id": "go-transverse-admin-session-manager",
       "label_key": "nav.transverse.admin.sessionManager",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-settings",
+      "route_key": "transverse-admin-settings",
+      "path": "/admin/settings",
+      "page_key": "transverse-admin-settings",
+      "shortcut_id": "go-transverse-admin-settings",
+      "label_key": "nav.transverse.admin.settings",
       "visibility": {
         "permission_any": ["transverse.admin.view"],
         "contexts_any": ["site"]

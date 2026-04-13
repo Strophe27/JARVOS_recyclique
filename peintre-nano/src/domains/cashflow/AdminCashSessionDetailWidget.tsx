@@ -11,6 +11,7 @@ import {
   Table,
   Text,
   Textarea,
+  Title,
 } from '@mantine/core';
 import {
   ArrowLeft,
@@ -168,7 +169,7 @@ type TicketPeekState =
   | { phase: 'ready'; saleId: string; operatorLabel: string; sale: SaleResponseV1 & { sale_date?: string | null; payment_method?: string | null } }
   | { phase: 'error'; message: string };
 
-/** Détail session caisse admin — lecture journal, ticket, correction encadrée si autorisée, note (PUT legacy) si vue admin. */
+/** Détail session caisse (admin). */
 export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): ReactNode {
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
@@ -258,8 +259,35 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
       if (prev.phase !== 'ready' || prev.saleId !== updated.id) return prev;
       return { ...prev, sale: updated };
     });
-    void loadSession();
-  }, [loadSession]);
+    setSession((prev) => {
+      if (!prev || !Array.isArray(prev.sales)) return prev;
+      const next = (prev.sales as ReadonlyArray<Record<string, unknown>>).map((row) =>
+        saleIdOf(row) === updated.id ? { ...row, note: updated.note ?? '' } : row,
+      );
+      return { ...prev, sales: next };
+    });
+  }, []);
+
+  const salesOrdered = useMemo(() => {
+    if (!session || !Array.isArray(session.sales)) return [];
+    const raw = [...(session.sales as ReadonlyArray<Record<string, unknown>>)];
+    raw.sort((a, b) => {
+      const da = Date.parse(saleRowDate(a));
+      const db = Date.parse(saleRowDate(b));
+      const na = Number.isFinite(da) ? da : 0;
+      const nb = Number.isFinite(db) ? db : 0;
+      if (na !== nb) return na - nb;
+      return saleIdOf(a).localeCompare(saleIdOf(b));
+    });
+    return raw;
+  }, [session]);
+
+  const donationsTotal = useMemo(() => {
+    if (session?.total_donations != null && session.total_donations !== undefined) {
+      return Number(session.total_donations);
+    }
+    return totalDonationsFromSales(salesOrdered);
+  }, [session?.total_donations, salesOrdered]);
 
   if (!sessionId) {
     return (
@@ -271,12 +299,6 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
       </Alert>
     );
   }
-
-  const sales = Array.isArray(session?.sales) ? (session!.sales as ReadonlyArray<Record<string, unknown>>) : [];
-  const donationsTotal =
-    session?.total_donations != null && session.total_donations !== undefined
-      ? Number(session.total_donations)
-      : totalDonationsFromSales(sales);
 
   const initialLoad = busy && !session;
 
@@ -306,6 +328,16 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
           Rafraîchir
         </Button>
       </Group>
+
+      <Title order={1} size="h2" data-testid="admin-cash-session-title">
+        Détail de la session de caisse
+      </Title>
+      {session ? (
+        <Text size="sm" c="dimmed" data-testid="admin-cash-session-title-meta">
+          {[session.operator_name?.trim(), session.site_name?.trim()].filter(Boolean).join(' · ') || '—'}
+          {session.opened_at ? ` · Ouverte le ${formatDate(session.opened_at)}` : ''}
+        </Text>
+      ) : null}
 
       <CashflowClientErrorAlert error={error} testId="admin-cash-session-error" />
 
@@ -424,7 +456,7 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
                     <Text size="xs" c="dimmed">
                       Nombre de paniers
                     </Text>
-                    <Text fw={600}>{sales.length}</Text>
+                    <Text fw={600}>{salesOrdered.length}</Text>
                   </div>
                 </Group>
               </Grid.Col>
@@ -493,11 +525,11 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
             <Group gap="sm" mb="md" align="center">
               <Package size={22} aria-hidden />
               <Text fw={600} size="md" my={0}>
-                Journal des ventes ({sales.length} vente{sales.length > 1 ? 's' : ''})
+                Journal des ventes ({salesOrdered.length} vente{salesOrdered.length > 1 ? 's' : ''})
               </Text>
             </Group>
 
-            {sales.length === 0 ? (
+            {salesOrdered.length === 0 ? (
               <Text size="sm" c="dimmed" data-testid="admin-cash-session-empty-sales">
                 Aucune vente enregistrée pour cette session.
               </Text>
@@ -516,7 +548,7 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {sales.map((raw) => {
+                  {salesOrdered.map((raw) => {
                     const row = raw;
                     const sid = saleIdOf(row);
                     const life = saleLifecycle(row);

@@ -396,17 +396,22 @@ export function RuntimeDemoApp() {
         return;
       }
       if (pathForMatch === '/admin/groups') {
-        setSelectedEntryId('transverse-admin');
+        setSelectedEntryId('transverse-admin-groups');
         setSearchSnapshot(window.location.search);
         return;
       }
       if (pathForMatch === '/admin/categories') {
-        setSelectedEntryId('transverse-admin');
+        setSelectedEntryId('transverse-admin-categories');
         setSearchSnapshot(window.location.search);
         return;
       }
       if (pathForMatch === '/admin/audit-log') {
-        setSelectedEntryId('transverse-admin');
+        setSelectedEntryId('transverse-admin-audit-log');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/settings') {
+        setSelectedEntryId('transverse-admin-settings');
         setSearchSnapshot(window.location.search);
         return;
       }
@@ -534,6 +539,9 @@ export function RuntimeDemoApp() {
     }
     if (adminPath === '/admin/audit-log') {
       return 'transverse-admin-audit-log';
+    }
+    if (adminPath === '/admin/settings') {
+      return 'transverse-admin-settings';
     }
     if (ADMIN_RECEPTION_TICKET_PATH.test(pathRoute)) {
       return 'admin-reception-ticket-detail';

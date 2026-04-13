@@ -14,9 +14,13 @@ export function toolbarSelectedEntryIdFromResolved(
     resolvedEntryId === 'transverse-admin-access' ||
     resolvedEntryId === 'transverse-admin-site' ||
     resolvedEntryId === 'transverse-admin-users' ||
+    resolvedEntryId === 'transverse-admin-groups' ||
+    resolvedEntryId === 'transverse-admin-categories' ||
+    resolvedEntryId === 'transverse-admin-audit-log' ||
     resolvedEntryId === 'transverse-admin-cash-registers' ||
     resolvedEntryId === 'transverse-admin-sites' ||
     resolvedEntryId === 'transverse-admin-session-manager' ||
+    resolvedEntryId === 'transverse-admin-settings' ||
     resolvedEntryId === 'transverse-admin-reception-stats' ||
     resolvedEntryId === 'transverse-admin-reception-sessions'
   ) {

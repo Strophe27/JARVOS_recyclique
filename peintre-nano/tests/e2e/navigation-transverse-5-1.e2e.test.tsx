@@ -771,7 +771,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
             'admin',
           );
           expect(within(main).getByTestId('admin-reception-tickets-operation-anchors').textContent).toMatch(
-            /export en tête/i,
+            /Filtres serveur/i,
           );
         });
         expect(within(main).getByTestId('widget-admin-reception-tickets-list')).toBeTruthy();
@@ -1045,7 +1045,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
           expect(within(main).getByTestId('widget-admin-reception-tickets-list')).toBeTruthy();
         });
         expect(within(main).getByTestId('admin-reception-tickets-operation-anchors').textContent).toMatch(
-          /export en tête/i,
+          /Filtres serveur/i,
         );
       } finally {
         global.fetch = origFetch;

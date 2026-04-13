@@ -12,7 +12,6 @@ import {
   Title,
 } from '@mantine/core';
 import {
-  Activity,
   Banknote,
   Bell,
   Building2,
@@ -38,6 +37,7 @@ import {
   fetchUsersListForAdminDashboard,
   fetchUsersMeForAdminDashboard,
 } from '../../api/admin-legacy-dashboard-client';
+import { canonicalUserIdForPresence } from '../../api/admin-users-client';
 import { getCurrentOpenCashSession } from '../../api/cash-session-client';
 import { fetchCashSessionStatsSummary, fetchReceptionStatsSummary } from '../../api/dashboard-legacy-stats-client';
 import { getReceptionTicketsList } from '../../api/reception-client';
@@ -134,7 +134,8 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
     setUsersLoading(true);
     try {
       const me = await fetchUsersMeForAdminDashboard(auth);
-      setIsSuperAdmin(me?.role === 'super-admin');
+      const r = me?.role?.trim().toLowerCase().replace(/_/g, '-');
+      setIsSuperAdmin(r === 'super-admin');
 
       const [sessionRes, ticketsRes] = await Promise.all([
         getCurrentOpenCashSession(auth),
@@ -179,7 +180,8 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
       ]);
       const online = statusRes.filter((s) => s.is_online);
       const merged = online.map((st) => {
-        const info = allUsers.find((u) => u.id === st.user_id);
+        const stCanon = canonicalUserIdForPresence(st.user_id);
+        const info = allUsers.find((u) => canonicalUserIdForPresence(u.id) === stCanon);
         return {
           user_id: st.user_id,
           username: info?.username,
@@ -589,34 +591,37 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
               Administration Super-Admin
             </Title>
             <Grid gutter="md">
-              <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
                 <Button
                   variant="default"
                   className={classes.superAdminButton}
-                  leftSection={<Activity size={20} />}
-                  onClick={() => handleNavigation('/admin/health')}
+                  leftSection={<Building2 size={20} />}
+                  onClick={() => handleNavigation('/admin/sites')}
+                  data-testid="admin-legacy-nav-sites"
                 >
-                  Santé Système
+                  Sites enregistrés
                 </Button>
               </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+                <Button
+                  variant="default"
+                  className={classes.superAdminButton}
+                  leftSection={<Banknote size={20} />}
+                  onClick={() => handleNavigation('/admin/cash-registers')}
+                  data-testid="admin-legacy-nav-cash-registers"
+                >
+                  Caisses enregistrées
+                </Button>
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
                 <Button
                   variant="default"
                   className={classes.superAdminButton}
                   leftSection={<Settings size={20} />}
                   onClick={() => handleNavigation('/admin/settings')}
+                  data-testid="admin-legacy-nav-advanced-settings"
                 >
-                  Paramètres Avancés
-                </Button>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <Button
-                  variant="default"
-                  className={classes.superAdminButton}
-                  leftSection={<Building2 size={20} />}
-                  onClick={() => handleNavigation('/admin/sites-and-registers')}
-                >
-                  Sites & Caisses
+                  Paramètres avancés
                 </Button>
               </Grid.Col>
             </Grid>

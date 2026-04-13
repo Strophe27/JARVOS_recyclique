@@ -61,9 +61,13 @@ describe('toolbarSelectedEntryIdFromResolved', () => {
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-access', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-site', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-users', true)).toBe('transverse-admin');
+    expect(toolbarSelectedEntryIdFromResolved('transverse-admin-groups', true)).toBe('transverse-admin');
+    expect(toolbarSelectedEntryIdFromResolved('transverse-admin-categories', true)).toBe('transverse-admin');
+    expect(toolbarSelectedEntryIdFromResolved('transverse-admin-audit-log', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-cash-registers', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-sites', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-session-manager', true)).toBe('transverse-admin');
+    expect(toolbarSelectedEntryIdFromResolved('transverse-admin-settings', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-reception-stats', true)).toBe('transverse-admin');
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-reception-sessions', true)).toBe('transverse-admin');
   });
