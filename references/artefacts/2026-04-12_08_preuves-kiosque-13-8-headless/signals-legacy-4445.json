@@ -1,8 +1,0 @@
-{
-  "url": "http://localhost:4445/cash-register",
-  "hasKioskTestId": false,
-  "hasCategoryGrid": false,
-  "hasWizardStep": false,
-  "title": "RecyClique",
-  "textSample": "RecyClique\nTableau de bord\nCaisse\nRéception\nAdministration\nadmin"
-}

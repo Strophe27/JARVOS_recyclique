@@ -3,7 +3,10 @@ import '@mantine/core/styles.css';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { RootProviders } from '../../src/app/providers/RootProviders';
-import { AdminListPageShell } from '../../src/domains/admin-config/AdminListPageShell';
+import {
+  AdminListPageShell,
+  DEFAULT_STATE_LIST_CAPTION,
+} from '../../src/domains/admin-config/AdminListPageShell';
 import '../../src/styles/tokens.css';
 
 afterEach(() => {
@@ -59,5 +62,25 @@ describe('AdminListPageShell (story 17.3)', () => {
       </RootProviders>,
     );
     expect(screen.queryByTestId('admin-detail-simple-demo-strip')).toBeNull();
+  });
+
+  it('rend l’écart sous forme de note discrète lorsque gapPresentation vaut note', () => {
+    render(
+      <RootProviders>
+        <AdminListPageShell
+          widgetRootTestId="widget-test-root"
+          listTitle="Titre"
+          contractGapAlertTitle="Note titre"
+          contractGapAlertBody="Note corps"
+          listBullets={['a']}
+          gapPresentation="note"
+          stateListCaption={null}
+        />
+      </RootProviders>,
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Note titre')).toBeTruthy();
+    expect(screen.getByText('Note corps')).toBeTruthy();
+    expect(screen.queryByText(DEFAULT_STATE_LIST_CAPTION)).toBeNull();
   });
 });

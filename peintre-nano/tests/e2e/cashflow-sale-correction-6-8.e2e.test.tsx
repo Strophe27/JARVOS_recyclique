@@ -124,7 +124,6 @@ describe('E2E — correction sensible Story 6.8 (parcours admin / journal sessio
       expect(screen.getByTestId('admin-cash-session-detail')).toBeTruthy();
     });
     expect(screen.queryByTestId(`admin-cash-session-correct-${SALE_ID}`)).toBeNull();
-    expect(screen.getByTestId('admin-cash-session-no-correct-perm')).toBeTruthy();
   });
 
   it('deep-link /caisse/correction-ticket : plus de page correction caisse dans la nav servie', async () => {

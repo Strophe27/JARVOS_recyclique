@@ -440,12 +440,44 @@ function parseTicketSummary(o: Record<string, unknown>): ReceptionTicketSummary 
   };
 }
 
+/** Paramètres GET `/v1/reception/tickets` (alignés FastAPI `reception.get_tickets`). */
+export type ReceptionTicketsListQuery = {
+  readonly page?: number;
+  readonly per_page?: number;
+  readonly status?: string;
+  /** ISO 8601 ou date `YYYY-MM-DD` (normalisée en début de journée UTC côté client). */
+  readonly date_from?: string;
+  readonly date_to?: string;
+  readonly benevole_id?: string;
+  readonly search?: string;
+  readonly include_empty?: boolean;
+  readonly poids_min?: number;
+  readonly poids_max?: number;
+  readonly categories?: readonly string[];
+  readonly destinations?: readonly string[];
+  readonly lignes_min?: number;
+  readonly lignes_max?: number;
+};
+
+function appendIsoDateRange(q: URLSearchParams, dateFrom?: string, dateTo?: string): void {
+  const trimFrom = dateFrom?.trim();
+  const trimTo = dateTo?.trim();
+  if (trimFrom) {
+    const iso = /T/.test(trimFrom) ? trimFrom : `${trimFrom}T00:00:00.000Z`;
+    q.set('date_from', iso);
+  }
+  if (trimTo) {
+    const iso = /T/.test(trimTo) ? trimTo : `${trimTo}T23:59:59.999Z`;
+    q.set('date_to', iso);
+  }
+}
+
 /** GET /v1/reception/tickets — `recyclique_reception_listTickets`. */
 export type ListTicketsResult = { ok: true; data: ReceptionTicketListPayload } | ReceptionHttpError;
 
 export async function getReceptionTicketsList(
   auth: Pick<AuthContextPort, 'getAccessToken'>,
-  params?: { page?: number; per_page?: number; status?: string },
+  params?: ReceptionTicketsListQuery,
 ): Promise<ListTicketsResult> {
   const base = getLiveSnapshotBasePrefix();
   const page = params?.page ?? 1;
@@ -454,6 +486,26 @@ export async function getReceptionTicketsList(
   if (params?.status?.trim()) {
     q.set('status', params.status.trim());
   }
+  appendIsoDateRange(q, params?.date_from, params?.date_to);
+  if (params?.benevole_id?.trim()) q.set('benevole_id', params.benevole_id.trim());
+  if (params?.search?.trim()) q.set('search', params.search.trim());
+  if (params?.include_empty === true) q.set('include_empty', 'true');
+  if (params?.poids_min != null && Number.isFinite(params.poids_min)) q.set('poids_min', String(params.poids_min));
+  if (params?.poids_max != null && Number.isFinite(params.poids_max)) q.set('poids_max', String(params.poids_max));
+  if (params?.categories?.length) {
+    for (const c of params.categories) {
+      const id = c.trim();
+      if (id) q.append('categories', id);
+    }
+  }
+  if (params?.destinations?.length) {
+    for (const d of params.destinations) {
+      const v = d.trim();
+      if (v) q.append('destinations', v);
+    }
+  }
+  if (params?.lignes_min != null && Number.isFinite(params.lignes_min)) q.set('lignes_min', String(params.lignes_min));
+  if (params?.lignes_max != null && Number.isFinite(params.lignes_max)) q.set('lignes_max', String(params.lignes_max));
   const url = `${base}/v1/reception/tickets?${q.toString()}`;
   let res: Response;
   try {
@@ -569,4 +621,101 @@ export async function getReceptionTicketDetail(
     lignes,
   };
   return { ok: true, ticket };
+}
+
+/** Filtres supportés par `POST /v1/admin/reports/reception-tickets/export-bulk` (aligné backend `BulkReceptionExportFilters`). */
+export type ReceptionBulkExportFilters = {
+  readonly date_from?: string;
+  readonly date_to?: string;
+  readonly status?: string;
+  readonly benevole_id?: string;
+  readonly search?: string;
+  readonly include_empty?: boolean;
+};
+
+function receptionBulkFiltersPayload(filters: ReceptionBulkExportFilters): Record<string, unknown> {
+  const out: Record<string, unknown> = { include_empty: filters.include_empty === true };
+  const trimFrom = filters.date_from?.trim();
+  const trimTo = filters.date_to?.trim();
+  if (trimFrom) {
+    out.date_from = /T/.test(trimFrom) ? trimFrom : `${trimFrom}T00:00:00.000Z`;
+  }
+  if (trimTo) {
+    out.date_to = /T/.test(trimTo) ? trimTo : `${trimTo}T23:59:59.999Z`;
+  }
+  if (filters.status?.trim()) out.status = filters.status.trim();
+  if (filters.benevole_id?.trim()) out.benevole_id = filters.benevole_id.trim();
+  if (filters.search?.trim()) out.search = filters.search.trim();
+  return out;
+}
+
+export type PostReceptionTicketsExportBulkResult =
+  | { ok: true; blob: Blob; filename: string }
+  | ReceptionHttpError;
+
+/**
+ * POST `/v1/admin/reports/reception-tickets/export-bulk` — export consolidé CSV ou Excel (rôles admin serveur).
+ * En-têtes requis par le contrat : confirmation à usage unique du compte administrateur + clé d'idempotence.
+ */
+export async function postReceptionTicketsExportBulk(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  opts: {
+    readonly stepUpPin: string;
+    readonly format: 'csv' | 'excel';
+    readonly filters: ReceptionBulkExportFilters;
+    readonly idempotencyKey?: string;
+  },
+): Promise<PostReceptionTicketsExportBulkResult> {
+  const pin = opts.stepUpPin.trim();
+  if (!pin) {
+    return receptionHttpError(400, null, 'Code de confirmation obligatoire pour cet export.');
+  }
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/admin/reports/reception-tickets/export-bulk`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json',
+    'X-Step-Up-Pin': pin,
+    'Idempotency-Key': opts.idempotencyKey?.trim() || crypto.randomUUID(),
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const body = JSON.stringify({
+    filters: receptionBulkFiltersPayload(opts.filters),
+    format: opts.format,
+  });
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'POST', credentials: 'include', headers, body });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return receptionHttpError(0, null, msg, true);
+  }
+  const contentType = res.headers.get('Content-Type') ?? '';
+  if (!res.ok) {
+    const text = await res.text();
+    const json = parseJsonText(text);
+    return receptionHttpError(res.status, json, text || res.statusText);
+  }
+  const looksJson = contentType.includes('application/json') || contentType.includes('problem+json');
+  if (looksJson) {
+    const text = await res.text();
+    const json = parseJsonText(text);
+    return receptionHttpError(res.status, json, 'Réponse export inattendue');
+  }
+  const blob = await res.blob();
+  const cd = res.headers.get('Content-Disposition') ?? '';
+  let filename =
+    opts.format === 'csv'
+      ? `export_tickets_reception_${new Date().toISOString().slice(0, 10)}.csv`
+      : `export_tickets_reception_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const m = /filename\*?=(?:UTF-8''|")?([^";\n]+)/i.exec(cd);
+  if (m?.[1]) {
+    try {
+      filename = decodeURIComponent(m[1].replace(/"/g, '').trim());
+    } catch {
+      filename = m[1].replace(/"/g, '').trim();
+    }
+  }
+  return { ok: true, blob, filename };
 }

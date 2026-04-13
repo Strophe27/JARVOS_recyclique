@@ -42,7 +42,7 @@ describe('Story 5.6 — templates transverses', () => {
     expect(resolveTransverseMainLayoutMode('transverse-dashboard-benevole')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-listing-articles')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-admin-reports-hub')).toBe('hub');
-    expect(resolveTransverseMainLayoutMode('transverse-admin-pending')).toBe('hub');
+    expect(resolveTransverseMainLayoutMode('transverse-admin-users')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-admin-cash-registers')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-admin-sites')).toBe('hub');
     expect(resolveTransverseMainLayoutMode('transverse-consultation-article')).toBe('consultation');

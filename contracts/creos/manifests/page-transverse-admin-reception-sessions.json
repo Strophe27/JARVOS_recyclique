@@ -5,23 +5,6 @@
   "requires_site": true,
   "slots": [
     {
-      "slot_id": "admin.transverse-list.header",
-      "widget_type": "demo.text.block",
-      "widget_props": {
-        "title": "Sessions réception (liste tickets)",
-        "title_level": "1",
-        "body": "Route legacy observable `/admin/reception-sessions` (`ReceptionSessionManager.tsx`). Liste paginée branchée sur `GET /v1/reception/tickets` (`recyclique_reception_listTickets`) via `reception-client.ts` — champs strictement `ReceptionTicketSummary`. Drill-down vers `/admin/reception-tickets/:id` (détail ressource, Story 19.2)."
-      }
-    },
-    {
-      "slot_id": "admin.transverse-list.contract-gap",
-      "widget_type": "demo.text.block",
-      "widget_props": {
-        "title": "Écarts vs legacy (gap K — pas de contournement)",
-        "body": "KPIs ou agrégats calculés uniquement côté client dans le legacy au-delà des champs exposés par la liste tickets : non reproduits ici (pas de seconde vérité). Export bulk `recyclique_admin_reports_receptionTicketsExportBulk`, jeton CSV ticket, fermeture ticket, patch poids ligne : **hors rail U lecture** — **Epic 16** / step-up ; exclusion visible sur la page détail."
-      }
-    },
-    {
       "slot_id": "admin.transverse-list.main",
       "widget_type": "admin.reception.tickets.list",
       "widget_props": {}

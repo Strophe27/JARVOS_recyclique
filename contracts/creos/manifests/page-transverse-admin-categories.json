@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-categories",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.categories.demo",
+      "widget_props": {}
+    }
+  ]
+}

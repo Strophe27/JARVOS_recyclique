@@ -118,7 +118,7 @@ describe('E2E — clôture caisse (Story 6.7)', () => {
     });
 
     const flow = screen.getByTestId('flow-renderer-cashflow-close');
-    fireEvent.click(within(flow).getByRole('tab', { name: '3. Confirmer' }));
+    fireEvent.click(within(flow).getByRole('tab', { name: /3\. Confirmer/i }));
 
     const pinInput = screen.getByLabelText(/PIN step-up/i);
     fireEvent.change(pinInput, { target: { value: '1234' } });
@@ -199,7 +199,7 @@ describe('E2E — clôture caisse (Story 6.7)', () => {
     });
 
     const flow = screen.getByTestId('flow-renderer-cashflow-close');
-    fireEvent.click(within(flow).getByRole('tab', { name: '3. Confirmer' }));
+    fireEvent.click(within(flow).getByRole('tab', { name: /3\. Confirmer/i }));
 
     const pinInput = screen.getByLabelText(/PIN step-up/i);
     fireEvent.change(pinInput, { target: { value: '1234' } });
@@ -274,7 +274,7 @@ describe('E2E — clôture caisse (Story 6.7)', () => {
     });
 
     const flow = screen.getByTestId('flow-renderer-cashflow-close');
-    fireEvent.click(within(flow).getByRole('tab', { name: '3. Confirmer' }));
+    fireEvent.click(within(flow).getByRole('tab', { name: /3\. Confirmer/i }));
 
     const pinInput = screen.getByLabelText(/PIN step-up/i);
     fireEvent.change(pinInput, { target: { value: '1234' } });

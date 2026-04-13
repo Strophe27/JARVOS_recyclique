@@ -2783,6 +2783,8 @@ L'equipe peut retrouver dans `Peintre_nano` les vues d'administration legacy pri
 
 **Repere de lecture operationnel :** s'appuyer sur les invariants multi-contextes, les permissions du `ContextEnvelope`, les manifests de navigation, puis trancher avec DevTools legacy et code `recyclique-1.4.4` avant toute extension admin.
 
+**Suivi BMAD (reconciliation code 2026-04-13) :** les stories **14.3**, **14.4** et **14.5** ont des surfaces Peintre deja implementees (dashboard legacy sur `/admin`, audit-log, groupes) — detail et statuts dans les fichiers story sous `_bmad-output/implementation-artifacts/` et dans `implementation-artifacts/sprint-status.yaml`. L'Epic **14** reste **in-progress** tant que ces stories ne sont pas toutes en **done** (passage **review** vers **done** apres validation, CR et gates selon le workflow projet).
+
 ### Story 14.1: Retrouver le shell et le choix de contexte admin observables dans `Peintre_nano`
 
 As an authorized admin user,
@@ -2836,6 +2838,42 @@ So that Peintre regains credible admin visibility without inventing a new report
 **When** the story is reviewed
 **Then** the delivered rendering shows explicit context anchoring and permission handling
 **And** residual cross-context risks are documented rather than ignored
+
+### Story 14.4: Retrouver la vue audit-log transverse observable dans `Peintre_nano`
+
+As an authorized admin user,
+I want the read-oriented audit log surface to be rendered in `Peintre_nano` from served CREOS manifests and stable OpenAPI operations,
+So that cross-context audit visibility regains parity with the legacy reference without inventing a new reporting product.
+
+**Acceptance Criteria:**
+
+**Given** the `audit-log` family was contractualized in Epic 16 Story 16.2 (rail **K**) and remains read-oriented supervision
+**When** this story is delivered
+**Then** the `Peintre_nano` page consumes `GET /v1/admin/audit-log` (or successor) only through the canonical OpenAPI contract and shared admin primitives (shell, guards, list patterns from Epic 17.3 where applicable)
+**And** no parallel `fetch` to undocumented paths or legacy-only clients is introduced
+
+**Given** audit reads are sensitive and transverse
+**When** the story is reviewed
+**Then** access remains driven by documented security (`require_admin_role_strict` per 16.2) and visible empty, loading, and error states are honest about rate limits or denials
+**And** `email-logs` and `transaction-logs` stay out of scope unless explicitly folded by a later story
+
+### Story 14.5: Retrouver la gestion des groupes admin observable dans `Peintre_nano`
+
+As an authorized admin user,
+I want the groups administration list, detail, and bounded mutations to be observable in `Peintre_nano` through CREOS manifests,
+So that ACL configuration regains a recognizable UI aligned with the legacy reference while staying contract-driven.
+
+**Acceptance Criteria:**
+
+**Given** the `groups` family was contractualized in Epic 16 Story 16.2
+**When** this story is delivered
+**Then** the rendered surfaces use the documented `/v1/admin/groups` operations (list, detail, mutations in scope) without inventing authority client-side
+**And** any backend defect (including HTTP 500 on nominal admin calls) is diagnosed and fixed in the backend layer with reproducible tests before the story is closed
+
+**Given** groups management touches identity and permissions
+**When** the story is reviewed
+**Then** mutations remain within the OpenAPI-documented scope; user-directory bulk actions stay deferred to Epic 21
+**And** parity notes reference the Epic 15 matrix line(s) for groups rather than ad hoc screenshots alone
 
 ## Epic 15: Fonder le portage admin strict mutualise vers `Peintre_nano`
 

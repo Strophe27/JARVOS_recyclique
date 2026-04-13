@@ -96,7 +96,7 @@ export async function fetchUsersListForAdminDashboard(
   signal?: AbortSignal,
 ): Promise<readonly AdminLegacyUserListRow[]> {
   const base = getLiveSnapshotBasePrefix().replace(/\/$/, '');
-  const url = `${base}/v1/users/`;
+  const url = `${base}/v1/users/?skip=0&limit=1000`;
   let res: Response;
   try {
     res = await fetch(url, { method: 'GET', credentials: 'include', headers: authHeaders(auth), signal });

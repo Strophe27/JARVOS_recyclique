@@ -20,6 +20,7 @@ import {
   ChevronUp,
   ClipboardList,
   Euro,
+  LayoutList,
   Package,
   Scale,
   ScrollText,
@@ -547,15 +548,12 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                 variant="light"
                 color="purple"
                 className={classes.operationalButton}
-                leftSection={<Wallet size={20} />}
-                onClick={() => handleNavigation('/admin/cash-registers')}
+                leftSection={<LayoutList size={20} />}
+                onClick={() => handleNavigation('/admin/session-manager')}
+                data-testid="admin-legacy-nav-session-manager"
               >
-                Caisses enregistrées
+                Sessions de Caisse
               </Button>
-              <Text size="xs" c="dimmed" mt={6} style={{ maxWidth: 280 }}>
-                Liste sessions avancée (legacy <code>/admin/session-manager</code>) : Story 18.2 — navigation limitée
-                aux chemins du manifeste servi (18.1).
-              </Text>
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 4 }}>
               <Button
@@ -564,6 +562,7 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                 className={classes.operationalButton}
                 leftSection={<ClipboardList size={20} />}
                 onClick={() => handleNavigation('/admin/reception-sessions')}
+                data-testid="admin-legacy-nav-reception-sessions"
               >
                 Sessions de Réception
               </Button>

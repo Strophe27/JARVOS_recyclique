@@ -12,7 +12,7 @@ import {
 } from '../../api/dashboard-legacy-stats-client';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
-import { AdminDetailSimpleDemoStrip } from './AdminListPageShell';
+import { formatReceptionDateTimeFr, formatReceptionWeightKg } from './reception-admin-display';
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -34,25 +34,89 @@ function numFromSummary(o: ReceptionStatsSummaryResponse, key: string): number |
   return null;
 }
 
-function formatLivePayload(live: UnifiedLiveStatsResponse | null): { key: string; value: string }[] {
-  if (!live || typeof live !== 'object') return [];
-  const out: { key: string; value: string }[] = [];
-  for (const [k, v] of Object.entries(live)) {
-    if (v === null || v === undefined) {
-      out.push({ key: k, value: '—' });
-    } else if (typeof v === 'object') {
-      out.push({ key: k, value: JSON.stringify(v) });
-    } else {
-      out.push({ key: k, value: String(v) });
-    }
-  }
-  return out.sort((a, b) => a.key.localeCompare(b.key));
+/** Libellés lisibles pour les indicateurs renvoyés par le flux unifié (clés stables côté serveur). */
+const LIVE_STAT_LABELS: Record<string, string> = {
+  tickets_count: 'Nombre de tickets caisse',
+  last_ticket_amount: 'Montant du dernier ticket',
+  ca: 'Chiffre d’affaires',
+  donations: 'Dons',
+  weight_out_sales: 'Poids sorti (ventes)',
+  tickets_open: 'Tickets caisse ouverts',
+  tickets_closed_24h: 'Tickets caisse fermés (24 h)',
+  items_received: 'Articles reçus',
+  weight_in: 'Poids entrant',
+  weight_out: 'Poids sortant',
+  period_start: 'Début de période',
+  period_end: 'Fin de période',
+  reception_open_sessions: 'Sessions de réception ouvertes',
+  total_weight: 'Poids total',
+  total_items: 'Nombre d’articles',
+  unique_categories: 'Catégories distinctes',
+  timestamp: 'Horodatage',
+};
+
+function liveStatLabel(key: string): string {
+  return LIVE_STAT_LABELS[key] ?? key.replace(/_/g, ' ');
 }
 
-/**
- * Story 19.1 — stats / supervision réception (rail U) : lectures via `dashboard-legacy-stats-client`
- * alignées sur `recyclique_stats_*` ; pas de `GET /v1/reception/stats/live` (déprécié) ; gaps **K** explicites.
- */
+function formatLiveValue(key: string, v: unknown): string {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'boolean') return v ? 'oui' : 'non';
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    if (key.includes('weight') || key === 'weight_in' || key === 'weight_out' || key === 'weight_out_sales') {
+      return formatReceptionWeightKg(v);
+    }
+    return v.toLocaleString('fr-FR');
+  }
+  if (typeof v === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}/.test(v.trim())) {
+      return formatReceptionDateTimeFr(v);
+    }
+    return v;
+  }
+  if (typeof v === 'object') {
+    return JSON.stringify(v);
+  }
+  return String(v);
+}
+
+function formatLiveRows(live: UnifiedLiveStatsResponse | null): { key: string; label: string; value: string }[] {
+  if (!live || typeof live !== 'object') return [];
+  const out: { key: string; label: string; value: string }[] = [];
+  for (const [k, v] of Object.entries(live)) {
+    out.push({ key: k, label: liveStatLabel(k), value: formatLiveValue(k, v) });
+  }
+  return out.sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+}
+
+const SUMMARY_EXTRA_LABELS: Record<string, string> = {
+  unique_categories: 'Catégories distinctes',
+  period_start: 'Début de période',
+  period_end: 'Fin de période',
+  start_date: 'Date de début (réponse)',
+  end_date: 'Date de fin (réponse)',
+};
+
+function summaryExtraRows(summary: ReceptionStatsSummaryResponse): { label: string; value: string }[] {
+  const skip = new Set(['total_weight', 'total_items', 'unique_categories']);
+  const out: { label: string; value: string }[] = [];
+  for (const [k, v] of Object.entries(summary)) {
+    if (skip.has(k)) continue;
+    if (v === null || v === undefined) continue;
+    const label = SUMMARY_EXTRA_LABELS[k] ?? k.replace(/_/g, ' ');
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      out.push({ label, value: v.toLocaleString('fr-FR') });
+    } else if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v.trim())) {
+      out.push({ label, value: formatReceptionDateTimeFr(v) });
+    } else if (typeof v === 'object') {
+      out.push({ label, value: JSON.stringify(v) });
+    } else {
+      out.push({ label, value: String(v) });
+    }
+  }
+  return out.sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+}
+
 export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
@@ -125,19 +189,22 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
 
   const totalWeight = summary ? numFromSummary(summary, 'total_weight') : null;
   const totalItems = summary ? numFromSummary(summary, 'total_items') : null;
+  const uniqueCategories = summary ? numFromSummary(summary, 'unique_categories') : null;
+  const extraSummary = summary ? summaryExtraRows(summary) : [];
 
   return (
     <Stack gap="md" data-testid="widget-admin-reception-stats-supervision">
-      <Text size="sm" data-testid="admin-reception-stats-operation-anchors" c="dimmed">
-        Fetches branchés :{' '}
-        <code>recyclique_stats_receptionSummary</code>, <code>recyclique_stats_receptionByCategory</code>,{' '}
-        <code>recyclique_stats_unifiedLive</code> — pas d&apos;appel à <code>recyclique_reception_statsLiveDeprecated</code>{' '}
-        (<code>GET /v1/reception/stats/live</code>).
-      </Text>
+      <div>
+        <Title order={2}>Tableau de bord réception</Title>
+        <Text size="sm" c="dimmed" mt={6} data-testid="admin-reception-stats-operation-anchors">
+          Données officielles : synthèse et répartition sur la période choisie, plus les indicateurs d’activité en direct
+          pour le site courant lorsqu’il est connu.
+        </Text>
+      </div>
 
       <Group gap="sm" wrap="wrap">
         <Text size="sm" fw={600}>
-          Période agrégats (résumé + par catégorie) :
+          Période pour le résumé et le tableau par catégorie :
         </Text>
         <Button size="xs" variant={rangeDays === 7 ? 'filled' : 'light'} onClick={() => setRangeDays(7)}>
           7 jours
@@ -146,22 +213,24 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
           30 jours
         </Button>
         <Text size="xs" c="dimmed">
-          {range.start} → {range.end} (paramètres <code>start_date</code> / <code>end_date</code>)
+          Du {range.start} au {range.end}
         </Text>
       </Group>
 
       <Group gap="sm" wrap="wrap">
         <Text size="sm" fw={600}>
-          Live unifié — <code>period_type</code> :
+          Rythme des indicateurs en direct :
         </Text>
         <Button size="xs" variant={periodType === '24h' ? 'filled' : 'light'} onClick={() => setPeriodType('24h')}>
-          24h
+          Dernières 24 h
         </Button>
         <Button size="xs" variant={periodType === 'daily' ? 'filled' : 'light'} onClick={() => setPeriodType('daily')}>
-          daily
+          Vue jour
         </Button>
         <Text size="xs" c="dimmed">
-          <code>site_id</code> optionnel : {envelope.siteId ? envelope.siteId : 'non transmis (contexte sans site)'}
+          {envelope.siteId
+            ? `Site filtré : ${envelope.siteId}`
+            : 'Aucun site précis dans le contexte : agrégats multi-sites côté serveur.'}
         </Text>
       </Group>
 
@@ -172,37 +241,57 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
           <Group gap="xs" mb="xs">
             <BarChart3 size={20} aria-hidden />
             <Title order={3} size="h4">
-              Résumé réception (période)
+              Synthèse sur la période
             </Title>
           </Group>
           {errSummary ? (
-            <Alert color="red" title="Erreur GET /v1/stats/reception/summary">
+            <Alert color="red" title="Impossible de charger le résumé">
               {errSummary}
               {(errSummary.startsWith('401') || errSummary.startsWith('403')) && (
                 <Text size="sm" mt="xs">
-                  Contrat admin (16.4) : agrégats sensibles — rôle insuffisant ou session absente ; pas de contournement
-                  côté UI.
+                  Votre rôle ne permet pas d’afficher ces agrégats, ou la session n’est pas valide. Aucune donnée de
+                  remplacement n’est affichée.
                 </Text>
               )}
             </Alert>
           ) : (
             <Stack gap={4}>
               <Text size="sm">
-                Poids total (champ <code>total_weight</code> si présent) :{' '}
-                <strong>{totalWeight != null ? `${totalWeight.toFixed(2)}` : '—'}</strong>
+                Poids total :{' '}
+                <strong>{totalWeight != null ? `${totalWeight.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg` : '—'}</strong>
               </Text>
               <Text size="sm">
-                Articles (champ <code>total_items</code> si présent) :{' '}
-                <strong>{totalItems != null ? totalItems : '—'}</strong>
+                Articles : <strong>{totalItems != null ? totalItems.toLocaleString('fr-FR') : '—'}</strong>
               </Text>
-              <Text size="xs" c="dimmed">
-                Autres clés renvoyées par le serveur : affichage brut sans réinterprétation métier.
-              </Text>
-              {summary && (
-                <pre style={{ fontSize: 11, overflow: 'auto', maxHeight: 120 }}>
-                  {JSON.stringify(summary, null, 2)}
-                </pre>
-              )}
+              {uniqueCategories != null ? (
+                <Text size="sm">
+                  Catégories distinctes :{' '}
+                  <strong>{uniqueCategories.toLocaleString('fr-FR')}</strong>
+                </Text>
+              ) : null}
+              {extraSummary.length > 0 ? (
+                <>
+                  <Text size="xs" c="dimmed" mt={4}>
+                    Autres champs renvoyés tels quels :
+                  </Text>
+                  <Table striped withTableBorder withColumnBorders>
+                    <Table.Tbody>
+                      {extraSummary.map((row) => (
+                        <Table.Tr key={row.label}>
+                          <Table.Td w="45%">
+                            <Text size="sm">{row.label}</Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm" style={{ wordBreak: 'break-word' }}>
+                              {row.value}
+                            </Text>
+                          </Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </>
+              ) : null}
             </Stack>
           )}
         </Paper>
@@ -211,28 +300,32 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
           <Group gap="xs" mb="xs">
             <ClipboardList size={20} aria-hidden />
             <Title order={3} size="h4">
-              KPIs live unifiés
+              Indicateurs en direct
             </Title>
           </Group>
           {errLive ? (
-            <Alert color="orange" title="Erreur GET /v1/stats/live">
+            <Alert color="orange" title="Impossible de charger les indicateurs en direct">
               {errLive}
             </Alert>
           ) : (
             <Table striped highlightOnHover withTableBorder withColumnBorders>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Clé (réponse OpenAPI)</Table.Th>
+                  <Table.Th>Indicateur</Table.Th>
                   <Table.Th>Valeur</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {formatLivePayload(live).map((row) => (
+                {formatLiveRows(live).map((row) => (
                   <Table.Tr key={row.key}>
                     <Table.Td>
-                      <code>{row.key}</code>
+                      <Text size="sm">{row.label}</Text>
                     </Table.Td>
-                    <Table.Td>{row.value}</Table.Td>
+                    <Table.Td>
+                      <Text size="sm" style={{ wordBreak: 'break-word' }}>
+                        {row.value}
+                      </Text>
+                    </Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Tbody>
@@ -243,15 +336,15 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
 
       <Paper withBorder p="md" data-operation-id="recyclique_stats_receptionByCategory">
         <Title order={3} size="h4" mb="sm">
-          Réception par catégorie
+          Répartition par catégorie
         </Title>
         {errCategory ? (
-          <Alert color="red" title="Erreur GET /v1/stats/reception/by-category">
+          <Alert color="red" title="Impossible de charger le détail par catégorie">
             {errCategory}
           </Alert>
         ) : byCategory.length === 0 ? (
           <Text size="sm" c="dimmed">
-            Aucune ligne (liste vide ou champs non reconnus).
+            Aucune donnée pour cette période.
           </Text>
         ) : (
           <Table striped>
@@ -266,8 +359,8 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
               {byCategory.map((r, i) => (
                 <Table.Tr key={`${r.category_name}-${i}`}>
                   <Table.Td>{r.category_name}</Table.Td>
-                  <Table.Td>{r.total_weight}</Table.Td>
-                  <Table.Td>{r.total_items}</Table.Td>
+                  <Table.Td>{formatReceptionWeightKg(r.total_weight)}</Table.Td>
+                  <Table.Td>{r.total_items.toLocaleString('fr-FR')}</Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -275,23 +368,18 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
         )}
       </Paper>
 
-      <Alert color="gray" title="Supervision nominative (opérateurs, sessions, classements)" data-testid="admin-reception-nominative-gap-k">
+      <Alert color="gray" title="Suivi par personne ou par session" data-testid="admin-reception-nominative-gap-k">
         <Text size="sm">
-          Aucun <code>operation_id</code> stabilisé dans <code>contracts/openapi/recyclique-api.yaml</code> pour une liste
-          nominative pilotage (ex. par opérateur ou par session réception) dans le périmètre **19.1** — gap{' '}
-          <strong>K</strong> ; parcours liste + détail réservé <strong>19.2</strong> ; fermeture contractuelle éventuelle{' '}
-          <strong>Epic 16</strong> / rail <strong>K</strong>. Aucune donnée simulée.
+          Une liste nominative des opérateurs ou un classement détaillé des sessions de réception n’est pas encore
+          exposée de façon stable par le service. Les tickets et leur détail restent accessibles depuis l’entrée
+          « Sessions de réception ». Aucune donnée inventée n’est affichée ici.
         </Text>
       </Alert>
 
-      <Alert color="yellow" title="Dette visuelle vs legacy `ReceptionDashboard.tsx`">
-        <Text size="sm">
-          Graphiques Recharts et métriques additionnelles du legacy : hors slice tant que le schéma OpenAPI ne porte pas des
-          champs exploitables pour les mêmes séries — pas d&apos;approximation silencieuse.
-        </Text>
-      </Alert>
-
-      <AdminDetailSimpleDemoStrip />
+      <Text size="xs" c="dimmed">
+        Les graphiques du tableau de bord historique (barres, secteurs) ne sont pas recopiés tant que les mêmes séries
+        ne sont pas fournies de manière exploitable pour ce masque.
+      </Text>
     </Stack>
   );
 }

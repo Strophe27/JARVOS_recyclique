@@ -29,7 +29,7 @@ Mapper les ecrans admin legacy (alignes sur l'inventaire 15.1) vers leurs endpoi
 
 ## Prerequis
 
-- Inventaire admin legacy de la story **15.1** disponible et stable (meme perimetre d'ecrans ù retenus ù ; sinon figer une liste de routes/ecrans en annexe de ce livrable).
+- Inventaire admin legacy de la story **15.1** disponible et stable (meme perimetre d'ecrans ÔøΩ retenus ÔøΩ ; sinon figer une liste de routes/ecrans en annexe de ce livrable).
 
 ## Corpus minimal
 
@@ -43,7 +43,7 @@ Mapper les ecrans admin legacy (alignes sur l'inventaire 15.1) vers leurs endpoi
 ## Livrables attendus
 
 1. Tableau ecran (ou route) -> endpoints / operationId (OpenAPI quand disponible).
-2. Tableau ecran -> permissions / roles / step-up / contexte (sources : backend, OpenAPI security, pas d'inference ù au feeling ù depuis le JSX seul).
+2. Tableau ecran -> permissions / roles / step-up / contexte (sources : backend, OpenAPI security, pas d'inference ÔøΩ au feeling ÔøΩ depuis le JSX seul).
 3. Liste des gaps OpenAPI / ContextEnvelope / CREOS identifies (avec gravite : bloquant portage / dette documentaire).
 4. Liste des surfaces sensibles a traiter a part (exports, bulk, super-admin, lecture cross-contexte).
 
@@ -56,7 +56,7 @@ Mapper les ecrans admin legacy (alignes sur l'inventaire 15.1) vers leurs endpoi
 ## Garde-fous
 
 - Hierarchie de verite : OpenAPI > ContextEnvelope > NavigationManifest > PageManifest > UserRuntimePrefs.
-- Pas de deduction locale des permissions ù au feeling ù.
+- Pas de deduction locale des permissions ÔøΩ au feeling ÔøΩ.
 - Les exports et actions sensibles sont traces explicitement.
 
 ## Tasks / Subtasks
@@ -70,17 +70,17 @@ Mapper les ecrans admin legacy (alignes sur l'inventaire 15.1) vers leurs endpoi
 ## Dev Notes
 
 - Epic 15 : chantier de fondation ; pas de modification produit dans `peintre-nano` ni de PR fonctionnelle attendue pour cette story seule.
-- Croiser systematiquement les appels frontend avec `operationId` / paths dans `contracts/openapi/recyclique-api.yaml` ; noter ù absent d'OpenAPI ù quand applicable.
+- Croiser systematiquement les appels frontend avec `operationId` / paths dans `contracts/openapi/recyclique-api.yaml` ; noter ÔøΩ absent d'OpenAPI ÔøΩ quand applicable.
 - Pour ContextEnvelope / CREOS : s'appuyer sur la doc contrats Peintre et les manifests existants ; ne pas inventer de champs non references.
 
 ## QA / preuves (hors E2E code)
 
 - Le skill **`bmad-qa-generate-e2e-tests`** ne s'applique pas : aucune feature executable a couvrir par tests auto dans cette story.
-- Validation : revue statique ù chaque ecran 15.1 possede au moins une ligne dans les tableaux 1 et 2 ; chaque gap nomme a une categorie (OpenAPI / ContextEnvelope / CREOS) ; aucune permission sans source tracee.
+- Validation : revue statique ÔøΩ chaque ecran 15.1 possede au moins une ligne dans les tableaux 1 et 2 ; chaque gap nomme a une categorie (OpenAPI / ContextEnvelope / CREOS) ; aucune permission sans source tracee.
 
 ## References
 
-- [Source: `_bmad-output/planning-artifacts/epics.md` ù Epic 15, Story 15.2]
+- [Source: `_bmad-output/planning-artifacts/epics.md` ÔøΩ Epic 15, Story 15.2]
 - [Source: `contracts/openapi/recyclique-api.yaml`]
 - [Source: `peintre-nano/docs/03-contrats-creos-et-donnees.md`]
 - [Source: `references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`]
@@ -89,7 +89,7 @@ Mapper les ecrans admin legacy (alignes sur l'inventaire 15.1) vers leurs endpoi
 
 ### Agent Model Used
 
-Composer (agent Cursor) ó execution Story Runner sous-agent, reprise `resume_at: DS`.
+Composer (agent Cursor) ÔøΩ execution Story Runner sous-agent, reprise `resume_at: DS`.
 
 ### Debug Log References
 
@@ -99,7 +99,7 @@ Composer (agent Cursor) ó execution Story Runner sous-agent, reprise `resume_at:
 ### Completion Notes List
 
 - Livrable unique sous `references/artefacts/` avec les quatre sections demandees (tableaux 1-2, gaps, surfaces sensibles) ; perimetre ecrans fige depuis `App.jsx` / `adminRoutes.js` (15.1 inventaire date absent du depot).
-- QA documentaire : checklist story section ´ QA / preuves ª validee en revue statique (substitut au skill E2E).
+- QA documentaire : checklist story section ÔøΩ QA / preuves ÔøΩ validee en revue statique (substitut au skill E2E).
 
 ### File List
 

@@ -703,7 +703,9 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
     );
   }
 
-  const showPosteSessionSitePaper = saleKioskMinimal || (!isCaisseHubCompact && !legacySessionOpenBareForm);
+  /** Sur kiosque vente avec session active, le chrome Poste/Session/Site est porté par `CashflowNominalWizard` — éviter le double bandeau. */
+  const showPosteSessionSitePaper =
+    (saleKioskMinimal && resolvedSessionId.length === 0) || (!saleKioskMinimal && !isCaisseHubCompact && !legacySessionOpenBareForm);
   /** Kiosque vente (`…/sale`) : ne pas empiler le wizard d’ouverture complet sans session (hybride) — garder le strip Poste/Session/Site + vente. */
   const showFullOpeningPaper =
     !isCaisseHubCompact &&
@@ -879,36 +881,12 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
       </Paper>
       ) : null}
 
-      {showSaleKioskSessionStrip ? (
-        <Stack gap="sm" data-testid="caisse-sale-kiosk-session-strip">
-          {openingFailure ? (
-            <Alert color="red" title="Ouverture refusée" data-testid="cashflow-opening-error-strip">
-              {openingFailure.message}
-            </Alert>
-          ) : null}
-          {resolvedSessionId && draft.operatingMode === 'virtual' && !legacySessionOpenBareForm ? (
-            <Alert color="teal" variant="light" data-testid="caisse-dash-active-mode-virtual-strip">
-              Mode actif côté poste : <strong>virtuel (simulation)</strong>.
-            </Alert>
-          ) : null}
-          {resolvedSessionId && draft.operatingMode === 'deferred' && !legacySessionOpenBareForm ? (
-            <Alert color="blue" variant="light" data-testid="caisse-dash-active-mode-deferred-strip">
-              Mode actif côté poste : <strong>saisie différée</strong> (date d’ouverture portée par la session serveur).
-            </Alert>
-          ) : null}
-          <Alert color="green" title="Session ouverte" data-testid="cashflow-opening-success-strip">
-            Session active: <code>{resolvedSessionId}</code>
-          </Alert>
-          <Group gap="sm">
-            <Button type="button" variant="default" size="sm" onClick={() => refresh()} data-testid="caisse-refresh-current-session-strip">
-              Rafraîchir session (serveur)
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={goToClose} data-testid="caisse-goto-close-strip">
-              Clôturer la session
-            </Button>
-          </Group>
-        </Stack>
-      ) : showFullOpeningPaper ? (
+      {showSaleKioskSessionStrip && openingFailure ? (
+        <Alert color="red" title="Ouverture refusée" data-testid="cashflow-opening-error-strip">
+          {openingFailure.message}
+        </Alert>
+      ) : null}
+      {showSaleKioskSessionStrip && !openingFailure ? null : showFullOpeningPaper ? (
       <Paper
         id={isSessionOpenSurface ? undefined : 'caisse-session-open-hint'}
         withBorder

@@ -2,8 +2,10 @@
 import '@mantine/core/styles.css';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { App } from '../../src/app/App';
+import { createDefaultDemoEnvelope } from '../../src/app/auth/default-demo-auth-adapter';
+import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import { RootProviders } from '../../src/app/providers/RootProviders';
+import { CashflowNominalWizard } from '../../src/domains/cashflow/CashflowNominalWizard';
 import { resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import { resetCashflowOperationalSyncNoticeCacheForTests } from '../../src/domains/cashflow/cashflow-operational-sync-notice';
 import '../../src/registry';
@@ -76,11 +78,17 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    /** Hors alias kiosque `/cash-register/sale` : le bandeau sync n’est pas monté si `sale_kiosk_category_workspace` (Story 13.8). */
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'e2e-69-sync-deferred' },
+      envelope: createDefaultDemoEnvelope({
+        cashSessionId: '00000000-0000-4000-8000-000000000001',
+      }),
+    });
 
     render(
-      <RootProviders disableUserPrefsPersistence>
-        <App />
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 
@@ -109,11 +117,16 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'e2e-69-sync-degraded' },
+      envelope: createDefaultDemoEnvelope({
+        cashSessionId: '00000000-0000-4000-8000-000000000001',
+      }),
+    });
 
     render(
-      <RootProviders disableUserPrefsPersistence>
-        <App />
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 
@@ -161,11 +174,16 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    window.history.pushState({}, '', '/cash-register/sale');
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'e2e-69-post-retry' },
+      envelope: createDefaultDemoEnvelope({
+        cashSessionId: '00000000-0000-4000-8000-000000000001',
+      }),
+    });
 
     render(
-      <RootProviders disableUserPrefsPersistence>
-        <App />
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <CashflowNominalWizard widgetProps={{}} />
       </RootProviders>,
     );
 
@@ -179,7 +197,7 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
       target: { value: '00000000-0000-4000-8000-000000000001' },
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /paiement/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /Paiement|Règlement/i }));
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
 
     await waitFor(() => {

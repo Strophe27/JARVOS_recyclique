@@ -214,10 +214,15 @@ export type CashSessionCurrentV1 = {
   current_amount: number;
   status: 'open' | 'closed';
   opened_at?: string;
+  closed_at?: string | null;
   total_sales?: number | null;
   total_items?: number | null;
   total_donations?: number | null;
   total_weight_out?: number | null;
+  closing_amount?: number | null;
+  actual_amount?: number | null;
+  variance?: number | null;
+  variance_comment?: string | null;
   totals?: CashSessionTotalsV1 | null;
 };
 

@@ -67,6 +67,21 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     expect(p?.patch?.tags).toContain("sales");
   });
 
+  it("expose recyclique_users_createUser sur POST /v1/users/", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string }>>;
+    expect(paths["/v1/users/"]?.post?.operationId).toBe("recyclique_users_createUser");
+  });
+
+  it("expose recyclique_users_updateUser sur PUT /v1/users/{user_id}", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string }>>;
+    expect(paths["/v1/users/{user_id}"]?.put?.operationId).toBe("recyclique_users_updateUser");
+  });
+
+  it("expose adminUsersRolePut sur PUT /v1/admin/users/{user_id}/role", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string }>>;
+    expect(paths["/v1/admin/users/{user_id}/role"]?.put?.operationId).toBe("adminUsersRolePut");
+  });
+
   it("expose recyclique_cashSessions_getCurrentOpenSession sur GET /v1/cash-sessions/current (Story 6.7)", () => {
     const paths = doc.paths as Record<
       string,
@@ -85,6 +100,95 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     const detail = paths["/v1/cash-sessions/{session_id}"];
     expect(detail?.get?.operationId).toBe("recyclique_cashSessions_getSessionDetail");
     expect(detail?.get?.tags).toContain("cash-sessions");
+  });
+
+  it("expose recyclique_cashSessions_listSessions sur GET /v1/cash-sessions/ (session-manager)", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const list = paths["/v1/cash-sessions/"];
+    expect(list?.get?.operationId).toBe("recyclique_cashSessions_listSessions");
+    expect(list?.get?.tags).toContain("cash-sessions");
+  });
+
+  it("expose recyclique_cashSessions_getSessionStatsSummary sur GET /v1/cash-sessions/stats/summary", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const st = paths["/v1/cash-sessions/stats/summary"];
+    expect(st?.get?.operationId).toBe("recyclique_cashSessions_getSessionStatsSummary");
+    expect(st?.get?.tags).toContain("cash-sessions");
+  });
+
+  it("expose recyclique_sites_listSites sur GET /v1/sites/", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const sites = paths["/v1/sites/"];
+    expect(sites?.get?.operationId).toBe("recyclique_sites_listSites");
+    expect(sites?.get?.tags).toContain("sites");
+  });
+
+  it("expose recyclique_cashRegisters_listCashRegisters sur GET /v1/cash-registers/", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string; tags?: string[] }>>;
+    const p = paths["/v1/cash-registers/"];
+    expect(p?.get?.operationId).toBe("recyclique_cashRegisters_listCashRegisters");
+    expect(p?.get?.tags).toContain("cash-registers");
+  });
+
+  it("expose recyclique_cashRegisters_getRegistersStatus sur GET /v1/cash-registers/status", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string; tags?: string[] }>>;
+    const p = paths["/v1/cash-registers/status"];
+    expect(p?.get?.operationId).toBe("recyclique_cashRegisters_getRegistersStatus");
+    expect(p?.get?.tags).toContain("cash-registers");
+  });
+
+  it("expose recyclique_sites_createSite sur POST /v1/sites/", () => {
+    const paths = doc.paths as Record<string, Record<string, { operationId?: string }>>;
+    expect(paths["/v1/sites/"]?.post?.operationId).toBe("recyclique_sites_createSite");
+  });
+
+  it("expose recyclique_categories_listCategories sur GET /v1/categories/", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const cat = paths["/v1/categories/"];
+    expect(cat?.get?.operationId).toBe("recyclique_categories_listCategories");
+    expect(cat?.get?.tags).toContain("categories");
+  });
+
+  it("expose recyclique_categories_listForEntryTickets sur GET /v1/categories/entry-tickets", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const p = paths["/v1/categories/entry-tickets"];
+    expect(p?.get?.operationId).toBe("recyclique_categories_listForEntryTickets");
+    expect(p?.get?.tags).toContain("categories");
+  });
+
+  it("expose recyclique_categories_listForSaleTickets sur GET /v1/categories/sale-tickets", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const p = paths["/v1/categories/sale-tickets"];
+    expect(p?.get?.operationId).toBe("recyclique_categories_listForSaleTickets");
+    expect(p?.get?.tags).toContain("categories");
+  });
+
+  it("expose recyclique_admin_reports_cashSessionsDownloadBySession sur GET …/by-session/{session_id}", () => {
+    const paths = doc.paths as Record<
+      string,
+      Record<string, { operationId?: string; tags?: string[] }>
+    >;
+    const dl = paths["/v1/admin/reports/cash-sessions/by-session/{session_id}"];
+    expect(dl?.get?.operationId).toBe("recyclique_admin_reports_cashSessionsDownloadBySession");
+    expect(dl?.get?.tags).toContain("admin");
   });
 
   it("expose recyclique_exploitation_getLiveSnapshot sur /v2/exploitation/live-snapshot (Stories 1.4 / 1.7)", () => {

@@ -8,6 +8,7 @@ import {
   setCashflowWidgetDataState,
   useCashflowDraft,
 } from './cashflow-draft-store';
+import { KioskFinalizeSaleDock } from './KioskFinalizeSaleDock';
 import classes from './CaisseCurrentTicket.module.css';
 
 function shortRef(id: string): string {
@@ -74,26 +75,55 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
           : `${l.category} ×${l.quantity} — ${l.totalPrice.toFixed(2)} € (poids ${l.weight} kg)`,
       }));
 
+  const unifiedGridRows = showServerTicket
+    ? serverSale!.items.map((it, i) => ({
+        key: it.id ?? `srv-${i}`,
+        category: it.category,
+        quantity: it.quantity,
+        weight: it.weight,
+        total: Number(it.total_price),
+      }))
+    : draft.lines.map((l) => ({
+        key: l.id,
+        category: l.category,
+        quantity: l.quantity,
+        weight: l.weight,
+        total: l.totalPrice,
+      }));
+
   const displayTotal = showServerTicket ? serverSale!.total_amount : draft.totalAmount;
 
-  return (
-    <section
-      className={`${classes.root}${unified ? ` ${classes.rootUnified}` : ''}`}
-      data-testid="caisse-current-ticket"
-      data-widget-data-state={draft.widgetDataState}
-      data-operation-id="recyclique_sales_getSale"
-    >
-      <Title order={4}>{unified ? 'Ticket' : 'Ticket courant'}</Title>
-      {!unified ? (
-        <Text size="sm" c="dimmed" mb="xs">
-          Contrat : lecture ticket via <code>recyclique_sales_getSale</code> (vente finalisée ou ticket en attente
-          repris) ; brouillon local jusqu’au POST / finalisation.
-        </Text>
-      ) : null}
+  const kioskParcoursHint = (() => {
+    if (!unified) return null;
+    if (draft.lastSaleId) return null;
+    if (draft.activeHeldSaleId) {
+      return (
+        <p className={classes.kioskTicketParcours} data-testid="caisse-ticket-parcours-hint">
+          <strong>Reprise</strong> : contrôlez le total, puis encaissez via le bloc <strong>Finaliser la vente</strong> ci-dessous.
+        </p>
+      );
+    }
+    if (draft.lines.length === 0) return null;
+    if (draft.totalAmount <= 0) {
+      return (
+        <p className={classes.kioskTicketParcours} data-testid="caisse-ticket-parcours-hint">
+          Puis allez à l’étape <strong>Montant</strong> pour confirmer le total à facturer.
+        </p>
+      );
+    }
+    return (
+      <p className={classes.kioskTicketParcours} data-testid="caisse-ticket-parcours-hint">
+        Puis encaissement : moyen de paiement et enregistrement dans le bloc <strong>Finaliser la vente</strong> ci-dessous.
+      </p>
+    );
+  })();
+
+  const unifiedInner = (
+    <>
       {draft.activeHeldSaleId ? (
         <Alert color="blue" mb="sm" data-testid="caisse-held-ticket-banner">
           {unified ? (
-            'Reprise d’un ticket en attente — vérifiez le total avant encaissement.'
+            'Reprise d’un ticket en attente — contrôlez le total avant encaissement.'
           ) : (
             <>
               Mode reprise : ticket en attente — finalisation via <code>recyclique_sales_finalizeHeldSale</code>.
@@ -109,46 +139,133 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
           data-testid="caisse-ticket-stale-banner"
         >
           {unified
-            ? 'Les montants affichés ne sont plus garantis. Réessayez ou rafraîchissez avant d’encaisser.'
+            ? 'Les montants affichés ne sont plus garantis. Réessayez ou actualisez avant d’encaisser.'
             : 'Les informations du ticket critique ne sont plus fiables (réseau ou réponse API). Le paiement est bloqué jusqu’à rafraîchissement du contexte ou nouvelle tentative.'}
         </Alert>
       ) : null}
       {activeTicketId && ticketLoading ? (
         <Text size="sm" data-testid="caisse-ticket-loading">
-          Chargement du ticket serveur…
+          {unified ? 'Chargement du ticket…' : 'Chargement du ticket serveur…'}
         </Text>
       ) : null}
-      {displayLines.length === 0 && !ticketLoading ? (
-        <Text size="sm">{unified ? 'Aucune ligne pour le moment.' : 'Aucune ligne — étape « Lignes » du flux.'}</Text>
-      ) : displayLines.length > 0 ? (
-        <List size="sm" spacing="xs">
-          {displayLines.map((row) => (
-            <List.Item key={row.key}>{row.label}</List.Item>
-          ))}
-        </List>
-      ) : null}
-      <Text fw={600} mt="sm">
-        {unified ? `Total : ${Number(displayTotal).toFixed(2)} €` : `Total ${showServerTicket ? '(serveur)' : '(saisi)'} : ${Number(displayTotal).toFixed(2)} €`}
-      </Text>
-      {draft.lastSaleId ? (
-        <Text size="sm" mt="xs" data-testid="caisse-last-sale-id" data-sale-id={draft.lastSaleId}>
+
+      <div className={unified ? classes.ticketSection : undefined}>
+        {unified ? (
+          <Text className={classes.ticketSectionLabel} component="h3">
+            Articles
+          </Text>
+        ) : null}
+        {displayLines.length === 0 && !ticketLoading ? (
+          <Text size="sm">
+            {unified
+              ? 'Aucun article pour l’instant — la saisie se fait à gauche.'
+              : 'Aucune ligne — étape « Lignes » du flux.'}
+          </Text>
+        ) : displayLines.length > 0 && unified ? (
+          <>
+            <Text className={classes.unifiedSummary} data-testid="caisse-ticket-lines-summary">
+              {unifiedGridRows.length} article{unifiedGridRows.length > 1 ? 's' : ''}
+            </Text>
+            <div className={classes.unifiedGrid} data-testid="caisse-ticket-lines-grid">
+              <div className={classes.unifiedGridHead}>
+                <span>Désignation</span>
+                <span className={classes.unifiedGridCellNum}>Qté</span>
+                <span className={classes.unifiedGridCellNum}>Poids</span>
+                <span className={classes.unifiedGridCellNum}>Montant</span>
+              </div>
+              {unifiedGridRows.map((row) => (
+                <div key={row.key} className={classes.unifiedGridRow}>
+                  <span>{row.category}</span>
+                  <span className={classes.unifiedGridCellNum}>{row.quantity}</span>
+                  <span className={classes.unifiedGridCellNum}>{`${Number(row.weight).toFixed(2)} kg`}</span>
+                  <span className={classes.unifiedGridCellNum}>{`${row.total.toFixed(2)} €`}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : displayLines.length > 0 ? (
+          <List size="sm" spacing="xs">
+            {displayLines.map((row) => (
+              <List.Item key={row.key}>{row.label}</List.Item>
+            ))}
+          </List>
+        ) : null}
+      </div>
+
+      <div className={unified ? `${classes.ticketSection} ${classes.ticketSectionTotal}` : undefined}>
+        {unified ? (
+          <Text className={classes.ticketSectionLabel} component="h3">
+            Total à régler
+          </Text>
+        ) : null}
+        {kioskParcoursHint}
+        <Text fw={600} mt={unified ? 0 : 'sm'} className={unified ? classes.unifiedTotalBand : undefined}>
           {unified
-            ? `Dernier enregistrement : réf. ${shortRef(draft.lastSaleId)}`
-            : `Dernier ticket enregistré : ${draft.lastSaleId}`}
+            ? `Total : ${Number(displayTotal).toFixed(2)} €`
+            : `Total ${showServerTicket ? '(serveur)' : '(saisi)'} : ${Number(displayTotal).toFixed(2)} €`}
         </Text>
+      </div>
+
+      {draft.lastSaleId || (draft.activeHeldSaleId && !draft.lastSaleId) ? (
+        <div className={unified ? `${classes.ticketSection} ${classes.ticketSectionRefs}` : undefined}>
+          {unified ? (
+            <Text className={classes.ticketSectionLabel} component="h3">
+              Références
+            </Text>
+          ) : null}
+          {draft.lastSaleId ? (
+            <Text size="sm" mt={unified ? 'xs' : 'xs'} data-testid="caisse-last-sale-id" data-sale-id={draft.lastSaleId}>
+              {unified
+                ? `Dernière vente : ${shortRef(draft.lastSaleId)}`
+                : `Dernier ticket enregistré : ${draft.lastSaleId}`}
+            </Text>
+          ) : null}
+          {draft.activeHeldSaleId && !draft.lastSaleId ? (
+            <Text
+              size="sm"
+              mt={unified ? 'xs' : 'xs'}
+              data-testid="caisse-active-held-id"
+              data-held-sale-id={draft.activeHeldSaleId}
+            >
+              {unified
+                ? `Ticket en attente : ${shortRef(draft.activeHeldSaleId)}`
+                : `Ticket en attente actif : ${draft.activeHeldSaleId}`}
+            </Text>
+          ) : null}
+        </div>
       ) : null}
-      {draft.activeHeldSaleId && !draft.lastSaleId ? (
-        <Text size="sm" mt="xs" data-testid="caisse-active-held-id" data-held-sale-id={draft.activeHeldSaleId}>
-          {unified
-            ? `En attente · réf. ${shortRef(draft.activeHeldSaleId)}`
-            : `Ticket en attente actif : ${draft.activeHeldSaleId}`}
-        </Text>
-      ) : null}
+
       {draft.localIssueMessage ? (
         <Alert color="blue" mt="sm" data-testid="caisse-local-issue-message">
           {draft.localIssueMessage}
         </Alert>
       ) : null}
+    </>
+  );
+
+  return (
+    <section
+      className={`${classes.root}${unified ? ` ${classes.rootUnified}` : ''}`}
+      data-testid="caisse-current-ticket"
+      data-widget-data-state={draft.widgetDataState}
+      data-operation-id="recyclique_sales_getSale"
+    >
+      {unified ? (
+        <div className={classes.ticketKioskShell}>
+          <div className={classes.ticketKioskTitleBar}>Ticket de caisse</div>
+          <div className={classes.ticketKioskBody}>{unifiedInner}</div>
+          <KioskFinalizeSaleDock />
+        </div>
+      ) : (
+        <>
+          <Title order={4}>Ticket courant</Title>
+          <Text size="sm" c="dimmed" mb="xs">
+            Contrat : lecture ticket via <code>recyclique_sales_getSale</code> (vente finalisée ou ticket en attente
+            repris) ; brouillon local jusqu’au POST / finalisation.
+          </Text>
+          {unifiedInner}
+        </>
+      )}
     </section>
   );
 }

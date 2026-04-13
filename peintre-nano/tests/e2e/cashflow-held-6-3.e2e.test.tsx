@@ -9,6 +9,7 @@ import { RootProviders } from '../../src/app/providers/RootProviders';
 import { getCashflowDraftSnapshot, resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
+import { addOneLineKioskSale } from './helpers/kiosk-sale-add-line';
 
 const SESSION = '00000000-0000-4000-8000-000000000001';
 const HELD_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-111111111111';
@@ -169,9 +170,13 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
       expect(getCashflowDraftSnapshot().cashSessionIdInput).toBe(SESSION);
     });
 
-    fireEvent.click(screen.getByTestId('cashflow-add-line'));
-    expect(screen.getByTestId('cashflow-lines-count').textContent ?? '').toContain('Lignes : 1');
+    await addOneLineKioskSale();
+    expect(screen.getByTestId('cashflow-kiosk-kpi-line-count').textContent ?? '').toBe('1');
 
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-micro-price'));
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-put-on-hold')).toBeTruthy();
+    });
     fireEvent.click(screen.getByTestId('cashflow-put-on-hold'));
 
     await waitFor(() => {
@@ -201,7 +206,7 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
     });
     expect(screen.getByTestId('caisse-active-held-id').getAttribute('data-held-sale-id')).toBe(HELD_ID);
 
-    fireEvent.click(screen.getByRole('tab', { name: /paiement/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /Paiement|Règlement|Encaissement/i }));
 
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
 

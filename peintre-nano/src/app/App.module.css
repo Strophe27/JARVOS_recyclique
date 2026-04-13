@@ -11,6 +11,26 @@
   border-radius: var(--pn-radius-md);
 }
 
+/** Colonne main sur kiosque vente : permet au wizard (`flex:1`) de remplir la hauteur sous le strip dashboard minimal */
+.cashflowKioskSaleMainStretch {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cashflowKioskSaleMainStretch > div {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cashflowKioskSaleMainStretch [data-pn-main-slot-stack='true'] {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .list {
   margin: 0;
   padding-left: var(--pn-list-indent);

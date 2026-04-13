@@ -5,14 +5,6 @@
   "requires_site": true,
   "slots": [
     {
-      "slot_id": "header",
-      "widget_type": "demo.text.block",
-      "widget_props": {
-        "title": "Détail ticket réception (admin)",
-        "body": "Brownfield `/admin/reception-tickets/:id` — lecture ticket + lignes via `GET /v1/reception/tickets/{ticket_id}` (`recyclique_reception_getTicketDetail`, client `reception-client.ts`). Liste des tickets : entrée nav **`transverse-admin-reception-sessions`** sur **`/admin/reception-sessions`**. Mutations sensibles et exports : hors **19.2** (bloc explicite dans le widget)."
-      }
-    },
-    {
       "slot_id": "main",
       "widget_type": "admin-reception-ticket-detail",
       "widget_props": {}

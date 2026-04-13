@@ -2,8 +2,15 @@ import type { AuthContextPort } from '../app/auth/auth-context-port';
 import type { operations } from '../../../contracts/openapi/generated/recyclique-api';
 import { getLiveSnapshotBasePrefix } from './live-snapshot-client';
 
+/** Réponse `GET /v1/cash-sessions/stats/summary` — `recyclique_cashSessions_getSessionStatsSummary`. */
+export type CashSessionStatsSummary =
+  operations['recyclique_cashSessions_getSessionStatsSummary']['responses'][200]['content']['application/json'];
+
 /** Plage ISO renvoyée par la même logique que `UnifiedDashboard` (legacy 1.4.4). */
 export type DashboardDateRangeIso = { readonly start?: string; readonly end?: string };
+
+/** Paramètres `GET /v1/cash-sessions/stats/summary` — plage + filtre site optionnel (session-manager). */
+export type CashSessionStatsQuery = DashboardDateRangeIso & { readonly site_id?: string };
 
 /** Types générés OpenAPI — `recyclique_stats_receptionSummary` (Story 19.1). */
 export type ReceptionStatsSummaryResponse =
@@ -16,19 +23,6 @@ export type ReceptionByCategoryResponse =
 /** Types générés — `recyclique_stats_unifiedLive` (successeur de `recyclique_reception_statsLiveDeprecated`). */
 export type UnifiedLiveStatsResponse =
   operations['recyclique_stats_unifiedLive']['responses'][200]['content']['application/json'];
-
-/** Aligné sur `CashSessionStats` (OpenAPI / schéma backend). */
-export type CashSessionStatsSummary = {
-  readonly total_sessions: number;
-  readonly open_sessions: number;
-  readonly closed_sessions: number;
-  readonly total_sales: number;
-  readonly total_items: number;
-  readonly number_of_sales: number;
-  readonly total_donations: number;
-  readonly total_weight_sold: number;
-  readonly average_session_duration?: number | null;
-};
 
 /** Ligne `by-category` (réception / ventes) — champs usuels ; corps OpenAPI = objet indexable. */
 export type CategoryStatRow = {
@@ -88,16 +82,17 @@ async function parseJsonResponse<T>(res: Response): Promise<T> {
 }
 
 /**
- * `GET /v1/cash-sessions/stats/summary` — paramètres `date_from` / `date_to` (legacy `cashSessionsService.getKPIs`).
+ * `GET /v1/cash-sessions/stats/summary` — paramètres `date_from` / `date_to` / `site_id` (legacy `cashSessionsService.getKPIs`).
  */
 export async function fetchCashSessionStatsSummary(
   auth: Pick<AuthContextPort, 'getAccessToken'>,
-  range: DashboardDateRangeIso,
+  range: CashSessionStatsQuery,
   signal?: AbortSignal,
 ): Promise<CashSessionStatsSummary> {
   const url = buildUrl('/v1/cash-sessions/stats/summary', {
     date_from: range.start,
     date_to: range.end,
+    site_id: range.site_id,
   });
   const res = await fetch(url, {
     method: 'GET',

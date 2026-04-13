@@ -20,8 +20,6 @@
  * gap K explicite, liens vers routes déjà manifestées + legacy). Pas de route nav officielle `/admin/reports` dans le
  * bundle servi ; alias SPA éventuel → `/admin` dans `RuntimeDemoApp` (pas d’`id` nav absent du manifeste).
  *
- * Story 17.1 : page `transverse-admin-pending` (`/admin/pending`) — placeholder honnête sans `data_contract` tant que
- * `GET /v1/admin/users/pending` est absent du OpenAPI canon (Epic 16).
  *
  * Story 17.2 : pages `transverse-admin-cash-registers` (`/admin/cash-registers`) et `transverse-admin-sites`
  * (`/admin/sites`) — même discipline rail U (gaps G-OA-02 → Epic 16).
@@ -53,7 +51,10 @@ import pageTransverseAdminAccessOverview from '../../../../contracts/creos/manif
 import pageTransverseAdminPlaceholder from '../../../../contracts/creos/manifests/page-transverse-admin-placeholder.json';
 import pageTransverseAdminReportsHub from '../../../../contracts/creos/manifests/page-transverse-admin-reports-hub.json';
 import pageTransverseAdminSiteOverview from '../../../../contracts/creos/manifests/page-transverse-admin-site-overview.json';
-import pageTransverseAdminPending from '../../../../contracts/creos/manifests/page-transverse-admin-pending.json';
+import pageTransverseAdminUsers from '../../../../contracts/creos/manifests/page-transverse-admin-users.json';
+import pageTransverseAdminGroups from '../../../../contracts/creos/manifests/page-transverse-admin-groups.json';
+import pageTransverseAdminCategories from '../../../../contracts/creos/manifests/page-transverse-admin-categories.json';
+import pageTransverseAdminAuditLog from '../../../../contracts/creos/manifests/page-transverse-admin-audit-log.json';
 import pageTransverseAdminCashRegisters from '../../../../contracts/creos/manifests/page-transverse-admin-cash-registers.json';
 import pageTransverseAdminSites from '../../../../contracts/creos/manifests/page-transverse-admin-sites.json';
 import pageTransverseAdminReceptionSessions from '../../../../contracts/creos/manifests/page-transverse-admin-reception-sessions.json';
@@ -154,7 +155,10 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseAdminPlaceholder),
     JSON.stringify(pageTransverseAdminAccessOverview),
     JSON.stringify(pageTransverseAdminSiteOverview),
-    JSON.stringify(pageTransverseAdminPending),
+    JSON.stringify(pageTransverseAdminUsers),
+    JSON.stringify(pageTransverseAdminGroups),
+    JSON.stringify(pageTransverseAdminCategories),
+    JSON.stringify(pageTransverseAdminAuditLog),
     JSON.stringify(pageTransverseAdminCashRegisters),
     JSON.stringify(pageTransverseAdminSites),
     JSON.stringify(pageTransverseAdminSessionManager),
@@ -188,7 +192,10 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-admin-placeholder.json',
           'contracts/creos/manifests/page-transverse-admin-access-overview.json',
           'contracts/creos/manifests/page-transverse-admin-site-overview.json',
-          'contracts/creos/manifests/page-transverse-admin-pending.json',
+          'contracts/creos/manifests/page-transverse-admin-users.json',
+          'contracts/creos/manifests/page-transverse-admin-groups.json',
+          'contracts/creos/manifests/page-transverse-admin-categories.json',
+          'contracts/creos/manifests/page-transverse-admin-audit-log.json',
           'contracts/creos/manifests/page-transverse-admin-cash-registers.json',
           'contracts/creos/manifests/page-transverse-admin-sites.json',
           'contracts/creos/manifests/page-transverse-admin-session-manager.json',

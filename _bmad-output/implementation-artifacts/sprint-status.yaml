@@ -1,3 +1,6 @@
+# last_updated: 2026-04-13 — reconciliation Epic 14 vs code : 14-3 et 14-4 backlog→review (dashboard supervision + audit-log deja portes) ; 14-5 inchangé review ; epic-14 in-progress
+# last_updated: 2026-04-12 — rattachement chantier admin audit-log / groups : epics.md + sprint-status — stories 14.4 (audit-log rail U sous Epic 14) et 14.5 (groups rail U + correctif backend 500 dans AC) ; 14.3 inchangé (KPIs dashboard)
+# last_updated: 2026-04-12 — story 18.1 Story Runner (resume_at DS, correctif parité 6+3 option A) : Task DS + gates peintre-nano lint/test/build (correctifs e2e caisse aria-label + sync hors kiosque) ; Task QA assertions grille legacy + ordre DOM ; Task CR PASS ; 18-1 reste done ; vs_loop=0 qa_loop=0 cr_loop=0
 # last_updated: 2026-04-12 — story 13.8 Story Runner BMAD (PO : poursuite sans bloquer sur MCP) : preuves headless Peintre + artefact comparatif + matrice/story/sprint ready-for-dev→review ; gates peintre-nano lint+test+build ; micro-DS retrait raccourci non câblé ; puppeteer-core devDependency ; Task QA+CR PASS ; vs_loop=0 qa_loop=0 cr_loop=0
 # last_updated: 2026-04-12 — story 19.3 Story Runner BMAD (resume_at CR, GATE/QA deja valides DS/parent) : Task bmad-code-review APPROVE ; 19-3 review→done ; epic-19 in-progress→done (toutes stories 19.x) ; vs_loop=0 qa_loop=0 cr_loop=0
 # last_updated: 2026-04-12 — story 19.3 DS bmad-dev-story (Task) : 19-3 ready-for-dev → review ; matrice + doc 03 §19.3 + NEEDS_HITL `2026-04-12_08_…` + tests contrat/e2e ; gates npm complets au parent (GATE)
@@ -180,7 +183,7 @@
 generated: "2026-04-01"
 # last_updated: 2026-04-12 — story 17.3 CS bmad-create-story : 17-3-consolider-les-briques-mutualisees-de-shell-liste-admin-guards-et-detail-simple backlog → ready-for-dev (fichier story + sprint ; epic-17 in-progress)
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
-last_updated: "2026-04-12" # story 19.3 CR Story Runner : 19-3 review→done ; epic-19→done (bmad-code-review APPROVE)
+last_updated: "2026-04-13" # reconciliation Epic 14 : sprint_status 14-3/14-4 alignes code (review) ; fichiers story 14-3/14-4/14-5 + epics.md
 # last_updated: "2026-04-12" # story 19.1 CS bmad-create-story : fichier story 19-1 + sprint epic-19 backlog→in-progress ; 19-1 backlog→ready-for-dev
 # last_updated: "2026-04-12" # backlog epic-13 : ajout des stories 13.7 (audit/traduction kiosque legacy -> Peintre) et 13.8 (implementation kiosque) apres 13.6 ; historique 13.1-13.6 preserve
 # last_updated: "2026-04-12" # story 13.6 CS bmad-create-story : 13-6-certifier-lequivalence-utilisateur-legacy-de-la-caisse-observable-dans-peintre-nano backlog → ready-for-dev (fichier story umbrella certification)
@@ -343,7 +346,9 @@ development_status:
   epic-14: in-progress
   14-1-retrouver-le-shell-et-le-choix-de-contexte-admin-observables-dans-peintre-nano: done
   14-2-retrouver-les-ecrans-de-parametres-admin-simples-observables-dans-peintre-nano: done
-  14-3-retrouver-les-vues-admin-de-supervision-simple-observables-dans-peintre-nano: backlog
+  14-3-retrouver-les-vues-admin-de-supervision-simple-observables-dans-peintre-nano: review
+  14-4-retrouver-la-vue-audit-log-transverse-observable-dans-peintre-nano: review
+  14-5-retrouver-la-gestion-des-groupes-admin-observable-dans-peintre-nano: review
   epic-14-retrospective: optional
 
   epic-15: in-progress

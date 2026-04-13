@@ -76,10 +76,13 @@ export type SaleResponseV1 = {
   id: string;
   cash_session_id: string;
   operator_id?: string | null;
+  operator_name?: string | null;
   lifecycle_status?: 'completed' | 'held' | 'abandoned';
   total_amount: number;
   donation?: number | null;
+  payment_method?: string | null;
   note?: string | null;
+  sale_date?: string | null;
   items: SaleItemResponseV1[];
   payments?: unknown[];
   special_encaissement_kind?: SpecialEncaissementKindV1 | null;
@@ -183,6 +186,59 @@ export async function getSale(
       method: 'GET',
       credentials: 'include',
       headers,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return salesHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return salesHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json !== 'object' || json === null || !('id' in json) || !('items' in json)) {
+    return salesHttpError(res.status, json, 'Réponse vente invalide');
+  }
+
+  return { ok: true, sale: json as SaleResponseV1 };
+}
+
+export type PutSaleNoteResult = { ok: true; sale: SaleResponseV1 } | SalesHttpError;
+
+/**
+ * PUT /v1/sales/{sale_id} — même contrat que le legacy `updateSaleNote` (note seule, rôles admin / super-admin côté serveur).
+ */
+export async function putSaleNote(
+  saleId: string,
+  note: string,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<PutSaleNoteResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/sales/${encodeURIComponent(saleId)}`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const token = auth.getAccessToken?.();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'PUT',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({ note }),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erreur réseau';

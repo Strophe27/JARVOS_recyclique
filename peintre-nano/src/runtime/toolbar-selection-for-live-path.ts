@@ -13,9 +13,12 @@ export function toolbarSelectedEntryIdFromResolved(
   if (
     resolvedEntryId === 'transverse-admin-access' ||
     resolvedEntryId === 'transverse-admin-site' ||
-    resolvedEntryId === 'transverse-admin-pending' ||
+    resolvedEntryId === 'transverse-admin-users' ||
     resolvedEntryId === 'transverse-admin-cash-registers' ||
-    resolvedEntryId === 'transverse-admin-sites'
+    resolvedEntryId === 'transverse-admin-sites' ||
+    resolvedEntryId === 'transverse-admin-session-manager' ||
+    resolvedEntryId === 'transverse-admin-reception-stats' ||
+    resolvedEntryId === 'transverse-admin-reception-sessions'
   ) {
     return 'transverse-admin';
   }

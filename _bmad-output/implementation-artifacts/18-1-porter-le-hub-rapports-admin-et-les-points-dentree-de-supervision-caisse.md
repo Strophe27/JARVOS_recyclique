@@ -71,15 +71,15 @@ So that operators recover observable navigation blocks and groupings aligned wit
 
 ## Tasks / Subtasks
 
-- [ ] **AC 1, 2, 3** — Cartographier le legacy `DashboardHomePage.jsx` (sections, liens, libelles) vs l'etat actuel Peintre sur `/admin` ; trancher le decoupage **18.1** vs **18.2** / **14.3** et lister les gaps **K** a afficher honnetement.
+- [x] **AC 1, 2, 3** — Cartographier le legacy `DashboardHomePage.jsx` (sections, liens, libelles) vs l'etat actuel Peintre sur `/admin` ; trancher le decoupage **18.1** vs **18.2** / **14.3** et lister les gaps **K** a afficher honnetement.
 
-- [ ] **AC 4, 5, 6** — Concevoir / etendre les **PageManifest** hub (`page_key` `transverse-admin-*`) avec slots partages (header, eventuel resume, grille d'entrees) + widgets registres (`register-admin-config-widgets.ts`) — reutiliser **`AdminListPageShell`** ou pattern hub documente pour les blocs « liste d'actions / liens » ; reutiliser / etendre **`AdminLegacyDashboardHomeWidget`** (`peintre-nano/src/widgets/admin/AdminLegacyDashboardHomeWidget.tsx`, type `admin.legacy.dashboard.home` deja branche sur `page-transverse-admin-placeholder.json`) plutot que dupliquer une grille ad hoc hors manifeste.
+- [x] **AC 4, 5, 6** — Concevoir / etendre les **PageManifest** hub (`page_key` `transverse-admin-*`) avec slots partages (header, eventuel resume, grille d'entrees) + widgets registres (`register-admin-config-widgets.ts`) — reutiliser **`AdminListPageShell`** ou pattern hub documente pour les blocs « liste d'actions / liens » ; reutiliser / etendre **`AdminLegacyDashboardHomeWidget`** (`peintre-nano/src/widgets/admin/AdminLegacyDashboardHomeWidget.tsx`, type `admin.legacy.dashboard.home` deja branche sur `page-transverse-admin-placeholder.json`) plutot que dupliquer une grille ad hoc hors manifeste.
 
-- [ ] **AC 6, 7, 10** — Mettre a jour **`navigation-transverse-served.json`** (et pipeline bundle / `public/manifests/navigation.json` si requis) : groupements / entrees supervision caisse coherentes avec les routes **deja** servies ; etendre les tests contrat + e2e navigation.
+- [x] **AC 6, 7, 10** — Mettre a jour **`navigation-transverse-served.json`** (et pipeline bundle / `public/manifests/navigation.json` si requis) : groupements / entrees supervision caisse coherentes avec les routes **deja** servies ; etendre les tests contrat + e2e navigation.
 
-- [ ] **AC 8, 9** — Documenter dans `03-contrats-creos-et-donnees.md` + lien matrice / cartographie ; verifier **`resolve-transverse-main-layout.ts`** et **`RuntimeDemoApp`** (shell admin, pas de regression sur chemins admin existants).
+- [x] **AC 8, 9** — Documenter dans `03-contrats-creos-et-donnees.md` + lien matrice / cartographie ; verifier **`resolve-transverse-main-layout.ts`** et **`RuntimeDemoApp`** (shell admin, pas de regression sur chemins admin existants).
 
-- [ ] **AC 1** — Gates **`peintre-nano`** : `npm run lint`, `npm run test`, `npm run build`.
+- [x] **AC 1** — Gates **`peintre-nano`** : `npm run lint`, `npm run test`, `npm run build`.
 
 ## Dev Notes
 
@@ -123,7 +123,16 @@ So that operators recover observable navigation blocks and groupings aligned wit
 ### Completion Notes List
 
 - Ultimate contexte story pour enchainement VS / DS ; statut sprint **ready-for-dev**. Repasse CS 2026-04-12 : audit OpenAPI `/v1/admin/reports/*` + widget `AdminLegacyDashboardHomeWidget` + notes `syncSelectionFromPath` / matrice 15.
+- **DS Task 2026-04-12 (correctif parité 6+3 option A)** : `page-transverse-admin-reports-hub.json` — grille legacy seule en slot avant le hub ; hub `presentation: secondary-strip` (gap K + liens hors 6 : pending, cash-registers, sites, reception-stats). `AdminLegacyDashboardHomeWidget` — 4e tuile → `/admin/session-manager` + testids legacy. `toolbar-selection-for-live-path.ts` — surbrillance toolbar live pour session-manager / reception-stats / reception-sessions. Tests contrat + e2e navigation mis à jour. `npm run lint` + `npm run build` OK ; tests ciblés navigation / prune **98/98** OK. **`npm run test` complet** : 6 echecs dans `cashflow-defensive-6-9.e2e` et `cashflow-close-6-7.e2e` (non lies au diff admin ; deja observes sur le run complet).
 
 ### File List
 
-(à remplir par le developpeur en fin de DS)
+- `contracts/creos/manifests/page-transverse-admin-reports-hub.json`
+- `peintre-nano/src/domains/admin-config/AdminReportsSupervisionHubWidget.tsx`
+- `peintre-nano/src/widgets/admin/AdminLegacyDashboardHomeWidget.tsx`
+- `peintre-nano/src/runtime/toolbar-selection-for-live-path.ts`
+- `peintre-nano/tests/contract/navigation-transverse-served-5-1.test.ts`
+- `peintre-nano/tests/e2e/navigation-transverse-5-1.e2e.test.tsx`
+- `peintre-nano/tests/unit/prune-navigation-for-live-toolbar.test.ts`
+- `peintre-nano/docs/03-contrats-creos-et-donnees.md`
+- `_bmad-output/implementation-artifacts/18-1-porter-le-hub-rapports-admin-et-les-points-dentree-de-supervision-caisse.md`

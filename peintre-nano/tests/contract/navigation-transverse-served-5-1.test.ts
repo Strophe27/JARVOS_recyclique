@@ -71,7 +71,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).toContain('transverse-admin');
     expect(ids).toContain('transverse-admin-access');
     expect(ids).toContain('transverse-admin-site');
-    expect(ids).toContain('transverse-admin-pending');
+    expect(ids).toContain('transverse-admin-users');
     expect(ids).toContain('transverse-admin-cash-registers');
     expect(ids).toContain('transverse-admin-sites');
     expect(ids).toContain('transverse-admin-session-manager');
@@ -290,13 +290,8 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       {
         pageKey: 'transverse-admin-reports-hub',
         path: '/admin',
-        slotIds: [
-          'admin.transverse-list.header',
-          'admin.transverse-list.contract-gap',
-          'admin.transverse-list.main',
-          'admin.dashboard.legacy',
-        ],
-        widgetTypes: ['demo.text.block', 'demo.text.block', 'admin.reports.supervision.hub', 'admin.legacy.dashboard.home'],
+        slotIds: ['admin.dashboard.legacy'],
+        widgetTypes: ['admin.legacy.dashboard.home'],
       },
       {
         pageKey: 'transverse-admin-access-overview',
@@ -353,18 +348,8 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     if (!page) return;
     expect(page.requiredPermissionKeys).toEqual(['transverse.admin.view']);
     expect(page.requiresSite).toBe(true);
-    expect(page.slots.map((s) => s.slotId)).toEqual([
-      'admin.transverse-list.header',
-      'admin.transverse-list.contract-gap',
-      'admin.transverse-list.main',
-      'admin.dashboard.legacy',
-    ]);
-    expect(page.slots.map((s) => s.widgetType)).toEqual([
-      'demo.text.block',
-      'demo.text.block',
-      'admin.reports.supervision.hub',
-      'admin.legacy.dashboard.home',
-    ]);
+    expect(page.slots.map((s) => s.slotId)).toEqual(['admin.dashboard.legacy']);
+    expect(page.slots.map((s) => s.widgetType)).toEqual(['admin.legacy.dashboard.home']);
   });
 
   it('ne manifeste aucune entrée nav sur le chemin SPA /admin/reports (alias runtime → /admin ; Story 18.1 CR)', () => {
@@ -381,10 +366,23 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(hub?.id).toBe('transverse-admin');
   });
 
+  it('ne manifeste aucune entrée nav sur le chemin SPA /admin/pending (rail retiré ; alias runtime → /admin)', () => {
+    expect(runtimeServedManifestLoadResult.ok).toBe(true);
+    if (!runtimeServedManifestLoadResult.ok) return;
+    const { bundle } = runtimeServedManifestLoadResult;
+    const flat = bundle.navigation.entries.flatMap(function walk(e): typeof bundle.navigation.entries {
+      return [e, ...(e.children?.flatMap(walk) ?? [])];
+    });
+    expect(flat.some((e) => e.path === '/admin/pending')).toBe(false);
+    expect(flat.some((e) => e.id === 'transverse-admin-pending')).toBe(false);
+    const hub = flat.find((e) => e.pageKey === 'transverse-admin-reports-hub');
+    expect(hub?.path).toBe('/admin');
+    expect(hub?.id).toBe('transverse-admin');
+  });
+
   /**
-   * Stories 17.1–17.3 : `/admin/pending`, `/admin/cash-registers`, `/admin/sites` — `page_key` `transverse-admin*`,
-   * slots homogènes `admin.transverse-list.*`, guards documentés (`admin-transverse-list-page-guards.ts`),
-   * widgets démo sans `data_contract` ; gaps OpenAPI inchangés (rail U).
+   * Pages admin transverse : shell liste homogène ou slot principal seul selon la page ;
+   * guards documentés (`admin-transverse-list-page-guards.ts`).
    */
   it('résout les pages admin liste transverse (stories 17.1–17.3)', () => {
     expect(runtimeServedManifestLoadResult.ok).toBe(true);
@@ -396,10 +394,10 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
 
     const cases = [
       {
-        pageKey: 'transverse-admin-pending',
-        path: '/admin/pending',
-        navId: 'transverse-admin-pending',
-        mainWidget: 'admin.pending-users.demo',
+        pageKey: 'transverse-admin-users',
+        path: '/admin/users',
+        navId: 'transverse-admin-users',
+        mainWidget: 'admin.users.demo',
       },
       {
         pageKey: 'transverse-admin-cash-registers',
@@ -445,6 +443,17 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         ...ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS.requiredPermissionKeys,
       ]);
       expect(page.requiresSite).toBe(ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS.requiresSite);
+      if (
+        spec.pageKey === 'transverse-admin-users' ||
+        spec.pageKey === 'transverse-admin-cash-registers' ||
+        spec.pageKey === 'transverse-admin-sites' ||
+        spec.pageKey === 'transverse-admin-session-manager' ||
+        spec.pageKey === 'transverse-admin-reception-sessions'
+      ) {
+        expect(page.slots.map((s) => s.slotId)).toEqual(['admin.transverse-list.main']);
+        expect(page.slots.map((s) => s.widgetType)).toEqual([spec.mainWidget]);
+        continue;
+      }
       expect(page.slots.map((s) => s.slotId)).toEqual([...ADMIN_TRANSVERSE_LIST_SHELL_SLOT_IDS]);
       expect(page.slots.map((s) => s.widgetType)).toEqual([
         'demo.text.block',
@@ -475,7 +484,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).not.toContain('transverse-admin');
     expect(ids).not.toContain('transverse-admin-access');
     expect(ids).not.toContain('transverse-admin-site');
-    expect(ids).not.toContain('transverse-admin-pending');
+    expect(ids).not.toContain('transverse-admin-users');
     expect(ids).not.toContain('transverse-admin-cash-registers');
     expect(ids).not.toContain('transverse-admin-sites');
     expect(ids).not.toContain('transverse-admin-session-manager');
@@ -572,11 +581,11 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     if (!denied.allowed) expect(denied.code).toBe('MISSING_PERMISSIONS');
   });
 
-  it('resolvePageAccess refuse /admin/pending sans transverse.admin.view (story 17.1)', () => {
+  it('resolvePageAccess refuse /admin/users sans transverse.admin.view', () => {
     expect(runtimeServedManifestLoadResult.ok).toBe(true);
     if (!runtimeServedManifestLoadResult.ok) return;
     const page = runtimeServedManifestLoadResult.bundle.pages.find(
-      (p) => p.pageKey === 'transverse-admin-pending',
+      (p) => p.pageKey === 'transverse-admin-users',
     );
     expect(page).toBeDefined();
     if (!page) return;
@@ -649,7 +658,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
   });
 
   /**
-   * Story 18.3 — détail session caisse admin : PageManifest reviewable + widget unique
+   * Story 18.3 — détail session caisse admin : PageManifest reviewable + widget principal seul
    * (données live uniquement via `recyclique_cashSessions_getSessionDetail` côté client, pas d’`operationId` inventé).
    */
   it('résout la page admin-cash-session-detail du bundle servi (Story 18.3)', () => {
@@ -660,8 +669,8 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     if (!page) return;
     expect(page.requiredPermissionKeys).toEqual(['transverse.admin.view']);
     expect(page.requiresSite).toBe(true);
-    expect(page.slots.map((s) => s.slotId)).toEqual(['header', 'main']);
-    expect(page.slots.map((s) => s.widgetType)).toEqual(['demo.text.block', 'admin-cash-session-detail']);
+    expect(page.slots.map((s) => s.slotId)).toEqual(['main']);
+    expect(page.slots.map((s) => s.widgetType)).toEqual(['admin-cash-session-detail']);
     expect(resolvePageAccess(page, envelopeSansAdminView).allowed).toBe(false);
   });
 
@@ -675,8 +684,8 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     if (!page) return;
     expect(page.requiredPermissionKeys).toEqual(['transverse.admin.view']);
     expect(page.requiresSite).toBe(true);
-    expect(page.slots.map((s) => s.slotId)).toEqual(['header', 'main']);
-    expect(page.slots.map((s) => s.widgetType)).toEqual(['demo.text.block', 'admin-reception-ticket-detail']);
+    expect(page.slots.map((s) => s.slotId)).toEqual(['main']);
+    expect(page.slots.map((s) => s.widgetType)).toEqual(['admin-reception-ticket-detail']);
     expect(resolvePageAccess(page, envelopeSansAdminView).allowed).toBe(false);
   });
 
@@ -744,7 +753,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         'transverse-admin',
         'transverse-admin-access',
         'transverse-admin-site',
-        'transverse-admin-pending',
+        'transverse-admin-users',
         'transverse-admin-cash-registers',
         'transverse-admin-sites',
         'transverse-admin-session-manager',
@@ -799,6 +808,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(flat.some((e) => e.path === '/admin/reception-stats')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/reception-sessions')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/reports')).toBe(false);
+      expect(flat.some((e) => e.path === '/admin/pending')).toBe(false);
     });
   });
 
@@ -818,7 +828,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(flat.some((e) => e.id === 'transverse-admin-reception-reports')).toBe(false);
     });
 
-    it('expose le texte reviewable export B / Epic 16 dans le slot contract-gap du manifeste reception-sessions', () => {
+    it('manifeste la liste reception-sessions comme une seule zone principale (widget liste, sans slots doublons)', () => {
       expect(runtimeServedManifestLoadResult.ok).toBe(true);
       if (!runtimeServedManifestLoadResult.ok) return;
       const page = runtimeServedManifestLoadResult.bundle.pages.find(
@@ -826,11 +836,8 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       );
       expect(page).toBeDefined();
       if (!page) return;
-      const gap = page.slots.find((s) => s.slotId === 'admin.transverse-list.contract-gap');
-      expect(gap).toBeDefined();
-      const body = typeof gap?.widgetProps?.body === 'string' ? gap.widgetProps.body : '';
-      expect(body).toContain('recyclique_admin_reports_receptionTicketsExportBulk');
-      expect(body).toContain('Epic 16');
+      expect(page.slots.map((s) => s.slotId)).toEqual(['admin.transverse-list.main']);
+      expect(page.slots.map((s) => s.widgetType)).toEqual(['admin.reception.tickets.list']);
     });
   });
 });

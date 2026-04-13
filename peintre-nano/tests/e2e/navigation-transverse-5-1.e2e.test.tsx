@@ -34,6 +34,11 @@ beforeAll(() => {
       dispatchEvent: () => false,
     }),
   });
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  } as unknown as typeof ResizeObserver;
 });
 
 afterEach(() => {
@@ -99,29 +104,24 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
 
     expect(window.location.pathname).toBe('/admin');
     const main = screen.getByTestId('shell-zone-main');
-    expect(
-      within(main).getByRole('heading', {
-        level: 1,
-        name: /Rapports admin et supervision caisse/i,
-      }),
-    ).toBeTruthy();
-    const hub = within(main).getByTestId('admin-reports-supervision-hub');
-    expect(hub).toBeTruthy();
-    expect(within(hub).getByText(/recyclique_admin_reports_cashSessionsExportBulk/i)).toBeTruthy();
-    expect(within(hub).getByText(/recyclique_admin_reports_receptionTicketsExportBulk/i)).toBeTruthy();
-    expect(within(hub).getByTestId('admin-hub-link-cash-registers')).toBeTruthy();
-    expect(within(hub).getByTestId('admin-hub-link-pending')).toBeTruthy();
-    expect(within(hub).getByTestId('admin-hub-link-sites')).toBeTruthy();
-    expect(within(hub).getByTestId('admin-hub-link-session-manager')).toBeTruthy();
-    expect(within(hub).getByTestId('admin-hub-link-reception-stats')).toBeTruthy();
-    expect(within(hub).getByTestId('admin-hub-link-reception-sessions')).toBeTruthy();
-    expect(within(hub).getByRole('heading', { name: /Entrées de supervision/i })).toBeTruthy();
-    expect(within(hub).getByRole('heading', { name: /Sessions de caisse/i })).toBeTruthy();
+    const legacy = within(main).getByTestId('admin-legacy-dashboard-home');
+    expect(legacy).toBeTruthy();
+    /** Story 18.1 — parité observable grille legacy 6 tuiles « Navigation principale » (sans seconde surface sur /admin). */
+    expect(within(legacy).getByRole('heading', { name: /Navigation principale/i })).toBeTruthy();
+    expect(within(legacy).getByRole('button', { name: /Utilisateurs & Profils/i })).toBeTruthy();
+    expect(within(legacy).getByRole('button', { name: /Groupes & Permissions/i })).toBeTruthy();
+    expect(within(legacy).getByRole('button', { name: /Catégories & Tarifs/i })).toBeTruthy();
+    expect(within(legacy).getByRole('button', { name: /Sessions de Caisse/i })).toBeTruthy();
+    expect(within(legacy).getByRole('button', { name: /Sessions de Réception/i })).toBeTruthy();
+    expect(within(legacy).getByRole('button', { name: /Activité & Logs/i })).toBeTruthy();
+    expect(within(legacy).getByTestId('admin-legacy-nav-session-manager')).toBeTruthy();
+    expect(within(legacy).getByTestId('admin-legacy-nav-reception-sessions')).toBeTruthy();
+    expect(within(main).queryByTestId('admin-reports-supervision-hub')).toBeNull();
     expect(within(main).getByTestId('admin-legacy-dashboard-home')).toBeTruthy();
     expect(within(main).getByRole('heading', { name: /Statistiques quotidiennes/i })).toBeTruthy();
     expect(within(nav).getByTestId('nav-entry-transverse-admin-access')).toBeTruthy();
     expect(within(nav).getByTestId('nav-entry-transverse-admin-site')).toBeTruthy();
-    expect(within(nav).getByTestId('nav-entry-transverse-admin-pending')).toBeTruthy();
+    expect(within(nav).getByTestId('nav-entry-transverse-admin-users')).toBeTruthy();
     expect(within(nav).getByTestId('nav-entry-transverse-admin-cash-registers')).toBeTruthy();
     expect(within(nav).getByTestId('nav-entry-transverse-admin-sites')).toBeTruthy();
     expect(within(nav).getByTestId('nav-entry-transverse-admin-session-manager')).toBeTruthy();
@@ -167,7 +167,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
     expect(within(nav).queryByTestId('nav-entry-transverse-admin')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-access')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-site')).toBeNull();
-    expect(within(nav).queryByTestId('nav-entry-transverse-admin-pending')).toBeNull();
+    expect(within(nav).queryByTestId('nav-entry-transverse-admin-users')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-cash-registers')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-sites')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-session-manager')).toBeNull();
@@ -196,7 +196,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
     expect(within(nav).queryByTestId('nav-entry-transverse-admin')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-access')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-site')).toBeNull();
-    expect(within(nav).queryByTestId('nav-entry-transverse-admin-pending')).toBeNull();
+    expect(within(nav).queryByTestId('nav-entry-transverse-admin-users')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-cash-registers')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-sites')).toBeNull();
     expect(within(nav).queryByTestId('nav-entry-transverse-admin-session-manager')).toBeNull();
@@ -423,13 +423,13 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
   });
 
   describe('Story 5.4 — admin transverse (lot access + site)', () => {
-    it('expose les entrées nav admin du lot y compris pending (libellés contrat)', () => {
+    it('expose les entrées nav admin du lot y compris utilisateurs (libellés contrat)', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       expect(within(nav).getByTestId('nav-entry-transverse-admin')).toBeTruthy();
       expect(within(nav).getByTestId('nav-entry-transverse-admin-access')).toBeTruthy();
       expect(within(nav).getByTestId('nav-entry-transverse-admin-site')).toBeTruthy();
-      expect(within(nav).getByTestId('nav-entry-transverse-admin-pending')).toBeTruthy();
+      expect(within(nav).getByTestId('nav-entry-transverse-admin-users')).toBeTruthy();
       expect(within(nav).getByTestId('nav-entry-transverse-admin-cash-registers')).toBeTruthy();
       expect(within(nav).getByTestId('nav-entry-transverse-admin-sites')).toBeTruthy();
       expect(within(nav).getByTestId('nav-entry-transverse-admin-session-manager')).toBeTruthy();
@@ -447,8 +447,8 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
         }),
       ).toBeTruthy();
       expect(
-        within(within(nav).getByTestId('nav-entry-transverse-admin-pending')).getByRole('button', {
-          name: 'Utilisateurs en attente',
+        within(within(nav).getByTestId('nav-entry-transverse-admin-users')).getByRole('button', {
+          name: 'Utilisateurs',
         }),
       ).toBeTruthy();
       expect(
@@ -458,22 +458,22 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       ).toBeTruthy();
       expect(
         within(within(nav).getByTestId('nav-entry-transverse-admin-sites')).getByRole('button', {
-          name: 'Sites (legacy)',
+          name: 'Sites enregistrés',
         }),
       ).toBeTruthy();
       expect(
         within(within(nav).getByTestId('nav-entry-transverse-admin-session-manager')).getByRole('button', {
-          name: 'Sessions caisse (supervision)',
+          name: 'Sessions de Caisse',
         }),
       ).toBeTruthy();
       expect(
         within(within(nav).getByTestId('nav-entry-transverse-admin-reception-stats')).getByRole('button', {
-          name: 'Stats reception (supervision)',
+          name: 'Statistiques réception (supervision)',
         }),
       ).toBeTruthy();
       expect(
         within(within(nav).getByTestId('nav-entry-transverse-admin-reception-sessions')).getByRole('button', {
-          name: 'Sessions reception (tickets)',
+          name: 'Sessions de réception (tickets)',
         }),
       ).toBeTruthy();
     });
@@ -517,18 +517,9 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       const adminBtn = within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button');
       expect(adminBtn.getAttribute('aria-current')).toBe('true');
       const main = screen.getByTestId('shell-zone-main');
-      expect(
-        within(main).getByRole('heading', {
-          level: 1,
-          name: /Rapports admin et supervision caisse/i,
-        }),
-      ).toBeTruthy();
-      const hubDeep = within(main).getByTestId('admin-reports-supervision-hub');
-      expect(within(hubDeep).getByTestId('admin-hub-link-cash-registers')).toBeTruthy();
-      expect(within(hubDeep).getByTestId('admin-hub-link-session-manager')).toBeTruthy();
-      expect(within(hubDeep).getByTestId('admin-hub-link-reception-stats')).toBeTruthy();
-      expect(within(hubDeep).getByTestId('admin-hub-link-reception-sessions')).toBeTruthy();
-      expect(within(hubDeep).getByText(/recyclique_admin_reports_receptionTicketsExportBulk/i)).toBeTruthy();
+      expect(within(main).queryByTestId('admin-reports-supervision-hub')).toBeNull();
+      expect(within(main).getByTestId('admin-legacy-nav-session-manager')).toBeTruthy();
+      expect(within(main).getByTestId('admin-legacy-nav-reception-sessions')).toBeTruthy();
     });
 
     it('alias /admin/reports → /admin + sélection transverse-admin + page transverse-admin-reports-hub (Story 18.1 CR)', () => {
@@ -540,27 +531,53 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       const adminBtn = within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button');
       expect(adminBtn.getAttribute('aria-current')).toBe('true');
       const main = screen.getByTestId('shell-zone-main');
-      expect(
-        within(main).getByRole('heading', {
-          level: 1,
-          name: /Rapports admin et supervision caisse/i,
-        }),
-      ).toBeTruthy();
-      expect(within(main).getByTestId('admin-reports-supervision-hub')).toBeTruthy();
+      expect(within(main).getByTestId('admin-legacy-dashboard-home')).toBeTruthy();
+      expect(within(main).queryByTestId('admin-reports-supervision-hub')).toBeNull();
     });
 
-    it('URL profonde /admin/users : même hub admin CREOS (transverse-admin-reports-hub + legacy)', () => {
+    it('URL profonde /admin/users : entrée nav utilisateurs + widget gestion', () => {
       window.history.pushState({}, '', '/admin/users');
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
-      const adminBtn = within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button');
-      expect(adminBtn.getAttribute('aria-current')).toBe('true');
+      const usersBtn = within(within(nav).getByTestId('nav-entry-transverse-admin-users')).getByRole('button');
+      expect(usersBtn.getAttribute('aria-current')).toBe('true');
       expect(window.location.pathname).toBe('/admin/users');
       const main = screen.getByTestId('shell-zone-main');
-      const hubUsers = within(main).getByTestId('admin-reports-supervision-hub');
-      expect(hubUsers).toBeTruthy();
-      expect(within(hubUsers).getByTestId('admin-hub-link-pending')).toBeTruthy();
-      expect(within(main).getByTestId('admin-legacy-dashboard-home')).toBeTruthy();
+      expect(within(main).getByTestId('widget-admin-users-demo')).toBeTruthy();
+      expect(within(main).queryByTestId('admin-legacy-dashboard-home')).toBeNull();
+    });
+
+    it('boutons users / groups / categories / audit-log ouvrent une surface dédiée au lieu de retomber sur /admin', () => {
+      renderServedApp();
+      const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
+      fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
+      let main = screen.getByTestId('shell-zone-main');
+
+      fireEvent.click(within(main).getByRole('button', { name: 'Utilisateurs & Profils' }));
+      expect(window.location.pathname).toBe('/admin/users');
+      main = screen.getByTestId('shell-zone-main');
+      expect(within(main).getByTestId('widget-admin-users-demo')).toBeTruthy();
+
+      fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
+      main = screen.getByTestId('shell-zone-main');
+      fireEvent.click(within(main).getByRole('button', { name: 'Groupes & Permissions' }));
+      expect(window.location.pathname).toBe('/admin/groups');
+      main = screen.getByTestId('shell-zone-main');
+      expect(within(main).getByTestId('widget-admin-groups-demo')).toBeTruthy();
+
+      fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
+      main = screen.getByTestId('shell-zone-main');
+      fireEvent.click(within(main).getByRole('button', { name: 'Catégories & Tarifs' }));
+      expect(window.location.pathname).toBe('/admin/categories');
+      main = screen.getByTestId('shell-zone-main');
+      expect(within(main).getByTestId('widget-admin-categories-demo')).toBeTruthy();
+
+      fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
+      main = screen.getByTestId('shell-zone-main');
+      fireEvent.click(within(main).getByRole('button', { name: 'Activité & Logs' }));
+      expect(window.location.pathname).toBe('/admin/audit-log');
+      main = screen.getByTestId('shell-zone-main');
+      expect(within(main).getByTestId('widget-admin-audit-log')).toBeTruthy();
     });
 
     it('synchronise la sélection nav depuis l’URL profonde /admin/site', () => {
@@ -578,39 +595,36 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       ).toBeTruthy();
     });
 
-    it('parcours admin pending : clic nav → /admin/pending + shell hub + placeholder (story 17.1)', () => {
+    it('parcours admin utilisateurs : clic nav → /admin/users + shell + widget gestion', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
-      const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-pending')).getByRole('button');
+      const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-users')).getByRole('button');
       fireEvent.click(btn);
-      expect(window.location.pathname).toBe('/admin/pending');
+      expect(window.location.pathname).toBe('/admin/users');
       const main = screen.getByTestId('shell-zone-main');
       expect(within(main).getByTestId('transverse-page-shell').getAttribute('data-transverse-family')).toBe('admin');
       expect(
         within(main).getByRole('heading', {
           level: 1,
-          name: /Utilisateurs en attente de validation/i,
+          name: /Gestion des utilisateurs/i,
         }),
       ).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
-      const demo = within(main).getByTestId('widget-admin-pending-users-demo');
-      expect(demo).toBeTruthy();
-      expect(within(demo).getByText(/GET \/v1\/admin\/users\/pending/i)).toBeTruthy();
-      expect(within(main).getByTestId('admin-detail-simple-demo-strip')).toBeTruthy();
+      expect(within(main).getByTestId('widget-admin-users-demo')).toBeTruthy();
     });
 
-    it('synchronise la sélection nav depuis l’URL profonde /admin/pending (story 17.1 + 17.3)', () => {
+    it('alias /admin/pending → /admin + sélection transverse-admin (rail pending retiré)', () => {
       window.history.pushState({}, '', '/admin/pending');
       renderServedApp();
+      expect(window.location.pathname).toBe('/admin');
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
-      const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-pending')).getByRole('button');
-      expect(btn.getAttribute('aria-current')).toBe('true');
+      const adminBtn = within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button');
+      expect(adminBtn.getAttribute('aria-current')).toBe('true');
       const main = screen.getByTestId('shell-zone-main');
-      expect(within(main).getByTestId('widget-admin-pending-users-demo')).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
+      expect(within(main).getByTestId('admin-legacy-dashboard-home')).toBeTruthy();
+      expect(within(main).queryByTestId('admin-reports-supervision-hub')).toBeNull();
     });
 
-    it('parcours admin cash-registers : clic nav → /admin/cash-registers + shell hub + placeholder (story 17.2 + 17.3 shell mutualisé)', () => {
+    it('parcours admin cash-registers : clic nav → /admin/cash-registers + shell hub + widget postes', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-cash-registers')).getByRole('button');
@@ -621,15 +635,11 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(
         within(main).getByRole('heading', {
           level: 1,
-          name: /Caisses enregistrees/i,
+          name: /Postes de caisse/i,
         }),
       ).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
-      const demo = within(main).getByTestId('widget-admin-cash-registers-demo');
-      expect(demo).toBeTruthy();
-      expect(within(demo).getByText(/Epic 16/i)).toBeTruthy();
-      expect(within(demo).getByText(/recyclique-api\.yaml/i)).toBeTruthy();
-      expect(within(main).getByTestId('admin-detail-simple-demo-strip')).toBeTruthy();
+      expect(within(main).getByTestId('widget-admin-cash-registers')).toBeTruthy();
+      expect(within(main).queryByTestId('admin-detail-simple-demo-strip')).toBeNull();
     });
 
     it('synchronise la sélection nav depuis l’URL profonde /admin/cash-registers (story 17.2 + 17.3)', () => {
@@ -639,11 +649,10 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-cash-registers')).getByRole('button');
       expect(btn.getAttribute('aria-current')).toBe('true');
       const main = screen.getByTestId('shell-zone-main');
-      expect(within(main).getByTestId('widget-admin-cash-registers-demo')).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
+      expect(within(main).getByTestId('widget-admin-cash-registers')).toBeTruthy();
     });
 
-    it('parcours admin sites : clic nav → /admin/sites + shell hub + placeholder (story 17.2 + 17.3 shell mutualisé)', () => {
+    it('parcours admin sites : clic nav → /admin/sites + shell hub + widget sites', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-sites')).getByRole('button');
@@ -654,15 +663,11 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(
         within(main).getByRole('heading', {
           level: 1,
-          name: /Sites \(CRUD legacy\)/i,
+          name: /^Sites$/i,
         }),
       ).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
-      const demo = within(main).getByTestId('widget-admin-sites-demo');
-      expect(demo).toBeTruthy();
-      expect(within(demo).getByText(/\/admin\/site/i)).toBeTruthy();
-      expect(within(demo).getByText(/recyclique-api\.yaml/i)).toBeTruthy();
-      expect(within(main).getByTestId('admin-detail-simple-demo-strip')).toBeTruthy();
+      expect(within(main).getByTestId('widget-admin-sites')).toBeTruthy();
+      expect(within(main).queryByTestId('admin-detail-simple-demo-strip')).toBeNull();
     });
 
     it('synchronise la sélection nav depuis l’URL profonde /admin/sites (story 17.2 + 17.3)', () => {
@@ -672,11 +677,10 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-sites')).getByRole('button');
       expect(btn.getAttribute('aria-current')).toBe('true');
       const main = screen.getByTestId('shell-zone-main');
-      expect(within(main).getByTestId('widget-admin-sites-demo')).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
+      expect(within(main).getByTestId('widget-admin-sites')).toBeTruthy();
     });
 
-    it('parcours admin session-manager : clic nav → /admin/session-manager + shell + gap K (story 18.2)', () => {
+    it('parcours admin session-manager : clic nav → /admin/session-manager + shell métier (story 18.2)', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-session-manager')).getByRole('button');
@@ -690,13 +694,11 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
           name: /Gestionnaire de sessions/i,
         }),
       ).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
       const demo = within(main).getByTestId('widget-admin-session-manager-demo');
       expect(demo).toBeTruthy();
-      expect(demo.textContent).toContain('GET /v1/cash-sessions/ ni');
-      expect(demo.textContent).toContain('GET /v1/cash-sessions/stats/summary');
-      expect(within(main).getByTestId('admin-session-manager-export-debt')).toBeTruthy();
-      expect(within(main).getByTestId('admin-detail-simple-demo-strip')).toBeTruthy();
+      expect(within(demo).getByTestId('admin-session-manager-sessions-table')).toBeTruthy();
+      expect(within(main).getByTestId('admin-session-manager-bulk-export')).toBeTruthy();
+      expect(within(main).queryByTestId('admin-detail-simple-demo-strip')).toBeNull();
     });
 
     it('synchronise la sélection nav depuis l’URL profonde /admin/session-manager (story 18.2)', () => {
@@ -707,10 +709,9 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(btn.getAttribute('aria-current')).toBe('true');
       const main = screen.getByTestId('shell-zone-main');
       expect(within(main).getByTestId('widget-admin-session-manager-demo')).toBeTruthy();
-      expect(within(main).getByTestId('admin-list-page-shell')).toBeTruthy();
     });
 
-    it('parcours admin reception-stats : clic nav → /admin/reception-stats + shell + operation_id (story 19.1)', () => {
+    it('parcours admin reception-stats : clic nav → /admin/reception-stats + shell + widget stats (story 19.1)', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       const btn = within(within(nav).getByTestId('nav-entry-transverse-admin-reception-stats')).getByRole('button');
@@ -720,10 +721,10 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(within(main).getByTestId('transverse-page-shell').getAttribute('data-transverse-family')).toBe('admin');
       expect(within(main).getByTestId('widget-admin-reception-stats-supervision')).toBeTruthy();
       expect(within(main).getByTestId('admin-reception-stats-operation-anchors').textContent).toContain(
-        'recyclique_stats_receptionSummary',
+        'Données officielles',
       );
       expect(within(main).getByTestId('admin-reception-nominative-gap-k')).toBeTruthy();
-      expect(within(main).getByTestId('admin-detail-simple-demo-strip')).toBeTruthy();
+      expect(within(main).queryByTestId('admin-detail-simple-demo-strip')).toBeNull();
     });
 
     it('synchronise la sélection nav depuis l’URL profonde /admin/reception-stats (story 19.1)', () => {
@@ -769,8 +770,8 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
           expect(within(main).getByTestId('transverse-page-shell').getAttribute('data-transverse-family')).toBe(
             'admin',
           );
-          expect(within(main).getByTestId('admin-reception-tickets-operation-anchors').textContent).toContain(
-            'recyclique_reception_listTickets',
+          expect(within(main).getByTestId('admin-reception-tickets-operation-anchors').textContent).toMatch(
+            /export en tête/i,
           );
         });
         expect(within(main).getByTestId('widget-admin-reception-tickets-list')).toBeTruthy();
@@ -851,10 +852,10 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
         await waitFor(() => {
           expect(within(main).getByTestId('admin-reception-ticket-detail')).toBeTruthy();
         });
-        expect(within(main).getByTestId('admin-reception-ticket-detail-operation-anchor').textContent).toContain(
-          'recyclique_reception_getTicketDetail',
+        expect(within(main).getByTestId('admin-reception-ticket-detail-operation-anchor').textContent).toMatch(
+          /Détail du ticket de réception/i,
         );
-        expect(within(main).getByTestId('admin-reception-ticket-excluded-actions')).toBeTruthy();
+        expect(within(main).getByTestId('admin-reception-ticket-sensitive-note')).toBeTruthy();
       } finally {
         global.fetch = origFetch;
       }
@@ -925,7 +926,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
         expect(
           within(screen.getByTestId('shell-zone-main')).getByTestId('admin-reception-ticket-detail-operation-anchor')
             .textContent,
-        ).toContain('recyclique_reception_getTicketDetail');
+        ).toMatch(/Détail du ticket de réception/i);
       } finally {
         global.fetch = origFetch;
       }
@@ -939,7 +940,7 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(adminBtn.getAttribute('aria-current')).toBe('true');
       const main = screen.getByTestId('shell-zone-main');
       expect(within(main).getByTestId('admin-cash-session-detail')).toBeTruthy();
-      expect(within(main).getByText(/Session demo-session-18-2/i)).toBeTruthy();
+      expect(within(main).getByTestId('admin-cash-session-back')).toBeTruthy();
     });
 
     it('hub admin puis sous-page access : deux clics, URL et titres cohérents', () => {
@@ -973,55 +974,47 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
     });
 
     /**
-     * Story 18.3 — preuve répétable : navigation secondaire hub → session-manager (gap K visible)
-     * puis retour via entrée nav « Administration » — sans appeler d’operationId absents du YAML.
+     * Story 18.3 — preuve répétable : tuile grille legacy 6+3 → session-manager (structure métier)
+     * puis retour via entrée nav « Administration ».
      */
-    it('Story 18.3 — hub lien Sessions caisse puis retour Administration (gap K + structure)', () => {
+    it('Story 18.3 — hub lien Sessions caisse puis retour Administration (structure)', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
       expect(window.location.pathname).toBe('/admin');
       const mainHub = screen.getByTestId('shell-zone-main');
-      const hub = within(mainHub).getByTestId('admin-reports-supervision-hub');
-      fireEvent.click(within(hub).getByTestId('admin-hub-link-session-manager'));
+      fireEvent.click(within(mainHub).getByTestId('admin-legacy-nav-session-manager'));
       expect(window.location.pathname).toBe('/admin/session-manager');
       const mainSm = screen.getByTestId('shell-zone-main');
       const demo = within(mainSm).getByTestId('widget-admin-session-manager-demo');
-      expect(demo.textContent).toContain('GET /v1/cash-sessions/ ni');
-      expect(demo.textContent).toContain('GET /v1/cash-sessions/stats/summary');
-      expect(within(mainSm).getByTestId('admin-session-manager-export-debt')).toBeTruthy();
+      expect(within(demo).getByTestId('admin-session-manager-sessions-table')).toBeTruthy();
+      expect(within(mainSm).getByTestId('admin-session-manager-bulk-export')).toBeTruthy();
       fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
       expect(window.location.pathname).toBe('/admin');
-      expect(
-        within(screen.getByTestId('shell-zone-main')).getByRole('heading', {
-          level: 1,
-          name: /Rapports admin et supervision caisse/i,
-        }),
-      ).toBeTruthy();
+      expect(within(screen.getByTestId('shell-zone-main')).getByTestId('admin-legacy-dashboard-home')).toBeTruthy();
     });
 
     /**
      * Story 19.1 — preuve répétable : hub 18.1 → lien manifesté « Stats réception » (AC 8),
      * sans dépendre d’appels API live pour l’assert principal (présence shell + ancrages contrat).
      */
-    it('Story 19.1 — hub lien Stats réception → /admin/reception-stats (widget + operation_id)', () => {
+    it('Story 19.1 — hub lien Stats réception → /admin/reception-stats (widget stats)', () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
       expect(window.location.pathname).toBe('/admin');
       const mainHub = screen.getByTestId('shell-zone-main');
-      const hub = within(mainHub).getByTestId('admin-reports-supervision-hub');
-      fireEvent.click(within(hub).getByTestId('admin-hub-link-reception-stats'));
+      fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin-reception-stats')).getByRole('button'));
       expect(window.location.pathname).toBe('/admin/reception-stats');
       const main = screen.getByTestId('shell-zone-main');
       expect(within(main).getByTestId('widget-admin-reception-stats-supervision')).toBeTruthy();
       expect(within(main).getByTestId('admin-reception-stats-operation-anchors').textContent).toContain(
-        'recyclique_stats_receptionSummary',
+        'Données officielles',
       );
       expect(within(main).getByTestId('admin-reception-nominative-gap-k')).toBeTruthy();
     });
 
-    it('Story 19.2 — hub lien Sessions reception (tickets) → /admin/reception-sessions (AC 7, mock liste)', async () => {
+    it('Story 19.2 — nav Sessions de réception (tickets) → /admin/reception-sessions (AC 7, mock liste)', async () => {
       const origFetch = global.fetch;
       global.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
         const u = typeof input === 'string' ? input : input.toString();
@@ -1045,15 +1038,14 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
         renderServedApp();
         const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
         fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
-        const hub = within(screen.getByTestId('shell-zone-main')).getByTestId('admin-reports-supervision-hub');
-        fireEvent.click(within(hub).getByTestId('admin-hub-link-reception-sessions'));
+        fireEvent.click(within(screen.getByTestId('shell-zone-main')).getByTestId('admin-legacy-nav-reception-sessions'));
         expect(window.location.pathname).toBe('/admin/reception-sessions');
         const main = screen.getByTestId('shell-zone-main');
         await waitFor(() => {
           expect(within(main).getByTestId('widget-admin-reception-tickets-list')).toBeTruthy();
         });
-        expect(within(main).getByTestId('admin-reception-tickets-operation-anchors').textContent).toContain(
-          'recyclique_reception_listTickets',
+        expect(within(main).getByTestId('admin-reception-tickets-operation-anchors').textContent).toMatch(
+          /export en tête/i,
         );
       } finally {
         global.fetch = origFetch;
@@ -1061,10 +1053,10 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
     });
 
     /**
-     * Story 19.3 — chaîne hub → stats → hub → sessions : exports **B** et gap manifeste visibles ;
+     * Story 19.3 — chaîne hub → stats → hub → sessions : export groupé branché dans le widget liste ;
      * aucune entrée nav `/admin/reception-reports` (ligne matrice réception-reports isolée).
      */
-    it('Story 19.3 — hub → stats → hub → sessions : dettes B nommées, sans nav reception-reports', async () => {
+    it('Story 19.3 — hub → stats → hub → sessions : export groupé branché, sans nav reception-reports', async () => {
       const origFetch = global.fetch;
       global.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
         const u = typeof input === 'string' ? input : input.toString();
@@ -1090,22 +1082,24 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
         expect(within(nav).queryByTestId('nav-entry-transverse-admin-reception-reports')).toBeNull();
         fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
         expect(window.location.pathname).toBe('/admin');
-        const hub0 = within(screen.getByTestId('shell-zone-main')).getByTestId('admin-reports-supervision-hub');
-        fireEvent.click(within(hub0).getByTestId('admin-hub-link-reception-stats'));
+        fireEvent.click(
+          within(within(nav).getByTestId('nav-entry-transverse-admin-reception-stats')).getByRole('button'),
+        );
         expect(window.location.pathname).toBe('/admin/reception-stats');
         const mainStats = screen.getByTestId('shell-zone-main');
         expect(within(mainStats).getByTestId('admin-reception-nominative-gap-k')).toBeTruthy();
         expect(within(nav).queryByTestId('nav-entry-transverse-admin-reception-reports')).toBeNull();
         fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));
-        const hub1 = within(screen.getByTestId('shell-zone-main')).getByTestId('admin-reports-supervision-hub');
-        fireEvent.click(within(hub1).getByTestId('admin-hub-link-reception-sessions'));
+        fireEvent.click(
+          within(screen.getByTestId('shell-zone-main')).getByTestId('admin-legacy-nav-reception-sessions'),
+        );
         expect(window.location.pathname).toBe('/admin/reception-sessions');
         const mainSess = screen.getByTestId('shell-zone-main');
         await waitFor(() => {
           expect(within(mainSess).getByTestId('widget-admin-reception-tickets-list')).toBeTruthy();
         });
-        expect(within(mainSess).getByText(/recyclique_admin_reports_receptionTicketsExportBulk/i)).toBeTruthy();
-        expect(within(mainSess).getByTestId('admin-reception-tickets-scope-note')).toBeTruthy();
+        expect(within(mainSess).getByTestId('admin-reception-tickets-bulk-export')).toBeTruthy();
+        expect(within(mainSess).getByTestId('admin-reception-tickets-sensitive-note')).toBeTruthy();
         expect(within(nav).queryByTestId('nav-entry-transverse-admin-reception-reports')).toBeNull();
       } finally {
         global.fetch = origFetch;

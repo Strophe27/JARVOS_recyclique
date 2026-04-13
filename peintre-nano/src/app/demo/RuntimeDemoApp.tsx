@@ -370,8 +370,9 @@ export function RuntimeDemoApp() {
       window.history.replaceState({}, '', `${CASH_REGISTER_DEFERRED_SESSION_OPEN_PATH}${qs}`);
       path = window.location.pathname;
     }
-    /** Story 18.1 — CR : `/admin/reports` n’est pas dans le NavigationManifest servi ; alias → `/admin` (`transverse-admin`). */
-    if (pathnameNoTrailingSlashExceptRoot(path) === '/admin/reports') {
+    /** Story 18.1 CR : `/admin/reports` hors nav servie ; rail `/admin/pending` retiré — alias SPA → hub `/admin`. */
+    const adminSpaAlias = pathnameNoTrailingSlashExceptRoot(path);
+    if (adminSpaAlias === '/admin/reports' || adminSpaAlias === '/admin/pending') {
       const qs = window.location.search;
       window.history.replaceState({}, '', `/admin${qs}`);
       path = window.location.pathname;
@@ -389,6 +390,26 @@ export function RuntimeDemoApp() {
       return;
     }
     if (isTransverseAdminShellPath(path)) {
+      if (pathForMatch === '/admin/users') {
+        setSelectedEntryId('transverse-admin-users');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/groups') {
+        setSelectedEntryId('transverse-admin');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/categories') {
+        setSelectedEntryId('transverse-admin');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/audit-log') {
+        setSelectedEntryId('transverse-admin');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
       if (pathForMatch === '/admin/access') {
         setSelectedEntryId('transverse-admin-access');
         setSearchSnapshot(window.location.search);
@@ -396,11 +417,6 @@ export function RuntimeDemoApp() {
       }
       if (pathForMatch === '/admin/site') {
         setSelectedEntryId('transverse-admin-site');
-        setSearchSnapshot(window.location.search);
-        return;
-      }
-      if (pathForMatch === '/admin/pending') {
-        setSelectedEntryId('transverse-admin-pending');
         setSearchSnapshot(window.location.search);
         return;
       }
@@ -506,6 +522,19 @@ export function RuntimeDemoApp() {
   const selectedEntry = flatFiltered.find((e) => e.id === resolvedEntryId);
 
   const resolvedPageKey = useMemo(() => {
+    const adminPath = pathnameNoTrailingSlashExceptRoot(pathRoute);
+    if (adminPath === '/admin/users') {
+      return 'transverse-admin-users';
+    }
+    if (adminPath === '/admin/groups') {
+      return 'transverse-admin-groups';
+    }
+    if (adminPath === '/admin/categories') {
+      return 'transverse-admin-categories';
+    }
+    if (adminPath === '/admin/audit-log') {
+      return 'transverse-admin-audit-log';
+    }
     if (ADMIN_RECEPTION_TICKET_PATH.test(pathRoute)) {
       return 'admin-reception-ticket-detail';
     }
@@ -704,7 +733,17 @@ export function RuntimeDemoApp() {
                 </Text>
               ) : null}
               {showLiveAdminPerimeterStrip ? <LiveAdminPerimeterStrip envelope={envelope} /> : null}
-              <Fragment key={cashflowNominalMainRemountKey}>{pageRegions?.mainWidgets}</Fragment>
+              {kioskSaleObservable ? (
+                <div
+                  key={cashflowNominalMainRemountKey}
+                  className={mainClasses.cashflowKioskSaleMainStretch}
+                  data-testid="cashflow-kiosk-main-stretch"
+                >
+                  {pageRegions?.mainWidgets}
+                </div>
+              ) : (
+                <Fragment key={cashflowNominalMainRemountKey}>{pageRegions?.mainWidgets}</Fragment>
+              )}
               {pageForAccess?.pageKey === 'demo-home' ? (
                 <>
                   <Title order={1}>Socle Peintre_nano</Title>

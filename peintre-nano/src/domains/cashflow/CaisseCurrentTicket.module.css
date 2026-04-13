@@ -6,6 +6,140 @@
 }
 
 .rootUnified {
-  border-color: var(--mantine-color-gray-4);
+  padding: 0;
+  border: none;
+  background: transparent;
+  position: sticky;
+  top: var(--mantine-spacing-md);
+  align-self: start;
+  max-height: calc(100vh - 2.5rem);
+  overflow: visible;
+}
+
+/** Colonne ticket kiosque vente — même famille visuelle que le chrome session (vert caisse). */
+.ticketKioskShell {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 2rem);
+  border-radius: var(--mantine-radius-md);
+  overflow: hidden;
+  border: 1px solid rgb(46 125 50 / 38%);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 10%);
+  background: var(--mantine-color-body);
+}
+
+.ticketKioskTitleBar {
+  background: #2e7d32;
+  color: #fff;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+
+.ticketKioskBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--mantine-spacing-md);
+  background: linear-gradient(180deg, var(--mantine-color-gray-0) 0%, var(--mantine-color-body) 48%);
+  overflow: auto;
+}
+
+.ticketSection {
+  margin-bottom: var(--mantine-spacing-md);
+  padding-bottom: var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+}
+
+.ticketSectionTotal {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: var(--mantine-spacing-sm);
+}
+
+.ticketSectionRefs {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.ticketSectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mantine-color-dimmed);
+  margin: 0 0 var(--mantine-spacing-xs);
+}
+
+.unifiedSummary {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+  margin-bottom: var(--mantine-spacing-sm);
+}
+
+.unifiedGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--mantine-spacing-sm);
+}
+
+.unifiedGridHead,
+.unifiedGridRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 2.5rem 4.25rem 5rem;
+  gap: var(--mantine-spacing-xs);
+  align-items: center;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.unifiedGridHead {
+  font-weight: 600;
+  background: var(--mantine-color-gray-2);
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+}
+
+.unifiedGridRow {
   background: var(--mantine-color-gray-0);
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+}
+
+.unifiedGridRow:last-child {
+  border-bottom: none;
+}
+
+.unifiedGridCellNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.unifiedTotalBand {
+  margin-top: 0;
+  padding-top: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-lg);
+  border-top: 2px solid rgb(46 125 50 / 35%);
+}
+
+/** Repères parcours (heuristique brouillon) — aligné kiosque vente / legacy */
+.kioskTicketParcours {
+  margin-top: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  border: 1px dashed rgb(46 125 50 / 35%);
+  background: rgb(237 247 237 / 55%);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.45;
+  color: var(--mantine-color-dark-6);
+}
+
+.kioskTicketParcours strong {
+  font-weight: 700;
+  color: #1b5e20;
 }

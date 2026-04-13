@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.19-draft
+  version: 0.1.20-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -251,6 +251,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+    post:
+      operationId: recyclique_users_createUser
+      tags:
+        - users
+      summary: Création d'un compte utilisateur
+      description: |
+        Handler FastAPI `POST /v1/users/` (corps `UserCreate`). Mot de passe obligatoire ; champs optionnels alignés sur le modèle ORM.
+        **Sécurité** : l'implémentation actuelle n'exige pas de JWT sur cette route ; l'UI admin legacy l'appelle depuis une session authentifiée. Durcissement serveur possible ultérieurement.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreateV1Request"
+      responses:
+        "200":
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV1Response"
+        "400":
+          description: Données invalides (ex. mot de passe ou identifiant)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Courriel ou ressource en conflit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/users/{user_id}:
     get:
       operationId: recyclique_users_getUserById
@@ -291,6 +331,742 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "404":
           description: Utilisateur inconnu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: recyclique_users_updateUser
+      tags:
+        - users
+        - admin
+      summary: Mise à jour d'un compte (champs profil et rôle)
+      description: |
+        Handler FastAPI `PUT /v1/users/{user_id}` avec corps `UserUpdate` (champs partiels). Aligné sur le client admin legacy (`UsersApi.userv1usersuseridput`).
+        **Sécurité** : l'implémentation actuelle n'exige pas de JWT sur cette route ; l'UI admin envoie le jeton de session comme le legacy.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdateV1Request"
+      responses:
+        "200":
+          description: Compte mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV1Response"
+        "404":
+          description: Utilisateur inconnu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit (ex. courriel déjà utilisé)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/:
+    get:
+      operationId: recyclique_cashSessions_listSessions
+      tags:
+        - cash-sessions
+        - admin
+      summary: Liste paginée des sessions de caisse (admin / supervision)
+      description: |
+        **Backend** : `GET /v1/cash-sessions/` — même implémentation que Recyclique 1.4.4 (filtres + pagination).
+        Rôles autorisés côté route : USER, ADMIN, SUPER_ADMIN (`require_role_strict`) ; le service applique
+        le filtrage métier (périmètre site, etc.).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - open
+              - closed
+        - name: operator_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: include_empty
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: amount_min
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+        - name: amount_max
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+        - name: variance_threshold
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: variance_has_variance
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: duration_min_hours
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+        - name: duration_max_hours
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+        - name: payment_methods
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: has_donation
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashSessionListResponseV1"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/stats/summary:
+    get:
+      operationId: recyclique_cashSessions_getSessionStatsSummary
+      tags:
+        - cash-sessions
+        - admin
+      summary: Agrégats KPI sessions de caisse (plage + site)
+      description: |
+        **Backend** : `GET /v1/cash-sessions/stats/summary` — statistiques agrégées (ADMIN / SUPER_ADMIN).
+        Le serveur peut émettre des en-têtes de dépréciation (`Deprecation`, `Sunset`, `Link`) vers `GET /v1/stats/live` ;
+        l’endpoint reste opérationnel pour les écrans de supervision (session-manager).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Statistiques agrégées
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashSessionStatsSummaryV1"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant (réservé ADMIN / SUPER_ADMIN côté backend)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sites/:
+    get:
+      operationId: recyclique_sites_listSites
+      tags:
+        - sites
+        - admin
+      summary: Liste des sites
+      description: |
+        **Backend** : `GET /v1/sites/` — liste pour filtres admin (session-manager, postes, etc.).
+        Rôles : USER, ADMIN, SUPER_ADMIN.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+        - name: only_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Liste des sites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SiteV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    post:
+      operationId: recyclique_sites_createSite
+      tags:
+        - sites
+        - admin
+      summary: Créer un site
+      description: |
+        Réservé ADMIN / SUPER_ADMIN. Corps aligné sur `SiteCreate` backend.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteV1Create"
+      responses:
+        "201":
+          description: Site créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sites/{site_id}:
+    get:
+      operationId: recyclique_sites_getSiteById
+      tags:
+        - sites
+        - admin
+      summary: Détail d'un site
+      description: Réservé ADMIN / SUPER_ADMIN.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: site_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Site introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    patch:
+      operationId: recyclique_sites_updateSite
+      tags:
+        - sites
+        - admin
+      summary: Mettre à jour un site
+      description: Mise à jour partielle (`SiteUpdate` backend).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: site_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteV1Update"
+      responses:
+        "200":
+          description: Site mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Site introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    delete:
+      operationId: recyclique_sites_deleteSite
+      tags:
+        - sites
+        - admin
+      summary: Supprimer un site
+      description: |
+        Suppression définitive si aucune dépendance bloquante ; sinon **409** (utilisateurs liés, etc.).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: site_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Supprimé
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Site introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit (dépendances)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-registers/:
+    get:
+      operationId: recyclique_cashRegisters_listCashRegisters
+      tags:
+        - cash-registers
+        - admin
+      summary: Lister les postes de caisse
+      description: |
+        Liste paginée ; filtre optionnel par `site_id`. Rôles lecture : USER, ADMIN, SUPER_ADMIN.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: only_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Liste des postes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CashRegisterV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    post:
+      operationId: recyclique_cashRegisters_createCashRegister
+      tags:
+        - cash-registers
+        - admin
+      summary: Créer un poste de caisse
+      description: Réservé ADMIN / SUPER_ADMIN.
+      security:
+        - bearerOrCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashRegisterV1Create"
+      responses:
+        "201":
+          description: Poste créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashRegisterV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-registers/status:
+    get:
+      operationId: recyclique_cashRegisters_getRegistersStatus
+      tags:
+        - cash-registers
+      summary: Statut des postes de caisse actifs
+      description: |
+        Pour chaque poste actif : identifiant, nom, session ouverte ou non, options virtuel / différé.
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Agrégat postes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashRegistersStatusV1Envelope"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-registers/{register_id}:
+    get:
+      operationId: recyclique_cashRegisters_getCashRegisterById
+      tags:
+        - cash-registers
+        - admin
+      summary: Détail d'un poste de caisse
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: register_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Poste
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashRegisterV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Poste introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    patch:
+      operationId: recyclique_cashRegisters_updateCashRegister
+      tags:
+        - cash-registers
+        - admin
+      summary: Mettre à jour un poste de caisse
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: register_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashRegisterV1Update"
+      responses:
+        "200":
+          description: Poste mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashRegisterV1Response"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Poste introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Corps invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    delete:
+      operationId: recyclique_cashRegisters_deleteCashRegister
+      tags:
+        - cash-registers
+        - admin
+      summary: Supprimer un poste de caisse
+      description: Refus **409** si des sessions ou autres dépendances bloquent la suppression.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: register_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Supprimé
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Poste introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit (dépendances)
           content:
             application/json:
               schema:
@@ -2368,6 +3144,108 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/:
+    get:
+      operationId: recyclique_categories_listCategories
+      tags:
+        - categories
+      summary: Liste des catégories (configuration site)
+      description: |
+        Liste plate des catégories utilisées en caisse et en réception, avec tarifs et métadonnées d’affichage.
+        Par défaut, les fiches archivées sont exclues ; utiliser `include_archived=true` pour l’administration.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: is_active
+          in: query
+          required: false
+          description: Filtrer sur les fiches actives ou inactives.
+          schema:
+            type: boolean
+        - name: include_archived
+          in: query
+          required: false
+          description: Inclure les fiches dont la date d’archivage est renseignée.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/entry-tickets:
+    get:
+      operationId: recyclique_categories_listForEntryTickets
+      tags:
+        - categories
+      summary: Liste catégories pour tickets de dépôt / réception
+      description: |
+        Fiches visibles et ordonnées pour la saisie des tickets de dépôt (respecte la visibilité réception).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: is_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/categories/sale-tickets:
+    get:
+      operationId: recyclique_categories_listForSaleTickets
+      tags:
+        - categories
+      summary: Liste catégories pour tickets de vente / caisse
+      description: |
+        Toutes les fiches actives utiles à la caisse (l'ordre affiché suit l'ordre ticket vente).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: is_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryV1Read"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/reception/categories:
     get:
       operationId: recyclique_reception_listCategories
@@ -2471,6 +3349,58 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "429":
           description: Rate limit ou verrouillage step-up PIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/reports/cash-sessions/by-session/{session_id}:
+    get:
+      operationId: recyclique_admin_reports_cashSessionsDownloadBySession
+      tags:
+        - admin
+        - reports
+        - cash-sessions
+      summary: Télécharger le rapport CSV d'une session de caisse
+      description: |
+        **Backend** : `GET /v1/admin/reports/cash-sessions/by-session/{session_id}` — génère un fichier CSV
+        pour une session donnée (ADMIN / SUPER_ADMIN). Réponse binaire `text/csv`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Fichier CSV généré
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle insuffisant ou accès refusé au périmètre de la session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur génération rapport
           content:
             application/json:
               schema:
@@ -2743,6 +3673,367 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "403":
           description: Rôle insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/users:
+    get:
+      operationId: adminUsersList
+      tags:
+        - admin
+        - users
+      summary: Liste des utilisateurs (administration)
+      description: |
+        Liste paginée réservée aux administrateurs (`require_admin_role`, Bearer ou cookie).
+        Filtres optionnels : `role`, `user_status` (nom de paramètre aligné sur l’impl FastAPI).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/UserRole"
+        - name: user_status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/UserStatus"
+      responses:
+        "200":
+          description: Liste d’utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/users/statuses:
+    get:
+      operationId: adminUsersStatusesList
+      tags:
+        - admin
+        - users
+      summary: Statuts de présence (admin)
+      description: |
+        Présence en ligne / dernière connexion pour les comptes (impl. `ActivityService`, rate-limit côté serveur).
+        Aligné sur `GET /admin/users/statuses` (FastAPI `admin_users_read`).
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Agrégat des statuts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserStatusesResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/users/{user_id}/role:
+    put:
+      operationId: adminUsersRolePut
+      tags:
+        - admin
+        - users
+      summary: Modifier le rôle d'un utilisateur
+      description: |
+        `PUT /admin/users/{user_id}/role` — `admin_users_mutations`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserRolePutBody"
+      responses:
+        "200":
+          description: Rôle mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMutationEnvelope"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis ou action interdite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Utilisateur introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/users/{user_id}/status:
+    put:
+      operationId: adminUsersActiveStatusPut
+      tags:
+        - admin
+        - users
+      summary: Activer ou désactiver un compte (historique admin)
+      description: |
+        `PUT /admin/users/{user_id}/status` — met à jour `is_active` et journalise. Corps aligné sur le schéma Pydantic `UserStatusUpdate` du module `schemas.user` (champ `status` requis par le schéma ; seul `is_active` est appliqué côté persistance ORM dans l'impl. actuelle).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserActiveStatusPutBody"
+      responses:
+        "200":
+          description: Statut d'activation mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMutationEnvelope"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis ou auto-désactivation interdite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Utilisateur introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/users/{user_id}:
+    put:
+      operationId: adminUsersProfilePut
+      tags:
+        - admin
+        - users
+      summary: Mettre à jour le profil restreint (admin)
+      description: |
+        `PUT /admin/users/{user_id}` — champs `UserProfileUpdate` (prénom, nom, identifiant, courriel, rôle, statut workflow).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserProfilePutBody"
+      responses:
+        "200":
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMutationEnvelope"
+        "400":
+          description: Aucun champ à mettre à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Utilisateur introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Identifiant ou courriel déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/users/{user_id}/history:
+    get:
+      operationId: adminUsersHistoryList
+      tags:
+        - admin
+        - users
+      summary: Historique d'activité d'un utilisateur (admin)
+      description: |
+        Chronologie filtrable (connexions, caisse, ventes, etc.) — `UserHistoryService`.
+        Pagination par `skip` / `limit` (même sémantique que le handler FastAPI).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: event_type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Page d'événements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserHistoryResponse"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Utilisateur introuvable ou identifiant invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "500":
+          description: Erreur serveur
           content:
             application/json:
               schema:
@@ -4246,6 +5537,317 @@ components:
           type: string
           format: date-time
       additionalProperties: false
+    UserCreateV1Request:
+      type: object
+      additionalProperties: false
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          minLength: 8
+          description: Règles de robustesse alignées sur le validateur backend (majuscule, minuscule, chiffre, caractère spécial).
+        first_name:
+          type: string
+          nullable: true
+        last_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        skills:
+          type: string
+          nullable: true
+        availability:
+          type: string
+          nullable: true
+        role:
+          $ref: "#/components/schemas/UserRole"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        is_active:
+          type: boolean
+          default: true
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+    UserUpdateV1Request:
+      type: object
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          nullable: true
+        first_name:
+          type: string
+          nullable: true
+        last_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        skills:
+          type: string
+          nullable: true
+        availability:
+          type: string
+          nullable: true
+        role:
+          $ref: "#/components/schemas/UserRole"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        is_active:
+          type: boolean
+          nullable: true
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+    AdminUserRolePutBody:
+      type: object
+      additionalProperties: false
+      required:
+        - role
+      properties:
+        role:
+          $ref: "#/components/schemas/UserRole"
+    AdminUserActiveStatusPutBody:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - is_active
+      properties:
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        is_active:
+          type: boolean
+        reason:
+          type: string
+          nullable: true
+    AdminUserProfilePutBody:
+      type: object
+      additionalProperties: false
+      properties:
+        first_name:
+          type: string
+          nullable: true
+        last_name:
+          type: string
+          nullable: true
+        username:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        role:
+          $ref: "#/components/schemas/UserRole"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+    UserRole:
+      type: string
+      enum:
+        - super-admin
+        - admin
+        - user
+    UserStatus:
+      type: string
+      enum:
+        - pending
+        - approved
+        - rejected
+        - active
+    AdminUser:
+      type: object
+      description: |
+        Utilisateur en vue administration (liste). Champs sensibles exclus ; aligné sur la réponse
+        `List[AdminUser]` de l’API Recyclique.
+      required:
+        - id
+        - role
+        - status
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          nullable: true
+        first_name:
+          type: string
+          nullable: true
+        last_name:
+          type: string
+          nullable: true
+        full_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        skills:
+          type: string
+          nullable: true
+        availability:
+          type: string
+          nullable: true
+        role:
+          $ref: "#/components/schemas/UserRole"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        is_active:
+          type: boolean
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    AdminUserStatusOnlineRow:
+      type: object
+      description: Statut de présence pour un compte (aligné `UserStatusInfo` backend).
+      required:
+        - user_id
+        - is_online
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        is_online:
+          type: boolean
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+        minutes_since_login:
+          type: integer
+          nullable: true
+      additionalProperties: false
+    AdminUserStatusesResponse:
+      type: object
+      description: Réponse agrégée `UserStatusesResponse` (GET `/v1/admin/users/statuses`).
+      required:
+        - user_statuses
+        - total_count
+        - online_count
+        - offline_count
+        - timestamp
+      properties:
+        user_statuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserStatusOnlineRow"
+        total_count:
+          type: integer
+        online_count:
+          type: integer
+        offline_count:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+      additionalProperties: false
+    AdminUserActivityEvent:
+      type: object
+      description: Événement d'activité (`ActivityEvent` backend).
+      required:
+        - id
+        - event_type
+        - description
+        - date
+      properties:
+        id:
+          type: string
+        event_type:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: false
+    AdminUserHistoryResponse:
+      type: object
+      description: Page d'historique (`UserHistoryResponse` backend).
+      required:
+        - user_id
+        - events
+        - total_count
+        - page
+        - limit
+        - has_next
+        - has_prev
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserActivityEvent"
+        total_count:
+          type: integer
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+      additionalProperties: false
     AdminPermissionV1:
       type: object
       description: Permission (réponse groupe détail) — Story 16.2.
@@ -4882,6 +6484,293 @@ components:
           type: number
         net:
           type: number
+      additionalProperties: false
+    CashSessionListResponseV1:
+      type: object
+      required:
+        - data
+        - total
+        - skip
+        - limit
+      description: Réponse paginée `GET /v1/cash-sessions/` — aligné `CashSessionListResponse` backend.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashSessionResponse"
+        total:
+          type: integer
+          minimum: 0
+        skip:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+      additionalProperties: false
+    CashSessionStatsSummaryV1:
+      type: object
+      required:
+        - total_sessions
+        - open_sessions
+        - closed_sessions
+        - total_sales
+        - total_items
+        - number_of_sales
+        - total_donations
+        - total_weight_sold
+      description: Agrégats `GET /v1/cash-sessions/stats/summary` — schéma `CashSessionStats` backend.
+      properties:
+        total_sessions:
+          type: integer
+        open_sessions:
+          type: integer
+        closed_sessions:
+          type: integer
+        total_sales:
+          type: number
+        total_items:
+          type: integer
+        number_of_sales:
+          type: integer
+        total_donations:
+          type: number
+        total_weight_sold:
+          type: number
+        average_session_duration:
+          type: number
+          nullable: true
+      additionalProperties: false
+    SiteV1Response:
+      type: object
+      required:
+        - id
+        - name
+        - is_active
+        - created_at
+        - updated_at
+      description: Site tel que sérialisé par `GET /v1/sites/` (`SiteResponse` backend).
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        configuration:
+          type: object
+          nullable: true
+          additionalProperties: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: true
+    SiteV1Create:
+      type: object
+      required:
+        - name
+        - is_active
+      description: Création de site (`SiteCreate` backend).
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        postal_code:
+          type: string
+          nullable: true
+          maxLength: 20
+        country:
+          type: string
+          nullable: true
+          maxLength: 100
+        configuration:
+          type: object
+          nullable: true
+          additionalProperties: true
+        is_active:
+          type: boolean
+      additionalProperties: false
+    SiteV1Update:
+      type: object
+      description: Mise à jour partielle (`SiteUpdate` backend).
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        postal_code:
+          type: string
+          nullable: true
+          maxLength: 20
+        country:
+          type: string
+          nullable: true
+          maxLength: 100
+        configuration:
+          type: object
+          nullable: true
+          additionalProperties: true
+        is_active:
+          type: boolean
+      additionalProperties: false
+    CashRegisterV1Response:
+      type: object
+      required:
+        - id
+        - name
+        - is_active
+        - workflow_options
+        - enable_virtual
+        - enable_deferred
+      description: Poste de caisse (`CashRegisterResponse` backend).
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        location:
+          type: string
+          nullable: true
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_active:
+          type: boolean
+        workflow_options:
+          type: object
+          additionalProperties: true
+        enable_virtual:
+          type: boolean
+        enable_deferred:
+          type: boolean
+      additionalProperties: true
+    CashRegisterV1Create:
+      type: object
+      required:
+        - name
+      description: |
+        Champs optionnels alignés sur les valeurs par défaut backend (`is_active` true, options vides, virtuel / différé false).
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        location:
+          type: string
+          nullable: true
+          maxLength: 255
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+        workflow_options:
+          type: object
+          additionalProperties: true
+        enable_virtual:
+          type: boolean
+          default: false
+        enable_deferred:
+          type: boolean
+          default: false
+      additionalProperties: false
+    CashRegisterV1Update:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        location:
+          type: string
+          nullable: true
+          maxLength: 255
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_active:
+          type: boolean
+        workflow_options:
+          type: object
+          additionalProperties: true
+        enable_virtual:
+          type: boolean
+        enable_deferred:
+          type: boolean
+      additionalProperties: false
+    CashRegisterStatusRowV1:
+      type: object
+      required:
+        - id
+        - name
+        - is_open
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        is_open:
+          type: boolean
+        enable_virtual:
+          type: boolean
+        enable_deferred:
+          type: boolean
+        location:
+          type: string
+          nullable: true
+      additionalProperties: true
+    CashRegistersStatusV1Envelope:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashRegisterStatusRowV1"
+        total:
+          type: integer
+          minimum: 0
       additionalProperties: false
     CashSessionResponse:
       type: object
@@ -6095,6 +7984,58 @@ components:
           nullable: true
         is_exit:
           type: boolean
+      additionalProperties: false
+    CategoryV1Read:
+      type: object
+      required:
+        - id
+        - name
+        - is_active
+        - display_order
+        - display_order_entry
+        - is_visible
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        official_name:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        parent_id:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: double
+          nullable: true
+        max_price:
+          type: number
+          format: double
+          nullable: true
+        display_order:
+          type: integer
+        display_order_entry:
+          type: integer
+        is_visible:
+          type: boolean
+        shortcut_key:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
       additionalProperties: false
     ReceptionCategoryRow:
       type: object

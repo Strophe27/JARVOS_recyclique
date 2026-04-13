@@ -86,12 +86,12 @@
       }
     },
     {
-      "id": "transverse-admin-pending",
-      "route_key": "transverse-admin-pending",
-      "path": "/admin/pending",
-      "page_key": "transverse-admin-pending",
-      "shortcut_id": "go-transverse-admin-pending",
-      "label_key": "nav.transverse.admin.pending",
+      "id": "transverse-admin-users",
+      "route_key": "transverse-admin-users",
+      "path": "/admin/users",
+      "page_key": "transverse-admin-users",
+      "shortcut_id": "go-transverse-admin-users",
+      "label_key": "nav.transverse.admin.users",
       "visibility": {
         "permission_any": ["transverse.admin.view"],
         "contexts_any": ["site"]

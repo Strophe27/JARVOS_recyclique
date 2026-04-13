@@ -9,6 +9,7 @@ import { resetCoalescedGetCurrentOpenCashSessionForTests } from '../../src/domai
 import { getCashflowDraftSnapshot, resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
+import { addOneLineKioskSale } from './helpers/kiosk-sale-add-line';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -164,8 +165,8 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     const ticketAside = screen.getByTestId('caisse-current-ticket');
     expect(ticketAside.getAttribute('data-operation-id')).toBe('recyclique_sales_getSale');
 
-    fireEvent.click(screen.getByTestId('cashflow-add-line'));
-    expect(screen.getByTestId('cashflow-lines-count').textContent ?? '').toContain('Lignes : 1');
+    await addOneLineKioskSale();
+    expect(screen.getByTestId('cashflow-kiosk-kpi-line-count').textContent ?? '').toBe('1');
 
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
@@ -625,7 +626,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
 
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
-    fireEvent.click(screen.getByTestId('cashflow-add-line'));
+    await addOneLineKioskSale();
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
@@ -676,7 +677,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
 
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
-    fireEvent.click(screen.getByTestId('cashflow-add-line'));
+    await addOneLineKioskSale();
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
@@ -723,7 +724,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
 
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
-    fireEvent.click(screen.getByTestId('cashflow-add-line'));
+    await addOneLineKioskSale();
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
@@ -808,7 +809,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
 
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
-    fireEvent.click(screen.getByTestId('cashflow-add-line'));
+    await addOneLineKioskSale();
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
 

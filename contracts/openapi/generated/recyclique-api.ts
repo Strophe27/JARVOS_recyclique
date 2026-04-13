@@ -150,7 +150,12 @@ export interface paths {
          */
         get: operations["recyclique_users_listUsers"];
         put?: never;
-        post?: never;
+        /**
+         * Création d'un compte utilisateur
+         * @description Handler FastAPI `POST /v1/users/` (corps `UserCreate`). Mot de passe obligatoire ; champs optionnels alignés sur le modèle ORM.
+         *     **Sécurité** : l'implémentation actuelle n'exige pas de JWT sur cette route ; l'UI admin legacy l'appelle depuis une session authentifiée. Durcissement serveur possible ultérieurement.
+         */
+        post: operations["recyclique_users_createUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -170,12 +175,180 @@ export interface paths {
          *     Trace : `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md` section 4.
          */
         get: operations["recyclique_users_getUserById"];
+        /**
+         * Mise à jour d'un compte (champs profil et rôle)
+         * @description Handler FastAPI `PUT /v1/users/{user_id}` avec corps `UserUpdate` (champs partiels). Aligné sur le client admin legacy (`UsersApi.userv1usersuseridput`).
+         *     **Sécurité** : l'implémentation actuelle n'exige pas de JWT sur cette route ; l'UI admin envoie le jeton de session comme le legacy.
+         */
+        put: operations["recyclique_users_updateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste paginée des sessions de caisse (admin / supervision)
+         * @description **Backend** : `GET /v1/cash-sessions/` — même implémentation que Recyclique 1.4.4 (filtres + pagination).
+         *     Rôles autorisés côté route : USER, ADMIN, SUPER_ADMIN (`require_role_strict`) ; le service applique
+         *     le filtrage métier (périmètre site, etc.).
+         */
+        get: operations["recyclique_cashSessions_listSessions"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-sessions/stats/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agrégats KPI sessions de caisse (plage + site)
+         * @description **Backend** : `GET /v1/cash-sessions/stats/summary` — statistiques agrégées (ADMIN / SUPER_ADMIN).
+         *     Le serveur peut émettre des en-têtes de dépréciation (`Deprecation`, `Sunset`, `Link`) vers `GET /v1/stats/live` ;
+         *     l’endpoint reste opérationnel pour les écrans de supervision (session-manager).
+         */
+        get: operations["recyclique_cashSessions_getSessionStatsSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sites/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des sites
+         * @description **Backend** : `GET /v1/sites/` — liste pour filtres admin (session-manager, postes, etc.).
+         *     Rôles : USER, ADMIN, SUPER_ADMIN.
+         */
+        get: operations["recyclique_sites_listSites"];
+        put?: never;
+        /**
+         * Créer un site
+         * @description Réservé ADMIN / SUPER_ADMIN. Corps aligné sur `SiteCreate` backend.
+         */
+        post: operations["recyclique_sites_createSite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sites/{site_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail d'un site
+         * @description Réservé ADMIN / SUPER_ADMIN.
+         */
+        get: operations["recyclique_sites_getSiteById"];
+        put?: never;
+        post?: never;
+        /**
+         * Supprimer un site
+         * @description Suppression définitive si aucune dépendance bloquante ; sinon **409** (utilisateurs liés, etc.).
+         */
+        delete: operations["recyclique_sites_deleteSite"];
+        options?: never;
+        head?: never;
+        /**
+         * Mettre à jour un site
+         * @description Mise à jour partielle (`SiteUpdate` backend).
+         */
+        patch: operations["recyclique_sites_updateSite"];
+        trace?: never;
+    };
+    "/v1/cash-registers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lister les postes de caisse
+         * @description Liste paginée ; filtre optionnel par `site_id`. Rôles lecture : USER, ADMIN, SUPER_ADMIN.
+         */
+        get: operations["recyclique_cashRegisters_listCashRegisters"];
+        put?: never;
+        /**
+         * Créer un poste de caisse
+         * @description Réservé ADMIN / SUPER_ADMIN.
+         */
+        post: operations["recyclique_cashRegisters_createCashRegister"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-registers/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statut des postes de caisse actifs
+         * @description Pour chaque poste actif : identifiant, nom, session ouverte ou non, options virtuel / différé.
+         */
+        get: operations["recyclique_cashRegisters_getRegistersStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-registers/{register_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'un poste de caisse */
+        get: operations["recyclique_cashRegisters_getCashRegisterById"];
+        put?: never;
+        post?: never;
+        /**
+         * Supprimer un poste de caisse
+         * @description Refus **409** si des sessions ou autres dépendances bloquent la suppression.
+         */
+        delete: operations["recyclique_cashRegisters_deleteCashRegister"];
+        options?: never;
+        head?: never;
+        /** Mettre à jour un poste de caisse */
+        patch: operations["recyclique_cashRegisters_updateCashRegister"];
         trace?: never;
     };
     "/v1/cash-sessions/current": {
@@ -951,6 +1124,67 @@ export interface paths {
         patch: operations["recyclique_reception_patchLigneWeight"];
         trace?: never;
     };
+    "/v1/categories/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des catégories (configuration site)
+         * @description Liste plate des catégories utilisées en caisse et en réception, avec tarifs et métadonnées d’affichage.
+         *     Par défaut, les fiches archivées sont exclues ; utiliser `include_archived=true` pour l’administration.
+         */
+        get: operations["recyclique_categories_listCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/entry-tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste catégories pour tickets de dépôt / réception
+         * @description Fiches visibles et ordonnées pour la saisie des tickets de dépôt (respecte la visibilité réception).
+         */
+        get: operations["recyclique_categories_listForEntryTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/sale-tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste catégories pour tickets de vente / caisse
+         * @description Toutes les fiches actives utiles à la caisse (l’ordre affiché suit l’ordre ticket vente).
+         */
+        get: operations["recyclique_categories_listForSaleTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/reception/categories": {
         parameters: {
             query?: never;
@@ -989,6 +1223,27 @@ export interface paths {
          *     Filtre `site_id` optionnel : les ADMIN non super-admin doivent rester alignés sur la portée site côté service métier.
          */
         post: operations["recyclique_admin_reports_cashSessionsExportBulk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/reports/cash-sessions/by-session/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Télécharger le rapport CSV d'une session de caisse
+         * @description **Backend** : `GET /v1/admin/reports/cash-sessions/by-session/{session_id}` — génère un fichier CSV
+         *     pour une session donnée (ADMIN / SUPER_ADMIN). Réponse binaire `text/csv`.
+         */
+        get: operations["recyclique_admin_reports_cashSessionsDownloadBySession"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1093,6 +1348,129 @@ export interface paths {
          *     En-têtes `Deprecation` / `Link` vers le successeur (impl FastAPI).
          */
         get: operations["recyclique_reception_statsLiveDeprecated"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des utilisateurs (administration)
+         * @description Liste paginée réservée aux administrateurs (`require_admin_role`, Bearer ou cookie).
+         *     Filtres optionnels : `role`, `user_status` (nom de paramètre aligné sur l’impl FastAPI).
+         */
+        get: operations["adminUsersList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/users/statuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statuts de présence (admin)
+         * @description Présence en ligne / dernière connexion pour les comptes (impl. `ActivityService`, rate-limit côté serveur).
+         *     Aligné sur `GET /admin/users/statuses` (FastAPI `admin_users_read`).
+         */
+        get: operations["adminUsersStatusesList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/users/{user_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Modifier le rôle d'un utilisateur
+         * @description `PUT /admin/users/{user_id}/role` — `admin_users_mutations`.
+         */
+        put: operations["adminUsersRolePut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/users/{user_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Activer ou désactiver un compte (historique admin)
+         * @description `PUT /admin/users/{user_id}/status` — met à jour `is_active` et journalise. Corps aligné sur le schéma Pydantic `UserStatusUpdate` du module `schemas.user` (champ `status` requis par le schéma ; seul `is_active` est appliqué côté persistance ORM dans l'impl. actuelle).
+         */
+        put: operations["adminUsersActiveStatusPut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mettre à jour le profil restreint (admin)
+         * @description `PUT /admin/users/{user_id}` — champs `UserProfileUpdate` (prénom, nom, identifiant, courriel, rôle, statut workflow).
+         */
+        put: operations["adminUsersProfilePut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/users/{user_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Historique d'activité d'un utilisateur (admin)
+         * @description Chronologie filtrable (connexions, caisse, ventes, etc.) — `UserHistoryService`.
+         *     Pagination par `skip` / `limit` (même sémantique que le handler FastAPI).
+         */
+        get: operations["adminUsersHistoryList"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1582,6 +1960,130 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        UserCreateV1Request: {
+            username: string;
+            /** @description Règles de robustesse alignées sur le validateur backend (majuscule, minuscule, chiffre, caractère spécial). */
+            password: string;
+            first_name?: string | null;
+            last_name?: string | null;
+            /** Format: email */
+            email?: string | null;
+            phone_number?: string | null;
+            address?: string | null;
+            notes?: string | null;
+            skills?: string | null;
+            availability?: string | null;
+            role?: components["schemas"]["UserRole"];
+            status?: components["schemas"]["UserStatus"];
+            /** @default true */
+            is_active: boolean;
+            /** Format: uuid */
+            site_id?: string | null;
+        };
+        UserUpdateV1Request: {
+            username?: string | null;
+            first_name?: string | null;
+            last_name?: string | null;
+            /** Format: email */
+            email?: string | null;
+            phone_number?: string | null;
+            address?: string | null;
+            notes?: string | null;
+            skills?: string | null;
+            availability?: string | null;
+            role?: components["schemas"]["UserRole"];
+            status?: components["schemas"]["UserStatus"];
+            is_active?: boolean | null;
+            /** Format: uuid */
+            site_id?: string | null;
+        };
+        AdminUserRolePutBody: {
+            role: components["schemas"]["UserRole"];
+        };
+        AdminUserActiveStatusPutBody: {
+            status: components["schemas"]["UserStatus"];
+            is_active: boolean;
+            reason?: string | null;
+        };
+        AdminUserProfilePutBody: {
+            first_name?: string | null;
+            last_name?: string | null;
+            username?: string | null;
+            email?: string | null;
+            role?: components["schemas"]["UserRole"];
+            status?: components["schemas"]["UserStatus"];
+        };
+        /** @enum {string} */
+        UserRole: "super-admin" | "admin" | "user";
+        /** @enum {string} */
+        UserStatus: "pending" | "approved" | "rejected" | "active";
+        /**
+         * @description Utilisateur en vue administration (liste). Champs sensibles exclus ; aligné sur la réponse
+         *     `List[AdminUser]` de l’API Recyclique.
+         */
+        AdminUser: {
+            /** Format: uuid */
+            id: string;
+            username?: string | null;
+            first_name?: string | null;
+            last_name?: string | null;
+            full_name?: string | null;
+            email?: string | null;
+            phone_number?: string | null;
+            address?: string | null;
+            notes?: string | null;
+            skills?: string | null;
+            availability?: string | null;
+            role: components["schemas"]["UserRole"];
+            status: components["schemas"]["UserStatus"];
+            is_active: boolean;
+            /** Format: uuid */
+            site_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Statut de présence pour un compte (aligné `UserStatusInfo` backend). */
+        AdminUserStatusOnlineRow: {
+            /** Format: uuid */
+            user_id: string;
+            is_online: boolean;
+            /** Format: date-time */
+            last_login?: string | null;
+            minutes_since_login?: number | null;
+        };
+        /** @description Réponse agrégée `UserStatusesResponse` (GET `/v1/admin/users/statuses`). */
+        AdminUserStatusesResponse: {
+            user_statuses: components["schemas"]["AdminUserStatusOnlineRow"][];
+            total_count: number;
+            online_count: number;
+            offline_count: number;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /** @description Événement d'activité (`ActivityEvent` backend). */
+        AdminUserActivityEvent: {
+            id: string;
+            event_type: string;
+            description: string;
+            /** Format: date-time */
+            date: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** @description Page d'historique (`UserHistoryResponse` backend). */
+        AdminUserHistoryResponse: {
+            /** Format: uuid */
+            user_id: string;
+            events: components["schemas"]["AdminUserActivityEvent"][];
+            total_count: number;
+            page: number;
+            limit: number;
+            has_next: boolean;
+            has_prev: boolean;
+        };
         /** @description Permission (réponse groupe détail) — Story 16.2. */
         AdminPermissionV1: {
             /** Format: uuid */
@@ -1877,6 +2379,129 @@ export interface components {
             sales_completed: number;
             refunds: number;
             net: number;
+        };
+        /** @description Réponse paginée `GET /v1/cash-sessions/` — aligné `CashSessionListResponse` backend. */
+        CashSessionListResponseV1: {
+            data: components["schemas"]["CashSessionResponse"][];
+            total: number;
+            skip: number;
+            limit: number;
+        };
+        /** @description Agrégats `GET /v1/cash-sessions/stats/summary` — schéma `CashSessionStats` backend. */
+        CashSessionStatsSummaryV1: {
+            total_sessions: number;
+            open_sessions: number;
+            closed_sessions: number;
+            total_sales: number;
+            total_items: number;
+            number_of_sales: number;
+            total_donations: number;
+            total_weight_sold: number;
+            average_session_duration?: number | null;
+        };
+        /** @description Site tel que sérialisé par `GET /v1/sites/` (`SiteResponse` backend). */
+        SiteV1Response: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            address?: string | null;
+            city?: string | null;
+            postal_code?: string | null;
+            country?: string | null;
+            configuration?: {
+                [key: string]: unknown;
+            } | null;
+            is_active: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Création de site (`SiteCreate` backend). */
+        SiteV1Create: {
+            name: string;
+            address?: string | null;
+            city?: string | null;
+            postal_code?: string | null;
+            country?: string | null;
+            configuration?: {
+                [key: string]: unknown;
+            } | null;
+            is_active: boolean;
+        };
+        /** @description Mise à jour partielle (`SiteUpdate` backend). */
+        SiteV1Update: {
+            name?: string;
+            address?: string | null;
+            city?: string | null;
+            postal_code?: string | null;
+            country?: string | null;
+            configuration?: {
+                [key: string]: unknown;
+            } | null;
+            is_active?: boolean;
+        };
+        /** @description Poste de caisse (`CashRegisterResponse` backend). */
+        CashRegisterV1Response: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            location?: string | null;
+            /** Format: uuid */
+            site_id?: string | null;
+            is_active: boolean;
+            workflow_options: {
+                [key: string]: unknown;
+            };
+            enable_virtual: boolean;
+            enable_deferred: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Champs optionnels alignés sur les valeurs par défaut backend (`is_active` true, options vides, virtuel / différé false). */
+        CashRegisterV1Create: {
+            name: string;
+            location?: string | null;
+            /** Format: uuid */
+            site_id?: string | null;
+            /** @default true */
+            is_active: boolean;
+            workflow_options?: {
+                [key: string]: unknown;
+            };
+            /** @default false */
+            enable_virtual: boolean;
+            /** @default false */
+            enable_deferred: boolean;
+        };
+        CashRegisterV1Update: {
+            name?: string;
+            location?: string | null;
+            /** Format: uuid */
+            site_id?: string | null;
+            is_active?: boolean;
+            workflow_options?: {
+                [key: string]: unknown;
+            };
+            enable_virtual?: boolean;
+            enable_deferred?: boolean;
+        };
+        CashRegisterStatusRowV1: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            is_open: boolean;
+            enable_virtual?: boolean;
+            enable_deferred?: boolean;
+            location?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        CashRegistersStatusV1Envelope: {
+            data: components["schemas"]["CashRegisterStatusRowV1"][];
+            total: number;
         };
         /** @description Session caisse enrichie (GET current, réponses liste). Champs optionnels selon persistance / enrichissement. */
         CashSessionResponse: {
@@ -2462,6 +3087,27 @@ export interface components {
             notes?: string | null;
             is_exit: boolean;
         };
+        CategoryV1Read: {
+            id: string;
+            name: string;
+            official_name?: string | null;
+            is_active: boolean;
+            parent_id?: string | null;
+            /** Format: double */
+            price?: number | null;
+            /** Format: double */
+            max_price?: number | null;
+            display_order: number;
+            display_order_entry: number;
+            is_visible: boolean;
+            shortcut_key?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            deleted_at?: string | null;
+        };
         ReceptionCategoryRow: {
             id: string;
             name: string;
@@ -2765,6 +3411,57 @@ export interface operations {
             };
         };
     };
+    recyclique_users_createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserCreateV1Request"];
+            };
+        };
+        responses: {
+            /** @description Compte créé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserV1Response"];
+                };
+            };
+            /** @description Données invalides (ex. mot de passe ou identifiant) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Courriel ou ressource en conflit */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_users_getUserById: {
         parameters: {
             query?: never;
@@ -2805,6 +3502,716 @@ export interface operations {
             };
             /** @description Utilisateur inconnu */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_users_updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdateV1Request"];
+            };
+        };
+        responses: {
+            /** @description Compte mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserV1Response"];
+                };
+            };
+            /** @description Utilisateur inconnu */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit (ex. courriel déjà utilisé) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_listSessions: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                status?: "open" | "closed";
+                operator_id?: string;
+                site_id?: string;
+                date_from?: string;
+                date_to?: string;
+                search?: string;
+                include_empty?: boolean;
+                amount_min?: number;
+                amount_max?: number;
+                variance_threshold?: number;
+                variance_has_variance?: boolean;
+                duration_min_hours?: number;
+                duration_max_hours?: number;
+                payment_methods?: string[];
+                has_donation?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste paginée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashSessionListResponseV1"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_getSessionStatsSummary: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                site_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statistiques agrégées */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashSessionStatsSummaryV1"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant (réservé ADMIN / SUPER_ADMIN côté backend) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sites_listSites: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                only_active?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste des sites */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteV1Response"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sites_createSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteV1Create"];
+            };
+        };
+        responses: {
+            /** @description Site créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteV1Response"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sites_getSiteById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Site */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteV1Response"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Site introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sites_deleteSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Supprimé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Site introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit (dépendances) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sites_updateSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteV1Update"];
+            };
+        };
+        responses: {
+            /** @description Site mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteV1Response"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Site introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashRegisters_listCashRegisters: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                site_id?: string;
+                only_active?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste des postes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashRegisterV1Response"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashRegisters_createCashRegister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashRegisterV1Create"];
+            };
+        };
+        responses: {
+            /** @description Poste créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashRegisterV1Response"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashRegisters_getRegistersStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agrégat postes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashRegistersStatusV1Envelope"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashRegisters_getCashRegisterById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                register_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Poste */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashRegisterV1Response"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Poste introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashRegisters_deleteCashRegister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                register_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Supprimé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Poste introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit (dépendances) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashRegisters_updateCashRegister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                register_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashRegisterV1Update"];
+            };
+        };
+        responses: {
+            /** @description Poste mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashRegisterV1Response"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Poste introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps invalide */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5007,6 +6414,102 @@ export interface operations {
             };
         };
     };
+    recyclique_categories_listCategories: {
+        parameters: {
+            query?: {
+                /** @description Filtrer sur les fiches actives ou inactives. */
+                is_active?: boolean;
+                /** @description Inclure les fiches dont la date d’archivage est renseignée. */
+                include_archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_listForEntryTickets: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_categories_listForSaleTickets: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryV1Read"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_reception_listCategories: {
         parameters: {
             query?: never;
@@ -5109,6 +6612,64 @@ export interface operations {
             };
             /** @description Rate limit ou verrouillage step-up PIN */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_admin_reports_cashSessionsDownloadBySession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fichier CSV généré */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle insuffisant ou accès refusé au périmètre de la session */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur génération rapport */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5389,6 +6950,373 @@ export interface operations {
             };
             /** @description Rôle insuffisant */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminUsersList: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                role?: components["schemas"]["UserRole"];
+                user_status?: components["schemas"]["UserStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste d’utilisateurs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminUsersStatusesList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agrégat des statuts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserStatusesResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminUsersRolePut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserRolePutBody"];
+            };
+        };
+        responses: {
+            /** @description Rôle mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMutationEnvelope"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis ou action interdite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Utilisateur introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminUsersActiveStatusPut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserActiveStatusPutBody"];
+            };
+        };
+        responses: {
+            /** @description Statut d'activation mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMutationEnvelope"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis ou auto-désactivation interdite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Utilisateur introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminUsersProfilePut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserProfilePutBody"];
+            };
+        };
+        responses: {
+            /** @description Profil mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMutationEnvelope"];
+                };
+            };
+            /** @description Aucun champ à mettre à jour */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Utilisateur introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Identifiant ou courriel déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    adminUsersHistoryList: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                event_type?: string;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page d'événements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserHistoryResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Utilisateur introuvable ou identifiant invalide */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Erreur serveur */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

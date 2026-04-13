@@ -112,24 +112,22 @@ describe('AdminReceptionStatsSupervisionWidget (Story 19.1)', () => {
     await waitFor(() => {
       expect(screen.getByText(/403:/i)).toBeTruthy();
     });
-    expect(screen.getByText(/Contrat admin \(16\.4\)/i)).toBeTruthy();
+    expect(screen.getByText(/Votre rôle ne permet pas/i)).toBeTruthy();
     expect(screen.getByTestId('admin-reception-nominative-gap-k')).toBeTruthy();
   });
 
-  it('affiche les ancrages operation_id et hydrate depuis les trois GET stats', async () => {
+  it('affiche le sous-titre opérateur et hydrate depuis les trois lectures stats', async () => {
     vi.stubGlobal('fetch', mockStatsFetch());
     render(wrap(<AdminReceptionStatsSupervisionWidget widgetProps={{}} />));
 
-    expect(screen.getByTestId('admin-reception-stats-operation-anchors').textContent).toContain(
-      'recyclique_stats_receptionSummary',
-    );
+    expect(screen.getByTestId('admin-reception-stats-operation-anchors').textContent).toContain('Données officielles');
     expect(screen.getByTestId('admin-reception-nominative-gap-k')).toBeTruthy();
 
     await waitFor(() => {
-      expect(screen.getByText('12.50')).toBeTruthy();
+      expect(screen.getByText(/12,50\s*kg/)).toBeTruthy();
     });
     expect(screen.getByText('Metal')).toBeTruthy();
     const livePaper = screen.getByTestId('widget-admin-reception-stats-supervision');
-    expect(within(livePaper).getByText('reception_open_sessions')).toBeTruthy();
+    expect(within(livePaper).getByText('Sessions de réception ouvertes')).toBeTruthy();
   });
 });

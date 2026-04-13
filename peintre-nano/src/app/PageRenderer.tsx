@@ -144,7 +144,7 @@ export function buildPageManifestRegions(
   const mainParts: ReactNode[] = [];
   if (buckets.main.length) {
     mainParts.push(
-      <div key="main-slots" className={classes.slotStack}>
+      <div key="main-slots" className={classes.slotStack} data-pn-main-slot-stack="true">
         {renderPlacements(buckets.main)}
       </div>,
     );
