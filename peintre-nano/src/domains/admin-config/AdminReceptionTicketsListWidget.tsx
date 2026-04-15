@@ -36,22 +36,12 @@ import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from '../cashflow/CashflowClientErrorAlert';
 import type { CashflowSubmitSurfaceError } from '../cashflow/cashflow-submit-error';
 import {
+  formatReceptionCompactId,
   formatReceptionDateTimeFr,
   formatReceptionWeightKg,
   formatReceptionWeightKgOrDash,
   receptionStatusPresentation,
 } from './reception-admin-display';
-
-/** Affichage discret des identifiants longs (UUID, etc.) : version courte + infobulle pour copie / support. */
-function receptionCompactIdDisplay(raw: string): { display: string; title?: string } {
-  const s = raw.trim();
-  if (!s) return { display: '—' };
-  const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-  if (uuidLike || s.length > 22) {
-    return { display: `${s.slice(0, 8)}…`, title: s };
-  }
-  return { display: s };
-}
 
 function resolveSameOriginDownloadUrl(downloadUrl: string): string {
   if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
@@ -484,7 +474,7 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
             </Table.Thead>
             <Table.Tbody>
               {rows.map((t) => {
-                const posteDisplay = receptionCompactIdDisplay(t.poste_id);
+                const posteDisplay = formatReceptionCompactId(t.poste_id);
                 const st = receptionStatusPresentation(t.status);
                 const dotColor =
                   st.color === 'green'

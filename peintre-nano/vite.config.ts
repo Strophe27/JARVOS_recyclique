@@ -1,6 +1,8 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
 
+const devProxyTarget = process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:8000';
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -13,9 +15,9 @@ export default defineConfig({
       allow: [searchForWorkspaceRoot(process.cwd()), '/contracts'],
     },
     proxy: {
-      // Keep the browser on the same origin in local Docker dev.
+      // Same-origin API calls in dev: host mode defaults to localhost, Docker frontend overrides to `api:8000`.
       '/api': {
-        target: 'http://api:8000',
+        target: devProxyTarget,
         changeOrigin: false,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),

@@ -13,6 +13,7 @@ import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import type { CashflowSubmitSurfaceError } from '../cashflow/cashflow-submit-error';
 import { useReceptionEntryBlock } from './reception-entry-gate';
+import { useReceptionPosteUiState } from './reception-poste-ui-state';
 
 function resolveSameOriginDownloadUrl(downloadUrl: string): string {
   if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
@@ -30,6 +31,7 @@ function resolveSameOriginDownloadUrl(downloadUrl: string): string {
 export function ReceptionHistoryPanel(_props: RegisteredWidgetProps): ReactNode {
   const auth = useAuthPort();
   const entry = useReceptionEntryBlock();
+  const posteOpened = useReceptionPosteUiState();
   const [rows, setRows] = useState<readonly ReceptionTicketSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -75,9 +77,9 @@ export function ReceptionHistoryPanel(_props: RegisteredWidgetProps): ReactNode 
   };
 
   useEffect(() => {
-    if (entry.blocked) return;
+    if (entry.blocked || !posteOpened) return;
     void loadList();
-  }, [entry.blocked, loadList]);
+  }, [entry.blocked, loadList, posteOpened]);
 
   const onExportCsv = async () => {
     if (!selectedId) return;
@@ -100,6 +102,8 @@ export function ReceptionHistoryPanel(_props: RegisteredWidgetProps): ReactNode 
       </Alert>
     );
   }
+
+  if (!posteOpened) return null;
 
   return (
     <Stack gap="md" data-testid="reception-history-panel">

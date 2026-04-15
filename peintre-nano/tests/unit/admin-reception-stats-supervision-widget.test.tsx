@@ -117,7 +117,8 @@ describe('AdminReceptionStatsSupervisionWidget (Story 19.1)', () => {
   });
 
   it('affiche le sous-titre opérateur et hydrate depuis les trois lectures stats', async () => {
-    vi.stubGlobal('fetch', mockStatsFetch());
+    const fetchMock = mockStatsFetch();
+    vi.stubGlobal('fetch', fetchMock);
     render(wrap(<AdminReceptionStatsSupervisionWidget widgetProps={{}} />));
 
     expect(screen.getByTestId('admin-reception-stats-operation-anchors').textContent).toContain('Données officielles');
@@ -129,5 +130,14 @@ describe('AdminReceptionStatsSupervisionWidget (Story 19.1)', () => {
     expect(screen.getByText('Metal')).toBeTruthy();
     const livePaper = screen.getByTestId('widget-admin-reception-stats-supervision');
     expect(within(livePaper).getByText('Sessions de réception ouvertes')).toBeTruthy();
+    const calledUrls = fetchMock.mock.calls.map(([input]) =>
+      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+    );
+    const summaryUrl = calledUrls.find((url) => url.includes('/v1/stats/reception/summary'));
+    const byCategoryUrl = calledUrls.find((url) => url.includes('/v1/stats/reception/by-category'));
+    expect(summaryUrl).toMatch(/start_date=\d{4}-\d{2}-\d{2}T/);
+    expect(summaryUrl).toMatch(/end_date=\d{4}-\d{2}-\d{2}T/);
+    expect(byCategoryUrl).toMatch(/start_date=\d{4}-\d{2}-\d{2}T/);
+    expect(byCategoryUrl).toMatch(/end_date=\d{4}-\d{2}-\d{2}T/);
   });
 });

@@ -7,6 +7,16 @@ export function formatReceptionDateTimeFr(iso: string | null | undefined): strin
   return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+export function formatReceptionCompactId(raw: string): { display: string; title?: string } {
+  const s = raw.trim();
+  if (!s) return { display: '—' };
+  const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  if (uuidLike || s.length > 22) {
+    return { display: `${s.slice(0, 8)}…`, title: s };
+  }
+  return { display: s };
+}
+
 export function formatReceptionWeightKg(value: number): string {
   const n = typeof value === 'number' && Number.isFinite(value) ? value : Number.parseFloat(String(value)) || 0;
   return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;

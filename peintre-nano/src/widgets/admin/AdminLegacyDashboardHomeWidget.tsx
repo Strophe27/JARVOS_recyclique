@@ -14,6 +14,7 @@ import {
 import {
   Banknote,
   Bell,
+  BookOpen,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -553,6 +554,18 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                 onClick={() => handleNavigation('/admin/categories')}
               >
                 Catégories & Tarifs
+              </Button>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Button
+                variant="light"
+                color="grape"
+                className={classes.operationalButton}
+                leftSection={<BookOpen size={20} />}
+                onClick={() => handleNavigation('/admin/compta')}
+                data-testid="admin-legacy-nav-accounting"
+              >
+                Cockpit comptable
               </Button>
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 4 }}>

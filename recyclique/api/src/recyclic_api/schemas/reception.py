@@ -40,6 +40,14 @@ class CloseResponse(BaseModel):
 
 
 
+class ReceptionCategoryResponse(BaseModel):
+    """Catégorie opératoire exposée au cockpit réception."""
+
+    id: str = Field(..., description="Identifiant de la catégorie")
+    name: str = Field(..., description="Libellé court affiché à l'opératrice")
+    parent_id: Optional[str] = Field(None, description="Identifiant de la catégorie parente si présent")
+
+
 # Lignes de dépôt
 
 

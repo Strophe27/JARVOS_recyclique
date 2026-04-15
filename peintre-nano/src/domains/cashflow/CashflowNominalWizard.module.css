@@ -215,6 +215,13 @@
   align-self: flex-start;
 }
 
+.kioskCategoryShortcutKey {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+  font-size: var(--mantine-font-size-sm);
+}
+
 .kioskCategoryMetaRow {
   display: flex;
   flex-wrap: wrap;
@@ -256,6 +263,39 @@
   flex-wrap: wrap;
   gap: var(--mantine-spacing-sm);
   margin-top: var(--mantine-spacing-md);
+}
+
+.kioskPricePrimaryActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: calc(var(--mantine-spacing-sm) * -1);
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.kioskPriceHintCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: 1px solid rgb(46 125 50 / 28%);
+  border-radius: var(--mantine-radius-sm);
+  background: linear-gradient(180deg, rgb(237 247 237) 0%, var(--mantine-color-body) 100%);
+}
+
+.kioskPriceHintLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.kioskPriceHintValue {
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 800;
+  color: #1b5e20;
+  font-variant-numeric: tabular-nums;
 }
 
 /** Chrome kiosque vente : en-tête session (vert legacy) + bandeau KPI — intention Sale / CashSessionHeader / CashKPIBanner */
@@ -461,6 +501,29 @@
   margin-bottom: var(--mantine-spacing-sm);
 }
 
+.kioskNumpad {
+  margin-top: var(--mantine-spacing-sm);
+}
+
+.kioskNumpadDisplay {
+  margin-bottom: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid rgb(46 125 50 / 28%);
+  background: var(--mantine-color-green-0);
+  color: #1b5e20;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.kioskNumpadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-sm);
+}
+
 .heldPanelKiosk {
   border-color: var(--mantine-color-gray-4);
   background: var(--mantine-color-gray-0);
@@ -492,6 +555,13 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+}
+
+.kioskUnifiedLayout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-height: 100%;
 }
 
 /** Étape règlement kiosque — carte alignée sur le ticket (bordure verte, bandeau). */

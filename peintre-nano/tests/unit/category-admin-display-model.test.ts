@@ -4,12 +4,16 @@ import {
   buildParentSelectDataForCreate,
   buildReparentParentSelectData,
   categoryBreadcrumbLabel,
+  filterCatsForReceptionVisibility,
   filterCatsForSearch,
+  filterFlatRowsHideCollapsedChildren,
   getDescendantIds,
   getForbiddenReparentTargets,
   orderedRowsWithDepth,
   parentIdFromReparentSelectValue,
+  parentIdsHavingChildren,
   reparentSelectValueFromParentId,
+  sortedDirectChildrenOf,
 } from '../../src/domains/admin-config/categories/category-admin-display-model';
 
 const baseRow = (over: Partial<CategoryAdminListRowDto>): CategoryAdminListRowDto => ({
@@ -52,6 +56,15 @@ describe('category-admin-display-model', () => {
     expect(out.map((r) => r.id).sort()).toEqual(['a', 'b']);
   });
 
+  it('filterCatsForReceptionVisibility conserve les parents des fiches masquées', () => {
+    const a = baseRow({ id: 'a', name: 'Racine', parent_id: null, is_visible: true });
+    const b = baseRow({ id: 'b', name: 'Enfant', parent_id: 'a', is_visible: false });
+    const hidden = filterCatsForReceptionVisibility([a, b], 'hidden');
+    expect(hidden.map((r) => r.id).sort()).toEqual(['a', 'b']);
+    const visible = filterCatsForReceptionVisibility([a, b], 'visible');
+    expect(visible.map((r) => r.id).sort()).toEqual(['a']);
+  });
+
   it('orderedRowsWithDepth respecte la source entry pour le tri par défaut', () => {
     const p = baseRow({
       id: 'p',
@@ -69,6 +82,27 @@ describe('category-admin-display-model', () => {
     });
     const ordered = orderedRowsWithDepth([p, c], 'order', 'entry');
     expect(ordered.map((x) => x.row.id)).toEqual(['p', 'c']);
+  });
+
+  it('sortedDirectChildrenOf aligne le tri sur orderedRowsWithDepth pour un parent', () => {
+    const p = baseRow({
+      id: 'p',
+      name: 'P',
+      display_order: 2,
+      display_order_entry: 5,
+      parent_id: null,
+    });
+    const c = baseRow({
+      id: 'c',
+      name: 'C',
+      display_order: 1,
+      display_order_entry: 1,
+      parent_id: 'p',
+    });
+    const flat = orderedRowsWithDepth([p, c], 'order', 'entry');
+    const direct = sortedDirectChildrenOf([p, c], 'p', 'order', 'entry');
+    expect(direct.map((r) => r.id)).toEqual([c.id]);
+    expect(flat.filter((x) => x.row.parent_id === 'p').map((x) => x.row.id)).toEqual([c.id]);
   });
 
   it('getDescendantIds couvre toute la profondeur', () => {
@@ -108,5 +142,15 @@ describe('category-admin-display-model', () => {
     expect(reparentSelectValueFromParentId(null)).toBe('');
     expect(parentIdFromReparentSelectValue('')).toBe(null);
     expect(parentIdFromReparentSelectValue('uuid')).toBe('uuid');
+  });
+
+  it('parentIdsHavingChildren et filterFlatRowsHideCollapsedChildren masquent le sous-arbre', () => {
+    const a = baseRow({ id: 'a', name: 'Racine', parent_id: null });
+    const b = baseRow({ id: 'b', name: 'Enfant', parent_id: 'a' });
+    const flat = orderedRowsWithDepth([a, b], 'order', 'sale');
+    expect([...parentIdsHavingChildren([a, b])].sort()).toEqual(['a']);
+    const collapsed = new Set<string>(['a']);
+    const filtered = filterFlatRowsHideCollapsedChildren(flat, collapsed);
+    expect(filtered.map((x) => x.row.id)).toEqual(['a']);
   });
 });

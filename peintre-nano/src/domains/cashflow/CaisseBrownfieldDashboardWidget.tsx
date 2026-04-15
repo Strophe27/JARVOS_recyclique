@@ -704,17 +704,12 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
   }
 
   /** Sur kiosque vente avec session active, le chrome Poste/Session/Site est porté par `CashflowNominalWizard` — éviter le double bandeau. */
-  const showPosteSessionSitePaper =
-    (saleKioskMinimal && resolvedSessionId.length === 0) || (!saleKioskMinimal && !isCaisseHubCompact && !legacySessionOpenBareForm);
-  /** Kiosque vente (`…/sale`) : ne pas empiler le wizard d’ouverture complet sans session (hybride) — garder le strip Poste/Session/Site + vente. */
-  const showFullOpeningPaper =
-    !isCaisseHubCompact &&
-    (isSessionOpenSurface || !saleKioskMinimal) &&
-    (!saleKioskMinimal || resolvedSessionId.length === 0);
+  const showPosteSessionSitePaper = !saleKioskMinimal && !isCaisseHubCompact && !legacySessionOpenBareForm;
+  /** Kiosque vente (`…/sale`) : le chrome d’aide / ouverture est désormais porté par le shell kiosque, pas par le dashboard brownfield. */
+  const showFullOpeningPaper = !saleKioskMinimal && !isCaisseHubCompact && isSessionOpenSurface;
   const showSaleKioskSessionStrip =
     saleKioskMinimal && resolvedSessionId.length > 0 && !isSessionOpenSurface;
-  const showDashboardChromeAfterOpening =
-    !isCaisseHubCompact && !legacySessionOpenBareForm && !(saleKioskMinimal && resolvedSessionId.length > 0);
+  const showDashboardChromeAfterOpening = !saleKioskMinimal && !isCaisseHubCompact && !legacySessionOpenBareForm;
   const showKpiStrip = !isCaisseHubCompact && !legacySessionOpenBareForm && !saleKioskMinimal;
 
   return (

@@ -114,6 +114,8 @@ describe('CashflowNominalWizard — micro-rail kiosque + drill sous-catégories'
                   parent_id: 'parent-cat',
                   is_active: true,
                   display_order: 0,
+                  price: 12.5,
+                  max_price: 18,
                 },
               ]),
           } as Response;
@@ -150,13 +152,143 @@ describe('CashflowNominalWizard — micro-rail kiosque + drill sous-catégories'
       expect(screen.getByTestId('cashflow-kiosk-readonly-category')).toBeTruthy();
     });
     expect(screen.getByTestId('cashflow-kiosk-readonly-category').textContent ?? '').toMatch(/EEE feuille/);
+    expect(screen.getByTestId('cashflow-kiosk-weight-display').textContent ?? '').toMatch(/^0 kg$/);
 
-    fireEvent.click(screen.getByRole('button', { name: /Continuer vers le prix/i }));
-    fireEvent.click(screen.getByTestId('cashflow-add-line'));
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-weight-clear'));
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-weight-digit-1'));
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-weight-validate'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-price-pad')).toBeTruthy();
+    });
+    expect(screen.getByTestId('cashflow-kiosk-price-catalog-hint').textContent ?? '').toMatch(
+      /Fourchette de prix autorisée.*12\.50 € - 18\.00 €/,
+    );
+    expect(screen.getByTestId('cashflow-kiosk-price-display').textContent ?? '').toMatch(/^12\.5 €$/);
+
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-price-clear'));
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-price-digit-1'));
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-price-validate'));
 
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-kiosk-kpi-line-count').textContent ?? '').toBe('1');
     });
+    expect(screen.getByText('1.00 €')).toBeTruthy();
+    expect(screen.getByText('Catégories')).toBeTruthy();
+  });
+
+  it('pilote le workflow clavier kiosque : AZERTY haute, Tab, Shift+Tab, Escape et focus finalisation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = requestUrl(input);
+        if (url.includes('/v1/cash-sessions/current')) {
+          return {
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ id: 'session-kiosk-demo', register_id: 'reg-1', total_sales: 0, current_amount: 0 }),
+          } as Response;
+        }
+        if (url.includes('/v1/categories/')) {
+          return {
+            ok: true,
+            status: 200,
+            text: async () =>
+              JSON.stringify([
+                {
+                  id: 'root-kbd',
+                  name: 'Racine clavier',
+                  parent_id: null,
+                  is_active: true,
+                  display_order: 0,
+                },
+                {
+                  id: 'leaf-kbd',
+                  name: 'Feuille clavier',
+                  parent_id: 'root-kbd',
+                  is_active: true,
+                  display_order: 0,
+                },
+              ]),
+          } as Response;
+        }
+        if (url.includes('live-snapshot')) {
+          return { ok: true, status: 200, text: async () => '{}' } as Response;
+        }
+        return { ok: true, status: 200, text: async () => '[]' } as Response;
+      }),
+    );
+
+    render(
+      <RootProviders disableUserPrefsPersistence>
+        <CashflowNominalWizard widgetProps={{ sale_kiosk_category_workspace: true }} />
+      </RootProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-category-root-kbd')).toBeTruthy();
+    });
+
+    fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', bubbles: true, cancelable: true });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-category-leaf-kbd')).toBeTruthy();
+    });
+
+    fireEvent.keyDown(document.body, { key: 'Backspace', code: 'Backspace', bubbles: true, cancelable: true });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-category-root-kbd')).toBeTruthy();
+    });
+
+    fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', bubbles: true, cancelable: true });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-category-leaf-kbd')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-category-leaf-kbd'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-weight-pad')).toBeTruthy();
+    });
+    expect(screen.getByTestId('cashflow-kiosk-weight-display').textContent ?? '').toMatch(/^0 kg$/);
+
+    fireEvent.keyDown(document.body, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
+    expect(screen.queryByTestId('cashflow-kiosk-price-pad')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-weight-clear'));
+    fireEvent.keyDown(document.body, { key: '&', code: 'Digit1', bubbles: true, cancelable: true });
+    expect(screen.getByTestId('cashflow-kiosk-weight-display').textContent ?? '').toMatch(/^1 kg$/);
+
+    fireEvent.keyDown(document.body, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-price-pad')).toBeTruthy();
+    });
+
+    fireEvent.keyDown(document.body, { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-weight-pad')).toBeTruthy();
+    });
+
+    fireEvent.keyDown(document.body, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-price-pad')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-price-clear'));
+    fireEvent.keyDown(document.body, { key: 'é', code: 'Digit2', bubbles: true, cancelable: true });
+    expect(screen.getByTestId('cashflow-kiosk-price-display').textContent ?? '').toMatch(/^2 €$/);
+
+    fireEvent.keyDown(document.body, { key: ',', code: 'Comma', bubbles: true, cancelable: true });
+    expect(screen.getByTestId('cashflow-kiosk-price-display').textContent ?? '').toMatch(/^2\. €$/);
+
+    fireEvent.click(screen.getByTestId('cashflow-kiosk-price-clear'));
+    fireEvent.keyDown(document.body, { key: '1', code: 'Digit1', bubbles: true, cancelable: true });
+    fireEvent.keyDown(document.body, { key: ';', code: 'Semicolon', bubbles: true, cancelable: true });
+    expect(screen.getByTestId('cashflow-kiosk-price-display').textContent ?? '').toMatch(/^1\. €$/);
+
+    fireEvent.keyDown(document.body, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-kiosk-kpi-line-count').textContent ?? '').toBe('1');
+    });
+    expect(screen.getByText('Catégories')).toBeTruthy();
   });
 
   it('chargement catégories kiosque : fin du loader malgré identité `auth` instable pendant le GET (robustesse)', async () => {

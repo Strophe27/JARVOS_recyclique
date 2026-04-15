@@ -4,7 +4,11 @@ import { parseRecycliqueApiErrorBody, toRecycliqueClientFailure } from './recycl
 
 export type ReceptionDestinationV1 = 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE';
 
-export type ReceptionCategoryRow = { readonly id: string; readonly name: string };
+export type ReceptionCategoryRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly parent_id?: string | null;
+};
 
 export type ReceptionLigneResponse = {
   readonly id: string;
@@ -419,7 +423,11 @@ export async function getReceptionCategories(
   }
   const categories = (json as unknown[]).map((row) => {
     const r = row as Record<string, unknown>;
-    return { id: String(r.id), name: String(r.name ?? '') };
+    return {
+      id: String(r.id),
+      name: String(r.name ?? ''),
+      parent_id: r.parent_id == null || String(r.parent_id).trim() === '' ? null : String(r.parent_id),
+    };
   });
   return { ok: true, categories };
 }

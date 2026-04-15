@@ -438,6 +438,12 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         mainWidget: 'admin.sites.demo',
       },
       {
+        pageKey: 'transverse-admin-accounting',
+        path: '/admin/compta',
+        navId: 'transverse-admin-accounting',
+        mainWidget: 'admin.accounting.hub',
+      },
+      {
         pageKey: 'transverse-admin-sites-and-registers',
         path: '/admin/sites-and-registers',
         navId: 'transverse-admin-sites-and-registers',
@@ -499,6 +505,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         spec.pageKey === 'transverse-admin-groups' ||
         spec.pageKey === 'transverse-admin-categories' ||
         spec.pageKey === 'transverse-admin-audit-log' ||
+        spec.pageKey === 'transverse-admin-accounting' ||
         spec.pageKey === 'transverse-admin-cash-registers' ||
         spec.pageKey === 'transverse-admin-sites' ||
         spec.pageKey === 'transverse-admin-sites-and-registers' ||
@@ -899,6 +906,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(flat.some((e) => e.path === '/admin/reception-stats')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/reception-sessions')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/settings')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/compta')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/health')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/sites-and-registers')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/groups')).toBe(true);

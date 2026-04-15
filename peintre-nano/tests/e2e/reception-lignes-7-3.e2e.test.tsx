@@ -253,26 +253,29 @@ describe('E2E — lignes réception Story 7.3 (PUT / DELETE / PATCH mockés)', (
       expect(screen.getByTestId('reception-poste-id').textContent).toContain(POSTE_ID);
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /2\. Ticket/i }));
-    fireEvent.click(screen.getByTestId('reception-create-ticket'));
     await waitFor(() => {
       expect(screen.getByTestId('reception-ticket-id').textContent).toContain(TICKET_ID);
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /3\. Ligne/i }));
     await waitFor(() => {
       expect(screen.getByTestId('reception-step-ligne')).toBeTruthy();
     });
 
+    fireEvent.click(screen.getByTestId('reception-keypad-1'));
     fireEvent.click(screen.getByTestId('reception-add-ligne'));
     await waitFor(() => {
       expect(screen.getByTestId('reception-ticket-lignes-summary').textContent).toMatch(/Lignes côté serveur : 1/);
     });
+    expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('1');
+    expect(screen.getByTestId('reception-ticket-summary-total').textContent ?? '').toContain('1.00 kg');
+    expect(screen.getByTestId('reception-ticket-summary-latest').textContent ?? '').toContain('1');
 
+    fireEvent.click(screen.getByTestId('reception-keypad-2'));
     fireEvent.click(screen.getByTestId('reception-add-ligne'));
     await waitFor(() => {
       expect(screen.getByTestId('reception-ticket-lignes-summary').textContent).toMatch(/Lignes côté serveur : 2/);
     });
+    expect(screen.getByTestId('reception-ticket-summary-total').textContent ?? '').toContain('3.00 kg');
 
     fireEvent.click(screen.getByTestId(`reception-edit-ligne-${LIGNE_1}`));
     const step = screen.getByTestId('reception-step-ligne');
@@ -291,7 +294,6 @@ describe('E2E — lignes réception Story 7.3 (PUT / DELETE / PATCH mockés)', (
     });
     confirmSpy.mockRestore();
 
-    fireEvent.click(screen.getByRole('tab', { name: /4\. Fermer ticket/i }));
     fireEvent.click(screen.getByTestId('reception-close-ticket'));
     await waitFor(() => {
       expect(
@@ -307,7 +309,6 @@ describe('E2E — lignes réception Story 7.3 (PUT / DELETE / PATCH mockés)', (
       expect(screen.getByTestId('reception-admin-patch-weight')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /3\. Ligne/i }));
     await waitFor(() => {
       expect(screen.getByTestId('reception-admin-patch-weight')).toBeTruthy();
     });
@@ -480,31 +481,28 @@ describe('E2E — lignes réception Story 7.3 (PUT / DELETE / PATCH mockés)', (
         expect(screen.getByTestId('reception-poste-id').textContent).toContain(POSTE_ID);
       });
 
-      fireEvent.click(screen.getByRole('tab', { name: /2\. Ticket/i }));
-      fireEvent.click(screen.getByTestId('reception-create-ticket'));
       await waitFor(() => {
         expect(screen.getByTestId('reception-ticket-id').textContent).toContain(TICKET_ID);
       });
 
-      fireEvent.click(screen.getByRole('tab', { name: /3\. Ligne/i }));
       await waitFor(() => {
         expect(screen.getByTestId('reception-step-ligne')).toBeTruthy();
       });
 
+      fireEvent.click(screen.getByTestId('reception-keypad-1'));
       fireEvent.click(screen.getByTestId('reception-add-ligne'));
       await waitFor(() => {
         expect(screen.getByTestId('reception-ticket-lignes-summary').textContent).toMatch(
           /Lignes côté serveur : 1/,
         );
       });
+      expect(screen.getByTestId('reception-ticket-summary-total').textContent ?? '').toContain('1.00 kg');
 
-      fireEvent.click(screen.getByRole('tab', { name: /4\. Fermer ticket/i }));
       fireEvent.click(screen.getByTestId('reception-close-ticket'));
       await waitFor(() => {
         expect(screen.getByTestId('reception-admin-patch-weight')).toBeTruthy();
       });
 
-      fireEvent.click(screen.getByRole('tab', { name: /3\. Ligne/i }));
       await waitFor(() => {
         expect(screen.getByTestId('reception-admin-patch-apply')).toBeTruthy();
       });

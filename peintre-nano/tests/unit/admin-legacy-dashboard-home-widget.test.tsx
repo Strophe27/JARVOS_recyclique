@@ -106,11 +106,13 @@ describe('AdminLegacyDashboardHomeWidget', () => {
     fireEvent.click(screen.getByTestId('admin-legacy-nav-system-health'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-advanced-settings'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-sites-and-registers'));
+    fireEvent.click(screen.getByTestId('admin-legacy-nav-accounting'));
 
     expect(spaNavigateMock.mock.calls).toEqual([
       ['/admin/health'],
       ['/admin/settings'],
       ['/admin/sites-and-registers'],
+      ['/admin/compta'],
     ]);
   });
 

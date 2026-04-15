@@ -275,13 +275,6 @@ describe('E2E — contexte réception et blocages (Story 7.2)', () => {
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-poste-id').textContent).toContain(POSTE_ID);
-    });
-
-    fireEvent.click(screen.getByRole('tab', { name: /2\. Ticket/i }));
-    fireEvent.click(screen.getByTestId('reception-create-ticket'));
-
-    await waitFor(() => {
       expect(screen.getByTestId('reception-api-error')).toBeTruthy();
       expect(screen.getByTestId('reception-api-error-http-status').textContent).toMatch(/403/);
     });

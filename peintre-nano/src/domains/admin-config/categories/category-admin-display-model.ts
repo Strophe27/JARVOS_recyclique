@@ -7,6 +7,41 @@ export type CategoriesSortBy = 'order' | 'name' | 'created';
 
 export type CategoryRowWithDepth = { row: CategoryAdminListRowDto; depth: number };
 
+/** Identifiants des fiches qui ont au moins un enfant (pour replier l’arbre, chevrons, etc.). */
+export function parentIdsHavingChildren(
+  rows: readonly { id: string; parent_id?: string | null }[],
+): Set<string> {
+  const out = new Set<string>();
+  for (const r of rows) {
+    if (r.parent_id) out.add(r.parent_id);
+  }
+  return out;
+}
+
+/**
+ * Masque les descendants des nœuds listés dans `collapsedParentIds` (la ligne parent reste visible).
+ * `flat` doit être l’ordre profondeur d’abord produit par `orderedRowsWithDepth`.
+ */
+export function filterFlatRowsHideCollapsedChildren(
+  flat: readonly CategoryRowWithDepth[],
+  collapsedParentIds: ReadonlySet<string>,
+): CategoryRowWithDepth[] {
+  if (collapsedParentIds.size === 0) return [...flat];
+  const out: CategoryRowWithDepth[] = [];
+  let barrierDepth: number | null = null;
+  for (const item of flat) {
+    if (barrierDepth !== null) {
+      if (item.depth <= barrierDepth) barrierDepth = null;
+      else continue;
+    }
+    out.push(item);
+    if (collapsedParentIds.has(item.row.id)) {
+      barrierDepth = item.depth;
+    }
+  }
+  return out;
+}
+
 /** Fil d'Ariane « Parent › Enfant » aligné sur la hiérarchie `parent_id` (données liste courante). */
 export function categoryBreadcrumbLabel(
   rows: readonly CategoryAdminListRowDto[],
@@ -22,6 +57,27 @@ export function categoryBreadcrumbLabel(
     cur = row.parent_id ?? null;
   }
   return parts.join(' › ');
+}
+
+/** Filtre `is_visible` en conservant les parents pour l’arborescence (même principe que la recherche). */
+export function filterCatsForReceptionVisibility(
+  cats: readonly CategoryAdminListRowDto[],
+  mode: 'all' | 'visible' | 'hidden',
+): CategoryAdminListRowDto[] {
+  if (mode === 'all') return [...cats];
+  const byId = new Map(cats.map((c) => [c.id, c]));
+  const keep = new Set<string>();
+  for (const c of cats) {
+    const ok = mode === 'visible' ? c.is_visible : !c.is_visible;
+    if (!ok) continue;
+    keep.add(c.id);
+    let pid = c.parent_id;
+    while (pid) {
+      keep.add(pid);
+      pid = byId.get(pid)?.parent_id ?? null;
+    }
+  }
+  return cats.filter((c) => keep.has(c.id));
 }
 
 export function filterCatsForSearch(
@@ -43,6 +99,17 @@ export function filterCatsForSearch(
     }
   }
   return cats.filter((c) => keep.has(c.id));
+}
+
+/** Enfants directs d’un parent, triés comme dans l’arborescence admin (`orderedRowsWithDepth`). */
+export function sortedDirectChildrenOf(
+  cats: readonly CategoryAdminListRowDto[],
+  parentId: string | null,
+  sortBy: CategoriesSortBy,
+  source: CategoriesDataSource,
+): CategoryAdminListRowDto[] {
+  const direct = cats.filter((c) => (c.parent_id ?? null) === parentId);
+  return [...direct].sort((a, b) => compareSiblings(a, b, sortBy, source));
 }
 
 function compareSiblings(

@@ -158,6 +158,18 @@
       }
     },
     {
+      "id": "transverse-admin-accounting",
+      "route_key": "transverse-admin-accounting",
+      "path": "/admin/compta",
+      "page_key": "transverse-admin-accounting",
+      "shortcut_id": "go-transverse-admin-accounting",
+      "label_key": "nav.transverse.admin.accounting",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "transverse-admin-sites-and-registers",
       "route_key": "transverse-admin-sites-and-registers",
       "path": "/admin/sites-and-registers",

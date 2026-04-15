@@ -1,5 +1,13 @@
 import { Alert, Badge, Button, Group, Loader, NumberInput, SimpleGrid, Text, TextInput } from '@mantine/core';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { type RecycliqueClientFailure, recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import {
   fetchCategoriesList,
@@ -256,6 +264,25 @@ function kioskOperatingLabel(mode: CashflowOperatingMode | null): string {
 
 type KioskLineMicroPhase = 'browse' | 'weight' | 'price';
 
+const KIOSK_FINALIZE_FOCUS_EVENT = 'cashflow:kiosk-finalize-focus';
+
+function isEditableTarget(target: EventTarget | null): target is HTMLElement {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+}
+
+function focusCashflowElementByTestId(testId: string): boolean {
+  const el = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+  if (!el) return false;
+  el.focus();
+  return document.activeElement === el;
+}
+
+function requestKioskFinalizeFocus(): void {
+  window.dispatchEvent(new CustomEvent(KIOSK_FINALIZE_FOCUS_EVENT));
+}
+
 function KioskLineMicroRail({
   microPhase,
   browseParentId,
@@ -460,6 +487,10 @@ function SaleKioskSessionHeader({
 }
 
 function formatEuro(amount: number): string {
+  return `${Number(amount).toFixed(2)} €`;
+}
+
+function formatCatalogPrice(amount: number): string {
   return `${Number(amount).toFixed(2)} €`;
 }
 
@@ -704,6 +735,25 @@ function HeldTicketsPanel({ kioskSurface }: { readonly kioskSurface: boolean }):
 }
 
 /**
+ * Même ordre position → touche que le legacy caisse (`recyclique-1.4.4/frontend/src/utils/cashKeyboardShortcuts.ts`).
+ * Utilisé quand `shortcut_key` est absent en base (cas fréquent en recette) pour garder nom accessible + clavier alignés legacy.
+ */
+const KIOSK_CATEGORY_POSITION_KEYS = [
+  'A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+  'Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M',
+  'W', 'X', 'C', 'V', 'B', 'N',
+] as const;
+
+function kioskCategoryEffectiveShortcutKey(category: CategoryListItem, indexInVisibleList: number): string {
+  const fromDb = category.shortcut_key != null ? String(category.shortcut_key).trim() : '';
+  if (fromDb.length > 0) return fromDb;
+  if (indexInVisibleList >= 0 && indexInVisibleList < KIOSK_CATEGORY_POSITION_KEYS.length) {
+    return KIOSK_CATEGORY_POSITION_KEYS[indexInVisibleList]!;
+  }
+  return '';
+}
+
+/**
  * Story 13.8 — intention parcours catégorie → ligne (GET `/v1/categories/` reviewable, même client que stats legacy).
  */
 function KioskCategoryWorkspace({
@@ -713,7 +763,11 @@ function KioskCategoryWorkspace({
   onBrowseDepthChange,
   onContinueWithoutGrid,
 }: {
-  readonly onPickCategoryCode: (categoryCode: string, categoryDisplayName: string) => void;
+  readonly onPickCategoryCode: (
+    categoryCode: string,
+    categoryDisplayName: string,
+    categoryMeta: CategoryListItem | null,
+  ) => void;
   /** Incrémenté par le parent pour ramener la navigation racine (retour depuis poids/prix). */
   readonly browseResetEpoch: number;
   readonly onDrillIntoChildren?: () => void;
@@ -784,6 +838,72 @@ function KioskCategoryWorkspace({
 
   const childCountFor = useCallback((id: string) => rows.filter((r) => r.parent_id === id).length, [rows]);
 
+  const showList = useMemo(() => (parentId ? children : roots), [parentId, children, roots]);
+
+  const onPickRef = useRef(onPickCategoryCode);
+  onPickRef.current = onPickCategoryCode;
+  const onDrillRef = useRef(onDrillIntoChildren);
+  onDrillRef.current = onDrillIntoChildren;
+  const parentIdRef = useRef(parentId);
+  parentIdRef.current = parentId;
+
+  const activateCategoryShortcut = useCallback(
+    (rawKey: string): boolean => {
+      if (loading || fetchErr || rawKey.length !== 1) return false;
+      if (showList.length === 0) return false;
+      const ch = rawKey.toLowerCase();
+      for (let i = 0; i < showList.length; i++) {
+        const c = showList[i]!;
+        const eff = kioskCategoryEffectiveShortcutKey(c, i);
+        if (eff.length !== 1 || eff.toLowerCase() !== ch) continue;
+        if (rowHasChildren(c.id)) {
+          setParentId(c.id);
+          if (!parentIdRef.current) onDrillRef.current?.();
+        } else {
+          onPickRef.current(c.id, c.name, c);
+        }
+        return true;
+      }
+      return false;
+    },
+    [loading, fetchErr, showList, rowHasChildren],
+  );
+
+  /** Raccourcis : `shortcut_key` API ou, si absent, touche positionnelle legacy (1 caractère). */
+  const handleCategoryGridKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (e.defaultPrevented) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      const tag = t.tagName;
+      const editable = t.isContentEditable;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable) return;
+      if (!activateCategoryShortcut(e.key)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    [activateCategoryShortcut],
+  );
+
+  useEffect(() => {
+    if (loading || fetchErr || showList.length === 0) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      const tag = t.tagName;
+      const editable = t.isContentEditable;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable) return;
+      if (!activateCategoryShortcut(e.key)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [loading, fetchErr, showList, activateCategoryShortcut]);
+
   if (loading) {
     return (
       <Group gap="sm" mb="md" data-testid="cashflow-kiosk-category-loading">
@@ -808,10 +928,12 @@ function KioskCategoryWorkspace({
     );
   }
 
-  const showList = parentId ? children : roots;
-
   return (
-    <div className={classes.kioskCategorySection} data-testid="cashflow-kiosk-category-grid">
+    <div
+      className={classes.kioskCategorySection}
+      data-testid="cashflow-kiosk-category-grid"
+      onKeyDown={handleCategoryGridKeyDown}
+    >
       {parentId ? (
         <Button
           variant="subtle"
@@ -844,35 +966,208 @@ function KioskCategoryWorkspace({
         </div>
       ) : (
         <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing="md" className={classes.kioskCategoryGrid} mb="md">
-          {showList.map((c) => {
+          {showList.map((c, index) => {
             const nChild = childCountFor(c.id);
+            const shortcutRaw = kioskCategoryEffectiveShortcutKey(c, index);
+            /** Libellé principal non masqué : le nom accessible des `<button>` suit le texte visible (MCP / Chromium). */
+            const mainLine = shortcutRaw ? `${c.name}, touche ${shortcutRaw}` : c.name;
             return (
               <button
                 key={c.id}
                 type="button"
                 className={classes.kioskCategoryButton}
                 data-testid={`cashflow-kiosk-category-${c.id}`}
+                {...(shortcutRaw.length === 1 ? { 'aria-keyshortcuts': shortcutRaw } : {})}
                 onClick={() => {
                   if (rowHasChildren(c.id)) {
                     setParentId(c.id);
                     if (!parentId) onDrillIntoChildren?.();
                     return;
                   }
-                  onPickCategoryCode(c.id, c.name);
+                  onPickCategoryCode(c.id, c.name, c);
                 }}
               >
-                <span className={classes.kioskCategoryButtonMain}>{c.name}</span>
+                <span className={classes.kioskCategoryButtonMain}>{mainLine}</span>
                 <span className={classes.kioskCategoryMetaRow}>
                   {nChild > 0 ? <span className={classes.kioskCategoryCountBadge}>{nChild} sous-cat.</span> : null}
                 </span>
-                {c.shortcut_key != null && String(c.shortcut_key).trim() !== '' ? (
-                  <span className={classes.kioskCategoryShortcutBadge}>Touche {String(c.shortcut_key).trim()}</span>
+                {shortcutRaw ? (
+                  <span className={classes.kioskCategoryShortcutBadge} aria-hidden="true">
+                    Clavier&nbsp;: <span className={classes.kioskCategoryShortcutKey}>{shortcutRaw}</span>
+                  </span>
                 ) : null}
               </button>
             );
           })}
         </SimpleGrid>
       )}
+    </div>
+  );
+}
+
+function normalizeKioskDecimalInput(raw: string): string {
+  const cleaned = raw.replace(',', '.').replace(/[^0-9.]/g, '');
+  const firstDot = cleaned.indexOf('.');
+  if (firstDot === -1) return cleaned;
+  return `${cleaned.slice(0, firstDot + 1)}${cleaned.slice(firstDot + 1).replaceAll('.', '')}`;
+}
+
+const KIOSK_AZERTY_TOP_ROW_DIGIT_BY_KEY: Record<string, string> = {
+  '&': '1',
+  'é': '2',
+  '"': '3',
+  "'": '4',
+  '(': '5',
+  '-': '6',
+  'è': '7',
+  '_': '8',
+  'ç': '9',
+  'à': '0',
+};
+
+function decodeKioskNumericKeyboardKey(key: string, code: string): string | null {
+  if (key >= '0' && key <= '9') return key;
+  if (code.startsWith('Digit')) {
+    const digitFromCode = code.slice('Digit'.length);
+    if (digitFromCode >= '0' && digitFromCode <= '9') return digitFromCode;
+  }
+  if (code.startsWith('Numpad')) {
+    const digitFromCode = code.slice('Numpad'.length);
+    if (digitFromCode >= '0' && digitFromCode <= '9') return digitFromCode;
+    if (digitFromCode === 'Decimal') return '.';
+  }
+  return KIOSK_AZERTY_TOP_ROW_DIGIT_BY_KEY[key] ?? null;
+}
+
+function isKioskDecimalSeparatorKey(key: string, code: string): boolean {
+  if (key === '.' || key === ',') return true;
+  // Claviers FR/AZERTY: selon l'OS/navigateur, la touche décimale dédiée peut remonter
+  // avec un `code` physique différent du simple `key` ".".
+  return code === 'NumpadDecimal' || code === 'Period' || code === 'Comma' || code === 'Semicolon';
+}
+
+function formatKioskNumericDisplay(raw: string, suffix: string): string {
+  const normalized = normalizeKioskDecimalInput(raw);
+  return `${normalized.length > 0 ? normalized : '0'} ${suffix}`;
+}
+
+function parseKioskPositiveNumber(raw: string, fallback: number): number {
+  const normalized = normalizeKioskDecimalInput(raw);
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function hasKioskPositiveNumber(raw: string): boolean {
+  const normalized = normalizeKioskDecimalInput(raw);
+  if (normalized.length === 0) return false;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0;
+}
+
+function KioskNumericPad({
+  value,
+  suffix,
+  onChange,
+  onValidate,
+  onStepBack,
+  onStepForward,
+  validateLabel,
+  testIdPrefix,
+}: {
+  readonly value: string;
+  readonly suffix: string;
+  readonly onChange: (next: string) => void;
+  readonly onValidate: () => void;
+  readonly onStepBack?: () => void;
+  readonly onStepForward?: () => void;
+  readonly validateLabel: string;
+  readonly testIdPrefix: string;
+}): ReactNode {
+  const append = useCallback(
+    (chunk: string) => {
+      onChange(normalizeKioskDecimalInput(`${value}${chunk}`));
+    },
+    [onChange, value],
+  );
+
+  const onBackspace = useCallback(() => {
+    onChange(value.slice(0, -1));
+  }, [onChange, value]);
+
+  const onClear = useCallback(() => {
+    onChange('');
+  }, [onChange]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isEditableTarget(e.target)) return;
+      const numericKey = decodeKioskNumericKeyboardKey(e.key, e.code);
+      if (numericKey && numericKey !== '.') {
+        e.preventDefault();
+        append(numericKey);
+        return;
+      }
+      if (isKioskDecimalSeparatorKey(e.key, e.code) || numericKey === '.') {
+        e.preventDefault();
+        append('.');
+        return;
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        if (value.length === 0) {
+          onStepBack?.();
+          return;
+        }
+        onBackspace();
+        return;
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (e.shiftKey) onStepBack?.();
+        else onStepForward?.();
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (onStepBack) {
+          onStepBack?.();
+          return;
+        }
+        onClear();
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onValidate();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [append, onBackspace, onClear, onStepBack, onStepForward, onValidate, value.length]);
+
+  return (
+    <div className={classes.kioskNumpad} data-testid={`${testIdPrefix}-pad`}>
+      <div className={classes.kioskNumpadDisplay} data-testid={`${testIdPrefix}-display`}>
+        {formatKioskNumericDisplay(value, suffix)}
+      </div>
+      <div className={classes.kioskNumpadGrid}>
+        <Button variant="default" onClick={onBackspace} data-testid={`${testIdPrefix}-backspace`}>
+          Effacer un caractère
+        </Button>
+        <Button variant="default" onClick={onClear} data-testid={`${testIdPrefix}-clear`}>
+          Effacer tout
+        </Button>
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.'].map((digit) => (
+          <Button key={digit} variant="light" onClick={() => append(digit)} data-testid={`${testIdPrefix}-digit-${digit === '.' ? 'dot' : digit}`}>
+            {digit}
+          </Button>
+        ))}
+      </div>
+      <Button mt="md" onClick={onValidate} data-testid={`${testIdPrefix}-validate`}>
+        {validateLabel}
+      </Button>
     </div>
   );
 }
@@ -889,6 +1184,7 @@ function LinesStep({
   const [category, setCategory] = useState('EEE-1');
   /** Libellé métier issu de la grille (GET /v1/categories/) — évite d’afficher l’identifiant technique comme libellé principal. */
   const [categoryArticleLabel, setCategoryArticleLabel] = useState('');
+  const [selectedCategoryMeta, setSelectedCategoryMeta] = useState<CategoryListItem | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [weight, setWeight] = useState(1);
   const [unitPrice, setUnitPrice] = useState(5);
@@ -898,19 +1194,72 @@ function LinesStep({
   const [kioskBrowseResetEpoch, setKioskBrowseResetEpoch] = useState(0);
   const [kioskBrowseParentId, setKioskBrowseParentId] = useState<string | null>(null);
   const [kioskUsedSubcategoryDrill, setKioskUsedSubcategoryDrill] = useState(false);
+  const [kioskWeightInput, setKioskWeightInput] = useState('');
+  const [kioskPriceInput, setKioskPriceInput] = useState('5');
+  const [kioskShowManualCategoryEdit, setKioskShowManualCategoryEdit] = useState(false);
 
   const goKioskBrowse = useCallback(() => {
     setKioskMicroPhase('browse');
     setKioskBrowseResetEpoch((e) => e + 1);
   }, []);
 
-  const onAdd = () => {
-    const totalPrice = unitPrice * quantity;
+  const goKioskWeight = useCallback(() => {
+    setKioskMicroPhase('weight');
+  }, []);
+
+  const commitKioskWeight = useCallback(() => {
+    if (!hasKioskPositiveNumber(kioskWeightInput)) return;
+    const nextWeight = parseKioskPositiveNumber(kioskWeightInput, weight || 1);
+    setWeight(nextWeight);
+    const categoryFixedPrice =
+      selectedCategoryMeta?.price != null && Number(selectedCategoryMeta.price) > 0
+        ? Number(selectedCategoryMeta.price)
+        : null;
+    setKioskPriceInput(String(categoryFixedPrice ?? unitPrice));
+    setKioskMicroPhase('price');
+  }, [kioskWeightInput, selectedCategoryMeta, unitPrice, weight]);
+
+  useEffect(() => {
+    if (kioskMicroPhase !== 'price') return;
+    if (!categoryArticleLabel.trim()) {
+      setKioskShowManualCategoryEdit(true);
+      return;
+    }
+    setKioskShowManualCategoryEdit(false);
+  }, [kioskMicroPhase, categoryArticleLabel]);
+
+  const categoryPricingHint = useMemo(() => {
+    if (!selectedCategoryMeta) return null;
+    const min = selectedCategoryMeta.price;
+    const max = selectedCategoryMeta.max_price;
+    const hasMin = typeof min === 'number' && Number.isFinite(min) && min > 0;
+    const hasMax = typeof max === 'number' && Number.isFinite(max) && max > 0;
+    if (hasMin && hasMax) {
+      return {
+        title: 'Fourchette de prix autorisée',
+        value: `${formatCatalogPrice(min)} - ${formatCatalogPrice(max)}`,
+      };
+    }
+    if (hasMin) {
+      return {
+        title: 'Prix fixe catalogue',
+        value: formatCatalogPrice(min),
+      };
+    }
+    return null;
+  }, [selectedCategoryMeta]);
+
+  const onAdd = (overrides?: { readonly weight?: number; readonly unitPrice?: number }) => {
+    const nextWeight = overrides?.weight ?? weight;
+    const nextUnitPrice = overrides?.unitPrice ?? unitPrice;
+    const totalPrice = nextUnitPrice * quantity;
+    const displayName = categoryArticleLabel.trim();
     addTicketLine({
       category: category.trim() || 'EEE-1',
+      ...(displayName ? { displayLabel: displayName } : {}),
       quantity,
-      weight,
-      unitPrice,
+      weight: nextWeight,
+      unitPrice: nextUnitPrice,
       totalPrice,
     });
     setTotalAmount(linesSubtotal(getCashflowDraftSnapshot().lines));
@@ -919,8 +1268,17 @@ function LinesStep({
       setKioskBrowseResetEpoch((e) => e + 1);
       setKioskUsedSubcategoryDrill(false);
       setCategoryArticleLabel('');
+      setSelectedCategoryMeta(null);
+      setKioskWeightInput('');
+      setKioskPriceInput(String(unitPrice));
     }
   };
+
+  const commitKioskPrice = useCallback(() => {
+    const nextUnitPrice = parseKioskPositiveNumber(kioskPriceInput, unitPrice || 0);
+    setUnitPrice(nextUnitPrice);
+    onAdd({ unitPrice: nextUnitPrice });
+  }, [kioskPriceInput, onAdd, unitPrice]);
 
   const onHold = async () => {
     const sid = draft.cashSessionIdInput.trim();
@@ -954,6 +1312,35 @@ function LinesStep({
     }
   };
 
+  useEffect(() => {
+    if (!kioskCategoryWorkspace) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isEditableTarget(e.target)) return;
+      if (e.key === 'Escape' || e.key === 'Backspace') {
+        if (kioskMicroPhase === 'browse' && kioskBrowseParentId) {
+          e.preventDefault();
+          goKioskBrowse();
+        }
+        return;
+      }
+      if (e.key !== 'Tab' || e.shiftKey) return;
+      if (kioskMicroPhase === 'browse' && draft.lines.length > 0 && draft.totalAmount > 0) {
+        e.preventDefault();
+        requestKioskFinalizeFocus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [
+    draft.lines.length,
+    draft.totalAmount,
+    goKioskBrowse,
+    kioskBrowseParentId,
+    kioskCategoryWorkspace,
+    kioskMicroPhase,
+  ]);
+
   return (
     <div className={`${classes.step}${kioskCategoryWorkspace ? ` ${classes.stepKiosk}` : ''}`}>
       {kioskCategoryWorkspace ? (
@@ -974,11 +1361,15 @@ function LinesStep({
               onBrowseDepthChange={setKioskBrowseParentId}
               onContinueWithoutGrid={() => {
                 setCategoryArticleLabel('');
+                setSelectedCategoryMeta(null);
+                setKioskWeightInput('');
                 setKioskMicroPhase('weight');
               }}
-              onPickCategoryCode={(code, displayName) => {
+              onPickCategoryCode={(code, displayName, categoryMeta) => {
                 setCategory(code);
                 setCategoryArticleLabel(displayName.trim());
+                setSelectedCategoryMeta(categoryMeta);
+                setKioskWeightInput('');
                 setKioskMicroPhase('weight');
               }}
             />
@@ -1000,21 +1391,29 @@ function LinesStep({
               <Text size="sm" mb="md" c="dimmed">
                 Contrôlez la quantité et le poids ; le prix unitaire vient à l’étape suivante.
               </Text>
-              <NumberInput label="Quantité" min={1} value={quantity} onChange={(v) => setQuantity(Number(v) || 1)} />
-              <NumberInput
-                label="Poids (kg)"
-                min={0.01}
-                step={0.1}
-                value={weight}
-                onChange={(v) => setWeight(Number(v) || 0)}
-                mt="sm"
-                data-testid="cashflow-input-weight"
+              <Text size="sm" mb="xs" c="dimmed">
+                Qté : {quantity}
+              </Text>
+              <KioskNumericPad
+                value={kioskWeightInput}
+                suffix="kg"
+                onChange={setKioskWeightInput}
+                onValidate={commitKioskWeight}
+                onStepBack={goKioskBrowse}
+                onStepForward={commitKioskWeight}
+                validateLabel="Valider le poids total"
+                testIdPrefix="cashflow-kiosk-weight"
               />
               <div className={classes.kioskLinePhaseActions}>
                 <Button type="button" variant="default" onClick={goKioskBrowse}>
                   Retour à la grille
                 </Button>
-                <Button type="button" onClick={() => setKioskMicroPhase('price')}>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    commitKioskWeight();
+                  }}
+                >
                   Continuer vers le prix
                 </Button>
               </div>
@@ -1029,29 +1428,56 @@ function LinesStep({
                   <span className={classes.kioskLineReadonlyCodeMuted}> — saisie directe du code catalogue.</span>
                 ) : null}
               </div>
-              <TextInput
-                label="Ajuster le code catalogue (optionnel)"
-                description="La grille reste le chemin principal ; la saisie manuelle reste possible."
-                value={category}
-                onChange={(e) => {
-                  setCategory(e.currentTarget.value);
-                  setCategoryArticleLabel('');
-                }}
-                data-testid="cashflow-input-category"
-              />
-              <NumberInput
-                label="Prix unitaire / ligne (€)"
-                min={0}
-                value={unitPrice}
-                onChange={(v) => setUnitPrice(Number(v) || 0)}
-                mt="sm"
+              <div className={classes.kioskPricePrimaryActions}>
+                <Button
+                  type="button"
+                  variant="subtle"
+                  size="xs"
+                  onClick={() => setKioskShowManualCategoryEdit((v) => !v)}
+                  data-testid="cashflow-kiosk-toggle-manual-category"
+                >
+                  {kioskShowManualCategoryEdit ? 'Masquer le code catalogue' : 'Ajuster le code catalogue'}
+                </Button>
+              </div>
+              {kioskShowManualCategoryEdit ? (
+                <TextInput
+                  label="Code catalogue"
+                  size="sm"
+                  value={category}
+                  onChange={(e) => {
+                    setCategory(e.currentTarget.value);
+                    setCategoryArticleLabel('');
+                    setSelectedCategoryMeta(null);
+                  }}
+                  data-testid="cashflow-input-category"
+                />
+              ) : null}
+              {categoryPricingHint ? (
+                <div className={classes.kioskPriceHintCard} data-testid="cashflow-kiosk-price-catalog-hint">
+                  <span className={classes.kioskPriceHintLabel}>{categoryPricingHint.title}</span>
+                  <strong className={classes.kioskPriceHintValue}>{categoryPricingHint.value}</strong>
+                </div>
+              ) : null}
+              <KioskNumericPad
+                value={kioskPriceInput}
+                suffix="€"
+                onChange={setKioskPriceInput}
+                onValidate={commitKioskPrice}
+                onStepBack={goKioskWeight}
+                onStepForward={commitKioskPrice}
+                validateLabel="Valider et ajouter la ligne"
+                testIdPrefix="cashflow-kiosk-price"
               />
               <div className={classes.kioskLinePhaseActions}>
                 <Button type="button" variant="default" onClick={() => setKioskMicroPhase('weight')}>
                   Retour poids / quantité
                 </Button>
               </div>
-              <Button mt="md" onClick={onAdd} data-testid="cashflow-add-line">
+              <Button
+                mt="md"
+                onClick={commitKioskPrice}
+                data-testid="cashflow-add-line"
+              >
                 Ajouter la ligne
               </Button>
               <Text size="sm" mt="md" data-testid="cashflow-lines-count">
@@ -1335,6 +1761,15 @@ function TicketStep({
   );
 }
 
+function KioskUnifiedSaleLayout(): ReactNode {
+  return (
+    <div className={classes.kioskUnifiedLayout} data-testid="cashflow-kiosk-unified-layout">
+      <LinesStep kioskCategoryWorkspace kioskSurface />
+      <PaymentStep kioskSurface wide />
+    </div>
+  );
+}
+
 /**
  * Parcours nominal caisse v2 — FlowRenderer + appels API (`recyclique_sales_createSale`).
  */
@@ -1467,24 +1902,32 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
           />
         </div>
       ) : null}
-      <div className={kioskSaleSurface ? classes.kioskFlowWrap : undefined}>
-        <FlowRenderer
-          flowId="cashflow-nominal"
-          panels={panels}
-          activeIndex={activeIndex}
-          onActiveIndexChange={setActiveIndex}
-          keepMounted
-          presentation={kioskSaleSurface ? 'kiosk_steps' : 'default'}
-        />
-      </div>
-      <div className={`${classes.navRow}${kioskSaleSurface ? ` ${classes.navRowKiosk}` : ''}`}>
-        <Button variant="default" onClick={onPrev} disabled={activeIndex === 0} data-testid="cashflow-step-prev">
-          Précédent
-        </Button>
-        <Button onClick={onNext} disabled={activeIndex >= panels.length - 1} data-testid="cashflow-step-next">
-          Suivant
-        </Button>
-      </div>
+      {kioskSaleSurface ? (
+        <div className={classes.kioskFlowWrap}>
+          <KioskUnifiedSaleLayout />
+        </div>
+      ) : (
+        <>
+          <div>
+            <FlowRenderer
+              flowId="cashflow-nominal"
+              panels={panels}
+              activeIndex={activeIndex}
+              onActiveIndexChange={setActiveIndex}
+              keepMounted
+              presentation="default"
+            />
+          </div>
+          <div className={classes.navRow}>
+            <Button variant="default" onClick={onPrev} disabled={activeIndex === 0} data-testid="cashflow-step-prev">
+              Précédent
+            </Button>
+            <Button onClick={onNext} disabled={activeIndex >= panels.length - 1} data-testid="cashflow-step-next">
+              Suivant
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

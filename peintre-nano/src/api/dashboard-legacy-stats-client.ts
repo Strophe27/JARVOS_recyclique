@@ -202,6 +202,8 @@ export type CategoryListItem = {
   readonly is_active: boolean;
   readonly display_order: number;
   readonly shortcut_key?: string | null;
+  readonly price?: number | null;
+  readonly max_price?: number | null;
 };
 
 /** `GET /v1/categories/` */
@@ -233,6 +235,20 @@ export async function fetchCategoriesList(
     const sk = o.shortcut_key;
     const shortcut_key =
       sk === null || sk === undefined ? null : typeof sk === 'string' ? sk : String(sk);
+    const rawPrice = o.price;
+    const rawMaxPrice = o.max_price;
+    const price =
+      rawPrice === null || rawPrice === undefined || rawPrice === ''
+        ? null
+        : typeof rawPrice === 'number'
+          ? rawPrice
+          : Number(rawPrice);
+    const max_price =
+      rawMaxPrice === null || rawMaxPrice === undefined || rawMaxPrice === ''
+        ? null
+        : typeof rawMaxPrice === 'number'
+          ? rawMaxPrice
+          : Number(rawMaxPrice);
     return {
       id: id || name,
       name,
@@ -240,6 +256,8 @@ export async function fetchCategoriesList(
       is_active,
       display_order,
       shortcut_key,
+      price: Number.isFinite(price) ? price : null,
+      max_price: Number.isFinite(max_price) ? max_price : null,
     };
   });
 }

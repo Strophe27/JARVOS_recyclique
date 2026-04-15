@@ -32,6 +32,7 @@ from recyclic_api.schemas.reception import (
     CreateTicketRequest,
     CreateTicketResponse,
     CloseResponse,
+    ReceptionCategoryResponse,
     CreateLigneRequest,
     UpdateLigneRequest,
     LigneResponse,
@@ -57,6 +58,15 @@ _RECEPTION_DOMAIN_HTTP = {
     "not_found_status": status.HTTP_404_NOT_FOUND,
     "conflict_status": status.HTTP_409_CONFLICT,
 }
+
+
+def _is_operational_reception_category_name(name: str) -> bool:
+    normalized = name.strip().upper()
+    if normalized.startswith("ZZ_MCP_"):
+        return False
+    if normalized.startswith("NE PLUS UTILISER"):
+        return False
+    return True
 
 
 @router.post("/postes/open", response_model=OpenPosteResponse)
@@ -204,7 +214,7 @@ def add_ligne(
     }
 
 
-@router.get("/categories")
+@router.get("/categories", response_model=List[ReceptionCategoryResponse])
 def get_categories(
     db: Session = Depends(get_db),
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
@@ -217,15 +227,24 @@ def get_categories(
         ReceptionService(db).assert_nominal_reception_eligible(current_user)
     except AuthorizationError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    categories = db.query(Category).filter(
-        Category.is_active == True
-    ).all()
+    categories = (
+        db.query(Category)
+        .filter(
+            Category.is_active == True,
+            Category.deleted_at.is_(None),
+            Category.is_visible == True,
+        )
+        .order_by(Category.display_order_entry, Category.display_order, Category.name)
+        .all()
+    )
     return [
         {
             "id": str(cat.id),
-            "name": cat.name  # Story B48-P5: Nom court/rapide (toujours utilisé)
+            "name": cat.name,  # Story B48-P5: Nom court/rapide (toujours utilisé)
+            "parent_id": str(cat.parent_id) if cat.parent_id else None,
         }
         for cat in categories
+        if _is_operational_reception_category_name(cat.name)
     ]
 
 

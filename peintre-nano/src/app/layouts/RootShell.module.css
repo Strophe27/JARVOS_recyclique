@@ -156,3 +156,39 @@
 .rootMinimalChrome .navAppLegacyToolbar [data-nav-chrome='legacyToolbar'] {
   box-shadow: none;
 }
+
+/**
+ * Kiosque `/cash-register/sale` : `hideNav` + `minimalChrome` (shell live).
+ * Sans ce bloc, `.rootMinimalChrome` force une seule colonne et `display: none` sur `aside` :
+ * le ticket / finalisation existe dans le DOM mais n’est pas observable (story 11.3 parité legacy).
+ */
+.rootMinimalChrome.rootKioskNavHidden {
+  grid-template-columns:
+    1fr
+    minmax(var(--pn-shell-aside-min), var(--pn-shell-aside-max));
+  grid-template-areas:
+    'header header'
+    'main aside'
+    'footer footer';
+}
+
+.rootMinimalChrome.rootKioskNavHidden.rootMinimalChromeNoPageHeader {
+  grid-template-areas:
+    'main aside'
+    'footer footer';
+}
+
+.rootMinimalChrome.rootKioskNavHidden .aside {
+  display: block;
+  max-width: none;
+  min-width: 0;
+  padding: var(--pn-space-sm) var(--pn-space-md);
+  overflow: visible;
+  border: 1px solid var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+  opacity: 1;
+  pointer-events: auto;
+  background: var(--pn-color-surface);
+  color: var(--pn-color-text-muted);
+  font-size: var(--pn-font-size-sm);
+}

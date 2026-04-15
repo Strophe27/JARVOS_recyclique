@@ -193,20 +193,17 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('reception-nominal-wizard')).toBeTruthy();
     });
-    expect(screen.getByTestId('flow-renderer-reception-nominal')).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => {
       expect(screen.getByTestId('reception-poste-id').textContent).toContain(POSTE_ID);
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /2\. Ticket/i }));
     fireEvent.click(screen.getByTestId('reception-create-ticket'));
     await waitFor(() => {
       expect(screen.getByTestId('reception-ticket-id').textContent).toContain(TICKET_ID);
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /3\. Ligne/i }));
     await waitFor(() => {
       const step = screen.getByTestId('reception-step-ligne');
       expect(within(step).getByTestId('reception-select-category')).toBeTruthy();
@@ -215,15 +212,13 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
     fireEvent.change(screen.getByTestId('reception-input-notes'), {
       target: { value: 'note e2e story 7.1' },
     });
+    fireEvent.click(screen.getByTestId('reception-keypad-1'));
     fireEvent.click(screen.getByTestId('reception-add-ligne'));
     await waitFor(() => {
       expect(screen.getByTestId('reception-ticket-lignes-summary').textContent).toMatch(/Lignes côté serveur : 1/);
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /4\. Fermer ticket/i }));
     fireEvent.click(screen.getByTestId('reception-close-ticket'));
-
-    fireEvent.click(screen.getByRole('tab', { name: /5\. Fermer poste/i }));
     fireEvent.click(screen.getByTestId('reception-close-poste'));
 
     await waitFor(() => {
@@ -380,7 +375,6 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
       expect(screen.getByTestId('reception-poste-id').textContent).toContain(POSTE_ID);
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /2\. Ticket/i }));
     fireEvent.click(screen.getByTestId('reception-create-ticket'));
     await waitFor(() => {
       expect(screen.getByTestId('reception-ticket-id').textContent).toContain(TICKET_ID);

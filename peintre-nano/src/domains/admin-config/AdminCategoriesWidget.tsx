@@ -1,10 +1,6 @@
 import {
 
-  ActionIcon,
-
   Alert,
-
-  Badge,
 
   Button,
 
@@ -26,8 +22,6 @@ import {
 
   Stack,
 
-  Stepper,
-
   Switch,
 
   Table,
@@ -40,20 +34,7 @@ import {
 
 } from '@mantine/core';
 
-import {
-  ArrowDown,
-  ArrowDownAZ,
-  ArrowUp,
-  ChevronDown,
-  Download,
-  FileSpreadsheet,
-  FileText,
-  MoreHorizontal,
-  Plus,
-  RefreshCw,
-  Search,
-  Upload,
-} from 'lucide-react';
+import { ArrowDownAZ, ChevronDown, Download, FileSpreadsheet, FileText, Plus, RefreshCw, Search, Upload } from 'lucide-react';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
@@ -75,6 +56,12 @@ import {
 
   softDeleteCategoryForAdmin,
 
+  patchCategoryDisplayOrderEntryForAdmin,
+
+  patchCategoryDisplayOrderForAdmin,
+
+  patchCategoryVisibilityForAdmin,
+
   updateCategoryForAdmin,
 
   type CategoriesDataSource,
@@ -91,23 +78,39 @@ import {
 
 import { CategoryAdminFormModal, type CategoryFormSavePayload } from './categories/CategoryAdminFormModal';
 
+import { AdminCategoriesDndShell, AdminCategoriesSortableTableRows } from './categories/admin-categories-dnd-table';
+
 import { CategoryReparentDraftPanel } from './categories/CategoryReparentDraftPanel';
 
 import { buildCategoriesCsvLines, triggerBlobDownload, triggerCsvDownload } from './categories/category-admin-csv-export';
 
 import {
 
-  categoryBreadcrumbLabel,
+  filterCatsForReceptionVisibility,
 
   filterCatsForSearch,
 
+  filterFlatRowsHideCollapsedChildren,
+
   orderedRowsWithDepth,
+
+  parentIdsHavingChildren,
 
   type CategoriesSortBy,
 
 } from './categories/category-admin-display-model';
 
-import { swapCaisseOrderWithNeighbor, swapReceptionOrderWithNeighbor } from './categories/category-admin-reorder';
+import {
+
+  computeOrdersAfterDragWithinSiblings,
+
+  swapCaisseOrderWithNeighbor,
+
+  swapReceptionOrderWithNeighbor,
+
+  type CategoryDisplayOrderPatchItem,
+
+} from './categories/category-admin-reorder';
 
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 
@@ -121,81 +124,10 @@ import type { CashflowSubmitSurfaceError } from '../cashflow/cashflow-submit-err
 
 
 
-const moneyFr = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
-
-const dateTimeFr = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-
-
-
-function formatMoney(v: number | null | undefined): string {
-
-  if (v === null || v === undefined || Number.isNaN(v)) return '—';
-
-  return moneyFr.format(v);
-
-}
-
-
-
-function formatCreated(iso: string): string {
-
-  const t = Date.parse(iso);
-
-  if (Number.isNaN(t)) return '—';
-
-  return dateTimeFr.format(t);
-
-}
-
-
-
 type ActivationFilter = 'all' | 'active' | 'inactive';
 
-
-
-function statusBadge(c: CategoryAdminListRowDto): ReactNode {
-
-  if (c.deleted_at) {
-
-    return (
-
-      <Badge color="gray" variant="light">
-
-        Archivée
-
-      </Badge>
-
-    );
-
-  }
-
-  if (!c.is_active) {
-
-    return (
-
-      <Badge color="orange" variant="light">
-
-        Inactivée
-
-      </Badge>
-
-    );
-
-  }
-
-  return (
-
-    <Badge color="green" variant="light">
-
-      Activée
-
-    </Badge>
-
-  );
-
-}
-
-
+/** Filtre client sur `is_visible` (admin réception : liste complète depuis `/v1/categories/`, comme l’écran legacy). */
+type ReceptionVisibilityFilter = 'all' | 'visible' | 'hidden';
 
 const SORT_OPTIONS: { value: CategoriesSortBy; label: string }[] = [
 
@@ -213,11 +145,11 @@ const IMPORT_SUMMARY_LABELS: Record<string, string> = {
 
   total: 'Lignes de données (après en-tête)',
 
-  to_create: 'Nouvelles sous-catégories (décompte contrôle ; racines nouvelles non incluses)',
+  to_create: 'Nouvelles sous-catégories (décompte analyse ; racines nouvelles non incluses)',
 
-  to_update: 'Sous-catégories à mettre à jour (décompte contrôle ; critère prix à l’analyse)',
+  to_update: 'Sous-catégories à mettre à jour (décompte analyse ; critère prix à l’analyse)',
 
-  roots: 'Racines nouvelles distinctes (décompte contrôle)',
+  roots: 'Racines nouvelles distinctes (décompte analyse)',
 
   subs: 'Lignes avec sous-catégorie renseignée',
 
@@ -414,9 +346,9 @@ function formatCategoryImportExecuteOkMessage(imported: number, updated: number,
 
     imported === 0 && updated === 0
 
-      ? 'Le serveur ne signale aucune création ni mise à jour pour ce lot.'
+      ? 'Aucune ligne créée ni mise à jour pour ce lot.'
 
-      : `Compteur renvoyé par le serveur : ${imported} création(s), ${updated} mise(s) à jour (ce décompte peut différer du nombre de fiches visibles dans la liste).`;
+      : `${imported} création(s), ${updated} mise(s) à jour.`;
 
   return `${counts} Liste actualisée.${errTail}`;
 
@@ -436,9 +368,47 @@ type CategoriesServerImportDialog = {
 
 /**
 
- * Administration des catégories et tarifs : listes (configuration, caisse, réception) et écriture en vue configuration.
+ * Administration des catégories et tarifs : vues caisse / réception (legacy), import secondaire.
 
  */
+
+type MainCategoriesView = 'sale' | 'entry';
+
+function applyOrderPatchesToRows(
+
+  rows: readonly CategoryAdminListRowDto[],
+
+  patches: readonly CategoryDisplayOrderPatchItem[],
+
+  mainView: MainCategoriesView,
+
+): CategoryAdminListRowDto[] {
+
+  const byId = new Map(patches.map((p) => [p.categoryId, p]));
+
+  return rows.map((r) => {
+
+    const p = byId.get(r.id);
+
+    if (!p) return r;
+
+    if (mainView === 'entry' && p.display_order_entry !== undefined) {
+
+      return { ...r, display_order_entry: p.display_order_entry };
+
+    }
+
+    if (mainView === 'sale' && p.display_order !== undefined) {
+
+      return { ...r, display_order: p.display_order };
+
+    }
+
+    return r;
+
+  });
+
+}
 
 export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
@@ -448,11 +418,13 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
 
 
-  const [dataSource, setDataSource] = useState<CategoriesDataSource>('config');
+  const [mainView, setMainView] = useState<MainCategoriesView>('sale');
 
   const [includeArchived, setIncludeArchived] = useState(false);
 
   const [activationFilter, setActivationFilter] = useState<ActivationFilter>('all');
+
+  const [receptionVisibilityFilter, setReceptionVisibilityFilter] = useState<ReceptionVisibilityFilter>('all');
 
   const [sortBy, setSortBy] = useState<CategoriesSortBy>('order');
 
@@ -482,11 +454,13 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
   const importFileRef = useRef<HTMLInputElement>(null);
 
-  const importJourneyRef = useRef<HTMLDivElement>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const [importWorkingFileLabel, setImportWorkingFileLabel] = useState<string | null>(null);
 
   const [importPreview, setImportPreview] = useState<CategoriesServerImportDialog | null>(null);
+
+  const [importStagedFile, setImportStagedFile] = useState<File | null>(null);
 
   const [importBusy, setImportBusy] = useState(false);
 
@@ -506,9 +480,13 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
   const [archiveBusy, setArchiveBusy] = useState(false);
 
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
 
 
-  const mutationsEnabled = dataSource === 'config';
+
+  const mutationsEnabled = true;
+
+  const listSortSource: CategoriesDataSource = mainView === 'entry' ? 'entry' : 'sale';
 
 
 
@@ -518,15 +496,32 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
     setError(null);
 
+    /** Admin réception : liste complète `GET /v1/categories/` (toutes visibilités), pas `entry-tickets` qui masque les fiches invisibles. */
+    const listSource: CategoriesDataSource =
+
+      includeArchived ? 'config' : mainView === 'entry' ? 'config' : 'sale';
+
     const res = await getCategoriesListForAdmin(auth, {
 
-      source: dataSource,
+      source: listSource,
 
-      include_archived: dataSource === 'config' ? includeArchived : undefined,
+      include_archived: includeArchived ? true : undefined,
 
       is_active:
 
-        activationFilter === 'active' ? true : activationFilter === 'inactive' ? false : undefined,
+        mainView === 'entry'
+
+          ? undefined
+
+          : activationFilter === 'active'
+
+            ? true
+
+            : activationFilter === 'inactive'
+
+              ? false
+
+              : undefined,
 
     });
 
@@ -544,9 +539,19 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
     setRows(res.data);
 
+    setCollapsedIds(parentIdsHavingChildren(res.data));
+
     setBusy(false);
 
-  }, [auth, dataSource, includeArchived, activationFilter]);
+  }, [auth, mainView, includeArchived, activationFilter]);
+
+
+
+  useEffect(() => {
+
+    setReceptionVisibilityFilter('all');
+
+  }, [mainView]);
 
 
 
@@ -570,47 +575,43 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
 
 
-  const filtered = useMemo(() => filterCatsForSearch(rows, search), [rows, search]);
+  const searchFiltered = useMemo(() => filterCatsForSearch(rows, search), [rows, search]);
 
-  const displayRows = useMemo(
+  const listFiltered = useMemo(() => {
 
-    () => orderedRowsWithDepth(filtered, sortBy, dataSource),
+    if (mainView !== 'entry') return searchFiltered;
 
-    [filtered, sortBy, dataSource],
+    return filterCatsForReceptionVisibility(searchFiltered, receptionVisibilityFilter);
+
+  }, [mainView, searchFiltered, receptionVisibilityFilter]);
+
+  const orderedFlat = useMemo(
+
+    () => orderedRowsWithDepth(listFiltered, sortBy, listSortSource),
+
+    [listFiltered, sortBy, listSortSource],
 
   );
 
+  const displayRows = useMemo(
 
+    () => filterFlatRowsHideCollapsedChildren(orderedFlat, collapsedIds),
 
-  const importJourneyActive = useMemo(() => {
+    [orderedFlat, collapsedIds],
 
-    if (importAnalyzeBusy) return 1;
+  );
 
-    if (importPreview) {
-
-      if (importPreview.analyze.session_id) return 2;
-
-      return 1;
-
-    }
-
-    return 0;
-
-  }, [importAnalyzeBusy, importPreview]);
+  const branchIds = useMemo(() => parentIdsHavingChildren(rows), [rows]);
 
 
 
   const subtitle =
 
-    dataSource === 'config'
+    mainView === 'sale'
 
-      ? 'Hiérarchie, tarifs, visibilité et ordres : modifiez chaque fiche ou réordonnez les lignes sœurs depuis le menu.'
+      ? 'Même arborescence et ordre qu’à l’encaissement.'
 
-      : dataSource === 'sale'
-
-        ? "Lecture seule — même liste qu'à l'encaissement. Modifiez les fiches en vue Configuration."
-
-        : "Lecture seule — même liste qu'à la réception dépôt. Modifiez les fiches en vue Configuration.";
+      : 'Même arborescence et ordre qu’à la réception dépôt.';
 
 
 
@@ -628,7 +629,7 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
 
-    const name = `categories-${dataSource}-${stamp}.csv`;
+    const name = `categories-${mainView}-${stamp}.csv`;
 
     const lines = buildCategoriesCsvLines(displayRows, rows);
 
@@ -642,7 +643,7 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
     });
 
-  }, [dataSource, displayRows, rows]);
+  }, [mainView, displayRows, rows]);
 
 
 
@@ -704,41 +705,49 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
 
 
-  const onImportFileSelected = useCallback(
+  const onImportFileSelected = useCallback((file: File | null) => {
 
-    async (file: File | null) => {
+    if (!file) return;
 
-      if (!file) return;
+    setError(null);
 
-      setError(null);
+    setImportPreview(null);
 
-      setImportWorkingFileLabel(file.name);
+    setImportWorkingFileLabel(file.name);
 
-      setImportAnalyzeBusy(true);
+    setImportStagedFile(file);
 
-      const res = await analyzeCategoriesImportForAdmin(auth, file);
+  }, []);
 
-      setImportAnalyzeBusy(false);
 
-      if (!res.ok) {
 
-        setImportWorkingFileLabel(null);
+  const runImportAnalyze = useCallback(async () => {
 
-        setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+    if (!importStagedFile) return;
 
-        return;
+    setError(null);
 
-      }
+    setImportAnalyzeBusy(true);
 
-      setImportDeleteExisting(false);
+    const res = await analyzeCategoriesImportForAdmin(auth, importStagedFile);
 
-      setImportPreview({ fileName: file.name, analyze: res.data });
+    setImportAnalyzeBusy(false);
 
-    },
+    if (!res.ok) {
 
-    [auth],
+      setImportPreview(null);
 
-  );
+      setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+
+      return;
+
+    }
+
+    setImportDeleteExisting(false);
+
+    setImportPreview({ fileName: importStagedFile.name, analyze: res.data });
+
+  }, [auth, importStagedFile]);
 
 
 
@@ -747,6 +756,8 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
     if (importBusy || importAnalyzeBusy) return;
 
     setImportPreview(null);
+
+    setImportStagedFile(null);
 
     setImportWorkingFileLabel(null);
 
@@ -788,7 +799,11 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
     setImportPreview(null);
 
+    setImportStagedFile(null);
+
     setImportWorkingFileLabel(null);
+
+    setImportModalOpen(false);
 
     await load();
 
@@ -818,7 +833,45 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
       for (const op of ops) {
 
-        const res = await updateCategoryForAdmin(auth, op.categoryId, op.body);
+        const b = op.body;
+
+        const keys = (Object.keys(b) as (keyof CategoryV1UpdateRequestBody)[]).filter(
+
+          (k) => b[k] !== undefined,
+
+        );
+
+        let res;
+
+        if (
+
+          keys.length === 1 &&
+
+          keys[0] === 'display_order' &&
+
+          typeof b.display_order === 'number'
+
+        ) {
+
+          res = await patchCategoryDisplayOrderForAdmin(auth, op.categoryId, b.display_order);
+
+        } else if (
+
+          keys.length === 1 &&
+
+          keys[0] === 'display_order_entry' &&
+
+          typeof b.display_order_entry === 'number'
+
+        ) {
+
+          res = await patchCategoryDisplayOrderEntryForAdmin(auth, op.categoryId, b.display_order_entry);
+
+        } else {
+
+          res = await updateCategoryForAdmin(auth, op.categoryId, b);
+
+        }
 
         if (!res.ok) {
 
@@ -841,6 +894,86 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
     },
 
     [auth, load],
+
+  );
+
+
+
+  const applySiblingDragOrders = useCallback(
+
+    async (activeId: string, overId: string) => {
+
+      const patches = computeOrdersAfterDragWithinSiblings(rows, mainView, activeId, overId);
+
+      if (!patches?.length) {
+
+        return;
+
+      }
+
+      const toSend = patches.filter((p) => {
+
+        const r = rows.find((x) => x.id === p.categoryId);
+
+        if (!r) return false;
+
+        if (mainView === 'entry') return r.display_order_entry !== p.display_order_entry;
+
+        return r.display_order !== p.display_order;
+
+      });
+
+      if (toSend.length === 0) {
+
+        return;
+
+      }
+
+      setRows((prev) => applyOrderPatchesToRows(prev, patches, mainView));
+
+      setBusy(true);
+
+      setError(null);
+
+      for (const p of toSend) {
+
+        const res =
+
+          mainView === 'entry'
+
+            ? await patchCategoryDisplayOrderEntryForAdmin(
+
+                auth,
+
+                p.categoryId,
+
+                p.display_order_entry as number,
+
+              )
+
+            : await patchCategoryDisplayOrderForAdmin(auth, p.categoryId, p.display_order as number);
+
+        if (!res.ok) {
+
+          setBusy(false);
+
+          setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+
+          return;
+
+        }
+
+      }
+
+      setBusy(false);
+
+      setOkFlash({ title: 'Ordre mis à jour', message: 'Réorganisation enregistrée.' });
+
+      await load();
+
+    },
+
+    [rows, mainView, auth, load],
 
   );
 
@@ -1020,7 +1153,93 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
 
 
-  const colCount = 10;
+  const [visibilityBusyId, setVisibilityBusyId] = useState<string | null>(null);
+
+  const [caisseBusyId, setCaisseBusyId] = useState<string | null>(null);
+
+
+
+  const handleReceptionVisibilityToggle = useCallback(
+
+    async (c: CategoryAdminListRowDto, nextVisible: boolean) => {
+
+      if (c.deleted_at || !mutationsEnabled) return;
+
+      setVisibilityBusyId(c.id);
+
+      setError(null);
+
+      const res = await patchCategoryVisibilityForAdmin(auth, c.id, { is_visible: nextVisible });
+
+      setVisibilityBusyId(null);
+
+      if (!res.ok) {
+
+        setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+
+        return;
+
+      }
+
+      setOkFlash({
+
+        title: 'Visibilité réception',
+
+        message: nextVisible ? `${res.data.name} : visible à la réception.` : `${res.data.name} : masquée à la réception.`,
+
+      });
+
+      await load();
+
+    },
+
+    [auth, load, mutationsEnabled],
+
+  );
+
+
+
+  const handleCaisseActiveToggle = useCallback(
+
+    async (c: CategoryAdminListRowDto, nextActive: boolean) => {
+
+      if (c.deleted_at || !mutationsEnabled) return;
+
+      setCaisseBusyId(c.id);
+
+      setError(null);
+
+      const res = await updateCategoryForAdmin(auth, c.id, { is_active: nextActive });
+
+      setCaisseBusyId(null);
+
+      if (!res.ok) {
+
+        setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+
+        return;
+
+      }
+
+      setOkFlash({
+
+        title: 'Visibilité caisse',
+
+        message: nextActive ? `${res.data.name} : visible à la caisse.` : `${res.data.name} : masquée à la caisse.`,
+
+      });
+
+      await load();
+
+    },
+
+    [auth, load, mutationsEnabled],
+
+  );
+
+
+
+  const tableColCount = 7;
 
 
 
@@ -1046,7 +1265,7 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
           e.currentTarget.value = '';
 
-          void onImportFileSelected(f);
+          onImportFileSelected(f);
 
         }}
 
@@ -1278,13 +1497,9 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
             leftSection={<Upload size={16} />}
 
-            onClick={() => {
+            onClick={() => setImportModalOpen(true)}
 
-              importJourneyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-            }}
-
-            disabled={busy || !mutationsEnabled}
+            disabled={busy}
 
             data-testid="categories-import-csv-button"
 
@@ -1316,33 +1531,95 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
 
 
-      <SegmentedControl
+      <Group align="center" gap="sm" wrap="wrap">
 
-        value={dataSource}
+        <SegmentedControl
 
-        onChange={(v) => setDataSource(v as CategoriesDataSource)}
+          value={mainView}
 
-        data={[
+          onChange={(v) => setMainView(v as MainCategoriesView)}
 
-          { label: 'Configuration', value: 'config' },
+          data={[
 
-          { label: 'Caisse', value: 'sale' },
+            { label: 'Caisse', value: 'sale' },
 
-          { label: 'Réception', value: 'entry' },
+            { label: 'Réception', value: 'entry' },
 
-        ]}
+          ]}
 
-        aria-label="Source de la liste"
+          aria-label="Vue caisse ou réception"
 
-        data-testid="categories-data-source"
+          data-testid="categories-data-source"
 
-      />
+        />
+
+        <Button
+
+          type="button"
+
+          variant="default"
+
+          size="xs"
+
+          onClick={() => setCollapsedIds(new Set())}
+
+          disabled={busy || branchIds.size === 0}
+
+          data-testid="categories-tree-expand-all"
+
+        >
+
+          Tout déplier
+
+        </Button>
+
+        <Button
+
+          type="button"
+
+          variant="default"
+
+          size="xs"
+
+          onClick={() => setCollapsedIds(new Set(branchIds))}
+
+          disabled={busy || branchIds.size === 0}
+
+          data-testid="categories-tree-collapse-all"
+
+        >
+
+          Tout replier
+
+        </Button>
+
+      </Group>
 
 
 
-      {dataSource === 'config' ? (
+      <Modal
 
-        <Paper ref={importJourneyRef} withBorder p="md" radius="md" data-testid="categories-import-journey">
+        opened={importModalOpen}
+
+        onClose={() => {
+
+          if (importBusy || importAnalyzeBusy) return;
+
+          setImportModalOpen(false);
+
+          resetImportJourney();
+
+        }}
+
+        title="Importer des catégories"
+
+        size="xl"
+
+      >
+
+        <Paper withBorder p="md" radius="md" data-testid="categories-import-journey" pos="relative">
+
+          <LoadingOverlay visible={importBusy || importAnalyzeBusy} zIndex={5} />
 
           <Stack gap="md">
 
@@ -1352,9 +1629,9 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                 <Title order={4}>Importer</Title>
 
-                <Text size="sm" c="dimmed" mt={6} maw={640}>
+                <Text size="sm" c="dimmed" mt={6} maw={520}>
 
-                  Modèle CSV, fichier, contrôle automatique, puis enregistrement si tout est bon.
+                  Modèle, fichier CSV, analyse puis import.
 
                 </Text>
 
@@ -1384,29 +1661,19 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
             </Group>
 
-            <Stepper active={importJourneyActive} size="sm" allowNextStepsSelect={false}>
-
-              <Stepper.Step label="Préparation" description="Modèle et fichier" />
-
-              <Stepper.Step label="Contrôle" description="Vérification automatique" />
-
-              <Stepper.Step label="Enregistrement" description="Appliquer les changements" />
-
-            </Stepper>
-
-            <Stack gap="md" mt="md" data-testid="categories-import-journey-body">
+            <Stack gap="md" mt={0} data-testid="categories-import-journey-body">
 
               <div>
 
-                <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={6}>
+                <Text size="sm" fw={600} mb="xs">
 
-                  1. Préparation
+                  Fichier
 
                 </Text>
 
-                <Text size="sm" mb="sm">
+                <Text size="sm" c="dimmed" mb="sm" maw={480}>
 
-                  Téléchargez le modèle pour voir les colonnes attendues, puis sélectionnez votre fichier CSV.
+                  Modèle = colonnes attendues. Puis choisissez le CSV à traiter.
 
                 </Text>
 
@@ -1442,8 +1709,6 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                     disabled={busy || importAnalyzeBusy}
 
-                    loading={importAnalyzeBusy}
-
                     data-testid="categories-import-choose-file"
 
                   >
@@ -1470,23 +1735,43 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
               <Paper withBorder p="sm" radius="md" data-testid="categories-import-analyze-zone">
 
-                <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={6}>
+                <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm" mb="xs">
 
-                  2. Vérification du fichier
+                  <Text size="sm" fw={600}>
 
-                </Text>
+                    Analyser
+
+                  </Text>
+
+                  <Button
+
+                    variant="filled"
+
+                    size="sm"
+
+                    loading={importAnalyzeBusy}
+
+                    disabled={!importStagedFile || importAnalyzeBusy}
+
+                    onClick={() => void runImportAnalyze()}
+
+                    data-testid="categories-import-analyze"
+
+                  >
+
+                    Analyser
+
+                  </Button>
+
+                </Group>
 
                 {!importPreview && !importAnalyzeBusy ? (
 
-                  <Stack gap="sm">
-                    <Badge color="gray" variant="light" w="fit-content">
-                      En attente du fichier
-                    </Badge>
+                  <Text size="sm" c="dimmed" maw={520}>
 
-                    <Text size="sm" c="dimmed" maw={560}>
-                      Dès le choix du fichier, la vérification démarre et le résultat s&apos;affiche ici.
-                    </Text>
-                  </Stack>
+                    Après le fichier, lancez <strong>Analyser</strong> pour valider le lot.
+
+                  </Text>
 
                 ) : null}
 
@@ -1496,7 +1781,7 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                     <Loader size="sm" />
 
-                    <Text size="sm">Contrôle en cours…</Text>
+                    <Text size="sm">Analyse en cours…</Text>
 
                   </Group>
 
@@ -1554,13 +1839,7 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                       <Text size="sm" fw={600} mb={4}>
 
-                        Résumé du contrôle
-
-                      </Text>
-
-                      <Text size="xs" c="dimmed" mb={6} maw={640}>
-
-                        Chaque ligne du fichier peut concerner une racine et/ou une sous-catégorie : les totaux « à créer » et « à mettre à jour » sont ceux renvoyés par le contrôle serveur et portent sur les sous-catégories ; les racines nouvelles sont indiquées séparément ci-dessous lorsque le contrôle les expose.
+                        Résumé de l&apos;analyse
 
                       </Text>
 
@@ -1578,7 +1857,7 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                         <Text size="xs" fw={600}>
 
-                          Extrait compris dans le contrôle
+                          Extrait compris dans l&apos;analyse
 
                         </Text>
 
@@ -1610,7 +1889,9 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                       <Text size="sm" c="dimmed">
 
-                        L’enregistrement n’est pas proposé tant que le contrôle signale un blocage.
+                        Tant qu&apos;un blocage est signalé, <strong>Exécuter l&apos;import</strong> reste
+
+                        indisponible.
 
                       </Text>
 
@@ -1618,7 +1899,7 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                       <Text size="sm" c="dimmed">
 
-                        Le fichier est accepté : vous pouvez passer à l’enregistrement.
+                        Passez à <strong>Exécuter l&apos;import</strong> ci-dessous.
 
                       </Text>
 
@@ -1632,21 +1913,21 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
               <Paper withBorder p="sm" radius="md" variant="light" data-testid="categories-import-execute-zone">
 
-                <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={6}>
+                <Text size="sm" fw={600} mb="xs">
 
-                  3. Enregistrement
+                  Exécuter l&apos;import
 
                 </Text>
 
-                {importPreview?.analyze.session_id ? (
+                <Stack gap="sm">
 
-                  <Stack gap="sm">
+                  {importPreview?.analyze.session_id ? (
 
                     <Switch
 
                       label="Remplacer toutes les catégories existantes avant d’importer"
 
-                      description="Option rare et risquée : à n’utiliser qu’en connaissance de cause."
+                      description="À n’utiliser qu’en connaissance de cause."
 
                       checked={importDeleteExisting}
 
@@ -1658,41 +1939,43 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
                     />
 
-                    <Group>
+                  ) : null}
 
-                      <Button
+                  <Group>
 
-                        loading={importBusy}
+                    <Button
 
-                        onClick={() => void handleImportConfirm()}
+                      variant="filled"
 
-                        disabled={importAnalyzeBusy}
+                      size="sm"
 
-                        data-testid="categories-import-confirm"
+                      loading={importBusy}
 
-                      >
+                      onClick={() => void handleImportConfirm()}
 
-                        Appliquer les changements
+                      disabled={importBusy || importAnalyzeBusy || !importPreview?.analyze.session_id}
 
-                      </Button>
+                      data-testid="categories-import-confirm"
 
-                    </Group>
+                    >
 
-                  </Stack>
+                      Exécuter l&apos;import
 
-                ) : (
+                    </Button>
 
-                  <Stack gap="sm">
-                    <Badge color="gray" variant="light" w="fit-content">
-                      En attente du résultat du contrôle
-                    </Badge>
+                  </Group>
 
-                    <Text size="sm" c="dimmed">
-                      Cette étape s&apos;active lorsque le fichier est validé sans blocage.
+                  {!importPreview?.analyze.session_id && !importAnalyzeBusy ? (
+
+                    <Text size="sm" c="dimmed" maw={520}>
+
+                      S&apos;active après une analyse sans erreur bloquante.
+
                     </Text>
-                  </Stack>
 
-                )}
+                  ) : null}
+
+                </Stack>
 
               </Paper>
 
@@ -1702,67 +1985,19 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
         </Paper>
 
-      ) : null}
-
-
-
-      {dataSource === 'entry' ? (
-
-        <Alert color="blue" title="Vue réception">
-
-          <Text size="sm">
-
-            Même liste et ordre qu&apos;à la saisie d&apos;un dépôt. Édition des fiches : vue <strong>Configuration</strong>.
-
-          </Text>
-
-        </Alert>
-
-      ) : null}
-
-
-
-      {dataSource === 'sale' ? (
-
-        <Alert color="blue" title="Vue caisse">
-
-          <Text size="sm">
-
-            Même liste qu&apos;à l&apos;encaissement. Édition des fiches : vue <strong>Configuration</strong>.
-
-          </Text>
-
-        </Alert>
-
-      ) : null}
+      </Modal>
 
 
 
       {error ? <CashflowClientErrorAlert error={error} /> : null}
 
-      {dataSource === 'config' && !includeArchived ? (
-
-        <Alert color="gray" variant="light" title="Archives masquées" data-testid="categories-restore-hint">
-
-          <Text size="sm">
-
-            Activez <strong>Afficher les éléments archivés</strong>, puis menu <strong>⋯</strong> sur une ligne archivée
-
-            → <strong>Restaurer</strong>.
-
-          </Text>
-
-        </Alert>
-
-      ) : null}
-
-      {dataSource === 'config' && includeArchived && rows.some((r) => r.deleted_at) ? (
+      {includeArchived && rows.some((r) => r.deleted_at) ? (
 
         <Alert color="teal" variant="light" title="Fiches archivées visibles" data-testid="categories-restore-active-hint">
 
           <Text size="sm">
 
-            Menu <strong>⋯</strong> → <strong>Restaurer</strong> pour remettre une fiche en circulation.
+            Utilisez le bouton <strong>Restaurer</strong> sur la ligne pour remettre une fiche en circulation.
 
           </Text>
 
@@ -1772,41 +2007,77 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
       <Group align="flex-end" wrap="wrap" gap="md">
 
-        <SegmentedControl
+        {mainView === 'sale' ? (
 
-          value={activationFilter}
+          <SegmentedControl
 
-          onChange={(v) => setActivationFilter(v as ActivationFilter)}
+            value={activationFilter}
 
-          data={[
+            onChange={(v) => setActivationFilter(v as ActivationFilter)}
 
-            { label: 'Toutes', value: 'all' },
+            data={[
 
-            { label: 'Actives', value: 'active' },
+              { label: 'Toutes', value: 'all' },
 
-            { label: 'Inactives', value: 'inactive' },
+              { label: 'Proposées caisse', value: 'active' },
 
-          ]}
+              { label: 'Non proposées caisse', value: 'inactive' },
 
-          aria-label="Filtrer par activation"
+            ]}
 
-          data-testid="categories-activation-filter"
+            aria-label="Filtrer les fiches proposées ou non à la caisse"
 
-        />
+            data-testid="categories-activation-filter"
 
-        <Switch
+          />
 
-          label="Afficher les éléments archivés"
+        ) : (
 
-          description="Nécessaire pour voir les fiches archivées et l'action Restaurer."
+          <SegmentedControl
 
-          checked={includeArchived}
+            value={receptionVisibilityFilter}
 
-          onChange={(e) => setIncludeArchived(e.currentTarget.checked)}
+            onChange={(v) => setReceptionVisibilityFilter(v as ReceptionVisibilityFilter)}
 
-          disabled={busy || dataSource !== 'config'}
+            data={[
 
-        />
+              { label: 'Toutes', value: 'all' },
+
+              { label: 'Visibles réception', value: 'visible' },
+
+              { label: 'Masquées réception', value: 'hidden' },
+
+            ]}
+
+            aria-label="Filtrer par visibilité à la réception (tickets dépôt)"
+
+            data-testid="categories-reception-visibility-filter"
+
+          />
+
+        )}
+
+        <Stack gap={6} align="flex-start" maw={420}>
+
+          <Switch
+
+            label="Afficher les fiches archivées"
+
+            checked={includeArchived}
+
+            onChange={(e) => setIncludeArchived(e.currentTarget.checked)}
+
+            disabled={busy}
+
+          />
+
+          <Text size="xs" c="dimmed" data-testid="categories-archived-switch-hint">
+
+            Activer « Afficher les fiches archivées », puis utiliser le bouton Restaurer sur la ligne concernée.
+
+          </Text>
+
+        </Stack>
 
         <TextInput
 
@@ -1845,18 +2116,6 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
         />
 
       </Group>
-
-
-
-      {dataSource !== 'config' ? (
-
-        <Text size="xs" c="dimmed">
-
-          L&apos;option archives ne s&apos;applique qu&apos;en vue Configuration.
-
-        </Text>
-
-      ) : null}
 
 
 
@@ -1916,385 +2175,163 @@ export function AdminCategoriesWidget(_: RegisteredWidgetProps): ReactNode {
 
         <LoadingOverlay visible={busy} zIndex={1} />
 
-        <Table.ScrollContainer minWidth={920} type="native">
+        <AdminCategoriesDndShell
 
-          <Table striped highlightOnHover verticalSpacing="sm">
+          dndActive={displayRows.length > 0}
 
-            <Table.Thead>
+          rows={rows}
 
-              <Table.Tr>
+          onApplySiblingDrag={applySiblingDragOrders}
 
-                <Table.Th>Libellé</Table.Th>
+        >
 
-                <Table.Th>Tarif</Table.Th>
+          <Table.ScrollContainer minWidth={560} type="native">
 
-                <Table.Th>Plafond</Table.Th>
+            <Table
 
-                <Table.Th>Visible dépôt</Table.Th>
+              striped
 
-                <Table.Th>Ordre caisse</Table.Th>
+              highlightOnHover
 
-                <Table.Th>Ordre réception</Table.Th>
+              withTableBorder
 
-                <Table.Th>Raccourci</Table.Th>
+              withRowBorders
 
-                <Table.Th>Création</Table.Th>
+              verticalSpacing="md"
 
-                <Table.Th>État</Table.Th>
+              style={{ fontSize: '13px', borderCollapse: 'separate', borderSpacing: 0 }}
 
-                <Table.Th w={56} ta="center" aria-label="Actions pour chaque ligne">
+            >
 
-                  <Text size="xs" c="dimmed" ff="monospace">
+              <Table.Thead>
 
-                    ···
+                <Table.Tr style={{ background: 'var(--mantine-color-gray-0)' }}>
 
-                  </Text>
+                  <Table.Th
 
-                </Table.Th>
+                    w={44}
 
-              </Table.Tr>
+                    aria-label={
 
-            </Table.Thead>
+                      mainView === 'sale'
 
-            <Table.Tbody>
+                        ? 'Ordre à la caisse : glisser-déposer la poignée sur une ligne du même niveau'
 
-              {displayRows.length === 0 && !busy ? (
+                        : 'Ordre à la réception : glisser-déposer la poignée sur une ligne du même niveau'
 
-                <Table.Tr>
+                    }
 
-                  <Table.Td colSpan={colCount}>
+                  />
 
-                    <Text size="sm" c="dimmed" py="md" ta="center">
+                  <Table.Th>Libellé</Table.Th>
 
-                      Aucune catégorie à afficher pour le moment.
+                  <Table.Th>Tarif</Table.Th>
 
-                    </Text>
+                  <Table.Th>Plafond</Table.Th>
 
-                  </Table.Td>
+                  <Table.Th w={132} title="Proposée ou non à l’encaissement">
+
+                    Caisse
+
+                  </Table.Th>
+
+                  <Table.Th w={132} title="Visible ou masquée aux tickets dépôt">
+
+                    Réception
+
+                  </Table.Th>
+
+                  <Table.Th miw={200} aria-label="Actions pour chaque ligne">
+
+                    Actions
+
+                  </Table.Th>
 
                 </Table.Tr>
 
-              ) : null}
+              </Table.Thead>
 
-              {displayRows.map(({ row: c, depth }) => {
+              <Table.Tbody>
 
-                const breadcrumb = categoryBreadcrumbLabel(rows, c.id);
+                {displayRows.length === 0 && !busy ? (
 
-                const archived = Boolean(c.deleted_at);
+                  <Table.Tr>
 
-                const caisseUp = !archived ? swapCaisseOrderWithNeighbor(rows, c.id, 'up') : null;
+                    <Table.Td colSpan={tableColCount}>
 
-                const caisseDown = !archived ? swapCaisseOrderWithNeighbor(rows, c.id, 'down') : null;
+                      <Text size="sm" c="dimmed" py="md" ta="center">
 
-                const recvUp = !archived ? swapReceptionOrderWithNeighbor(rows, c.id, 'up') : null;
-
-                const recvDown = !archived ? swapReceptionOrderWithNeighbor(rows, c.id, 'down') : null;
-
-                return (
-
-                  <Table.Tr key={c.id}>
-
-                    <Table.Td>
-
-                      <div style={{ paddingLeft: depth * 18 }}>
-
-                        <Text size="sm" fw={500}>
-
-                          {c.name}
-
-                        </Text>
-
-                        {c.official_name ? (
-
-                          <Text size="xs" c="dimmed">
-
-                            {c.official_name}
-
-                          </Text>
-
-                        ) : null}
-
-                        {breadcrumb !== c.name ? (
-
-                          <Text size="xs" c="dimmed" lineClamp={2} title={breadcrumb}>
-
-                            {breadcrumb}
-
-                          </Text>
-
-                        ) : null}
-
-                      </div>
-
-                    </Table.Td>
-
-                    <Table.Td>
-
-                      <Text size="sm">{formatMoney(c.price ?? null)}</Text>
-
-                    </Table.Td>
-
-                    <Table.Td>
-
-                      <Text size="sm">{formatMoney(c.max_price ?? null)}</Text>
-
-                    </Table.Td>
-
-                    <Table.Td>
-
-                      <Text size="sm">{c.is_visible ? 'Oui' : 'Non'}</Text>
-
-                    </Table.Td>
-
-                    <Table.Td>
-
-                      <Text size="sm">{c.display_order}</Text>
-
-                    </Table.Td>
-
-                    <Table.Td>
-
-                      <Text size="sm">{c.display_order_entry}</Text>
-
-                    </Table.Td>
-
-                    <Table.Td>
-
-                      <Text size="sm" ff="monospace">
-
-                        {c.shortcut_key?.trim() ? c.shortcut_key : '—'}
+                        Aucune catégorie à afficher pour le moment.
 
                       </Text>
 
                     </Table.Td>
 
-                    <Table.Td>
-
-                      <Text size="sm">{formatCreated(c.created_at)}</Text>
-
-                    </Table.Td>
-
-                    <Table.Td>{statusBadge(c)}</Table.Td>
-
-                    <Table.Td>
-
-                      <Menu shadow="md" width={240} withinPortal={false}>
-
-                        <Menu.Target>
-
-                          <ActionIcon
-
-                            variant="subtle"
-
-                            color="gray"
-
-                            aria-label={`Actions pour ${c.name}`}
-
-                            data-testid={`category-row-actions-${c.id}`}
-
-                            onClick={(e) => e.stopPropagation()}
-
-                          >
-
-                            <MoreHorizontal size={18} />
-
-                          </ActionIcon>
-
-                        </Menu.Target>
-
-                        <Menu.Dropdown>
-
-                          {c.deleted_at ? (
-
-                            <Menu.Item
-
-                              onClick={() => void handleRestore(c.id)}
-
-                              disabled={!mutationsEnabled || busy}
-
-                              data-testid={`category-restore-${c.id}`}
-
-                            >
-
-                              Restaurer
-
-                            </Menu.Item>
-
-                          ) : (
-
-                            <>
-
-                              <Menu.Item
-
-                                onClick={() => openEdit(c)}
-
-                                disabled={!mutationsEnabled || busy}
-
-                                data-testid={`category-edit-open-${c.id}`}
-
-                              >
-
-                                Modifier
-
-                              </Menu.Item>
-
-                              <Menu.Item
-
-                                leftSection={<ArrowUp size={14} />}
-
-                                disabled={!mutationsEnabled || busy || caisseUp === null}
-
-                                onClick={() => {
-
-                                  const ops = caisseUp;
-
-                                  if (ops) void applyReorderPair(ops);
-
-                                }}
-
-                                data-testid={`category-order-caisse-up-${c.id}`}
-
-                              >
-
-                                Monter (caisse)
-
-                              </Menu.Item>
-
-                              <Menu.Item
-
-                                leftSection={<ArrowDown size={14} />}
-
-                                disabled={!mutationsEnabled || busy || caisseDown === null}
-
-                                onClick={() => {
-
-                                  const ops = caisseDown;
-
-                                  if (ops) void applyReorderPair(ops);
-
-                                }}
-
-                                data-testid={`category-order-caisse-down-${c.id}`}
-
-                              >
-
-                                Descendre (caisse)
-
-                              </Menu.Item>
-
-                              <Menu.Item
-
-                                leftSection={<ArrowUp size={14} />}
-
-                                disabled={!mutationsEnabled || busy || recvUp === null}
-
-                                onClick={() => {
-
-                                  const ops = recvUp;
-
-                                  if (ops) void applyReorderPair(ops);
-
-                                }}
-
-                                data-testid={`category-order-reception-up-${c.id}`}
-
-                              >
-
-                                Monter (réception)
-
-                              </Menu.Item>
-
-                              <Menu.Item
-
-                                leftSection={<ArrowDown size={14} />}
-
-                                disabled={!mutationsEnabled || busy || recvDown === null}
-
-                                onClick={() => {
-
-                                  const ops = recvDown;
-
-                                  if (ops) void applyReorderPair(ops);
-
-                                }}
-
-                                data-testid={`category-order-reception-down-${c.id}`}
-
-                              >
-
-                                Descendre (réception)
-
-                              </Menu.Item>
-
-                              <Menu.Item
-
-                                onClick={() => {
-
-                                  setReparentCategoryId(c.id);
-
-                                  setReparentOpen(true);
-
-                                }}
-
-                                disabled={!mutationsEnabled || busy}
-
-                                data-testid={`category-reparent-open-${c.id}`}
-
-                              >
-
-                                Reclasser
-
-                              </Menu.Item>
-
-                              <Menu.Item
-
-                                color="orange"
-
-                                onClick={() => setConfirmArchive(c)}
-
-                                disabled={!mutationsEnabled || busy}
-
-                                data-testid={`category-archive-open-${c.id}`}
-
-                              >
-
-                                Archiver
-
-                              </Menu.Item>
-
-                            </>
-
-                          )}
-
-                        </Menu.Dropdown>
-
-                      </Menu>
-
-                    </Table.Td>
-
                   </Table.Tr>
 
-                );
+                ) : null}
 
-              })}
+                {displayRows.length > 0 ? (
 
-            </Table.Tbody>
+                  <AdminCategoriesSortableTableRows
 
-          </Table>
+                    rows={rows}
 
-        </Table.ScrollContainer>
+                    listFiltered={listFiltered}
+
+                    sortBy={sortBy}
+
+                    listSortSource={listSortSource}
+
+                    mainView={mainView}
+
+                    collapsedIds={collapsedIds}
+
+                    setCollapsedIds={setCollapsedIds}
+
+                    branchIds={branchIds}
+
+                    busy={busy}
+
+                    mutationsEnabled={mutationsEnabled}
+
+                    openEdit={openEdit}
+
+                    setConfirmArchive={setConfirmArchive}
+
+                    setReparentCategoryId={setReparentCategoryId}
+
+                    setReparentOpen={setReparentOpen}
+
+                    handleRestore={handleRestore}
+
+                    handleCaisseActiveToggle={handleCaisseActiveToggle}
+
+                    handleReceptionVisibilityToggle={handleReceptionVisibilityToggle}
+
+                    applyReorderPair={applyReorderPair}
+
+                    swapCaisseOrderWithNeighbor={swapCaisseOrderWithNeighbor}
+
+                    swapReceptionOrderWithNeighbor={swapReceptionOrderWithNeighbor}
+
+                    caisseBusyId={caisseBusyId}
+
+                    visibilityBusyId={visibilityBusyId}
+
+                  />
+
+                ) : null}
+
+              </Table.Tbody>
+
+            </Table>
+
+          </Table.ScrollContainer>
+
+        </AdminCategoriesDndShell>
 
       </Paper>
-
-
-
-      <Text size="sm" c="dimmed">
-
-        Export : menu PDF, Excel ou CSV (liste complète), ou CSV des lignes affichées. Import : uniquement avec
-
-        l&apos;onglet Configuration (carte du haut).
-
-      </Text>
 
     </Stack>
 

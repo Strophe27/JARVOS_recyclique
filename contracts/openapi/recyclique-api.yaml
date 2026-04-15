@@ -4051,12 +4051,13 @@ paths:
         - reception
       summary: Liste des catégories actives (réception)
       description: |
-        Équivalent opérationnel à une liste pour saisie ticket ; le backend filtre `is_active`.
+        Équivalent opérationnel à une liste pour saisie ticket ; le backend filtre `is_active`, `is_visible`
+        et exclut les catégories archivées. `parent_id` permet la hiérarchie opérateur racine → enfant.
       security:
         - bearerOrCookie: []
       responses:
         "200":
-          description: Liste `{ id, name }`
+          description: Liste `{ id, name, parent_id }`
           content:
             application/json:
               schema:
@@ -9631,6 +9632,9 @@ components:
           type: string
         name:
           type: string
+        parent_id:
+          type: string
+          nullable: true
       additionalProperties: false
     ReceptionTicketSummaryRow:
       type: object

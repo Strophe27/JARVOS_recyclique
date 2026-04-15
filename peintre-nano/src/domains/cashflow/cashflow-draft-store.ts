@@ -6,12 +6,24 @@ export type WidgetDataState = 'NOMINAL' | 'DATA_STALE';
 
 export type TicketLine = {
   readonly id: string;
+  /** Code / identifiant contrat envoyé aux POST vente (inchangé). */
   readonly category: string;
+  /**
+   * Libellé métier (grille kiosque, sous-catégorie) — ticket / a11y uniquement.
+   * Si absent ou vide, l’UI retombe sur `category`.
+   */
+  readonly displayLabel?: string;
   readonly quantity: number;
   readonly weight: number;
   readonly unitPrice: number;
   readonly totalPrice: number;
 };
+
+/** Désignation lisible pour ticket et accessibilité (brouillon ou ligne déjà typée). */
+export function ticketLineDisplayLabel(line: Pick<TicketLine, 'category' | 'displayLabel'>): string {
+  const t = line.displayLabel?.trim();
+  return t && t.length > 0 ? t : line.category;
+}
 
 /** Mode d’ouverture choisi sur le dashboard brownfield (Story 6.10 / §7) — null si session uniquement serveur / inconnu. */
 export type CashflowOperatingMode = 'real' | 'virtual' | 'deferred';
@@ -19,7 +31,7 @@ export type CashflowOperatingMode = 'real' | 'virtual' | 'deferred';
 export type CashflowDraftState = {
   readonly lines: readonly TicketLine[];
   readonly totalAmount: number;
-  readonly paymentMethod: 'cash' | 'card';
+  readonly paymentMethod: 'cash' | 'card' | 'check' | 'free';
   /** Saisie locale si l'enveloppe ne fournit pas encore `cashSessionId`. */
   readonly cashSessionIdInput: string;
   /** Renseigné après POST d’ouverture explicite depuis `/caisse` (réel / virtuel / différé). */
@@ -90,7 +102,7 @@ export function setTotalAmount(n: number): void {
   emit();
 }
 
-export function setPaymentMethod(m: 'cash' | 'card'): void {
+export function setPaymentMethod(m: 'cash' | 'card' | 'check' | 'free'): void {
   state = { ...state, paymentMethod: m };
   emit();
 }
@@ -141,6 +153,7 @@ export function setAfterSuccessfulSale(saleId: string): void {
     lastSaleId: saleId,
     activeHeldSaleId: null,
     totalAmount: 0,
+    paymentMethod: 'cash',
     localIssueMessage:
       'Vente enregistrée localement dans Recyclique. La synchronisation comptable avec Paheko n’est pas prétendue finalisée sur cet écran.',
     widgetDataState: 'NOMINAL',

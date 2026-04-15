@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from recyclic_api.core.database import get_db
 from recyclic_api.core.database import SessionLocal
 from recyclic_api.services.anomaly_detection_service import get_anomaly_detection_service
+from recyclic_api.services.paheko_outbox_processor import process_next_paheko_outbox_item
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.deposit import Deposit
 from recyclic_api.models.user import User
@@ -134,6 +135,43 @@ class SchedulerService:
         # - Nettoyer les fichiers temporaires
 
         return {"status": "completed", "timestamp": datetime.now(timezone.utc)}
+
+    async def run_paheko_outbox_task(self):
+        """Traite les lignes outbox Paheko éligibles."""
+        logger.info("Exécution du traitement outbox Paheko")
+        processed = 0
+        delivered = 0
+        retried = 0
+        quarantined = 0
+
+        try:
+            with SessionLocal() as db:
+                while True:
+                    item = process_next_paheko_outbox_item(db)
+                    if item is None:
+                        break
+                    processed += 1
+                    if item.outbox_status == "delivered":
+                        delivered += 1
+                    elif item.sync_state_core == "a_reessayer":
+                        retried += 1
+                    elif item.sync_state_core == "en_quarantaine":
+                        quarantined += 1
+                    if processed >= 20:
+                        logger.info("Traitement outbox Paheko limité à 20 lignes sur ce passage")
+                        break
+
+            return {
+                "status": "completed",
+                "processed": processed,
+                "delivered": delivered,
+                "retried": retried,
+                "quarantined": quarantined,
+                "timestamp": datetime.now(timezone.utc),
+            }
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement outbox Paheko: {e}")
+            raise
 
     async def run_weekly_reports_task(self):
         """Tâche de génération des rapports hebdomadaires."""
@@ -290,6 +328,14 @@ et envoie des notifications en cas de problème.
             name="health_check",
             func=self.run_health_check_task,
             interval_minutes=5,
+            enabled=True
+        )
+
+        # Outbox Paheko toutes les minutes
+        self.add_task(
+            name="paheko_outbox",
+            func=self.run_paheko_outbox_task,
+            interval_minutes=1,
             enabled=True
         )
 

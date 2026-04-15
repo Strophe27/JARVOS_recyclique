@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@mantine/core/styles.css';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { RuntimeDemoApp } from '../../src/app/demo/RuntimeDemoApp';
 import { RootProviders } from '../../src/app/providers/RootProviders';
@@ -52,8 +52,16 @@ describe('RuntimeDemoApp — alias `/cash-register/sale` → cashflow nominal (S
     expect(screen.queryByText('Démonstration runtime (bac à sable)')).toBeNull();
 
     await waitFor(() => {
-      expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
+      expect(screen.getByTestId('cashflow-kiosk-unified-layout')).toBeTruthy();
     });
+    const aside = screen.getByTestId('shell-zone-aside');
+    expect(getComputedStyle(aside).display).not.toBe('none');
+    expect(within(aside).getByTestId('caisse-current-ticket')).toBeTruthy();
+    expect(screen.queryByTestId('flow-renderer-cashflow-nominal')).toBeNull();
+    expect(screen.queryByTestId('cashflow-step-prev')).toBeNull();
+    expect(screen.queryByTestId('cashflow-step-next')).toBeNull();
+    expect(screen.queryByTestId('caisse-dash-poste')).toBeNull();
+    expect(screen.queryByText('Aller à l’aide « ouverture / session »')).toBeNull();
   });
 
   it('traite `/cash-register/sale/` (slash final) comme l’alias kiosque', async () => {
@@ -66,7 +74,7 @@ describe('RuntimeDemoApp — alias `/cash-register/sale` → cashflow nominal (S
 
     await waitFor(() => {
       expect(screen.getByTestId('cash-register-sale-kiosk')).toBeTruthy();
-      expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
+      expect(screen.getByTestId('cashflow-kiosk-unified-layout')).toBeTruthy();
     });
   });
 

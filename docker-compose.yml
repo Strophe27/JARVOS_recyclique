@@ -179,6 +179,7 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
+      VITE_DEV_PROXY_TARGET: ${VITE_DEV_PROXY_TARGET:-http://api:8000}
       # Login terrain (LiveAuthShell) : même logique que `v === 'true' || v === '1'` dans App.tsx
       VITE_LIVE_AUTH: ${VITE_LIVE_AUTH:-true}
     ports:

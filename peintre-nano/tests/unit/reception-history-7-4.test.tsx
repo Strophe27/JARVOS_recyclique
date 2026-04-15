@@ -6,6 +6,7 @@ import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import { createDefaultDemoEnvelope } from '../../src/app/auth/default-demo-auth-adapter';
 import { RootProviders } from '../../src/app/providers/RootProviders';
 import { ReceptionHistoryPanel } from '../../src/domains/reception/ReceptionHistoryPanel';
+import { setReceptionPosteUiState } from '../../src/domains/reception/reception-poste-ui-state';
 import '../../src/registry';
 
 function requestUrl(input: RequestInfo | URL): string {
@@ -19,9 +20,11 @@ describe('Story 7.4 — panneau historique réception (API mockée)', () => {
     cleanup();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    setReceptionPosteUiState(false);
   });
 
   beforeEach(() => {
+    setReceptionPosteUiState(true);
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({

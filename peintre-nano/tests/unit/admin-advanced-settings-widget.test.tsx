@@ -28,6 +28,43 @@ function okJson(body: unknown, status = 200): Response {
   });
 }
 
+const siteId = '550e8400-e29b-41d4-a716-446655440000';
+const registerId = '660e8400-e29b-41d4-a716-446655440000';
+
+function okSettingsSupportJson(url: string): Response | null {
+  if (url.includes('/v1/sites/')) {
+    return okJson([
+      {
+        id: siteId,
+        name: 'Site principal',
+        city: 'Lyon',
+        address: null,
+        is_active: true,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-02T00:00:00.000Z',
+      },
+    ]);
+  }
+  if (url.includes('/v1/cash-registers/')) {
+    return okJson([
+      {
+        id: registerId,
+        name: 'Caisse 1',
+        location: 'Entrée',
+        site_id: siteId,
+        is_active: true,
+        workflow_options: {},
+        enable_virtual: false,
+        enable_deferred: false,
+      },
+    ]);
+  }
+  if (url.includes('/v1/admin/paheko-mappings/cash-session-close')) {
+    return okJson({ data: [], total: 0, skip: 0, limit: 200 });
+  }
+  return null;
+}
+
 function wrap(ui: ReactElement) {
   return <RootProviders authAdapter={authStub}>{ui}</RootProviders>;
 }
@@ -62,6 +99,8 @@ describe('AdminAdvancedSettingsWidget', () => {
   it('charge GET session et enregistre via PUT', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const supportRes = okSettingsSupportJson(url);
+      if (supportRes) return supportRes;
       expect(url).toContain('/v1/admin/settings/session');
       const method = init?.method ?? 'GET';
       if (method === 'PUT') {
@@ -95,6 +134,8 @@ describe('AdminAdvancedSettingsWidget', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        const supportRes = okSettingsSupportJson(url);
+        if (supportRes) return supportRes;
         if (url.includes('/v1/admin/settings/session')) {
           return okJson({ detail: 'Accès refusé', code: 'FORBIDDEN' }, 403);
         }
@@ -135,6 +176,8 @@ describe('AdminAdvancedSettingsWidget', () => {
     };
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const supportRes = okSettingsSupportJson(url);
+      if (supportRes) return supportRes;
       if (url.includes('/v1/admin/audit-log')) {
         expect(url).toContain('action_type=db_import');
         return okJson(auditPage);
@@ -185,5 +228,224 @@ describe('AdminAdvancedSettingsWidget', () => {
     await waitFor(() => {
       expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/admin/db/export'))).toBe(true);
     });
+  });
+
+  it('garde le cockpit pour le suivi quotidien mais remet les réglages et le support Paheko dans les paramètres avancés', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes('/v1/admin/settings/session')) return okJson({ token_expiration_minutes: 360 });
+      if (url.includes('/v1/admin/settings/email')) return okJson({ from_name: '', from_address: '', has_api_key: false });
+      if (url.includes('/v1/admin/settings/activity-threshold')) return okJson({ activity_threshold_minutes: 30 });
+      if (url.includes('/v1/admin/settings/alert-thresholds')) {
+        return okJson({ thresholds: { cashDiscrepancy: 1, lowInventory: 2 } });
+      }
+      if (url.includes('/v1/sites/')) {
+        return okJson([
+          {
+            id: siteId,
+            name: 'Site principal',
+            city: 'Lyon',
+            address: null,
+            is_active: true,
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-02T00:00:00.000Z',
+          },
+        ]);
+      }
+      if (url.includes('/v1/cash-registers/')) {
+        return okJson([
+          {
+            id: registerId,
+            name: 'Caisse 1',
+            location: 'Entrée',
+            site_id: siteId,
+            is_active: true,
+            workflow_options: {},
+            enable_virtual: false,
+            enable_deferred: false,
+          },
+        ]);
+      }
+      if (url.includes('/v1/admin/paheko-mappings/cash-session-close')) {
+        return okJson({ data: [], total: 0, skip: 0, limit: 200 });
+      }
+      if (url.includes('/v1/admin/health')) {
+        return okJson({
+          system_health: {
+            overall_status: 'healthy',
+            anomalies_detected: 0,
+            critical_anomalies: 0,
+            active_tasks: 5,
+            scheduler_running: true,
+            timestamp: '2026-04-14T18:20:00.000Z',
+          },
+          anomalies: {},
+          recommendations: [],
+          scheduler_status: {
+            running: true,
+            total_tasks: 5,
+            tasks: [
+              {
+                name: 'paheko_outbox',
+                enabled: true,
+                running: false,
+                last_run: '2026-04-14T18:20:00.000Z',
+                next_run: '2026-04-14T18:21:00.000Z',
+                interval_minutes: 1,
+              },
+            ],
+          },
+        });
+      }
+      if (url.includes('/v1/admin/paheko-outbox/items?')) {
+        return okJson({
+          data: [
+            {
+              id: '11111111-1111-4111-8111-111111111111',
+              operation_type: 'cash_session_close',
+              idempotency_key: 'cash_session_close:test',
+              cash_session_id: siteId,
+              site_id: siteId,
+              outbox_status: 'failed',
+              sync_state_core: 'en_quarantaine',
+              local_session_persisted: true,
+              remote_attempt_count: 1,
+              last_remote_http_status: 422,
+              last_error: 'mapping invalid',
+              next_retry_at: null,
+              rejection_reason: null,
+              mapping_resolution_error: null,
+              correlation_id: 'corr-test-1',
+              created_at: '2026-04-14T18:19:00.000Z',
+              updated_at: '2026-04-14T18:20:00.000Z',
+            },
+          ],
+          total: 1,
+          skip: 0,
+          limit: 10,
+        });
+      }
+      if (url.includes('/v1/admin/paheko-outbox/items/11111111-1111-4111-8111-111111111111')) {
+        return okJson({
+          id: '11111111-1111-4111-8111-111111111111',
+          operation_type: 'cash_session_close',
+          idempotency_key: 'cash_session_close:test',
+          cash_session_id: siteId,
+          site_id: siteId,
+          outbox_status: 'failed',
+          sync_state_core: 'en_quarantaine',
+          local_session_persisted: true,
+          remote_attempt_count: 1,
+          last_remote_http_status: 422,
+          last_error: 'mapping invalid',
+          next_retry_at: null,
+          rejection_reason: null,
+          mapping_resolution_error: null,
+          correlation_id: 'corr-test-1',
+          created_at: '2026-04-14T18:19:00.000Z',
+          updated_at: '2026-04-14T18:20:00.000Z',
+          payload: { total_amount: 15 },
+          last_response_snippet: '{"id":134}',
+          recent_sync_transitions: [],
+        });
+      }
+      if (url.includes('/v1/admin/paheko-outbox/by-correlation/corr-test-1')) {
+        return okJson({
+          correlation_id: 'corr-test-1',
+          items: [
+            {
+              id: '11111111-1111-4111-8111-111111111111',
+              operation_type: 'cash_session_close',
+              idempotency_key: 'cash_session_close:test',
+              cash_session_id: siteId,
+              site_id: siteId,
+              outbox_status: 'failed',
+              sync_state_core: 'en_quarantaine',
+              local_session_persisted: true,
+              remote_attempt_count: 1,
+              last_remote_http_status: 422,
+              last_error: 'mapping invalid',
+              next_retry_at: null,
+              rejection_reason: null,
+              mapping_resolution_error: null,
+              correlation_id: 'corr-test-1',
+              created_at: '2026-04-14T18:19:00.000Z',
+              updated_at: '2026-04-14T18:20:00.000Z',
+            },
+          ],
+          sync_transitions: [
+            {
+              id: 'tr-1',
+              transition_name: 'auto_quarantine_http_non_retryable',
+              from_sync_state: 'a_reessayer',
+              to_sync_state: 'en_quarantaine',
+              from_outbox_status: 'processing',
+              to_outbox_status: 'failed',
+              actor_user_id: null,
+              occurred_at: '2026-04-14T18:20:00.000Z',
+              reason: 'mapping invalid',
+              correlation_id: 'corr-test-1',
+              context_json: {},
+            },
+          ],
+          sync_transitions_total: 1,
+          sync_transitions_skip: 0,
+          sync_transitions_limit: 200,
+        });
+      }
+      if (url.includes('/lift-quarantine')) {
+        expect(JSON.parse(String(init?.body))).toEqual({
+          reason: 'Relance contrôlée depuis le panel super-admin Paheko',
+        });
+        return okJson({
+          id: '11111111-1111-4111-8111-111111111111',
+          operation_type: 'cash_session_close',
+          idempotency_key: 'cash_session_close:test',
+          cash_session_id: siteId,
+          site_id: siteId,
+          outbox_status: 'pending',
+          sync_state_core: 'a_reessayer',
+          local_session_persisted: true,
+          remote_attempt_count: 1,
+          last_remote_http_status: 422,
+          last_error: null,
+          next_retry_at: '2026-04-14T18:22:00.000Z',
+          rejection_reason: null,
+          mapping_resolution_error: null,
+          correlation_id: 'corr-test-1',
+          created_at: '2026-04-14T18:19:00.000Z',
+          updated_at: '2026-04-14T18:21:30.000Z',
+          payload: { total_amount: 15 },
+          last_response_snippet: '{"id":134}',
+          recent_sync_transitions: [],
+        });
+      }
+      return okJson({}, 404);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(wrap(<AdminAdvancedSettingsWidget widgetProps={{}} />));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-advanced-settings-nav-accounting-hub')).toBeTruthy();
+    });
+    expect(screen.getByText('Le cockpit comptable sert au suivi quotidien. Les réglages Paheko avancés et le support technique restent ici, dans les paramètres avancés.')).toBeTruthy();
+    expect(screen.getByTestId('admin-advanced-settings-accordion-paheko-mappings')).toBeTruthy();
+    expect(screen.getByTestId('admin-advanced-settings-accordion-paheko-diagnostics')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('admin-advanced-settings-accordion-paheko-mappings'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-paheko-close-mappings-create-open')).toBeTruthy();
+    });
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/admin/paheko-mappings/cash-session-close'))).toBe(true);
+
+    fireEvent.click(screen.getByTestId('admin-advanced-settings-accordion-paheko-diagnostics'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-paheko-diagnostics-refresh')).toBeTruthy();
+    });
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/admin/paheko-outbox/items'))).toBe(true);
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/admin/health'))).toBe(true);
   });
 });

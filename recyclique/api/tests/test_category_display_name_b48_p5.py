@@ -218,3 +218,113 @@ class TestCategoryOfficialNameAPI:
         cat_data = next((c for c in data if c["id"] == str(category.id)), None)
         assert cat_data is not None
         assert cat_data["name"] == "EEE"
+
+    def test_api_reception_get_categories_exposes_parent_id_and_filters_visible_active(self, admin_client, db_session: Session):
+        parent = Category(
+            id=uuid4(),
+            name="Livres",
+            official_name="Livres",
+            is_active=True,
+            is_visible=True,
+            display_order_entry=10,
+        )
+        child = Category(
+            id=uuid4(),
+            name="BD",
+            official_name="Bandes dessinées",
+            is_active=True,
+            is_visible=True,
+            parent_id=parent.id,
+            display_order_entry=20,
+        )
+        hidden = Category(
+            id=uuid4(),
+            name="Masquée",
+            official_name=None,
+            is_active=True,
+            is_visible=False,
+            display_order_entry=0,
+        )
+        inactive = Category(
+            id=uuid4(),
+            name="Inactive",
+            official_name=None,
+            is_active=False,
+            is_visible=True,
+            display_order_entry=0,
+        )
+        db_session.add_all([parent, child, hidden, inactive])
+        db_session.commit()
+
+        response = admin_client.get(f"{_V1}/reception/categories")
+        assert response.status_code == 200
+        data = response.json()
+
+        ids = [row["id"] for row in data]
+        assert str(parent.id) in ids
+        assert str(child.id) in ids
+        assert str(hidden.id) not in ids
+        assert str(inactive.id) not in ids
+
+        parent_row = next(row for row in data if row["id"] == str(parent.id))
+        child_row = next(row for row in data if row["id"] == str(child.id))
+        assert parent_row["parent_id"] is None
+        assert child_row["parent_id"] == str(parent.id)
+        assert ids.index(str(parent.id)) < ids.index(str(child.id))
+
+    def test_api_reception_get_categories_hides_technical_and_non_operational_labels(self, admin_client, db_session: Session):
+        root_ok = Category(
+            id=uuid4(),
+            name="Livres",
+            official_name="Livres",
+            is_active=True,
+            is_visible=True,
+            display_order_entry=10,
+        )
+        technical_root = Category(
+            id=uuid4(),
+            name="ZZ_MCP_IMPORT_TEST_ROOT_deadbeef",
+            official_name=None,
+            is_active=True,
+            is_visible=True,
+            display_order_entry=0,
+        )
+        deprecated_root = Category(
+            id=uuid4(),
+            name="NE PLUS UTILISER Rangement",
+            official_name=None,
+            is_active=True,
+            is_visible=True,
+            display_order_entry=0,
+        )
+        technical_child = Category(
+            id=uuid4(),
+            name="ZZ_MCP_IMPORT_TEST_CHILD_deadbeef",
+            official_name=None,
+            is_active=True,
+            is_visible=True,
+            parent_id=root_ok.id,
+            display_order_entry=20,
+        )
+        valid_child = Category(
+            id=uuid4(),
+            name="BD",
+            official_name="Bandes dessinées",
+            is_active=True,
+            is_visible=True,
+            parent_id=root_ok.id,
+            display_order_entry=30,
+        )
+        db_session.add_all([root_ok, technical_root, deprecated_root, technical_child, valid_child])
+        db_session.commit()
+
+        response = admin_client.get(f"{_V1}/reception/categories")
+        assert response.status_code == 200
+        data = response.json()
+        names = [row["name"] for row in data]
+
+        assert "Livres" in names
+        assert "BD" in names
+        assert "ZZ_MCP_IMPORT_TEST_ROOT_deadbeef" not in names
+        assert "ZZ_MCP_IMPORT_TEST_CHILD_deadbeef" not in names
+        assert "NE PLUS UTILISER Rangement" not in names

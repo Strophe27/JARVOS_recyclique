@@ -8,6 +8,7 @@ export type CategoryAdminListRowDto = components['schemas']['CategoryV1Read'];
 
 export type CategoryV1CreateRequestBody = components['schemas']['CategoryV1CreateRequest'];
 export type CategoryV1UpdateRequestBody = components['schemas']['CategoryV1UpdateRequest'];
+export type CategoryV1VisibilityPatchBody = components['schemas']['CategoryV1VisibilityPatchRequest'];
 
 /** Source de liste alignée sur les routes `GET /v1/categories/*` du backend. */
 export type CategoriesDataSource = 'config' | 'sale' | 'entry';
@@ -257,6 +258,93 @@ export async function updateCategoryForAdmin(
 ): Promise<CategoryMutationResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/categories/${encodeURIComponent(categoryId)}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: authHeaders(auth, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return categoriesHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  return singleCategoryResponse(res, json, text || res.statusText);
+}
+
+/**
+ * `PUT /v1/categories/{category_id}/display-order` — `recyclique_categories_updateCategoryDisplayOrder`.
+ */
+export async function patchCategoryDisplayOrderForAdmin(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  categoryId: string,
+  display_order: number,
+  signal?: AbortSignal,
+): Promise<CategoryMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/categories/${encodeURIComponent(categoryId)}/display-order`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: authHeaders(auth, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ display_order }),
+      signal,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return categoriesHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  return singleCategoryResponse(res, json, text || res.statusText);
+}
+
+/**
+ * `PUT /v1/categories/{category_id}/display-order-entry` — `recyclique_categories_updateCategoryDisplayOrderEntry`.
+ */
+export async function patchCategoryDisplayOrderEntryForAdmin(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  categoryId: string,
+  display_order_entry: number,
+  signal?: AbortSignal,
+): Promise<CategoryMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/categories/${encodeURIComponent(categoryId)}/display-order-entry`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: authHeaders(auth, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ display_order_entry }),
+      signal,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return categoriesHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  return singleCategoryResponse(res, json, text || res.statusText);
+}
+
+/**
+ * `PUT /v1/categories/{category_id}/visibility` — `recyclique_categories_updateCategoryVisibility`.
+ */
+export async function patchCategoryVisibilityForAdmin(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  categoryId: string,
+  body: CategoryV1VisibilityPatchBody,
+  signal?: AbortSignal,
+): Promise<CategoryMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/categories/${encodeURIComponent(categoryId)}/visibility`;
   let res: Response;
   try {
     res = await fetch(url, {

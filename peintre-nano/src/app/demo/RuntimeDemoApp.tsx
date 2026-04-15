@@ -415,6 +415,11 @@ export function RuntimeDemoApp() {
         setSearchSnapshot(window.location.search);
         return;
       }
+      if (pathForMatch === '/admin/compta') {
+        setSelectedEntryId('transverse-admin-accounting');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
       if (pathForMatch === '/admin/health') {
         setSelectedEntryId('transverse-admin-health');
         setSearchSnapshot(window.location.search);
@@ -552,6 +557,9 @@ export function RuntimeDemoApp() {
     }
     if (adminPath === '/admin/settings') {
       return 'transverse-admin-settings';
+    }
+    if (adminPath === '/admin/compta') {
+      return 'transverse-admin-accounting';
     }
     if (adminPath === '/admin/health') {
       return 'transverse-admin-health';

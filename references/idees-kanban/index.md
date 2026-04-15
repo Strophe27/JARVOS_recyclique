@@ -20,3 +20,4 @@ Une ligne par idée. Mise à jour par le skill `idees-kanban` à chaque créatio
 | 2026-02-24_module-correspondance-paheko.md | Module correspondance Paheko | a-conceptualiser | 2026-02-24 | 2026-02-24 |
 | 2026-02-26_parcours-ouverture-caisse-postes-acces-pin.md | Parcours ouverture caisse, postes et accès PIN | a-conceptualiser | 2026-02-26 | 2026-02-26 |
 | 2026-03-31_peintre-workflows-raccourcis-navigation.md | Peintre workflows raccourcis navigation | a-rechercher | 2026-03-31 | 2026-03-31 |
+| 2026-04-14_configuration-raccourcis-clavier-par-poste.md | Configuration raccourcis clavier par poste | a-conceptualiser | 2026-04-14 | 2026-04-14 |

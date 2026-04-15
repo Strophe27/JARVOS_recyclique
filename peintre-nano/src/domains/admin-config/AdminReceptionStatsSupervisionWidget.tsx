@@ -15,7 +15,28 @@ import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { formatReceptionDateTimeFr, formatReceptionWeightKg } from './reception-admin-display';
 
 function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function startOfLocalDayIso(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).toISOString();
+}
+
+function endOfLocalDayIso(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).toISOString();
+}
+
+function isAbortLikeError(error: unknown): boolean {
+  return (
+    error instanceof DOMException
+      ? error.name === 'AbortError'
+      : error instanceof Error
+        ? error.name === 'AbortError'
+        : false
+  );
 }
 
 function addDays(d: Date, n: number): Date {
@@ -133,7 +154,12 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
   const range = useMemo(() => {
     const end = new Date();
     const start = addDays(end, -(rangeDays - 1));
-    return { start: isoDate(start), end: isoDate(end) };
+    return {
+      start: startOfLocalDayIso(start),
+      end: endOfLocalDayIso(end),
+      startLabel: isoDate(start),
+      endLabel: isoDate(end),
+    };
   }, [rangeDays]);
 
   useEffect(() => {
@@ -146,6 +172,9 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
       try {
         const [s, c] = await Promise.all([
           fetchReceptionStatsSummary(auth, range, ac.signal).catch((e: unknown) => {
+            if (ac.signal.aborted || isAbortLikeError(e)) {
+              return null;
+            }
             if (e instanceof DashboardLegacyApiError) {
               setErrSummary(`${e.status}: ${e.message}`);
             } else {
@@ -154,6 +183,9 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
             return null;
           }),
           fetchReceptionByCategory(auth, range, ac.signal).catch((e: unknown) => {
+            if (ac.signal.aborted || isAbortLikeError(e)) {
+              return [] as CategoryStatRow[];
+            }
             if (e instanceof DashboardLegacyApiError) {
               setErrCategory(`${e.status}: ${e.message}`);
             } else {
@@ -172,6 +204,9 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
           { period_type: periodType, site_id: siteId },
           ac.signal,
         ).catch((e: unknown) => {
+          if (ac.signal.aborted || isAbortLikeError(e)) {
+            return null;
+          }
           if (e instanceof DashboardLegacyApiError) {
             setErrLive(`${e.status}: ${e.message}`);
           } else {
@@ -213,7 +248,7 @@ export function AdminReceptionStatsSupervisionWidget(_: RegisteredWidgetProps) {
           30 jours
         </Button>
         <Text size="xs" c="dimmed">
-          Du {range.start} au {range.end}
+          Du {range.startLabel} au {range.endLabel}
         </Text>
       </Group>
 

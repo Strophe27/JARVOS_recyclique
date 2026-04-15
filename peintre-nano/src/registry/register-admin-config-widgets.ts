@@ -1,4 +1,5 @@
 import { AdminAdvancedSettingsWidget } from '../domains/admin-config/AdminAdvancedSettingsWidget';
+import { AdminAccountingHubWidget } from '../domains/admin-config/AdminAccountingHubWidget';
 import { AdminAuditLogWidget } from '../domains/admin-config/AdminAuditLogWidget';
 import { AdminCategoriesWidget } from '../domains/admin-config/AdminCategoriesWidget';
 import { AdminGroupsWidget } from '../domains/admin-config/AdminGroupsWidget';
@@ -17,6 +18,7 @@ import { registerWidget } from './widget-registry';
 /** Stories 17.1–17.3 — widgets admin mutualisables (`admin-config/`), allowlist CREOS ; coquille `AdminListPageShell`. */
 export function registerAdminConfigWidgets(): void {
   registerWidget('admin.users.demo', AdminUsersWidget);
+  registerWidget('admin.accounting.hub', AdminAccountingHubWidget);
   /** Paramètres session JWT super-admin (`adminSettingsSessionGet` / `adminSettingsSessionPut`). */
   registerWidget('admin.advanced.settings.demo', AdminAdvancedSettingsWidget);
   /** Santé exploitation — contexte + live-snapshot + stats live (contrat OpenAPI servi uniquement). */

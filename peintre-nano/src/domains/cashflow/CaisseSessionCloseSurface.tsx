@@ -13,7 +13,7 @@ import {
   Title,
 } from '@mantine/core';
 import { ArrowLeft, Calculator } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import {
   needsVarianceComment,
   postCloseCashSession,
@@ -46,7 +46,7 @@ export type CaisseSessionCloseSurfaceProps = {
 export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfaceProps): ReactNode {
   const auth = useAuthPort();
   const { session, loading, failure, refresh } = useCaisseServerCurrentSession(auth);
-  const [actualAmount, setActualAmount] = useState<number | ''>('');
+  const [actualAmount, setActualAmount] = useState<number | string>('');
   const [varianceComment, setVarianceComment] = useState('');
   const [stepUpPin, setStepUpPin] = useState('');
   const [closeBusy, setCloseBusy] = useState(false);
@@ -78,6 +78,12 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
 
   const isEmpty = session && session.status === 'open' ? isSessionEmptyForClose(session) : false;
 
+  const handleActualAmountKeyDownCapture = useCallback((event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== '.' && event.key !== ',') return;
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation?.();
+  }, []);
+
   const performClose = useCallback(async () => {
     if (!session || session.status !== 'open') return;
     const pin = stepUpPin.trim();
@@ -103,7 +109,7 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
         spaNavigateTo('/caisse');
         return;
       }
-      const actualNum = typeof actualAmount === 'number' ? actualAmount : Number(actualAmount);
+      const actualNum = typeof actualAmount === 'number' ? actualAmount : Number.parseFloat(String(actualAmount));
       if (!Number.isFinite(actualNum)) {
         setCloseError('Montant physique invalide.');
         return;
@@ -294,8 +300,9 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
                 label="Montant Physique Compté *"
                 min={0}
                 decimalScale={2}
-                value={actualAmount === '' ? undefined : actualAmount}
-                onChange={(v) => setActualAmount(typeof v === 'number' ? v : '')}
+                value={actualAmount}
+                onChange={setActualAmount}
+                onKeyDownCapture={handleActualAmountKeyDownCapture}
                 data-testid="cashflow-session-close-actual-amount"
               />
               {typeof actualAmount === 'number' && Number.isFinite(actualAmount) ? (

@@ -18,6 +18,7 @@ import { parsePageManifestJson } from '../../validation/page-manifest-ingest';
 import { buildPageManifestRegions } from '../PageRenderer';
 import { LiveAuthLoginControllerProvider, type LiveAuthLoginController } from './LiveAuthLoginControllerContext';
 import { LiveAuthActionsProvider } from './LiveAuthActionsContext';
+import { LiveActivityPresenceBridge } from './LiveActivityPresenceBridge';
 
 type Phase = 'idle' | 'restoring' | 'ready';
 
@@ -248,7 +249,10 @@ export function LiveAuthShell({ children }: LiveAuthShellProps) {
 
   return (
     <LiveAuthActionsProvider value={{ requestLogout: () => void onLogout() }}>
-      <AuthRuntimeProvider adapter={adapter}>{children}</AuthRuntimeProvider>
+      <AuthRuntimeProvider adapter={adapter}>
+        <LiveActivityPresenceBridge />
+        {children}
+      </AuthRuntimeProvider>
     </LiveAuthActionsProvider>
   );
 }

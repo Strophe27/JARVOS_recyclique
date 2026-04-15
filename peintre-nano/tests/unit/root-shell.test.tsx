@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@mantine/core/styles.css';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { RootShell } from '../../src/app/layouts/RootShell';
 import { RootProviders } from '../../src/app/providers/RootProviders';
@@ -105,5 +105,24 @@ describe('RootShell (grille et zones nommées)', () => {
     expect(screen.getByTestId('cash-register-sale-kiosk')).toBeTruthy();
     expect(screen.queryByTestId('shell-zone-nav')).toBeNull();
     expect(screen.getByText('plein écran caisse')).toBeTruthy();
+  });
+
+  it('hideNav + minimalChrome : la zone aside reste observable (kiosque `/cash-register/sale`, shell live)', () => {
+    render(
+      <RootProviders>
+        <RootShell
+          hideNav
+          minimalChrome
+          regions={{
+            main: <span data-testid="kiosk-sale-main">corps</span>,
+            aside: <span data-testid="kiosk-sale-aside-slot">ticket</span>,
+          }}
+        />
+      </RootProviders>,
+    );
+
+    const aside = screen.getByTestId('shell-zone-aside');
+    expect(getComputedStyle(aside).display).not.toBe('none');
+    expect(within(aside).getByTestId('kiosk-sale-aside-slot')).toBeTruthy();
   });
 });

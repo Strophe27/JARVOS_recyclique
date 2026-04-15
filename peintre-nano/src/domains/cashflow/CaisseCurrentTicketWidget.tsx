@@ -6,6 +6,7 @@ import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import {
   setCashflowWidgetDataState,
+  ticketLineDisplayLabel,
   useCashflowDraft,
 } from './cashflow-draft-store';
 import { KioskFinalizeSaleDock } from './KioskFinalizeSaleDock';
@@ -60,7 +61,12 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
   }, [draft.activeHeldSaleId, draft.lastSaleId]);
 
   const activeTicketId = draft.activeHeldSaleId ?? draft.lastSaleId;
-  const showServerTicket = Boolean(activeTicketId && serverSale);
+  /**
+   * Kiosque unifié : après une vente finalisée, on garde la référence serveur/confirmation,
+   * mais on repart visuellement sur un ticket vide pour enchaîner le produit suivant,
+   * comme sur le legacy. Les tickets "held" restent affichés depuis la vérité serveur.
+   */
+  const showServerTicket = Boolean(activeTicketId && serverSale && !(unified && draft.lastSaleId));
   const displayLines = showServerTicket
     ? serverSale!.items.map((it, i) => ({
         key: it.id ?? `srv-${i}`,
@@ -68,12 +74,15 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
           ? `${it.category} ×${it.quantity} — ${Number(it.total_price).toFixed(2)} €`
           : `${it.category} ×${it.quantity} — ${Number(it.total_price).toFixed(2)} € (poids ${it.weight} kg)`,
       }))
-    : draft.lines.map((l) => ({
-        key: l.id,
-        label: unified
-          ? `${l.category} ×${l.quantity} — ${l.totalPrice.toFixed(2)} €`
-          : `${l.category} ×${l.quantity} — ${l.totalPrice.toFixed(2)} € (poids ${l.weight} kg)`,
-      }));
+    : draft.lines.map((l) => {
+        const designation = ticketLineDisplayLabel(l);
+        return {
+          key: l.id,
+          label: unified
+            ? `${designation} ×${l.quantity} — ${l.totalPrice.toFixed(2)} €`
+            : `${designation} ×${l.quantity} — ${l.totalPrice.toFixed(2)} € (poids ${l.weight} kg)`,
+        };
+      });
 
   const unifiedGridRows = showServerTicket
     ? serverSale!.items.map((it, i) => ({
@@ -85,7 +94,7 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
       }))
     : draft.lines.map((l) => ({
         key: l.id,
-        category: l.category,
+        category: ticketLineDisplayLabel(l),
         quantity: l.quantity,
         weight: l.weight,
         total: l.totalPrice,
@@ -164,7 +173,7 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
         ) : displayLines.length > 0 && unified ? (
           <>
             <Text className={classes.unifiedSummary} data-testid="caisse-ticket-lines-summary">
-              {unifiedGridRows.length} article{unifiedGridRows.length > 1 ? 's' : ''}
+              {unifiedGridRows.length} article{unifiedGridRows.length > 1 ? 's' : ''} — {Number(displayTotal).toFixed(2)} €
             </Text>
             <div className={classes.unifiedGrid} data-testid="caisse-ticket-lines-grid">
               <div className={classes.unifiedGridHead}>
@@ -194,16 +203,12 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
 
       <div className={unified ? `${classes.ticketSection} ${classes.ticketSectionTotal}` : undefined}>
         {unified ? (
-          <Text className={classes.ticketSectionLabel} component="h3">
-            Total à régler
+          kioskParcoursHint
+        ) : (
+          <Text fw={600} mt="sm">
+            {`Total ${showServerTicket ? '(serveur)' : '(saisi)'} : ${Number(displayTotal).toFixed(2)} €`}
           </Text>
-        ) : null}
-        {kioskParcoursHint}
-        <Text fw={600} mt={unified ? 0 : 'sm'} className={unified ? classes.unifiedTotalBand : undefined}>
-          {unified
-            ? `Total : ${Number(displayTotal).toFixed(2)} €`
-            : `Total ${showServerTicket ? '(serveur)' : '(saisi)'} : ${Number(displayTotal).toFixed(2)} €`}
-        </Text>
+        )}
       </div>
 
       {draft.lastSaleId || (draft.activeHeldSaleId && !draft.lastSaleId) ? (
@@ -236,7 +241,12 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
       ) : null}
 
       {draft.localIssueMessage ? (
-        <Alert color="blue" mt="sm" data-testid="caisse-local-issue-message">
+        <Alert
+          color={draft.lastSaleId ? 'green' : 'blue'}
+          title={draft.lastSaleId ? 'Vente enregistree avec succes' : undefined}
+          mt="sm"
+          data-testid="caisse-local-issue-message"
+        >
           {draft.localIssueMessage}
         </Alert>
       ) : null}
@@ -252,7 +262,7 @@ export function CaisseCurrentTicketWidget(props: RegisteredWidgetProps): ReactNo
     >
       {unified ? (
         <div className={classes.ticketKioskShell}>
-          <div className={classes.ticketKioskTitleBar}>Ticket de caisse</div>
+          <div className={classes.ticketKioskTitleBar}>Ticket de Caisse</div>
           <div className={classes.ticketKioskBody}>{unifiedInner}</div>
           <KioskFinalizeSaleDock />
         </div>

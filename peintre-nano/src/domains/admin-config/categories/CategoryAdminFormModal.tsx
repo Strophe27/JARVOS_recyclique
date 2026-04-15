@@ -139,7 +139,8 @@ export function CategoryAdminFormModal({
     >
       <Stack gap="md" data-testid="category-admin-form">
         <TextInput
-          label="Nom affiché"
+          label="Nom court (affichage rapide)"
+          description="Texte affiché sur les boutons et listes à la caisse et à la réception dépôt. Court et lisible pour l’équipe."
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -147,8 +148,8 @@ export function CategoryAdminFormModal({
           data-testid="category-form-name"
         />
         <TextInput
-          label="Nom officiel"
-          description="Libellé long ou mention réglementaire, optionnel."
+          label="Nom officiel / libellé long / mention réglementaire"
+          description="Utilisé pour la comptabilité, les exports et tout document où le libellé légal ou détaillé est requis. Laisser vide pour réutiliser le nom court seul."
           value={officialName}
           onChange={(e) => setOfficialName(e.target.value)}
         />
@@ -201,8 +202,8 @@ export function CategoryAdminFormModal({
         />
         {mode === 'edit' ? (
           <Switch
-            label="Fiche active"
-            description="Une fiche inactive reste visible selon les filtres."
+            label="Proposée à la caisse (actif)"
+            description="is_active : proposée à l’encaissement ou non. Distinct de la visibilité réception ci-dessus."
             checked={isActive}
             onChange={(e) => setIsActive(e.currentTarget.checked)}
           />

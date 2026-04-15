@@ -2,6 +2,78 @@ import type { CategoryAdminListRowDto, CategoryV1UpdateRequestBody } from '../..
 
 export type ReorderMove = 'up' | 'down';
 
+/** Aligné sur l’admin : vue caisse (ordre ticket vente) ou réception (ordre dépôt). */
+export type CategoryOrderMainView = 'sale' | 'entry';
+
+export type CategoryDisplayOrderPatchItem = {
+  readonly categoryId: string;
+  readonly display_order?: number;
+  readonly display_order_entry?: number;
+};
+
+/** Indique où la ligne déplacée se retrouvera par rapport à la ligne survolée (même sémantique que `arrayMove` legacy / dnd-kit). */
+export type SiblingDragPlacementHint = {
+  readonly placement: 'before' | 'after';
+  readonly targetName: string;
+};
+
+/**
+ * Prévisualise le résultat d’un dépôt sur une ligne sœur (même parent), sans modifier les données.
+ * `before` = la ligne déplacée montera au-dessus de la cible ; `after` = elle descendra en dessous.
+ */
+export function getSiblingDragPlacementHint(
+  rows: readonly CategoryAdminListRowDto[],
+  mainView: CategoryOrderMainView,
+  draggedId: string,
+  targetId: string,
+): SiblingDragPlacementHint | null {
+  if (draggedId === targetId) return null;
+  const siblings =
+    mainView === 'entry' ? siblingsForReceptionOrder(rows, draggedId) : siblingsForCaisseOrder(rows, draggedId);
+  const oi = siblings.findIndex((r) => r.id === draggedId);
+  const ti = siblings.findIndex((r) => r.id === targetId);
+  if (oi < 0 || ti < 0) return null;
+  const active = siblings[oi];
+  const over = siblings[ti];
+  if ((active.parent_id ?? null) !== (over.parent_id ?? null)) return null;
+  const placement: 'before' | 'after' = oi < ti ? 'after' : 'before';
+  return { placement, targetName: over.name };
+}
+
+export function arrayMove<T>(arr: readonly T[], from: number, to: number): T[] {
+  if (from === to) return [...arr];
+  const a = [...arr];
+  const [it] = a.splice(from, 1);
+  a.splice(to, 0, it);
+  return a;
+}
+
+/**
+ * Recalcule les ordres (incréments de 10, comme le legacy) après glisser-déposer entre deux sœurs.
+ */
+export function computeOrdersAfterDragWithinSiblings(
+  rows: readonly CategoryAdminListRowDto[],
+  mainView: CategoryOrderMainView,
+  activeId: string,
+  overId: string,
+): CategoryDisplayOrderPatchItem[] | null {
+  if (activeId === overId) return null;
+  const siblings =
+    mainView === 'entry' ? siblingsForReceptionOrder(rows, activeId) : siblingsForCaisseOrder(rows, activeId);
+  const oi = siblings.findIndex((r) => r.id === activeId);
+  const ti = siblings.findIndex((r) => r.id === overId);
+  if (oi < 0 || ti < 0) return null;
+  const active = siblings[oi];
+  const over = siblings[ti];
+  if ((active.parent_id ?? null) !== (over.parent_id ?? null)) return null;
+  const reordered = arrayMove(siblings, oi, ti);
+  const step = 10;
+  return reordered.map((r, i) => ({
+    categoryId: r.id,
+    ...(mainView === 'entry' ? { display_order_entry: i * step } : { display_order: i * step }),
+  }));
+}
+
 function sameParent(a: CategoryAdminListRowDto, b: CategoryAdminListRowDto): boolean {
   return (a.parent_id ?? null) === (b.parent_id ?? null);
 }

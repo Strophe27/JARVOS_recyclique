@@ -1,0 +1,260 @@
+import { Alert, Badge, Button, Group, Paper, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import { RefreshCw, Settings2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { listPahekoCashSessionCloseMappings } from '../../api/admin-paheko-mappings-client';
+import { listPahekoOutboxItems } from '../../api/admin-paheko-outbox-client';
+import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
+import { spaNavigateTo } from '../../app/demo/spa-navigate';
+import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { ADMIN_SUPER_PAGE_MANIFEST_GUARDS } from './admin-super-page-guards';
+
+function formatInstant(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return iso;
+  return new Date(t).toLocaleString('fr-FR');
+}
+
+function statusColor(status: string): 'teal' | 'yellow' | 'red' | 'gray' {
+  if (status === 'delivered') return 'teal';
+  if (status === 'pending' || status === 'processing') return 'yellow';
+  if (status === 'failed') return 'red';
+  return 'gray';
+}
+
+function statusLabel(status: string): string {
+  if (status === 'delivered') return 'Transmise';
+  if (status === 'pending' || status === 'processing') return 'En cours';
+  if (status === 'failed') return 'À vérifier';
+  return 'Inconnue';
+}
+
+function statusHelper(status: string): string {
+  if (status === 'delivered') return 'Clôture transmise à Paheko.';
+  if (status === 'pending' || status === 'processing') return 'Transmission en cours de traitement.';
+  if (status === 'failed') return 'Une vérification du support technique est nécessaire.';
+  return 'Statut à confirmer.';
+}
+
+export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
+  const auth = useAuthPort();
+  const envelope = auth.getContextEnvelope();
+  const isSuperAdminUi = ADMIN_SUPER_PAGE_MANIFEST_GUARDS.requiredPermissionKeys.every((key) =>
+    envelope.permissions.permissionKeys.includes(key),
+  );
+  const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [mappingCount, setMappingCount] = useState({ active: 0, disabled: 0 });
+  const [outboxSummary, setOutboxSummary] = useState({ pending: 0, delivered: 0, failed: 0 });
+  const [recentFlows, setRecentFlows] = useState<
+    readonly {
+      id: string;
+      outbox_status: string;
+      updated_at: string;
+    }[]
+  >([]);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    setLoadError(null);
+    const [mappingsRes, outboxRes] = await Promise.all([
+      listPahekoCashSessionCloseMappings(auth, { limit: 200 }),
+      listPahekoOutboxItems(auth, { limit: 20, operation_type: 'cash_session_close' }),
+    ]);
+    if (!mappingsRes.ok) {
+      setLoadError(mappingsRes.detail);
+      setBusy(false);
+      return;
+    }
+    if (!outboxRes.ok) {
+      setLoadError(outboxRes.detail);
+      setBusy(false);
+      return;
+    }
+    const currentSiteId = envelope.siteId?.trim() ?? '';
+    const siteScopedOutbox = currentSiteId
+      ? outboxRes.data.filter((row) => (row.site_id ?? '').trim() === currentSiteId)
+      : outboxRes.data;
+    setMappingCount({
+      active: mappingsRes.data.filter((row) => row.enabled).length,
+      disabled: mappingsRes.data.filter((row) => !row.enabled).length,
+    });
+    const pending = siteScopedOutbox.filter((row) => row.outbox_status === 'pending' || row.outbox_status === 'processing')
+      .length;
+    const delivered = siteScopedOutbox.filter((row) => row.outbox_status === 'delivered').length;
+    const failed = siteScopedOutbox.filter((row) => row.outbox_status === 'failed').length;
+    setOutboxSummary({ pending, delivered, failed });
+    setRecentFlows(
+      siteScopedOutbox.slice(0, 8).map((row) => ({
+        id: row.id,
+        outbox_status: row.outbox_status,
+        updated_at: row.updated_at,
+      })),
+    );
+    setBusy(false);
+  }, [auth, envelope.siteId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const latestActivity = useMemo(() => recentFlows[0]?.updated_at ?? null, [recentFlows]);
+  const hasConfigurationGap = mappingCount.active === 0;
+  const hasAttention = outboxSummary.failed > 0;
+
+  return (
+    <Stack gap="md" data-testid="admin-accounting-hub">
+      <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+        <div>
+          <Title order={1} size="h2" m={0}>
+            Suivi comptable Paheko
+          </Title>
+          <Text size="sm" c="dimmed" mt={4}>
+            Suivez les clôtures du site actif et repérez rapidement celles qui demandent une attention.
+          </Text>
+        </div>
+        <Button
+          variant="default"
+          leftSection={<RefreshCw size={16} />}
+          onClick={() => void load()}
+          loading={busy}
+          data-testid="admin-accounting-hub-refresh"
+        >
+          Actualiser
+        </Button>
+      </Group>
+
+      <Alert color="gray" title="À quoi sert cette page">
+        Vue quotidienne de suivi: ce qui est transmis, en cours ou à vérifier. Les réglages rares et le support
+        technique détaillé restent dans les paramètres avancés.
+      </Alert>
+
+      {hasConfigurationGap ? (
+        <Alert color="orange" title="Configuration à compléter">
+          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+            <Text size="sm">
+              Aucun réglage de clôture Paheko actif n’est disponible pour le moment.
+            </Text>
+            {isSuperAdminUi ? (
+              <Button
+                variant="light"
+                leftSection={<Settings2 size={16} />}
+                onClick={() => spaNavigateTo('/admin/settings')}
+                data-testid="admin-accounting-hub-nav-settings"
+              >
+                Ouvrir les paramètres avancés
+              </Button>
+            ) : null}
+          </Group>
+        </Alert>
+      ) : null}
+
+      {hasAttention ? (
+        <Alert color="orange" title="Clôtures à vérifier">
+          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+            <Text size="sm">
+              Une ou plusieurs clôtures demandent une vérification par le support technique.
+            </Text>
+            {isSuperAdminUi ? (
+              <Button
+                variant="light"
+                leftSection={<Settings2 size={16} />}
+                onClick={() => spaNavigateTo('/admin/settings')}
+                data-testid="admin-accounting-hub-nav-support"
+              >
+                Ouvrir le support technique
+              </Button>
+            ) : null}
+          </Group>
+        </Alert>
+      ) : null}
+
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
+        <Paper withBorder p="sm">
+          <Text size="xs" c="dimmed">
+            Transmises
+          </Text>
+          <Text size="lg" fw={700}>
+            {outboxSummary.delivered}
+          </Text>
+        </Paper>
+        <Paper withBorder p="sm">
+          <Text size="xs" c="dimmed">
+            En cours
+          </Text>
+          <Text size="lg" fw={700}>
+            {outboxSummary.pending}
+          </Text>
+        </Paper>
+        <Paper withBorder p="sm">
+          <Text size="xs" c="dimmed">
+            À vérifier
+          </Text>
+          <Text size="lg" fw={700}>
+            {outboxSummary.failed}
+          </Text>
+        </Paper>
+        <Paper withBorder p="sm">
+          <Text size="xs" c="dimmed">
+            Dernière activité
+          </Text>
+          <Text size="lg" fw={700}>
+            {formatInstant(latestActivity)}
+          </Text>
+        </Paper>
+      </SimpleGrid>
+
+      {loadError ? (
+        <Alert color="red" title="Chargement partiel">
+          {loadError}
+        </Alert>
+      ) : null}
+
+      <Paper withBorder p="md">
+        <Text fw={600} mb="sm">
+          Clôtures récentes
+        </Text>
+        <Text size="sm" c="dimmed" mb="md">
+          Historique récent des clôtures du site actif, avec un statut compréhensible au premier coup d’œil.
+        </Text>
+        <Alert color="blue" mb="md" title="Périmètre affiché">
+          Cette vue est limitée au site actif de votre contexte.
+        </Alert>
+        {recentFlows.length === 0 ? (
+          <Text size="sm" c="dimmed" data-testid="admin-accounting-hub-no-flows">
+            Aucune clôture récente visible.
+          </Text>
+        ) : (
+          <Table striped highlightOnHover data-testid="admin-accounting-hub-history-table">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Date</Table.Th>
+                <Table.Th>Situation</Table.Th>
+                <Table.Th>Résumé</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {recentFlows.map((row) => (
+                <Table.Tr key={row.id}>
+                  <Table.Td>
+                    <Text size="sm">{formatInstant(row.updated_at)}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <Badge color={statusColor(row.outbox_status)} variant="light">
+                        {statusLabel(row.outbox_status)}
+                      </Badge>
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">{statusHelper(row.outbox_status)}</Text>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        )}
+      </Paper>
+    </Stack>
+  );
+}
