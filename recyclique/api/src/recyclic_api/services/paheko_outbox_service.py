@@ -37,6 +37,7 @@ def enqueue_cash_session_close_outbox(
     *,
     closed_session: CashSession,
     correlation_id: str,
+    accounting_close_snapshot: Optional[dict[str, Any]] = None,
 ) -> PahekoOutboxItem:
     """
     Insère une ligne outbox pour une session déjà passée à **closed** en mémoire ;
@@ -62,6 +63,9 @@ def enqueue_cash_session_close_outbox(
         "theoretical_amount": closed_session.closing_amount,
         "variance": closed_session.variance,
     }
+    # Story 22.6 — charge figée pour le builder Paheko (22.7) sans relire le legacy vente.
+    if accounting_close_snapshot is not None:
+        payload["accounting_close_snapshot_frozen"] = accounting_close_snapshot
 
     row = PahekoOutboxItem(
         operation_type=OPERATION_CASH_SESSION_CLOSE,

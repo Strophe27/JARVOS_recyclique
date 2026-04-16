@@ -55,6 +55,11 @@ class AuditActionType(str, enum.Enum):
     DB_EXPORT = "db_export"
     DB_PURGE = "db_purge"
 
+    # Story 22.3 — gouvernance comptable expert (révision publiée, moyens, comptes globaux)
+    ACCOUNTING_GLOBAL_SETTINGS_UPDATED = "accounting_global_settings_updated"
+    ACCOUNTING_PAYMENT_METHOD_CHANGED = "accounting_payment_method_changed"
+    ACCOUNTING_CONFIG_PUBLISHED = "accounting_config_published"
+
 class AuditLog(Base):
     """Journal d'audit centralisé pour toutes les actions importantes"""
     __tablename__ = "audit_logs"

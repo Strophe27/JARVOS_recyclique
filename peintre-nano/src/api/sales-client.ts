@@ -59,6 +59,8 @@ export type SaleCreateBody = {
   donation?: number;
   payment_method?: 'cash' | 'card' | 'check' | 'free';
   payments?: Array<{ payment_method: string; amount: number }>;
+  /** Story 22.4 — journal serveur `donation_surplus`, distinct du règlement */
+  donation_surplus?: Array<{ payment_method: string; amount: number }>;
   note?: string | null;
   special_encaissement_kind?: SpecialEncaissementKindV1;
   social_action_kind?: SocialActionKindV1;
@@ -104,6 +106,7 @@ export type SaleFinalizeHeldBody = {
   donation?: number | null;
   payment_method?: 'cash' | 'card' | 'check' | 'free';
   payments?: Array<{ payment_method: string; amount: number }>;
+  donation_surplus?: Array<{ payment_method: string; amount: number }>;
   note?: string | null;
 };
 
@@ -414,6 +417,10 @@ export type SaleReversalCreateBody = {
   reason_code: 'ERREUR_SAISIE' | 'RETOUR_ARTICLE' | 'ANNULATION_CLIENT' | 'AUTRE';
   detail?: string | null;
   idempotency_key?: string | null;
+  /** Story 22.5 — moyen de sortie réel (défaut serveur cash). */
+  refund_payment_method?: 'cash' | 'check' | 'card';
+  /** Parcours expert N-1 clos + permission accounting.prior_year_refund. */
+  expert_prior_year_refund?: boolean;
 };
 
 export type SaleReversalCreateResult = { ok: true; reversalId: string; raw: unknown } | SalesHttpError;

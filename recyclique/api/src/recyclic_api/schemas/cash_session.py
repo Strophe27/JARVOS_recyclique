@@ -121,6 +121,26 @@ class CashSessionResponse(CashSessionBase):
         description="Identifiant de la ligne paheko_outbox_items ; détail admin GET .../paheko-outbox/items/{id}.",
     )
 
+    # Story 22.3 — révision comptable figée à l'ouverture (référence stable pour snapshot 22.6)
+    accounting_config_revision_id: Optional[str] = Field(
+        None,
+        description="Identifiant de la révision comptable publiée au moment de l'ouverture de session.",
+    )
+    # Story 22.6 — snapshot figé (null tant que session ouverte ou avant migration)
+    accounting_close_snapshot: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Snapshot comptable immutable après clôture (journal payment_transactions + corrélation).",
+    )
+
+    @field_validator('accounting_config_revision_id', mode='before')
+    @classmethod
+    def convert_accounting_revision_uuid_to_str(cls, v):
+        if v is None:
+            return v
+        if hasattr(v, '__str__'):
+            return str(v)
+        return v
+
     @field_validator('id', mode='before')
     @classmethod
     def convert_id_uuid_to_str(cls, v):

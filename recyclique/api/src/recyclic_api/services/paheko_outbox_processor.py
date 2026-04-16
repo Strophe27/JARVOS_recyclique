@@ -12,6 +12,12 @@ from sqlalchemy.orm import Session
 from recyclic_api.core.config import settings
 from recyclic_api.models.paheko_outbox import PahekoOutboxItem, PahekoOutboxOperationType, PahekoOutboxStatus
 from recyclic_api.services.paheko_accounting_client import PahekoAccountingClient, PahekoHttpResult
+from recyclic_api.services.paheko_close_batch_builder import (
+    PAHEKO_CLOSE_BATCH_STATE_KEY,
+    build_cash_session_close_batch_from_enriched_payload,
+    merge_state_with_planned,
+    parse_remote_transaction_id,
+)
 from recyclic_api.services.paheko_mapping_service import resolve_enriched_payload_for_item
 from recyclic_api.services.paheko_transaction_payload_builder import build_cash_session_close_transaction_payload
 from recyclic_api.services.paheko_outbox_transition_audit import (
@@ -141,6 +147,17 @@ def process_next_paheko_outbox_item(
         db.commit()
         return item
 
+    if isinstance(post_payload.get("accounting_close_snapshot_frozen"), dict):
+        _process_cash_session_close_batch(
+            db,
+            item,
+            post_payload,
+            http_client,
+            now=now,
+        )
+        db.commit()
+        return item
+
     paheko_body, body_code, body_msg = build_cash_session_close_transaction_payload(post_payload)
     if body_code is not None or paheko_body is None:
         _apply_mapping_resolution_failure(
@@ -164,6 +181,161 @@ def process_next_paheko_outbox_item(
     _apply_http_result(db, item, result)
     db.commit()
     return item
+
+
+def _persist_payload_state(item: PahekoOutboxItem, state: dict) -> None:
+    pl = dict(item.payload or {})
+    pl[PAHEKO_CLOSE_BATCH_STATE_KEY] = state
+    item.payload = pl
+
+
+def _process_cash_session_close_batch(
+    db: Session,
+    item: PahekoOutboxItem,
+    post_payload: dict,
+    http_client: PahekoAccountingClient,
+    *,
+    now: datetime,
+) -> None:
+    """
+    Story 22.7 — N POST idempotents avec sous-clés ; reprise des seuls échecs (resume_failed_sub_writes_v1).
+
+    Transport Epic 8 inchangé (un seul enregistrement outbox par session ; états dans ``payload`` JSON).
+    """
+    planned_rows, bcode, bmsg = build_cash_session_close_batch_from_enriched_payload(
+        post_payload,
+        batch_idempotency_key=item.idempotency_key,
+    )
+    if bcode is not None or planned_rows is None:
+        _apply_mapping_resolution_failure(
+            db,
+            item,
+            now=now,
+            code=bcode or "batch_build_failed",
+            message=bmsg or "Construction batch Paheko (snapshot figé) impossible.",
+        )
+        return
+
+    item.touch_attempt()
+    db.flush()
+
+    prev_state = None
+    if isinstance(item.payload, dict):
+        prev_state = item.payload.get(PAHEKO_CLOSE_BATCH_STATE_KEY)
+    state = merge_state_with_planned(
+        prev_state if isinstance(prev_state, dict) else None,
+        batch_idempotency_key=item.idempotency_key,
+        planned=planned_rows,
+    )
+
+    any_retryable_failure = False
+    any_terminal_failure = False
+    last_summary: str | None = None
+    last_batch_http_status: int | None = None
+    last_success_line_http: int | None = None
+
+    for planned, body in planned_rows:
+        idx = planned["index"]
+        sw = next((s for s in state["sub_writes"] if int(s["index"]) == idx), None)
+        if sw is None:
+            continue
+        if sw.get("status") in ("delivered", "skipped_zero"):
+            continue
+        if body is None:
+            sw["status"] = "skipped_zero"
+            continue
+
+        sub_key = sw["idempotency_sub_key"]
+        result = http_client.post_cash_session_close(
+            body,
+            correlation_id=item.correlation_id,
+            idempotency_key=sub_key,
+        )
+
+        if result.error_message:
+            sw["last_http_status"] = result.http_status
+            sw["last_error"] = result.error_message
+            retryable = _is_retryable_http_status(result.http_status)
+            if retryable:
+                sw["status"] = "failed"
+                any_retryable_failure = True
+            else:
+                sw["status"] = "failed"
+                any_terminal_failure = True
+            if result.http_status is not None:
+                last_batch_http_status = result.http_status
+            last_summary = result.error_message
+            continue
+
+        status = result.http_status or 0
+        sw["last_http_status"] = status
+        if 200 <= status < 300 or status == 409:
+            rid = parse_remote_transaction_id(result.response_text or "")
+            sw["status"] = "delivered"
+            sw["last_error"] = None
+            last_success_line_http = status
+            if rid:
+                sw["remote_transaction_id"] = rid
+            elif status == 409:
+                sw["remote_transaction_id"] = sw.get("remote_transaction_id") or "idempotent_duplicate"
+            continue
+
+        sw["last_error"] = f"http_status_{status}"
+        last_batch_http_status = status
+        retryable = _is_retryable_http_status(status)
+        if retryable:
+            sw["status"] = "failed"
+            any_retryable_failure = True
+        else:
+            sw["status"] = "failed"
+            any_terminal_failure = True
+        last_summary = sw["last_error"]
+
+    subs = state["sub_writes"]
+    all_done = all(s.get("status") in ("delivered", "skipped_zero") for s in subs)
+    any_delivered = any(s.get("status") == "delivered" for s in subs)
+    state["all_delivered"] = bool(all_done)
+    state["partial_success"] = bool(any_delivered and not all_done)
+
+    _persist_payload_state(item, state)
+
+    if all_done:
+        final_http = last_success_line_http if last_success_line_http is not None else 200
+        ok = PahekoHttpResult(http_status=final_http, response_text="{}", error_message=None)
+        _apply_http_result(db, item, ok)
+        return
+
+    if any_terminal_failure:
+        item.last_error = last_summary or "batch_sub_write_terminal_failure"
+        item.last_http_status = last_batch_http_status
+        fs, fo = item.sync_state_core, item.outbox_status
+        item.outbox_status = PahekoOutboxStatus.failed.value
+        item.sync_state_core = "en_quarantaine"
+        item.next_retry_at = None
+        item.updated_at = now
+        append_paheko_outbox_transition(
+            db,
+            item=item,
+            transition_name=TRANSITION_AUTO_QUARANTINE_HTTP,
+            from_sync_state=fs,
+            to_sync_state=item.sync_state_core,
+            from_outbox_status=fo,
+            to_outbox_status=item.outbox_status,
+            reason=item.last_error or "batch_partial_terminal",
+            actor_user_id=None,
+            context_extra={"batch": True, "partial": state.get("partial_success")},
+        )
+        return
+
+    if any_retryable_failure:
+        item.last_error = last_summary or "batch_sub_write_retryable"
+        item.last_http_status = last_batch_http_status
+        max_a = int(settings.PAHEKO_OUTBOX_MAX_ATTEMPTS)
+        if (item.attempt_count or 0) >= max_a:
+            _terminal_quarantine(db, item, now, "max_attempts_exceeded")
+            return
+        _schedule_retry(item, now)
+        return
 
 
 def _schedule_retry(item: PahekoOutboxItem, now: datetime) -> None:

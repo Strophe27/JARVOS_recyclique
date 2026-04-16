@@ -76,7 +76,7 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`automatisation-bmad/`** — Recueil technique pour **orchestrer** le cycle BMAD dans Cursor (chemins, `sprint-status`, **mapping colonne CSV → skills Cursor**, anytime vs phase 4, HITL, graphe minimal, **§15 cadre : pas d'exécution automatique headless**). Spec runners : **automatisation-bmad/epic-story-runner-spec.md** ; agents **`.cursor/agents/bmad-epic-runner.md`** / **`bmad-story-runner.md`** ; skill **`bmad-epic-runner`**. Index : **automatisation-bmad/index.md**.
   _(Charger : skill orchestrateur, pipeline story par story, gates tests/CI, contrat d'exécution au-dessus de BMAD.)_
 
-- **`migration-paheko/`** — Guides Paheko/RecyClique, TODO, comptes-rendus, décla éco-organismes, specs d'intégration tiers (ex. HelloAsso). Croiser avec **consolidation-1.4.5/** pour le code. Détail : **migration-paheko/index.md**.
+- **`migration-paheko/`** — Guides Paheko/RecyClique, TODO, comptes-rendus, décla éco-organismes, specs d'intégration tiers (ex. HelloAsso). Croiser avec **consolidation-1.4.5/** pour le code. Détail : **migration-paheko/index.md**. **PRD caisse / compta / Paheko (v1.0, 2026-04-15)** : [migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md](migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md).
   _(Charger : intégration Paheko, décla éco-organismes, historique décisions, cadrage HelloAsso / paiements en ligne.)_
 
 - **`paheko/`** — Guide et référence Paheko : clone, doc officielle (Fossil). Code source dans **paheko/repo/** (gitignore). Détail : **paheko/index.md**.

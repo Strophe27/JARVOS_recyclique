@@ -16,6 +16,10 @@ from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.schemas.cash_session import CashSessionFilters, CashSessionStep as ApiCashSessionStep
 from recyclic_api.core.logging import log_transaction_event
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.services.cash_session_journal_snapshot import (
+    build_accounting_close_snapshot_v1,
+    compute_payment_journal_aggregates,
+)
 from recyclic_api.services.stats_service import _created_at_end_filter
 
 CLOSE_VARIANCE_TOLERANCE = 0.05
@@ -146,6 +150,16 @@ class CashSessionService:
             
             cash_session = CashSession(**session_kwargs)
             cash_session.set_current_step(CashSessionStep.ENTRY)
+
+            # Story 22.3 — figer la révision comptable publiée à l'ouverture (snapshot 22.6)
+            from recyclic_api.services.accounting_expert_service import AccountingExpertService
+
+            rev = AccountingExpertService(self.db).get_latest_revision()
+            if rev is None:
+                raise ValidationError(
+                    "Aucune révision comptable publiée — contactez un super-admin pour publier la configuration."
+                )
+            cash_session.accounting_config_revision_id = rev.id
 
             self.db.add(cash_session)
             self.db.commit()
@@ -777,12 +791,27 @@ class CashSessionService:
         )
 
     def get_closing_preview(self, session: CashSession, actual_amount: float) -> Dict[str, float]:
-        total_donations = self.get_total_donations_for_session(str(session.id))
-        theoretical_amount = session.initial_amount + (session.total_sales or 0) + total_donations
+        """Pré-clôture : montant théorique en caisse — priorité au journal 22.1/22.6, repli legacy si journal vide."""
+        sid = UUID(str(session.id)) if not isinstance(session.id, UUID) else session.id
+        journal = compute_payment_journal_aggregates(
+            self.db,
+            cash_session_id=sid,
+            use_legacy_preview_if_no_journal=True,
+        )
+
+        if journal.payment_transaction_line_count > 0:
+            theoretical_amount = float(session.initial_amount) + journal.cash_signed_net_from_journal
+            total_donations = float(journal.donation_surplus_total)
+        else:
+            total_donations = self.get_total_donations_for_session(str(session.id))
+            theoretical_amount = float(session.initial_amount or 0) + float(session.total_sales or 0) + float(
+                total_donations
+            )
+
         variance = actual_amount - theoretical_amount
         return {
-            "total_donations": total_donations,
-            "theoretical_amount": theoretical_amount,
+            "total_donations": float(total_donations),
+            "theoretical_amount": float(theoretical_amount),
             "variance": variance,
         }
 
@@ -847,11 +876,41 @@ class CashSessionService:
         # Story 8.6 : garde unique A1 (quarantaine session + mapping) avant mutation / outbox.
         assert_a1_allowed_for_cash_session_close(self.db, session, sync_correlation_id=cid)
 
+        # Story 22.6 — immuabilité : refuser une seconde écriture (conformité append-only / pas de remplacement).
+        if getattr(session, "accounting_close_snapshot", None) is not None:
+            raise ConflictError("Snapshot comptable de clôture déjà présent pour cette session.")
+
+        journal_totals = compute_payment_journal_aggregates(
+            self.db,
+            cash_session_id=session.id,
+            use_legacy_preview_if_no_journal=True,
+        )
+
         # Utiliser la nouvelle méthode du modèle avec le montant théorique calculé
         session.close_with_amounts(actual_amount, normalized_comment, preview["theoretical_amount"])
 
-        # Story 8.1 : outbox Paheko dans la même transaction que la clôture locale (AR11).
-        enqueue_cash_session_close_outbox(self.db, closed_session=session, correlation_id=cid)
+        closed_iso = session.closed_at.isoformat() if session.closed_at else None
+        snap = build_accounting_close_snapshot_v1(
+            session_id=session.id,
+            site_id=session.site_id,
+            register_id=session.register_id,
+            accounting_config_revision_id=session.accounting_config_revision_id,
+            closed_at_iso=closed_iso,
+            sync_correlation_id=cid,
+            totals=journal_totals,
+            theoretical_cash_amount=float(preview["theoretical_amount"]),
+            actual_cash_amount=float(actual_amount),
+            cash_variance=float(preview["variance"]),
+        )
+        session.accounting_close_snapshot = snap.model_dump_for_storage()
+
+        # Story 8.1 : outbox Paheko dans la même transaction que la clôture locale + snapshot (AR11 / 22.6).
+        enqueue_cash_session_close_outbox(
+            self.db,
+            closed_session=session,
+            correlation_id=cid,
+            accounting_close_snapshot=snap.model_dump_for_storage(),
+        )
 
         self.db.commit()
         self.db.refresh(session)

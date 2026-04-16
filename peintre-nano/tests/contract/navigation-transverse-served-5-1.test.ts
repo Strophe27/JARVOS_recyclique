@@ -500,6 +500,17 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
           : [...ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS.requiredPermissionKeys],
       );
       expect(page.requiresSite).toBe(ADMIN_TRANSVERSE_LIST_PAGE_MANIFEST_GUARDS.requiresSite);
+      if (spec.pageKey === 'transverse-admin-reception-stats') {
+        expect(page.slots.map((s) => s.slotId)).toEqual([
+          'admin.transverse-list.header',
+          'admin.transverse-list.main',
+        ]);
+        expect(page.slots.map((s) => s.widgetType)).toEqual([
+          'demo.text.block',
+          'admin.reception.stats.supervision',
+        ]);
+        continue;
+      }
       if (
         spec.pageKey === 'transverse-admin-users' ||
         spec.pageKey === 'transverse-admin-groups' ||

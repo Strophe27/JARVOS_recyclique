@@ -38,6 +38,9 @@ SENSITIVE_OPERATION_DB_PURGE_TRANSACTIONS = "db.purge_transactions"
 SENSITIVE_OPERATION_REPORTS_CASH_SESSIONS_EXPORT_BULK = "reports.cash_sessions.export_bulk"
 SENSITIVE_OPERATION_REPORTS_RECEPTION_TICKETS_EXPORT_BULK = "reports.reception_tickets.export_bulk"
 
+# Story 22.3 — paramétrage comptable expert (moyens + comptes globaux + publication de révision)
+SENSITIVE_OPERATION_ACCOUNTING_EXPERT = "accounting.expert.mutation"
+
 # Alignement approximatif avec le rate limit ``POST /auth/pin`` (5/min) : fenêtre Redis.
 _STEP_UP_FAIL_WINDOW_SEC = 60
 _STEP_UP_MAX_FAILS_PER_WINDOW = 5

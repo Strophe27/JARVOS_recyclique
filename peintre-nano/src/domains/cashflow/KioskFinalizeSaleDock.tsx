@@ -1,7 +1,7 @@
 import { Button, Modal, Text, Textarea, TextInput } from '@mantine/core';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
-import { postCreateSale, postFinalizeHeldSale } from '../../api/sales-client';
+import { postCreateSale, postFinalizeHeldSale, type SaleCreateBody } from '../../api/sales-client';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import {
@@ -118,6 +118,17 @@ function amountReceivedLabel(method: Exclude<FinalizePaymentMethod, 'free'>): st
   return 'Montant carte';
 }
 
+/** Moyen financier pour l’API (modal carte souvent désactivée → legacy cash). */
+function apiPaymentMethodFromDock(m: Exclude<FinalizePaymentMethod, 'free'>): 'cash' | 'check' | 'card' {
+  if (m === 'check') return 'check';
+  if (m === 'card') return 'card';
+  return 'cash';
+}
+
+function slimPaymentLines(lines: readonly FinalizePaymentLine[]): Array<{ payment_method: string; amount: number }> {
+  return lines.map(({ payment_method, amount }) => ({ payment_method, amount }));
+}
+
 /**
  * Bloc d’encaissement toujours visible (colonne ticket kiosque) — logique métier CREOS conservée,
  * structure visuelle et workflow rapprochés du legacy.
@@ -150,6 +161,16 @@ export function KioskFinalizeSaleDock(): ReactNode {
       setCashSessionIdInput(fromEnv);
     }
   }, [draft.cashSessionIdInput, envelope.cashSessionId]);
+
+  /** Story 22.4 — gratuité : pas d’encaissement cumulé au même ticket. */
+  useEffect(() => {
+    if (!confirmOpen || busy) return;
+    if (draft.paymentMethod === 'free') {
+      setPayments([]);
+      setAmountReceived('');
+      setLoopAmount('');
+    }
+  }, [draft.paymentMethod, confirmOpen, busy]);
 
   const canSubmit =
     !stale &&
@@ -221,6 +242,11 @@ export function KioskFinalizeSaleDock(): ReactNode {
       loopPaymentSelectRef.current?.focus();
     }, 0);
   };
+
+  const closeFinalizeModal = useCallback(() => {
+    if (busyRef.current) return;
+    setConfirmOpen(false);
+  }, []);
 
   const updateFinalizeNumericInput = (
     input: HTMLInputElement,
@@ -296,7 +322,10 @@ export function KioskFinalizeSaleDock(): ReactNode {
     setSaleNote('');
     setPayments([]);
     setLoopAmount('');
-    setLoopPaymentMethod(coerceLegacyAvailableFinalizeMethod(draft.paymentMethod));
+    {
+      const m = coerceLegacyAvailableFinalizeMethod(draft.paymentMethod);
+      setLoopPaymentMethod(m === 'free' ? 'cash' : m);
+    }
     const timer = window.setTimeout(() => {
       paymentMethodSelectRef.current?.focus();
     }, 0);
@@ -397,14 +426,30 @@ export function KioskFinalizeSaleDock(): ReactNode {
     clearCashflowDraftSubmitError();
     setBusy(true);
     try {
+      const noteOpt = saleNote.trim() ? { note: saleNote.trim() } : {};
+      const baseDon = { donation: parsedDonation, ...noteOpt };
+      const legacyPm = apiPaymentMethodFromDock(
+        coerceLegacyAvailableFinalizeMethod(draft.paymentMethod) as Exclude<FinalizePaymentMethod, 'free'>,
+      );
+
       if (draft.activeHeldSaleId) {
-        const res = await postFinalizeHeldSale(
-          draft.activeHeldSaleId,
-          payments.length > 0
-            ? { payments, donation: parsedDonation, ...(saleNote.trim() ? { note: saleNote.trim() } : {}) }
-            : { payment_method: draft.paymentMethod, donation: parsedDonation, ...(saleNote.trim() ? { note: saleNote.trim() } : {}) },
-          auth,
-        );
+        let finalizePayload: Parameters<typeof postFinalizeHeldSale>[1];
+        if (payments.length > 0) {
+          finalizePayload = { payments: slimPaymentLines(payments), ...baseDon };
+        } else if (!paymentMethodNeedsAmount) {
+          finalizePayload = { payment_method: 'free', ...baseDon };
+        } else if (parsedAmountReceived !== null && parsedAmountReceived > amountDue + 1e-6) {
+          const excess = parsedAmountReceived - amountDue;
+          finalizePayload = {
+            payments: [{ payment_method: legacyPm, amount: amountDue }],
+            donation_surplus: [{ payment_method: legacyPm, amount: excess }],
+            ...baseDon,
+          };
+        } else {
+          finalizePayload = { payment_method: legacyPm, ...baseDon };
+        }
+
+        const res = await postFinalizeHeldSale(draft.activeHeldSaleId, finalizePayload, auth);
         if (!res.ok) {
           setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(res));
           return;
@@ -414,7 +459,8 @@ export function KioskFinalizeSaleDock(): ReactNode {
         bumpHeldTicketsListRefresh();
         return;
       }
-      const body = {
+
+      const body: SaleCreateBody = {
         cash_session_id: draft.cashSessionIdInput.trim(),
         items: draft.lines.map((l) => ({
           category: l.category,
@@ -423,11 +469,21 @@ export function KioskFinalizeSaleDock(): ReactNode {
           unit_price: l.unitPrice,
           total_price: l.totalPrice,
         })),
-        total_amount: draft.totalAmount,
-        donation: parsedDonation,
-        ...(saleNote.trim() ? { note: saleNote.trim() } : {}),
-        ...(payments.length > 0 ? { payments } : { payment_method: draft.paymentMethod }),
+        total_amount: amountDue,
+        ...baseDon,
       };
+      if (payments.length > 0) {
+        body.payments = slimPaymentLines(payments);
+      } else if (!paymentMethodNeedsAmount) {
+        body.payment_method = 'free';
+      } else if (parsedAmountReceived !== null && parsedAmountReceived > amountDue + 1e-6) {
+        const excess = parsedAmountReceived - amountDue;
+        body.payments = [{ payment_method: legacyPm, amount: amountDue }];
+        body.donation_surplus = [{ payment_method: legacyPm, amount: excess }];
+      } else {
+        body.payment_method = legacyPm;
+      }
+
       const res = await postCreateSale(body, auth);
       if (!res.ok) {
         setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(res));
@@ -508,7 +564,8 @@ export function KioskFinalizeSaleDock(): ReactNode {
       }
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (!busyRef.current) setConfirmOpen(false);
+        e.stopPropagation();
+        closeFinalizeModal();
         return;
       }
       if (e.key === 'Tab') {
@@ -520,6 +577,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
       if (e.key !== 'Enter' || e.shiftKey) return;
       if (busyRef.current) return;
       if (target?.tagName === 'TEXTAREA') return;
+      if (target && isInteractiveActionTarget(target)) return;
       if (
         target &&
         (target.closest('[data-testid="cashflow-finalize-add-payment"]') ||
@@ -574,9 +632,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
     <div className={dockClasses.root} data-testid="cashflow-kiosk-finalize-dock">
       <Modal
         opened={confirmOpen}
-        onClose={() => {
-          if (!busy) setConfirmOpen(false);
-        }}
+        onClose={closeFinalizeModal}
         title="Finaliser la vente"
         data-testid="cashflow-kiosk-finalize-modal"
         withCloseButton={false}
@@ -624,6 +680,9 @@ export function KioskFinalizeSaleDock(): ReactNode {
                 </option>
                 <option value="free">Gratuit / don</option>
               </select>
+              <Text size="xs" c="dimmed" mt={4} data-testid="cashflow-finalize-card-note">
+                Carte indisponible dans cette modale, comme sur le legacy.
+              </Text>
             </label>
 
             {paymentMethodNeedsAmount ? (
@@ -746,6 +805,9 @@ export function KioskFinalizeSaleDock(): ReactNode {
                       Carte (indisponible)
                     </option>
                   </select>
+                  <Text size="xs" c="dimmed" mt={4} data-testid="cashflow-finalize-loop-card-note">
+                    Carte indisponible dans cette modale, comme sur le legacy.
+                  </Text>
                 </label>
                 <TextInput
                   ref={loopPaymentInputRef}
@@ -801,9 +863,8 @@ export function KioskFinalizeSaleDock(): ReactNode {
           <div className={dockClasses.footerActions}>
             <Button
               variant="default"
-              onClick={() => {
-                if (!busy) setConfirmOpen(false);
-              }}
+              onClick={closeFinalizeModal}
+              data-testid="cashflow-finalize-cancel"
             >
               Annuler
             </Button>

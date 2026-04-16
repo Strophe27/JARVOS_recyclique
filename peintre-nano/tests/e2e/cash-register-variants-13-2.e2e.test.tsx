@@ -8,6 +8,7 @@ import { resetCoalescedGetCurrentOpenCashSessionForTests } from '../../src/domai
 import { resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
+import { expectCashflowNominalSaleSurface } from '../helpers/cashflow-nominal-sale-surface';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -150,7 +151,7 @@ describe('E2E — variantes caisse virtuelle / saisie différée (Story 13.2)', 
 
     await waitFor(() => {
       expect(screen.getByTestId('cash-register-sale-kiosk')).toBeTruthy();
-      expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
+      expectCashflowNominalSaleSurface();
     });
   });
 

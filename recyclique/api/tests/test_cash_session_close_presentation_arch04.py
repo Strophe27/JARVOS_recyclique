@@ -93,4 +93,64 @@ def test_present_closed_session_sets_report_url_and_skips_email_without_recipien
     )
     assert result.report_email_sent is False
     mock_report.assert_called_once_with(db, closed)
-    mock_enrich.assert_called_once_with(closed, service)
+    mock_enrich.assert_called_once_with(
+        closed,
+        service,
+        degrade_snapshot_on_validation_error=True,
+    )
+
+
+@patch("recyclic_api.api.api_v1.endpoints.cash_sessions.generate_cash_session_report")
+@patch("recyclic_api.application.cash_session_close_presentation.enrich_session_response")
+@patch("recyclic_api.application.cash_session_close_presentation.settings")
+def test_present_closed_session_degrades_when_report_generation_fails(
+    mock_settings,
+    mock_enrich,
+    mock_report,
+):
+    mock_settings.API_V1_STR = "/api/v1"
+    mock_settings.CASH_SESSION_REPORT_RECIPIENT = "reports@example.com"
+    mock_settings.CASH_SESSION_REPORT_TOKEN_TTL_SECONDS = 3600
+    mock_report.side_effect = RuntimeError("csv boom")
+
+    closed = SimpleNamespace(
+        id=uuid4(),
+        operator_id=uuid4(),
+        operator=None,
+        actual_amount=10.0,
+        closing_amount=None,
+        initial_amount=5.0,
+    )
+    outcome = CloseCashSessionOutcome(
+        closed_session=closed, session_id=str(closed.id)
+    )
+
+    opened = datetime(2025, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    closed_at = datetime(2025, 1, 1, 18, 0, 0, tzinfo=timezone.utc)
+    base = CashSessionResponse(
+        id=str(closed.id),
+        operator_id=str(closed.operator_id),
+        site_id=str(uuid4()),
+        initial_amount=5.0,
+        current_amount=10.0,
+        status=CashSessionStatus.CLOSED,
+        opened_at=opened,
+        closed_at=closed_at,
+        register_options={},
+    )
+    mock_enrich.return_value = base
+
+    db = MagicMock()
+    service = MagicMock()
+
+    result = present_close_cash_session_outcome(db=db, service=service, outcome=outcome)
+
+    assert isinstance(result, CashSessionResponse)
+    assert result.report_download_url is None
+    assert result.report_email_sent is False
+    mock_report.assert_called_once_with(db, closed)
+    mock_enrich.assert_called_once_with(
+        closed,
+        service,
+        degrade_snapshot_on_validation_error=True,
+    )

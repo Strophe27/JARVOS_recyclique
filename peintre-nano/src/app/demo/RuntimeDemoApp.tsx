@@ -171,6 +171,10 @@ function isCashflowNominalCertificationPathRoute(path: string): boolean {
   return false;
 }
 
+function isReceptionNominalCertificationPathRoute(path: string): boolean {
+  return pathnameNoTrailingSlashExceptRoot(path) === '/reception';
+}
+
 /**
  * Story 13.1 — alias documenté `/cash-register/session/open` : même `page_key` CREOS, surcouche
  * `widget_props` présentationnelle (pas second manifeste ; aligné `03-contrats-creos-et-donnees.md` § 13.1).
@@ -584,6 +588,8 @@ export function RuntimeDemoApp() {
   }, [pathRoute, selectedEntry?.pageKey]);
 
   const kioskSaleObservable = isCashRegisterSaleKioskPath(pathRoute);
+  const receptionNominalObservable = isReceptionNominalCertificationPathRoute(pathRoute);
+  const hideShellNav = kioskSaleObservable || receptionNominalObservable;
   const showSandboxBanner = !hideSandboxBanner && !kioskSaleObservable && !cashflowCertificationUi;
   const showLiveAdminPerimeterStrip = hideSandboxBanner && isTransverseAdminShellPath(pathRoute);
 
@@ -653,7 +659,8 @@ export function RuntimeDemoApp() {
         <ContextRestrictionBanner message={envelope.restrictionMessage} />
         <RootShell
           shellPresentation={shellPresentation}
-          hideNav={kioskSaleObservable}
+          hideNav={hideShellNav}
+          preserveAsideWhenNavHidden={kioskSaleObservable}
           minimalChrome={minimalAppChrome}
           navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
         >
@@ -705,7 +712,8 @@ export function RuntimeDemoApp() {
         <ContextRestrictionBanner message={envelope.restrictionMessage} />
         <RootShell
           shellPresentation={shellPresentation}
-          hideNav={kioskSaleObservable}
+          hideNav={hideShellNav}
+          preserveAsideWhenNavHidden={kioskSaleObservable}
           minimalChrome={minimalAppChrome}
           navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
           regions={{
@@ -740,7 +748,8 @@ export function RuntimeDemoApp() {
       <ContextRestrictionBanner message={envelope.restrictionMessage} />
       <RootShell
         shellPresentation={shellPresentation}
-        hideNav={kioskSaleObservable}
+        hideNav={hideShellNav}
+        preserveAsideWhenNavHidden={kioskSaleObservable}
         minimalChrome={minimalAppChrome}
         navPresentation={hideSandboxBanner ? 'legacyToolbar' : 'default'}
         regions={{

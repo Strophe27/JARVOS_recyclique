@@ -3,7 +3,6 @@ import {
   Badge,
   Box,
   Button,
-  Divider,
   Grid,
   Group,
   MultiSelect,
@@ -357,49 +356,48 @@ export function AdminReceptionTicketsListWidget(_: RegisteredWidgetProps): React
                   </Grid>
                 </Accordion.Panel>
               </Accordion.Item>
+              <Accordion.Item value="bulk-export" data-testid="admin-reception-tickets-bulk-export">
+                <Accordion.Control>Export groupé</Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap="xs">
+                    <Text size="xs" c="dimmed">
+                      Mêmes critères que les filtres ci-dessus. Les exports très volumineux peuvent être limités côté
+                      serveur. Code administrateur obligatoire.
+                    </Text>
+                    <PasswordInput
+                      label="Code administrateur"
+                      description="Requis pour lancer un export groupé"
+                      size="xs"
+                      value={bulkAdminPin}
+                      onChange={(e) => setBulkAdminPin(e.currentTarget.value)}
+                      style={{ maxWidth: 280 }}
+                    />
+                    <Group gap="xs" wrap="wrap">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="filled"
+                        loading={bulkExportBusy === 'csv'}
+                        disabled={!!bulkExportBusy && bulkExportBusy !== 'csv'}
+                        onClick={() => void triggerBulkDownload('csv')}
+                      >
+                        Exporter en CSV
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="default"
+                        loading={bulkExportBusy === 'excel'}
+                        disabled={!!bulkExportBusy && bulkExportBusy !== 'excel'}
+                        onClick={() => void triggerBulkDownload('excel')}
+                      >
+                        Exporter en Excel
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
             </Accordion>
-
-            <Divider my="xs" />
-
-            <Stack gap="xs" data-testid="admin-reception-tickets-bulk-export">
-              <Text size="sm" fw={600}>
-                Export groupé
-              </Text>
-              <Text size="xs" c="dimmed">
-                Mêmes critères que les filtres ci-dessus. Les exports très volumineux peuvent être limités côté
-                serveur. Code administrateur obligatoire.
-              </Text>
-              <PasswordInput
-                label="Code administrateur"
-                description="Requis pour lancer un export groupé"
-                size="xs"
-                value={bulkAdminPin}
-                onChange={(e) => setBulkAdminPin(e.currentTarget.value)}
-                style={{ maxWidth: 280 }}
-              />
-              <Group gap="xs" wrap="wrap">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="filled"
-                  loading={bulkExportBusy === 'csv'}
-                  disabled={!!bulkExportBusy && bulkExportBusy !== 'csv'}
-                  onClick={() => void triggerBulkDownload('csv')}
-                >
-                  Exporter en CSV
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="default"
-                  loading={bulkExportBusy === 'excel'}
-                  disabled={!!bulkExportBusy && bulkExportBusy !== 'excel'}
-                  onClick={() => void triggerBulkDownload('excel')}
-                >
-                  Exporter en Excel
-                </Button>
-              </Group>
-            </Stack>
           </Stack>
         </Paper>
 

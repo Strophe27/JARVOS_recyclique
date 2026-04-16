@@ -9,6 +9,48 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from recyclic_api.schemas.exploitation_live_snapshot import SyncStateCore
 
+# Aligné sur ``paheko_close_batch_builder.PAHEKO_CLOSE_BATCH_STATE_KEY`` (Story 22.7).
+_PAHEKO_CLOSE_BATCH_STATE_KEY = "paheko_close_batch_state_v1"
+
+
+class PahekoCloseBatchSubWritePublic(BaseModel):
+    """Story 22.7 — état d'une sous-écriture dans le batch clôture (payload persisté)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    index: int
+    kind: str
+    status: str
+    idempotency_sub_key: str = Field(description="Clé d'idempotence HTTP distante pour cette sous-écriture.")
+    remote_transaction_id: Optional[str] = None
+    last_http_status: Optional[int] = None
+    last_error: Optional[str] = None
+
+
+class PahekoCloseBatchStatePublic(BaseModel):
+    """Story 22.7 — corrélation batch + succès partiel + sous-états."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: int = 1
+    retry_policy: str
+    partial_success: bool
+    all_delivered: bool
+    sub_writes: List[PahekoCloseBatchSubWritePublic]
+
+
+class PahekoResolvedTransactionPreview(BaseModel):
+    """Résumé lisible de l'écriture Paheko calculée pour une clôture."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    amount: float = Field(description="Montant qui sera transmis à Paheko.")
+    debit: str = Field(description="Code du compte de débit utilisé.")
+    credit: str = Field(description="Code du compte de crédit utilisé.")
+    id_year: int = Field(description="Identifiant d'exercice Paheko utilisé.")
+    label: Optional[str] = Field(default=None, description="Libellé généré pour l'écriture.")
+    reference: Optional[str] = Field(default=None, description="Référence générée pour l'écriture.")
+
 
 class PahekoOutboxItemPublic(BaseModel):
     """Vue admin / support — distingue persistance locale vs cycle outbox vs erreur distante."""
@@ -56,6 +98,16 @@ class PahekoOutboxItemPublic(BaseModel):
     correlation_id: str
     created_at: datetime
     updated_at: datetime
+    transaction_preview: Optional[PahekoResolvedTransactionPreview] = Field(
+        default=None,
+        description=(
+            "Résumé calculé de l'écriture comptable Paheko (montant + comptes) quand la résolution mapping est possible."
+        ),
+    )
+    close_batch_state: Optional[PahekoCloseBatchStatePublic] = Field(
+        default=None,
+        description="Story 22.7 — suivi batch multi-sous-écritures (snapshot figé) lorsque présent sur la ligne.",
+    )
 
 
 class PahekoOutboxSyncTransitionPublic(BaseModel):
@@ -116,6 +168,38 @@ class PahekoOutboxCorrelationTimelineResponse(BaseModel):
     sync_transitions_limit: int
 
 
+def close_batch_state_from_payload(payload: Dict[str, Any]) -> Optional[PahekoCloseBatchStatePublic]:
+    raw = payload.get(_PAHEKO_CLOSE_BATCH_STATE_KEY)
+    if not isinstance(raw, dict) or raw.get("schema_version") != 1:
+        return None
+    subs = raw.get("sub_writes") or []
+    out_subs: List[PahekoCloseBatchSubWritePublic] = []
+    for s in subs:
+        if not isinstance(s, dict):
+            continue
+        try:
+            out_subs.append(
+                PahekoCloseBatchSubWritePublic(
+                    index=int(s["index"]),
+                    kind=str(s.get("kind", "")),
+                    status=str(s.get("status", "")),
+                    idempotency_sub_key=str(s.get("idempotency_sub_key", "")),
+                    remote_transaction_id=s.get("remote_transaction_id"),
+                    last_http_status=s.get("last_http_status"),
+                    last_error=s.get("last_error"),
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+    return PahekoCloseBatchStatePublic(
+        schema_version=1,
+        retry_policy=str(raw.get("retry_policy", "")),
+        partial_success=bool(raw.get("partial_success")),
+        all_delivered=bool(raw.get("all_delivered")),
+        sub_writes=out_subs,
+    )
+
+
 class PahekoOutboxRejectBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -130,8 +214,14 @@ class PahekoOutboxRejectBody(BaseModel):
         return s
 
 
-def outbox_item_to_public(row: Any) -> PahekoOutboxItemPublic:
+def outbox_item_to_public(
+    row: Any,
+    *,
+    transaction_preview: Optional[PahekoResolvedTransactionPreview] = None,
+) -> PahekoOutboxItemPublic:
     local_ok = row.cash_session_id is not None
+    pl = dict(row.payload or {}) if getattr(row, "payload", None) is not None else {}
+    cb = close_batch_state_from_payload(pl)
     return PahekoOutboxItemPublic(
         id=str(row.id),
         operation_type=row.operation_type,
@@ -150,6 +240,8 @@ def outbox_item_to_public(row: Any) -> PahekoOutboxItemPublic:
         correlation_id=row.correlation_id,
         created_at=row.created_at,
         updated_at=row.updated_at,
+        transaction_preview=transaction_preview,
+        close_batch_state=cb,
     )
 
 
@@ -173,8 +265,9 @@ def outbox_item_to_detail(
     row: Any,
     *,
     recent_sync_transitions: Optional[List[Any]] = None,
+    transaction_preview: Optional[PahekoResolvedTransactionPreview] = None,
 ) -> PahekoOutboxItemDetail:
-    base = outbox_item_to_public(row).model_dump()
+    base = outbox_item_to_public(row, transaction_preview=transaction_preview).model_dump()
     base["payload"] = dict(row.payload or {})
     base["last_response_snippet"] = row.last_response_snippet
     base["recent_sync_transitions"] = [

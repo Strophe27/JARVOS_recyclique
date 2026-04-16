@@ -1,6 +1,7 @@
 import { Alert, Badge, Button, Group, Paper, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
 import { RefreshCw, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getAccountingExpertLatestRevision } from '../../api/admin-accounting-expert-client';
 import { listPahekoCashSessionCloseMappings } from '../../api/admin-paheko-mappings-client';
 import { listPahekoOutboxItems } from '../../api/admin-paheko-outbox-client';
 import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
@@ -8,11 +9,25 @@ import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { ADMIN_SUPER_PAGE_MANIFEST_GUARDS } from './admin-super-page-guards';
 
+type PahekoTransactionPreview = {
+  readonly amount: number;
+  readonly debit: string;
+  readonly credit: string;
+  readonly id_year: number;
+  readonly label?: string | null;
+  readonly reference?: string | null;
+};
+
 function formatInstant(iso: string | null | undefined): string {
   if (!iso) return '—';
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return iso;
   return new Date(t).toLocaleString('fr-FR');
+}
+
+function formatCurrency(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
 function statusColor(status: string): 'teal' | 'yellow' | 'red' | 'gray' {
@@ -36,6 +51,34 @@ function statusHelper(status: string): string {
   return 'Statut à confirmer.';
 }
 
+function readTransactionPreview(row: { readonly transaction_preview?: unknown }): PahekoTransactionPreview | null {
+  const preview = row.transaction_preview;
+  if (!preview || typeof preview !== 'object') return null;
+  const candidate = preview as Record<string, unknown>;
+  if (
+    typeof candidate.amount !== 'number' ||
+    !Number.isFinite(candidate.amount) ||
+    typeof candidate.debit !== 'string' ||
+    typeof candidate.credit !== 'string' ||
+    typeof candidate.id_year !== 'number'
+  ) {
+    return null;
+  }
+  return {
+    amount: candidate.amount,
+    debit: candidate.debit,
+    credit: candidate.credit,
+    id_year: candidate.id_year,
+    label: typeof candidate.label === 'string' ? candidate.label : null,
+    reference: typeof candidate.reference === 'string' ? candidate.reference : null,
+  };
+}
+
+function transactionSummary(preview: PahekoTransactionPreview | null): string | null {
+  if (!preview) return null;
+  return `${formatCurrency(preview.amount)} · Débit ${preview.debit} · Crédit ${preview.credit}`;
+}
+
 export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
   const auth = useAuthPort();
   const envelope = auth.getContextEnvelope();
@@ -46,11 +89,13 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mappingCount, setMappingCount] = useState({ active: 0, disabled: 0 });
   const [outboxSummary, setOutboxSummary] = useState({ pending: 0, delivered: 0, failed: 0 });
+  const [expertRevisionLabel, setExpertRevisionLabel] = useState<string | null>(null);
   const [recentFlows, setRecentFlows] = useState<
     readonly {
       id: string;
       outbox_status: string;
       updated_at: string;
+      transactionPreview: PahekoTransactionPreview | null;
     }[]
   >([]);
 
@@ -61,6 +106,16 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
       listPahekoCashSessionCloseMappings(auth, { limit: 200 }),
       listPahekoOutboxItems(auth, { limit: 20, operation_type: 'cash_session_close' }),
     ]);
+    if (isSuperAdminUi) {
+      const revRes = await getAccountingExpertLatestRevision(auth);
+      setExpertRevisionLabel(
+        revRes.ok
+          ? `Révision #${revRes.data.revision_seq} (${revRes.data.id.slice(0, 8)}…) — paramétrage expert API`
+          : revRes.detail,
+      );
+    } else {
+      setExpertRevisionLabel(null);
+    }
     if (!mappingsRes.ok) {
       setLoadError(mappingsRes.detail);
       setBusy(false);
@@ -89,10 +144,11 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
         id: row.id,
         outbox_status: row.outbox_status,
         updated_at: row.updated_at,
+        transactionPreview: readTransactionPreview(row as { readonly transaction_preview?: unknown }),
       })),
     );
     setBusy(false);
-  }, [auth, envelope.siteId]);
+  }, [auth, envelope.siteId, isSuperAdminUi]);
 
   useEffect(() => {
     void load();
@@ -128,6 +184,15 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
         Vue quotidienne de suivi: ce qui est transmis, en cours ou à vérifier. Les réglages rares et le support
         technique détaillé restent dans les paramètres avancés.
       </Alert>
+
+      {isSuperAdminUi && expertRevisionLabel ? (
+        <Alert color="grape" title="Gouvernance comptable (expert) — Epic 22.3" data-testid="admin-accounting-hub-expert-rail">
+          <Text size="sm">
+            {expertRevisionLabel} — distinct de la config « modules » (Epic 9.6). Lecture seule ici ; les mutations
+            sensibles (PIN step-up) passent par l’API documentée.
+          </Text>
+        </Alert>
+      ) : null}
 
       {hasConfigurationGap ? (
         <Alert color="orange" title="Configuration à compléter">
@@ -215,7 +280,8 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
           Clôtures récentes
         </Text>
         <Text size="sm" c="dimmed" mb="md">
-          Historique récent des clôtures du site actif, avec un statut compréhensible au premier coup d’œil.
+          Historique récent des clôtures du site actif, avec le montant et les comptes comptables quand l’écriture est
+          prête.
         </Text>
         <Alert color="blue" mb="md" title="Périmètre affiché">
           Cette vue est limitée au site actif de votre contexte.
@@ -230,7 +296,7 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
               <Table.Tr>
                 <Table.Th>Date</Table.Th>
                 <Table.Th>Situation</Table.Th>
-                <Table.Th>Résumé</Table.Th>
+                <Table.Th>Écriture comptable</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -247,7 +313,12 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
                     </Group>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">{statusHelper(row.outbox_status)}</Text>
+                    <Stack gap={2}>
+                      <Text size="sm">{transactionSummary(row.transactionPreview) ?? 'Montant et comptes en préparation.'}</Text>
+                      <Text size="xs" c="dimmed">
+                        {statusHelper(row.outbox_status)}
+                      </Text>
+                    </Stack>
                   </Table.Td>
                 </Table.Tr>
               ))}

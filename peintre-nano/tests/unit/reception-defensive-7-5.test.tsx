@@ -17,6 +17,22 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+async function reachPoidsStepThroughVisibleSelection(): Promise<HTMLInputElement> {
+  const rootGrid = await screen.findByTestId('reception-category-root-grid');
+  const firstRoot = rootGrid.querySelector('button') as HTMLButtonElement | null;
+  if (!firstRoot) throw new Error('Aucune famille visible.');
+  fireEvent.click(firstRoot);
+
+  const childGrid = screen.queryByTestId('reception-category-child-grid');
+  if (childGrid) {
+    const firstChild = childGrid.querySelector('button') as HTMLButtonElement | null;
+    if (!firstChild) throw new Error('Aucune sous-categorie visible.');
+    fireEvent.click(firstChild);
+  }
+
+  return (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+}
+
 describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux succès)', () => {
   afterEach(() => {
     cleanup();
@@ -106,11 +122,11 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-poste-id').textContent).toContain('poste-s');
+      expect(screen.getByTestId('reception-poste-id').getAttribute('title')).toBe('poste-s');
     });
     fireEvent.click(screen.getByTestId('reception-create-ticket'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid);
+      expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid);
     });
 
     setReceptionCriticalDataState('DATA_STALE');
@@ -184,11 +200,11 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-poste-id').textContent).toContain('poste-c');
+      expect(screen.getByTestId('reception-poste-id').getAttribute('title')).toBe('poste-c');
     });
     fireEvent.click(screen.getByTestId('reception-create-ticket'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid);
+      expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid);
     });
 
     await waitFor(() => {
@@ -263,9 +279,10 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid);
+      expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid);
     });
 
+    await reachPoidsStepThroughVisibleSelection();
     expect(screen.getByTestId('reception-add-ligne').hasAttribute('disabled')).toBe(true);
     fireEvent.click(screen.getByTestId('reception-keypad-1'));
     fireEvent.click(screen.getByTestId('reception-keypad-dot'));
@@ -275,7 +292,7 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     expect(screen.getByTestId('reception-add-ligne').hasAttribute('disabled')).toBe(false);
   });
 
-  it('remet le focus sur le poids après ajout réussi pour accélérer la boucle produit suivante', async () => {
+  it('revient au choix de famille après ajout réussi pour relancer le cycle article legacy', async () => {
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u1' },
       envelope: createDefaultDemoEnvelope(),
@@ -370,17 +387,18 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid));
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
 
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
+    const poidsInput = await reachPoidsStepThroughVisibleSelection();
     fireEvent.change(poidsInput, { target: { value: '1.5' } });
     fireEvent.click(screen.getByTestId('reception-add-ligne'));
 
     await waitFor(() => expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('1'));
-    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
-    expect(poidsInput.value).toBe('0');
-    expect(screen.getByTestId('reception-poids-entry-zone').getAttribute('data-feedback')).toBe('ready-next');
-    expect(screen.getByTestId('reception-poids-ready-next-banner').textContent ?? '').toContain("Pret pour l'article suivant");
+    await waitFor(() =>
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-category-tile-cat-1'),
+    );
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+    expect(screen.queryByLabelText('Poids (kg)')).toBeNull();
   });
 
   it('reste synchronise apres ajout meme si le premier refresh ticket revient encore stale', async () => {
@@ -483,18 +501,19 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid));
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
 
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
+    const poidsInput = await reachPoidsStepThroughVisibleSelection();
     fireEvent.change(poidsInput, { target: { value: '1.5' } });
     fireEvent.click(screen.getByTestId('reception-add-ligne'));
 
     await waitFor(() => expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('1'));
     expect(screen.getByTestId('reception-ticket-summary-total').textContent ?? '').toContain('1.50');
-    expect(screen.getByTestId('reception-poids-display').textContent ?? '').toContain('0.00 kg');
-    expect(poidsInput.value).toBe('0');
-    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
-    expect(screen.getByTestId('reception-poids-ready-next-banner').textContent ?? '').toContain("Pret pour l'article suivant");
+    await waitFor(() =>
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-category-tile-cat-1'),
+    );
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+    expect(screen.queryByLabelText('Poids (kg)')).toBeNull();
   });
 
   it('déclenche Ajouter la ligne via Entrée quand le poids est valide', async () => {
@@ -592,16 +611,95 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid));
-    await waitFor(() => expect(screen.getByTestId('reception-category-grid')).toBeTruthy());
-    fireEvent.focus(screen.getByLabelText('Poids (kg)'));
-    fireEvent.change(screen.getByLabelText('Poids (kg)'), { target: { value: '1.5' } });
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
+    const poidsInput = await reachPoidsStepThroughVisibleSelection();
+    fireEvent.focus(poidsInput);
+    fireEvent.change(poidsInput, { target: { value: '1.5' } });
     await waitFor(() => expect(screen.getByTestId('reception-poids-display').textContent ?? '').toContain('1.50 kg'));
     await waitFor(() => expect(screen.getByTestId('reception-add-ligne').hasAttribute('disabled')).toBe(false));
-    fireEvent.keyDown(screen.getByLabelText('Poids (kg)'), { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13 });
+    fireEvent.keyDown(poidsInput, { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13 });
 
     await waitFor(() => expect(ligneCount).toBe(1));
     await waitFor(() => expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('1'));
+  });
+
+  it('transpose la saisie poids AZERTY legacy dans le champ poids', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope(),
+      accessToken: 'tok',
+    });
+    const tid = 'ticket-poids-azerty-test';
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/reception/postes/open') && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: 'poste-poids-azerty', status: 'open' }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/tickets') && method === 'POST' && !url.includes('/close')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: tid }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/categories') && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify([{ id: 'cat-1', name: 'Articles' }]),
+        } as Response);
+      }
+      if (url.includes(`/v1/reception/tickets/${tid}`) && method === 'GET' && !url.includes('export')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: tid,
+              poste_id: 'poste-poids-azerty',
+              benevole_username: 'v',
+              created_at: '2026-01-01',
+              closed_at: null,
+              status: 'opened',
+              lignes: [],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <ReceptionNominalWizard widgetProps={{}} />
+      </RootProviders>,
+    );
+
+    fireEvent.click(screen.getByTestId('reception-open-poste'));
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
+
+    const poidsInput = await reachPoidsStepThroughVisibleSelection();
+    fireEvent.focus(poidsInput);
+    fireEvent.keyDown(poidsInput, { key: '&', code: 'Digit1', bubbles: true, cancelable: true });
+    fireEvent.keyDown(poidsInput, { key: 'é', code: 'Digit2', bubbles: true, cancelable: true });
+    fireEvent.keyDown(poidsInput, { key: ',', code: 'Comma', bubbles: true, cancelable: true });
+    fireEvent.keyDown(poidsInput, { key: '"', code: 'Digit3', bubbles: true, cancelable: true });
+
+    await waitFor(() => expect(screen.getByTestId('reception-poids-display').textContent ?? '').toContain('12.30 kg'));
+    expect(poidsInput.value).toBe('12.3');
+
+    fireEvent.keyDown(poidsInput, { key: 'Backspace', code: 'Backspace', bubbles: true, cancelable: true });
+    await waitFor(() => expect(screen.getByTestId('reception-poids-display').textContent ?? '').toContain('12.00 kg'));
+    expect(poidsInput.value).toBe('12.');
   });
 
   it('redonne le focus au poids après changement de sous-catégorie pour enchaîner poids puis Entrée', async () => {
@@ -671,10 +769,11 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
+    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
     await waitFor(() => expect(screen.getByTestId('reception-subcategory-tile-child-bike')).toBeTruthy());
 
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
     fireEvent.click(screen.getByTestId('reception-subcategory-tile-child-ball'));
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
 
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons');
@@ -748,17 +847,18 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
+    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
     await waitFor(() => expect(screen.getByTestId('reception-subcategory-tile-child-bike')).toBeTruthy());
 
     const childBike = screen.getByTestId('reception-subcategory-tile-child-bike');
     const childBall = screen.getByTestId('reception-subcategory-tile-child-ball');
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
 
     childBike.focus();
     fireEvent.keyDown(childBike, { key: 'ArrowRight', code: 'ArrowRight' });
     expect(document.activeElement).toBe(childBall);
 
     fireEvent.keyDown(childBall, { key: 'Enter', code: 'Enter' });
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons');
   });
@@ -836,7 +936,6 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
 
     const rootSport = screen.getByTestId('reception-category-tile-root-sport');
     const rootBooks = screen.getByTestId('reception-category-tile-root-books');
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
 
     rootSport.focus();
     fireEvent.keyDown(rootSport, { key: 'ArrowRight', code: 'ArrowRight' });
@@ -846,12 +945,658 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     await waitFor(() =>
       expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
     );
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Aucune');
     const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
     await waitFor(() => expect(document.activeElement).toBe(childBd));
-    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : BD');
 
     fireEvent.keyDown(childBd, { key: 'Enter', code: 'Enter' });
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : BD');
+  });
+
+  it('verrouille la chaine clavier legacy famille sous-categorie poids Entree sans souris', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope(),
+      accessToken: 'tok',
+    });
+    const tid = 'ticket-keyboard-legacy-chain-test';
+    let ligneCount = 0;
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/reception/postes/open') && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: 'poste-keyboard-legacy-chain', status: 'open' }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/tickets') && method === 'POST' && !url.includes('/close')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: tid }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/categories') && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([
+              { id: 'root-books', name: 'Livres', parent_id: null },
+              { id: 'child-bd', name: 'BD', parent_id: 'root-books' },
+              { id: 'child-roman', name: 'Romans', parent_id: 'root-books' },
+            ]),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/lignes') && method === 'POST') {
+        ligneCount += 1;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: `ligne-keyboard-chain-${ligneCount}`,
+              ticket_id: tid,
+              category_id: 'child-roman',
+              category_label: 'Romans',
+              poids_kg: 1,
+              destination: 'MAGASIN',
+              is_exit: false,
+              notes: null,
+            }),
+        } as Response);
+      }
+      if (url.includes(`/v1/reception/tickets/${tid}`) && method === 'GET' && !url.includes('export')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: tid,
+              poste_id: 'poste-keyboard-legacy-chain',
+              benevole_username: 'v',
+              created_at: '2026-01-01',
+              closed_at: null,
+              status: 'opened',
+              lignes:
+                ligneCount === 0
+                  ? []
+                  : [
+                      {
+                        id: 'ligne-keyboard-chain-1',
+                        ticket_id: tid,
+                        category_id: 'child-roman',
+                        category_label: 'Romans',
+                        poids_kg: 1,
+                        destination: 'MAGASIN',
+                        is_exit: false,
+                        notes: null,
+                      },
+                    ],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <ReceptionNominalWizard widgetProps={{}} />
+      </RootProviders>,
+    );
+
+    fireEvent.click(screen.getByTestId('reception-open-poste'));
+    const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
+    await waitFor(() => expect(document.activeElement).toBe(rootBooks));
+
+    fireEvent.keyDown(rootBooks, { key: 'Enter', code: 'Enter' });
+    await waitFor(() =>
+      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
+    );
+
+    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
+    await waitFor(() => expect(document.activeElement).toBe(childBd));
+
+    fireEvent.keyDown(document.body, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Romans');
+
+    fireEvent.keyDown(poidsInput, { key: '&', code: 'Digit1', bubbles: true, cancelable: true });
+    await waitFor(() => expect(screen.getByTestId('reception-poids-display').textContent ?? '').toContain('1.00 kg'));
+
+    fireEvent.keyDown(poidsInput, { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13 });
+
+    await waitFor(() => expect(ligneCount).toBe(1));
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('1'));
+    expect(screen.getByTestId('reception-ticket-summary-total').textContent ?? '').toContain('1.00');
+    await waitFor(() =>
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe(
+        rootBooks.getAttribute('data-testid'),
+      ),
+    );
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+  });
+
+  it(
+    "permet de revenir au choix de l'article suivant au clavier apres Entrée sans re-souris",
+    { timeout: 15_000 },
+    async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope(),
+      accessToken: 'tok',
+    });
+    const tid = 'ticket-keyboard-next-article-test';
+    let ligneCount = 0;
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/reception/postes/open') && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: 'poste-keyboard-next-article', status: 'open' }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/tickets') && method === 'POST' && !url.includes('/close')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: tid }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/categories') && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([
+              { id: 'root-books', name: 'Livres', parent_id: null },
+              { id: 'root-sport', name: 'Sport', parent_id: null },
+              { id: 'child-bd', name: 'BD', parent_id: 'root-books' },
+              { id: 'child-roman', name: 'Romans', parent_id: 'root-books' },
+              { id: 'child-ball', name: 'Ballons', parent_id: 'root-sport' },
+            ]),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/lignes') && method === 'POST') {
+        ligneCount += 1;
+        const categoryId = ligneCount === 1 ? 'child-bd' : 'child-ball';
+        const categoryLabel = ligneCount === 1 ? 'BD' : 'Ballons';
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: `ligne-keyboard-next-${ligneCount}`,
+              ticket_id: tid,
+              category_id: categoryId,
+              category_label: categoryLabel,
+              poids_kg: 1,
+              destination: 'MAGASIN',
+              is_exit: false,
+              notes: null,
+            }),
+        } as Response);
+      }
+      if (url.includes(`/v1/reception/tickets/${tid}`) && method === 'GET' && !url.includes('export')) {
+        const lignes =
+          ligneCount === 0
+            ? []
+            : [
+                {
+                  id: 'ligne-keyboard-next-1',
+                  ticket_id: tid,
+                  category_id: 'child-bd',
+                  category_label: 'BD',
+                  poids_kg: 1,
+                  destination: 'MAGASIN',
+                  is_exit: false,
+                  notes: null,
+                },
+                ...(ligneCount > 1
+                  ? [
+                      {
+                        id: 'ligne-keyboard-next-2',
+                        ticket_id: tid,
+                        category_id: 'child-ball',
+                        category_label: 'Ballons',
+                        poids_kg: 1,
+                        destination: 'MAGASIN',
+                        is_exit: false,
+                        notes: null,
+                      },
+                    ]
+                  : []),
+              ];
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: tid,
+              poste_id: 'poste-keyboard-next-article',
+              benevole_username: 'v',
+              created_at: '2026-01-01',
+              closed_at: null,
+              status: 'opened',
+              lignes,
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <ReceptionNominalWizard widgetProps={{}} />
+      </RootProviders>,
+    );
+
+    fireEvent.click(screen.getByTestId('reception-open-poste'));
+    const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
+    await waitFor(() => expect(document.activeElement).toBe(rootBooks));
+
+    fireEvent.keyDown(rootBooks, { key: 'Enter', code: 'Enter' });
+    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
+    await waitFor(() => expect(document.activeElement).toBe(childBd));
+
+    fireEvent.keyDown(childBd, { key: 'Enter', code: 'Enter' });
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
+
+    fireEvent.keyDown(poidsInput, { key: '&', code: 'Digit1', bubbles: true, cancelable: true });
+    fireEvent.keyDown(poidsInput, { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13 });
+
+    await waitFor(() => expect(ligneCount).toBe(1));
+    await waitFor(() =>
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe(
+        rootBooks.getAttribute('data-testid'),
+      ),
+    );
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+
+    fireEvent.keyDown(document.body, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
+    await waitFor(() =>
+      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Sport'),
+    );
+    const childBall = await screen.findByTestId('reception-subcategory-tile-child-ball');
+    await waitFor(() => expect(document.activeElement).toBe(childBall));
+
+    fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', bubbles: true, cancelable: true });
+    await waitFor(() =>
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-input-poids-kg'),
+    );
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons');
+
+    const poidsInputNext = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+    fireEvent.keyDown(poidsInputNext, { key: '&', code: 'Digit1', bubbles: true, cancelable: true });
+    fireEvent.keyDown(poidsInputNext, { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13 });
+
+    await waitFor(() => expect(ligneCount).toBe(2));
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('2'));
+    await waitFor(() =>
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe(
+        rootBooks.getAttribute('data-testid'),
+      ),
+    );
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+  });
+
+  it('transpose les raccourcis AZERTY legacy du rail actif famille puis sous-catégorie', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope(),
+      accessToken: 'tok',
+    });
+    const tid = 'ticket-root-shortcuts-legacy-test';
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/reception/postes/open') && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: 'poste-root-shortcuts', status: 'open' }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/tickets') && method === 'POST' && !url.includes('/close')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: tid }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/categories') && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([
+              { id: 'root-sport', name: 'Sport', parent_id: null },
+              { id: 'root-books', name: 'Livres', parent_id: null },
+              { id: 'child-bd', name: 'BD', parent_id: 'root-books' },
+              { id: 'child-roman', name: 'Romans', parent_id: 'root-books' },
+              { id: 'child-bike', name: 'Cycles', parent_id: 'root-sport' },
+            ]),
+        } as Response);
+      }
+      if (url.includes(`/v1/reception/tickets/${tid}`) && method === 'GET' && !url.includes('export')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: tid,
+              poste_id: 'poste-root-shortcuts',
+              benevole_username: 'v',
+              created_at: '2026-01-01',
+              closed_at: null,
+              status: 'opened',
+              lignes: [],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <ReceptionNominalWizard widgetProps={{}} />
+      </RootProviders>,
+    );
+
+    fireEvent.click(screen.getByTestId('reception-open-poste'));
+    const rootSport = await screen.findByTestId('reception-category-tile-root-sport');
+
+    await waitFor(() => expect(document.activeElement).toBe(rootSport));
+    expect(rootSport.textContent ?? '').toContain('A');
+    expect(screen.getByTestId('reception-category-tile-root-books').textContent ?? '').toContain('Z');
+
+    fireEvent.keyDown(document.body, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
+    await waitFor(() =>
+      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
+    );
+
+    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
+    const childRoman = await screen.findByTestId('reception-subcategory-tile-child-roman');
+    await waitFor(() => expect(document.activeElement).toBe(childBd));
+    expect(childBd.textContent ?? '').toContain('A');
+    expect(childRoman.textContent ?? '').toContain('Z');
+
+    fireEvent.keyDown(document.body, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Romans');
+  });
+
+  it('neutralise les raccourcis catégories quand le poids a le focus, comme dans le legacy', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope(),
+      accessToken: 'tok',
+    });
+    const tid = 'ticket-shortcut-from-weight-test';
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/reception/postes/open') && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: 'poste-shortcut-weight', status: 'open' }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/tickets') && method === 'POST' && !url.includes('/close')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: tid }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/categories') && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([
+              { id: 'root-books', name: 'Livres', parent_id: null },
+              { id: 'root-sport', name: 'Sport', parent_id: null },
+              { id: 'child-bd', name: 'BD', parent_id: 'root-books' },
+              { id: 'child-roman', name: 'Romans', parent_id: 'root-books' },
+            ]),
+        } as Response);
+      }
+      if (url.includes(`/v1/reception/tickets/${tid}`) && method === 'GET' && !url.includes('export')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: tid,
+              poste_id: 'poste-shortcut-weight',
+              benevole_username: 'v',
+              created_at: '2026-01-01',
+              closed_at: null,
+              status: 'opened',
+              lignes: [],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <ReceptionNominalWizard widgetProps={{}} />
+      </RootProviders>,
+    );
+
+    fireEvent.click(screen.getByTestId('reception-open-poste'));
+    fireEvent.click(await screen.findByTestId('reception-category-tile-root-books'));
+    fireEvent.click(await screen.findByTestId('reception-subcategory-tile-child-bd'));
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+
+    fireEvent.focus(poidsInput);
+    fireEvent.keyDown(poidsInput, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
+
+    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : BD');
+    expect(poidsInput.value).toBe('0');
+  });
+
+  it('transpose le micro-rail poids legacy : = bascule sortie et ArrowDown fait tourner la destination', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope(),
+      accessToken: 'tok',
+    });
+    const tid = 'ticket-weight-microrail-legacy-test';
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/reception/postes/open') && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: 'poste-weight-microrail', status: 'open' }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/tickets') && method === 'POST' && !url.includes('/close')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: tid }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/categories') && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify([{ id: 'cat-1', name: 'Articles' }]),
+        } as Response);
+      }
+      if (url.includes(`/v1/reception/tickets/${tid}`) && method === 'GET' && !url.includes('export')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: tid,
+              poste_id: 'poste-weight-microrail',
+              benevole_username: 'v',
+              created_at: '2026-01-01',
+              closed_at: null,
+              status: 'opened',
+              lignes: [],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <ReceptionNominalWizard widgetProps={{}} />
+      </RootProviders>,
+    );
+
+    fireEvent.click(screen.getByTestId('reception-open-poste'));
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
+
+    const poidsInput = await reachPoidsStepThroughVisibleSelection();
+    const destinationInput = screen.getByRole('textbox', { name: 'Destination' }) as HTMLInputElement;
+
+    expect(destinationInput.value).toBe('Magasin');
+
+    fireEvent.keyDown(poidsInput, { key: '=', code: 'Equal', bubbles: true, cancelable: true });
+    await waitFor(() => expect(destinationInput.value).toBe('Recyclage'));
+
+    fireEvent.keyDown(poidsInput, { key: 'ArrowDown', code: 'ArrowDown', bubbles: true, cancelable: true });
+    await waitFor(() => expect(destinationInput.value).toBe('Déchetterie'));
+
+    fireEvent.keyDown(poidsInput, { key: 'ArrowDown', code: 'ArrowDown', bubbles: true, cancelable: true });
+    await waitFor(() => expect(destinationInput.value).toBe('Recyclage'));
+
+    fireEvent.keyDown(poidsInput, { key: '=', code: 'Equal', bubbles: true, cancelable: true });
+    await waitFor(() => expect(destinationInput.value).toBe('Magasin'));
+  });
+
+  it('fait boucler Tab entre rail catégories et poids comme dans le legacy', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope(),
+      accessToken: 'tok',
+    });
+    const tid = 'ticket-tab-loop-legacy-test';
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/reception/postes/open') && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: 'poste-tab-loop', status: 'open' }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/tickets') && method === 'POST' && !url.includes('/close')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: tid }),
+        } as Response);
+      }
+      if (url.includes('/v1/reception/categories') && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([
+              { id: 'root-books', name: 'Livres', parent_id: null },
+              { id: 'child-bd', name: 'BD', parent_id: 'root-books' },
+              { id: 'child-roman', name: 'Romans', parent_id: 'root-books' },
+            ]),
+        } as Response);
+      }
+      if (url.includes(`/v1/reception/tickets/${tid}`) && method === 'GET' && !url.includes('export')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: tid,
+              poste_id: 'poste-tab-loop',
+              benevole_username: 'v',
+              created_at: '2026-01-01',
+              closed_at: null,
+              status: 'opened',
+              lignes: [],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <ReceptionNominalWizard widgetProps={{}} />
+      </RootProviders>,
+    );
+
+    fireEvent.click(screen.getByTestId('reception-open-poste'));
+    const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
+    await waitFor(() => expect(document.activeElement).toBe(rootBooks));
+
+    fireEvent.keyDown(rootBooks, { key: 'Enter', code: 'Enter' });
+    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
+    await waitFor(() => expect(document.activeElement).toBe(childBd));
+
+    fireEvent.keyDown(childBd, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
+
+    fireEvent.keyDown(poidsInput, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
+    const childBdAgain = await screen.findByTestId('reception-subcategory-tile-child-bd');
+    await waitFor(() =>
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe(
+        childBdAgain.getAttribute('data-testid'),
+      ),
+    );
   });
 
   it('donne un accès clavier initial crédible au rail familles quand le cockpit hiérarchique devient prêt', async () => {
@@ -999,12 +1744,12 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
 
     await waitFor(() => expect(rootSport.getAttribute('data-focused')).toBe('true'));
-    expect(rootSport.getAttribute('data-selected')).toBe('true');
+    expect(rootSport.getAttribute('data-selected')).toBe('false');
 
     rootBooks.focus();
     await waitFor(() => expect(rootBooks.getAttribute('data-focused')).toBe('true'));
     expect(rootBooks.getAttribute('data-selected')).toBe('false');
-    expect(rootSport.getAttribute('data-selected')).toBe('true');
+    expect(rootSport.getAttribute('data-selected')).toBe('false');
   });
 
   it('différencie visuellement le focus clavier d’une sous-catégorie sans perdre l’état sélectionné', async () => {
@@ -1074,18 +1819,19 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
+    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
     const childBike = await screen.findByTestId('reception-subcategory-tile-child-bike');
     const childBall = await screen.findByTestId('reception-subcategory-tile-child-ball');
 
     await waitFor(() => expect(childBike.getAttribute('data-focused')).toBe('false'));
     childBike.focus();
     await waitFor(() => expect(childBike.getAttribute('data-focused')).toBe('true'));
-    expect(childBike.getAttribute('data-selected')).toBe('true');
+    expect(childBike.getAttribute('data-selected')).toBe('false');
 
     childBall.focus();
     await waitFor(() => expect(childBall.getAttribute('data-focused')).toBe('true'));
     expect(childBall.getAttribute('data-selected')).toBe('false');
-    expect(childBike.getAttribute('data-selected')).toBe('true');
+    expect(childBike.getAttribute('data-selected')).toBe('false');
   });
 
   it('rend le point d’atterrissage visuel du poids explicite après validation d’une sous-catégorie', async () => {
@@ -1155,15 +1901,16 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
+    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
     const childBike = await screen.findByTestId('reception-subcategory-tile-child-bike');
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
-    const poidsWrapper = screen.getByTestId('reception-poids-focus-ring');
-    const poidsEntryZone = screen.getByTestId('reception-poids-entry-zone');
 
     childBike.focus();
     fireEvent.keyDown(childBike, { key: 'ArrowRight', code: 'ArrowRight' });
     fireEvent.keyDown(screen.getByTestId('reception-subcategory-tile-child-ball'), { key: 'Enter', code: 'Enter' });
 
+    const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
+    const poidsWrapper = screen.getByTestId('reception-poids-focus-ring');
+    const poidsEntryZone = screen.getByTestId('reception-poids-entry-zone');
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
     await waitFor(() => expect(poidsWrapper.getAttribute('data-focused')).toBe('true'));
     await waitFor(() => expect(poidsEntryZone.getAttribute('data-focused')).toBe('true'));
@@ -1231,8 +1978,8 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid));
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
+    const poidsInput = await reachPoidsStepThroughVisibleSelection();
     const keypadOne = await screen.findByTestId('reception-keypad-1');
     const poidsEntryZone = screen.getByTestId('reception-poids-entry-zone');
 
@@ -1315,9 +2062,9 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').textContent).toContain(tid));
+    await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
 
-    const poidsInput = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
+    const poidsInput = await reachPoidsStepThroughVisibleSelection();
     fireEvent.keyDown(poidsInput, { key: 'Enter', code: 'Enter' });
 
     expect(lignePostCount).toBe(0);
@@ -1389,8 +2136,10 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     await waitFor(() => expect(screen.getByTestId('reception-category-grid')).toBeTruthy());
 
     fireEvent.click(screen.getByTestId('reception-category-tile-cat-2'));
-    expect(screen.getByTestId('reception-category-tile-cat-2').getAttribute('data-selected')).toBe('true');
-    expect(screen.getByTestId('reception-category-tile-cat-1').getAttribute('data-selected')).toBe('false');
+    await waitFor(() =>
+      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
+    );
+    await waitFor(() => expect(screen.getByLabelText('Poids (kg)')).toBeTruthy());
   });
 
   it('rend visible la hiérarchie racine vers sous-catégorie quand parent_id est présent', async () => {
@@ -1464,12 +2213,11 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => expect(screen.getByTestId('reception-category-root-grid')).toBeTruthy());
 
-    expect(screen.getByTestId('reception-category-child-panel').textContent ?? '').toContain('Sous-catégories Livres');
-    expect(screen.getByTestId('reception-subcategory-tile-child-bd').getAttribute('data-selected')).toBe('true');
+    expect(screen.queryByTestId('reception-category-child-panel')).toBeNull();
 
     fireEvent.click(screen.getByTestId('reception-category-tile-root-sport'));
-    expect(screen.getByTestId('reception-category-child-panel').textContent ?? '').toContain('Sous-catégories Sport');
-    expect(screen.getByTestId('reception-subcategory-tile-child-ball').getAttribute('data-selected')).toBe('true');
+    expect(screen.getByTestId('reception-category-child-panel').textContent ?? '').toContain('Sous-categories Sport');
+    expect(screen.getByTestId('reception-subcategory-tile-child-ball').getAttribute('data-selected')).toBe('false');
   });
 
   it('affiche explicitement la famille et la sous-catégorie actives', async () => {
@@ -1540,10 +2288,16 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
+    fireEvent.click(await screen.findByTestId('reception-category-tile-root-books'));
     await waitFor(() => expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'));
-    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : BD');
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Aucune');
 
+    fireEvent.click(screen.getByTestId('reception-subcategory-tile-child-bd'));
+    await waitFor(() =>
+      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : BD'),
+    );
     fireEvent.click(screen.getByTestId('reception-category-tile-root-sport'));
+    fireEvent.click(screen.getByTestId('reception-subcategory-tile-child-ball'));
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Sport');
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons');
   });
@@ -1620,7 +2374,8 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     const rootButtons = Array.from(screen.getByTestId('reception-category-root-grid').querySelectorAll('button')).map(
       (button) => button.textContent ?? '',
     );
-    expect(rootButtons.slice(0, 2)).toEqual(['Livres', 'Auto']);
+    expect(rootButtons[0]?.startsWith('Livres')).toBe(true);
+    expect(rootButtons[1]?.startsWith('Auto')).toBe(true);
   });
 
   it('erreur open poste : pas de libellé de succès ; correlation_id discret', async () => {

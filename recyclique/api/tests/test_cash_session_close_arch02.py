@@ -7,9 +7,11 @@ from sqlalchemy.orm import Session
 
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.config import settings
+from recyclic_api.models.accounting_config import AccountingConfigRevision
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
+from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
 
 _V1 = settings.API_V1_STR.rstrip("/")
 
@@ -47,6 +49,11 @@ def close_test_site(db_session: Session) -> Site:
     db_session.commit()
     db_session.refresh(site)
     return site
+
+
+@pytest.fixture
+def close_test_paheko_mapping(db_session: Session, close_test_site: Site):
+    return seed_default_paheko_close_mapping(db_session, close_test_site.id)
 
 
 @pytest.fixture
@@ -94,7 +101,13 @@ def close_report_environment(monkeypatch, tmp_path):
     )
 
 
-def test_close_cash_session_success_arch02(client, close_test_session: CashSession, close_test_user: User, close_report_environment):
+def test_close_cash_session_success_arch02(
+    client,
+    close_test_session: CashSession,
+    close_test_user: User,
+    close_report_environment,
+    close_test_paheko_mapping,
+):
     response = client.post(
         f"{_V1}/cash-sessions/{close_test_session.id}/close",
         json={"actual_amount": 75.0, "variance_comment": None},
@@ -110,6 +123,43 @@ def test_close_cash_session_success_arch02(client, close_test_session: CashSessi
     assert data["closing_amount"] == 75.0
     assert data["actual_amount"] == 75.0
     assert data["variance"] == 0.0
+
+
+def test_close_cash_session_serializes_accounting_revision_id_arch02(
+    client,
+    db_session: Session,
+    close_test_session: CashSession,
+    close_test_user: User,
+    close_report_environment,
+    close_test_paheko_mapping,
+):
+    revision = AccountingConfigRevision(
+        revision_seq=9991,
+        snapshot_json="{}",
+        actor_user_id=close_test_user.id,
+        note="close-arch02-regression",
+    )
+    db_session.add(revision)
+    db_session.commit()
+    db_session.refresh(revision)
+
+    close_test_session.accounting_config_revision_id = revision.id
+    db_session.commit()
+    db_session.refresh(close_test_session)
+
+    response = client.post(
+        f"{_V1}/cash-sessions/{close_test_session.id}/close",
+        json={"actual_amount": 75.0, "variance_comment": None},
+        headers={
+            "Authorization": f"Bearer {create_access_token(data={'sub': str(close_test_user.id)})}",
+            "X-Step-Up-Pin": "1234",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["status"] == "closed"
+    assert data["accounting_config_revision_id"] == str(revision.id)
 
 
 def test_close_cash_session_requires_comment_when_variance_exceeds_tolerance_arch02(client, close_test_session: CashSession, close_test_user: User):

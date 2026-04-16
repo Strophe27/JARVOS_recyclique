@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, ForeignKey, Enum as SAEnum, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -39,11 +39,22 @@ class CashSession(Base):
     site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=False)
     site = relationship("Site", back_populates="cash_sessions")
 
+    # Story 22.3 — révision comptable publiée figée à l'ouverture (snapshot 22.6)
+    accounting_config_revision_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("accounting_config_revisions.id"),
+        nullable=True,
+    )
+
     # Poste de caisse (registre) utilisé pour la session
     register_id = Column(UUID(as_uuid=True), ForeignKey("cash_registers.id"), nullable=True)
     # Story 6.3 / SQLite tests : `lazy="joined"` force un JOIN sur `cash_registers` même si `register_id` est NULL,
     # ce qui casse les suites partielles sans table registre. Chargement à la demande.
     register = relationship("CashRegister", lazy="select")
+    accounting_config_revision = relationship(
+        "AccountingConfigRevision",
+        foreign_keys=[accounting_config_revision_id],
+    )
     
     # Montants financiers
     initial_amount = Column(Float, nullable=False, default=0.0)
@@ -84,6 +95,9 @@ class CashSession(Base):
     total_sales = Column(Float, nullable=True, default=0.0)
     total_items = Column(Integer, nullable=True, default=0)
     
+    # Story 22.6 — snapshot comptable figé (immutable après écriture ; politique append-only documentée dans le JSON)
+    accounting_close_snapshot = Column(JSON, nullable=True)
+
     # Champs de fermeture avec contrôle des montants
     closing_amount = Column(Float, nullable=True, comment="Montant théorique calculé à la fermeture")
     actual_amount = Column(Float, nullable=True, comment="Montant physique compté à la fermeture")

@@ -178,7 +178,7 @@ describe('AdminReceptionTicketDetailWidget', () => {
       ),
     );
     await waitFor(() => expect(screen.queryByTestId('admin-reception-ticket-close')).toBeNull());
-    expect(screen.getByText('Fermé')).toBeTruthy();
+    expect(screen.getByTestId('admin-reception-ticket-summary-status').textContent ?? '').toContain('Fermé');
   });
 
   it('affiche un panneau résumé dense aligné sur les totaux et l’état du ticket', async () => {

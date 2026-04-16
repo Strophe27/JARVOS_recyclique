@@ -108,4 +108,29 @@ describe('LiveAuthShell (Story 11.2)', () => {
     expect(window.location.pathname).toBe('/dashboard/benevole');
     expect(fetchRecycliqueContextEnvelope).toHaveBeenCalledWith('stored-token');
   });
+
+  it('restauration : erreur serveur 500 sur le contexte conserve le jeton pour retry manuel', async () => {
+    sessionStorage.setItem('peintre-nano.recyclique.access_token', 'bad-restored-token');
+    fetchRecycliqueContextEnvelope.mockResolvedValue({
+      ok: false,
+      status: 500,
+      message: 'GET /v1/users/me/context a échoué (500) : Internal Server Error',
+    });
+
+    render(
+      <MantineProvider>
+        <LiveAuthShell>
+          <span data-testid="post-login-child">in</span>
+        </LiveAuthShell>
+      </MantineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('live-auth-public-shell')).toBeTruthy();
+    });
+    expect(sessionStorage.getItem('peintre-nano.recyclique.access_token')).toBe('bad-restored-token');
+    expect(screen.queryByTestId('post-login-child')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Réessayer la connexion' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Oublier la session sur cet appareil' })).toBeTruthy();
+  });
 });

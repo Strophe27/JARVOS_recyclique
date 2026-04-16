@@ -14,6 +14,7 @@ Un échec de cleanup (inspect schéma ou ``DELETE``) est journalisé et fait
 import logging
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 # Ajouter la racine du projet au PYTHONPATH pour résoudre les imports
@@ -27,17 +28,27 @@ os.environ.setdefault("SECRET_KEY", "pytest-secret-key-do-not-use-in-production"
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
 
 _api_dir = Path(__file__).parent.parent
-_default_sqlite = "sqlite:///" + str((_api_dir / "pytest_recyclic.db").resolve()).replace("\\", "/")
+# Fichier SQLite distinct par processus pytest : évite « database is locked » si un autre
+# run (ou outil) tient encore pytest_recyclic.db, en particulier sous Windows.
+_fd_default_sqlite, _path_default_sqlite = tempfile.mkstemp(
+    prefix="pytest_recyclic_", suffix=".db"
+)
+os.close(_fd_default_sqlite)
+_default_sqlite = "sqlite:///" + str(Path(_path_default_sqlite).resolve()).replace("\\", "/")
 
-test_db_url = os.getenv("TEST_DATABASE_URL")
-if not test_db_url:
-    db_url = os.getenv("DATABASE_URL", "")
-    if db_url.startswith("sqlite"):
-        test_db_url = db_url
-    elif db_url and "/recyclic" in db_url:
-        test_db_url = db_url.rsplit("/", 1)[0] + "/recyclic_test"
-    else:
-        test_db_url = _default_sqlite
+configured_test_db_url = os.getenv("TEST_DATABASE_URL", "")
+db_url = os.getenv("DATABASE_URL", "")
+
+if configured_test_db_url.startswith("postgresql"):
+    # Les tests explicitement demandés sur PostgreSQL doivent conserver l'URL fournie.
+    test_db_url = configured_test_db_url
+elif db_url and not db_url.startswith("sqlite") and "/recyclic" in db_url:
+    test_db_url = db_url.rsplit("/", 1)[0] + "/recyclic_test"
+else:
+    # Sous SQLite, on force toujours un fichier temporaire par processus pytest.
+    # Cela évite les collisions de schéma/verrous quand un shell réutilise un ancien
+    # TEST_DATABASE_URL ou quand plusieurs suites tournent en parallèle sous Windows.
+    test_db_url = _default_sqlite
 
 os.environ["TEST_DATABASE_URL"] = test_db_url
 if "DATABASE_URL" not in os.environ:
@@ -203,6 +214,7 @@ if "openpyxl" not in sys.modules:
 import re
 
 import pytest
+import pytest_asyncio
 
 # Module `clean_legacy_import` absent (script hors dépôt) — évite l'échec de collecte.
 collect_ignore = ["test_clean_legacy_import.py"]
@@ -226,6 +238,13 @@ from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.models.site import Site
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.deposit import Deposit
+from recyclic_api.models.payment_method import PaymentMethodDefinition
+from recyclic_api.models.accounting_config import (
+    GLOBAL_ACCOUNTING_SETTINGS_ROW_ID,
+    AccountingConfigRevision,
+    GlobalAccountingSettings,
+)
+from recyclic_api.models.accounting_period_authority import AccountingPeriodAuthoritySnapshot
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.sale_item import SaleItem
@@ -239,6 +258,7 @@ from recyclic_api.models.registration_request import RegistrationRequest
 from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.models.admin_setting import AdminSetting  # noqa: F401 — admin_settings (SQLite)
 from recyclic_api.models.category import Category
+from recyclic_api.models.legacy_category_mapping_cache import LegacyCategoryMappingCache
 from recyclic_api.models.preset_button import PresetButton  # noqa: F401 — preset_buttons (tests presets API)
 from recyclic_api.models.poste_reception import PosteReception
 from recyclic_api.models.ticket_depot import TicketDepot
@@ -545,11 +565,207 @@ def _sqlite_align_paheko_outbox_story_82(bind) -> None:
         conn.commit()
 
 
+def _sqlite_align_accounting_period_authority_story_225(bind) -> None:
+    """SQLite : table + seed autorité exercice + permission second parcours (Story 22.5)."""
+    if not str(bind.url).startswith("sqlite"):
+        return
+
+    from datetime import datetime, timezone
+
+    from sqlalchemy import inspect, text
+
+    AccountingPeriodAuthoritySnapshot.__table__.create(bind, checkfirst=True)
+
+    with bind.connect() as conn:
+        insp = inspect(conn)
+        if not insp.has_table("accounting_period_authority_snapshots"):
+            conn.commit()
+            return
+        row_ct = conn.execute(text("SELECT COUNT(*) FROM accounting_period_authority_snapshots")).scalar() or 0
+        if row_ct == 0:
+            y = datetime.now(timezone.utc).year
+            conn.execute(
+                text(
+                    "INSERT INTO accounting_period_authority_snapshots "
+                    "(id, current_open_fiscal_year, fetched_at, source, version) "
+                    "VALUES (:id, :y, :ts, 'local_test_seed', 1)"
+                ),
+                {
+                    "id": "00000000-0000-5000-8000-000000000001",
+                    "y": y,
+                    "ts": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                },
+            )
+        perm_ct = conn.execute(
+            text("SELECT COUNT(*) FROM permissions WHERE name = 'accounting.prior_year_refund'")
+        ).scalar() or 0
+        if perm_ct == 0:
+            conn.execute(
+                text(
+                    "INSERT INTO permissions (id, name, description) VALUES "
+                    "(:pid, 'accounting.prior_year_refund', 'Story 22.5 second parcours N-1 clos')"
+                ),
+                {"pid": str(uuid.uuid4())},
+            )
+        conn.commit()
+
+
+def _sqlite_align_accounting_expert_story_223(bind) -> None:
+    """SQLite : tables révision 22.3, seed minimal, FK session (alignement tests sans Alembic)."""
+    if not str(bind.url).startswith("sqlite"):
+        return
+
+    GlobalAccountingSettings.__table__.create(bind, checkfirst=True)
+    AccountingConfigRevision.__table__.create(bind, checkfirst=True)
+
+    _gid = GLOBAL_ACCOUNTING_SETTINGS_ROW_ID
+    snapshot_to_seed = None
+    with bind.connect() as conn:
+        insp = inspect(conn)
+        if insp.has_table("global_accounting_settings"):
+            c = conn.execute(text("SELECT COUNT(*) FROM global_accounting_settings WHERE id = :id"), {"id": str(_gid)}).scalar()
+            if c == 0:
+                conn.execute(
+                    text(
+                        "INSERT INTO global_accounting_settings (id, default_sales_account, "
+                        "default_donation_account, prior_year_refund_account) VALUES "
+                        "(:id, '707', '708', '467')"
+                    ),
+                    {"id": str(_gid)},
+                )
+        rev_ct = 0
+        if insp.has_table("accounting_config_revisions"):
+            rev_ct = conn.execute(text("SELECT COUNT(*) FROM accounting_config_revisions")).scalar() or 0
+        if rev_ct == 0:
+            pm_snapshot = []
+            if insp.has_table("payment_methods"):
+                rows = conn.execute(
+                    text(
+                        "SELECT id, code, label, active, kind, paheko_debit_account, paheko_refund_credit_account, "
+                        "min_amount, max_amount, display_order, notes, archived_at FROM payment_methods "
+                        "ORDER BY display_order, code"
+                    )
+                ).fetchall()
+                for r in rows:
+                    archived = r[11].isoformat() if r[11] is not None else None
+                    pm_snapshot.append(
+                        {
+                            "id": str(r[0]),
+                            "code": r[1],
+                            "label": r[2],
+                            "active": bool(r[3]),
+                            "kind": r[4],
+                            "paheko_debit_account": r[5],
+                            "paheko_refund_credit_account": r[6],
+                            "min_amount": r[7],
+                            "max_amount": r[8],
+                            "display_order": r[9],
+                            "notes": r[10],
+                            "archived_at": archived,
+                        }
+                    )
+            g = conn.execute(
+                text(
+                    "SELECT default_sales_account, default_donation_account, prior_year_refund_account "
+                    "FROM global_accounting_settings WHERE id = :id"
+                ),
+                {"id": str(_gid)},
+            ).fetchone()
+            if g is None:
+                ga = ("707", "708", "467")
+            else:
+                ga = (g[0], g[1], g[2])
+            snapshot_to_seed = {
+                "schema_version": 1,
+                "global_accounts": {
+                    "default_sales_account": ga[0],
+                    "default_donation_account": ga[1],
+                    "prior_year_refund_account": ga[2],
+                },
+                "payment_methods": pm_snapshot,
+            }
+        if insp.has_table("cash_sessions"):
+            cols = {c["name"] for c in insp.get_columns("cash_sessions")}
+            if "accounting_config_revision_id" not in cols:
+                conn.execute(
+                    text("ALTER TABLE cash_sessions ADD COLUMN accounting_config_revision_id VARCHAR(36)")
+                )
+            # Story 22.6 — colonne JSON snapshot (SQLite tests hors alembic complet)
+            if "accounting_close_snapshot" not in cols:
+                conn.execute(text("ALTER TABLE cash_sessions ADD COLUMN accounting_close_snapshot JSON"))
+        conn.commit()
+
+    if snapshot_to_seed is not None:
+        from sqlalchemy.orm import sessionmaker
+
+        ORMSession = sessionmaker(bind=bind)
+        seed_sess = ORMSession()
+        try:
+            rev = AccountingConfigRevision(
+                id=uuid.uuid4(),
+                revision_seq=1,
+                snapshot_json=json.dumps(snapshot_to_seed),
+                note="SQLite test seed Story 22.3",
+            )
+            seed_sess.add(rev)
+            seed_sess.commit()
+        finally:
+            seed_sess.close()
+
+
+def _sqlite_align_payment_canonical_story_221(bind) -> None:
+    """SQLite : ajoute le socle canonique `payment_methods` / `payment_transactions` si le schéma existait déjà."""
+    if not str(bind.url).startswith("sqlite"):
+        return
+
+    PaymentMethodDefinition.__table__.create(bind, checkfirst=True)
+
+    with bind.connect() as conn:
+        insp = inspect(conn)
+        if not insp.has_table("payment_transactions"):
+            return
+        cols = {c["name"] for c in insp.get_columns("payment_transactions")}
+        if "payment_method_id" not in cols:
+            conn.execute(text("ALTER TABLE payment_transactions ADD COLUMN payment_method_id VARCHAR(36)"))
+        if "nature" not in cols:
+            conn.execute(text("ALTER TABLE payment_transactions ADD COLUMN nature VARCHAR(32)"))
+        if "direction" not in cols:
+            conn.execute(text("ALTER TABLE payment_transactions ADD COLUMN direction VARCHAR(32)"))
+        if "original_sale_id" not in cols:
+            conn.execute(text("ALTER TABLE payment_transactions ADD COLUMN original_sale_id VARCHAR(36)"))
+        if "original_payment_method_id" not in cols:
+            conn.execute(text("ALTER TABLE payment_transactions ADD COLUMN original_payment_method_id VARCHAR(36)"))
+        if "is_prior_year_special_case" not in cols:
+            conn.execute(
+                text(
+                    "ALTER TABLE payment_transactions "
+                    "ADD COLUMN is_prior_year_special_case BOOLEAN NOT NULL DEFAULT 0"
+                )
+            )
+        if "paheko_account_override" not in cols:
+            conn.execute(text("ALTER TABLE payment_transactions ADD COLUMN paheko_account_override VARCHAR(32)"))
+        if "notes" not in cols:
+            conn.execute(text("ALTER TABLE payment_transactions ADD COLUMN notes TEXT"))
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_payment_transactions_payment_method_id "
+                "ON payment_transactions (payment_method_id)"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_payment_transactions_original_sale_id "
+                "ON payment_transactions (original_sale_id)"
+            )
+        )
+        conn.commit()
+
+
 # Fonction pour créer les tables
 def create_tables_if_not_exist():
     """Créer les tables si elles n'existent pas"""
     try:
-        print("🔧 Création des tables...")
+        print("[tests] Creation des tables...")
         # Créer les types ENUM PostgreSQL nécessaires avant de créer les tables
         # (Base.metadata.create_all() ne les crée pas automatiquement)
         if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
@@ -585,10 +801,14 @@ def create_tables_if_not_exist():
                     RegistrationRequest.__table__,
                     AdminSetting.__table__,
                     CashRegister.__table__,
+                    GlobalAccountingSettings.__table__,
+                    AccountingConfigRevision.__table__,
+                    AccountingPeriodAuthoritySnapshot.__table__,
                     CashSession.__table__,
                     PahekoOutboxItem.__table__,
                     PahekoOutboxSyncTransition.__table__,
                     PahekoCashSessionCloseMapping.__table__,
+                    PaymentMethodDefinition.__table__,
                     Sale.__table__,
                     SaleReversal.__table__,
                     SaleItem.__table__,
@@ -596,6 +816,7 @@ def create_tables_if_not_exist():
                     Deposit.__table__,
                     # Réception / dépôt (test_reception_live_stats, stats live)
                     Category.__table__,
+                    LegacyCategoryMappingCache.__table__,
                     PresetButton.__table__,
                     PosteReception.__table__,
                     TicketDepot.__table__,
@@ -606,16 +827,19 @@ def create_tables_if_not_exist():
             _sqlite_align_sales_story_65(engine)
             _sqlite_align_groups_story_23(engine)
             _sqlite_align_paheko_outbox_story_82(engine)
+            _sqlite_align_payment_canonical_story_221(engine)
+            _sqlite_align_accounting_expert_story_223(engine)
+            _sqlite_align_accounting_period_authority_story_225(engine)
         else:
             Base.metadata.create_all(bind=engine)
-        print("✅ Tables créées avec succès")
+        print("[tests] Tables creees avec succes")
     except Exception as e:
-        print(f"❌ Erreur lors de la création des tables: {e}")
+        print(f"[tests] Erreur lors de la creation des tables: {e}")
 
 @pytest.fixture(scope="session")
 def db_engine():
     """Crée les tables une seule fois pour toute la session de test."""
-    print("🔧 (tests) Moteur de base de données de test prêt.")
+    print("[tests] Moteur de base de donnees de test pret.")
     create_tables_if_not_exist()
     return engine
 
@@ -689,8 +913,9 @@ def _db_autouse(db_engine, request):
         return
 
     connection = db_engine.connect()
-    # Transaction racine ouverte ; l'objet n'est pas commit/rollback dans le teardown (voir docstring).
-    _ = connection.begin()
+    # Transaction racine dédiée au test : on la rollback explicitement au teardown
+    # pour éviter les fuites d'état et relâcher les verrous SQLite entre tests.
+    transaction = connection.begin()
 
     session = TestingSessionLocal(bind=connection)
 
@@ -711,8 +936,8 @@ def _db_autouse(db_engine, request):
     finally:
         app.dependency_overrides.pop(get_db, None)
         session.close()
-        # Pas de transaction.rollback() / commit() ici : stratégie transactionnelle inchangée
-        # (voir docstring). Fermeture connexion uniquement.
+        if transaction.is_active:
+            transaction.rollback()
         connection.close()
         # Pilote TEST-01 : nettoyage après libération de la connexion du test (ordre critique SQLite).
         if _request_is_pilot_db_isolation(request):
@@ -726,7 +951,8 @@ def db_session(_db_autouse):
 @pytest.fixture(scope="function")
 def client(db_session):
     """Fixture pour le client de test FastAPI qui utilise la session de test."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture(scope="function")
@@ -742,31 +968,21 @@ def admin_client(db_session: Session) -> Generator[TestClient, None, None]:
     Fixture pour un client de test avec les droits d'administrateur.
     Crée un utilisateur admin, génère un token JWT et configure le client.
     """
-    # Vérifier si un admin existe déjà
-    admin_user = db_session.query(User).filter(User.role == UserRole.ADMIN).first()
+    admin_username = f"admin_{uuid.uuid4().hex}@test.com"
+    admin_password = "admin_password"
+    hashed_password = hash_password(admin_password)
 
-    if admin_user is None:
-        # Création de l'utilisateur admin
-        admin_username = f"admin_{uuid.uuid4().hex}@test.com"
-        admin_password = "admin_password"
-        hashed_password = hash_password(admin_password)
-
-        admin_user = User(
-            username=admin_username,
-            hashed_password=hashed_password,
-            hashed_pin=hash_password("1234"),
-            role=UserRole.ADMIN,
-            status=UserStatus.ACTIVE,
-            legacy_external_contact_id="999999999",
-        )
-        db_session.add(admin_user)
-        db_session.commit()
-        db_session.refresh(admin_user)
-    elif not getattr(admin_user, "hashed_pin", None):
-        admin_user.hashed_pin = hash_password("1234")
-        db_session.add(admin_user)
-        db_session.commit()
-        db_session.refresh(admin_user)
+    admin_user = User(
+        username=admin_username,
+        hashed_password=hashed_password,
+        hashed_pin=hash_password("1234"),
+        role=UserRole.ADMIN,
+        status=UserStatus.ACTIVE,
+        legacy_external_contact_id=f"admin-fixture-{uuid.uuid4().hex[:12]}",
+    )
+    db_session.add(admin_user)
+    db_session.commit()
+    db_session.refresh(admin_user)
 
     # Génération du token
     access_token = create_access_token(data={"sub": str(admin_user.id)})
@@ -805,10 +1021,9 @@ def admin_client(db_session: Session) -> Generator[TestClient, None, None]:
             headers.update(self._auth_header)
             return self._client.delete(url, headers=headers, **kwargs)
     
-    client = TestClient(app)
-    authenticated_client = AuthenticatedTestClient(client, access_token)
-
-    yield authenticated_client
+    with TestClient(app) as client:
+        authenticated_client = AuthenticatedTestClient(client, access_token)
+        yield authenticated_client
 
 
 @pytest.fixture(scope="function")
@@ -863,10 +1078,9 @@ def user_client(db_session: Session) -> Generator[TestClient, None, None]:
             headers.update(self._auth_header)
             return self._client.delete(url, headers=headers, **kwargs)
 
-    client = TestClient(app)
-    authenticated_client = AuthenticatedTestClient(client, access_token)
-
-    yield authenticated_client
+    with TestClient(app) as client:
+        authenticated_client = AuthenticatedTestClient(client, access_token)
+        yield authenticated_client
 
 
 @pytest.fixture(scope="function")
@@ -896,15 +1110,15 @@ def super_admin_client(db_session: Session) -> Generator[TestClient, None, None]
     access_token = create_access_token(data={"sub": str(super_admin_user.id)})
 
     # Configuration du client de test
-    client = TestClient(app)
-    client.headers["Authorization"] = f"Bearer {access_token}"
+    with TestClient(app) as client:
+        client.headers["Authorization"] = f"Bearer {access_token}"
+        yield client
 
-    yield client
-
-@pytest.fixture(scope="function")
-def async_client():
+@pytest_asyncio.fixture(scope="function")
+async def async_client():
     """Fixture pour le client de test asynchrone FastAPI (httpx 0.25 ``app=`` ou 0.28+ ASGITransport)."""
-    return _async_client_for_fastapi_app()
+    async with _async_client_for_fastapi_app() as client:
+        yield client
 
 
 @pytest.fixture(scope="session")

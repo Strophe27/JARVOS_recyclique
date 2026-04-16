@@ -23,6 +23,7 @@ from recyclic_api.schemas.cash_session import (
 )
 
 from tests.api_v1_paths import v1
+from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
 
 
 @pytest.fixture
@@ -422,6 +423,7 @@ class TestCashSessionEndpoints:
         sess.total_sales = 1.0
         sess.total_items = 1
         db_session.commit()
+        seed_default_paheko_close_mapping(db_session, site.id)
 
         # Fermer la session
         close_data = {
@@ -477,6 +479,7 @@ class TestCashSessionEndpoints:
         sess.total_sales = 1.0
         sess.total_items = 1
         db_session.commit()
+        seed_default_paheko_close_mapping(db_session, site.id)
 
         # Fermer la session une premiÃ¨re fois
         close_data = {

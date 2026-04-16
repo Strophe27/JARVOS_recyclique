@@ -272,13 +272,6 @@ function isEditableTarget(target: EventTarget | null): target is HTMLElement {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
-function focusCashflowElementByTestId(testId: string): boolean {
-  const el = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
-  if (!el) return false;
-  el.focus();
-  return document.activeElement === el;
-}
-
 function requestKioskFinalizeFocus(): void {
   window.dispatchEvent(new CustomEvent(KIOSK_FINALIZE_FOCUS_EVENT));
 }
@@ -1525,7 +1518,7 @@ function LinesStep({
             onChange={(v) => setUnitPrice(Number(v) || 0)}
             mt="sm"
           />
-          <Button mt="md" onClick={onAdd} data-testid="cashflow-add-line">
+          <Button mt="md" onClick={() => onAdd()} data-testid="cashflow-add-line">
             Ajouter la ligne
           </Button>
           <Text size="sm" mt="md" data-testid="cashflow-lines-count">

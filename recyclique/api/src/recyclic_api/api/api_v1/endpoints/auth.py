@@ -194,8 +194,12 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
             detail="Identifiants invalides ou utilisateur inactif",
         )
 
+    user_id = user.id
+    user_id_str = str(user_id)
+    user_role_value = user.role.value
+
     # Créer le token JWT
-    token = create_access_token({"sub": str(user.id)})
+    token = create_access_token({"sub": user_id_str})
 
     # Créer un refresh token (Story B42-P2)
     refresh_service = RefreshTokenService(db)
@@ -204,18 +208,16 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
     
     try:
         refresh_token = refresh_service.generate_refresh_token()
-        logger.debug(f"Refresh token généré pour user_id: {user.id}")
+        logger.debug("Refresh token généré pour user_id: %s", user_id_str)
         
         refresh_service.create_session(
-            user_id=user.id,
+            user_id=user_id,
             refresh_token=refresh_token,
             ip_address=client_ip,
             user_agent=user_agent,
         )
-        logger.debug("Refresh token créé pour user_id=%s", user.id)
+        logger.debug("Refresh token créé pour user_id=%s", user_id_str)
     except Exception as exc:
-        # Capturer user_id avant d'accéder à user.id (qui peut échouer si la session DB est invalide)
-        user_id_str = str(user.id) if user and hasattr(user, 'id') else 'unknown'
         logger.error(
             f"Erreur lors de la création du refresh token pour user_id={user_id_str}: {exc}",
             exc_info=True
@@ -229,7 +231,7 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
             pass  # Ignorer les erreurs de rollback
 
     # Log successful login
-    logger.info(f"Successful login for user_id: {user.id}")
+    logger.info(f"Successful login for user_id: {user_id_str}")
 
     # Record metrics for successful login
     elapsed_ms = (time.time() - start_time) * 1000
@@ -238,14 +240,14 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
         success=True,
         elapsed_ms=elapsed_ms,
         client_ip=client_ip,
-        user_id=str(user.id)
+        user_id=user_id_str
     )
 
     # Persist successful login
     try:
         db.add(LoginHistory(
             id=__import__("uuid").uuid4(),
-            user_id=user.id,
+            user_id=user_id,
             username=payload.username,
             success=True,
             client_ip=client_ip,
@@ -259,7 +261,7 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
     log_audit(
         action_type=AuditActionType.LOGIN_SUCCESS,
         actor=user,
-        details={"username": payload.username, "user_role": user.role.value},
+        details={"username": payload.username, "user_role": user_role_value},
         description=f"Connexion réussie pour l'utilisateur {payload.username}",
         ip_address=client_ip,
         user_agent=user_agent,
@@ -270,7 +272,7 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
     # This initializes the activity timer in Redis so subsequent refreshes can validate inactivity
     try:
         activity_service = ActivityService(db)
-        activity_service.record_user_activity(str(user.id))
+        activity_service.record_user_activity(user_id_str)
     except Exception as act_exc:
         logger.warning(f"Failed to record initial activity on login: {act_exc}")
 

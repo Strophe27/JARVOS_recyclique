@@ -80,7 +80,12 @@ class Sale(Base):
     # Story 1.1.2: Relation preset_button supprimée - presets maintenant sur sale_items
     items = relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
     # Story B52-P1: Relation vers les paiements multiples
-    payments = relationship("PaymentTransaction", back_populates="sale", cascade="all, delete-orphan")
+    payments = relationship(
+        "PaymentTransaction",
+        back_populates="sale",
+        cascade="all, delete-orphan",
+        foreign_keys="PaymentTransaction.sale_id",
+    )
 
     def __repr__(self):
         return f"<Sale(id={self.id}, total_amount={self.total_amount})>"

@@ -36,8 +36,15 @@ class PahekoAccountingClient:
         client_factory: Callable[[], httpx.Client] | None = None,
     ) -> None:
         self._base_url = (base_url if base_url is not None else settings.PAHEKO_API_BASE_URL or "").rstrip("/")
-        self._api_user = api_user if api_user is not None else settings.PAHEKO_API_USER
-        self._api_password = api_password if api_password is not None else settings.PAHEKO_API_PASSWORD
+        explicit_legacy_token = token is not None
+        # Si un token legacy est injecté explicitement sans couple Basic explicite,
+        # on n'importe pas silencieusement les identifiants Basic depuis les settings.
+        if explicit_legacy_token and api_user is None and api_password is None:
+            self._api_user = None
+            self._api_password = None
+        else:
+            self._api_user = api_user if api_user is not None else settings.PAHEKO_API_USER
+            self._api_password = api_password if api_password is not None else settings.PAHEKO_API_PASSWORD
         self._token = token if token is not None else settings.PAHEKO_API_TOKEN
         self._timeout = timeout_seconds if timeout_seconds is not None else settings.PAHEKO_HTTP_TIMEOUT_SECONDS
         self._close_path = close_path if close_path is not None else settings.PAHEKO_ACCOUNTING_CASH_SESSION_CLOSE_PATH

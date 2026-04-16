@@ -55,6 +55,8 @@ def test_site(db_session: Session):
 @pytest.fixture(autouse=True)
 def cleanup_logs():
     """Nettoyer les logs avant et après chaque test."""
+    shutdown_transaction_logger()
+
     # Nettoyer avant le test
     if TRANSACTION_LOG_FILE.exists():
         with open(TRANSACTION_LOG_FILE, 'w') as f:
@@ -87,15 +89,28 @@ def read_transaction_logs() -> list:
     return logs
 
 
-def wait_for_logs(expected_count: int, timeout: float = 2.0):
-    """Attendre que les logs soient écrits."""
-    start_time = time.time()
-    while time.time() - start_time < timeout:
+def find_log_entry(logs: list, *, event: str, session_id: str | None = None):
+    """Retourne l'entrée correspondant à l'événement attendu, idéalement pour la session du test."""
+    matches = [log for log in logs if log.get("event") == event]
+    if session_id is not None:
+        scoped = [log for log in matches if log.get("session_id") == session_id]
+        if scoped:
+            return scoped[-1]
+        # Ne pas retomber sur un autre session_id (fichier partagé / ordre de lecture).
+        return None
+    return matches[-1] if matches else None
+
+
+def wait_for_log_entry(*, event: str, session_id: str | None = None, timeout: float = 3.0):
+    """Attend qu'une ligne de log corresponde à event (+ session_id si fourni)."""
+    start = time.time()
+    while time.time() - start < timeout:
         logs = read_transaction_logs()
-        if len(logs) >= expected_count:
-            return logs
+        entry = find_log_entry(logs, event=event, session_id=session_id)
+        if entry is not None:
+            return entry
         time.sleep(0.1)
-    return read_transaction_logs()
+    return find_log_entry(read_transaction_logs(), event=event, session_id=session_id)
 
 
 class TestSessionOpeningLogging:
@@ -112,14 +127,9 @@ class TestSessionOpeningLogging:
             initial_amount=100.0
         )
         
-        # Attendre que le log soit écrit
-        logs = wait_for_logs(1)
-        
-        # Vérifier qu'un log SESSION_OPENED existe
-        session_logs = [log for log in logs if log.get("event") == "SESSION_OPENED"]
-        assert len(session_logs) > 0, "Aucun log SESSION_OPENED trouvé"
-        
-        log_entry = session_logs[0]
+        # Attendre que le log soit écrit (session_id strict : pas de collision avec d'autres tests sur le même fichier)
+        log_entry = wait_for_log_entry(event="SESSION_OPENED", session_id=str(session.id))
+        assert log_entry is not None, "Aucun log SESSION_OPENED trouvé"
         assert log_entry["user_id"] == str(test_user.id)
         assert log_entry["session_id"] == str(session.id)
         assert "timestamp" in log_entry
@@ -173,13 +183,8 @@ class TestPaymentValidationLogging:
         assert response.status_code == 200
         
         # Attendre que les logs soient écrits
-        logs = wait_for_logs(1, timeout=3.0)
-        
-        # Vérifier qu'un log PAYMENT_VALIDATED existe
-        payment_logs = [log for log in logs if log.get("event") == "PAYMENT_VALIDATED"]
-        assert len(payment_logs) > 0, "Aucun log PAYMENT_VALIDATED trouvé"
-        
-        log_entry = payment_logs[0]
+        log_entry = wait_for_log_entry(event="PAYMENT_VALIDATED", session_id=str(session.id), timeout=3.0)
+        assert log_entry is not None, "Aucun log PAYMENT_VALIDATED trouvé"
         assert log_entry["session_id"] == str(session.id)
         assert "transaction_id" in log_entry
         assert "cart_state_before" in log_entry
@@ -235,14 +240,8 @@ class TestTransactionLogEndpoint:
         assert response.status_code == 200
         assert response.json()["success"] is True
         
-        # Attendre que le log soit écrit
-        logs = wait_for_logs(1)
-        
-        # Vérifier que le log existe
-        ticket_logs = [log for log in logs if log.get("event") == "TICKET_OPENED"]
-        assert len(ticket_logs) > 0, "Aucun log TICKET_OPENED trouvé"
-        
-        log_entry = ticket_logs[0]
+        log_entry = wait_for_log_entry(event="TICKET_OPENED", session_id=str(session.id))
+        assert log_entry is not None, "Aucun log TICKET_OPENED trouvé"
         assert log_entry["session_id"] == str(session.id)
         assert "cart_state" in log_entry
         assert log_entry["cart_state"]["items_count"] == 1
@@ -282,14 +281,8 @@ class TestTransactionLogEndpoint:
         response = admin_client.post(_TRANSACTIONS_LOG, json=log_data)
         assert response.status_code == 200
         
-        # Attendre que le log soit écrit
-        logs = wait_for_logs(1)
-        
-        # Vérifier que le log existe
-        reset_logs = [log for log in logs if log.get("event") == "TICKET_RESET"]
-        assert len(reset_logs) > 0, "Aucun log TICKET_RESET trouvé"
-        
-        log_entry = reset_logs[0]
+        log_entry = wait_for_log_entry(event="TICKET_RESET", session_id=str(session.id))
+        assert log_entry is not None, "Aucun log TICKET_RESET trouvé"
         assert log_entry["session_id"] == str(session.id)
         assert "cart_state_before" in log_entry
         assert log_entry["cart_state_before"]["items_count"] == 2
@@ -327,14 +320,8 @@ class TestTransactionLogEndpoint:
         assert response.status_code == 200
         assert response.json()["success"] is True
         
-        # Attendre que le log soit écrit
-        logs = wait_for_logs(1)
-        
-        # Vérifier que le log existe
-        anomaly_logs = [log for log in logs if log.get("event") == "ANOMALY_DETECTED"]
-        assert len(anomaly_logs) > 0, "Aucun log ANOMALY_DETECTED trouvé"
-        
-        log_entry = anomaly_logs[0]
+        log_entry = wait_for_log_entry(event="ANOMALY_DETECTED", session_id=str(session.id))
+        assert log_entry is not None, "Aucun log ANOMALY_DETECTED trouvé"
         assert log_entry["session_id"] == str(session.id)
         assert log_entry["anomaly_type"] == "ITEM_ADDED_WITHOUT_TICKET"
         assert "cart_state" in log_entry

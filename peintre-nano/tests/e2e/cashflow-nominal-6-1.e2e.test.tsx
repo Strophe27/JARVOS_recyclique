@@ -9,7 +9,8 @@ import { resetCoalescedGetCurrentOpenCashSessionForTests } from '../../src/domai
 import { getCashflowDraftSnapshot, resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
-import { addOneLineKioskSale } from './helpers/kiosk-sale-add-line';
+import { expectCashflowNominalSaleSurface } from '../helpers/cashflow-nominal-sale-surface';
+import { addOneLineKioskSale, kioskFillSessionOpenFinalizeAndConfirmSale } from './helpers/kiosk-sale-add-line';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -161,21 +162,14 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
 
     expect(document.getElementById('caisse-sale-workspace')).toBeTruthy();
 
-    expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
+    expectCashflowNominalSaleSurface();
     const ticketAside = screen.getByTestId('caisse-current-ticket');
     expect(ticketAside.getAttribute('data-operation-id')).toBe('recyclique_sales_getSale');
 
     await addOneLineKioskSale();
     expect(screen.getByTestId('cashflow-kiosk-kpi-line-count').textContent ?? '').toBe('1');
 
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-
-    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
-      target: { value: '00000000-0000-4000-8000-000000000001' },
-    });
-
-    fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
+    await kioskFillSessionOpenFinalizeAndConfirmSale('00000000-0000-4000-8000-000000000001');
 
     await waitFor(() => {
       expect(screen.getByTestId('caisse-last-sale-id').getAttribute('data-sale-id')).toBe('sale-e2e-story61');
@@ -188,8 +182,9 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     expect(screen.getByTestId('caisse-current-ticket').getAttribute('data-widget-data-state')).toBe('NOMINAL');
 
     const ticketText = screen.getByTestId('caisse-current-ticket').textContent ?? '';
-    expect(ticketText).toMatch(/Total : 5\.00 €/);
-    expect(ticketText).toMatch(/EEE-1/);
+    /** Kiosque unifié : après vente, le panneau ticket repasse sur une grille vide (enchaînement produit suivant). */
+    expect(ticketText).toMatch(/Aucun article/i);
+    expect(ticketText).toMatch(/Dernière vente :/);
 
     const localMsg = screen.getByTestId('caisse-local-issue-message').textContent ?? '';
     expect(localMsg).toMatch(/localement dans Recyclique/i);
@@ -627,14 +622,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
     await addOneLineKioskSale();
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-
-    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
-      target: { value: '00000000-0000-4000-8000-000000000001' },
-    });
-
-    fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
+    await kioskFillSessionOpenFinalizeAndConfirmSale('00000000-0000-4000-8000-000000000001');
 
     await waitFor(() => {
       expect(screen.getByTestId('caisse-current-ticket').getAttribute('data-widget-data-state')).toBe('DATA_STALE');
@@ -678,14 +666,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
     await addOneLineKioskSale();
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-
-    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
-      target: { value: '00000000-0000-4000-8000-000000000001' },
-    });
-
-    fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
+    await kioskFillSessionOpenFinalizeAndConfirmSale('00000000-0000-4000-8000-000000000001');
 
     await waitFor(() => {
       expect(screen.getByTestId('caisse-current-ticket').getAttribute('data-widget-data-state')).toBe('DATA_STALE');
@@ -725,14 +706,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
     await addOneLineKioskSale();
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-
-    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
-      target: { value: '00000000-0000-4000-8000-000000000001' },
-    });
-
-    fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
+    await kioskFillSessionOpenFinalizeAndConfirmSale('00000000-0000-4000-8000-000000000001');
 
     await waitFor(() => {
       expect(screen.getByTestId('caisse-current-ticket').getAttribute('data-widget-data-state')).toBe('DATA_STALE');
@@ -810,14 +784,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     await waitFor(() => screen.getByTestId('cashflow-nominal-wizard'));
 
     await addOneLineKioskSale();
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-
-    fireEvent.change(screen.getByTestId('cashflow-input-session-id'), {
-      target: { value: '00000000-0000-4000-8000-000000000001' },
-    });
-
-    fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
+    await kioskFillSessionOpenFinalizeAndConfirmSale('00000000-0000-4000-8000-000000000001');
 
     await waitFor(() => {
       const err = screen.getByTestId('cashflow-submit-error').textContent ?? '';

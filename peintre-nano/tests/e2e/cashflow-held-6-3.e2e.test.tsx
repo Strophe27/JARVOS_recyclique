@@ -9,7 +9,7 @@ import { RootProviders } from '../../src/app/providers/RootProviders';
 import { getCashflowDraftSnapshot, resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
-import { addOneLineKioskSale } from './helpers/kiosk-sale-add-line';
+import { addOneLineKioskSale, kioskFillSessionOpenFinalizeAndConfirmSale } from './helpers/kiosk-sale-add-line';
 
 const SESSION = '00000000-0000-4000-8000-000000000001';
 const HELD_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-111111111111';
@@ -206,12 +206,10 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
     });
     expect(screen.getByTestId('caisse-active-held-id').getAttribute('data-held-sale-id')).toBe(HELD_ID);
 
-    fireEvent.click(screen.getByRole('tab', { name: /Paiement|Règlement|Encaissement/i }));
-
-    fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
+    await kioskFillSessionOpenFinalizeAndConfirmSale(SESSION);
 
     await waitFor(() => {
-      expect(screen.getByTestId('cashflow-ticket-sale-id').getAttribute('data-sale-id')).toBe(
+      expect(screen.getByTestId('caisse-last-sale-id').getAttribute('data-sale-id')).toBe(
         'bbbbbbbb-bbbb-4ccc-8ddd-222222222222',
       );
     });
@@ -346,9 +344,6 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-nominal-wizard')).toBeTruthy();
     });
-
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
-    fireEvent.click(screen.getByTestId('cashflow-step-next'));
 
     const sessionInput = await screen.findByTestId('cashflow-input-session-id');
     const full = '00000000-0000-4000-8000-000000000099';

@@ -3248,3 +3248,154 @@ So that the final users epic delivers observable parity without smuggling unreso
 **Then** the retained actions are explicitly mapped to contracts, proof sources, and guards
 **And** any excluded or still-sensitive behavior remains named as debt or deferred scope rather than partially implemented
 
+## Epic 22: Rebaseliner la caisse/compta/`Paheko` sur un modele comptable canonique
+
+L'equipe ajoute un rail correctif dedie pour aligner la caisse, la cloture de session, le parametrage comptable et la synchronisation `Paheko` sur le PRD du `2026-04-15`, sans reecrire artificiellement l'historique **done** des Epics 6 et 8. Cet epic introduit la chaine canonique **referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable fige -> builder d'ecritures `Paheko` -> batch outbox idempotent par session**.
+
+**Note agents (create-story / review) :** cet epic est un rail correctif **CASH-COMPTA**. Il rebase les verites metier et comptables sans invalider la fondation historique de terrain (`Epic 6`) ni la fondation transport/sync (`Epic 8`). Les dependances critiques sont : `Epic 10` pour les preuves et gates, `Epic 16` pour les controles super-admin sensibles, `Epic 13.8` en mode **finish-only si compatible transition**, `Epic 14.3` / `14.4` / `14.5` en **pause par defaut** des que la semantique comptable ou le parametrage sensible est en jeu, et `Epic 18` conserve uniquement une valeur de preuve UI historique, sans autorite sur la future semantique comptable.
+
+**FRs covered:** FR4, FR24, FR25, FR26, FR27, FR28, FR39, FR42, FR57, FR66, FR67, FR69, FR70
+
+### Story 22.1: Preparer le schema comptable cible, le backfill et la compatibilite brownfield
+
+As a backend accounting migration team,
+I want the canonical accounting model introduced alongside the brownfield model,
+So that the project can move toward the new payment truth without breaking historical continuity.
+
+**Acceptance Criteria:**
+
+**Given** the current brownfield still carries legacy payment assumptions
+**When** this story is completed
+**Then** the canonical accounting entities, fields, and invariants needed for payment methods, detailed payment transactions, session accounting, and `Paheko` export preparation are explicitly defined
+**And** the legacy payment field carried by the sale is downgraded to a compatibility concern rather than the accounting source of truth
+
+**Given** historical data and open sessions cannot be discarded
+**When** the migration path is documented
+**Then** the expected backfill scope, cutover constraints, and rollback-safe compatibility rules are written for historical sessions, open sessions, and newly closed sessions
+**And** the story names the minimum data that must exist before later corrective stories can rely on the new model
+
+### Story 22.2: Executer la double lecture, comparer les agregats et piloter la bascule hors legacy
+
+As a migration safety team,
+I want the legacy and canonical accounting views compared during transition,
+So that the cutover decision is evidence-based instead of assumed.
+
+**Acceptance Criteria:**
+
+**Given** the canonical model may diverge from the legacy aggregation logic
+**When** the dual-read phase is active
+**Then** the team can compare legacy and canonical totals on a named sample of sessions
+**And** mismatches are traceable, reviewable, and classed before any full cutover claim
+
+**Given** cutover changes the accounting authority
+**When** the transition rule is approved
+**Then** the exit criteria from legacy are explicit, measurable, and tied to a named validation package
+**And** no downstream story assumes the cutover happened silently
+
+### Story 22.3: Livrer le parametrage expert des moyens de paiement et des comptes globaux
+
+As a super-admin governance team,
+I want expert accounting settings for payment methods and global accounts,
+So that the accounting model is configurable without hiding sensitive decisions inside generic admin screens.
+
+**Acceptance Criteria:**
+
+**Given** payment method accounting and global accounts are sensitive super-admin concerns
+**When** this story is delivered
+**Then** the retained expert settings surfaces, contracts, validations, and audit expectations are explicitly defined
+**And** they reuse the step-up and audit principles already established for sensitive admin work
+
+**Given** `config admin simple` and expert accounting governance are not the same product concern
+**When** the scope is reviewed
+**Then** this story keeps accounting expert settings separate from reusable simple admin toggles
+**And** the backlog states which parameters belong to expert governance versus general admin configuration
+
+### Story 22.4: Rebaseliner les parcours caisse pour paiements mixtes, don en surplus et gratuite
+
+As a cashflow product team,
+I want the sale finalization flow aligned with the canonical accounting model,
+So that mixed payments, extra donations, and zero-value sales become first-class and traceable behaviors.
+
+**Acceptance Criteria:**
+
+**Given** the previous caisse flow was sufficient for a local terrain baseline but not for the new accounting target
+**When** this story is completed
+**Then** the retained caisse flow supports mixed payments, donation surplus, and free sales without collapsing them into one legacy payment value
+**And** the resulting local transactions remain understandable by operators and exploitable by later accounting stories
+
+**Given** the terrain UX must stay fast
+**When** the redesigned flow is reviewed
+**Then** the story preserves keyboard-first operability and explicit operator feedback on the new cases
+**And** any case intentionally deferred remains named instead of silently rejected
+
+### Story 22.5: Etendre le remboursement au modele comptable cible et verrouiller l'autorite exercice anterieur clos
+
+As a refund governance team,
+I want refunds aligned with the canonical accounting rules and fiscal-period authority,
+So that current-period and prior-period refunds are handled safely and traceably.
+
+**Acceptance Criteria:**
+
+**Given** refund accounting differs between current period and prior closed period
+**When** this story is delivered
+**Then** the retained model distinguishes the original payment context from the refund payment context
+**And** the accounting consequences of each branch are explicit enough for snapshot and export generation
+
+**Given** prior closed period decisions depend on external or authoritative accounting knowledge
+**When** the authority source is unavailable or stale
+**Then** the system does not guess whether the refund belongs to a closed prior period
+**And** the fallback is an explicit block or expert rerouting path with audit visibility
+
+### Story 22.6: Construire le snapshot comptable fige de cloture de session
+
+As a session-closing accounting team,
+I want closure to produce an immutable accounting snapshot,
+So that later sync and reconciliation work from a frozen business payload rather than moving local data.
+
+**Acceptance Criteria:**
+
+**Given** session closure is the pivot between terrain operations and accounting sync
+**When** a session is closed under the retained rules
+**Then** the closure process produces a frozen snapshot containing the required totals, detailed breakdowns, context identifiers, and accounting rule revision needed for later export
+**And** the snapshot is identifiable independently from UI screens or transient runtime state
+
+**Given** post-closure recalculation would break auditability
+**When** downstream accounting processing occurs
+**Then** it consumes the frozen snapshot rather than recomputing accounting truth from mutable live data
+**And** any correction path is explicit and traceable instead of silent mutation
+
+### Story 22.7: Generer les ecritures avancees multi-lignes `Paheko` et adapter la sync Epic 8
+
+As a sync and accounting integration team,
+I want the existing sync foundation to consume the canonical session snapshot,
+So that `Paheko` receives deterministic multi-line balanced entries without losing idempotence or observability.
+
+**Acceptance Criteria:**
+
+**Given** one closed session may now require several deterministic accounting sub-entries
+**When** the builder and outbox integration are implemented
+**Then** the canonical sync unit is one idempotent batch per closed session containing the required indexed sub-entries
+**And** the system persists batch correlation, per-sub-entry status, and multiple remote `Paheko` identifiers when relevant
+
+**Given** partial remote success is now possible
+**When** only some sub-entries are accepted by `Paheko`
+**Then** the local status model exposes that partial success explicitly instead of pretending the whole batch is simply synced or failed
+**And** the existing retry, quarantine, and selective blocking principles remain preserved
+
+### Story 22.8: Rebaseliner les preuves qualite et valider bout en bout la chaine caisse -> snapshot -> ecriture -> `Paheko`
+
+As a release-readiness team,
+I want the historical proofs updated for the canonical accounting rail,
+So that old evidence is not mistaken for coverage of the new model.
+
+**Acceptance Criteria:**
+
+**Given** earlier Epic 6 and Epic 8 proofs predate the canonical accounting model
+**When** this story is reviewed
+**Then** the project explicitly identifies which prior proofs remain valid, which become insufficient, and which must be replaced
+**And** the impacted Definition of Done and release gates are rebased rather than implicitly reused
+
+**Given** the corrective rail must be operationally credible
+**When** the end-to-end validation package is assembled
+**Then** it covers the retained path from caisse to frozen snapshot to `Paheko` entry generation and sync result visibility
+**And** it leaves behind a baseline that `Epic 10` can reuse for final readiness gates

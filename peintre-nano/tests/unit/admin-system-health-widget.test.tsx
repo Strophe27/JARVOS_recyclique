@@ -197,7 +197,8 @@ describe('AdminSystemHealthWidget', () => {
       </RootProviders>,
     );
     await screen.findByTestId('admin-system-health-legacy-panel');
-    expect(screen.getByText(/Détection d'anomalies/)).toBeTruthy();
+    /** Libellé avec apostrophe typographique possible (fichier source vs DOM). */
+    expect(await screen.findByText(/Détection d.anomalies/)).toBeTruthy();
     expect(screen.queryByText(/anomaly_detection/)).toBeNull();
     expect(screen.queryByText('2026-04-13T15:30:00.000Z')).toBeNull();
     expect(screen.queryByText('2026-04-13T14:00:00.000Z')).toBeNull();
@@ -249,8 +250,8 @@ describe('AdminSystemHealthWidget', () => {
       </RootProviders>,
     );
     await screen.findByTestId('admin-system-health-legacy-panel');
-    expect(screen.getByText(/priorité faible/i)).toBeTruthy();
-    expect(screen.getByText(/priorité haute/i)).toBeTruthy();
+    expect(await screen.findByText(/priorité faible/i)).toBeTruthy();
+    expect(await screen.findByText(/priorité haute/i)).toBeTruthy();
     expect(screen.queryByText(/\blow\b/i)).toBeNull();
     expect(screen.queryByText(/\bhigh\b/i)).toBeNull();
   });

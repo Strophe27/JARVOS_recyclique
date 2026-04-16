@@ -17,7 +17,13 @@ from recyclic_api.core.config import settings
 from recyclic_api.core.security import hash_password
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.paheko_outbox import PahekoOutboxItem, PahekoOutboxStatus
+from recyclic_api.models.payment_transaction import (
+    PaymentTransaction,
+    PaymentTransactionDirection,
+    PaymentTransactionNature,
+)
 from recyclic_api.models.site import Site
+from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.services.cash_session_service import CashSessionService
 from recyclic_api.services.paheko_accounting_client import PahekoAccountingClient
@@ -62,6 +68,26 @@ def _site_user_session(db_session: Session) -> tuple[Site, User, CashSession]:
         total_items=1,
     )
     db_session.add(cs)
+    db_session.flush()
+    sale = Sale(
+        cash_session_id=cs.id,
+        operator_id=user.id,
+        total_amount=25.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+        lifecycle_status=SaleLifecycleStatus.COMPLETED,
+    )
+    db_session.add(sale)
+    db_session.flush()
+    db_session.add(
+        PaymentTransaction(
+            sale_id=sale.id,
+            payment_method=PaymentMethod.CASH,
+            nature=PaymentTransactionNature.SALE_PAYMENT,
+            direction=PaymentTransactionDirection.INFLOW,
+            amount=25.0,
+        )
+    )
     db_session.commit()
     cs = db_session.execute(
         select(CashSession).where(CashSession.id == cs.id).options(noload(CashSession.register))
@@ -197,12 +223,18 @@ def test_admin_list_and_get_item(super_admin_client: Any, db_session: Session) -
     assert one["sync_state_core"] == "a_reessayer"
     assert one["local_session_persisted"] is True
     assert one["correlation_id"] == "api-corr"
+    assert one["transaction_preview"]["amount"] == 25.0
+    assert one["transaction_preview"]["debit"] == "512"
+    assert one["transaction_preview"]["credit"] == "707"
 
     g = super_admin_client.get(f"{_V1}/admin/paheko-outbox/items/{item.id}")
     assert g.status_code == 200, g.text
     det = g.json()
     assert "payload" in det
     assert det["payload"]["cash_session_id"] == str(cs.id)
+    assert det["transaction_preview"]["amount"] == 25.0
+    assert det["transaction_preview"]["debit"] == "512"
+    assert det["transaction_preview"]["credit"] == "707"
 
 
 def test_live_snapshot_worst_state_pending_outbox(client: Any, db_session: Session) -> None:
@@ -329,7 +361,7 @@ def test_processor_sends_official_paheko_transaction_payload(db_session: Session
     assert payload["id_year"] == 2
     assert payload["debit"] == "512"
     assert payload["credit"] == "707"
-    assert payload["amount"] == 35.0
+    assert payload["amount"] == 25.0
     assert "cash_session_id" not in payload
 
 

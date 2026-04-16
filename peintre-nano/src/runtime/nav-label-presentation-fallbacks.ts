@@ -18,7 +18,7 @@ export const NAV_LABEL_PRESENTATION_FALLBACKS: Readonly<Record<string, string>> 
   'nav.transverse.admin.groups': 'Groupes et permissions',
   'nav.transverse.admin.categories': 'Catégories et tarifs',
   'nav.transverse.admin.auditLog': 'Activité et journaux',
-  'nav.transverse.admin.accounting': 'Compta et sync Paheko',
+  'nav.transverse.admin.accounting': 'Cockpit comptable',
   'nav.transverse.admin.cashRegisters': 'Caisses enregistrées',
   'nav.transverse.admin.sites': 'Sites enregistrés',
   'nav.transverse.admin.sitesAndRegisters': 'Sites et caisses',

@@ -55,18 +55,33 @@ def present_close_cash_session_outcome(
         get_email_service,
     )
 
-    report_path = generate_cash_session_report(db, closed_session)
-    download_token = generate_download_token(report_path.name)
-    report_download_url = (
-        f"{get_browser_api_v1_prefix()}/admin/reports/cash-sessions/{report_path.name}"
-        f"?token={download_token}"
-    )
+    report_path = None
+    report_download_url = None
+    try:
+        report_path = generate_cash_session_report(db, closed_session)
+        download_token = generate_download_token(report_path.name)
+        report_download_url = (
+            f"{get_browser_api_v1_prefix()}/admin/reports/cash-sessions/{report_path.name}"
+            f"?token={download_token}"
+        )
+    except Exception as exc:  # noqa: BLE001 - la clôture métier est déjà persistée
+        logger.error(
+            "cash_session_close_report_generation_failed session_id=%s: %s",
+            closed_session.id,
+            exc,
+            exc_info=True,
+        )
     email_sent = False
 
     recipient = settings.CASH_SESSION_REPORT_RECIPIENT
     if not recipient:
         logger.warning(
             "CASH_SESSION_REPORT_RECIPIENT is not configured; skipping report email dispatch"
+        )
+    elif report_path is None:
+        logger.warning(
+            "cash session report unavailable; skipping report email dispatch session_id=%s",
+            closed_session.id,
         )
     else:
         try:
@@ -113,7 +128,11 @@ def present_close_cash_session_outcome(
         except Exception as exc:  # noqa: BLE001 - keep closing flow resilient
             logger.error("Failed to send cash session report email: %s", exc)
 
-    response_model = enrich_session_response(closed_session, service)
+    response_model = enrich_session_response(
+        closed_session,
+        service,
+        degrade_snapshot_on_validation_error=True,
+    )
     outbox_row = get_outbox_item_for_cash_session(db, closed_session.id)
     paheko_cid = outbox_row.correlation_id if outbox_row else None
     paheko_oid = str(outbox_row.id) if outbox_row else None

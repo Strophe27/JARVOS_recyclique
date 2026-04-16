@@ -69,6 +69,8 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
       is_exit: boolean;
     }> = [];
 
+    let ticketClosed = false;
+
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -117,8 +119,8 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
               poste_id: POSTE_ID,
               benevole_username: 'tester',
               created_at: '2026-04-09T10:00:00Z',
-              closed_at: null,
-              status: 'opened',
+              closed_at: ticketClosed ? '2026-04-09T11:00:00Z' : null,
+              status: ticketClosed ? 'closed' : 'opened',
               lignes: [...lignes],
             }),
         } as Response);
@@ -160,6 +162,7 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
         } as Response);
       }
       if (url.includes(`/v1/reception/tickets/${TICKET_ID}/close`) && method === 'POST') {
+        ticketClosed = true;
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -196,17 +199,21 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-poste-id').textContent).toContain(POSTE_ID);
+      expect(screen.getByTestId('reception-poste-id').getAttribute('title')).toBe(POSTE_ID);
     });
 
     fireEvent.click(screen.getByTestId('reception-create-ticket'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-ticket-id').textContent).toContain(TICKET_ID);
+      expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(TICKET_ID);
     });
 
     await waitFor(() => {
       const step = screen.getByTestId('reception-step-ligne');
-      expect(within(step).getByTestId('reception-select-category')).toBeTruthy();
+      expect(within(step).getByTestId('reception-category-grid')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId(`reception-category-tile-${CAT_ID}`));
+    await waitFor(() => {
+      expect(screen.getByTestId('reception-keypad-1')).toBeTruthy();
     });
 
     fireEvent.change(screen.getByTestId('reception-input-notes'), {
@@ -215,10 +222,13 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
     fireEvent.click(screen.getByTestId('reception-keypad-1'));
     fireEvent.click(screen.getByTestId('reception-add-ligne'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-ticket-lignes-summary').textContent).toMatch(/Lignes côté serveur : 1/);
+      expect(screen.getByTestId('reception-lignes-list').querySelectorAll('li').length).toBe(1);
     });
 
     fireEvent.click(screen.getByTestId('reception-close-ticket'));
+    await waitFor(() => {
+      expect(screen.getByTestId('reception-close-poste')).toBeTruthy();
+    });
     fireEvent.click(screen.getByTestId('reception-close-poste'));
 
     await waitFor(() => {
@@ -372,12 +382,12 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-poste-id').textContent).toContain(POSTE_ID);
+      expect(screen.getByTestId('reception-poste-id').getAttribute('title')).toBe(POSTE_ID);
     });
 
     fireEvent.click(screen.getByTestId('reception-create-ticket'));
     await waitFor(() => {
-      expect(screen.getByTestId('reception-ticket-id').textContent).toContain(TICKET_ID);
+      expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(TICKET_ID);
     });
 
     fireEvent.click(screen.getByTestId('reception-trigger-stale'));

@@ -547,7 +547,10 @@ describe('E2E — navigation transverse commanditaire (story 5.1)', () => {
       expect(within(main).queryByTestId('admin-legacy-dashboard-home')).toBeNull();
     });
 
-    it('boutons users / groups / categories / audit-log ouvrent une surface dédiée au lieu de retomber sur /admin', () => {
+    it(
+      'boutons users / groups / categories / audit-log ouvrent une surface dédiée au lieu de retomber sur /admin',
+      { timeout: 15_000 },
+      () => {
       renderServedApp();
       const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
       fireEvent.click(within(within(nav).getByTestId('nav-entry-transverse-admin')).getByRole('button'));

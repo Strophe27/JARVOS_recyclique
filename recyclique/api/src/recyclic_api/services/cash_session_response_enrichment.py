@@ -30,6 +30,8 @@ def enrich_session_response(
     session: CashSession,
     service: CashSessionService,
     total_weight_out: Optional[float] = None,
+    *,
+    degrade_snapshot_on_validation_error: bool = False,
 ) -> CashSessionResponse:
     """Story B49-P1: Enrichit une réponse de session avec les options du register.
 
@@ -66,7 +68,20 @@ def enrich_session_response(
             exc.errors(),
             exc_info=exc,
         )
-        raise
+        if not degrade_snapshot_on_validation_error:
+            raise
+        snap_backup = getattr(session, "accounting_close_snapshot", None)
+        session.accounting_close_snapshot = None
+        try:
+            response_data = CashSessionResponse.model_validate(session).model_dump()
+        except PydanticValidationError:
+            session.accounting_close_snapshot = snap_backup
+            raise
+        session.accounting_close_snapshot = snap_backup
+        logger.warning(
+            "CashSessionResponse: réponse dégradée (snapshot omis) session_id=%s",
+            getattr(session, "id", None),
+        )
     response_data["register_options"] = register_options
     response_data["total_donations"] = total_donations
     response_data["total_weight_out"] = total_weight_out

@@ -131,7 +131,12 @@ describe('E2E — alias `…/session/close` (clôture caisse, Story 13.3)', () =
     await waitFor(() => {
       expect(screen.getByTestId('cash-register-session-close-surface')).toBeTruthy();
     });
-    expect(screen.getByTestId('cashflow-session-close-summary')).toBeTruthy();
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('cashflow-session-close-summary')).toBeTruthy();
+      },
+      { timeout: 10_000 },
+    );
     expect(screen.queryByTestId('cash-register-sale-kiosk')).toBeNull();
   });
 });

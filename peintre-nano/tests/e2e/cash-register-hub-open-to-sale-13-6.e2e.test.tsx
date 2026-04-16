@@ -9,6 +9,7 @@ import { resetCoalescedGetCurrentOpenCashSessionForTests } from '../../src/domai
 import { resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
+import { waitForCashflowNominalSaleSurface } from '../helpers/cashflow-nominal-sale-surface';
 
 const REGISTER_ID = '31d56e8f-08ec-4907-9163-2a5c49c5f2fe';
 const SESSION_ID = '00000000-0000-4000-8000-0000000000aa';
@@ -207,9 +208,7 @@ describe('E2E — hub `/caisse` → Ouvrir → session/open → vente (Story 13.
     expect(screen.getByTestId('cash-register-sale-kiosk')).toBeTruthy();
     expect(screen.queryByTestId('shell-zone-nav')).toBeNull();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
-    });
+    await waitForCashflowNominalSaleSurface();
 
     expect(window.location.pathname).not.toContain('session/open');
     expect(
@@ -246,8 +245,6 @@ describe('E2E — hub `/caisse` → Ouvrir → session/open → vente (Story 13.
       screen.queryByRole('heading', { level: 2, name: /Ouverture de Session de Caisse/i }),
     ).toBeNull();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
-    });
+    await waitForCashflowNominalSaleSurface();
   });
 });

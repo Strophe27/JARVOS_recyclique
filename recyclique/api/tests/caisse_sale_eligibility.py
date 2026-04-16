@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from recyclic_api.models.permission import Group, Permission
@@ -15,6 +16,7 @@ CAISSE_ACCESS_PERMISSION = "caisse.access"
 CAISSE_VIRTUAL_ACCESS_PERMISSION = "caisse.virtual.access"
 CAISSE_DEFERRED_ACCESS_PERMISSION = "caisse.deferred.access"
 CAISSE_REFUND_PERMISSION = "caisse.refund"
+ACCOUNTING_PRIOR_YEAR_REFUND_PERMISSION = "accounting.prior_year_refund"
 CAISSE_SPECIAL_ENCAISSEMENT_PERMISSION = "caisse.special_encaissement"
 CAISSE_SOCIAL_ENCAISSEMENT_PERMISSION = "caisse.social_encaissement"
 
@@ -120,6 +122,36 @@ def grant_user_caisse_refund_permission(db: Session, user: User) -> None:
     db.add(group)
     db.flush()
     group.users.append(user)
+    db.commit()
+    db.refresh(user)
+
+
+def grant_user_accounting_prior_year_refund_permission(db: Session, user: User) -> None:
+    """Story 22.5 — ajoute ``accounting.prior_year_refund`` au groupe de test caisse de l'utilisateur."""
+    perm = db.query(Permission).filter(Permission.name == ACCOUNTING_PRIOR_YEAR_REFUND_PERMISSION).first()
+    if not perm:
+        perm = Permission(
+            name=ACCOUNTING_PRIOR_YEAR_REFUND_PERMISSION,
+            description="Second parcours remboursement N-1 clos (tests 22.5)",
+        )
+        db.add(perm)
+        db.flush()
+
+    gkey = f"story62-caisse-{user.id}"
+    # SQL direct : l'association ORM group.permissions.append n'est pas toujours persistée
+    # selon l'état de session SQLite des tests (connection partagée / threads TestClient).
+    db.execute(
+        text(
+            "INSERT INTO group_permissions (group_id, permission_id) "
+            "SELECT g.id, p.id FROM groups g, permissions p "
+            "WHERE g.key = :gk AND p.name = :pn "
+            "AND NOT EXISTS ("
+            "  SELECT 1 FROM group_permissions x "
+            "  WHERE x.group_id = g.id AND x.permission_id = p.id"
+            ")"
+        ),
+        {"gk": gkey, "pn": ACCOUNTING_PRIOR_YEAR_REFUND_PERMISSION},
+    )
     db.commit()
     db.refresh(user)
 

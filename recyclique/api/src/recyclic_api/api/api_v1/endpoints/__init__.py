@@ -30,3 +30,4 @@ from .transactions import router as transactions_router
 from .legacy_import import router as legacy_import_router
 from .admin_paheko_outbox import router as admin_paheko_outbox_router
 from .admin_paheko_mapping import router as admin_paheko_mapping_router
+from .admin_accounting_expert import router as admin_accounting_expert_router

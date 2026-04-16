@@ -22,6 +22,7 @@ TRANSACTION_LOG_DIR = BASE_DIR / "logs"
 TRANSACTION_LOG_FILE = TRANSACTION_LOG_DIR / "transactions.log"
 MAX_BYTES = 10 * 1024 * 1024  # 10MB
 BACKUP_COUNT = 5  # 5 fichiers de backup
+_SYNC_TRANSACTION_LOGGING = os.getenv("TESTING", "").lower() == "true"
 
 
 def _utc_iso_z() -> str:
@@ -103,19 +104,25 @@ def _setup_transaction_logger() -> logging.Logger:
         file_handler.setFormatter(JSONFormatter())
         file_handler.setLevel(logging.INFO)
         
-        # Créer la queue et le queue handler pour logging asynchrone
-        global _log_queue, _queue_listener
-        _log_queue = queue.Queue(-1)  # Queue illimitée
-        queue_handler = QueueHandler(_log_queue)
-        
-        # Créer le queue listener pour écrire dans le fichier depuis un thread séparé
-        _queue_listener = QueueListener(_log_queue, file_handler)
-        _queue_listener.start()
-        
         # Créer et configurer le logger
         logger = logging.getLogger('transaction_audit')
         logger.setLevel(logging.INFO)
-        logger.addHandler(queue_handler)
+        logger.handlers.clear()
+        global _log_queue, _queue_listener
+        _log_queue = None
+        _queue_listener = None
+
+        if _SYNC_TRANSACTION_LOGGING:
+            logger.addHandler(file_handler)
+        else:
+            # Créer la queue et le queue handler pour logging asynchrone
+            _log_queue = queue.Queue(-1)  # Queue illimitée
+            queue_handler = QueueHandler(_log_queue)
+
+            # Créer le queue listener pour écrire dans le fichier depuis un thread séparé
+            _queue_listener = QueueListener(_log_queue, file_handler)
+            _queue_listener.start()
+            logger.addHandler(queue_handler)
         # Empêcher la propagation vers le logger root
         logger.propagate = False
         

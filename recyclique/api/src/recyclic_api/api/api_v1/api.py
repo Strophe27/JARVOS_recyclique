@@ -31,6 +31,7 @@ from .endpoints import (
     legacy_import_router as legacy_import,
     admin_paheko_outbox_router as admin_paheko_outbox,
     admin_paheko_mapping_router as admin_paheko_mapping,
+    admin_accounting_expert_router as admin_accounting_expert,
 )
 
 api_router = APIRouter()
@@ -74,5 +75,10 @@ api_router.include_router(
     admin_paheko_mapping,
     prefix="/admin/paheko-mappings",
     tags=["admin", "paheko-mappings"],
+)
+api_router.include_router(
+    admin_accounting_expert,
+    prefix="/admin/accounting-expert",
+    tags=["admin", "accounting-expert"],
 )
 

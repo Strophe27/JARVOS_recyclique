@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "schema": "epic22_cutover_criteria",
+  "numeric": {
+    "euros_rounding_epsilon": 0.02,
+    "significant_gap_epsilon": 0.02
+  },
+  "taxonomy": {
+    "categories": {
+      "MODEL": {
+        "label": "Divergence de modèle / règle métier",
+        "default_cutover_effect": "tolerated_under_documentation"
+      },
+      "HISTORICAL_DATA": {
+        "label": "Données historiques, backfill partiel, journal absent avant 22.1",
+        "default_cutover_effect": "blocks_until_reconciled"
+      },
+      "ROUNDING": {
+        "label": "Écart d'arrondi ou représentation sous epsilon",
+        "default_cutover_effect": "tolerated"
+      },
+      "BUG": {
+        "label": "Défaut de code sur le chemin canonique ou legacy",
+        "default_cutover_effect": "blocks"
+      },
+      "MISSING_CONTRACT": {
+        "label": "Contrat / donnée structurante manquante pour comparer",
+        "default_cutover_effect": "blocks"
+      },
+      "OUT_OF_SCOPE": {
+        "label": "Comportement hors périmètre phase B",
+        "default_cutover_effect": "ignored_for_cutover_gate"
+      },
+      "UNCLASSIFIED": {
+        "label": "Écart non encore classé — analyse requise",
+        "default_cutover_effect": "blocks"
+      }
+    }
+  },
+  "global_indicator": {
+    "forbids_ready_if": [
+      "any_significant_unclassified_gap",
+      "any_blocking_taxonomy_without_review",
+      "journal_empty_with_sales_while_strict_read"
+    ]
+  },
+  "exit_criteria": [
+    {
+      "id": "EC-01",
+      "description": "Pour chaque session de la matrice minimale AC5, rapport dual-read produit (pytest/API) avec colonnes legacy + canonique.",
+      "kind": "boolean"
+    },
+    {
+      "id": "EC-02",
+      "description": "Aucun écart significatif resté UNCLASSIFIED sans revue.",
+      "kind": "boolean"
+    },
+    {
+      "id": "EC-03",
+      "description": "Parcours 6.x/8.x non régressés (suites pytest existantes vertes sur branche).",
+      "kind": "boolean"
+    }
+  ],
+  "validation_package": {
+    "pytest_modules": [
+      "recyclique/api/tests/test_story_22_2_dual_read_aggregate_compare.py"
+    ],
+    "admin_api": [
+      "GET {api_v1}/admin/accounting-expert/cash-sessions/{cash_session_id}/dual-read-compare"
+    ]
+  },
+  "rollback_conditions": [
+    "Réactivation explicite des lectures legacy en préférence (feature flag / param — hors scope implémentatif 22.2).",
+    "Restauration BDD / annulation migration si écarts BUG confirmés en production."
+  ]
+}

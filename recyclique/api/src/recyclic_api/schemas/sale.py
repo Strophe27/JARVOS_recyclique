@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict, model_valida
 from uuid import UUID
 from typing import Annotated, List, Literal, Optional, Union
 from datetime import datetime
+from recyclic_api.models.payment_transaction import PaymentTransactionDirection, PaymentTransactionNature
 from recyclic_api.models.sale import PaymentMethod, SaleLifecycleStatus, SocialActionKind, SpecialEncaissementKind
 from recyclic_api.models.sale_reversal import RefundReasonCode
 
@@ -13,17 +14,44 @@ class PaymentBase(BaseModel):
 
 
 class PaymentCreate(PaymentBase):
-    pass
+    # Story 22.4 : rejeter tôt les montants non positifs (évite filtrage silencieux dans sale_service)
+    amount: float = Field(gt=0, description="Montant strictement positif pour chaque ligne de paiement ou de don.")
+
+    @field_validator("payment_method")
+    @classmethod
+    def _reject_free_explicit_payment(cls, v: PaymentMethod) -> PaymentMethod:
+        if v == PaymentMethod.FREE:
+            raise ValueError(
+                "Le moyen de paiement 'free' n'est pas autorise dans payments[]. "
+                "Utilisez payment_method=free sur la vente gratuite sans ligne financiere."
+            )
+        return v
 
 
 class PaymentResponse(PaymentBase):
     id: str
     sale_id: str
+    payment_method_id: Optional[str] = None
+    payment_method_code: Optional[str] = None
+    nature: Optional[PaymentTransactionNature] = None
+    direction: Optional[PaymentTransactionDirection] = None
+    original_sale_id: Optional[str] = None
+    original_payment_method_id: Optional[str] = None
+    is_prior_year_special_case: bool = False
+    paheko_account_override: Optional[str] = None
+    notes: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator('id', 'sale_id', mode='before')
+    @field_validator(
+        'id',
+        'sale_id',
+        'payment_method_id',
+        'original_sale_id',
+        'original_payment_method_id',
+        mode='before',
+    )
     @classmethod
     def _uuid_to_str(cls, v):
         return str(v) if v is not None else v
@@ -80,6 +108,8 @@ class SaleCreate(BaseModel):
     donation: Optional[float] = 0.0
     payment_method: Optional[PaymentMethod] = PaymentMethod.CASH  # Déprécié - utiliser payments à la place
     payments: Optional[List[PaymentCreate]] = None  # Story B52-P1: Paiements multiples
+    # Story 22.4 — don / surplus hors règlement de vente (journal `donation_surplus`)
+    donation_surplus: Optional[List[PaymentCreate]] = None
     note: Optional[str] = None  # Story B40-P5: Notes sur les tickets de caisse
     # Story 1.1.2: notes et preset_id déplacés vers sale_items (par item individuel)
     # Story 6.5 : encaissement sans article — exige permission caisse.special_encaissement ; items doit être [].
@@ -113,6 +143,7 @@ class SaleFinalizeHeld(BaseModel):
     donation: Optional[float] = None
     payment_method: Optional[PaymentMethod] = PaymentMethod.CASH
     payments: Optional[List[PaymentCreate]] = None
+    donation_surplus: Optional[List[PaymentCreate]] = None
     note: Optional[str] = None
 
 
@@ -159,6 +190,24 @@ class SaleReversalCreate(BaseModel):
     reason_code: RefundReasonCode
     detail: Optional[str] = None
     idempotency_key: Optional[str] = Field(None, max_length=128)
+    # Story 22.5 — double contexte : moyen de sortie réel (≠ vente source legacy) + parcours expert N-1 clos.
+    refund_payment_method: PaymentMethod = Field(
+        default=PaymentMethod.CASH,
+        description="Moyen effectif de remboursement (journal canonique) ; distinct du legacy vente source.",
+    )
+    expert_prior_year_refund: bool = Field(
+        default=False,
+        description="Second parcours : déblocage remboursement sur exercice antérieur clos (permission accounting.prior_year_refund).",
+    )
+
+    @field_validator("refund_payment_method")
+    @classmethod
+    def _reject_free_refund_channel(cls, v: PaymentMethod) -> PaymentMethod:
+        if v == PaymentMethod.FREE:
+            raise ValueError(
+                "Le moyen « free » ne peut pas servir de canal de remboursement réel (Story 22.5)."
+            )
+        return v
 
     @model_validator(mode="after")
     def _validate_detail(self) -> "SaleReversalCreate":

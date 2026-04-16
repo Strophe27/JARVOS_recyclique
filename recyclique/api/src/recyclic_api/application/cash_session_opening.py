@@ -139,6 +139,11 @@ def open_cash_session(
                 actual_amount=cash_session.actual_amount,
                 variance=cash_session.variance,
                 variance_comment=cash_session.variance_comment,
+                accounting_config_revision_id=(
+                    str(cash_session.accounting_config_revision_id)
+                    if cash_session.accounting_config_revision_id
+                    else None
+                ),
             )
     except NotFoundError as e:
         log_cash_session_opening(

@@ -24,7 +24,12 @@ from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.core.logging import log_transaction_event
 from recyclic_api.models.audit_log import AuditActionType
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
-from recyclic_api.models.payment_transaction import PaymentTransaction
+from recyclic_api.models.payment_method import PaymentMethodDefinition
+from recyclic_api.models.payment_transaction import (
+    PaymentTransaction,
+    PaymentTransactionDirection,
+    PaymentTransactionNature,
+)
 from recyclic_api.models.preset_button import PresetButton
 from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus, SpecialEncaissementKind
 from recyclic_api.models.sale_reversal import SaleReversal
@@ -40,6 +45,10 @@ from recyclic_api.schemas.sale import (
     SaleItemUpdate,
     SaleReversalCreate,
 )
+from recyclic_api.services.accounting_period_authority_service import (
+    AccountingPeriodAuthorityService,
+    RefundFiscalBranch,
+)
 from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
 
 
@@ -54,6 +63,9 @@ CAISSE_SOCIAL_ENCAISSEMENT_PERMISSION_KEY = "caisse.social_encaissement"
 
 # Story 6.3 — borne produit (liste + refus serveur si dépassé).
 MAX_HELD_SALES_PER_SESSION = 10
+
+# Story 22.4 — comparaisons montants caisse (float ticket / paiements)
+_ARBITRAGE_EPS = 1e-6
 
 
 def user_has_any_cash_sale_access(user: User, db: Session) -> bool:
@@ -453,7 +465,7 @@ class SaleService:
                 f"Le total ({sale_data.total_amount}) ne peut pas être inférieur au sous-total ({subtotal})"
             )
 
-        payments_to_create = self._resolve_payments(sale_data)
+        sale_payments, donation_surplus_to_create = self._resolve_payments(sale_data)
 
         now = datetime.now(timezone.utc)
         session_opened_at = None
@@ -511,11 +523,21 @@ class SaleService:
             )
             db.add(db_item)
 
-        for payment_data in payments_to_create:
-            db_payment = PaymentTransaction(
+        for payment_data in sale_payments:
+            db_payment = self._build_payment_transaction(
                 sale_id=db_sale.id,
-                payment_method=payment_data.payment_method,
-                amount=payment_data.amount,
+                payment_data=payment_data,
+                nature=PaymentTransactionNature.SALE_PAYMENT,
+                direction=PaymentTransactionDirection.INFLOW,
+            )
+            db.add(db_payment)
+
+        for payment_data in donation_surplus_to_create:
+            db_payment = self._build_payment_transaction(
+                sale_id=db_sale.id,
+                payment_data=payment_data,
+                nature=PaymentTransactionNature.DONATION_SURPLUS,
+                direction=PaymentTransactionDirection.INFLOW,
             )
             db.add(db_payment)
 
@@ -550,11 +572,12 @@ class SaleService:
         }
         cart_state_after = {"items_count": 0, "items": [], "total": 0.0}
 
+        payments_for_log = sale_payments + donation_surplus_to_create
         payment_methods_log = [
             p.payment_method.value if hasattr(p.payment_method, "value") else str(p.payment_method)
-            for p in payments_to_create
+            for p in payments_for_log
         ]
-        payment_amounts_log = [float(p.amount) for p in payments_to_create]
+        payment_amounts_log = [float(p.amount) for p in payments_for_log]
 
         tx_payload: dict = {
             "user_id": str(operator_id),
@@ -776,28 +799,56 @@ class SaleService:
 
     def _resolve_payments_for_finalize(
         self, total_amount: float, payload: SaleFinalizeHeld
-    ) -> List[PaymentCreate]:
+    ) -> tuple[List[PaymentCreate], List[PaymentCreate]]:
+        """Story 22.4 — retourne (lignes règlement, dons surplus explicites)."""
+        sale_lines: List[PaymentCreate]
+        donation_lines = list(payload.donation_surplus or [])
+
         if payload.payments:
-            total_payments = sum(p.amount for p in payload.payments)
-            if total_payments < total_amount:
-                raise ValidationError(
-                    f"La somme des paiements ({total_payments}) doit être supérieure ou égale "
-                    f"au total ({total_amount})"
-                )
-            return list(payload.payments)
-        if payload.payment_method:
-            return [
-                PaymentCreate(
-                    payment_method=payload.payment_method,
-                    amount=total_amount,
-                )
-            ]
-        return [
-            PaymentCreate(
-                payment_method=PaymentMethod.CASH,
-                amount=total_amount,
+            for p in payload.payments:
+                if p.payment_method == PaymentMethod.FREE:
+                    raise ValidationError(
+                        "Le moyen « free » est interdit dans la répartition explicite des paiements (payments)."
+                    )
+            sale_lines = list(payload.payments)
+        elif total_amount <= _ARBITRAGE_EPS and payload.payment_method == PaymentMethod.FREE:
+            sale_lines = []
+        elif payload.payment_method and payload.payment_method != PaymentMethod.FREE:
+            if total_amount <= _ARBITRAGE_EPS:
+                sale_lines = []
+            else:
+                sale_lines = [
+                    PaymentCreate(
+                        payment_method=payload.payment_method,
+                        amount=total_amount,
+                    )
+                ]
+        elif payload.payment_method == PaymentMethod.FREE and total_amount > _ARBITRAGE_EPS:
+            raise ValidationError(
+                "Le mode gratuité (free) est incompatible avec un total de ticket positif pour cette finalisation."
             )
-        ]
+        else:
+            if total_amount <= _ARBITRAGE_EPS:
+                sale_lines = []
+            else:
+                sale_lines = [
+                    PaymentCreate(
+                        payment_method=PaymentMethod.CASH,
+                        amount=total_amount,
+                    )
+                ]
+
+        sale_f = [p for p in sale_lines if float(p.amount) > _ARBITRAGE_EPS]
+        don_f = [p for p in donation_lines if float(p.amount) > _ARBITRAGE_EPS]
+
+        self._validate_payment_arbitrage_22_4(
+            total_amount=total_amount,
+            sale_lines=sale_f,
+            donation_surplus_lines=don_f,
+            payment_method_top=payload.payment_method,
+            forbid_free_with_financial_lines=True,
+        )
+        return sale_f, don_f
 
     def finalize_held_sale(
         self,
@@ -839,13 +890,23 @@ class SaleService:
         if payload.payment_method is not None:
             sale.payment_method = payload.payment_method
 
-        payments_to_create = self._resolve_payments_for_finalize(float(sale.total_amount), payload)
+        sale_pays, donation_surplus_final = self._resolve_payments_for_finalize(float(sale.total_amount), payload)
 
-        for payment_data in payments_to_create:
-            db_payment = PaymentTransaction(
+        for payment_data in sale_pays:
+            db_payment = self._build_payment_transaction(
                 sale_id=sale.id,
-                payment_method=payment_data.payment_method,
-                amount=payment_data.amount,
+                payment_data=payment_data,
+                nature=PaymentTransactionNature.SALE_PAYMENT,
+                direction=PaymentTransactionDirection.INFLOW,
+            )
+            db.add(db_payment)
+
+        for payment_data in donation_surplus_final:
+            db_payment = self._build_payment_transaction(
+                sale_id=sale.id,
+                payment_data=payment_data,
+                nature=PaymentTransactionNature.DONATION_SURPLUS,
+                direction=PaymentTransactionDirection.INFLOW,
             )
             db.add(db_payment)
 
@@ -881,11 +942,12 @@ class SaleService:
         }
         cart_state_after = {"items_count": 0, "items": [], "total": 0.0}
 
+        payments_for_held_log = sale_pays + donation_surplus_final
         payment_methods_log = [
             p.payment_method.value if hasattr(p.payment_method, "value") else str(p.payment_method)
-            for p in payments_to_create
+            for p in payments_for_held_log
         ]
-        payment_amounts_log = [float(p.amount) for p in payments_to_create]
+        payment_amounts_log = [float(p.amount) for p in payments_for_held_log]
 
         log_transaction_event(
             "PAYMENT_VALIDATED",
@@ -1041,6 +1103,20 @@ class SaleService:
         if dup:
             raise ConflictError("Un remboursement existe déjà pour cette vente source.")
 
+        authority = AccountingPeriodAuthorityService(db)
+        auth_view = authority.resolve_refund_branch(sale_date=sale.sale_date, created_at=sale.created_at)
+
+        if auth_view.branch == RefundFiscalBranch.PRIOR_CLOSED:
+            if not payload.expert_prior_year_refund:
+                raise ConflictError(
+                    "[PRIOR_YEAR_REFUND_REQUIRES_EXPERT_PATH] "
+                    "Remboursement sur exercice antérieur clos : utilisez le parcours expert (permission "
+                    "accounting.prior_year_refund, expert_prior_year_refund=true) — interdit d'élargir "
+                    "implicitement le wizard terrain (Story 22.5)."
+                )
+            if not user_has_permission(operator_user, "accounting.prior_year_refund", db):
+                raise AuthorizationError("Permission requise: accounting.prior_year_refund")
+
         refund_amount = float(sale.total_amount)
         amount_signed = -refund_amount
 
@@ -1055,6 +1131,23 @@ class SaleService:
         )
         db.add(reversal)
         db.flush()
+
+        orig_pm_pk = self._original_payment_method_pk_for_refund_source(sale)
+        pm_eff = self._resolve_payment_method_definition(payload.refund_payment_method)
+        prior_flag = auth_view.branch == RefundFiscalBranch.PRIOR_CLOSED
+        refund_journal = PaymentTransaction(
+            sale_id=sale.id,
+            payment_method=payload.refund_payment_method,
+            payment_method_id=pm_eff.id if pm_eff else None,
+            nature=PaymentTransactionNature.REFUND_PAYMENT,
+            direction=PaymentTransactionDirection.OUTFLOW,
+            amount=refund_amount,
+            original_sale_id=sale.id,
+            original_payment_method_id=orig_pm_pk,
+            is_prior_year_special_case=prior_flag,
+            notes="Story 22.5 — reversal caisse (journal canonique)",
+        )
+        db.add(refund_journal)
 
         cash_session.current_amount = float(cash_session.current_amount or 0) + amount_signed
 
@@ -1073,6 +1166,9 @@ class SaleService:
                 "reversal_id": str(reversal.id),
                 "amount_signed": amount_signed,
                 "reason_code": payload.reason_code.value,
+                "fiscal_branch": auth_view.branch.value,
+                "sale_fiscal_year": auth_view.sale_fiscal_year,
+                "is_prior_year_special_case": prior_flag,
             },
             request_id=request_id,
         )
@@ -1088,8 +1184,13 @@ class SaleService:
                 "amount_signed": amount_signed,
                 "reason_code": payload.reason_code.value,
                 "request_id": request_id,
+                "fiscal_branch": auth_view.branch.value,
+                "authority_source": auth_view.source,
+                "authority_snapshot_version": auth_view.snapshot_version,
+                "refund_payment_method": payload.refund_payment_method.value,
+                "is_prior_year_special_case": prior_flag,
             },
-            description="Remboursement / reversal caisse (Story 6.4)",
+            description="Remboursement / reversal caisse (Story 6.4 + journal 22.5)",
             db=db,
         )
 
@@ -1240,6 +1341,15 @@ class SaleService:
                 fields_touched.append("donation")
 
             if fin.payment_method is not None:
+                pays_pm = list(sale.payments or [])
+                if len(pays_pm) == 1:
+                    pm_ref = self._resolve_payment_method_definition(fin.payment_method)
+                    pays_pm[0].payment_method = fin.payment_method
+                    pays_pm[0].payment_method_id = pm_ref.id if pm_ref else None
+                elif len(pays_pm) > 1:
+                    raise ValidationError(
+                        "Correction du moyen de paiement interdite : vente avec plusieurs lignes de paiement (Story 6.8)."
+                    )
                 sale.payment_method = fin.payment_method
                 fields_touched.append("payment_method")
 
@@ -1291,25 +1401,154 @@ class SaleService:
 
         return sale
 
-    def _resolve_payments(self, sale_data: SaleCreate) -> List[PaymentCreate]:
-        if sale_data.payments:
-            total_payments = sum(p.amount for p in sale_data.payments)
-            if total_payments < sale_data.total_amount:
-                raise ValidationError(
-                    f"La somme des paiements ({total_payments}) doit être supérieure ou égale "
-                    f"au total ({sale_data.total_amount})"
-                )
-            return list(sale_data.payments)
-        if sale_data.payment_method:
-            return [
-                PaymentCreate(
-                    payment_method=sale_data.payment_method,
-                    amount=sale_data.total_amount,
-                )
-            ]
-        return [
-            PaymentCreate(
-                payment_method=PaymentMethod.CASH,
-                amount=sale_data.total_amount,
+    def _resolve_payment_method_definition(
+        self,
+        payment_method: PaymentMethod | None,
+    ) -> PaymentMethodDefinition | None:
+        if payment_method in (None, PaymentMethod.FREE):
+            return None
+        return (
+            self.db.query(PaymentMethodDefinition)
+            .filter(
+                PaymentMethodDefinition.code == payment_method.value,
+                PaymentMethodDefinition.archived_at.is_(None),
             )
-        ]
+            .first()
+        )
+
+    def _original_payment_method_pk_for_refund_source(self, sale: Sale) -> UUID | None:
+        """Journal canonique : préfère les lignes ``SALE_PAYMENT`` ; repli référentiel depuis legacy brownfield."""
+        q = (
+            self.db.query(PaymentTransaction)
+            .filter(
+                PaymentTransaction.sale_id == sale.id,
+                PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+            )
+            .order_by(PaymentTransaction.created_at.asc())
+        )
+        for pt in q.all():
+            if pt.payment_method_id is not None:
+                return pt.payment_method_id
+        pm_ref = self._resolve_payment_method_definition(sale.payment_method)
+        return pm_ref.id if pm_ref else None
+
+    def _validate_payment_arbitrage_22_4(
+        self,
+        *,
+        total_amount: float,
+        sale_lines: List[PaymentCreate],
+        donation_surplus_lines: List[PaymentCreate],
+        payment_method_top: PaymentMethod | None,
+        forbid_free_with_financial_lines: bool,
+    ) -> None:
+        """
+        Story 22.4 — couverture ticket, interdiction sur-règlement implicite, gratuité sans lignes financières.
+
+        - Règlement (``sale_lines``) ne doit pas dépasser le total : excédent = don en surplus explicite.
+        - Couverture : somme(règlements) + somme(don surplus) >= total (don explicite comble un éventuel manque).
+        """
+        sum_sale = sum(float(p.amount) for p in sale_lines)
+        sum_don = sum(float(p.amount) for p in donation_surplus_lines)
+        total = float(total_amount)
+
+        if forbid_free_with_financial_lines and payment_method_top == PaymentMethod.FREE:
+            if sale_lines or donation_surplus_lines:
+                raise ValidationError(
+                    "Une vente en gratuité (payment_method=free) ne peut pas comporter de lignes "
+                    "de paiement ni de don en surplus — retirez les encaissements ou changez le total."
+                )
+            if total > _ARBITRAGE_EPS:
+                raise ValidationError(
+                    "Le mode gratuité (free) est réservé à un total de vente nul — corrigez le total ou le moyen."
+                )
+
+        if total <= _ARBITRAGE_EPS:
+            if sum_sale > _ARBITRAGE_EPS or sum_don > _ARBITRAGE_EPS:
+                raise ValidationError(
+                    "Pour un total de vente nul, aucune ligne financière (paiement ou don en surplus) n'est acceptée."
+                )
+            return
+
+        if sum_sale > total + _ARBITRAGE_EPS:
+            raise ValidationError(
+                "Montant encaissé sur le règlement supérieur au total du ticket — "
+                "réduisez les lignes de paiement ou déclarez explicitement le surplus en don."
+            )
+
+        if sum_sale + sum_don < total - _ARBITRAGE_EPS:
+            raise ValidationError(
+                "Encaissement insuffisant : la somme des paiements et des dons en surplus doit couvrir le total du ticket."
+            )
+
+    def _build_payment_transaction(
+        self,
+        *,
+        sale_id: UUID,
+        payment_data: PaymentCreate,
+        nature: PaymentTransactionNature,
+        direction: PaymentTransactionDirection,
+    ) -> PaymentTransaction:
+        if payment_data.payment_method == PaymentMethod.FREE:
+            raise ValidationError(
+                "Le moyen de paiement 'free' n'est pas autorise dans payments[]. "
+                "Utilisez payment_method=free sur la vente gratuite sans ligne financiere."
+            )
+        payment_method_ref = self._resolve_payment_method_definition(payment_data.payment_method)
+        return PaymentTransaction(
+            sale_id=sale_id,
+            payment_method=payment_data.payment_method,
+            payment_method_id=payment_method_ref.id if payment_method_ref else None,
+            nature=nature,
+            direction=direction,
+            amount=payment_data.amount,
+        )
+
+    def _resolve_payments(self, sale_data: SaleCreate) -> tuple[List[PaymentCreate], List[PaymentCreate]]:
+        """Story 22.4 — vente directe : règlements + dons surplus explicites (journal distinct)."""
+        donation_lines = list(sale_data.donation_surplus or [])
+
+        if sale_data.payments:
+            for p in sale_data.payments:
+                if p.payment_method == PaymentMethod.FREE:
+                    raise ValidationError(
+                        "Le moyen « free » est interdit dans la répartition explicite des paiements (payments)."
+                    )
+            sale_lines = list(sale_data.payments)
+        elif sale_data.total_amount <= _ARBITRAGE_EPS and sale_data.payment_method == PaymentMethod.FREE:
+            sale_lines = []
+        elif sale_data.payment_method == PaymentMethod.FREE and sale_data.total_amount > _ARBITRAGE_EPS:
+            raise ValidationError(
+                "Le mode gratuité (free) est incompatible avec un total de vente positif — utilisez des paiements explicites."
+            )
+        elif sale_data.payment_method:
+            if sale_data.total_amount <= _ARBITRAGE_EPS:
+                sale_lines = []
+            else:
+                sale_lines = [
+                    PaymentCreate(
+                        payment_method=sale_data.payment_method,
+                        amount=sale_data.total_amount,
+                    )
+                ]
+        else:
+            if sale_data.total_amount <= _ARBITRAGE_EPS:
+                sale_lines = []
+            else:
+                sale_lines = [
+                    PaymentCreate(
+                        payment_method=PaymentMethod.CASH,
+                        amount=sale_data.total_amount,
+                    )
+                ]
+
+        sale_f = [p for p in sale_lines if float(p.amount) > _ARBITRAGE_EPS]
+        don_f = [p for p in donation_lines if float(p.amount) > _ARBITRAGE_EPS]
+
+        self._validate_payment_arbitrage_22_4(
+            total_amount=float(sale_data.total_amount),
+            sale_lines=sale_f,
+            donation_surplus_lines=don_f,
+            payment_method_top=sale_data.payment_method,
+            forbid_free_with_financial_lines=True,
+        )
+        return sale_f, don_f

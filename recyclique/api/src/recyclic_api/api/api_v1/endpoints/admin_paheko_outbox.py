@@ -16,11 +16,14 @@ from recyclic_api.schemas.paheko_outbox import (
     PahekoOutboxItemDetail,
     PahekoOutboxListResponse,
     PahekoOutboxRejectBody,
+    PahekoResolvedTransactionPreview,
     PahekoOutboxSyncTransitionListResponse,
     outbox_item_to_detail,
     outbox_item_to_public,
     sync_transition_to_public,
 )
+from recyclic_api.services.paheko_close_batch_builder import build_cash_session_close_batch_from_enriched_payload
+from recyclic_api.services.paheko_mapping_service import resolve_enriched_payload_for_item
 from recyclic_api.services.paheko_outbox_service import (
     confirm_paheko_delivered_resolved,
     get_outbox_item,
@@ -29,12 +32,69 @@ from recyclic_api.services.paheko_outbox_service import (
     list_outbox_items_by_correlation_id,
     reject_paheko_outbox_item,
 )
+from recyclic_api.services.paheko_transaction_payload_builder import build_cash_session_close_transaction_payload
 from recyclic_api.services.paheko_outbox_transition_audit import (
     list_transitions_for_correlation,
     list_transitions_for_item,
 )
 
 router = APIRouter()
+
+
+def _build_transaction_preview(db: Session, row: object) -> PahekoResolvedTransactionPreview | None:
+    operation_type = getattr(row, "operation_type", None)
+    if operation_type != "cash_session_close":
+        return None
+    payload = getattr(row, "payload", None)
+    cash_session_id = getattr(row, "cash_session_id", None)
+    enriched_payload, err, _msg = resolve_enriched_payload_for_item(
+        db,
+        base_payload=dict(payload or {}),
+        cash_session_id=cash_session_id,
+    )
+    if err is not None or enriched_payload is None:
+        return None
+    if isinstance(enriched_payload.get("accounting_close_snapshot_frozen"), dict):
+        ikey = getattr(row, "idempotency_key", "") or ""
+        planned, perr, _ = build_cash_session_close_batch_from_enriched_payload(
+            enriched_payload,
+            batch_idempotency_key=str(ikey),
+        )
+        if perr or not planned:
+            return None
+        body = None
+        for _p, b in planned:
+            if b is not None:
+                body = b
+                break
+        if body is None:
+            return None
+        body_code, _body_msg = None, None
+    else:
+        body, body_code, _body_msg = build_cash_session_close_transaction_payload(enriched_payload)
+    if body_code is not None or body is None:
+        return None
+    amount = body.get("amount")
+    debit = body.get("debit")
+    credit = body.get("credit")
+    id_year = body.get("id_year")
+    if not isinstance(debit, str) or not isinstance(credit, str):
+        return None
+    try:
+        amount_value = float(amount)
+        id_year_value = int(id_year)
+    except (TypeError, ValueError):
+        return None
+    label = body.get("label")
+    reference = body.get("reference")
+    return PahekoResolvedTransactionPreview(
+        amount=amount_value,
+        debit=debit,
+        credit=credit,
+        id_year=id_year_value,
+        label=label if isinstance(label, str) else None,
+        reference=reference if isinstance(reference, str) else None,
+    )
 
 
 @router.get(
@@ -74,7 +134,7 @@ async def paheko_outbox_list_items(
         correlation_id=correlation_id,
     )
     return PahekoOutboxListResponse(
-        data=[outbox_item_to_public(r) for r in rows],
+        data=[outbox_item_to_public(r, transaction_preview=_build_transaction_preview(db, r)) for r in rows],
         total=total,
         skip=skip,
         limit=limit,
@@ -113,7 +173,7 @@ async def paheko_outbox_get_correlation_timeline(
     )
     return PahekoOutboxCorrelationTimelineResponse(
         correlation_id=cid,
-        items=[outbox_item_to_public(r) for r in items],
+        items=[outbox_item_to_public(r, transaction_preview=_build_transaction_preview(db, r)) for r in items],
         sync_transitions=[sync_transition_to_public(t) for t in trans_rows],
         sync_transitions_total=trans_total,
         sync_transitions_skip=transitions_skip,
@@ -137,7 +197,11 @@ async def paheko_outbox_get_item(
     if row is None:
         raise HTTPException(status_code=404, detail="Élément outbox introuvable")
     recent, _ = list_transitions_for_item(db, item_id, skip=0, limit=10, order="desc")
-    return outbox_item_to_detail(row, recent_sync_transitions=recent)
+    return outbox_item_to_detail(
+        row,
+        recent_sync_transitions=recent,
+        transaction_preview=_build_transaction_preview(db, row),
+    )
 
 
 @router.post(
@@ -170,7 +234,11 @@ async def paheko_outbox_reject_item(
     db.commit()
     db.refresh(row)
     recent, _ = list_transitions_for_item(db, item_id, skip=0, limit=10, order="desc")
-    return outbox_item_to_detail(row, recent_sync_transitions=recent)
+    return outbox_item_to_detail(
+        row,
+        recent_sync_transitions=recent,
+        transaction_preview=_build_transaction_preview(db, row),
+    )
 
 
 @router.get(
@@ -227,7 +295,11 @@ async def paheko_outbox_lift_quarantine(
     db.commit()
     db.refresh(row)
     recent, _ = list_transitions_for_item(db, item_id, skip=0, limit=10, order="desc")
-    return outbox_item_to_detail(row, recent_sync_transitions=recent)
+    return outbox_item_to_detail(
+        row,
+        recent_sync_transitions=recent,
+        transaction_preview=_build_transaction_preview(db, row),
+    )
 
 
 @router.post(
@@ -259,4 +331,8 @@ async def paheko_outbox_confirm_resolved(
     db.commit()
     db.refresh(row)
     recent, _ = list_transitions_for_item(db, item_id, skip=0, limit=10, order="desc")
-    return outbox_item_to_detail(row, recent_sync_transitions=recent)
+    return outbox_item_to_detail(
+        row,
+        recent_sync_transitions=recent,
+        transaction_preview=_build_transaction_preview(db, row),
+    )

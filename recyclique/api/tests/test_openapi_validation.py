@@ -52,6 +52,12 @@ _RECYCLIQUE_API_ERROR_SCHEMA = {
         "retryable": {"type": "boolean"},
         "state": {"type": ["string", "null"]},
         "correlation_id": {"type": "string"},
+        "policy_reason_code": {"type": ["string", "null"]},
+        "policy_version": {"type": ["string", "null"]},
+        "cash_session_id": {"type": ["string", "null"]},
+        "site_id": {"type": ["string", "null"]},
+        "blocking_outbox_item_id": {"type": ["string", "null"]},
+        "mapping_resolution_code": {"type": ["string", "null"]},
     },
     "additionalProperties": False,
 }

@@ -52,6 +52,17 @@ function KpiCard(props: { label: string; value: ReactNode; color?: string; testI
   );
 }
 
+function ContextStat(props: { label: string; value: ReactNode; testId?: string }): ReactNode {
+  return (
+    <Text size="sm" c="dimmed" data-testid={props.testId}>
+      <Text span fw={600} c="gray.8">
+        {props.label}
+      </Text>{' '}
+      {props.value}
+    </Text>
+  );
+}
+
 /**
  * Détail ticket réception admin — lecture seule, export fichier lorsque le serveur l'autorise.
  */
@@ -198,20 +209,10 @@ export function AdminReceptionTicketDetailWidget(_props: RegisteredWidgetProps):
               Détail du ticket de réception
             </Title>
             <Text size="sm" c="dimmed" mt={4} data-testid="admin-reception-ticket-meta">
-              Identifiant :{' '}
+              Ticket{' '}
               <Text span ff="monospace" size="sm" title={ticketDisplay.title}>
                 {ticketDisplay.display}
               </Text>
-              {ticket ? (
-                <>
-                  {' '}
-                  · Poste{' '}
-                  <Text span ff="monospace" size="sm" title={posteDisplay.title}>
-                    {posteDisplay.display}
-                  </Text>{' '}
-                  · {st?.label ?? ticket.status}
-                </>
-              ) : null}
             </Text>
           </div>
           <Group gap="xs">
@@ -241,87 +242,77 @@ export function AdminReceptionTicketDetailWidget(_props: RegisteredWidgetProps):
 
         {ticket && st && metrics ? (
           <Paper withBorder p="md" data-testid="admin-reception-ticket-summary-panel">
-            <Grid gutter="xs">
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard
+            <Stack gap="sm">
+              <Group gap="xs" wrap="wrap" align="center">
+                <Badge color={st.color} variant="light" size="lg" data-testid="admin-reception-ticket-summary-status">
+                  {st.label}
+                </Badge>
+                <ContextStat
                   label="Bénévole"
                   value={ticket.benevole_username?.trim() || 'Inconnu'}
                   testId="admin-reception-ticket-summary-benevole"
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard
-                  label="Date création"
+                <ContextStat
+                  label="Créé"
                   value={formatReceptionDateTimeFr(ticket.created_at)}
                   testId="admin-reception-ticket-summary-created-at"
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard
-                  label="Statut"
-                  value={
-                    <Badge color={st.color} variant="light" size="lg" mt={4}>
-                      {st.label}
-                    </Badge>
-                  }
-                  testId="admin-reception-ticket-summary-status"
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard
-                  label="Poids total traité"
-                  value={formatReceptionWeightKg(metrics.totalProcessed)}
-                  testId="admin-reception-ticket-summary-total"
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard
-                  label="Entrée boutique"
-                  value={formatReceptionWeightKg(metrics.enteredBoutique)}
-                  color="green.7"
-                  testId="admin-reception-ticket-summary-entered"
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard
-                  label="Recyclage direct"
-                  value={formatReceptionWeightKg(metrics.recycledDirect)}
-                  color="orange.7"
-                  testId="admin-reception-ticket-summary-direct"
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard
-                  label="Sortie boutique"
-                  value={formatReceptionWeightKg(metrics.recycledFromBoutique)}
-                  color="red.7"
-                  testId="admin-reception-ticket-summary-exit"
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 6, md: 3 }}>
-                <KpiCard label="Nombre de lignes" value={String(lignes.length)} testId="admin-reception-ticket-summary-lines" />
-              </Grid.Col>
-              {ticket.closed_at ? (
-                <Grid.Col span={{ base: 12, md: 6 }}>
-                  <KpiCard
-                    label="Date fermeture"
+                {ticket.closed_at ? (
+                  <ContextStat
+                    label="Fermé"
                     value={formatReceptionDateTimeFr(ticket.closed_at)}
                     testId="admin-reception-ticket-summary-closed-at"
                   />
-                </Grid.Col>
-              ) : null}
-              <Grid.Col span={{ base: 12, md: ticket.closed_at ? 6 : 12 }}>
-                <KpiCard
+                ) : null}
+                <ContextStat
                   label="Poste"
                   value={
-                    <Text ff="monospace" title={posteDisplay.title}>
+                    <Text span ff="monospace" title={posteDisplay.title}>
                       {posteDisplay.display}
                     </Text>
                   }
                   testId="admin-reception-ticket-summary-poste"
                 />
-              </Grid.Col>
-            </Grid>
+                <ContextStat
+                  label="Lignes"
+                  value={String(lignes.length)}
+                  testId="admin-reception-ticket-summary-lines"
+                />
+              </Group>
+              <Grid gutter="xs">
+                <Grid.Col span={{ base: 6, md: 3 }}>
+                  <KpiCard
+                    label="Poids total traité"
+                    value={formatReceptionWeightKg(metrics.totalProcessed)}
+                    testId="admin-reception-ticket-summary-total"
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 6, md: 3 }}>
+                  <KpiCard
+                    label="Entrée boutique"
+                    value={formatReceptionWeightKg(metrics.enteredBoutique)}
+                    color="green.7"
+                    testId="admin-reception-ticket-summary-entered"
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 6, md: 3 }}>
+                  <KpiCard
+                    label="Recyclage direct"
+                    value={formatReceptionWeightKg(metrics.recycledDirect)}
+                    color="orange.7"
+                    testId="admin-reception-ticket-summary-direct"
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 6, md: 3 }}>
+                  <KpiCard
+                    label="Sortie boutique"
+                    value={formatReceptionWeightKg(metrics.recycledFromBoutique)}
+                    color="red.7"
+                    testId="admin-reception-ticket-summary-exit"
+                  />
+                </Grid.Col>
+              </Grid>
+            </Stack>
           </Paper>
         ) : null}
 

@@ -1105,9 +1105,7 @@ class TestSalesIntegration:
 
     def test_create_sale_with_multiple_payments_cash_change(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):
         """
-        Test de création d'une vente avec paiement espèces supérieur au total (reste).
-        
-        Story B52-P1: Valide que la somme des paiements peut être supérieure au total pour espèces.
+        Surpaiement espèces : Story 22.4 — excédent explicite en ``donation_surplus``, pas sur la ligne de règlement.
         """
         # Créer les données de test en base
         user = User(**test_cashier)
@@ -1122,7 +1120,7 @@ class TestSalesIntegration:
         db_session.commit()
         grant_user_caisse_sale_eligibility(db_session, user, site.id)
 
-        # Données de la vente : 50€ total, paiement espèces 55€ (reste 5€)
+        # 50 € ticket : règlement 50 € + don surplus explicite 5 € (rendu monnaie / surplus)
         sale_data = {
             "cash_session_id": str(test_cash_session["id"]),
             "items": [
@@ -1137,8 +1135,11 @@ class TestSalesIntegration:
             "total_amount": 50.0,
             "donation": 0.0,
             "payments": [
-                {"payment_method": "cash", "amount": 55.0}  # 5€ de reste
-            ]
+                {"payment_method": "cash", "amount": 50.0}
+            ],
+            "donation_surplus": [
+                {"payment_method": "cash", "amount": 5.0}
+            ],
         }
 
         response = client.post(
@@ -1150,10 +1151,11 @@ class TestSalesIntegration:
         assert response.status_code == 200
         data = response.json()
 
-        # Vérifier que le paiement est supérieur au total (reste pour espèces)
         total_payments = sum(p["amount"] for p in data["payments"])
         assert total_payments == 55.0
         assert total_payments > data["total_amount"]
+        assert sum(1 for p in data["payments"] if p.get("nature") == "sale_payment") == 1
+        assert sum(1 for p in data["payments"] if p.get("nature") == "donation_surplus") == 1
 
     def test_create_sale_with_multiple_payments_validation_error(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):
         """
@@ -1200,9 +1202,10 @@ class TestSalesIntegration:
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
 
-        # Erreur métier (somme des paiements < total) → 400, pas 422 validation schéma
+        # Erreur métier (couverture insuffisante) → 400
         assert response.status_code == 400
-        assert "paiements" in response.json()["detail"].lower() or "payments" in response.json()["detail"].lower()
+        detail = response.json()["detail"].lower()
+        assert "insuffisant" in detail or "paiements" in detail or "couvrir" in detail
 
     def test_create_sale_backward_compatibility_single_payment(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):
         """

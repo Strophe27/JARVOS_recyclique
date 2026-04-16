@@ -117,6 +117,8 @@ export function LiveAuthShell({ children }: LiveAuthShellProps) {
     async (token: string, userIdHint?: string): Promise<boolean> => {
       const ctx = await fetchRecycliqueContextEnvelope(token);
       if (!ctx.ok) {
+        // 401 : jeton invalide ou expiré, on purge. Les 5xx/transitoires gardent la session stockée
+        // pour permettre un retry manuel depuis l'écran public sans redemander immédiatement le mot de passe.
         if (ctx.status === 401) {
           clearSession();
         }

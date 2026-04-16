@@ -8,16 +8,24 @@ from typing import Any
 
 import httpx
 import pytest
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, noload
 
 from recyclic_api.core.config import settings
 from recyclic_api.core.security import hash_password
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.paheko_outbox import PahekoOutboxItem, PahekoOutboxStatus
+from recyclic_api.models.payment_transaction import (
+    PaymentTransaction,
+    PaymentTransactionDirection,
+    PaymentTransactionNature,
+)
 from recyclic_api.models.site import Site
+from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.services.cash_session_service import CashSessionService
 from recyclic_api.services.paheko_accounting_client import PahekoAccountingClient
+from recyclic_api.services.paheko_close_batch_builder import SUB_KIND_SALES_DONATIONS, sub_write_idempotency_key
 from recyclic_api.services.paheko_outbox_processor import process_next_paheko_outbox_item
 from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
 
@@ -57,7 +65,30 @@ def _site_user_session(db_session: Session) -> tuple[Site, User, CashSession]:
         total_items=1,
     )
     db_session.add(cs)
+    db_session.flush()
+    sale = Sale(
+        cash_session_id=cs.id,
+        operator_id=user.id,
+        total_amount=25.0,
+        donation=0.0,
+        payment_method=PaymentMethod.CASH,
+        lifecycle_status=SaleLifecycleStatus.COMPLETED,
+    )
+    db_session.add(sale)
+    db_session.flush()
+    db_session.add(
+        PaymentTransaction(
+            sale_id=sale.id,
+            payment_method=PaymentMethod.CASH,
+            nature=PaymentTransactionNature.SALE_PAYMENT,
+            direction=PaymentTransactionDirection.INFLOW,
+            amount=25.0,
+        )
+    )
     db_session.commit()
+    cs = db_session.execute(
+        select(CashSession).where(CashSession.id == cs.id).options(noload(CashSession.register))
+    ).scalar_one()
     return site, user, cs
 
 
@@ -138,7 +169,8 @@ def test_idempotency_key_header_sent(db_session: Session) -> None:
 
     client = PahekoAccountingClient(base_url="http://paheko.test", client_factory=factory)
     process_next_paheko_outbox_item(db_session, client=client)
-    assert seen and seen[0] == item.idempotency_key
+    expected_sub_key = sub_write_idempotency_key(item.idempotency_key, 0, SUB_KIND_SALES_DONATIONS)
+    assert seen and seen[0] == expected_sub_key
 
 
 def test_max_attempts_then_quarantine(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:

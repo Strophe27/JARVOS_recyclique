@@ -101,7 +101,13 @@ export function AdminPahekoDiagnosticsSection() {
     } else {
       setItems([]);
       const msg =
-        outboxRes.status === 'fulfilled' ? outboxRes.value.detail : outboxRes.reason instanceof Error ? outboxRes.reason.message : 'Erreur inconnue';
+        outboxRes.status === 'fulfilled'
+          ? outboxRes.value.ok
+            ? 'Erreur inconnue'
+            : outboxRes.value.detail
+          : outboxRes.reason instanceof Error
+            ? outboxRes.reason.message
+            : 'Erreur inconnue';
       setLoadError(msg);
     }
     setBusy(false);

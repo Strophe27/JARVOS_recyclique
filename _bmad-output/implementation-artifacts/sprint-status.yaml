@@ -1,3 +1,26 @@
+# last_updated: 2026-04-16 — story 22-8 Story Runner BMAD : resume_at VS ; VS Task NEEDS_HITL→arbitrage parent ; GATE 40 PASS→QA→CR2 APPROVE ; 22-8 review→done ; epic-22→done ; vs_loop=1 qa_loop=0 cr_loop=1 composer-2-fast
+# last_updated: 2026-04-16 — story 22-8 DS bmad-dev-story Task : test-summary-story-22-8-qa-chain.md ; ready-for-dev → review (gate pytest reserve Story Runner)
+# last_updated: 2026-04-16 — story 22-8 CS bmad-create-story (VS) : 22-8-rebaseliner-les-preuves-qualite-et-valider-bout-en-bout-la-chaine-caisse-snapshot-ecriture-paheko backlog → ready-for-dev (matrice 4 col + chemins pytest/e2e + refs 6.7/8.7/22.6/22.7 + Epic 10 + delta archi)
+# last_updated: 2026-04-16 — story 22-2 Story Runner BMAD : resume_at VS ; VS→DS→GATE→QA→CR1 CHANGES→DS fix→GATE→CR2 APPROVE ; 22-2 review→done ; vs_loop=0 qa_loop=0 cr_loop=1 ; composer-2-fast ; dual-read GET + pytest matrice AC5
+# last_updated: 2026-04-16 — story 22-2 Story Runner BMAD : resume_at VS → VS→DS→GATE→QA→CR1 CHANGES_REQUESTED (snapshot totals illisibles) → correctif DS+tests → GATE→CR2 APPROVE ; 22-2 done ; vs_loop=0 qa_loop=0 cr_loop=1 ; composer-2-fast ; `frozen_snapshot_present_but_totals_unreadable`
+# last_updated: 2026-04-16 — story 22-2 CS bmad-create-story (VS) : 22-2-executer-la-double-lecture-comparer-les-agregats-et-piloter-la-bascule-hors-legacy backlog → ready-for-dev (checklist + ancres code chaîne canonique → outbox ; phasage 22.7 < 22.2 < 22.8 ; DoD mesurable)
+# last_updated: 2026-04-16 — story 22-2 DS bmad-dev-story : 22-2 in-progress → review (dual-read service + GET accounting-expert + critères JSON + tests matrice AC5)
+# last_updated: 2026-04-16 — story 22-2 DS bmad-dev-story : 22-2 ready-for-dev → in-progress (double lecture agrégats + endpoint admin + tests + critères cutover YAML)
+# last_updated: 2026-04-16 — story 22-7 Story Runner BMAD : resume_at VS ; VS→DS→GATE→QA→CR APPROVE ; 22-7 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; composer-2-fast ; Task shell GATE indisponible (loop) → pytest exécuté parent ; QA test GET admin close_batch_state
+# last_updated: 2026-04-16 — story 22-7 Story Runner BMAD : VS→DS→GATE→QA→CR2 APPROVE ; review→done ; vs_loop=0 qa_loop=0 cr_loop=1 ; composer-2-fast (correctifs gate 8.2 + OpenAPI idempotence batch)
+# last_updated: 2026-04-16 — story 22-7 DS bmad-dev-story : 22-7-generer-les-ecritures-avancees-multi-lignes-paheko-et-adapter-la-sync-epic-8 ready-for-dev → review (batch snapshot multi-sous-écritures + état payload + OpenAPI)
+# last_updated: 2026-04-16 — story 22-7 CS bmad-create-story (VS) : 22-7-generer-les-ecritures-avancees-multi-lignes-paheko-et-adapter-la-sync-epic-8 backlog → ready-for-dev (trace BDD epics + gel epic-22 + ancres code outbox ; 22.6 done)
+# last_updated: 2026-04-16 — story 22-6 Story Runner BMAD : resume_at VS → VS→DS→GATE→QA→CR PASS ; 22-6 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; composer-2-fast
+# last_updated: 2026-04-15 — story 22.3 Story Runner BMAD (resume_at DS) : DS→GATE→QA→CR PASS ; CR APPROVE ; model composer-2-fast ; 22-3 review→done ; vs_loop=0 qa_loop=0 cr_loop=0
+# last_updated: 2026-04-16 — story 22-6 DS bmad-dev-story : 22-6-construire-le-snapshot-comptable-fige-de-cloture-de-session in-progress → review (snapshot JSON + outbox frozen + append_only_v1)
+# last_updated: 2026-04-16 — story 22-6 CS bmad-create-story (VS) : 22-6-construire-le-snapshot-comptable-fige-de-cloture-de-session backlog → ready-for-dev (trace BDD epics + payment_transactions + handoff 22.7)
+# last_updated: 2026-04-16 — story 22.3 Story Runner BMAD : resume_at DS → DS→GATE→QA→CR1 CHANGES_REQUESTED → DS correctifs → GATE→QA→CR2 APPROVE ; vs_loop=0 qa_loop=0 cr_loop=1 ; 22-3 review→done (composer-2-fast)
+# last_updated: 2026-04-15 — story 22.3 CS bmad-create-story : 22-3-livrer-le-parametrage-expert-des-moyens-de-paiement-et-des-comptes-globaux backlog → ready-for-dev (fichier story enrichi PRD + chaine canonique + revision 22.6 ; epic-22 inchangé in-progress)
+# last_updated: 2026-04-15 — story 22.1 Story Runner (resume_at GATE) : GATE→QA PASS ; CR1 CHANGES_REQUESTED (B1 sale_service) → DS→GATE→QA→CR2 APPROVE ; vs_loop=0 qa_loop=1 cr_loop=1 ; 22-1 fichier story review→done (alignement sprint)
+# last_updated: 2026-04-15 — story 22.1 Story Runner BMAD : VS→DS→GATE→QA→CR PASS ; CR APPROVE ; 22-1 review→done ; Epic Runner : prochaine story 22-3 (22.2 reste backlog par phasage dependances)
+# last_updated: 2026-04-15 — phasage Epic 22 durci apres QA : 22.1 reste ready-for-dev ; 22.2 a 22.8 recontextualisees en backlog sequence selon dependances reelles ; epic-22 reste in-progress
+# last_updated: 2026-04-15 — stories Epic 22 creees : 22.1 a 22.8 backlog -> ready-for-dev ; epic-22 backlog -> in-progress ; artefacts implementation-artifacts synchronises
+# last_updated: 2026-04-15 — correct course caisse/compta/Paheko propagé : ajout epic-22 (rail correctif comptable canonique) ; 13-8 = finish-only si compatible transition ; 14-3 / 14-4 / 14-5 = pause par defaut si semantique comptable ou parametrage sensible ; epic-18 conserve valeur de preuve UI historique, non autorite comptable
 # last_updated: 2026-04-13 — reconciliation Epic 14 vs code : 14-3 et 14-4 backlog→review (dashboard supervision + audit-log deja portes) ; 14-5 inchangé review ; epic-14 in-progress
 # last_updated: 2026-04-12 — rattachement chantier admin audit-log / groups : epics.md + sprint-status — stories 14.4 (audit-log rail U sous Epic 14) et 14.5 (groups rail U + correctif backend 500 dans AC) ; 14.3 inchangé (KPIs dashboard)
 # last_updated: 2026-04-12 — story 18.1 Story Runner (resume_at DS, correctif parité 6+3 option A) : Task DS + gates peintre-nano lint/test/build (correctifs e2e caisse aria-label + sync hors kiosque) ; Task QA assertions grille legacy + ordre DOM ; Task CR PASS ; 18-1 reste done ; vs_loop=0 qa_loop=0 cr_loop=0
@@ -183,7 +206,15 @@
 generated: "2026-04-01"
 # last_updated: 2026-04-12 — story 17.3 CS bmad-create-story : 17-3-consolider-les-briques-mutualisees-de-shell-liste-admin-guards-et-detail-simple backlog → ready-for-dev (fichier story + sprint ; epic-17 in-progress)
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
-last_updated: "2026-04-13" # reconciliation Epic 14 : sprint_status 14-3/14-4 alignes code (review) ; fichiers story 14-3/14-4/14-5 + epics.md
+# last_updated: 2026-04-16 — story 22-2 DS bmad-dev-story Task : 22-2 in-progress→review (dual-read compare + OpenAPI)
+last_updated: "2026-04-16" # story 22-8 Story Runner fin : 22-8 review→done ; epic-22 done ; C4 gate 40 PASS
+# last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
+# last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
+# last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
+# last_updated: "2026-04-16" # story 22.4 Story Runner fin : VS→DS→GATE→QA→CR×2→correctifs (Field(gt=0) + vente 0€)→GATE→CR3 APPROVE ; 22-4 review→done ; vs=0 qa=0 cr=2
+# last_updated: "2026-04-16" # story 22.4 DS bmad-dev-story Task : arbitrage caisse 22.4 + OpenAPI + Peintre ; 22-4 in-progress→review
+# last_updated: "2026-04-16" # story 22.3 Story Runner fin : DS→GATE→QA→CR1→DS→GATE→QA→CR2 APPROVE ; 22-3 review→done ; vs=0 qa=0 cr=1
+# last_updated: "2026-04-15" # story 22.1 Story Runner fin : gates+QA+CR OK ; conftest SQLite temp + legacy_category_mapping_cache ; 22-1 review -> done
 # last_updated: "2026-04-12" # story 19.1 CS bmad-create-story : fichier story 19-1 + sprint epic-19 backlog→in-progress ; 19-1 backlog→ready-for-dev
 # last_updated: "2026-04-12" # backlog epic-13 : ajout des stories 13.7 (audit/traduction kiosque legacy -> Peintre) et 13.8 (implementation kiosque) apres 13.6 ; historique 13.1-13.6 preserve
 # last_updated: "2026-04-12" # story 13.6 CS bmad-create-story : 13-6-certifier-lequivalence-utilisateur-legacy-de-la-caisse-observable-dans-peintre-nano backlog → ready-for-dev (fichier story umbrella certification)
@@ -394,3 +425,15 @@ development_status:
   21-1-porter-la-liste-users-et-ses-etats-de-consultation-sous-creos: backlog
   21-2-porter-les-actions-utilisateur-retenues-dans-le-scope-stabilise-et-en-prouver-la-parite: backlog
   epic-21-retrospective: optional
+
+  epic-22: done
+  22-1-preparer-le-schema-comptable-cible-le-backfill-et-la-compatibilite-brownfield: done
+  22-2-executer-la-double-lecture-comparer-les-agregats-et-piloter-la-bascule-hors-legacy: done
+  22-3-livrer-le-parametrage-expert-des-moyens-de-paiement-et-des-comptes-globaux: done
+  22-4-rebaseliner-les-parcours-caisse-pour-paiements-mixtes-don-en-surplus-et-gratuite: done
+  22-5-etendre-le-remboursement-au-modele-comptable-cible-et-verrouiller-lautorite-exercice-anterieur-clos: done
+  # phasage Epic 22 (gel) : 22.2 apres 22.7 (double lecture honnete jusqu'au batch outbox), avant 22.8 (preuves qualite bout-en-bout)
+  22-6-construire-le-snapshot-comptable-fige-de-cloture-de-session: done
+  22-7-generer-les-ecritures-avancees-multi-lignes-paheko-et-adapter-la-sync-epic-8: done
+  22-8-rebaseliner-les-preuves-qualite-et-valider-bout-en-bout-la-chaine-caisse-snapshot-ecriture-paheko: done
+  epic-22-retrospective: optional

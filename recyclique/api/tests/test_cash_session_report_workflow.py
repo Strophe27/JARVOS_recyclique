@@ -16,6 +16,7 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.utils.report_tokens import verify_download_token, generate_download_token
 
 from tests.api_v1_paths import browser_api_to_testclient_path, v1
+from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
 
 
 def _create_site(db_session: Session, name: str) -> Site:
@@ -73,6 +74,7 @@ def test_cash_session_report_workflow(monkeypatch, tmp_path: Path, client: TestC
     )
 
     site = _create_site(db_session, "Workflow Site")
+    seed_default_paheko_close_mapping(db_session, site.id)
     cashier = _create_user(db_session, username="cashier_workflow", role=UserRole.USER, site=site)
     admin = _create_user(db_session, username="admin_workflow", role=UserRole.ADMIN, site=site)
 

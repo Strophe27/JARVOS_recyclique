@@ -8,6 +8,7 @@ import { resetCoalescedGetCurrentOpenCashSessionForTests } from '../../src/domai
 import { resetCashflowDraft } from '../../src/domains/cashflow/cashflow-draft-store';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
+import { waitForCashflowNominalSaleSurface } from '../helpers/cashflow-nominal-sale-surface';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -117,8 +118,6 @@ describe('E2E — transition hub `/caisse` → `/cash-register/sale` RCN-02 (Sto
     expect(screen.getByTestId('cash-register-sale-kiosk')).toBeTruthy();
     expect(screen.queryByTestId('shell-zone-nav')).toBeNull();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
-    });
+    await waitForCashflowNominalSaleSurface();
   });
 });

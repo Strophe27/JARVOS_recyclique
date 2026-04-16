@@ -37,7 +37,13 @@ type MappingFormState = {
   readonly registerId: string | null;
   readonly enabled: boolean;
   readonly label: string;
-  readonly destinationParamsText: string;
+  readonly accountingYearId: string;
+  readonly debitAccountCode: string;
+  readonly creditAccountCode: string;
+  readonly labelPrefix: string;
+  readonly referencePrefix: string;
+  readonly notes: string;
+  readonly extraDestinationParams: Readonly<Record<string, unknown>>;
 };
 
 function defaultFormState(siteId?: string | null): MappingFormState {
@@ -48,11 +54,55 @@ function defaultFormState(siteId?: string | null): MappingFormState {
     registerId: null,
     enabled: true,
     label: '',
-    destinationParamsText: '{\n  "account_code": "",\n  "journal_code": ""\n}',
+    accountingYearId: '',
+    debitAccountCode: '',
+    creditAccountCode: '',
+    labelPrefix: '',
+    referencePrefix: '',
+    notes: '',
+    extraDestinationParams: {},
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function extractDestinationFields(raw: unknown): {
+  readonly accountingYearId: string;
+  readonly debitAccountCode: string;
+  readonly creditAccountCode: string;
+  readonly labelPrefix: string;
+  readonly referencePrefix: string;
+  readonly notes: string;
+  readonly extraDestinationParams: Readonly<Record<string, unknown>>;
+} {
+  if (!isRecord(raw)) {
+    return {
+      accountingYearId: '',
+      debitAccountCode: '',
+      creditAccountCode: '',
+      labelPrefix: '',
+      referencePrefix: '',
+      notes: '',
+      extraDestinationParams: {},
+    };
+  }
+  const { id_year, debit, credit, label_prefix, reference_prefix, notes, ...extraDestinationParams } = raw;
+  return {
+    accountingYearId:
+      typeof id_year === 'number' ? String(id_year) : typeof id_year === 'string' ? id_year.trim() : '',
+    debitAccountCode: typeof debit === 'string' ? debit : '',
+    creditAccountCode: typeof credit === 'string' ? credit : '',
+    labelPrefix: typeof label_prefix === 'string' ? label_prefix : '',
+    referencePrefix: typeof reference_prefix === 'string' ? reference_prefix : '',
+    notes: typeof notes === 'string' ? notes : '',
+    extraDestinationParams,
   };
 }
 
 function buildEditState(mapping: PahekoCashSessionCloseMappingDto): MappingFormState {
+  const destination = extractDestinationFields(mapping.destination_params);
   return {
     mode: 'edit',
     mapping,
@@ -60,16 +110,56 @@ function buildEditState(mapping: PahekoCashSessionCloseMappingDto): MappingFormS
     registerId: mapping.register_id ?? null,
     enabled: mapping.enabled,
     label: mapping.label ?? '',
-    destinationParamsText: JSON.stringify(mapping.destination_params ?? {}, null, 2),
+    accountingYearId: destination.accountingYearId,
+    debitAccountCode: destination.debitAccountCode,
+    creditAccountCode: destination.creditAccountCode,
+    labelPrefix: destination.labelPrefix,
+    referencePrefix: destination.referencePrefix,
+    notes: destination.notes,
+    extraDestinationParams: destination.extraDestinationParams,
   };
 }
 
-function prettyJson(value: unknown): string {
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return '{}';
+function buildDestinationParams(form: MappingFormState): { ok: true; value: Record<string, unknown> } | { ok: false; message: string } {
+  const accountingYearId = form.accountingYearId.trim();
+  if (!accountingYearId) {
+    return { ok: false, message: 'Renseignez l’exercice Paheko.' };
   }
+  const idYear = Number(accountingYearId);
+  if (!Number.isInteger(idYear) || idYear <= 0) {
+    return { ok: false, message: 'Utilisez un identifiant d’exercice Paheko valide.' };
+  }
+  const debit = form.debitAccountCode.trim();
+  if (!debit) {
+    return { ok: false, message: 'Renseignez le compte de débit.' };
+  }
+  const credit = form.creditAccountCode.trim();
+  if (!credit) {
+    return { ok: false, message: 'Renseignez le compte de crédit.' };
+  }
+  const destination: Record<string, unknown> = {
+    ...form.extraDestinationParams,
+    id_year: idYear,
+    debit,
+    credit,
+  };
+  const labelPrefix = form.labelPrefix.trim();
+  const referencePrefix = form.referencePrefix.trim();
+  const notes = form.notes.trim();
+  if (labelPrefix) destination.label_prefix = labelPrefix;
+  if (referencePrefix) destination.reference_prefix = referencePrefix;
+  if (notes) destination.notes = notes;
+  return { ok: true, value: destination };
+}
+
+function formatDestinationSummary(destinationParams: unknown): string {
+  const destination = extractDestinationFields(destinationParams);
+  const bits = [
+    destination.accountingYearId ? `Exercice ${destination.accountingYearId}` : null,
+    destination.debitAccountCode ? `Débit ${destination.debitAccountCode}` : null,
+    destination.creditAccountCode ? `Crédit ${destination.creditAccountCode}` : null,
+  ].filter(Boolean);
+  return bits.join(' · ') || 'Comptes à compléter';
 }
 
 function formatScope(
@@ -196,16 +286,9 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
       setError({ kind: 'local', message: 'Choisissez un site.' });
       return;
     }
-    let parsedDestination: Record<string, unknown>;
-    try {
-      const parsed = JSON.parse(form.destinationParamsText);
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        setError({ kind: 'local', message: 'Le JSON de destination doit être un objet.' });
-        return;
-      }
-      parsedDestination = parsed as Record<string, unknown>;
-    } catch {
-      setError({ kind: 'local', message: 'Le JSON destination_params est invalide.' });
+    const parsedDestination = buildDestinationParams(form);
+    if (!parsedDestination.ok) {
+      setError({ kind: 'local', message: parsedDestination.message });
       return;
     }
     setSaving(true);
@@ -214,7 +297,7 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
     const body = {
       label: form.label.trim() || null,
       enabled: form.enabled,
-      destination_params: parsedDestination,
+      destination_params: parsedDestination.value,
     };
     const result =
       form.mode === 'create'
@@ -223,7 +306,7 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
             register_id: form.registerId?.trim() || null,
             enabled: form.enabled,
             label: form.label.trim() || null,
-            destination_params: parsedDestination,
+            destination_params: parsedDestination.value,
           })
         : await updatePahekoCashSessionCloseMapping(auth, form.mapping?.id ?? '', body);
     setSaving(false);
@@ -253,12 +336,12 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
   return (
     <Stack gap="md">
       <Text size="sm" c="dimmed">
-        Réglage technique des clôtures envoyées à Paheko. Recyclique cherche d’abord un réglage précis site/poste,
+        Définissez ici où part l’écriture comptable de clôture. Recyclique cherche d’abord un réglage précis site/poste,
         puis utilise le réglage par défaut du site si besoin.
       </Text>
       <Alert color="blue" title="Réservé au super-admin">
-        Utilisez cette section pour créer ou corriger une correspondance technique Paheko. Le cockpit comptable ne garde
-        qu’un signal métier si la configuration manque.
+        Le cockpit comptable reste volontairement simple. Ici, vous indiquez l’exercice et les comptes Paheko à utiliser
+        pour les clôtures.
       </Alert>
 
       <Group justify="space-between" align="flex-start" wrap="wrap">
@@ -317,6 +400,9 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
               <Text size="sm">
                 {resolvedMapping.label?.trim() || 'Sans libellé'} ({formatScope(resolvedMapping, siteNameById, registerNameById)})
               </Text>
+              <Text size="sm" c="dimmed">
+                {formatDestinationSummary(resolvedMapping.destination_params)}
+              </Text>
             </Alert>
           ) : (
             <Alert color="orange" title="Aucun réglage actif" data-testid="admin-paheko-close-mappings-resolver-miss">
@@ -336,7 +422,7 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
               <Table.Th>Libellé</Table.Th>
               <Table.Th>S’applique à</Table.Th>
               <Table.Th>Statut</Table.Th>
-              <Table.Th>Destination Paheko</Table.Th>
+              <Table.Th>Écriture comptable</Table.Th>
               <Table.Th> </Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -374,7 +460,30 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
                   </Group>
                 </Table.Td>
                 <Table.Td>
-                  <Textarea value={prettyJson(mapping.destination_params)} autosize minRows={2} readOnly />
+                  {(() => {
+                    const destination = extractDestinationFields(mapping.destination_params);
+                    const hasExtras = Object.keys(destination.extraDestinationParams).length > 0;
+                    return (
+                      <Stack gap={2}>
+                        <Text size="sm">{formatDestinationSummary(mapping.destination_params)}</Text>
+                        {destination.labelPrefix ? (
+                          <Text size="xs" c="dimmed">
+                            Libellé: {destination.labelPrefix}
+                          </Text>
+                        ) : null}
+                        {destination.referencePrefix ? (
+                          <Text size="xs" c="dimmed">
+                            Référence: {destination.referencePrefix}
+                          </Text>
+                        ) : null}
+                        {hasExtras ? (
+                          <Badge size="xs" color="gray" variant="light">
+                            Options avancées conservées
+                          </Badge>
+                        ) : null}
+                      </Stack>
+                    );
+                  })()}
                 </Table.Td>
                 <Table.Td>
                   <Button size="xs" variant="light" onClick={() => openEdit(mapping)}>
@@ -416,6 +525,7 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
             label="Libellé"
             value={form.label}
             onChange={(e) => setForm((prev) => ({ ...prev, label: e.currentTarget.value }))}
+            description="Nom libre pour vous repérer dans la liste."
             data-testid="admin-paheko-close-mappings-form-label"
           />
           <Switch
@@ -424,15 +534,63 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
             label="Réglage actif"
             data-testid="admin-paheko-close-mappings-form-enabled"
           />
+          <Alert color="gray" title="Ce que vous réglez ici">
+            Recyclique calcule le montant automatiquement. Vous indiquez seulement l’exercice Paheko et les comptes à
+            utiliser pour l’écriture de clôture.
+          </Alert>
+          <Group grow align="start">
+            <TextInput
+              label="Exercice Paheko"
+              value={form.accountingYearId}
+              onChange={(e) => setForm((prev) => ({ ...prev, accountingYearId: e.currentTarget.value }))}
+              description="Identifiant numérique de l’exercice comptable dans Paheko."
+              data-testid="admin-paheko-close-mappings-form-id-year"
+            />
+            <TextInput
+              label="Compte de débit"
+              value={form.debitAccountCode}
+              onChange={(e) => setForm((prev) => ({ ...prev, debitAccountCode: e.currentTarget.value }))}
+              description="Compte qui reçoit l’encaissement de clôture."
+              data-testid="admin-paheko-close-mappings-form-debit"
+            />
+            <TextInput
+              label="Compte de crédit"
+              value={form.creditAccountCode}
+              onChange={(e) => setForm((prev) => ({ ...prev, creditAccountCode: e.currentTarget.value }))}
+              description="Compte de contrepartie ou de produit utilisé pour la clôture."
+              data-testid="admin-paheko-close-mappings-form-credit"
+            />
+          </Group>
+          <Group grow align="start">
+            <TextInput
+              label="Préfixe du libellé"
+              value={form.labelPrefix}
+              onChange={(e) => setForm((prev) => ({ ...prev, labelPrefix: e.currentTarget.value }))}
+              description="Optionnel. Recyclique ajoute ensuite la session automatiquement."
+              data-testid="admin-paheko-close-mappings-form-label-prefix"
+            />
+            <TextInput
+              label="Préfixe de référence"
+              value={form.referencePrefix}
+              onChange={(e) => setForm((prev) => ({ ...prev, referencePrefix: e.currentTarget.value }))}
+              description="Optionnel. Permet de reconnaître l’origine de l’écriture."
+              data-testid="admin-paheko-close-mappings-form-reference-prefix"
+            />
+          </Group>
           <Textarea
-            label="Paramètres envoyés à Paheko (JSON)"
-            minRows={8}
+            label="Note complémentaire"
+            minRows={3}
             autosize
-            value={form.destinationParamsText}
-            onChange={(e) => setForm((prev) => ({ ...prev, destinationParamsText: e.currentTarget.value }))}
-            description="Exemples fréquents : journal, compte, analytique. Le format reste volontairement en JSON pour garder toute la souplesse du serveur."
-            data-testid="admin-paheko-close-mappings-form-destination"
+            value={form.notes}
+            onChange={(e) => setForm((prev) => ({ ...prev, notes: e.currentTarget.value }))}
+            description="Optionnel. Ajoutée aux notes techniques envoyées avec l’écriture."
+            data-testid="admin-paheko-close-mappings-form-notes"
           />
+          {Object.keys(form.extraDestinationParams).length > 0 ? (
+            <Alert color="gray" title="Options avancées conservées">
+              Les paramètres avancés déjà présents sur ce réglage sont gardés automatiquement lors de l’enregistrement.
+            </Alert>
+          ) : null}
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setFormOpen(false)}>
               Annuler

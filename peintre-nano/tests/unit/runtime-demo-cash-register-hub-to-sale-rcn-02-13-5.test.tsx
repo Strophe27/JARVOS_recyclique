@@ -6,6 +6,7 @@ import { RuntimeDemoApp } from '../../src/app/demo/RuntimeDemoApp';
 import { RootProviders } from '../../src/app/providers/RootProviders';
 import '../../src/registry';
 import '../../src/styles/tokens.css';
+import { waitForCashflowNominalSaleSurface } from '../helpers/cashflow-nominal-sale-surface';
 
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
@@ -111,8 +112,6 @@ describe('RuntimeDemoApp — transition hub `/caisse` → `/cash-register/sale` 
     expect(screen.queryByTestId('shell-zone-nav')).toBeNull();
     expect(screen.queryByText('Démonstration runtime (bac à sable)')).toBeNull();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-renderer-cashflow-nominal')).toBeTruthy();
-    });
+    await waitForCashflowNominalSaleSurface();
   });
 });

@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     PAHEKO_OUTBOX_RETRY_BASE_SECONDS: float = 2.0
     PAHEKO_OUTBOX_RETRY_MAX_SECONDS: float = 900.0
 
+    # Story 22.5 — autorité exercice clos (snapshot local / futur pull Paheko) ; pas d'inférence UI.
+    ACCOUNTING_PERIOD_AUTHORITY_MAX_AGE_SECONDS: float = 604800.0
+
     # kDrive Sync
     KDRIVE_WEBDAV_URL: str | None = None
     KDRIVE_WEBDAV_USERNAME: str | None = None

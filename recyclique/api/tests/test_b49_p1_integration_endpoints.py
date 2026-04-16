@@ -11,6 +11,8 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.site import Site
 from recyclic_api.core.auth import create_access_token
 
+from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
+
 
 @pytest.fixture
 def test_user(db_session: Session):
@@ -150,6 +152,7 @@ class TestIntegrationRegisterOptions:
         db_session.add(test_session)
         db_session.commit()
         db_session.refresh(test_session)
+        seed_default_paheko_close_mapping(db_session, test_session.site_id)
         
         access_token = create_access_token(data={"sub": str(test_user.id)})
         headers = {

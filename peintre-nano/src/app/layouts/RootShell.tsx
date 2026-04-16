@@ -20,6 +20,8 @@ export type RootShellProps = {
    * Story 11.3 — alias runtime `/cash-register/sale` : masque la zone nav (pas d’entrée `NavigationManifest` dédiée).
    */
   hideNav?: boolean;
+  /** Conserve la grille `main + aside` quand la nav est masquée (kiosque vente). */
+  preserveAsideWhenNavHidden?: boolean;
   /**
    * Présentation « app » : masque aside / footer décoratifs (auth live / tableau de bord observable).
    */
@@ -38,6 +40,7 @@ export function RootShell({
   regions,
   shellPresentation,
   hideNav = false,
+  preserveAsideWhenNavHidden = false,
   minimalChrome = false,
   navPresentation = 'default',
 }: RootShellProps) {
@@ -50,7 +53,7 @@ export function RootShell({
 
   return (
     <div
-      className={`${classes.root}${hideNav ? ` ${classes.rootKioskNavHidden}` : ''}${minimalChrome ? ` ${classes.rootMinimalChrome}` : ''}${omitHeaderRow ? ` ${classes.rootMinimalChromeNoPageHeader}` : ''}`}
+      className={`${classes.root}${hideNav && preserveAsideWhenNavHidden ? ` ${classes.rootKioskNavHidden}` : ''}${minimalChrome ? ` ${classes.rootMinimalChrome}` : ''}${omitHeaderRow ? ` ${classes.rootMinimalChromeNoPageHeader}` : ''}`}
       data-testid="peintre-nano-shell"
       data-pn-ui-density={uiDensity}
       data-pn-sidebar-panel={sidebarPanelOpen ? 'open' : 'closed'}

@@ -439,6 +439,13 @@ describe('AdminAdvancedSettingsWidget', () => {
       expect(screen.getByTestId('admin-paheko-close-mappings-create-open')).toBeTruthy();
     });
     expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/admin/paheko-mappings/cash-session-close'))).toBe(true);
+    fireEvent.click(screen.getByTestId('admin-paheko-close-mappings-create-open'));
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-paheko-close-mappings-form-id-year')).toBeTruthy();
+    });
+    expect(screen.getByTestId('admin-paheko-close-mappings-form-debit')).toBeTruthy();
+    expect(screen.getByTestId('admin-paheko-close-mappings-form-credit')).toBeTruthy();
+    expect(screen.queryByText('Paramètres envoyés à Paheko (JSON)')).toBeNull();
 
     fireEvent.click(screen.getByTestId('admin-advanced-settings-accordion-paheko-diagnostics'));
 

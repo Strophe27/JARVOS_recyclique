@@ -136,8 +136,12 @@ def build_context_envelope(db: Session, user_id: uuid.UUID) -> ContextEnvelopeRe
     # Epic 14 — parité admin : libellé site reviewable (présentation uniquement), sans exposer d’UUID en UI.
     if site_id_val is not None:
         site_row = db.get(Site, site_id_val)
-        if site_row is not None and getattr(site_row, "name", None):
-            presentation_labels["context.active_site_display_name"] = site_row.name
+        if site_row is not None:
+            raw_name = getattr(site_row, "name", None)
+            if isinstance(raw_name, str):
+                label = raw_name.strip()
+                if label:
+                    presentation_labels["context.active_site_display_name"] = label
 
     return ContextEnvelopeResponse(
         runtime_state=runtime_state,

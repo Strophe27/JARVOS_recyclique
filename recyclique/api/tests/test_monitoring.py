@@ -342,8 +342,8 @@ class TestMonitoringIntegration:
         # Vérifications
         assert isinstance(result, dict)
         assert 'anomalies' in result
-        assert len(scheduler_service.tasks) == 4
-        assert scheduler_service.get_status()["total_tasks"] == 4
+        assert len(scheduler_service.tasks) == 5
+        assert scheduler_service.get_status()["total_tasks"] == 5
 
 
 if __name__ == "__main__":

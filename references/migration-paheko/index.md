@@ -26,5 +26,6 @@ Matiere de travail sur la migration Paheko / RecyClique : guides, presentations,
 | `2025-12-05_compte-rendu-reunion-recyclique.md` | Compte-rendu réunion 5 déc. 2025 (décisions, participants, transcription) |
 | `2026-04-12_specification-integration-helloasso-recyclique-paheko.md` | Spec d'integration **HelloAsso** ↔ RecyClique ↔ Paheko (roles, flux, webhooks, modeles de donnees, securite) — matiere pour un futur module RecyClique |
 | `2026-04-12_brouillon-arbitrage-helloasso-et-promesse-recyclique-paheko.md` | **Brouillon** : arbitrage express (voie API, Paheko local) + **promesse produit** en langage plancher (parcours adherent/donateur, admin asso, effets Paheko, phases 1–3) — pour valider story 9.4 et communication interne |
+| `2026-04-15_prd-recyclique-caisse-compta-paheko.md` | **PRD** Recyclique × Paheko (v1.0) : refonte caisse, moyens de paiement, dons, remboursements, snapshot de session, écriture multi-lignes Paheko, paramétrage SuperAdmin ; date document 2026-04-15. _(Charger si : cadrage comptable caisse, stories Epic 8 / compta, arbitrage expert-comptable, alignement implémentation vs spec.)_ |
 
 **Ailleurs :** Archive RAG → **references/vision-projet/** ; matière première présentations → **references/vision-projet/** ; version épurée pour envoi → **doc/** (racine, communication publique).
