@@ -14,6 +14,7 @@ from recyclic_api.models.paheko_outbox import PahekoOutboxItem, PahekoOutboxOper
 from recyclic_api.services.paheko_accounting_client import PahekoAccountingClient, PahekoHttpResult
 from recyclic_api.services.paheko_close_batch_builder import (
     PAHEKO_CLOSE_BATCH_STATE_KEY,
+    amounts_from_frozen_snapshot,
     build_cash_session_close_batch_from_enriched_payload,
     merge_state_with_planned,
     parse_remote_transaction_id,
@@ -205,6 +206,7 @@ def _process_cash_session_close_batch(
     planned_rows, bcode, bmsg = build_cash_session_close_batch_from_enriched_payload(
         post_payload,
         batch_idempotency_key=item.idempotency_key,
+        db=db,
     )
     if bcode is not None or planned_rows is None:
         _apply_mapping_resolution_failure(
@@ -298,6 +300,36 @@ def _process_cash_session_close_batch(
     state["partial_success"] = bool(any_delivered and not all_done)
 
     _persist_payload_state(item, state)
+
+    if all_done and not any_delivered:
+        snap = post_payload.get("accounting_close_snapshot_frozen")
+        if isinstance(snap, dict):
+            s_tot, rc_tot, rp_tot = amounts_from_frozen_snapshot(snap)
+            if (s_tot + rc_tot + rp_tot) > 0.004:
+                item.last_error = "batch_all_skipped_nonzero_snapshot"
+                item.last_http_status = None
+                fs, fo = item.sync_state_core, item.outbox_status
+                item.outbox_status = PahekoOutboxStatus.failed.value
+                item.sync_state_core = "en_quarantaine"
+                item.next_retry_at = None
+                item.updated_at = now
+                append_paheko_outbox_transition(
+                    db,
+                    item=item,
+                    transition_name=TRANSITION_AUTO_QUARANTINE_HTTP,
+                    from_sync_state=fs,
+                    to_sync_state=item.sync_state_core,
+                    from_outbox_status=fo,
+                    to_outbox_status=item.outbox_status,
+                    reason=item.last_error or "batch_all_skipped_nonzero_snapshot",
+                    actor_user_id=None,
+                    context_extra={
+                        "batch": True,
+                        "cause": "all_sub_writes_skipped",
+                        "snapshot_totals": {"s": s_tot, "rc": rc_tot, "rp": rp_tot},
+                    },
+                )
+                return
 
     if all_done:
         final_http = last_success_line_http if last_success_line_http is not None else 200

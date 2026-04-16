@@ -14,7 +14,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import { Bell, Database, Link2, Mail, Settings, Timer } from 'lucide-react';
+import { Bell, Database, Mail, Settings, Timer } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchAdminSettingsActivityThreshold,
@@ -34,11 +34,7 @@ import {
 } from '../../api/admin-db-operations-client';
 import { getAdminAuditLogList, type AdminAuditLogEntryDto } from '../../api/admin-audit-log-client';
 import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
-import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
-import { ADMIN_SUPER_PAGE_MANIFEST_GUARDS } from './admin-super-page-guards';
-import { AdminPahekoDiagnosticsSection } from './AdminPahekoDiagnosticsSection';
-import { AdminPahekoCashSessionCloseMappingsSection } from './AdminPahekoCashSessionCloseMappingsSection';
 
 const MIN_MINUTES = 1;
 const MAX_MINUTES = 10080;
@@ -46,11 +42,6 @@ const MIN_ACTIVITY = 1;
 const MAX_ACTIVITY = 1440;
 
 export function AdminAdvancedSettingsWidget(_props: RegisteredWidgetProps) {
-  const auth = useAuthPort();
-  const envelope = auth.getContextEnvelope();
-  const isSuperAdminUi = ADMIN_SUPER_PAGE_MANIFEST_GUARDS.requiredPermissionKeys.every((key) =>
-    envelope.permissions.permissionKeys.includes(key),
-  );
   const [openAccordionPanels, setOpenAccordionPanels] = useState<string[]>(['session']);
 
   return (
@@ -70,22 +61,6 @@ export function AdminAdvancedSettingsWidget(_props: RegisteredWidgetProps) {
           tableau de bord — alignés sur l’administration Recyclique.
         </Text>
       </div>
-
-      <Alert color="blue" title="Répartition Paheko">
-        <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-          <Text size="sm">
-            Le cockpit comptable sert au suivi quotidien. Les réglages Paheko avancés et le support technique restent
-            ici, dans les paramètres avancés.
-          </Text>
-          <Button
-            variant="light"
-            onClick={() => spaNavigateTo('/admin/compta')}
-            data-testid="admin-advanced-settings-nav-accounting-hub"
-          >
-            Ouvrir le cockpit comptable
-          </Button>
-        </Group>
-      </Alert>
 
       <Accordion
         variant="separated"
@@ -141,33 +116,6 @@ export function AdminAdvancedSettingsWidget(_props: RegisteredWidgetProps) {
           </Accordion.Panel>
         </Accordion.Item>
 
-        {isSuperAdminUi ? (
-          <Accordion.Item value="paheko-mappings">
-            <Accordion.Control
-              icon={<Link2 size={18} />}
-              data-testid="admin-advanced-settings-accordion-paheko-mappings"
-            >
-              Paheko : réglages de clôture
-            </Accordion.Control>
-            <Accordion.Panel>
-              <AdminPahekoCashSessionCloseMappingsSection />
-            </Accordion.Panel>
-          </Accordion.Item>
-        ) : null}
-
-        {isSuperAdminUi ? (
-          <Accordion.Item value="paheko-diagnostics">
-            <Accordion.Control
-              icon={<Link2 size={18} />}
-              data-testid="admin-advanced-settings-accordion-paheko-diagnostics"
-            >
-              Paheko : support technique
-            </Accordion.Control>
-            <Accordion.Panel>
-              <AdminPahekoDiagnosticsSection />
-            </Accordion.Panel>
-          </Accordion.Item>
-        ) : null}
       </Accordion>
     </Stack>
   );

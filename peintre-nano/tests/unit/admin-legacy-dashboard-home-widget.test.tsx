@@ -2,7 +2,8 @@
 import '@mantine/core/styles.css';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { getDefaultDemoAuthAdapter } from '../../src/app/auth/default-demo-auth-adapter';
+import { createDefaultDemoEnvelope, getDefaultDemoAuthAdapter, PERMISSION_CASHFLOW_SALE_CORRECT } from '../../src/app/auth/default-demo-auth-adapter';
+import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import { RootProviders } from '../../src/app/providers/RootProviders';
 import { AdminLegacyDashboardHomeWidget } from '../../src/widgets/admin/AdminLegacyDashboardHomeWidget';
 
@@ -107,16 +108,18 @@ describe('AdminLegacyDashboardHomeWidget', () => {
     fireEvent.click(screen.getByTestId('admin-legacy-nav-advanced-settings'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-sites-and-registers'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-accounting'));
+    fireEvent.click(screen.getByTestId('admin-legacy-nav-accounting-expert'));
 
     expect(spaNavigateMock.mock.calls).toEqual([
       ['/admin/health'],
       ['/admin/settings'],
       ['/admin/sites-and-registers'],
       ['/admin/compta'],
+      ['/admin/compta/parametrage'],
     ]);
   });
 
-  it('rôle non super-admin : pas de section super-admin ; toggles notifications et utilisateurs avec ARIA cohérents', async () => {
+  it('rôle non super-admin : pas de section super-admin ; accès paramétrage comptable si proxy enveloppe ; toggles notifications et utilisateurs avec ARIA cohérents', async () => {
     fetchMeMock.mockResolvedValue({ role: 'admin' });
     fetchStatusesMock.mockResolvedValue([
       { user_id: 'u1', is_online: true, last_login: '2026-04-13T10:00:00.000Z' },
@@ -124,10 +127,16 @@ describe('AdminLegacyDashboardHomeWidget', () => {
     fetchUsersListMock.mockResolvedValue([
       { id: 'u1', username: 'bob', first_name: 'Bob', last_name: 'Op', role: 'operator' },
     ]);
-    const adapter = {
-      ...getDefaultDemoAuthAdapter(),
-      getAccessToken: () => 'test-token',
-    };
+    const base = createDefaultDemoEnvelope();
+    const adapter = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-admin' },
+      envelope: createDefaultDemoEnvelope({
+        permissions: {
+          permissionKeys: base.permissions.permissionKeys.filter((k) => k !== PERMISSION_CASHFLOW_SALE_CORRECT),
+        },
+      }),
+      accessToken: 'test-token',
+    });
     render(
       <RootProviders authAdapter={adapter}>
         <AdminLegacyDashboardHomeWidget widgetProps={{}} />
@@ -137,6 +146,7 @@ describe('AdminLegacyDashboardHomeWidget', () => {
 
     expect(screen.queryByTestId('admin-legacy-nav-system-health')).toBeNull();
     expect(screen.queryByText(/Administration Super-Admin/i)).toBeNull();
+    expect(screen.queryByTestId('admin-legacy-nav-accounting-expert')).toBeNull();
 
     const notifToggle = screen.getByRole('button', { name: /Voir les notifications/i });
     expect(notifToggle.getAttribute('aria-expanded')).toBe('false');
@@ -151,5 +161,30 @@ describe('AdminLegacyDashboardHomeWidget', () => {
     fireEvent.click(usersToggle);
     expect(usersToggle.getAttribute('aria-expanded')).toBe('true');
     expect(document.getElementById('admin-legacy-dashboard-connected-users-panel')).toBeTruthy();
+  });
+
+  it('rôle admin avec proxy caisse.sale_correct : raccourci paramétrage comptable sans bloc Administration Super-Admin', async () => {
+    fetchMeMock.mockResolvedValue({ role: 'admin' });
+    fetchStatusesMock.mockResolvedValue([
+      { user_id: 'u1', is_online: true, last_login: '2026-04-13T10:00:00.000Z' },
+    ]);
+    fetchUsersListMock.mockResolvedValue([
+      { id: 'u1', username: 'bob', first_name: 'Bob', last_name: 'Op', role: 'admin' },
+    ]);
+    const adapter = {
+      ...getDefaultDemoAuthAdapter(),
+      getAccessToken: () => 'test-token',
+    };
+    render(
+      <RootProviders authAdapter={adapter}>
+        <AdminLegacyDashboardHomeWidget widgetProps={{}} />
+      </RootProviders>,
+    );
+    await screen.findByTestId('admin-legacy-dashboard-home');
+
+    expect(screen.queryByText(/Administration Super-Admin/i)).toBeNull();
+    expect(screen.getByTestId('admin-legacy-nav-accounting-expert')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('admin-legacy-nav-accounting-expert'));
+    expect(spaNavigateMock).toHaveBeenCalledWith('/admin/compta/parametrage');
   });
 });

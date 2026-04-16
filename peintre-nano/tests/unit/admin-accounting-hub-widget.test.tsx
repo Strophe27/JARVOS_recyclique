@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@mantine/core/styles.css';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { RootProviders } from '../../src/app/providers/RootProviders';
 import {
@@ -11,19 +11,9 @@ import {
 import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import { AdminAccountingHubWidget } from '../../src/domains/admin-config/AdminAccountingHubWidget';
 
-const { listMappingsMock, listOutboxMock, spaNavigateMock, getAccountingExpertLatestRevisionMock } = vi.hoisted(() => ({
+const { listMappingsMock, listOutboxMock } = vi.hoisted(() => ({
   listMappingsMock: vi.fn(),
   listOutboxMock: vi.fn(),
-  spaNavigateMock: vi.fn(),
-  getAccountingExpertLatestRevisionMock: vi.fn(),
-}));
-
-vi.mock('../../src/app/demo/spa-navigate', () => ({
-  spaNavigateTo: (path: string) => spaNavigateMock(path),
-}));
-
-vi.mock('../../src/api/admin-accounting-expert-client', () => ({
-  getAccountingExpertLatestRevision: (...args: unknown[]) => getAccountingExpertLatestRevisionMock(...args),
 }));
 
 vi.mock('../../src/api/admin-paheko-mappings-client', () => ({
@@ -56,19 +46,9 @@ describe('AdminAccountingHubWidget', () => {
     cleanup();
     listMappingsMock.mockReset();
     listOutboxMock.mockReset();
-    spaNavigateMock.mockReset();
-    getAccountingExpertLatestRevisionMock.mockReset();
   });
 
-  it('recentre le cockpit sur un suivi métier quotidien et renvoie le support vers les paramètres avancés', async () => {
-    getAccountingExpertLatestRevisionMock.mockResolvedValue({
-      ok: true,
-      data: {
-        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-        revision_seq: 42,
-        published_at: '2026-04-14T12:00:00.000Z',
-      },
-    });
+  it('affiche le suivi Paheko et des alertes informatives sans rail expert ni navigation SPA', async () => {
     listMappingsMock.mockResolvedValue({
       ok: true,
       data: [
@@ -122,20 +102,11 @@ describe('AdminAccountingHubWidget', () => {
     );
 
     expect(await screen.findByTestId('admin-accounting-hub')).toBeTruthy();
-    expect(screen.getByTestId('admin-accounting-hub-expert-rail')).toBeTruthy();
-    await waitFor(() => {
-      expect(getAccountingExpertLatestRevisionMock).toHaveBeenCalledTimes(1);
-    });
-    expect(screen.getByText(/Révision #42/)).toBeTruthy();
-    expect(
-      screen.getByText(/paramétrage expert API/i),
-    ).toBeTruthy();
-    expect(screen.getByText(/PIN step-up/)).toBeTruthy();
+    expect(screen.queryByTestId('admin-accounting-hub-expert-rail')).toBeNull();
     await waitFor(() => {
       expect(screen.getByTestId('admin-accounting-hub-history-table')).toBeTruthy();
     });
     expect(screen.getByText('Suivi comptable Paheko')).toBeTruthy();
-    expect(screen.getByText('Cette vue est limitée au site actif de votre contexte.')).toBeTruthy();
     expect(screen.getByText('Configuration à compléter')).toBeTruthy();
     expect(screen.getByText('Clôtures à vérifier')).toBeTruthy();
     expect(screen.getByText('Transmise')).toBeTruthy();
@@ -146,13 +117,9 @@ describe('AdminAccountingHubWidget', () => {
     expect(screen.queryByText('corr-1')).toBeNull();
     expect(screen.queryByText('corr-2')).toBeNull();
     expect(screen.queryByText('Support technique Paheko')).toBeNull();
-
-    fireEvent.click(screen.getByTestId('admin-accounting-hub-nav-settings'));
-    fireEvent.click(screen.getByTestId('admin-accounting-hub-nav-support'));
-    expect(spaNavigateMock.mock.calls).toEqual([['/admin/settings'], ['/admin/settings']]);
   });
 
-  it('sans permission super-admin complète : pas de rail expert ni d’appel à la révision comptable', async () => {
+  it('sans permission super-admin complète : pas de rail expert', async () => {
     const base = createDefaultDemoEnvelope();
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u-no-sale-correct' },
@@ -188,6 +155,5 @@ describe('AdminAccountingHubWidget', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('admin-accounting-hub-expert-rail')).toBeNull();
     });
-    expect(getAccountingExpertLatestRevisionMock).not.toHaveBeenCalled();
   });
 });

@@ -47,8 +47,12 @@ def upgrade() -> None:
         )
 
     inspector = sa.inspect(bind)
+    # Brownfield : `id` peut être UUID (table pré-existante) ou VARCHAR (créée ci-dessus).
+    # Comparer en texte évite « operator does not exist: character varying = uuid ».
     existing_global = bind.execute(
-        sa.text("SELECT COUNT(*) FROM global_accounting_settings WHERE id = :id").bindparams(_GLOBAL_ID_BIND)
+        sa.text("SELECT COUNT(*) FROM global_accounting_settings WHERE CAST(id AS TEXT) = :id").bindparams(
+            _GLOBAL_ID_BIND
+        )
     ).scalar()
     if existing_global == 0:
         bind.execute(
@@ -115,7 +119,7 @@ def upgrade() -> None:
         g = bind.execute(
             sa.text(
                 "SELECT default_sales_account, default_donation_account, prior_year_refund_account "
-                "FROM global_accounting_settings WHERE id = :id"
+                "FROM global_accounting_settings WHERE CAST(id AS TEXT) = :id"
             ).bindparams(_GLOBAL_ID_BIND)
         ).fetchone()
         if g is None:

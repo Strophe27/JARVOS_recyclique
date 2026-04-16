@@ -381,6 +381,14 @@ export function RuntimeDemoApp() {
       window.history.replaceState({}, '', `/admin${qs}`);
       path = window.location.pathname;
     }
+    const comptaLegacy = pathnameNoTrailingSlashExceptRoot(path);
+    if (comptaLegacy === '/admin/compta/payment-methods') {
+      window.history.replaceState({}, '', '/admin/compta/parametrage?tab=payment-methods');
+      path = window.location.pathname;
+    } else if (comptaLegacy === '/admin/compta/comptes-globaux') {
+      window.history.replaceState({}, '', '/admin/compta/parametrage?tab=global-accounts');
+      path = window.location.pathname;
+    }
     setPathRoute(path);
     const pathForMatch = pathnameNoTrailingSlashExceptRoot(path);
     if (ADMIN_RECEPTION_TICKET_PATH.test(path)) {
@@ -416,6 +424,11 @@ export function RuntimeDemoApp() {
       }
       if (pathForMatch === '/admin/settings') {
         setSelectedEntryId('transverse-admin-settings');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
+      if (pathForMatch === '/admin/compta/parametrage') {
+        setSelectedEntryId('transverse-admin-accounting-expert');
         setSearchSnapshot(window.location.search);
         return;
       }
@@ -561,6 +574,9 @@ export function RuntimeDemoApp() {
     }
     if (adminPath === '/admin/settings') {
       return 'transverse-admin-settings';
+    }
+    if (adminPath === '/admin/compta/parametrage') {
+      return 'transverse-admin-accounting-expert';
     }
     if (adminPath === '/admin/compta') {
       return 'transverse-admin-accounting';

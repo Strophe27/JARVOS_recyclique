@@ -1,5 +1,8 @@
 import { AdminAdvancedSettingsWidget } from '../domains/admin-config/AdminAdvancedSettingsWidget';
+import { AdminAccountingGlobalAccountsWidget } from '../domains/admin-config/AdminAccountingGlobalAccountsWidget';
 import { AdminAccountingHubWidget } from '../domains/admin-config/AdminAccountingHubWidget';
+import { AdminAccountingExpertShellWidget } from '../domains/admin-config/AdminAccountingExpertShellWidget';
+import { AdminAccountingPaymentMethodsWidget } from '../domains/admin-config/AdminAccountingPaymentMethodsWidget';
 import { AdminAuditLogWidget } from '../domains/admin-config/AdminAuditLogWidget';
 import { AdminCategoriesWidget } from '../domains/admin-config/AdminCategoriesWidget';
 import { AdminGroupsWidget } from '../domains/admin-config/AdminGroupsWidget';
@@ -19,6 +22,12 @@ import { registerWidget } from './widget-registry';
 export function registerAdminConfigWidgets(): void {
   registerWidget('admin.users.demo', AdminUsersWidget);
   registerWidget('admin.accounting.hub', AdminAccountingHubWidget);
+  /** Coquille super-admin : moyens de paiement, comptes globaux, Paheko clôture + support (`/admin/compta/parametrage`). */
+  registerWidget('admin.accounting.expert.shell', AdminAccountingExpertShellWidget);
+  /** Story 23-3 — comptes globaux expert (`GET`/`PATCH` global-accounts), distinct des moyens de paiement. */
+  registerWidget('admin.accounting.global.accounts', AdminAccountingGlobalAccountsWidget);
+  /** Story 23.2 — moyens de paiement expert (step-up, révision). */
+  registerWidget('admin.accounting.payment-methods.expert', AdminAccountingPaymentMethodsWidget);
   /** Paramètres session JWT super-admin (`adminSettingsSessionGet` / `adminSettingsSessionPut`). */
   registerWidget('admin.advanced.settings.demo', AdminAdvancedSettingsWidget);
   /** Santé exploitation — contexte + live-snapshot + stats live (contrat OpenAPI servi uniquement). */

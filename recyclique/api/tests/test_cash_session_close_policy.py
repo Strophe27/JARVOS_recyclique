@@ -8,8 +8,7 @@ from recyclic_api.schemas.cash_session_close_snapshot import CashSessionJournalT
 from recyclic_api.services.cash_session_service import CashSessionService
 
 
-@patch("recyclic_api.services.cash_session_service.compute_payment_journal_aggregates")
-def test_get_closing_preview_uses_single_formula(mock_journal):
+def test_get_closing_preview_uses_single_formula():
     db = MagicMock()
     service = CashSessionService(db)
 
@@ -17,15 +16,6 @@ def test_get_closing_preview_uses_single_formula(mock_journal):
         id=uuid4(),
         initial_amount=50.0,
         total_sales=25.0,
-    )
-    mock_journal.return_value = CashSessionJournalTotalsV1(
-        by_payment_method_signed={},
-        donation_surplus_total=0.0,
-        refunds_current_fiscal_total=0.0,
-        refunds_prior_closed_fiscal_total=0.0,
-        cash_signed_net_from_journal=0.0,
-        payment_transaction_line_count=0,
-        preview_fallback_legacy_totals=True,
     )
 
     scalar_query = db.query.return_value.filter.return_value

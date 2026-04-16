@@ -31,6 +31,12 @@ from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
 _V1 = settings.API_V1_STR.rstrip("/")
 
 
+@pytest.fixture(autouse=True)
+def _force_paheko_close_sales_policy_aggregated_for_epic8(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Epic 8 : ces tests ciblent le POST mono-ligne 22.7 agrégé ; fige la politique (CI peut exporter per_pm)."""
+    monkeypatch.setattr(settings, "PAHEKO_CLOSE_SALES_BUILDER_POLICY", "aggregated_v22_7", raising=False)
+
+
 def _site_user_session(db_session: Session, *, with_register: bool = False) -> tuple[Site, User, CashSession]:
     site = Site(
         name="S8.3 site",

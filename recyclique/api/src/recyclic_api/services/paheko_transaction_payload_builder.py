@@ -119,6 +119,110 @@ def build_close_transaction_line_payload(
     return body, None, None
 
 
+def build_close_transaction_advanced_payload(
+    enriched_payload: dict[str, Any],
+    *,
+    lines: list[dict[str, Any]],
+    label: str,
+    reference: str,
+    extra_note_lines: list[str] | None = None,
+) -> tuple[dict[str, Any] | None, str | None, str | None]:
+    """
+    Story 23.1 — écriture Paheko **ADVANCED** multi-lignes (un POST, tableau ``lines``).
+
+    Chaque ligne attend au minimum ``account`` (code Paheko) et **exactement** un montant
+    parmi ``debit`` / ``credit`` (nombre > 0), aligné doc interne / recherche projet.
+    """
+    id_year = _as_int(enriched_payload.get("id_year"))
+    if id_year is None:
+        return (
+            None,
+            "invalid_destination_params",
+            "id_year requis pour une écriture Paheko ADVANCED.",
+        )
+    if not lines:
+        return None, "invalid_sub_write", "ADVANCED : au moins une ligne est requise."
+
+    closed_at_raw = _as_non_empty_str(enriched_payload.get("closed_at"))
+    if not closed_at_raw:
+        return None, "invalid_outbox_payload", "Date de clôture absente pour construire l'écriture Paheko."
+    try:
+        date_value = datetime.fromisoformat(closed_at_raw.replace("Z", "+00:00")).date().isoformat()
+    except ValueError:
+        return None, "invalid_outbox_payload", "Date de clôture invalide pour construire l'écriture Paheko."
+
+    cash_session_id = _as_non_empty_str(enriched_payload.get("cash_session_id"))
+    if not cash_session_id:
+        return None, "invalid_outbox_payload", "cash_session_id absent du payload outbox."
+    site_id = _as_non_empty_str(enriched_payload.get("site_id"))
+    operator_id = _as_non_empty_str(enriched_payload.get("operator_id"))
+
+    note_lines = [
+        f"cash_session_id={cash_session_id}",
+        f"site_id={site_id or '-'}",
+        f"operator_id={operator_id or '-'}",
+    ]
+    theoretical_amount = _as_float(enriched_payload.get("theoretical_amount"))
+    variance = _as_float(enriched_payload.get("variance"))
+    if theoretical_amount is not None:
+        note_lines.append(f"theoretical_amount={theoretical_amount:.2f}")
+    if variance is not None:
+        note_lines.append(f"variance={variance:.2f}")
+    extra_notes = _as_non_empty_str(enriched_payload.get("notes"))
+    if extra_notes:
+        note_lines.append(extra_notes)
+    if extra_note_lines:
+        note_lines.extend(extra_note_lines)
+
+    sanitized: list[dict[str, Any]] = []
+    for i, raw in enumerate(lines):
+        if not isinstance(raw, dict):
+            return None, "invalid_sub_write", f"Ligne ADVANCED #{i} invalide."
+        acc = _as_non_empty_str(raw.get("account"))
+        if not acc:
+            return None, "invalid_sub_write", f"Ligne ADVANCED #{i} sans compte."
+        debit_v = _as_float(raw.get("debit"))
+        credit_v = _as_float(raw.get("credit"))
+        has_d = debit_v is not None and debit_v > 0
+        has_c = credit_v is not None and credit_v > 0
+        if has_d == has_c:
+            return None, "invalid_sub_write", f"Ligne ADVANCED #{i} : renseigner un seul côté débit ou crédit."
+        line: dict[str, Any] = {"account": acc}
+        if has_d:
+            line["debit"] = round(float(debit_v), 2)
+        else:
+            line["credit"] = round(float(credit_v), 2)
+        lbl = _as_non_empty_str(raw.get("label"))
+        if lbl:
+            line["label"] = lbl
+        ref = _as_non_empty_str(raw.get("reference"))
+        if ref:
+            line["reference"] = ref
+        sanitized.append(line)
+
+    td = sum(float(x.get("debit") or 0) for x in sanitized)
+    tc = sum(float(x.get("credit") or 0) for x in sanitized)
+    if abs(round(td - tc, 2)) > 0.01:
+        return (
+            None,
+            "invalid_sub_write",
+            f"ADVANCED non équilibré : débits={td:.2f} crédits={tc:.2f}.",
+        )
+
+    body: dict[str, Any] = {
+        "id_year": id_year,
+        "label": label,
+        "date": date_value,
+        "type": "ADVANCED",
+        "reference": reference,
+        "lines": sanitized,
+    }
+    notes = "\n".join(note_lines)
+    if notes:
+        body["notes"] = notes
+    return body, None, None
+
+
 def build_cash_session_close_transaction_payload(
     enriched_payload: dict[str, Any],
 ) -> tuple[dict[str, Any] | None, str | None, str | None]:

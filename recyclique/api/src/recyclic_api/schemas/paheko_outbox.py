@@ -25,6 +25,10 @@ class PahekoCloseBatchSubWritePublic(BaseModel):
     remote_transaction_id: Optional[str] = None
     last_http_status: Optional[int] = None
     last_error: Optional[str] = None
+    observability: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Story 23.1 — ventilation : codes moyen, montants, index de ligne, révision ; null si agrégé 22.7.",
+    )
 
 
 class PahekoCloseBatchStatePublic(BaseModel):
@@ -50,6 +54,14 @@ class PahekoResolvedTransactionPreview(BaseModel):
     id_year: int = Field(description="Identifiant d'exercice Paheko utilisé.")
     label: Optional[str] = Field(default=None, description="Libellé généré pour l'écriture.")
     reference: Optional[str] = Field(default=None, description="Référence générée pour l'écriture.")
+    body_type: str = Field(
+        default="REVENUE",
+        description="Story 23.1 — REVENUE (ligne simplifiée) ou ADVANCED (écriture multi-lignes).",
+    )
+    advanced_line_count: Optional[int] = Field(
+        default=None,
+        description="Story 23.1 — nombre de lignes Paheko si body_type=ADVANCED.",
+    )
 
 
 class PahekoOutboxItemPublic(BaseModel):
@@ -187,6 +199,7 @@ def close_batch_state_from_payload(payload: Dict[str, Any]) -> Optional[PahekoCl
                     remote_transaction_id=s.get("remote_transaction_id"),
                     last_http_status=s.get("last_http_status"),
                     last_error=s.get("last_error"),
+                    observability=s.get("observability") if isinstance(s.get("observability"), dict) else None,
                 )
             )
         except (KeyError, TypeError, ValueError):

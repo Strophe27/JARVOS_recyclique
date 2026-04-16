@@ -60,6 +60,14 @@ La chaine canonique devient :
   - sous-ecriture 3 : remboursements exercice anterieur clos.
 - L'unite canonique n'est plus "une unique transaction au singulier".
 
+#### Story 23.1 — Contrat HTTP Paheko (ventilation par moyen)
+
+- **Remboursements (sous-ecritures 2 et 3)** : inchangé 22.7 — **un POST HTTP par sous-ecriture**, corps JSON **simplifié** `type: REVENUE` avec une paire `debit` / `credit` et un `amount` (voir `paheko_transaction_payload_builder.build_close_transaction_line_payload`).
+- **Ventes + dons (sous-ecriture 1)** — deux modes pilotés par `PAHEKO_CLOSE_SALES_BUILDER_POLICY` :
+  - `aggregated_v22_7` (defaut) : **un POST** `REVENUE` une ligne (montant agrege), comme en 22.7.
+  - `per_payment_method_v1` : **un POST** `type: ADVANCED` avec un tableau **`lines`** (une ligne par moyen au debit sur le compte `paheko_debit_account` de la **revision** pointee par `accounting_config_revision_id` du snapshot, plus lignes de credit **ventes** et **dons** sur les comptes globaux de la meme revision). Un seul POST pour garder une **ecriture equilibree** multi-lignes cote Paheko ; ce n'est **pas** une succession de POST par moyen pour le bloc ventes+dons.
+- **Idempotence / bascule** : la sous-ecriture 1 en mode `per_payment_method_v1` utilise une `kind` / sous-cle d'idempotence distincte de l'agrege (`sales_donations_per_pm_v1` vs `sales_donations`) pour eviter les collisions avec des lots deja pousses en 22.7.
+
 ### 5. Outbox `Paheko`
 
 - L'unite canonique de sync devient :
@@ -115,6 +123,12 @@ La migration cible suit trois phases :
 - couper l'autorite du champ legacy pour la compta canonique ;
 - utiliser exclusivement le snapshot fige et le batch outbox canonique ;
 - conserver l'historique et la tracabilite de transition.
+
+### Story 23.1 — Bascule ventilation Paheko (ops)
+
+- **Defaut** : `PAHEKO_CLOSE_SALES_BUILDER_POLICY=aggregated_v22_7` (comportement 22.7).
+- **Activation ventilation** : `per_payment_method_v1` apres validation metier (agregats / double lecture si applicable) ; redemarrage API avec la variable d'environnement.
+- **Prevention doubles ecritures** : la sous-ecriture « ventes + dons » en mode `per_payment_method_v1` porte un `kind` et une sous-cle d'idempotence HTTP **differents** de l'agrege 22.7 (`sales_donations_per_pm_v1`). Les lots deja **delivered** en agrege ne sont pas rejoues automatiquement avec un autre corps ; toute reprise manuelle reste une operation expert explicite.
 
 ## Impact on planning
 

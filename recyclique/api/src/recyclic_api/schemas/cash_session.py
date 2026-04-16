@@ -53,7 +53,11 @@ class CashSessionUpdate(BaseModel):
     """Schéma pour la mise à jour d'une session de caisse."""
     status: Optional[CashSessionStatus] = Field(None, description="Nouveau statut de la session")
     current_amount: Optional[float] = Field(None, ge=0, description="Montant actuel en caisse")
-    total_sales: Optional[float] = Field(None, ge=0, description="Total des ventes")
+    total_sales: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Total « ventes » net (hors part ``donation`` sur ticket) — aligné colonne session.",
+    )
     total_items: Optional[int] = Field(None, ge=0, description="Nombre total d'articles vendus")
 
 
@@ -77,7 +81,10 @@ class CashSessionTotalsV1(BaseModel):
     (``refunds`` est la somme algébrique des montants signés des reversals, typiquement ≤ 0).
     """
 
-    sales_completed: float = Field(..., description="Somme des ventes lifecycle completed (hors reversal)")
+    sales_completed: float = Field(
+        ...,
+        description="Somme nette des tickets ``completed`` : ``total_amount - coalesce(donation,0)`` (hors reversal).",
+    )
     refunds: float = Field(..., description="Somme algébrique des reversals de session (négatif = sorties)")
     net: float = Field(..., description="sales_completed + refunds")
 
@@ -89,7 +96,10 @@ class CashSessionResponse(CashSessionBase):
     status: CashSessionStatus = Field(..., description="Statut de la session")
     opened_at: datetime = Field(..., description="Date et heure d'ouverture")
     closed_at: Optional[datetime] = Field(None, description="Date et heure de fermeture")
-    total_sales: Optional[float] = Field(None, description="Total des ventes")
+    total_sales: Optional[float] = Field(
+        None,
+        description="Total « ventes » hors part ``donation`` sur les tickets (somme ``total_amount - donation``) ; l'encaissement brut = total_sales + total_donations.",
+    )
     total_items: Optional[int] = Field(None, description="Nombre total d'articles vendus")
     number_of_sales: Optional[int] = Field(None, description="Nombre de ventes effectuées")
     total_donations: Optional[float] = Field(None, description="Total des dons collectés")
@@ -132,6 +142,16 @@ class CashSessionResponse(CashSessionBase):
         description="Snapshot comptable immutable après clôture (journal payment_transactions + corrélation).",
     )
 
+    # Alignement UI ↔ POST /close — même règle que ``CashSessionService.get_closing_preview``.
+    closing_preview_theoretical_amount: Optional[float] = Field(
+        None,
+        description=(
+            "Montant théorique caisse utilisé pour la validation d'écart à la clôture ; "
+            "null si session fermée. Fond initial + total des ventes + dons (agrégat session), "
+            "indépendamment du détail des moyens de paiement au journal."
+        ),
+    )
+
     @field_validator('accounting_config_revision_id', mode='before')
     @classmethod
     def convert_accounting_revision_uuid_to_str(cls, v):
@@ -160,7 +180,7 @@ class CashSessionSummary(BaseModel):
     closed_at: Optional[datetime] = Field(None, description="Date de fermeture")
     initial_amount: float = Field(..., description="Montant initial")
     current_amount: float = Field(..., description="Montant actuel")
-    total_sales: float = Field(..., description="Total des ventes")
+    total_sales: float = Field(..., description="Total « ventes » net (hors ``donation`` sur tickets)")
     total_items: int = Field(..., description="Nombre d'articles vendus")
     status: CashSessionStatus = Field(..., description="Statut de la session")
 
@@ -203,7 +223,7 @@ class CashSessionStats(BaseModel):
     total_sessions: int = Field(..., description="Nombre total de sessions")
     open_sessions: int = Field(..., description="Nombre de sessions ouvertes")
     closed_sessions: int = Field(..., description="Nombre de sessions fermées")
-    total_sales: float = Field(..., description="Total des ventes")
+    total_sales: float = Field(..., description="Total « ventes » net (hors ``donation`` sur tickets)")
     total_items: int = Field(..., description="Total des articles vendus")
     number_of_sales: int = Field(..., description="Nombre total de ventes")
     total_donations: float = Field(..., description="Total des dons sur la période")

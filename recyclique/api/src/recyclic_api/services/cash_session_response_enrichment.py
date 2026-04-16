@@ -9,7 +9,7 @@ from typing import Optional
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func
 
-from recyclic_api.models.cash_session import CashSession
+from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import Sale, SaleLifecycleStatus
 from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.schemas.cash_session import CashSessionResponse, CashSessionTotalsV1
@@ -93,8 +93,9 @@ def enrich_session_response(
     # comme le nominal ; une ventilation par ``special_encaissement_kind`` pourra compléter la clôture 6.7.
     # Story 6.6 — idem pour ``social_action_kind`` (montant > 0) : inclus dans sales_completed ; ventilation 6.7.
     db = service.db
+    # Aligné sur ``total_sales`` session (net hors ``sale.donation`` sur ticket complété).
     sales_completed = (
-        db.query(func.coalesce(func.sum(Sale.total_amount), 0))
+        db.query(func.coalesce(func.sum(Sale.total_amount - func.coalesce(Sale.donation, 0)), 0.0))
         .filter(
             Sale.cash_session_id == sid,
             Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
@@ -115,5 +116,9 @@ def enrich_session_response(
         refunds=refunds_alg,
         net=sales_completed + refunds_alg,
     )
+
+    if session.status == CashSessionStatus.OPEN:
+        prev = service.get_closing_preview(session, 0.0)
+        response_data["closing_preview_theoretical_amount"] = float(prev["theoretical_amount"])
 
     return CashSessionResponse(**response_data)

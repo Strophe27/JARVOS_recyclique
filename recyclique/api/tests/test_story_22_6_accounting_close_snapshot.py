@@ -213,8 +213,10 @@ def test_snapshot_reflects_multiple_journal_lines(db_session, snapshot_close_fix
     site, _user, cs = snapshot_close_fixtures_multi_pt
     seed_default_paheko_close_mapping(db_session, site.id)
     svc = CashSessionService(db_session)
-    # Théorique caisse = 10 + 25 (cash journal) = 35 — aligné avec le détail espèces physiques.
-    closed = svc.close_session_with_amounts(str(cs.id), 35.0, None, sync_correlation_id="corr-multi")
+    # Théorique clôture = fond + total ventes (45) ; comptage physique 35 = uniquement la part espèces attendue.
+    closed = svc.close_session_with_amounts(
+        str(cs.id), 35.0, "écart mixte espèces / ventes totales (test 22.6)", sync_correlation_id="corr-multi"
+    )
     assert closed is not None
     db_session.refresh(closed)
     snap = closed.accounting_close_snapshot
@@ -222,5 +224,6 @@ def test_snapshot_reflects_multiple_journal_lines(db_session, snapshot_close_fix
     assert snap["totals"]["cash_signed_net_from_journal"] == 25.0
     assert snap["totals"]["by_payment_method_signed"]["cash"] == 25.0
     assert snap["totals"]["by_payment_method_signed"]["card"] == 10.0
-    assert snap["closing"]["theoretical_cash_amount"] == 35.0
+    assert snap["closing"]["theoretical_cash_amount"] == 45.0
     assert snap["closing"]["actual_cash_amount"] == 35.0
+    assert snap["closing"]["cash_variance"] == pytest.approx(-10.0)

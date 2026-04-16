@@ -178,7 +178,7 @@ export function AdminPahekoDiagnosticsSection() {
     <Stack gap="md">
       <Alert color="gray" title="Support super-admin">
         Ce bloc aide à comprendre un envoi bloqué ou à confirmer qu’une clôture est bien partie vers Paheko. Les
-        réglages de clôture restent dans le bloc précédent.
+        réglages de clôture se configurent dans l’onglet « Paheko : clôture » du même écran.
       </Alert>
 
       <Group justify="space-between" align="flex-start" wrap="wrap">

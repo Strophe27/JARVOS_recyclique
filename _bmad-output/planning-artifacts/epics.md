@@ -3399,3 +3399,33 @@ So that old evidence is not mistaken for coverage of the new model.
 **When** the end-to-end validation package is assembled
 **Then** it covers the retained path from caisse to frozen snapshot to `Paheko` entry generation and sync result visibility
 **And** it leaves behind a baseline that `Epic 10` can reuse for final readiness gates
+
+## Epic 23: Alignement produit post-Epic 22 — ventilation `Paheko` par moyen de paiement et cockpit expert Peintre
+
+**Goal:** Fermer l’écart entre l’intention terrain (montants par moyen visibles dans `Paheko` sur les comptes du référentiel expert) et le livrable 22.7 (agrégation par blocs métier). Ajouter une surface Peintre de gestion des moyens de paiement alignée sur l’API expert existante (step-up, pas d’autorité comptable côté client).
+
+**Décision QA (scission) :** trois stories — **23.1** backend Paheko (ventilation par moyen), **23.2** Peintre (moyens de paiement expert), **23.3** Peintre (**comptabilité caisse** / comptes globaux PRD §5.2, distinct des moyens). Dépendance : valeur **Paheko** d’abord (23.1) ; 23.2 / 23.3 peuvent avancer en parallèle sur le hub `/admin/compta` si contrats API stables.
+
+### Story 23.1: Ventiler `Paheko` par moyen de paiement (builder, migration, outbox)
+
+As a trésorier ou intégrateur comptable,
+I want des écritures `Paheko` ventilées par moyen à partir du snapshot figé et des comptes expert par moyen,
+So that la compta distante reflète la caisse sans tout agréger sur le seul mapping de clôture.
+
+**Implementation artifact:** `_bmad-output/implementation-artifacts/23-1-ventiler-paheko-par-moyen-de-paiement-builder-migration-et-outbox.md`
+
+### Story 23.2: Cockpit Peintre — moyens de paiement expert (step-up, révision)
+
+As a super-admin terrain,
+I want gérer les moyens de paiement depuis Peintre avec step-up et publication de révision,
+So that je n’ai pas à utiliser l’API brute pour le référentiel courant.
+
+**Implementation artifact:** `_bmad-output/implementation-artifacts/23-2-cockpit-peintre-moyens-paiement-expert-step-up-et-revision.md`
+
+### Story 23.3: Cockpit Peintre — comptabilité caisse (comptes globaux expert)
+
+As a super-admin terrain,
+I want consulter et modifier les comptes globaux (ventes, dons, remboursement exercice clos) depuis Peintre,
+So that le paramétrage PRD §5.2 soit accessible sans Postman et sans confondre avec les moyens de paiement.
+
+**Implementation artifact:** `_bmad-output/implementation-artifacts/23-3-cockpit-peintre-comptabilite-caisse-comptes-globaux-expert.md`

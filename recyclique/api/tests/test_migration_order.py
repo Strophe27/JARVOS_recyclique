@@ -108,11 +108,11 @@ class TestMigrationOrder:
         )
         
         assert result.returncode == 0, f"Erreur lors de l'affichage de la tête: {result.stderr}"
-        
-        # Vérifier que la migration de tête existe et est valide
-        assert "Revision ID:" in result.stdout
-        # Alembic output phrasing varies by version: accept either
-        assert ("Parent revision(s):" in result.stdout) or ("Parent:" in result.stdout)
+
+        combined = (result.stdout or "") + (result.stderr or "")
+        # Alembic 1.x–2.x : libellés variables (stdout vs stderr, EN/FR, « Rev » / « Revision ID »).
+        assert re.search(r"(?i)(Rev|Revision ID|Révision ID)\s*:", combined), combined[:800]
+        assert re.search(r"(?i)Parent(?:\s+revision\(s\))?\s*:", combined), combined[:800]
     
     def test_migration_files_exist(self):
         """Chaque entrée d'historique Alembic pointe vers un fichier .py existant (ligne Path:)."""

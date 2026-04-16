@@ -675,7 +675,11 @@ class CashSessionService:
                 Sale.cash_session_id,
                 func.sum(Sale.donation).label("total_donations")
             )
-            .filter(Sale.cash_session_id.in_(session_ids), Sale.donation.isnot(None))
+            .filter(
+                Sale.cash_session_id.in_(session_ids),
+                Sale.donation.isnot(None),
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+            )
             .group_by(Sale.cash_session_id)
             .subquery()
         )
@@ -773,9 +777,15 @@ class CashSessionService:
 
     def get_total_donations_for_session(self, session_id: str) -> float:
         sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
-        total_donations = self.db.query(func.coalesce(func.sum(Sale.donation), 0)).filter(
-            Sale.cash_session_id == sid
-        ).scalar() or 0.0
+        total_donations = (
+            self.db.query(func.coalesce(func.sum(Sale.donation), 0))
+            .filter(
+                Sale.cash_session_id == sid,
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+            )
+            .scalar()
+            or 0.0
+        )
         return float(total_donations)
 
     def count_held_sales_for_session(self, session_id: str) -> int:
@@ -791,22 +801,18 @@ class CashSessionService:
         )
 
     def get_closing_preview(self, session: CashSession, actual_amount: float) -> Dict[str, float]:
-        """Pré-clôture : montant théorique en caisse — priorité au journal 22.1/22.6, repli legacy si journal vide."""
-        sid = UUID(str(session.id)) if not isinstance(session.id, UUID) else session.id
-        journal = compute_payment_journal_aggregates(
-            self.db,
-            cash_session_id=sid,
-            use_legacy_preview_if_no_journal=True,
-        )
+        """Pré-clôture : montant théorique = fond + encaissement brut des tickets complétés.
 
-        if journal.payment_transaction_line_count > 0:
-            theoretical_amount = float(session.initial_amount) + journal.cash_signed_net_from_journal
-            total_donations = float(journal.donation_surplus_total)
-        else:
-            total_donations = self.get_total_donations_for_session(str(session.id))
-            theoretical_amount = float(session.initial_amount or 0) + float(session.total_sales or 0) + float(
-                total_donations
-            )
+        ``cash_sessions.total_sales`` est le **net** hors part ``sale.donation`` (ventilation sur le ticket) ;
+        les dons sur ticket s'ajoutent explicitement via ``get_total_donations_for_session`` — équivalent à
+        fond + somme des ``sale.total_amount`` (brut) pour les tickets ``completed``.
+
+        Le journal ``payment_transactions`` sert au snapshot comptable 22.6, pas à ce montant terrain.
+        """
+        total_donations = self.get_total_donations_for_session(str(session.id))
+        theoretical_amount = float(session.initial_amount or 0) + float(session.total_sales or 0) + float(
+            total_donations
+        )
 
         variance = actual_amount - theoretical_amount
         return {
@@ -885,6 +891,13 @@ class CashSessionService:
             cash_session_id=session.id,
             use_legacy_preview_if_no_journal=True,
         )
+        # Brownfield : sans lignes ``payment_transactions``, le snapshot doit quand même porter un agrégat
+        # compatible clôture / Paheko (22.7), aligné sur le préavis terrain (fond + ventes + dons ticket).
+        if journal_totals.preview_fallback_legacy_totals:
+            th = float(preview["theoretical_amount"])
+            journal_totals = journal_totals.model_copy(
+                update={"by_payment_method_signed": {"cash": round(th, 2)}}
+            )
 
         # Utiliser la nouvelle méthode du modèle avec le montant théorique calculé
         session.close_with_amounts(actual_amount, normalized_comment, preview["theoretical_amount"])
@@ -988,12 +1001,9 @@ class CashSessionService:
         # Nombre de ventes (COUNT sur Sale avec filtres de date)
         number_of_sales = int(sales_query.count() or 0)
 
-        # Total des ventes (SUM sur Sale.total_amount avec filtres de date)
-        # Utiliser les ventes filtrées par date, pas le champ total_sales de la session
+        # Total « ventes » net (hors ``sale.donation`` sur ticket), aligné sur l'agrégat session.
         total_sales_result = (
-            sales_query
-            .with_entities(func.sum(Sale.total_amount))
-            .scalar()
+            sales_query.with_entities(func.sum(Sale.total_amount - func.coalesce(Sale.donation, 0))).scalar()
         )
         total_sales = float(total_sales_result or 0.0)
 

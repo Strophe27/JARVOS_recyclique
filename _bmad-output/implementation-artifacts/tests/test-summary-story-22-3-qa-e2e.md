@@ -33,3 +33,17 @@ pytest tests/test_story_22_3_expert_accounting.py -v --tb=short
 npx vitest run tests/unit/admin-accounting-hub-widget.test.tsx
 # Résultat : 2 tests passed, 1 fichier — exit 0 (~6.5 s total Vitest)
 ```
+
+## Re-vérification worker `bmad-qa-generate-e2e-tests` (2026-04-16, `force_full_graph`)
+
+Grille `checklist.md` du skill : API + UI (Vitest) couverts ; exécution locale OK.
+
+```text
+# recyclique/api
+python -m pytest tests/test_story_22_3_expert_accounting.py -q --tb=short
+# 24 passed, warnings Pydantic — exit 0 (~45 s)
+
+# peintre-nano
+npx vitest run tests/unit/admin-accounting-hub-widget.test.tsx
+# 2 passed — exit 0 (~11 s)
+```

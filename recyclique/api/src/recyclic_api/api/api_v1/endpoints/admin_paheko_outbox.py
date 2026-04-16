@@ -59,6 +59,7 @@ def _build_transaction_preview(db: Session, row: object) -> PahekoResolvedTransa
         planned, perr, _ = build_cash_session_close_batch_from_enriched_payload(
             enriched_payload,
             batch_idempotency_key=str(ikey),
+            db=db,
         )
         if perr or not planned:
             return None
@@ -74,19 +75,37 @@ def _build_transaction_preview(db: Session, row: object) -> PahekoResolvedTransa
         body, body_code, _body_msg = build_cash_session_close_transaction_payload(enriched_payload)
     if body_code is not None or body is None:
         return None
-    amount = body.get("amount")
-    debit = body.get("debit")
-    credit = body.get("credit")
     id_year = body.get("id_year")
-    if not isinstance(debit, str) or not isinstance(credit, str):
-        return None
     try:
-        amount_value = float(amount)
         id_year_value = int(id_year)
     except (TypeError, ValueError):
         return None
     label = body.get("label")
     reference = body.get("reference")
+    if body.get("type") == "ADVANCED" and isinstance(body.get("lines"), list):
+        lines = body["lines"]
+        td = sum(float(x.get("debit") or 0) for x in lines if isinstance(x, dict))
+        tc = sum(float(x.get("credit") or 0) for x in lines if isinstance(x, dict))
+        amount_value = max(td, tc)
+        return PahekoResolvedTransactionPreview(
+            amount=float(amount_value),
+            debit="(ADVANCED)",
+            credit="(ADVANCED)",
+            id_year=id_year_value,
+            label=label if isinstance(label, str) else None,
+            reference=reference if isinstance(reference, str) else None,
+            body_type="ADVANCED",
+            advanced_line_count=len(lines),
+        )
+    amount = body.get("amount")
+    debit = body.get("debit")
+    credit = body.get("credit")
+    if not isinstance(debit, str) or not isinstance(credit, str):
+        return None
+    try:
+        amount_value = float(amount)
+    except (TypeError, ValueError):
+        return None
     return PahekoResolvedTransactionPreview(
         amount=amount_value,
         debit=debit,
@@ -94,6 +113,8 @@ def _build_transaction_preview(db: Session, row: object) -> PahekoResolvedTransa
         id_year=id_year_value,
         label=label if isinstance(label, str) else None,
         reference=reference if isinstance(reference, str) else None,
+        body_type="REVENUE",
+        advanced_line_count=None,
     )
 
 

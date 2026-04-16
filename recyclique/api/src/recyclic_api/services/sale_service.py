@@ -95,6 +95,33 @@ class SaleService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    @staticmethod
+    def recompute_cash_session_completed_rollups(db: Session, cash_session: CashSession) -> None:
+        """Recalcule ``total_sales`` (net hors ``sale.donation``), ``total_items`` et ``current_amount`` (fond + brut).
+
+        Le champ ``total_amount`` sur le ticket est l'encaissement total ; ``donation`` en est une ventilation
+        affichée à part — le net commercial est ``total_amount - coalesce(donation,0)``.
+        """
+        cid = cash_session.id
+        row = (
+            db.query(
+                func.coalesce(func.sum(Sale.total_amount), 0.0),
+                func.coalesce(func.sum(Sale.total_amount - func.coalesce(Sale.donation, 0)), 0.0),
+                func.count(Sale.id),
+            )
+            .filter(
+                Sale.cash_session_id == cid,
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+            )
+            .first()
+        )
+        gross_sales = float(row[0] or 0.0)
+        net_sales = float(row[1] or 0.0)
+        n_completed = int(row[2] or 0)
+        cash_session.total_sales = net_sales
+        cash_session.total_items = n_completed
+        cash_session.current_amount = float(cash_session.initial_amount or 0.0) + gross_sales
+
     def get_sale_readable_by_user(self, sale_id: str, user_id: str) -> Sale:
         """
         Détail vente (ticket) avec revalidation contexte caisse (Story 6.2).
@@ -543,17 +570,7 @@ class SaleService:
 
         # Une seule transaction : vente + lignes + paiements + agrégats session caisse.
         # Story 6.3 : les tickets « en attente » (held) ne comptent pas dans les agrégats tant qu'ils ne sont pas finalisés.
-        session_sales = db.query(
-            func.coalesce(func.sum(Sale.total_amount), 0).label("total_sales"),
-            func.count(Sale.id).label("total_items"),
-        ).filter(
-            Sale.cash_session_id == sale_data.cash_session_id,
-            Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
-        ).first()
-
-        cash_session.total_sales = float(session_sales.total_sales)
-        cash_session.total_items = session_sales.total_items
-        cash_session.current_amount = cash_session.initial_amount + cash_session.total_sales
+        SaleService.recompute_cash_session_completed_rollups(db, cash_session)
 
         db.commit()
 
@@ -878,13 +895,33 @@ class SaleService:
         cash_session, _, _ = self._load_cash_session_operator_user(sale.cash_session_id, operator_id)
 
         subtotal = sum(item.total_price for item in sale.items if item.total_price > 0)
-        if subtotal > 0 and sale.total_amount < subtotal:
+
+        # Ticket tenu : `total_amount` = encaissement total, `donation` = ventilation (voir recompute rollups).
+        # À la mise en attente seul le net marchand est souvent persisté ; le don saisi à la finalisation doit
+        # augmenter `total_amount` (sinon l’arbitrage 22.4 compare les paiements à un total périmé).
+        prev_total = float(sale.total_amount)
+        prev_donation = float(sale.donation or 0.0)
+        goods_net = prev_total - prev_donation
+
+        if payload.donation is not None:
+            new_donation = float(payload.donation)
+            if new_donation < -_ARBITRAGE_EPS:
+                raise ValidationError("Le don ne peut pas être négatif.")
+            sale.donation = new_donation
+
+        sale.total_amount = goods_net + float(sale.donation or 0.0)
+
+        if subtotal > 0 and sale.total_amount < subtotal - _ARBITRAGE_EPS:
             raise ValidationError(
                 f"Le total ({sale.total_amount}) ne peut pas être inférieur au sous-total ({subtotal})"
             )
 
-        if payload.donation is not None:
-            sale.donation = payload.donation
+        don_v = float(sale.donation or 0.0)
+        if don_v > float(sale.total_amount) + _ARBITRAGE_EPS:
+            raise ValidationError(
+                f"La donation ({don_v}) ne peut pas dépasser le total du ticket ({sale.total_amount})."
+            )
+
         if payload.note is not None:
             sale.note = payload.note
         if payload.payment_method is not None:
@@ -913,17 +950,7 @@ class SaleService:
         sale.lifecycle_status = SaleLifecycleStatus.COMPLETED
         db.flush()
 
-        session_sales = db.query(
-            func.coalesce(func.sum(Sale.total_amount), 0).label("total_sales"),
-            func.count(Sale.id).label("total_items"),
-        ).filter(
-            Sale.cash_session_id == sale.cash_session_id,
-            Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
-        ).first()
-
-        cash_session.total_sales = float(session_sales.total_sales)
-        cash_session.total_items = session_sales.total_items
-        cash_session.current_amount = cash_session.initial_amount + cash_session.total_sales
+        SaleService.recompute_cash_session_completed_rollups(db, cash_session)
 
         db.commit()
 
@@ -1357,17 +1384,8 @@ class SaleService:
                 sale.note = fin.note
                 fields_touched.append("note")
 
-        if "total_amount" in fields_touched:
-            session_sales = db.query(
-                func.coalesce(func.sum(Sale.total_amount), 0).label("total_sales"),
-                func.count(Sale.id).label("total_items"),
-            ).filter(
-                Sale.cash_session_id == cash_session.id,
-                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
-            ).first()
-            cash_session.total_sales = float(session_sales.total_sales)
-            cash_session.total_items = int(session_sales.total_items or 0)
-            cash_session.current_amount = float(cash_session.initial_amount or 0) + cash_session.total_sales
+        if "total_amount" in fields_touched or "donation" in fields_touched:
+            SaleService.recompute_cash_session_completed_rollups(db, cash_session)
 
         db.commit()
         db.refresh(sale)

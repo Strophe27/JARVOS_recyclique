@@ -31,7 +31,7 @@ Set-Location "D:\Users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyc
 python -m pytest tests/test_story_22_2_dual_read_aggregate_compare.py -v --tb=short
 ```
 
-**Résultat :** `15 passed` (avertissements Pydantic dépréciation hors périmètre story).
+**Résultat :** `16 passed` (avertissements Pydantic dépréciation hors périmètre story). Passe QA `force_full_graph` 2026-04-16.
 
 ---
 
@@ -42,7 +42,14 @@ python -m pytest tests/test_story_22_2_dual_read_aggregate_compare.py -v --tb=sh
   - Matrice agrégats + gaps cutover couverte en pytest (service + cas limites métier).
   - Endpoint admin : 200 + 404 + 403 couverts après complément.
   - OpenAPI `operationId` et fichier critères JSON toujours assertés.
-- **`files_touched`:**
+- **`files_touched` (historique complément HTTP) :**
   - `recyclique/api/tests/test_story_22_2_dual_read_aggregate_compare.py` (constants + `test_admin_dual_read_endpoint_404_unknown_session`, `test_admin_dual_read_endpoint_403_non_super_admin`)
   - `_bmad-output/implementation-artifacts/tests/test-summary-story-22-2-qa-dual-read.md` (ce fichier)
 - **`pytest_exit_code`:** 0
+
+### Passe QA `force_full_graph` (qa_loop: 0)
+
+- Checklist skill : tests API, happy path + erreurs clés, exécution verte, résumé à jour.
+- **Aucune modification de code** ; re-exécution : **16 passed**.
+- **`files_touched` (cette passe Task QA) :**
+  - `d:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\_bmad-output\implementation-artifacts\tests\test-summary-story-22-2-qa-dual-read.md`

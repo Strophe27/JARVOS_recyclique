@@ -340,8 +340,7 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
         puis utilise le réglage par défaut du site si besoin.
       </Text>
       <Alert color="blue" title="Réservé au super-admin">
-        Le cockpit comptable reste volontairement simple. Ici, vous indiquez l’exercice et les comptes Paheko à utiliser
-        pour les clôtures.
+        Dans le paramétrage comptable, vous indiquez ici l’exercice et les comptes Paheko à utiliser pour les clôtures.
       </Alert>
 
       <Group justify="space-between" align="flex-start" wrap="wrap">

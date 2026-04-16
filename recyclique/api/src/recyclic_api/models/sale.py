@@ -1,11 +1,16 @@
+import enum
+import logging
+import uuid
+
 from sqlalchemy import Column, String, DateTime, Float, ForeignKey, Enum as SQLEnum, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-import uuid
-import enum
+from sqlalchemy.sql import func
+from sqlalchemy.types import TypeDecorator
 
 from recyclic_api.core.database import Base
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentMethod(str, enum.Enum):
@@ -14,6 +19,55 @@ class PaymentMethod(str, enum.Enum):
     CARD = "card"
     CHECK = "check"
     FREE = "free"  # Gratuit/Don
+
+
+def _normalize_payment_method_token(raw: str) -> str | None:
+    """Retourne une valeur enum ``cash``/… ou None si chaîne vide."""
+    s = (raw or "").strip()
+    if not s:
+        return None
+    low = s.lower()
+    if low in ("cash", "card", "check", "free"):
+        return low
+    up = s.upper()
+    if up in ("CASH", "CARD", "CHECK", "FREE"):
+        return up.lower()
+    return None
+
+
+class PaymentMethodColumn(TypeDecorator):
+    """VARCHAR en base : tolère le brownfield sans ``LookupError`` à l'hydratation (Epic 22 / s22_7).
+
+    ``SQLEnum`` + valeurs héritées (casse, anciens libellés) peut lever ``LookupError`` au chargement
+    des ventes / ``payment_transactions``, ce qui casse ``GET /v1/cash-sessions/{id}``.
+    """
+
+    impl = String(32)
+    cache_ok = True
+
+    def __init__(self, *, allow_none_result: bool = True, **kw):
+        super().__init__(**kw)
+        self._allow_none_result = allow_none_result
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, PaymentMethod):
+            return value.value
+        token = _normalize_payment_method_token(str(value))
+        if token is not None:
+            return token
+        logger.warning("payment_method ORM bind inconnu %r ; forcé à cash", value)
+        return PaymentMethod.CASH.value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None if self._allow_none_result else PaymentMethod.CASH
+        token = _normalize_payment_method_token(str(value))
+        if token is not None:
+            return PaymentMethod(token)
+        logger.warning("payment_method ORM lecture inconnue %r ; défaut cash", value)
+        return PaymentMethod.CASH
 
 
 class SaleLifecycleStatus(str, enum.Enum):
@@ -51,7 +105,11 @@ class Sale(Base):
     operator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     total_amount = Column(Float, nullable=False)
     donation = Column(Float, nullable=True, default=0.0)
-    payment_method = Column(SQLEnum(PaymentMethod, name="payment_method", native_enum=False), nullable=True, default=PaymentMethod.CASH)
+    payment_method = Column(
+        PaymentMethodColumn(allow_none_result=True),
+        nullable=True,
+        default=PaymentMethod.CASH,
+    )
     note = Column(Text, nullable=True)  # Story B40-P5: Notes sur les tickets de caisse
     # Story 1.1.2: preset_id et notes déplacés vers sale_items (par item individuel)
     sale_date = Column(DateTime(timezone=True), nullable=True)  # Story B52-P3: Date réelle du ticket (date du cahier)

@@ -20,6 +20,7 @@ import {
   ChevronUp,
   ClipboardList,
   HeartPulse,
+  Landmark,
   Euro,
   LayoutList,
   Package,
@@ -46,6 +47,7 @@ import { getReceptionTicketsList } from '../../api/reception-client';
 import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { ADMIN_SUPER_PAGE_MANIFEST_GUARDS } from '../../domains/admin-config/admin-super-page-guards';
 import classes from './AdminLegacyDashboardHomeWidget.module.css';
 
 function num(v: unknown): number {
@@ -77,6 +79,10 @@ type AlertItem = {
 
 export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
   const auth = useAuthPort();
+  const envelope = auth.getContextEnvelope();
+  const isAccountingExpertShell = ADMIN_SUPER_PAGE_MANIFEST_GUARDS.requiredPermissionKeys.every((key) =>
+    envelope.permissions.permissionKeys.includes(key),
+  );
   const [stats, setStats] = useState({ ca: 0, donations: 0, weightReceived: 0, weightSold: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
   const [caMois, setCaMois] = useState(0);
@@ -614,7 +620,8 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
               Administration Super-Admin
             </Title>
             <Text size="sm" c="dimmed">
-              Outils réservés au super-admin : santé de l’exploitation, réglages avancés, sites et caisses.
+              Outils réservés au super-admin : santé de l’exploitation, réglages avancés, sites et caisses, paramétrage
+              comptable (Paheko, moyens de paiement).
             </Text>
             <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
@@ -650,7 +657,41 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                   Sites et caisses
                 </Button>
               </Grid.Col>
+              {isAccountingExpertShell ? (
+                <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+                  <Button
+                    variant="default"
+                    className={classes.superAdminButton}
+                    leftSection={<Landmark size={20} />}
+                    onClick={() => handleNavigation('/admin/compta/parametrage')}
+                    data-testid="admin-legacy-nav-accounting-expert"
+                  >
+                    Paramétrage comptable
+                  </Button>
+                </Grid.Col>
+              ) : null}
             </Grid>
+          </Stack>
+        </Paper>
+      ) : isAccountingExpertShell ? (
+        <Paper p="sm" withBorder bg="#f8f9fa">
+          <Stack gap="sm" style={{ gap: 12 }}>
+            <Title order={2} size="h3" mb="xs" c="dimmed">
+              Paramétrage comptable
+            </Title>
+            <Text size="sm" c="dimmed">
+              Moyens de paiement, comptes globaux et intégration Paheko — accès réservé (proxy super-admin sur
+              l’enveloppe).
+            </Text>
+            <Button
+              variant="default"
+              className={classes.superAdminButton}
+              leftSection={<Landmark size={20} />}
+              onClick={() => handleNavigation('/admin/compta/parametrage')}
+              data-testid="admin-legacy-nav-accounting-expert"
+            >
+              Ouvrir le paramétrage comptable
+            </Button>
           </Stack>
         </Paper>
       ) : null}

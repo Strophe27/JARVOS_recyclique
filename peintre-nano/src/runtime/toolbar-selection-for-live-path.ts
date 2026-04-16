@@ -24,7 +24,9 @@ export function toolbarSelectedEntryIdFromResolved(
     resolvedEntryId === 'transverse-admin-settings' ||
     resolvedEntryId === 'transverse-admin-health' ||
     resolvedEntryId === 'transverse-admin-reception-stats' ||
-    resolvedEntryId === 'transverse-admin-reception-sessions'
+    resolvedEntryId === 'transverse-admin-reception-sessions' ||
+    resolvedEntryId === 'transverse-admin-accounting' ||
+    resolvedEntryId === 'transverse-admin-accounting-expert'
   ) {
     return 'transverse-admin';
   }

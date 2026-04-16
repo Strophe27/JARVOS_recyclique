@@ -224,6 +224,8 @@ export type CashSessionCurrentV1 = {
   variance?: number | null;
   variance_comment?: string | null;
   totals?: CashSessionTotalsV1 | null;
+  /** Aligné ``get_closing_preview`` / POST close (fond + ventes + dons) — prioritaire pour ``theoreticalCloseAmount``. */
+  closing_preview_theoretical_amount?: number | null;
 };
 
 export type CashSessionClientHttpErrorFields = {
@@ -594,8 +596,12 @@ export async function getCashSessionDetail(
   return { ok: true, session: json as CashSessionDetailV1 };
 }
 
-/** Montant théorique caisse (aligné `CashSessionService.get_closing_preview`). */
+/** Montant théorique caisse — même règle que ``CashSessionService.get_closing_preview`` / POST ``/close``. */
 export function theoreticalCloseAmount(session: CashSessionCurrentV1): number {
+  const fromApi = session.closing_preview_theoretical_amount;
+  if (fromApi != null && Number.isFinite(Number(fromApi))) {
+    return Number(fromApi);
+  }
   const initial = session.initial_amount ?? 0;
   const sales = session.total_sales ?? 0;
   const donations = session.total_donations ?? 0;

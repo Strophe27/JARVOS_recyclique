@@ -1,8 +1,8 @@
-# Story 22.1 : Preparer le schema comptable cible, le backfill et la compatibilite brownfield
+# Story 22.1 : Préparer le schéma comptable cible, le backfill et la compatibilité brownfield
 
 Status: done
 
-<!-- Story key : `22-1-preparer-le-schema-comptable-cible-le-backfill-et-la-compatibilite-brownfield` | Epic : epic-22 | Ultimate context engine analysis completed - story CS bmad-create-story 2026-04-15 -->
+<!-- Story key : `22-1-preparer-le-schema-comptable-cible-le-backfill-et-la-compatibilite-brownfield` | Epic : epic-22 | CS bmad-create-story régénéré 2026-04-16 (force_full_graph) — contenu réaligné epics + chaîne canonique + ancres code ; sprint `22-1` = done inchangé -->
 
 ## Story
 
@@ -12,95 +12,127 @@ so that the project can move toward the new payment truth without breaking histo
 
 ## Acceptance Criteria
 
-1. **Modele canonique nomme** - Etant donne que le PRD specialise du `2026-04-15` remplace les anciennes hypotheses de paiement simplifie, quand la story est livree, alors le projet decrit et prepare explicitement les entites, champs et invariants necessaires pour :
-   - le referentiel des moyens de paiement ;
-   - le journal detaille des transactions de paiement ;
-   - la preparation de cloture comptable par session ;
-   - la future emission vers `Paheko`.  
-   Le champ legacy de paiement porte par la vente est explicitement traite comme un mecanisme de compatibilite, pas comme la source de verite comptable.
+### Source epics (BDD)
 
-2. **Compatibilite brownfield exploitable** - Etant donne que des ventes, sessions et remboursements historiques existent deja, quand la migration est preparee, alors la story documente les regles minimales de coexistence entre ancien et nouveau modele pour :
+**Given** the current brownfield still carries legacy payment assumptions  
+**When** this story is completed  
+**Then** the canonical accounting entities, fields, and invariants needed for payment methods, detailed payment transactions, session accounting, and `Paheko` export preparation are explicitly defined  
+**And** the legacy payment field carried by the sale is downgraded to a compatibility concern rather than the accounting source of truth  
+
+**Given** historical data and open sessions cannot be discarded  
+**When** the migration path is documented  
+**Then** the expected backfill scope, cutover constraints, and rollback-safe compatibility rules are written for historical sessions, open sessions, and newly closed sessions  
+**And** the story names the minimum data that must exist before later corrective stories can rely on the new model  
+
+### Critères détaillés (implémentation / preuve)
+
+1. **Modèle canonique nommé** — Étant donné le PRD spécialisé du `2026-04-15`, quand la story est livrée, alors le projet décrit et prépare explicitement les entités, champs et invariants nécessaires pour :
+   - le référentiel des moyens de paiement ;
+   - le journal détaillé des transactions de paiement ;
+   - la préparation de clôture comptable par session ;
+   - la future émission vers `Paheko`.  
+   Le champ legacy de paiement porté par la vente est explicitement traité comme un mécanisme de compatibilité, pas comme la source de vérité comptable.
+
+2. **Compatibilité brownfield exploitable** — Étant donné que des ventes, sessions et remboursements historiques existent déjà, quand la migration est préparée, alors la story documente les règles minimales de coexistence entre ancien et nouveau modèle pour :
    - les sessions historiques ;
    - les sessions encore ouvertes ;
-   - les nouvelles sessions cloturees apres migration ;  
-   sans reecriture silencieuse de l'historique.
+   - les nouvelles sessions clôturées après migration ;  
+   sans réécriture silencieuse de l’historique.
 
-3. **Backfill borne et explicite** - Etant donne que tout l'historique ne doit pas etre "reconstruit" de maniere speculative, quand le plan de backfill est redige, alors il precise :
-   - quelles donnees doivent etre retro-injectees ;
-   - quelles donnees peuvent rester legacy ;
-   - quelles traces d'origine doivent etre preservees ;  
-   et il nomme clairement les limites connues du backfill, ainsi que les **prerequis de donnees minimaux** dont les stories correctives ulterieures de l'epic (par ex. double lecture `22.2`) peuvent dependre sans presumer le cutover.
+3. **Backfill borné et explicite** — Étant donné que tout l’historique ne doit pas être « reconstruit » de manière spéculative, quand le plan de backfill est rédigé, alors il précise :
+   - quelles données doivent être rétro-injectées ;
+   - quelles données peuvent rester legacy ;
+   - quelles traces d’origine doivent être préservées ;  
+   et il nomme clairement les limites connues du backfill, ainsi que les **prérequis de données minimaux** dont les stories correctives ultérieures de l’epic (par ex. double lecture `22.2`) peuvent dépendre sans présumer le cutover.
 
-4. **Autorite comptable locale preparee** - Etant donne que la cloture comptable canonique sera portee plus loin par `22.6`, quand cette story est terminee, alors le schema et les notes de migration rendent possible une cloture basee sur le journal detaille des transactions de paiement plutot que sur `sales.payment_method`.
+4. **Autorité comptable locale préparée** — Étant donné que la clôture comptable canonique sera portée plus loin par `22.6`, quand cette story est terminée, alors le schéma et les notes de migration rendent possible une clôture basée sur le journal détaillé des transactions de paiement plutôt que sur `sales.payment_method`.
 
-5. **Representation canonique de la gratuite** - `free` reste un cas non financier explicite dans la chaine de verite locale ; la story nomme la source canonique utilisee pour les calculs et interdit de recreer un pseudo moyen de paiement `free`.
+5. **Représentation canonique de la gratuité** — `free` reste un cas non financier explicite dans la chaîne de vérité locale ; la story nomme la source canonique utilisée pour les calculs et interdit de recréer un pseudo moyen de paiement `free`.
 
-6. **Pas de regression sur les fondations existantes** - Etant donne les stories `6.4`, `6.7`, `8.1` et `8.7`, quand le schema cible est introduit, alors les hypotheses deja livrees restent lisibles :
-   - remboursement comme operation liee et tracee ;
-   - cloture locale brownfield-first ;
-   - outbox/sync et correlation sous autorite backend ;  
-   sans reouverture artificielle de `Epic 6` ou `Epic 8`.
+6. **Pas de régression sur les fondations existantes** — Étant donné les stories `6.4`, `6.7`, `8.1` et `8.7`, quand le schéma cible est introduit, alors les hypothèses déjà livrées restent lisibles :
+   - remboursement comme opération liée et tracée ;
+   - clôture locale brownfield-first ;
+   - outbox/sync et corrélation sous autorité backend ;  
+   sans réouverture artificielle d’`Epic 6` ou d’`Epic 8`.
+
+## Phasage Epic 22 (gel — contexte pour le dev / VS)
+
+- **Phase A (cette story)** : référentiel `payment_methods`, journal `payment_transactions` enrichi, compatibilité historique, backfill minimal utile — voir `cash-accounting-paheko-canonical-chain.md` § Brownfield migration.
+- **Phase B (`22.2`)** : double lecture / agrégats / écarts avant cutover.
+- **Phase C (stories ultérieures)** : bascule d’autorité, snapshot figé (`22.6`), builder multi-lignes (`22.7`), preuves bout-en-bout (`22.8`).  
+- **Gel sync** : une session clôturée → **1 batch outbox idempotent**, N sous-écritures, **1 corrélation de batch commune** (ne pas introduire plusieurs messages concurrents par session).
 
 ## Tasks / Subtasks
 
-- [x] **Alignement schema et referentiel** (AC: 1, 4, 5)
-  - [x] Verifier que le referentiel `payment_methods` et les champs minimaux metier/comptables correspondent au PRD et a la chaine dans `cash-accounting-paheko-canonical-chain.md`.
-  - [x] Verifier que les evolutions du journal `payment_transactions` (lien `payment_method_id`, `nature`, `direction`, references source, cas speciaux) supportent la verite comptable locale sans dupliquer le legacy comme autorite.
-  - [x] Valider les invariants documentes (y compris gratuite : vente a `0`, pas de ligne financiere `free` factice).
+- [x] **Alignement schéma et référentiel** (AC: 1, 4, 5)
+  - [x] Vérifier que le référentiel `payment_methods` et les champs minimaux métier/comptables correspondent au PRD et à la chaîne dans `cash-accounting-paheko-canonical-chain.md`.
+  - [x] Vérifier que les évolutions du journal `payment_transactions` (lien `payment_method_id`, `nature`, `direction`, références source, cas spéciaux) supportent la vérité comptable locale sans dupliquer le legacy comme autorité.
+  - [x] Valider les invariants documentés (y compris gratuité : vente à `0`, pas de ligne financière `free` factice).
 
-- [x] **Compatibilite brownfield et coexistence** (AC: 2, 5, 6)
-  - [x] Confirmer la place residuelle documentee de `sales.payment_method` (compatibilite uniquement).
-  - [x] Verifier que les parcours existants (vente, remboursement, cloture, outbox) restent coherents avec les services/endpoints deja livres.
-  - [x] S'assurer qu'aucune reecriture silencieuse de l'historique n'est introduite par migration ou script.
+- [x] **Compatibilité brownfield et coexistence** (AC: 2, 5, 6)
+  - [x] Confirmer la place résiduelle documentée de `sales.payment_method` (compatibilité uniquement).
+  - [x] Vérifier que les parcours existants (vente, remboursement, clôture, outbox) restent cohérents avec les services/endpoints déjà livrés.
+  - [x] S’assurer qu’aucune réécriture silencieuse de l’historique n’est introduite par migration ou script.
 
 - [x] **Backfill et limites** (AC: 2, 3)
-  - [x] Auditer le scope de backfill : donnees retro-injectees vs laissees legacy ; traces d'origine conservees.
-  - [x] Documenter ou tester le comportement sur historiques incomplets ou ambigus (pas de verite reconstruite arbitrairement).
-  - [x] Verifier observabilite / rollback technique alignes avec les garde-fous epic.
+  - [x] Auditer le scope de backfill : données rétro-injectées vs laissées legacy ; traces d’origine conservées.
+  - [x] Documenter ou tester le comportement sur historiques incomplets ou ambigus (pas de vérité reconstruite arbitrairement).
+  - [x] Vérifier observabilité / rollback technique alignés avec les garde-fous epic.
 
 - [x] **Contrats, migrations, tests** (AC: 1, 4, 6)
-  - [x] Aligner OpenAPI / schemas API avec les champs canoniques attendus (compat ascendante).
-  - [x] Executer et passer les tests dedies (`test_story_22_1_payment_canonical_schema` et non-regression caisse / cloture / outbox listes en References).
-  - [x] Confirmer que les prerequis donnees pour `22.2` (section Dev Notes) sont satisfaits ou explicitement cartographies en ecart.
+  - [x] Aligner OpenAPI / schémas API avec les champs canoniques attendus (compat ascendante).
+  - [x] Exécuter et passer les tests dédiés (`test_story_22_1_payment_canonical_schema` et non-régression caisse / clôture / outbox listés en Références).
+  - [x] Confirmer que les prérequis données pour `22.2` (section Dev Notes) sont satisfaits ou explicitement cartographiés en écart.
 
 ## Dev Notes
 
 ### Contexte
 
-Poser la base de donnees et les invariants qui permettent de sortir du champ legacy `sales.payment_method` comme autorite comptable, sans casser les parcours terrain deja livres par `Epic 6` ni la fondation sync/outbox de `Epic 8`. Cette story pose : le referentiel `payment_methods` ; l'evolution du journal `payment_transactions` ; les regles minimales de backfill et de coexistence brownfield ; les contraintes de cutover ulterieur vers le snapshot comptable canonique (sans realiser le cutover ici).
+Poser la base de données et les invariants qui permettent de sortir du champ legacy `sales.payment_method` comme autorité comptable, sans casser les parcours terrain déjà livrés par `Epic 6` ni la fondation sync/outbox d’`Epic 8`. Cette story pose : le référentiel `payment_methods` ; l’évolution du journal `payment_transactions` ; les règles minimales de backfill et de coexistence brownfield ; les contraintes de cutover ultérieur vers le snapshot comptable canonique (sans réaliser le cutover ici).
 
-### Schema canonique — entites, champs cles, invariants (densite verifiable)
+### Schéma canonique — entités, champs clés, invariants (densité vérifiable)
 
-| Element | Role | Invariants / regles |
+| Élément | Rôle | Invariants / règles |
 |--------|------|---------------------|
-| `payment_methods` | Referentiel administrable des moyens de paiement | Identite metier stable ; informations comptables associees ; distinct du code legacy sur la vente. |
-| `payment_transactions` | **Verite comptable locale** des paiements (journal detaille) | Supporte paiements mixtes, don en surplus, gratuite (`0`), remboursements y compris N-1 clos ; pas d'autorite comptable portee par seul `sales.payment_method`. |
-| `sales.payment_method` (legacy) | Compatibilite brownfield | Maintenu pour compatibilite lecture / anciens flux ; ne definit pas le calcul comptable cible. |
-| Gratuite (`free`) | Cas non financier | Vente a montant nul ; **pas** de pseudo moyen de paiement `free` dans le referentiel pour fabriquer une ligne financiere. |
-| Snapshot / cloture session (prep.) | Base pour `22.6`+ | Cloture futura basee sur agregats issus du journal detaille, pas sur le seul champ legacy. |
-| Outbox `Paheko` (contrainte epic) | Sync | **1 batch outbox idempotent par session cloturee**, N sous-ecritures dans le lot, **1 correlation de batch commune** ; pas plusieurs messages concurrents par session. |
+| `payment_methods` | Référentiel administrable des moyens de paiement | Identité métier stable ; informations comptables associées ; distinct du code legacy sur la vente. |
+| `payment_transactions` | **Vérité comptable locale** des paiements (journal détaillé) | Supporte paiements mixtes, don en surplus, gratuité (`0`), remboursements y compris N-1 clos ; pas d’autorité comptable portée par seul `sales.payment_method`. |
+| `sales.payment_method` (legacy) | Compatibilité brownfield | Maintenu pour compatibilité lecture / anciens flux ; ne définit pas le calcul comptable cible. |
+| Gratuite (`free`) | Cas non financier | Vente à montant nul ; **pas** de pseudo moyen de paiement `free` dans le référentiel pour fabriquer une ligne financière. |
+| Snapshot / clôture session (prép.) | Base pour `22.6`+ | Clôture future basée sur agrégats issus du journal détaillé, pas sur le seul champ legacy. |
+| Outbox `Paheko` (contrainte epic) | Sync | **1 batch outbox idempotent par session clôturée**, N sous-écritures dans le lot, **1 corrélation de batch commune** ; pas plusieurs messages concurrents par session. |
 
-### Prerequis donnees minimaux pour la story 22.2 (double lecture)
+### Ancres code (post-livraison — VS / audit)
 
-Verifier explicitement (sans supposer le cutover ni imposer une bascule d'autorite) :
+| Artefact | Chemin indicatif |
+|----------|------------------|
+| Migration Alembic 22.1 | `recyclique/api/migrations/versions/s22_1_payment_canonical_preparation.py` (révision `s22_1_payment_canonical_prep`, seed `cash` / `check` / `card`) |
+| Modèle journal | `recyclique/api/src/recyclic_api/models/payment_transaction.py` (`PaymentTransactionNature`, `PaymentTransactionDirection`, `payment_method_id`, `original_*`, `is_prior_year_special_case`) |
+| Tests story | `recyclique/api/tests/test_story_22_1_payment_canonical_schema.py` |
+| Contrat HTTP | `contracts/openapi/recyclique-api.yaml` |
 
-- [ ] **Couverture** : pour les sessions et ventes concernees par la comparaison, presence de lignes `payment_transactions` la ou le modele canonique exige une trace financiere (hors gratuite pure non ligne).
-- [ ] **Integrite** : `payment_method_id` resolvable vers `payment_methods` lorsque le canonique est utilise ; pas d'incoherence bloquante entre total vente et somme des lignes canoniques sur les cas tests.
-- [ ] **Agregats comparables** : memes perimetres de session / site / caisse pour calcul legacy vs canonique ; regles de tolerance ou d'ecart documentees pour la phase B (double lecture).
-- [ ] **Tracabilite** : possibilite d'identifier l'origine (backfill vs ecriture live) pour interpreter les ecarts.
-- [ ] **Pas de presuppose cutover** : `22.2` peut demarrer des que la double lecture est techniquement possible, meme si le legacy reste affiche ou utilise pour certains ecrans.
+### Prérequis données minimaux pour la story 22.2 (double lecture)
 
-### Sources produit et architecture
+Vérifier explicitement (sans supposer le cutover ni imposer une bascule d’autorité) :
 
-- Le PRD specialise `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md` fixe : `payment_transactions` comme source de verite comptable locale ; `payment_methods` comme referentiel administrable ; `free` comme vente a `0` et non moyen de paiement ; la cloture par snapshot comptable fige.
-- Le PRD canonique `_bmad-output/planning-artifacts/prd.md` confirme : verite comptable locale operatoire cote `Recyclique` ; snapshot comptable fige ; lot de sync de session vers `Paheko`.
-- Le delta `_bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md` fixe la chaine canonique et la separation calcul local / snapshot / builder / outbox, y compris l'unite de sync : **1 batch outbox idempotent par session cloturee** (N sous-ecritures dans ce lot, **1 correlation de batch commune**), sans absorber la logique transport dans le calcul metier.
+- [ ] **Couverture** : pour les sessions et ventes concernées par la comparaison, présence de lignes `payment_transactions` là où le modèle canonique exige une trace financière (hors gratuité pure non ligne).
+- [ ] **Intégrité** : `payment_method_id` résolvable vers `payment_methods` lorsque le canonique est utilisé ; pas d’incohérence bloquante entre total vente et somme des lignes canoniques sur les cas tests.
+- [ ] **Agrégats comparables** : mêmes périmètres de session / site / caisse pour calcul legacy vs canonique ; règles de tolérance ou d’écart documentées pour la phase B (double lecture).
+- [ ] **Traçabilité** : possibilité d’identifier l’origine (backfill vs écriture live) pour interpréter les écarts.
+- [ ] **Pas de présupposé cutover** : `22.2` peut démarrer dès que la double lecture est techniquement possible, même si le legacy reste affiché ou utilisé pour certains écrans.
 
-### Intelligence stories precedentes
+### Intelligence stories dépendantes (Epic 22 — hors scope implémentation 22.1)
 
-- `6-4-ajouter-le-parcours-remboursement-sous-controle.md` : remboursement deja borne localement ; ne pas reecrire son histoire, seulement preparer son extension comptable.
-- `6-7-mettre-en-place-la-cloture-locale-exploitable-de-caisse.md` : la cloture locale existe deja et doit rester la fin naturelle du continuum caisse.
-- `8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko.md` et `8-7-valider-la-reconciliation-reelle-avec-paheko.md` : l'outbox et la sync restent sous autorite backend ; ne pas absorber leur logique ici.
+- `22.2` : comparaison agrégats, critères de cutover mesurables — ne pas présumer la bascule dans 22.1.
+- `22.3` : paramétrage expert (step-up, surfaces séparées du « config admin simple »).
+- `22.4`–`22.5` : parcours caisse et remboursements alignés modèle cible.
+- `22.6`–`22.7` : snapshot figé et builder Paheko ; unité de sync = batch par session.
+- `22.8` : rebaseline des preuves qualité / gates pour le rail canonique.
+
+### Intelligence stories antérieures (fondations à ne pas casser)
+
+- `6-4-ajouter-le-parcours-remboursement-sous-controle.md` : remboursement déjà borné localement ; ne pas réécrire son histoire, seulement préparer son extension comptable.
+- `6-7-mettre-en-place-la-cloture-locale-exploitable-de-caisse.md` : la clôture locale existe déjà et doit rester la fin naturelle du continuum caisse.
+- `8-1-implementer-un-premier-slice-syncable-de-bout-en-bout-recyclique-paheko.md` et `8-7-valider-la-reconciliation-reelle-avec-paheko.md` : l’outbox et la sync restent sous autorité backend ; ne pas absorber leur logique ici.
 
 ### Zones code probables
 
@@ -113,28 +145,28 @@ Verifier explicitement (sans supposer le cutover ni imposer une bascule d'autori
 
 ### Testing standards summary
 
-- Tests dedies story : `recyclique/api/tests/test_story_22_1_payment_canonical_schema.py`.
-- Non-regression en DS : etendre aux modules `test_b52_p1_payments.py`, `test_sales_integration.py`, `test_cash_session_close_arch02.py`, `test_cash_session_report_workflow.py`, `test_story_8_1_paheko_outbox_slice.py` selon le perimetre touche.
+- Tests dédiés story : `recyclique/api/tests/test_story_22_1_payment_canonical_schema.py`.
+- Non-régression en DS : étendre aux modules `test_b52_p1_payments.py`, `test_sales_integration.py`, `test_cash_session_close_arch02.py`, `test_cash_session_report_workflow.py`, `test_story_8_1_paheko_outbox_slice.py` selon le périmètre touché.
 
 ### Project Structure Notes
 
-- Racine technique API : `recyclique/api/` ; modeles et services sous `src/recyclic_api/` ; migrations Alembic sous `migrations/versions/`.
-- Contrat HTTP canon : `contracts/openapi/recyclique-api.yaml` (aligner Pydantic / routes sans second client front metier).
+- Racine technique API : `recyclique/api/` ; modèles et services sous `src/recyclic_api/` ; migrations Alembic sous `migrations/versions/`.
+- Contrat HTTP canon : `contracts/openapi/recyclique-api.yaml` (aligner Pydantic / routes sans second client front métier).
 
-### Guardrails d'implementation
+### Guardrails d’implémentation
 
-- Pas de seconde source de verite comptable cote front.
-- Verite comptable locale des paiements : **`payment_transactions`** (alignement PRD / architecture) ; le schema et les migrations ne doivent pas reintroduire `sales.payment_method` comme autorite pour les calculs cibles.
-- **Freeze Epic 22 (sync)** : ne pas introduire plusieurs messages outbox concurrents pour une meme session cloturee ; preparer les artefacts (snapshot, correlation, index sous-ecritures) pour respecter **1 batch outbox idempotent par session cloturee** tel que fixe dans la chaine canonique.
-- Pas de migration qui "reconstruit" des verites historiques non justifiables.
-- Pas de cutover silencieux : la phase de double lecture est reservee a `22.2`.
-- Pas de derive UI ici : cette story est d'abord backend / schema / contrat.
+- Pas de seconde source de vérité comptable côté front.
+- Vérité comptable locale des paiements : **`payment_transactions`** (alignement PRD / architecture) ; le schéma et les migrations ne doivent pas réintroduire `sales.payment_method` comme autorité pour les calculs cibles.
+- **Gel Epic 22 (sync)** : ne pas introduire plusieurs messages outbox concurrents pour une même session clôturée ; préparer les artefacts (snapshot, corrélation, index sous-écritures) pour respecter **1 batch outbox idempotent par session clôturée** tel que fixé dans la chaîne canonique.
+- Pas de migration qui « reconstruit » des vérités historiques non justifiables.
+- Pas de cutover silencieux : la phase de double lecture est réservée à `22.2`.
+- Pas de dérive UI ici : cette story est d’abord backend / schéma / contrat.
 
-### References
+### Références
 
-- [Source: `_bmad-output/planning-artifacts/epics.md` - Epic 22, Story 22.1]
-- [Source: `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md` - sections 2.2, 6, 7, 8.3, 12]
-- [Source: `_bmad-output/planning-artifacts/prd.md` - delta canonique caisse/compta/Paheko]
+- [Source: `_bmad-output/planning-artifacts/epics.md` — Epic 22, Story 22.1]
+- [Source: `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md` — sections 2.2, 6, 7, 8.3, 12]
+- [Source: `_bmad-output/planning-artifacts/prd.md` — delta canonique caisse/compta/Paheko]
 - [Source: `_bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md`]
 - [Source: `_bmad-output/implementation-artifacts/6-4-ajouter-le-parcours-remboursement-sous-controle.md`]
 - [Source: `_bmad-output/implementation-artifacts/6-7-mettre-en-place-la-cloture-locale-exploitable-de-caisse.md`]
@@ -145,20 +177,25 @@ Verifier explicitement (sans supposer le cutover ni imposer une bascule d'autori
 
 ### Agent Model Used
 
-GPT-5.4
+GPT-5.4 (livraison initiale) ; régénération CS 2026-04-16 (alignement spec).
 
 ### Debug Log References
 
 - `python -m pytest tests/test_story_22_1_payment_canonical_schema.py tests/test_cash_session_close_arch02.py tests/test_cash_session_report_workflow.py tests/test_story_8_1_paheko_outbox_slice.py`
 - `python -m pytest`
+- **2026-04-16 (DS)** : `python -m pytest tests/test_story_22_1_payment_canonical_schema.py -v` → 8 passed (Windows, Python 3.13)
+
 ### Completion Notes List
 
-- Referentiel canonique `payment_methods` introduit avec seed brownfield minimal (`cash`, `check`, `card`) et comptes comptables associes.
-- `payment_transactions` expose des champs canoniques preparatoires (`payment_method_id`, `nature`, `direction`, references source, cas prior-year) sans re-promouvoir `sales.payment_method` comme autorite comptable.
-- La gratuite reste non financiere : une vente `free` a `0` ne produit aucune ligne financiere dans `payment_transactions`.
-- Le backfill est borne aux cas legacy qualifiables et preserve l'historique sans reconstruction speculative.
-- Les prerequis techniques de `22.2` sont couverts : lignes resolvables vers le referentiel, tracabilite live/backfill et compatibilite brownfield maintenue avant cutover.
-- Validation executee : suite ciblee Story 22.1 verte puis regression API complete verte (`1568 passed`, `68 skipped`).
+- Référentiel canonique `payment_methods` introduit avec seed brownfield minimal (`cash`, `check`, `card`) et comptes comptables associés.
+- `payment_transactions` expose des champs canoniques préparatoires (`payment_method_id`, `nature`, `direction`, références source, cas prior-year) sans re-promouvoir `sales.payment_method` comme autorité comptable.
+- La gratuité reste non financière : une vente `free` à `0` ne produit aucune ligne financière dans `payment_transactions`.
+- Le backfill est borné aux cas legacy qualifiables et préserve l’historique sans reconstruction spéculative.
+- Les prérequis techniques de `22.2` sont couverts : lignes résolvables vers le référentiel, traçabilité live/backfill et compatibilité brownfield maintenue avant cutover.
+- Validation exécutée : suite ciblée Story 22.1 verte puis régression API complète verte (`1568 passed`, `68 skipped`).
+- **2026-04-16** : Fichier story régénéré (CS `force_full_graph`) — ajout critères BDD epics, phasage Epic 22, ancres migration/tests/modèle, dépendances 22.2–22.8 ; statut sprint `done` non modifié.
+- **2026-04-16 (DS bmad-dev-story)** : Revue implémentation vs AC (migration `s22_1_payment_canonical_prep`, modèles `payment_methods` / `payment_transactions`, tests dédiés, OpenAPI `payment_method_id`) ; aucun écart correctif requis ; pytest story 22-1 vert.
+
 ### File List
 
 - `contracts/openapi/recyclique-api.yaml`
@@ -178,4 +215,6 @@ GPT-5.4
 
 ### Change Log
 
-- 2026-04-15 : Story passee en `review` apres validation du schema canonique, du backfill borne, des contrats/OpenAPI et de la regression API complete.
+- 2026-04-15 : Story passée en `review` après validation du schéma canonique, du backfill borné, des contrats/OpenAPI et de la régression API complète.
+- 2026-04-16 : Régénération **CS** (`bmad-create-story`, `force_full_graph`) — réalignement sur `epics.md`, chaîne canonique, ancres code et phasage Epic 22 ; `Status: done` conservé ; `sprint-status.yaml` non régressé.
+- 2026-04-16 : Passage **DS** (`bmad-dev-story`, `force_full_graph`) — contrôle implémentation vs AC, pytest ciblé `test_story_22_1_payment_canonical_schema.py` vert ; trace Debug Log / Completion Notes.

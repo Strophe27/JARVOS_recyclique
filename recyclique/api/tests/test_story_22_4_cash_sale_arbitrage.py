@@ -12,6 +12,7 @@ from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentM
 from recyclic_api.models.payment_transaction import PaymentTransaction, PaymentTransactionNature
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.services.cash_session_service import CashSessionService
 from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 
@@ -258,6 +259,41 @@ def test_finalize_held_underpay_and_overpay(client, db_session, finalize_body):
     assert fin.status_code == 400
 
 
+def test_finalize_held_voluntary_donation_recomputes_total_for_mixed_payments(client, db_session):
+    """Don saisi à la finalisation : total encaissement = net marchand + don (bug 400 si total_amount restait au hold)."""
+    cashier, session = _seed(db_session)
+    token = create_access_token(data={"sub": str(cashier.id)})
+    headers = {"Authorization": f"Bearer {token}"}
+    hold = client.post(
+        "/v1/sales/hold",
+        json={
+            "cash_session_id": str(session.id),
+            "items": [_item_block()],
+            "total_amount": 12.0,
+        },
+        headers=headers,
+    )
+    assert hold.status_code == 200, hold.text
+    sale_id = hold.json()["id"]
+    fin = client.post(
+        f"/v1/sales/{sale_id}/finalize-held",
+        json={
+            "donation": 4.0,
+            "payments": [
+                {"payment_method": "cash", "amount": 10.0},
+                {"payment_method": "check", "amount": 6.0},
+            ],
+        },
+        headers=headers,
+    )
+    assert fin.status_code == 200, fin.text
+    data = fin.json()
+    assert data["total_amount"] == pytest.approx(16.0)
+    assert data["donation"] == pytest.approx(4.0)
+    kinds = {p["nature"] for p in data["payments"]}
+    assert kinds == {"sale_payment"}
+
+
 def test_finalize_held_donation_surplus_distinct_nature(client, db_session):
     """AC 22.4 — ticket tenu : règlement + don surplus explicite, même persistance que vente directe."""
     cashier, session = _seed(db_session)
@@ -312,3 +348,33 @@ def test_nonpositive_payment_amount_schema_rejected(client, db_session):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 422
+
+
+def test_session_rollups_separate_net_sales_donation_and_gross_current_amount(client, db_session):
+    """``total_amount`` = encaissement ; ``donation`` = ventilation sur ticket : total_sales net, current_amount = fond + brut."""
+    cashier, session = _seed(db_session)
+    token = create_access_token(data={"sub": str(cashier.id)})
+    r = client.post(
+        "/v1/sales/",
+        json={
+            "cash_session_id": str(session.id),
+            "items": [_item_block()],
+            "total_amount": 15.0,
+            "donation": 2.0,
+            "payments": [
+                {"payment_method": "cash", "amount": 5.0},
+                {"payment_method": "check", "amount": 10.0},
+            ],
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    db_session.refresh(session)
+    init = float(session.initial_amount or 0.0)
+    assert session.total_sales == pytest.approx(13.0)
+    assert session.current_amount == pytest.approx(init + 15.0)
+
+    svc = CashSessionService(db_session)
+    preview = svc.get_closing_preview(session, 0.0)
+    assert preview["total_donations"] == pytest.approx(2.0)
+    assert preview["theoretical_amount"] == pytest.approx(init + 15.0)

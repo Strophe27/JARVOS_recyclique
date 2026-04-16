@@ -8,7 +8,7 @@ from sqlalchemy.sql import func
 
 from recyclic_api.core.database import Base
 from recyclic_api.models.payment_method import PaymentMethodDefinition
-from recyclic_api.models.sale import PaymentMethod
+from recyclic_api.models.sale import PaymentMethod, PaymentMethodColumn
 
 
 class PaymentTransactionNature(str, enum.Enum):
@@ -30,12 +30,7 @@ class PaymentTransaction(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sale_id = Column(UUID(as_uuid=True), ForeignKey("sales.id"), nullable=False)
     payment_method = Column(
-        SQLEnum(
-            PaymentMethod,
-            name="payment_method",
-            native_enum=False,
-            values_callable=lambda values: [value.value for value in values],
-        ),
+        PaymentMethodColumn(allow_none_result=False),
         nullable=False,
     )
     payment_method_id = Column(UUID(as_uuid=True), ForeignKey("payment_methods.id"), nullable=True)

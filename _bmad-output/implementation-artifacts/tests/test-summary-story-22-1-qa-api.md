@@ -8,6 +8,8 @@
 
 **Date (re-validation apres correctif DS PaymentTransaction / correction sensible) :** 2026-04-15  
 
+**Date (re-validation Story Runner BMAD, `force_full_graph`) :** 2026-04-16  
+
 **Skill :** `bmad-qa-generate-e2e-tests`
 
 
@@ -107,6 +109,11 @@ python -m pytest tests/test_story_22_1_payment_canonical_schema.py tests/test_ca
 
 
 Resultat (re-execution QA Story Runner, 2026-04-15) : **PASS** — `33 passed`, exit code `0`. Avertissements connus (Pydantic `config`, `utcfromtimestamp` dans `export_service`) sans echec de test.
+
+Resultat (re-execution QA worker `bmad-qa-generate-e2e-tests`, 2026-04-16, story `22-1`, `force_full_graph`) :
+
+- Lot story + regressions citees dans la story (`test_story_22_1_payment_canonical_schema`, `test_cash_session_close_arch02`, `test_cash_session_report_workflow`, `test_story_8_1_paheko_outbox_slice`) : **26 passed** en ~20 s, exit code `0`.
+- Lot elargi incluant non-regression Story 6.8 (`test_sale_correction_story_68.py`) : **33 passed**, exit code `0` (memes avertissements sans echec).
 
 
 

@@ -24,6 +24,38 @@ So that the cutover decision is evidence-based instead of assumed.
 
 
 
+## Alignement planning (epics.md — Story 22.2)
+
+
+
+Les critères numérotés ci-dessous **détaillent et opérationnalisent** les deux blocs BDD du fichier de planning. Toute évolution du wording BDD dans `epics.md` doit être reflétée ici lors d’un passage create-story / validate.
+
+
+
+**Acceptance Criteria (source planning, BDD)**
+
+
+
+**Given** the canonical model may diverge from the legacy aggregation logic  
+
+**When** the dual-read phase is active  
+
+**Then** the team can compare legacy and canonical totals on a named sample of sessions  
+
+**And** mismatches are traceable, reviewable, and classed before any full cutover claim  
+
+
+
+**Given** cutover changes the accounting authority  
+
+**When** the transition rule is approved  
+
+**Then** the exit criteria from legacy are explicit, measurable, and tied to a named validation package  
+
+**And** no downstream story assumes the cutover happened silently  
+
+
+
 ## Acceptance Criteria
 
 
@@ -258,7 +290,7 @@ Tests deja dedicaces epic-22 — base pour assertions de non-regression et patte
 
 
 
-- [Source: `_bmad-output/planning-artifacts/epics.md` — Epic 22, Story 22.2]
+- [Source: `_bmad-output/planning-artifacts/epics.md` — Epic 22, Story 22.2, lignes ~3277–3293 (BDD + énoncé utilisateur)]
 
 - [Source: `_bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md` — Phases B et C, chaine canonique §1–5]
 

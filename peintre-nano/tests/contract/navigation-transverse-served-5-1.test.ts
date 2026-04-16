@@ -444,6 +444,12 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         mainWidget: 'admin.accounting.hub',
       },
       {
+        pageKey: 'transverse-admin-accounting-expert',
+        path: '/admin/compta/parametrage',
+        navId: 'transverse-admin-accounting-expert',
+        mainWidget: 'admin.accounting.expert.shell',
+      },
+      {
         pageKey: 'transverse-admin-sites-and-registers',
         path: '/admin/sites-and-registers',
         navId: 'transverse-admin-sites-and-registers',
@@ -493,6 +499,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         'transverse-admin-settings',
         'transverse-admin-health',
         'transverse-admin-sites-and-registers',
+        'transverse-admin-accounting-expert',
       ]);
       expect(page.requiredPermissionKeys).toEqual(
         superKeys.has(spec.pageKey)
@@ -517,6 +524,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         spec.pageKey === 'transverse-admin-categories' ||
         spec.pageKey === 'transverse-admin-audit-log' ||
         spec.pageKey === 'transverse-admin-accounting' ||
+        spec.pageKey === 'transverse-admin-accounting-expert' ||
         spec.pageKey === 'transverse-admin-cash-registers' ||
         spec.pageKey === 'transverse-admin-sites' ||
         spec.pageKey === 'transverse-admin-sites-and-registers' ||
@@ -551,10 +559,12 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       }),
     );
     const ids = filtered.entries.map((e) => e.id);
+    expect(ids).toContain('transverse-admin-accounting');
     expect(ids).toContain('transverse-admin-sites');
     expect(ids).not.toContain('transverse-admin-sites-and-registers');
     expect(ids).not.toContain('transverse-admin-settings');
     expect(ids).not.toContain('transverse-admin-health');
+    expect(ids).not.toContain('transverse-admin-accounting-expert');
   });
 
   it('masque les entrées admin si transverse.admin.view est absente (story 5.4 + 17.1)', () => {
@@ -590,6 +600,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).not.toContain('transverse-admin-health');
     expect(ids).not.toContain('transverse-admin-reception-stats');
     expect(ids).not.toContain('transverse-admin-reception-sessions');
+    expect(ids).not.toContain('transverse-admin-accounting-expert');
     expect(ids).not.toContain('transverse-admin-reports');
   });
 

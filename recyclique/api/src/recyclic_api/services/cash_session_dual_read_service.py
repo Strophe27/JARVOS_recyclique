@@ -150,18 +150,18 @@ def _build_gap_findings(
     def _sig(x: float) -> bool:
         return abs(x) > eps
 
-    # Session dénormalisée vs somme ventes
-    d_denorm = float(legacy.cash_session_total_sales_field) - float(legacy.sum_sales_total_amount)
+    # Session dénormalisée (total_sales = net hors part ``donation`` sur ticket) vs somme SQL alignée
+    d_denorm = float(legacy.cash_session_total_sales_field) - float(legacy.sum_sales_net_amount)
     if _sig(d_denorm):
         gaps.append(
             DualReadGapFinding(
                 metric_key="session_total_sales_vs_sum_sale_total_amount",
                 legacy_value=float(legacy.cash_session_total_sales_field),
-                canonical_value=float(legacy.sum_sales_total_amount),
+                canonical_value=float(legacy.sum_sales_net_amount),
                 delta=d_denorm,
                 taxonomy=DualReadTaxonomy.HISTORICAL_DATA,
                 blocks_cutover=True,
-                notes="Dérive possible entre total_sales de session et somme des tickets — revue migration / cohérence métier.",
+                notes="Dérive entre ``cash_sessions.total_sales`` (net hors don sur ticket) et la somme recalculée des tickets — revue migration / cohérence métier.",
             )
         )
 
@@ -327,6 +327,7 @@ def build_dual_read_compare_report(db: Session, cash_session_id: UUID) -> DualRe
         db.query(
             func.coalesce(func.sum(Sale.total_amount), 0.0),
             func.coalesce(func.sum(Sale.donation), 0.0),
+            func.coalesce(func.sum(Sale.total_amount - func.coalesce(Sale.donation, 0)), 0.0),
             func.count(Sale.id),
         )
         .filter(Sale.cash_session_id == cash_session_id)
@@ -334,11 +335,13 @@ def build_dual_read_compare_report(db: Session, cash_session_id: UUID) -> DualRe
     )
     sum_total = float(row[0] or 0.0)
     sum_don = float(row[1] or 0.0)
-    n_sales = int(row[2] or 0)
+    sum_net = float(row[2] or 0.0)
+    n_sales = int(row[3] or 0)
 
     legacy = LegacyBrownfieldSessionRollups(
         cash_session_total_sales_field=float(cs.total_sales or 0.0),
         sum_sales_total_amount=sum_total,
+        sum_sales_net_amount=sum_net,
         sum_sales_donation_field=sum_don,
         sale_row_count=n_sales,
     )

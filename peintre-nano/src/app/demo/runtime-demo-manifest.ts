@@ -57,6 +57,7 @@ import pageTransverseAdminHealth from '../../../../contracts/creos/manifests/pag
 import pageTransverseAdminCategories from '../../../../contracts/creos/manifests/page-transverse-admin-categories.json';
 import pageTransverseAdminAuditLog from '../../../../contracts/creos/manifests/page-transverse-admin-audit-log.json';
 import pageTransverseAdminAccounting from '../../../../contracts/creos/manifests/page-transverse-admin-accounting.json';
+import pageTransverseAdminAccountingExpert from '../../../../contracts/creos/manifests/page-transverse-admin-accounting-expert.json';
 import pageTransverseAdminCashRegisters from '../../../../contracts/creos/manifests/page-transverse-admin-cash-registers.json';
 import pageTransverseAdminSites from '../../../../contracts/creos/manifests/page-transverse-admin-sites.json';
 import pageTransverseAdminSitesAndRegisters from '../../../../contracts/creos/manifests/page-transverse-admin-sites-and-registers.json';
@@ -164,6 +165,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseAdminCategories),
     JSON.stringify(pageTransverseAdminAuditLog),
     JSON.stringify(pageTransverseAdminAccounting),
+    JSON.stringify(pageTransverseAdminAccountingExpert),
     JSON.stringify(pageTransverseAdminCashRegisters),
     JSON.stringify(pageTransverseAdminSites),
     JSON.stringify(pageTransverseAdminSitesAndRegisters),
@@ -205,6 +207,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-admin-categories.json',
           'contracts/creos/manifests/page-transverse-admin-audit-log.json',
           'contracts/creos/manifests/page-transverse-admin-accounting.json',
+          'contracts/creos/manifests/page-transverse-admin-accounting-expert.json',
           'contracts/creos/manifests/page-transverse-admin-cash-registers.json',
           'contracts/creos/manifests/page-transverse-admin-sites.json',
           'contracts/creos/manifests/page-transverse-admin-sites-and-registers.json',

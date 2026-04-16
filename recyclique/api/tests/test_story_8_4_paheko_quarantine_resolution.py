@@ -29,6 +29,12 @@ from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
 _V1 = settings.API_V1_STR.rstrip("/")
 
 
+@pytest.fixture(autouse=True)
+def _force_paheko_close_sales_policy_aggregated_for_epic8(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Epic 8 : quarantaine / audit HTTP — politique agrégée stable (évite batch « tout skip » sans POST)."""
+    monkeypatch.setattr(settings, "PAHEKO_CLOSE_SALES_BUILDER_POLICY", "aggregated_v22_7", raising=False)
+
+
 def _site_user_session(db_session: Session) -> tuple[Site, User, CashSession]:
     site = Site(
         name="S8.4 site",

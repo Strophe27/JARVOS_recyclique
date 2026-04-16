@@ -1848,7 +1848,7 @@ paths:
         - accounting-expert
       summary: Comptes globaux Paheko (paramétrage expert)
       description: |
-        Story 22.3 — **SUPER_ADMIN** uniquement. Comptes globaux (`default_sales_account`, etc.), distincts
+        Stories **22.3** (fondation API) et **23.3** (cockpit Peintre) — **SUPER_ADMIN** uniquement. Comptes globaux (`default_sales_account`, etc.), distincts
         de la config admin « simple » (Epic 9.6). Source vérité encaissements : `payment_transactions`,
         pas `sales.payment_method`.
       security:
@@ -1879,7 +1879,7 @@ paths:
         - accounting-expert
       summary: Mettre à jour les comptes globaux (step-up PIN requis)
       description: |
-        Story 22.3 — mutation sensible : `X-Step-Up-Pin` obligatoire (`accounting.expert.mutation`), audit
+        Stories **22.3** (fondation API) et **23.3** (cockpit Peintre) — mutation sensible : `X-Step-Up-Pin` obligatoire (`accounting.expert.mutation`), audit
         `accounting_global_settings_updated`.
       security:
         - bearerOrCookie: []
@@ -1928,7 +1928,7 @@ paths:
         - accounting-expert
       summary: Lister le référentiel des moyens de paiement (expert)
       description: |
-        Story 22.3 — SUPER_ADMIN. Lecture seule ; vérité des encaissements côté ventes : `payment_transactions`,
+        Stories **22.3** (fondation API) et **23.2** (cockpit Peintre) — SUPER_ADMIN. Lecture seule ; vérité des encaissements côté ventes : `payment_transactions`,
         pas `sales.payment_method`.
       security:
         - bearerOrCookie: []
@@ -1960,7 +1960,7 @@ paths:
         - accounting-expert
       summary: Créer un moyen de paiement (step-up PIN requis)
       description: |
-        Story 22.3 — mutation sensible : `X-Step-Up-Pin` obligatoire (`accounting.expert.mutation`); audit
+        Stories **22.3** (fondation API) et **23.2** (cockpit Peintre) — mutation sensible : `X-Step-Up-Pin` obligatoire (`accounting.expert.mutation`); audit
         `accounting_payment_method_changed`.
       security:
         - bearerOrCookie: []
@@ -2014,7 +2014,7 @@ paths:
         - admin
         - accounting-expert
       summary: Mettre à jour un moyen de paiement (step-up PIN requis)
-      description: Story 22.3 — mutation sensible avec audit `accounting_payment_method_changed`.
+      description: Stories **22.3** (fondation API) et **23.2** (Peintre) — mutation sensible avec audit `accounting_payment_method_changed`.
       security:
         - bearerOrCookie: []
       parameters:
@@ -2080,7 +2080,7 @@ paths:
         - accounting-expert
       summary: Activer ou désactiver un moyen (step-up PIN requis)
       description: |
-        Story 22.3 — désactivation refusée si le moyen est référencé par un encaissement d'une session ouverte
+        Stories **22.3** (fondation API) et **23.2** (Peintre) — désactivation refusée si le moyen est référencé par un encaissement d'une session ouverte
         (journal `payment_transactions`). Sinon audit `accounting_payment_method_changed`.
       security:
         - bearerOrCookie: []
@@ -2147,7 +2147,7 @@ paths:
         - accounting-expert
       summary: Publier une révision comptable (snapshot immuable)
       description: |
-        Story 22.3 — produit un `accounting_config_revisions.id` stable pour la chaîne canonique et le snapshot 22.6.
+        Stories **22.3** (API) et **23.2**/**23.3** (Peintre, publication) — produit un `accounting_config_revisions.id` stable pour la chaîne canonique et le snapshot 22.6.
         Step-up PIN obligatoire ; audit `accounting_config_published`.
       security:
         - bearerOrCookie: []
@@ -2201,7 +2201,7 @@ paths:
         - admin
         - accounting-expert
       summary: Dernière révision comptable publiée
-      description: Story 22.3 — SUPER_ADMIN ; inclut le snapshot immuable (comptes globaux + moyens de paiement).
+      description: Stories **22.3** (API) et **23.2**/**23.3** (Peintre) — SUPER_ADMIN ; inclut le snapshot immuable (comptes globaux + moyens de paiement).
       security:
         - bearerOrCookie: []
       responses:
@@ -2230,7 +2230,7 @@ paths:
         - admin
         - accounting-expert
       summary: Historique des révisions comptables publiées
-      description: Story 22.3 — liste paginée (`skip`, `limit`), la plus récente en premier.
+      description: Stories **22.3** (API) et **23.2**/**23.3** (Peintre) — liste paginée (`skip`, `limit`), la plus récente en premier.
       security:
         - bearerOrCookie: []
       parameters:
@@ -2283,7 +2283,7 @@ paths:
         - admin
         - accounting-expert
       summary: Détail d'une révision (snapshot immuable)
-      description: Story 22.3 — référence stable `id` pour chaîne 22.6 ; pas de Substitution par « config courante ».
+      description: Stories **22.3** (API) et **23.2**/**23.3** (Peintre) — référence stable `id` pour chaîne 22.6 ; pas de substitution par « config courante ».
       security:
         - bearerOrCookie: []
       parameters:
@@ -8814,7 +8814,7 @@ components:
           format: uuid
           nullable: true
           description: |
-            Story 22.3 — identifiant de la révision comptable publiée figée à l'ouverture de session
+            Stories **22.3** (révision publiée) et **22.6** (snapshot) — identifiant de la révision comptable publiée figée à l'ouverture de session
             (référence stable pour snapshot 22.6 ; pas « dernière config lue » au moment de la clôture).
         accounting_close_snapshot:
           type: object
@@ -8823,6 +8823,12 @@ components:
             Story 22.6 — snapshot comptable figé après clôture (journal payment_transactions, corrélation, politique append-only) ;
             null tant que la session est ouverte.
           additionalProperties: true
+        closing_preview_theoretical_amount:
+          type: number
+          nullable: true
+          description: |
+            Montant théorique caisse aligné sur ``get_closing_preview`` / POST ``/close`` : fond initial + total des ventes + dons.
+            Présent pour les sessions ouvertes ; null si session fermée.
       additionalProperties: true
     CashSessionDetailResponseV1:
       allOf:
@@ -9330,6 +9336,14 @@ components:
         reference:
           type: string
           nullable: true
+        body_type:
+          type: string
+          description: Story 23.1 — REVENUE (ligne simplifiee) ou ADVANCED (ecriture multi-lignes Paheko).
+          default: REVENUE
+        advanced_line_count:
+          type: integer
+          nullable: true
+          description: Story 23.1 — nombre de lignes si body_type=ADVANCED.
     PahekoCloseBatchSubWritePublic:
       type: object
       additionalProperties: false
@@ -9357,6 +9371,13 @@ components:
         last_error:
           type: string
           nullable: true
+        observability:
+          type: object
+          nullable: true
+          description: |
+            Story 23.1 — detail ventilation (codes moyen, montants, index de ligne, revision) pour support ;
+            null en mode agrege 22.7.
+          additionalProperties: true
     PahekoCloseBatchStatePublic:
       type: object
       additionalProperties: false

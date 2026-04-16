@@ -29,7 +29,11 @@ class LegacyBrownfieldSessionRollups(BaseModel):
     )
     sum_sales_total_amount: float = Field(
         ...,
-        description="Somme des `sales.total_amount` pour la session.",
+        description="Somme des `sales.total_amount` pour la session (encaissement brut par ticket).",
+    )
+    sum_sales_net_amount: float = Field(
+        ...,
+        description="Somme ``sales.total_amount - coalesce(sales.donation,0)`` (partie « ventes » hors ventilation don sur ticket).",
     )
     sum_sales_donation_field: float = Field(
         ...,

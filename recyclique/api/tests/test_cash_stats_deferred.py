@@ -39,8 +39,8 @@ class TestCashSessionStatsDeferred:
         db_session.add(operator)
         db_session.commit()
 
-        # Calculate dates
-        now = datetime.now(timezone.utc)
+        # Dates figées (UTC) : évite toute ambiguïté « minuit » / horloge entre deux appels à now().
+        now = datetime(2024, 6, 15, 18, 30, tzinfo=timezone.utc)
         start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         yesterday = start_of_today - timedelta(days=1)
         site_id = uuid.uuid4()
@@ -129,7 +129,8 @@ class TestCashSessionStatsDeferred:
         assert stats["total_sessions"] == 1, "Should only count normal session"
         assert stats["open_sessions"] == 1, "Should only count normal session"
         assert stats["closed_sessions"] == 0, "Deferred session should be excluded"
-        assert stats["total_sales"] == 25.0, "Should only include normal sale"
+        # KPI total_sales = somme (total_amount - donation) sur les ventes (hors part « don » du ticket).
+        assert stats["total_sales"] == 23.0, "Should only include normal sale net of donation"
         assert stats["number_of_sales"] == 1, "Should only count normal sale"
         assert stats["total_donations"] == 2.0, "Should only include normal donation"
         assert stats["total_items"] == 1, "Should only count normal item"
@@ -148,8 +149,7 @@ class TestCashSessionStatsDeferred:
         db_session.add(operator)
         db_session.commit()
 
-        # Calculate dates
-        now = datetime.now(timezone.utc)
+        now = datetime(2024, 6, 15, 16, 0, tzinfo=timezone.utc)
         start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         site_id = uuid.uuid4()
 

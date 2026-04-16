@@ -34,7 +34,7 @@ afterEach(() => {
 });
 
 describe('Story 6.7 — helpers clôture', () => {
-  it('theoreticalCloseAmount = initial + total_sales + total_donations', () => {
+  it('theoreticalCloseAmount = initial + total_sales + total_donations sans champ serveur', () => {
     expect(
       theoreticalCloseAmount({
         id: 's1',
@@ -45,6 +45,20 @@ describe('Story 6.7 — helpers clôture', () => {
         total_donations: 2,
       }),
     ).toBe(77);
+  });
+
+  it('theoreticalCloseAmount priorise closing_preview_theoretical_amount du serveur', () => {
+    expect(
+      theoreticalCloseAmount({
+        id: 's1',
+        initial_amount: 10,
+        current_amount: 23,
+        status: 'open',
+        total_sales: 13,
+        total_donations: 0,
+        closing_preview_theoretical_amount: 23,
+      }),
+    ).toBe(23);
   });
 
   it('needsVarianceComment au-delà de la tolérance', () => {

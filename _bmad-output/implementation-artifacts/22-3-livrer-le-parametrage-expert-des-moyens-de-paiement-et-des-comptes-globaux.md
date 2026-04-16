@@ -2,7 +2,7 @@
 
 Status: done
 
-<!-- Story key : `22-3-livrer-le-parametrage-expert-des-moyens-de-paiement-et-des-comptes-globaux` | Epic : epic-22 | CS bmad-create-story 2026-04-15 : alignement PRD + chaine canonique + sprint ready-for-dev -->
+<!-- Story key : `22-3-livrer-le-parametrage-expert-des-moyens-de-paiement-et-des-comptes-globaux` | Epic : epic-22 | CS bmad-create-story 2026-04-16 (force_full_graph) : trace BDD epics.md §22.3 + chaîne canonique §1–2 ; sprint sans régression (story done) -->
 
 **Story key :** `22-3-livrer-le-parametrage-expert-des-moyens-de-paiement-et-des-comptes-globaux`  
 **Epic :** 22 - Rebaseliner la caisse/compta/`Paheko` sur un modele comptable canonique
@@ -95,6 +95,13 @@ Story d'abord d'**autorite** et de gouvernance super-admin. Tout ecran Peintre e
 - [Source: `_bmad-output/planning-artifacts/prd.md` — profils super-admin / expert, parametrage comptable sensible]
 - [Source: `_bmad-output/implementation-artifacts/22-1-preparer-le-schema-comptable-cible-le-backfill-et-la-compatibilite-brownfield.md` — prerequis schema]
 - [Source: `_bmad-output/implementation-artifacts/16-3-encadrer-settings-et-les-surfaces-super-admin-par-step-up-et-audit-explicites.md` — step-up / audit]
+
+### Trace BDD epics.md (Story 22.3)
+
+Alignement avec `_bmad-output/planning-artifacts/epics.md` § « Story 22.3 » :
+
+- **Bloc 1** — *Given* sensibilité super-admin / *Then* surfaces, contrats, validations, attentes d’audit explicites + réutilisation step-up/audit → couvert par **AC2**, **AC3**, **AC5** (livré : API `accounting-expert`, OpenAPI, `SENSITIVE_OPERATION_ACCOUNTING_EXPERT`, tests `test_story_22_3_expert_accounting.py`).
+- **Bloc 2** — *Given* distinction config admin simple vs gouvernance expert / *Then* séparation et backlog explicite → couvert par **AC1** (tableau § Périmètres livrés ; Epic **9.6** = admin simple hors 22.3).
 
 ### Intelligence story precedente (22.1)
 

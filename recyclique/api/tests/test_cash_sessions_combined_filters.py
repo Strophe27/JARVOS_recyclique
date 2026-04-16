@@ -53,7 +53,7 @@ def test_cash_sessions_combined_filters_list_and_kpis(admin_client, db_session: 
     )
     db_session.add_all([s_match, s_old])
     db_session.flush()
-    # KPI stats/summary agrège Sale.total_amount (pas seulement cash_sessions.total_sales)
+    # KPI stats/summary : somme ``total_amount - donation`` sur les ventes (aligné agrégat session).
     sale_match = Sale(
         id=uuid.uuid4(),
         cash_session_id=s_match.id,

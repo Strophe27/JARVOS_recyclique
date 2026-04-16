@@ -58,15 +58,18 @@ def test_amounts_reconstruct_sales_plus_refunds() -> None:
 
 def test_planned_sub_writes_stable_order() -> None:
     snap = _snap(by_pm={"cash": 10.0})
-    p1 = build_planned_sub_writes(snap)
-    p2 = build_planned_sub_writes(copy.deepcopy(snap))
+    p1, e1, _ = build_planned_sub_writes(snap)
+    assert e1 is None
+    p2, e2, _ = build_planned_sub_writes(copy.deepcopy(snap))
+    assert e2 is None
     assert [x["index"] for x in p1] == [0, 1, 2]
     assert p1 == p2
 
 
 def test_sub_idempotency_keys_stable() -> None:
     snap = _snap(by_pm={"cash": 1.0})
-    plan = build_planned_sub_writes(snap)
+    plan, err, _ = build_planned_sub_writes(snap)
+    assert err is None
     bkey = "cash_session_close:abc"
     keys = [sub_write_idempotency_key(bkey, x["index"], x["kind"]) for x in plan]
     assert keys[0].endswith(f":0:{SUB_KIND_SALES_DONATIONS}")

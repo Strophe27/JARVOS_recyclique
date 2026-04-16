@@ -55,3 +55,25 @@ recyclic.sqlite
 
 # Journaux hook Cursor (réponses agent — peut contenir du confidentiel)
 log/cursor-agent/
+
+# Recyclique API — sorties locales pytest / agents / rapports CSV (ne pas versionner)
+recyclique/api/tmp_dashboard_reports_test/
+recyclique/api/logs/*.log
+recyclique/api/pytest-full*
+recyclique/api/_collect.txt
+recyclique/api/_pytest*
+recyclique/api/agent_pytest.log
+recyclique/api/full_pytest.log
+recyclique/api/junit*.xml
+recyclique/api/pytest-quiet.txt
+recyclique/api/pytest-run.log
+recyclique/api/pytest_*.db
+recyclique/api/pytest_*.db-journal
+recyclique/api/pytest_console.txt
+recyclique/api/pytest_full.log
+recyclique/api/pytest_full_out.txt
+recyclique/api/pytest_report.xml
+recyclique/api/pytest_run_capture.txt
+recyclique/api/pytest_single_run.log
+recyclique/api/pytest_subprocess.log
+recyclique/api/subagent*.log

@@ -1,13 +1,10 @@
 import { Alert, Badge, Button, Group, Paper, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
-import { RefreshCw, Settings2 } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getAccountingExpertLatestRevision } from '../../api/admin-accounting-expert-client';
 import { listPahekoCashSessionCloseMappings } from '../../api/admin-paheko-mappings-client';
 import { listPahekoOutboxItems } from '../../api/admin-paheko-outbox-client';
 import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
-import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
-import { ADMIN_SUPER_PAGE_MANIFEST_GUARDS } from './admin-super-page-guards';
 
 type PahekoTransactionPreview = {
   readonly amount: number;
@@ -82,14 +79,10 @@ function transactionSummary(preview: PahekoTransactionPreview | null): string | 
 export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
   const auth = useAuthPort();
   const envelope = auth.getContextEnvelope();
-  const isSuperAdminUi = ADMIN_SUPER_PAGE_MANIFEST_GUARDS.requiredPermissionKeys.every((key) =>
-    envelope.permissions.permissionKeys.includes(key),
-  );
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mappingCount, setMappingCount] = useState({ active: 0, disabled: 0 });
   const [outboxSummary, setOutboxSummary] = useState({ pending: 0, delivered: 0, failed: 0 });
-  const [expertRevisionLabel, setExpertRevisionLabel] = useState<string | null>(null);
   const [recentFlows, setRecentFlows] = useState<
     readonly {
       id: string;
@@ -106,16 +99,6 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
       listPahekoCashSessionCloseMappings(auth, { limit: 200 }),
       listPahekoOutboxItems(auth, { limit: 20, operation_type: 'cash_session_close' }),
     ]);
-    if (isSuperAdminUi) {
-      const revRes = await getAccountingExpertLatestRevision(auth);
-      setExpertRevisionLabel(
-        revRes.ok
-          ? `Révision #${revRes.data.revision_seq} (${revRes.data.id.slice(0, 8)}…) — paramétrage expert API`
-          : revRes.detail,
-      );
-    } else {
-      setExpertRevisionLabel(null);
-    }
     if (!mappingsRes.ok) {
       setLoadError(mappingsRes.detail);
       setBusy(false);
@@ -148,7 +131,7 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
       })),
     );
     setBusy(false);
-  }, [auth, envelope.siteId, isSuperAdminUi]);
+  }, [auth, envelope.siteId]);
 
   useEffect(() => {
     void load();
@@ -165,9 +148,6 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
           <Title order={1} size="h2" m={0}>
             Suivi comptable Paheko
           </Title>
-          <Text size="sm" c="dimmed" mt={4}>
-            Suivez les clôtures du site actif et repérez rapidement celles qui demandent une attention.
-          </Text>
         </div>
         <Button
           variant="default"
@@ -180,57 +160,21 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
         </Button>
       </Group>
 
-      <Alert color="gray" title="À quoi sert cette page">
-        Vue quotidienne de suivi: ce qui est transmis, en cours ou à vérifier. Les réglages rares et le support
-        technique détaillé restent dans les paramètres avancés.
-      </Alert>
-
-      {isSuperAdminUi && expertRevisionLabel ? (
-        <Alert color="grape" title="Gouvernance comptable (expert) — Epic 22.3" data-testid="admin-accounting-hub-expert-rail">
-          <Text size="sm">
-            {expertRevisionLabel} — distinct de la config « modules » (Epic 9.6). Lecture seule ici ; les mutations
-            sensibles (PIN step-up) passent par l’API documentée.
-          </Text>
-        </Alert>
-      ) : null}
-
       {hasConfigurationGap ? (
         <Alert color="orange" title="Configuration à compléter">
-          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-            <Text size="sm">
-              Aucun réglage de clôture Paheko actif n’est disponible pour le moment.
-            </Text>
-            {isSuperAdminUi ? (
-              <Button
-                variant="light"
-                leftSection={<Settings2 size={16} />}
-                onClick={() => spaNavigateTo('/admin/settings')}
-                data-testid="admin-accounting-hub-nav-settings"
-              >
-                Ouvrir les paramètres avancés
-              </Button>
-            ) : null}
-          </Group>
+          <Text size="sm">
+            Aucun réglage de clôture Paheko actif n’est disponible pour le moment. Le paramétrage comptable (super-admin)
+            permet d’activer les réglages de clôture et l’intégration Paheko.
+          </Text>
         </Alert>
       ) : null}
 
       {hasAttention ? (
         <Alert color="orange" title="Clôtures à vérifier">
-          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-            <Text size="sm">
-              Une ou plusieurs clôtures demandent une vérification par le support technique.
-            </Text>
-            {isSuperAdminUi ? (
-              <Button
-                variant="light"
-                leftSection={<Settings2 size={16} />}
-                onClick={() => spaNavigateTo('/admin/settings')}
-                data-testid="admin-accounting-hub-nav-support"
-              >
-                Ouvrir le support technique
-              </Button>
-            ) : null}
-          </Group>
+          <Text size="sm">
+            Une ou plusieurs clôtures demandent une vérification par le support technique. À traiter depuis le
+            paramétrage comptable (super-admin), onglet support Paheko.
+          </Text>
         </Alert>
       ) : null}
 
@@ -279,13 +223,6 @@ export function AdminAccountingHubWidget(_props: RegisteredWidgetProps) {
         <Text fw={600} mb="sm">
           Clôtures récentes
         </Text>
-        <Text size="sm" c="dimmed" mb="md">
-          Historique récent des clôtures du site actif, avec le montant et les comptes comptables quand l’écriture est
-          prête.
-        </Text>
-        <Alert color="blue" mb="md" title="Périmètre affiché">
-          Cette vue est limitée au site actif de votre contexte.
-        </Alert>
         {recentFlows.length === 0 ? (
           <Text size="sm" c="dimmed" data-testid="admin-accounting-hub-no-flows">
             Aucune clôture récente visible.

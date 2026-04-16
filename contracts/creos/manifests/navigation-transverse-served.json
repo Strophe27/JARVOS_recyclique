@@ -170,6 +170,19 @@
       }
     },
     {
+      "id": "transverse-admin-accounting-expert",
+      "route_key": "transverse-admin-accounting-expert",
+      "path": "/admin/compta/parametrage",
+      "page_key": "transverse-admin-accounting-expert",
+      "shortcut_id": "go-transverse-admin-accounting-expert",
+      "label_key": "nav.transverse.admin.accountingExpert",
+      "required_permission_keys": ["transverse.admin.view", "caisse.sale_correct"],
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "transverse-admin-sites-and-registers",
       "route_key": "transverse-admin-sites-and-registers",
       "path": "/admin/sites-and-registers",
