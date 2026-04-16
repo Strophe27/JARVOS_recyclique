@@ -61,19 +61,23 @@ export type AccountingExpertRevisionDetail = {
   readonly snapshot: Record<string, unknown>;
 };
 
-/** OpenAPI `AccountingExpertGlobalAccounts` — champs PRD absents tant que le backend ne les expose pas (story 23-3). */
+/** OpenAPI `AccountingExpertGlobalAccounts`. */
 export type GlobalAccountsResponse = {
   readonly default_sales_account: string;
   readonly default_donation_account: string;
   readonly prior_year_refund_account: string;
+  readonly cash_journal_code: string;
+  readonly default_entry_label_prefix: string;
   readonly updated_at: string;
 };
 
-/** OpenAPI `AccountingExpertGlobalAccountsPatch`. */
+/** OpenAPI `AccountingExpertGlobalAccountsPatch` (+ champs optionnels côté JSON avec défauts). */
 export type GlobalAccountsPatchPayload = {
   readonly default_sales_account: string;
   readonly default_donation_account: string;
   readonly prior_year_refund_account: string;
+  readonly cash_journal_code?: string;
+  readonly default_entry_label_prefix?: string;
 };
 
 function isGlobalAccountsResponse(x: unknown): x is GlobalAccountsResponse {
@@ -83,6 +87,8 @@ function isGlobalAccountsResponse(x: unknown): x is GlobalAccountsResponse {
     typeof o.default_sales_account === 'string' &&
     typeof o.default_donation_account === 'string' &&
     typeof o.prior_year_refund_account === 'string' &&
+    typeof o.cash_journal_code === 'string' &&
+    typeof o.default_entry_label_prefix === 'string' &&
     typeof o.updated_at === 'string'
   );
 }
@@ -216,6 +222,33 @@ export async function patchAccountingExpertPaymentMethod(
     return { ok: false, detail: await readFailureDetail(res) };
   }
   const data = (await res.json()) as AccountingExpertPaymentMethod;
+  return { ok: true, data };
+}
+
+export type PaymentMethodOpenSessionUsage = {
+  readonly used_in_open_session: boolean;
+};
+
+export async function getAccountingExpertPaymentMethodOpenSessionUsage(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  paymentMethodId: string,
+  args?: { readonly siteId?: string | null },
+): Promise<{ ok: true; data: PaymentMethodOpenSessionUsage } | { ok: false; detail: string }> {
+  const qs = new URLSearchParams();
+  const sid = args?.siteId?.trim();
+  if (sid) qs.set('site_id', sid);
+  const q = qs.toString();
+  const url = `${getLiveSnapshotBasePrefix()}/v1/admin/accounting-expert/payment-methods/${encodeURIComponent(
+    paymentMethodId,
+  )}/open-session-usage${q ? `?${q}` : ''}`;
+  const res = await fetch(url, { headers: authHeaders(auth), credentials: 'include' });
+  if (!res.ok) {
+    return { ok: false, detail: await readFailureDetail(res) };
+  }
+  const data = (await res.json()) as PaymentMethodOpenSessionUsage;
+  if (typeof data.used_in_open_session !== 'boolean') {
+    return { ok: false, detail: 'Réponse serveur inattendue pour open-session-usage.' };
+  }
   return { ok: true, data };
 }
 

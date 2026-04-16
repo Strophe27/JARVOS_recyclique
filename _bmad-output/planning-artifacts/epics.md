@@ -3404,7 +3404,9 @@ So that old evidence is not mistaken for coverage of the new model.
 
 **Goal:** Fermer l’écart entre l’intention terrain (montants par moyen visibles dans `Paheko` sur les comptes du référentiel expert) et le livrable 22.7 (agrégation par blocs métier). Ajouter une surface Peintre de gestion des moyens de paiement alignée sur l’API expert existante (step-up, pas d’autorité comptable côté client).
 
-**Décision QA (scission) :** trois stories — **23.1** backend Paheko (ventilation par moyen), **23.2** Peintre (moyens de paiement expert), **23.3** Peintre (**comptabilité caisse** / comptes globaux PRD §5.2, distinct des moyens). Dépendance : valeur **Paheko** d’abord (23.1) ; 23.2 / 23.3 peuvent avancer en parallèle sur le hub `/admin/compta` si contrats API stables.
+**Décision QA (scission) :** trois stories initiales — **23.1** backend Paheko (ventilation par moyen), **23.2** Peintre (moyens de paiement expert), **23.3** Peintre (**comptabilité caisse** / comptes globaux PRD §5.2, distinct des moyens). Dépendance : valeur **Paheko** d’abord (23.1) ; 23.2 / 23.3 peuvent avancer en parallèle sur le hub `/admin/compta` si contrats API stables.
+
+**Story 23.4 (correct-course post-livraison) :** supprimer définitivement le mode builder **agrégé** et la variable d’environnement de politique ; **un seul** chemin « ventilation détaillée » câblé en dur (décision architecte produit — rapprochement bancaire / honnêteté comptable).
 
 ### Story 23.1: Ventiler `Paheko` par moyen de paiement (builder, migration, outbox)
 
@@ -3429,3 +3431,11 @@ I want consulter et modifier les comptes globaux (ventes, dons, remboursement ex
 So that le paramétrage PRD §5.2 soit accessible sans Postman et sans confondre avec les moyens de paiement.
 
 **Implementation artifact:** `_bmad-output/implementation-artifacts/23-3-cockpit-peintre-comptabilite-caisse-comptes-globaux-expert.md`
+
+### Story 23.4: Paheko clôture — builder unique (ventilation détaillée), suppression du mode agrégé
+
+As a responsable comptable ou trésorier,
+I want que le code **ne propose plus jamais** une écriture « ventes + dons » agrégée sur une seule ligne (sans ventilation par moyen de paiement) ni aucun levier de configuration pour réactiver ce mode,
+So that le rapprochement bancaire et le contrôle de caisse restent possibles et la compta associative reste défendable.
+
+**Implementation artifact:** `_bmad-output/implementation-artifacts/23-4-paheko-close-builder-unique-ventilation-detaillee-supprimer-agregue.md`

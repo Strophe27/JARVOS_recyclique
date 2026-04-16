@@ -27,7 +27,7 @@ from recyclic_api.services.paheko_accounting_client import PahekoAccountingClien
 from recyclic_api.core.config import settings
 from recyclic_api.services.paheko_close_batch_builder import PAHEKO_CLOSE_BATCH_STATE_KEY
 from recyclic_api.services.paheko_outbox_processor import process_next_paheko_outbox_item
-from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
+from tests.paheko_8x_test_utils import attach_latest_accounting_revision_to_session, seed_default_paheko_close_mapping
 
 _V1 = settings.API_V1_STR.rstrip("/")
 
@@ -64,6 +64,8 @@ def _seed_session(db_session: Session) -> tuple[Site, CashSession]:
         total_items=1,
     )
     db_session.add(cs)
+    db_session.flush()
+    attach_latest_accounting_revision_to_session(db_session, cs)
     db_session.flush()
     sale = Sale(
         cash_session_id=cs.id,

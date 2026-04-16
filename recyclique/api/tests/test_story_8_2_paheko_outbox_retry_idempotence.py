@@ -25,9 +25,9 @@ from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.services.cash_session_service import CashSessionService
 from recyclic_api.services.paheko_accounting_client import PahekoAccountingClient
-from recyclic_api.services.paheko_close_batch_builder import SUB_KIND_SALES_DONATIONS, sub_write_idempotency_key
+from recyclic_api.services.paheko_close_batch_builder import SUB_KIND_SALES_DONATIONS_PER_PM, sub_write_idempotency_key
 from recyclic_api.services.paheko_outbox_processor import process_next_paheko_outbox_item
-from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
+from tests.paheko_8x_test_utils import attach_latest_accounting_revision_to_session, seed_default_paheko_close_mapping
 
 _V1 = settings.API_V1_STR.rstrip("/")
 
@@ -65,6 +65,8 @@ def _site_user_session(db_session: Session) -> tuple[Site, User, CashSession]:
         total_items=1,
     )
     db_session.add(cs)
+    db_session.flush()
+    attach_latest_accounting_revision_to_session(db_session, cs)
     db_session.flush()
     sale = Sale(
         cash_session_id=cs.id,
@@ -169,7 +171,7 @@ def test_idempotency_key_header_sent(db_session: Session) -> None:
 
     client = PahekoAccountingClient(base_url="http://paheko.test", client_factory=factory)
     process_next_paheko_outbox_item(db_session, client=client)
-    expected_sub_key = sub_write_idempotency_key(item.idempotency_key, 0, SUB_KIND_SALES_DONATIONS)
+    expected_sub_key = sub_write_idempotency_key(item.idempotency_key, 0, SUB_KIND_SALES_DONATIONS_PER_PM)
     assert seen and seen[0] == expected_sub_key
 
 

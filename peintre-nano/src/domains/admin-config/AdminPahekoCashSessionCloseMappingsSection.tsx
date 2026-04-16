@@ -1,5 +1,6 @@
 import {
   Alert,
+  Anchor,
   Badge,
   Button,
   Checkbox,
@@ -27,6 +28,7 @@ import { listCashRegistersForAdmin, type CashRegisterAdminRowDto } from '../../a
 import { listSitesForAdmin, type SiteAdminRowDto } from '../../api/admin-sites-client';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import { CashflowClientErrorAlert } from '../cashflow/CashflowClientErrorAlert';
 import type { CashflowSubmitSurfaceError } from '../cashflow/cashflow-submit-error';
 
@@ -343,6 +345,31 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
         Dans le paramétrage comptable, vous indiquez ici l’exercice et les comptes Paheko à utiliser pour les clôtures.
       </Alert>
 
+      <Alert color="cyan" title="Comptes de débit / crédit et moyens de paiement">
+        <Text size="sm">
+          Quand la clôture est ventilée par moyen de paiement (politique serveur recommandée), les encaissements sont
+          répartis sur les comptes Paheko configurés pour chaque moyen (ex. 530 espèces, 5112 chèques) dans l’onglet{' '}
+          <Anchor
+            component="button"
+            type="button"
+            onClick={() => spaNavigateTo('/admin/compta/parametrage?tab=payment-methods')}
+          >
+            Moyens de paiement
+          </Anchor>
+          . Les comptes de vente et de dons proviennent des comptes globaux de la révision. Le couple débit / crédit
+          ci-dessous reste utilisé pour les tranches remboursement envoyées vers Paheko et pour le mode agrégé
+          historique (une seule ligne ventes+dons).
+        </Text>
+      </Alert>
+
+      <Alert color="gray" title="Si aucun réglage ne correspond au site ou au poste">
+        <Text size="sm">
+          Si aucun réglage actif ne correspond au site et au poste de la session, la clôture est bloquée côté serveur et
+          un message d’erreur est renvoyé à l’opérateur. Prévoyez au minimum un réglage actif au niveau « Défaut site »
+          (sans poste précis) pour chaque site qui encaisse.
+        </Text>
+      </Alert>
+
       <Group justify="space-between" align="flex-start" wrap="wrap">
         <Group gap="sm">
           <Button
@@ -542,21 +569,21 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
               label="Exercice Paheko"
               value={form.accountingYearId}
               onChange={(e) => setForm((prev) => ({ ...prev, accountingYearId: e.currentTarget.value }))}
-              description="Identifiant numérique de l’exercice comptable dans Paheko."
+              description="Identifiant numérique interne de l’exercice dans Paheko (Comptabilité → Exercices). Recyclique ne liste pas encore les exercices via l’API Paheko : vérifiez l’ID dans Paheko avant d’enregistrer."
               data-testid="admin-paheko-close-mappings-form-id-year"
             />
             <TextInput
               label="Compte de débit"
               value={form.debitAccountCode}
               onChange={(e) => setForm((prev) => ({ ...prev, debitAccountCode: e.currentTarget.value }))}
-              description="Compte qui reçoit l’encaissement de clôture."
+              description="Compte Paheko côté débit pour les sous-écritures qui utilisent encore ce couple (ex. remboursements, mode agrégé). Pas un doublon des comptes par moyen de paiement."
               data-testid="admin-paheko-close-mappings-form-debit"
             />
             <TextInput
               label="Compte de crédit"
               value={form.creditAccountCode}
               onChange={(e) => setForm((prev) => ({ ...prev, creditAccountCode: e.currentTarget.value }))}
-              description="Compte de contrepartie ou de produit utilisé pour la clôture."
+              description="Contrepartie Paheko associée au débit ci-dessus pour ces mêmes tranches."
               data-testid="admin-paheko-close-mappings-form-credit"
             />
           </Group>

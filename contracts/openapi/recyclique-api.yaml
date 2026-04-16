@@ -2007,6 +2007,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/admin/accounting-expert/payment-methods/{payment_method_id}/open-session-usage:
+    get:
+      operationId: accountingExpertGetPaymentMethodOpenSessionUsage
+      tags:
+        - admin
+        - accounting-expert
+      summary: Usage du moyen dans une session ouverte (lecture)
+      description: |
+        Indique si le moyen est encore utilisé par un `payment_transaction` lié à une session **ouverte** — pour afficher
+        un avertissement avant désactivation (les ventes en cours ne sont pas bloquées).
+        Si `site_id` est fourni, seules les sessions ouvertes de ce site sont prises en compte.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: payment_method_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: site_id
+          in: query
+          required: false
+          description: Filtrer sur les sessions ouvertes de ce site (UUID).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Indicateur d'usage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingExpertPaymentMethodOpenSessionUsage"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé (super-admin requis)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Moyen introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/admin/accounting-expert/payment-methods/{payment_method_id}:
     patch:
       operationId: accountingExpertPatchPaymentMethod
@@ -2080,8 +2132,8 @@ paths:
         - accounting-expert
       summary: Activer ou désactiver un moyen (step-up PIN requis)
       description: |
-        Stories **22.3** (fondation API) et **23.2** (Peintre) — désactivation refusée si le moyen est référencé par un encaissement d'une session ouverte
-        (journal `payment_transactions`). Sinon audit `accounting_payment_method_changed`.
+        Stories **22.3** (fondation API) et **23.2** (Peintre) — la désactivation est toujours possible ; si une session ouverte
+        utilise encore le moyen, l’UI peut prévenir via `GET …/open-session-usage`. Audit `accounting_payment_method_changed`.
       security:
         - bearerOrCookie: []
       parameters:
@@ -8854,6 +8906,8 @@ components:
         - default_sales_account
         - default_donation_account
         - prior_year_refund_account
+        - cash_journal_code
+        - default_entry_label_prefix
         - updated_at
       properties:
         default_sales_account:
@@ -8862,6 +8916,12 @@ components:
           type: string
         prior_year_refund_account:
           type: string
+        cash_journal_code:
+          type: string
+          description: Code journal Paheko pour les écritures de clôture (vide si non renseigné).
+        default_entry_label_prefix:
+          type: string
+          description: Préfixe des libellés d'écriture Paheko si le mapping ne fournit pas `label_prefix`.
         updated_at:
           type: string
           format: date-time
@@ -8879,6 +8939,23 @@ components:
           type: string
         prior_year_refund_account:
           type: string
+        cash_journal_code:
+          type: string
+          default: ""
+          maxLength: 64
+        default_entry_label_prefix:
+          type: string
+          default: "Z caisse"
+          maxLength: 120
+      additionalProperties: false
+    AccountingExpertPaymentMethodOpenSessionUsage:
+      type: object
+      required:
+        - used_in_open_session
+      properties:
+        used_in_open_session:
+          type: boolean
+          description: True si le moyen est référencé par un encaissement d'une session de caisse ouverte.
       additionalProperties: false
     AccountingExpertPublishBody:
       type: object

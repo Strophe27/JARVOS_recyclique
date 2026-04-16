@@ -628,8 +628,8 @@ def _sqlite_align_accounting_expert_story_223(bind) -> None:
                 conn.execute(
                     text(
                         "INSERT INTO global_accounting_settings (id, default_sales_account, "
-                        "default_donation_account, prior_year_refund_account) VALUES "
-                        "(:id, '707', '708', '467')"
+                        "default_donation_account, prior_year_refund_account, cash_journal_code, default_entry_label_prefix) "
+                        "VALUES (:id, '707', '7541', '672', NULL, 'Z caisse')"
                     ),
                     {"id": str(_gid)},
                 )
@@ -664,23 +664,38 @@ def _sqlite_align_accounting_expert_story_223(bind) -> None:
                             "archived_at": archived,
                         }
                     )
-            g = conn.execute(
-                text(
-                    "SELECT default_sales_account, default_donation_account, prior_year_refund_account "
-                    "FROM global_accounting_settings WHERE id = :id"
-                ),
-                {"id": str(_gid)},
-            ).fetchone()
-            if g is None:
-                ga = ("707", "708", "467")
+            gcols = {c["name"] for c in insp.get_columns("global_accounting_settings")}
+            if {"cash_journal_code", "default_entry_label_prefix"}.issubset(gcols):
+                g = conn.execute(
+                    text(
+                        "SELECT default_sales_account, default_donation_account, prior_year_refund_account, "
+                        "cash_journal_code, default_entry_label_prefix "
+                        "FROM global_accounting_settings WHERE id = :id"
+                    ),
+                    {"id": str(_gid)},
+                ).fetchone()
             else:
-                ga = (g[0], g[1], g[2])
+                g = conn.execute(
+                    text(
+                        "SELECT default_sales_account, default_donation_account, prior_year_refund_account "
+                        "FROM global_accounting_settings WHERE id = :id"
+                    ),
+                    {"id": str(_gid)},
+                ).fetchone()
+            if g is None:
+                ga = ("707", "7541", "672", "", "Z caisse")
+            elif len(g) >= 5:
+                ga = (g[0], g[1], g[2], (g[3] or "").strip() if g[3] is not None else "", str(g[4] or "Z caisse"))
+            else:
+                ga = (g[0], g[1], g[2], "", "Z caisse")
             snapshot_to_seed = {
                 "schema_version": 1,
                 "global_accounts": {
                     "default_sales_account": ga[0],
                     "default_donation_account": ga[1],
                     "prior_year_refund_account": ga[2],
+                    "cash_journal_code": ga[3],
+                    "default_entry_label_prefix": ga[4],
                 },
                 "payment_methods": pm_snapshot,
             }

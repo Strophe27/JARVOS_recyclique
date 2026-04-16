@@ -30,6 +30,7 @@ from recyclic_api.schemas.accounting_expert import (
     GlobalAccountsResponse,
     PaymentMethodCreate,
     PaymentMethodExpertResponse,
+    PaymentMethodOpenSessionUsageResponse,
     PaymentMethodUpdate,
     PublishAccountingRevisionBody,
 )
@@ -117,6 +118,9 @@ async def get_global_accounts(
         default_sales_account=row.default_sales_account,
         default_donation_account=row.default_donation_account,
         prior_year_refund_account=row.prior_year_refund_account,
+        cash_journal_code=(row.cash_journal_code or "").strip() if getattr(row, "cash_journal_code", None) else "",
+        default_entry_label_prefix=str(getattr(row, "default_entry_label_prefix", None) or "Z caisse").strip()
+        or "Z caisse",
         updated_at=row.updated_at,
     )
 
@@ -140,6 +144,8 @@ async def patch_global_accounts(
             default_sales_account=payload.default_sales_account,
             default_donation_account=payload.default_donation_account,
             prior_year_refund_account=payload.prior_year_refund_account,
+            cash_journal_code=payload.cash_journal_code,
+            default_entry_label_prefix=payload.default_entry_label_prefix,
         )
     except ValidationError as e:
         raise_domain_exception_as_http(e, **_DOMAIN)
@@ -156,8 +162,34 @@ async def patch_global_accounts(
         default_sales_account=row.default_sales_account,
         default_donation_account=row.default_donation_account,
         prior_year_refund_account=row.prior_year_refund_account,
+        cash_journal_code=(row.cash_journal_code or "").strip() if getattr(row, "cash_journal_code", None) else "",
+        default_entry_label_prefix=str(getattr(row, "default_entry_label_prefix", None) or "Z caisse").strip()
+        or "Z caisse",
         updated_at=row.updated_at,
     )
+
+
+@router.get(
+    "/payment-methods/{payment_method_id}/open-session-usage",
+    response_model=PaymentMethodOpenSessionUsageResponse,
+    summary="Session ouverte : usage du moyen de paiement (lecture, pas de step-up)",
+    operation_id="accountingExpertGetPaymentMethodOpenSessionUsage",
+)
+async def payment_method_open_session_usage(
+    payment_method_id: UUID,
+    site_id: Optional[UUID] = Query(
+        None,
+        description="Si fourni, ne considère que les sessions ouvertes de ce site (alignement contexte caisse).",
+    ),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_super_admin_role()),
+):
+    svc = AccountingExpertService(db)
+    try:
+        used = svc.is_payment_method_used_in_open_session(payment_method_id, site_id=site_id)
+    except NotFoundError as e:
+        raise_domain_exception_as_http(e, **_DOMAIN)
+    return PaymentMethodOpenSessionUsageResponse(used_in_open_session=used)
 
 
 @router.get(

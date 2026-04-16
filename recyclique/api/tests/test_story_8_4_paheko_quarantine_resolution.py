@@ -24,15 +24,9 @@ from recyclic_api.services.paheko_outbox_transition_audit import (
     TRANSITION_AUTO_QUARANTINE_HTTP,
     TRANSITION_MANUAL_CONFIRM_RESOLU,
 )
-from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
+from tests.paheko_8x_test_utils import attach_latest_accounting_revision_to_session, seed_default_paheko_close_mapping
 
 _V1 = settings.API_V1_STR.rstrip("/")
-
-
-@pytest.fixture(autouse=True)
-def _force_paheko_close_sales_policy_aggregated_for_epic8(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Epic 8 : quarantaine / audit HTTP — politique agrégée stable (évite batch « tout skip » sans POST)."""
-    monkeypatch.setattr(settings, "PAHEKO_CLOSE_SALES_BUILDER_POLICY", "aggregated_v22_7", raising=False)
 
 
 def _site_user_session(db_session: Session) -> tuple[Site, User, CashSession]:
@@ -68,6 +62,7 @@ def _site_user_session(db_session: Session) -> tuple[Site, User, CashSession]:
         total_items=1,
     )
     db_session.add(cs)
+    attach_latest_accounting_revision_to_session(db_session, cs)
     db_session.commit()
     return site, user, cs
 

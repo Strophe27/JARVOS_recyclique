@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import copy
+import json
 import uuid
+from typing import Any
 
 import pytest
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
+from recyclic_api.models.accounting_config import AccountingConfigRevision
 from recyclic_api.services.paheko_close_batch_builder import (
     RETRY_POLICY_RESUME_FAILED_SUB_WRITES,
     SUB_KIND_REFUNDS_CURRENT,
     SUB_KIND_REFUNDS_PRIOR_CLOSED,
-    SUB_KIND_SALES_DONATIONS,
+    SUB_KIND_SALES_DONATIONS_PER_PM,
     amounts_from_frozen_snapshot,
     build_cash_session_close_batch_from_enriched_payload,
     build_planned_sub_writes,
@@ -25,8 +30,9 @@ def _snap(
     by_pm: dict,
     rc: float = 0.0,
     rp: float = 0.0,
+    accounting_config_revision_id: str | None = None,
 ) -> dict:
-    return {
+    out: dict[str, Any] = {
         "schema_version": 1,
         "session_id": str(uuid.uuid4()),
         "site_id": str(uuid.uuid4()),
@@ -46,6 +52,44 @@ def _snap(
             "cash_variance": 0.0,
         },
     }
+    if accounting_config_revision_id:
+        out["accounting_config_revision_id"] = accounting_config_revision_id
+    return out
+
+
+def _revision_snapshot() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "global_accounts": {
+            "default_sales_account": "7070",
+            "default_donation_account": "7541",
+            "prior_year_refund_account": "672",
+        },
+        "payment_methods": [
+            {
+                "code": "cash",
+                "label": "Especes",
+                "active": True,
+                "kind": "cash",
+                "paheko_debit_account": "511",
+                "paheko_refund_credit_account": "511",
+            },
+        ],
+    }
+
+
+def _insert_revision(db_session: Session) -> AccountingConfigRevision:
+    max_seq = db_session.query(func.max(AccountingConfigRevision.revision_seq)).scalar()
+    next_seq = (max_seq or 0) + 1
+    rev = AccountingConfigRevision(
+        revision_seq=next_seq,
+        snapshot_json=json.dumps(_revision_snapshot()),
+        note="pytest-22-7",
+    )
+    db_session.add(rev)
+    db_session.commit()
+    db_session.refresh(rev)
+    return rev
 
 
 def test_amounts_reconstruct_sales_plus_refunds() -> None:
@@ -56,29 +100,50 @@ def test_amounts_reconstruct_sales_plus_refunds() -> None:
     assert rp == 5.0
 
 
-def test_planned_sub_writes_stable_order() -> None:
-    snap = _snap(by_pm={"cash": 10.0})
-    p1, e1, _ = build_planned_sub_writes(snap)
+def test_planned_sub_writes_stable_order(db_session: Session) -> None:
+    rev = _insert_revision(db_session)
+    snap = _snap(by_pm={"cash": 10.0}, accounting_config_revision_id=str(rev.id))
+    enr = {
+        "accounting_close_snapshot_frozen": snap,
+        "cash_session_id": str(uuid.uuid4()),
+        "closed_at": "2026-01-15T10:00:00+00:00",
+        "site_id": str(uuid.uuid4()),
+        "id_year": 2,
+        "debit": "512",
+        "credit": "707",
+    }
+    p1, e1, _ = build_planned_sub_writes(snap, db=db_session, enriched_payload=enr)
     assert e1 is None
-    p2, e2, _ = build_planned_sub_writes(copy.deepcopy(snap))
+    p2, e2, _ = build_planned_sub_writes(copy.deepcopy(snap), db=db_session, enriched_payload=copy.deepcopy(enr))
     assert e2 is None
     assert [x["index"] for x in p1] == [0, 1, 2]
     assert p1 == p2
 
 
-def test_sub_idempotency_keys_stable() -> None:
-    snap = _snap(by_pm={"cash": 1.0})
-    plan, err, _ = build_planned_sub_writes(snap)
+def test_sub_idempotency_keys_stable(db_session: Session) -> None:
+    rev = _insert_revision(db_session)
+    snap = _snap(by_pm={"cash": 1.0}, accounting_config_revision_id=str(rev.id))
+    enr = {
+        "accounting_close_snapshot_frozen": snap,
+        "cash_session_id": str(uuid.uuid4()),
+        "closed_at": "2026-01-15T10:00:00+00:00",
+        "site_id": str(uuid.uuid4()),
+        "id_year": 2,
+        "debit": "512",
+        "credit": "707",
+    }
+    plan, err, _ = build_planned_sub_writes(snap, db=db_session, enriched_payload=enr)
     assert err is None
     bkey = "cash_session_close:abc"
     keys = [sub_write_idempotency_key(bkey, x["index"], x["kind"]) for x in plan]
-    assert keys[0].endswith(f":0:{SUB_KIND_SALES_DONATIONS}")
+    assert keys[0].endswith(f":0:{SUB_KIND_SALES_DONATIONS_PER_PM}")
     assert keys[1].endswith(f":1:{SUB_KIND_REFUNDS_CURRENT}")
     assert keys[2].endswith(f":2:{SUB_KIND_REFUNDS_PRIOR_CLOSED}")
 
 
-def test_merge_state_preserves_delivered() -> None:
-    snap = _snap(by_pm={"cash": 5.0})
+def test_merge_state_preserves_delivered(db_session: Session) -> None:
+    rev = _insert_revision(db_session)
+    snap = _snap(by_pm={"cash": 5.0}, accounting_config_revision_id=str(rev.id))
     enr = {
         "accounting_close_snapshot_frozen": snap,
         "id_year": 2,
@@ -95,6 +160,7 @@ def test_merge_state_preserves_delivered() -> None:
     rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
         enr,
         batch_idempotency_key="cash_session_close:x",
+        db=db_session,
     )
     assert err is None and rows is not None
     prev = {
@@ -103,11 +169,11 @@ def test_merge_state_preserves_delivered() -> None:
         "sub_writes": [
             {
                 "index": 0,
-                "kind": SUB_KIND_SALES_DONATIONS,
+                "kind": SUB_KIND_SALES_DONATIONS_PER_PM,
                 "idempotency_sub_key": sub_write_idempotency_key(
                     "cash_session_close:x",
                     0,
-                    SUB_KIND_SALES_DONATIONS,
+                    SUB_KIND_SALES_DONATIONS_PER_PM,
                 ),
                 "status": "delivered",
                 "remote_transaction_id": "rid-1",
@@ -128,11 +194,13 @@ def test_merge_state_preserves_delivered() -> None:
 
 @pytest.mark.parametrize("rc,rp,expect_bodies", [(0.0, 0.0, 1), (3.0, 0.0, 2), (1.0, 2.0, 3)])
 def test_bodies_emitted_only_for_positive_amounts(
+    db_session: Session,
     rc: float,
     rp: float,
     expect_bodies: int,
 ) -> None:
-    snap = _snap(by_pm={"cash": 10.0}, rc=rc, rp=rp)
+    rev = _insert_revision(db_session)
+    snap = _snap(by_pm={"cash": 10.0}, rc=rc, rp=rp, accounting_config_revision_id=str(rev.id))
     enr = {
         "accounting_close_snapshot_frozen": snap,
         "id_year": 2,
@@ -149,6 +217,7 @@ def test_bodies_emitted_only_for_positive_amounts(
     rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
         enr,
         batch_idempotency_key="cash_session_close:z",
+        db=db_session,
     )
     assert err is None and rows is not None
     n_bodies = sum(1 for _p, b in rows if b is not None)

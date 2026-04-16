@@ -43,6 +43,13 @@ def upgrade() -> None:
             sa.Column("default_sales_account", sa.String(length=32), nullable=False),
             sa.Column("default_donation_account", sa.String(length=32), nullable=False),
             sa.Column("prior_year_refund_account", sa.String(length=32), nullable=False),
+            sa.Column("cash_journal_code", sa.String(length=64), nullable=True),
+            sa.Column(
+                "default_entry_label_prefix",
+                sa.String(length=120),
+                nullable=False,
+                server_default=sa.text("'Z caisse'"),
+            ),
             sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         )
 
@@ -61,11 +68,26 @@ def upgrade() -> None:
                 INSERT INTO global_accounting_settings (
                     id, default_sales_account, default_donation_account, prior_year_refund_account
                 ) VALUES (
-                    :id, '707', '708', '467'
+                    :id, '707', '7541', '672'
                 )
                 """
             ).bindparams(_GLOBAL_ID_BIND)
         )
+
+    inspector = sa.inspect(bind)
+    if _has_table(inspector, "global_accounting_settings"):
+        if not _has_column(inspector, "global_accounting_settings", "cash_journal_code"):
+            op.add_column("global_accounting_settings", sa.Column("cash_journal_code", sa.String(length=64), nullable=True))
+        if not _has_column(inspector, "global_accounting_settings", "default_entry_label_prefix"):
+            op.add_column(
+                "global_accounting_settings",
+                sa.Column(
+                    "default_entry_label_prefix",
+                    sa.String(length=120),
+                    nullable=False,
+                    server_default=sa.text("'Z caisse'"),
+                ),
+            )
 
     if not _has_table(inspector, "accounting_config_revisions"):
         op.create_table(
@@ -123,7 +145,7 @@ def upgrade() -> None:
             ).bindparams(_GLOBAL_ID_BIND)
         ).fetchone()
         if g is None:
-            ga = ("707", "708", "467")
+            ga = ("707", "7541", "672")
         else:
             ga = (g[0], g[1], g[2])
         snapshot = {

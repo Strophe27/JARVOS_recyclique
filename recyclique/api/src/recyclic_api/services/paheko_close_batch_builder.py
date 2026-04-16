@@ -6,7 +6,6 @@ import json
 import re
 from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
-from recyclic_api.core.config import settings
 from recyclic_api.services.paheko_transaction_payload_builder import (
     build_close_transaction_advanced_payload,
     build_close_transaction_line_payload,
@@ -27,8 +26,8 @@ SUB_KIND_SALES_DONATIONS_PER_PM = "sales_donations_per_pm_v1"
 SUB_KIND_REFUNDS_CURRENT = "refunds_current_fiscal"
 SUB_KIND_REFUNDS_PRIOR_CLOSED = "refunds_prior_closed_fiscal"
 
-POLICY_AGGREGATED = "aggregated_v22_7"
-POLICY_PER_PAYMENT_METHOD = "per_payment_method_v1"
+# Story 23.4 — seul mode supporté : ventilation détaillée (valeur d'observabilité `builder_policy`).
+POLICY_DETAILED = "detailed"
 
 
 class PlannedSubWrite(TypedDict, total=False):
@@ -62,14 +61,6 @@ def _parse_remote_transaction_id(response_text: str) -> str | None:
 def sub_write_idempotency_key(batch_idempotency_key: str, index: int, kind: str) -> str:
     """Sous-clé stable par sous-écriture (AC5) — distincte de la clé batch session."""
     return f"{batch_idempotency_key}:sub:{index}:{kind}"
-
-
-def _effective_sales_policy(override: str | None = None) -> str:
-    raw = (override if override is not None else getattr(settings, "PAHEKO_CLOSE_SALES_BUILDER_POLICY", None) or "")
-    v = str(raw).strip()
-    if v not in (POLICY_AGGREGATED, POLICY_PER_PAYMENT_METHOD):
-        return POLICY_AGGREGATED
-    return v
 
 
 def _r2(x: float) -> float:
@@ -260,7 +251,7 @@ def _build_sales_donations_planned_row_per_pm(
             "label_token": "VentesDonsPm",
             "reference_token": "sd_pm",
             "observability": {
-                "builder_policy": POLICY_PER_PAYMENT_METHOD,
+                "builder_policy": POLICY_DETAILED,
                 "accounting_config_revision_id": str(rev_id),
                 "lines": [],
                 "body_format": "skipped_zero",
@@ -301,7 +292,7 @@ def _build_sales_donations_planned_row_per_pm(
         return None, code or "invalid_sub_write", msg or "Construction ADVANCED impossible."
 
     obs = {
-        "builder_policy": POLICY_PER_PAYMENT_METHOD,
+        "builder_policy": POLICY_DETAILED,
         "accounting_config_revision_id": str(rev_id),
         "body_format": "ADVANCED",
         "lines": obs_lines,
@@ -330,16 +321,14 @@ def build_planned_sub_writes(
     snapshot: dict[str, Any],
     *,
     db: Session | None = None,
-    sales_policy: str | None = None,
     enriched_payload: dict[str, Any] | None = None,
 ) -> tuple[list[PlannedSubWrite], str | None, str | None]:
     """
     Ordre stable : index 0, 1, 2 — même snapshot → même liste (sauf erreur métier explicite).
 
-    Story 23.1 : ``sales_policy`` ou ``settings.PAHEKO_CLOSE_SALES_BUILDER_POLICY`` pilote l'index 0.
+    Story 23.4 : une seule politique — sous-écriture 0 = ventilation détaillée par moyen de paiement (ADVANCED).
     """
-    policy = _effective_sales_policy(sales_policy)
-    s, rc, rp = amounts_from_frozen_snapshot(snapshot)
+    _, rc, rp = amounts_from_frozen_snapshot(snapshot)
     refunds_rows: list[PlannedSubWrite] = [
         {
             "index": 1,
@@ -361,22 +350,10 @@ def build_planned_sub_writes(
         },
     ]
 
-    if policy != POLICY_PER_PAYMENT_METHOD:
-        first: PlannedSubWrite = {
-            "index": 0,
-            "kind": SUB_KIND_SALES_DONATIONS,
-            "amount": s,
-            "swap_debit_credit": False,
-            "tx_type": "REVENUE",
-            "label_token": "VentesDons",
-            "reference_token": "sd",
-        }
-        return [first, *refunds_rows], None, None
-
     if db is None:
         return [], "revision_resolution_requires_db", "Ventilation par moyen : session SQLAlchemy requise (révision publiée)."
-    if not isinstance(enriched_payload, dict):
-        return [], "invalid_outbox_payload", "enriched_payload requis pour ventilation par moyen."
+    if enriched_payload is None or not isinstance(enriched_payload, dict):
+        return [], "invalid_outbox_payload", "enriched_payload requis pour le builder Paheko clôture."
     pm_row, err, msg = _build_sales_donations_planned_row_per_pm(snapshot, enriched_payload, db=db)
     if err is not None:
         return [], err, msg or err
@@ -428,7 +405,6 @@ def build_cash_session_close_batch_from_enriched_payload(
     *,
     batch_idempotency_key: str,
     db: Session | None = None,
-    sales_policy: str | None = None,
 ) -> tuple[
     list[tuple[PlannedSubWrite, dict[str, Any] | None]] | None,
     str | None,
@@ -437,7 +413,7 @@ def build_cash_session_close_batch_from_enriched_payload(
     """
     Point d'entrée : snapshot figé obligatoire (22.6) ; pas de relecture métier hors JSON ``accounting_close_snapshot_frozen``.
 
-    Story 23.1 : ``db`` obligatoire en production lorsque la politique est ``per_payment_method_v1``.
+    Story 23.4 : ``db`` obligatoire pour résoudre la révision et ventiler l'index 0 par moyen de paiement.
     """
     snap = enriched_payload.get("accounting_close_snapshot_frozen")
     if not isinstance(snap, dict):
@@ -448,7 +424,6 @@ def build_cash_session_close_batch_from_enriched_payload(
     plan, perr, pmsg = build_planned_sub_writes(
         snap,
         db=db,
-        sales_policy=sales_policy,
         enriched_payload=enriched_payload,
     )
     if perr is not None:
@@ -532,8 +507,7 @@ def parse_remote_transaction_id(response_text: str) -> str | None:
 
 __all__ = [
     "PAHEKO_CLOSE_BATCH_STATE_KEY",
-    "POLICY_AGGREGATED",
-    "POLICY_PER_PAYMENT_METHOD",
+    "POLICY_DETAILED",
     "RETRY_POLICY_RESUME_FAILED_SUB_WRITES",
     "SUB_KIND_REFUNDS_CURRENT",
     "SUB_KIND_REFUNDS_PRIOR_CLOSED",

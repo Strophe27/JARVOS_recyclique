@@ -14,6 +14,8 @@ const FIELD_LABELS: Readonly<Record<keyof GlobalAccountsPatchPayload, string>> =
   default_sales_account: 'Compte ventes (par défaut)',
   default_donation_account: 'Compte dons (par défaut)',
   prior_year_refund_account: 'Compte remboursements exercice antérieur',
+  cash_journal_code: 'Code du journal Paheko',
+  default_entry_label_prefix: 'Préfixe des libellés d’écriture',
 };
 
 function formatUpdatedAt(iso: string): string {
@@ -38,6 +40,8 @@ export function AdminAccountingGlobalAccountsWidget(_props: RegisteredWidgetProp
   const [defaultSales, setDefaultSales] = useState('');
   const [defaultDonation, setDefaultDonation] = useState('');
   const [priorRefund, setPriorRefund] = useState('');
+  const [cashJournalCode, setCashJournalCode] = useState('');
+  const [entryLabelPrefix, setEntryLabelPrefix] = useState('Z caisse');
   const [stepUpPin, setStepUpPin] = useState('');
 
   const load = useCallback(async () => {
@@ -54,6 +58,8 @@ export function AdminAccountingGlobalAccountsWidget(_props: RegisteredWidgetProp
     setDefaultSales(res.data.default_sales_account);
     setDefaultDonation(res.data.default_donation_account);
     setPriorRefund(res.data.prior_year_refund_account);
+    setCashJournalCode(res.data.cash_journal_code ?? '');
+    setEntryLabelPrefix(res.data.default_entry_label_prefix ?? 'Z caisse');
     setUpdatedAt(res.data.updated_at);
   }, [auth, isSuperAdminUi]);
 
@@ -68,6 +74,8 @@ export function AdminAccountingGlobalAccountsWidget(_props: RegisteredWidgetProp
       default_sales_account: defaultSales.trim(),
       default_donation_account: defaultDonation.trim(),
       prior_year_refund_account: priorRefund.trim(),
+      cash_journal_code: cashJournalCode.trim(),
+      default_entry_label_prefix: entryLabelPrefix.trim() || 'Z caisse',
     };
     setBusy(true);
     const res = await patchGlobalAccounts(auth, payload, { stepUpPin });
@@ -81,8 +89,10 @@ export function AdminAccountingGlobalAccountsWidget(_props: RegisteredWidgetProp
     setDefaultSales(res.data.default_sales_account);
     setDefaultDonation(res.data.default_donation_account);
     setPriorRefund(res.data.prior_year_refund_account);
+    setCashJournalCode(res.data.cash_journal_code ?? '');
+    setEntryLabelPrefix(res.data.default_entry_label_prefix ?? 'Z caisse');
     setUpdatedAt(res.data.updated_at);
-  }, [auth, defaultDonation, defaultSales, priorRefund, stepUpPin]);
+  }, [auth, cashJournalCode, defaultDonation, defaultSales, entryLabelPrefix, priorRefund, stepUpPin]);
 
   return (
     <Stack gap="md" data-testid="admin-accounting-global-accounts">
@@ -125,24 +135,47 @@ export function AdminAccountingGlobalAccountsWidget(_props: RegisteredWidgetProp
           <Stack gap="sm">
             <TextInput
               label={FIELD_LABELS.default_sales_account}
-              description="Clé API : default_sales_account"
+              description="Compte de produit / ventes global (ex. 707 ou 7070). Clé API : default_sales_account"
+              placeholder="707"
               value={defaultSales}
               onChange={(e) => setDefaultSales(e.currentTarget.value)}
               data-testid="admin-global-accounts-sales"
             />
             <TextInput
               label={FIELD_LABELS.default_donation_account}
-              description="Clé API : default_donation_account"
+              description="Dons manuels reçus en caisse (ex. surplus volontaire du client). Compte recommandé : 7541. Clé API : default_donation_account"
+              placeholder="7541"
               value={defaultDonation}
               onChange={(e) => setDefaultDonation(e.currentTarget.value)}
               data-testid="admin-global-accounts-donation"
             />
             <TextInput
               label={FIELD_LABELS.prior_year_refund_account}
-              description="Clé API : prior_year_refund_account"
+              description="Utilisé uniquement pour les remboursements d'une vente dont l'exercice comptable est déjà clos. Candidat recommandé : 672 (Charges sur exercices antérieurs). À valider avec votre expert-comptable. Clé API : prior_year_refund_account"
+              placeholder="672"
               value={priorRefund}
               onChange={(e) => setPriorRefund(e.currentTarget.value)}
               data-testid="admin-global-accounts-refund"
+            />
+            <Alert color="yellow" title="Remboursements sur exercice clos">
+              Ce compte est activé automatiquement lors d&apos;un remboursement sur exercice clos. Vérifiez sa valeur avec
+              votre expert-comptable avant la première clôture.
+            </Alert>
+            <TextInput
+              label={FIELD_LABELS.cash_journal_code}
+              description="Code du journal comptable dans lequel Recyclique dépose les écritures de clôture. Exemple : CA pour journal de caisse. Visible dans Paheko (Comptabilité → Journaux). Le serveur refuse un enregistrement vide si PAHEKO_API_BASE_URL est configuré sur le backend (intégration sortante). Clé API : cash_journal_code"
+              placeholder="CA"
+              value={cashJournalCode}
+              onChange={(e) => setCashJournalCode(e.currentTarget.value)}
+              data-testid="admin-global-accounts-journal"
+            />
+            <TextInput
+              label={FIELD_LABELS.default_entry_label_prefix}
+              description="Recyclique complète le libellé côté Paheko à partir de ce préfixe si le réglage de clôture ne fournit pas de préfixe. Exemple : « Z caisse ». Clé API : default_entry_label_prefix"
+              placeholder="Z caisse"
+              value={entryLabelPrefix}
+              onChange={(e) => setEntryLabelPrefix(e.currentTarget.value)}
+              data-testid="admin-global-accounts-label-prefix"
             />
             <Text size="sm" c="dimmed" data-testid="admin-global-accounts-updated-at">
               Dernière mise à jour (lecture seule) :{' '}

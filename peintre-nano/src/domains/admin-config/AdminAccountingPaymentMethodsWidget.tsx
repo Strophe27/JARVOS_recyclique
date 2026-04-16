@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -13,8 +14,9 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from '@mantine/core';
-import { ArrowDown, ArrowUp, Pencil, Plus, RefreshCw } from 'lucide-react';
+import { ArrowDown, ArrowUp, Info, Pencil, Plus, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type AccountingExpertPaymentMethod,
@@ -23,6 +25,7 @@ import {
   type AccountingExpertPaymentMethodPatch,
   createAccountingExpertPaymentMethod,
   getAccountingExpertLatestRevisionDetail,
+  getAccountingExpertPaymentMethodOpenSessionUsage,
   listAccountingExpertPaymentMethods,
   patchAccountingExpertPaymentMethod,
   publishAccountingExpertRevision,
@@ -86,6 +89,14 @@ function signatureFromRevisionSnapshot(snapshot: Record<string, unknown> | undef
   return JSON.stringify(norm);
 }
 
+/** true = débit « produit » (7…) et crédit « trésorerie » (5…) — pattern inhabituel pour un encaissement. */
+function showDebitCreditOrderWarning(debit: string, credit: string): boolean {
+  const d = debit.trim();
+  const c = credit.trim();
+  if (!d || !c) return false;
+  return d.startsWith('7') && c.startsWith('5');
+}
+
 export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps) {
   const hideStandaloneNav = props.widgetProps?.hideStandaloneNav === true;
   const auth = useAuthPort();
@@ -103,8 +114,10 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editRow, setEditRow] = useState<AccountingExpertPaymentMethod | null>(null);
-  const [activeRow, setActiveRow] = useState<AccountingExpertPaymentMethod | null>(null);
+  /** Modal activer/désactiver : `warn` = session ouverte avec ce moyen (message métier). */
+  const [confirmActive, setConfirmActive] = useState<{ m: AccountingExpertPaymentMethod; warn: boolean } | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [orderFeedback, setOrderFeedback] = useState<string | null>(null);
   const [stepUpPin, setStepUpPin] = useState('');
   const [publishNote, setPublishNote] = useState('');
 
@@ -123,6 +136,7 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
   const load = useCallback(async () => {
     setBusy(true);
     setLoadError(null);
+    setOrderFeedback(null);
     const [listRes, revRes] = await Promise.all([
       listAccountingExpertPaymentMethods(auth),
       getAccountingExpertLatestRevisionDetail(auth),
@@ -239,25 +253,29 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
     if (formMax !== '' && formMax !== null) body.max_amount = typeof formMax === 'number' ? formMax : Number(formMax);
     else body.max_amount = null;
 
+    const orderN = typeof formOrder === 'number' ? formOrder : Number(formOrder);
+    const orderChanged = Number.isFinite(orderN) && orderN !== editRow.display_order;
+
     const res = await patchAccountingExpertPaymentMethod(auth, editRow.id, body, { stepUpPin });
     if (!res.ok) {
       setFormError(res.detail);
       return;
     }
+    if (orderChanged) setOrderFeedback('Ordre mis à jour');
     setEditRow(null);
     resetForm();
     await load();
   };
 
   const submitToggleActive = async () => {
-    if (!activeRow) return;
-    const next = !activeRow.active;
-    const res = await setAccountingExpertPaymentMethodActive(auth, activeRow.id, next, { stepUpPin });
+    if (!confirmActive) return;
+    const next = !confirmActive.m.active;
+    const res = await setAccountingExpertPaymentMethodActive(auth, confirmActive.m.id, next, { stepUpPin });
     if (!res.ok) {
       setFormError(res.detail);
       return;
     }
-    setActiveRow(null);
+    setConfirmActive(null);
     setStepUpPin('');
     await load();
   };
@@ -297,6 +315,15 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
           <Text size="sm" c="dimmed" mt={4}>
             Référentiel courant : lecture API, mutations avec PIN step-up (X-Step-Up-Pin), pas de suppression HTTP.
           </Text>
+          <Text size="xs" c="dimmed" mt={6}>
+            La suppression d&apos;un moyen de paiement n&apos;est pas possible pour préserver l&apos;historique comptable.
+            Utilisez Désactiver pour retirer un moyen de la caisse.
+          </Text>
+          <Text size="xs" c="dimmed" mt={4}>
+            Les flèches ↑↓ ouvrent le formulaire « Modifier » avec un ordre d&apos;affichage pré-rempli ; enregistrez pour
+            appliquer l&apos;ordre côté serveur (PATCH). Un message « Ordre mis à jour » confirme la sauvegarde lorsque
+            l&apos;ordre change.
+          </Text>
         </div>
         <Group gap="xs">
           <Button
@@ -318,6 +345,12 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
           ) : null}
         </Group>
       </Group>
+
+      {orderFeedback ? (
+        <Alert color="teal" title={orderFeedback} onClose={() => setOrderFeedback(null)} withCloseButton>
+          L&apos;ordre d&apos;affichage a été enregistré sur le serveur.
+        </Alert>
+      ) : null}
 
       {needsPublish ? (
         <Alert color="orange" title="Publication de révision" data-testid="admin-accounting-payment-methods-drift">
@@ -412,9 +445,18 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
                     variant="outline"
                     color={m.active ? 'orange' : 'teal'}
                     onClick={() => {
-                      setActiveRow(m);
-                      setStepUpPin('');
-                      setFormError(null);
+                      void (async () => {
+                        setFormError(null);
+                        setStepUpPin('');
+                        if (m.active) {
+                          const u = await getAccountingExpertPaymentMethodOpenSessionUsage(auth, m.id, {
+                            siteId: envelope.siteId ?? null,
+                          });
+                          setConfirmActive({ m, warn: u.ok && u.data.used_in_open_session });
+                        } else {
+                          setConfirmActive({ m, warn: false });
+                        }
+                      })();
                     }}
                   >
                     {m.active ? 'Désactiver' : 'Activer'}
@@ -437,13 +479,48 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
           <TextInput label="Code" required value={formCode} onChange={(e) => setFormCode(e.currentTarget.value)} />
           <TextInput label="Libellé" required value={formLabel} onChange={(e) => setFormLabel(e.currentTarget.value)} />
           <Select label="Type" data={KIND_OPTIONS} value={formKind} onChange={(v) => v && setFormKind(v as AccountingExpertPaymentMethodKind)} />
-          <TextInput label="Compte Paheko (débit)" required value={formDebit} onChange={(e) => setFormDebit(e.currentTarget.value)} />
           <TextInput
-            label="Compte Paheko (crédit remboursement)"
+            label={
+              <Group gap={6} wrap="nowrap">
+                <span>Compte Paheko (débit)</span>
+                <Tooltip
+                  withArrow
+                  label="Compte crédité dans Paheko lors de l'encaissement de ce moyen de paiement. Exemples : 530 pour les espèces, 5112 pour les chèques, 511 pour la carte bancaire."
+                >
+                  <ActionIcon variant="subtle" size="sm" aria-label="Aide compte débit">
+                    <Info size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            }
+            required
+            value={formDebit}
+            onChange={(e) => setFormDebit(e.currentTarget.value)}
+          />
+          <TextInput
+            label={
+              <Group gap={6} wrap="nowrap">
+                <span>Compte Paheko (crédit remboursement)</span>
+                <Tooltip
+                  withArrow
+                  label="Compte crédité dans Paheko lors d'un remboursement effectué avec ce moyen. En général identique au compte de débit."
+                >
+                  <ActionIcon variant="subtle" size="sm" aria-label="Aide compte crédit remboursement">
+                    <Info size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            }
             required
             value={formCredit}
             onChange={(e) => setFormCredit(e.currentTarget.value)}
           />
+          {showDebitCreditOrderWarning(formDebit, formCredit) ? (
+            <Alert color="yellow" title="Paramétrage inhabituel">
+              Le compte de débit est normalement un compte de trésorerie (classe 5) et le compte de crédit un compte de
+              produit (classe 7). Vérifiez avec votre expert-comptable — la sauvegarde reste possible.
+            </Alert>
+          ) : null}
           <Group grow>
             <NumberInput label="Montant min (optionnel)" value={formMin} onChange={setFormMin} decimalScale={2} />
             <NumberInput label="Montant max (optionnel)" value={formMax} onChange={setFormMax} decimalScale={2} />
@@ -481,13 +558,48 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
           ) : null}
           <TextInput label="Libellé" required value={formLabel} onChange={(e) => setFormLabel(e.currentTarget.value)} />
           <Select label="Type" data={KIND_OPTIONS} value={formKind} onChange={(v) => v && setFormKind(v as AccountingExpertPaymentMethodKind)} />
-          <TextInput label="Compte Paheko (débit)" required value={formDebit} onChange={(e) => setFormDebit(e.currentTarget.value)} />
           <TextInput
-            label="Compte Paheko (crédit remboursement)"
+            label={
+              <Group gap={6} wrap="nowrap">
+                <span>Compte Paheko (débit)</span>
+                <Tooltip
+                  withArrow
+                  label="Compte crédité dans Paheko lors de l'encaissement de ce moyen de paiement. Exemples : 530 pour les espèces, 5112 pour les chèques, 511 pour la carte bancaire."
+                >
+                  <ActionIcon variant="subtle" size="sm" aria-label="Aide compte débit">
+                    <Info size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            }
+            required
+            value={formDebit}
+            onChange={(e) => setFormDebit(e.currentTarget.value)}
+          />
+          <TextInput
+            label={
+              <Group gap={6} wrap="nowrap">
+                <span>Compte Paheko (crédit remboursement)</span>
+                <Tooltip
+                  withArrow
+                  label="Compte crédité dans Paheko lors d'un remboursement effectué avec ce moyen. En général identique au compte de débit."
+                >
+                  <ActionIcon variant="subtle" size="sm" aria-label="Aide compte crédit remboursement">
+                    <Info size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            }
             required
             value={formCredit}
             onChange={(e) => setFormCredit(e.currentTarget.value)}
           />
+          {showDebitCreditOrderWarning(formDebit, formCredit) ? (
+            <Alert color="yellow" title="Paramétrage inhabituel">
+              Le compte de débit est normalement un compte de trésorerie (classe 5) et le compte de crédit un compte de
+              produit (classe 7). Vérifiez avec votre expert-comptable — la sauvegarde reste possible.
+            </Alert>
+          ) : null}
           <Group grow>
             <NumberInput label="Montant min (optionnel)" value={formMin} onChange={setFormMin} decimalScale={2} />
             <NumberInput label="Montant max (optionnel)" value={formMax} onChange={setFormMax} decimalScale={2} />
@@ -516,15 +628,19 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
       </Modal>
 
       <Modal
-        opened={activeRow !== null}
-        onClose={() => setActiveRow(null)}
-        title={activeRow ? (activeRow.active ? 'Désactiver le moyen' : 'Activer le moyen') : ''}
+        opened={confirmActive !== null}
+        onClose={() => setConfirmActive(null)}
+        title={confirmActive ? (confirmActive.m.active ? 'Désactiver le moyen' : 'Activer le moyen') : ''}
       >
         <Stack gap="sm">
           <Text size="sm" mb="sm">
-            {activeRow
-              ? activeRow.active
-                ? 'La désactivation est refusée si le moyen est utilisé dans une session ouverte.'
+            {confirmActive
+              ? confirmActive.m.active
+                ? confirmActive.warn
+                  ? envelope.siteId
+                    ? 'Une session de caisse est ouverte sur ce site et des encaissements utilisent déjà ce moyen. Les ventes déjà enregistrées dans cette session ne changent pas. Après confirmation, le moyen est marqué inactif : il ne sera plus proposé pour de nouveaux encaissements lorsque le référentiel est rechargé côté caisse.'
+                    : 'Une session de caisse est ouverte (tout site confondu dans le périmètre technique) et des encaissements utilisent déjà ce moyen. Les ventes déjà enregistrées ne changent pas. Après confirmation, le moyen est marqué inactif pour les prochains encaissements.'
+                  : 'Le moyen sera masqué pour les prochaines sessions après enregistrement.'
                 : 'Activation du moyen.'
               : null}
           </Text>
@@ -540,7 +656,7 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
             </Alert>
           ) : null}
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => setActiveRow(null)}>
+            <Button variant="default" onClick={() => setConfirmActive(null)}>
               Annuler
             </Button>
             <Button onClick={() => void submitToggleActive()}>Confirmer</Button>

@@ -1,3 +1,5 @@
+# last_updated: 2026-04-16 — story 23-4 DS Story Runner : 23-4 ready-for-dev→done ; epic-23 in-progress→done ; builder Paheko unique ventilation detailed
+# last_updated: 2026-04-16 — story 23-4 bmad-create-story : cle 23-4-paheko-close-builder-unique-ventilation-detaillee-supprimer-agregue → ready-for-dev ; epic-23 done→in-progress (correct-course builder Paheko)
 # last_updated: 2026-04-16 — epic-23-retrospective : optional -> done ; artefact epic-23-retro-2026-04-16.md (skill bmad-retrospective)
 # last_updated: 2026-04-16 — clôture Epic 23 : descriptions OpenAPI accounting-expert harmonisées (références 23.2 / 23.3 + 22.3) ; pytest peloton 23.1 + vitest admin compta + test_openapi_validation verts
 # last_updated: 2026-04-16 — story 23-3 Story Runner CR2 APPROVE : sprint 23-3 review→done ; epic-23 in-progress→done (3 stories livrées) ; alignement fichier story 23-3 Status done
@@ -223,7 +225,7 @@ generated: "2026-04-01"
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
 # last_updated: 2026-04-16 — story 22-2 DS bmad-dev-story Task : 22-2 in-progress→review (dual-read compare + OpenAPI)
 # last_updated: 2026-04-16 — story 23-1 Story Runner BMAD (resume_at GATE) : GATE→QA→CR APPROVE ; 23-1 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; gate front omis (story backend)
-last_updated: "2026-04-16" # Epic 23 : stories + epic done ; rétro epic-23-retro-2026-04-16.md ; epic-23-retrospective done
+last_updated: "2026-04-16" # Epic 23 : story 23-4 done (builder Paheko detailed unique) ; epic-23 done ; rétro epic-23-retro-2026-04-16.md ; epic-23-retrospective done
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -458,4 +460,5 @@ development_status:
   23-1-ventiler-paheko-par-moyen-de-paiement-builder-migration-et-outbox: done
   23-2-cockpit-peintre-moyens-paiement-expert-step-up-et-revision: done
   23-3-cockpit-peintre-comptabilite-caisse-comptes-globaux-expert: done
+  23-4-paheko-close-builder-unique-ventilation-detaillee-supprimer-agregue: done
   epic-23-retrospective: done

@@ -8,6 +8,7 @@ from typing import Any, Optional, Sequence, Tuple
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from recyclic_api.models.accounting_config import GLOBAL_ACCOUNTING_SETTINGS_ROW_ID, GlobalAccountingSettings
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.paheko_cash_session_close_mapping import PahekoCashSessionCloseMapping
 from recyclic_api.services.paheko_transaction_payload_builder import validate_destination_params_for_transaction
@@ -100,7 +101,14 @@ def resolve_enriched_payload_for_item(
         }
         return None, err or "mapping_missing", codes.get(err or "", codes["mapping_missing"])
 
-    return build_enriched_close_payload(base_payload, row), None, None
+    merged = build_enriched_close_payload(base_payload, row)
+    if str(merged.get("label_prefix") or "").strip() == "":
+        ga = db.get(GlobalAccountingSettings, str(GLOBAL_ACCOUNTING_SETTINGS_ROW_ID))
+        if ga is not None:
+            pref = str(getattr(ga, "default_entry_label_prefix", None) or "").strip()
+            if pref:
+                merged["label_prefix"] = pref
+    return merged, None, None
 
 
 def list_cash_session_close_mappings(

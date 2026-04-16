@@ -12,10 +12,8 @@ from sqlalchemy.orm import Session
 
 from recyclic_api.models.accounting_config import AccountingConfigRevision
 from recyclic_api.services.paheko_close_batch_builder import (
-    POLICY_AGGREGATED,
-    POLICY_PER_PAYMENT_METHOD,
+    POLICY_DETAILED,
     SUB_KIND_REFUNDS_CURRENT,
-    SUB_KIND_SALES_DONATIONS,
     SUB_KIND_SALES_DONATIONS_PER_PM,
     build_cash_session_close_batch_from_enriched_payload,
     build_planned_sub_writes,
@@ -31,7 +29,7 @@ def _revision_snapshot() -> dict[str, Any]:
         "global_accounts": {
             "default_sales_account": "7070",
             "default_donation_account": "7541",
-            "prior_year_refund_account": "467",
+            "prior_year_refund_account": "672",
         },
         "payment_methods": [
             {
@@ -117,7 +115,6 @@ def test_per_method_builds_advanced_balanced(db_session: Session) -> None:
         enr,
         batch_idempotency_key="cash_session_close:pm1",
         db=db_session,
-        sales_policy=POLICY_PER_PAYMENT_METHOD,
     )
     assert err is None and rows is not None
     assert rows[0][0]["kind"] == SUB_KIND_SALES_DONATIONS_PER_PM
@@ -132,15 +129,8 @@ def test_per_method_builds_advanced_balanced(db_session: Session) -> None:
     assert rows[1][1] is None
     st = initial_batch_state_v1(batch_idempotency_key="cash_session_close:pm1", planned=rows)
     assert st["sub_writes"][0].get("observability", {}).get("body_format") == "ADVANCED"
+    assert st["sub_writes"][0].get("observability", {}).get("builder_policy") == POLICY_DETAILED
     assert any(l.get("payment_method_code") == "cash" for l in st["sub_writes"][0]["observability"]["lines"])
-
-
-def test_aggregated_policy_unchanged_shape() -> None:
-    snap = _snap_base(by_pm={"cash": 10.0}, rev_id=str(uuid.uuid4()))
-    plan, err, _ = build_planned_sub_writes(snap, sales_policy=POLICY_AGGREGATED)
-    assert err is None
-    assert plan[0]["kind"] == SUB_KIND_SALES_DONATIONS
-    assert "http_body" not in plan[0]
 
 
 def test_per_method_requires_db() -> None:
@@ -148,7 +138,6 @@ def test_per_method_requires_db() -> None:
     plan, err, _ = build_planned_sub_writes(
         snap,
         db=None,
-        sales_policy=POLICY_PER_PAYMENT_METHOD,
         enriched_payload=_enr(snap),
     )
     assert err == "revision_resolution_requires_db"
@@ -163,7 +152,6 @@ def test_per_method_missing_revision_id(db_session: Session) -> None:
         enr,
         batch_idempotency_key="x",
         db=db_session,
-        sales_policy=POLICY_PER_PAYMENT_METHOD,
     )
     assert err == "snapshot_missing_revision"
     assert rows is None
@@ -177,7 +165,6 @@ def test_refunds_blocks_unchanged_under_per_method(db_session: Session) -> None:
         enr,
         batch_idempotency_key="cash_session_close:pm2",
         db=db_session,
-        sales_policy=POLICY_PER_PAYMENT_METHOD,
     )
     assert err is None and rows is not None
     assert rows[1][0]["amount"] == 3.0 and rows[1][1] is not None
@@ -185,26 +172,19 @@ def test_refunds_blocks_unchanged_under_per_method(db_session: Session) -> None:
     assert rows[2][0]["amount"] == 2.0 and rows[2][1] is not None
 
 
-def test_idempotency_sub_key_differs_between_policies(db_session: Session) -> None:
+def test_idempotency_sub_key_uses_per_pm_kind(db_session: Session) -> None:
     rev = _insert_revision(db_session)
     snap = _snap_base(by_pm={"cash": 5.0}, rev_id=str(rev.id))
     enr = _enr(snap)
-    agg, e1, _ = build_cash_session_close_batch_from_enriched_payload(
+    pm, err, _ = build_cash_session_close_batch_from_enriched_payload(
         enr,
         batch_idempotency_key="same",
         db=db_session,
-        sales_policy=POLICY_AGGREGATED,
     )
-    pm, e2, _ = build_cash_session_close_batch_from_enriched_payload(
-        enr,
-        batch_idempotency_key="same",
-        db=db_session,
-        sales_policy=POLICY_PER_PAYMENT_METHOD,
-    )
-    assert e1 is None and e2 is None and agg and pm
-    k_agg = sub_write_idempotency_key("same", 0, agg[0][0]["kind"])
-    k_pm = sub_write_idempotency_key("same", 0, pm[0][0]["kind"])
-    assert k_agg != k_pm
+    assert err is None and pm
+    assert pm[0][0]["kind"] == SUB_KIND_SALES_DONATIONS_PER_PM
+    k = sub_write_idempotency_key("same", 0, pm[0][0]["kind"])
+    assert SUB_KIND_SALES_DONATIONS_PER_PM in k
 
 
 def test_per_method_observability_ac5_minimum_fields(db_session: Session) -> None:
@@ -216,7 +196,6 @@ def test_per_method_observability_ac5_minimum_fields(db_session: Session) -> Non
         enr,
         batch_idempotency_key="cash_session_close:ac5",
         db=db_session,
-        sales_policy=POLICY_PER_PAYMENT_METHOD,
     )
     assert err is None and rows
     st = initial_batch_state_v1(batch_idempotency_key="cash_session_close:ac5", planned=rows)
@@ -266,7 +245,6 @@ def test_merge_preserves_observability_on_redelivery_template(db_session: Sessio
         enr,
         batch_idempotency_key="cash_session_close:merge-obs",
         db=db_session,
-        sales_policy=POLICY_PER_PAYMENT_METHOD,
     )
     assert err is None and rows
     prev = {

@@ -62,6 +62,8 @@ class TestAccountingExpertAuth:
         data = r.json()
         assert len(data["default_sales_account"]) >= 1
         assert "prior_year_refund_account" in data
+        assert "cash_journal_code" in data
+        assert "default_entry_label_prefix" in data
 
 
 class TestAccountingExpertStepUp:
@@ -188,7 +190,7 @@ class TestSessionOpenFreezesRevision:
 
 
 class TestDeactivatePaymentMethodOpenSession:
-    def test_cannot_deactivate_when_used_in_open_session(
+    def test_open_session_usage_reflects_open_session(
         self,
         super_admin_client: TestClient,
         db_session: Session,
@@ -243,11 +245,35 @@ class TestDeactivatePaymentMethodOpenSession:
         db_session.add(pt)
         db_session.commit()
 
+        u = super_admin_client.get(f"{_EXPERT}/payment-methods/{pm.id}/open-session-usage")
+        assert u.status_code == 200, u.text
+        assert u.json()["used_in_open_session"] is True
+
+        other_site = Site(name="S22 site autre", address="b")
+        db_session.add(other_site)
+        db_session.commit()
+        db_session.refresh(other_site)
+        u_other = super_admin_client.get(
+            f"{_EXPERT}/payment-methods/{pm.id}/open-session-usage",
+            params={"site_id": str(other_site.id)},
+        )
+        assert u_other.status_code == 200, u_other.text
+        assert u_other.json()["used_in_open_session"] is False
+        u_same = super_admin_client.get(
+            f"{_EXPERT}/payment-methods/{pm.id}/open-session-usage",
+            params={"site_id": str(site.id)},
+        )
+        assert u_same.status_code == 200, u_same.text
+        assert u_same.json()["used_in_open_session"] is True
+
         r = super_admin_client.post(
             f"{_EXPERT}/payment-methods/{pm.id}/active?active=false",
             headers=_step_headers(super_admin_client),
         )
-        assert r.status_code == 409
+        assert r.status_code == 200, r.text
+        assert r.json()["active"] is False
+        db_session.refresh(pm)
+        assert pm.active is False
 
 
 class TestPaymentMethodExpertHttp:
@@ -381,6 +407,25 @@ class TestGlobalAccountsValidation:
                 "default_sales_account": "707!",
                 "default_donation_account": "708",
                 "prior_year_refund_account": "467",
+            },
+            headers=_step_headers(super_admin_client),
+        )
+        assert r.status_code == 422
+
+    def test_patch_global_requires_cash_journal_when_paheko_url_configured(
+        self, super_admin_client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setattr(
+            "recyclic_api.services.accounting_expert_service._paheko_outbound_base_url_configured",
+            lambda: True,
+        )
+        r = super_admin_client.patch(
+            f"{_EXPERT}/global-accounts",
+            json={
+                "default_sales_account": "707",
+                "default_donation_account": "7541",
+                "prior_year_refund_account": "672",
+                "cash_journal_code": "",
             },
             headers=_step_headers(super_admin_client),
         )

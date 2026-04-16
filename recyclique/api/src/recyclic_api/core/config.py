@@ -53,9 +53,6 @@ class Settings(BaseSettings):
     PAHEKO_OUTBOX_RETRY_BASE_SECONDS: float = 2.0
     PAHEKO_OUTBOX_RETRY_MAX_SECONDS: float = 900.0
 
-    # Story 23.1 — ventilation Paheko transaction 1 : agrégé 22.7 (défaut prod) vs ventilation par moyen.
-    PAHEKO_CLOSE_SALES_BUILDER_POLICY: str = "aggregated_v22_7"
-
     # Story 22.5 — autorité exercice clos (snapshot local / futur pull Paheko) ; pas d'inférence UI.
     ACCOUNTING_PERIOD_AUTHORITY_MAX_AGE_SECONDS: float = 604800.0
 

@@ -11,6 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from recyclic_api.core.config import settings
 from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.accounting_config import (
     GLOBAL_ACCOUNTING_SETTINGS_ROW_ID,
@@ -25,11 +26,25 @@ from recyclic_api.models.sale import Sale
 _GLOBAL_SETTINGS_ID_STR = str(GLOBAL_ACCOUNTING_SETTINGS_ROW_ID)
 
 _PAHEKO_ACCOUNT_RE = re.compile(r"^[0-9A-Za-z._-]{1,32}$")
+_PAHEKO_JOURNAL_CODE_RE = re.compile(r"^[0-9A-Za-z._-]{1,64}$")
 
 
 def validate_paheko_account_code(value: str) -> None:
     if not _PAHEKO_ACCOUNT_RE.match(value):
         raise ValidationError("Code compte Paheko invalide (1–32 caractères alphanumériques, . _ -)")
+
+
+def validate_cash_journal_code(value: str) -> None:
+    s = (value or "").strip()
+    if not s:
+        return
+    if not _PAHEKO_JOURNAL_CODE_RE.match(s):
+        raise ValidationError("Code journal Paheko invalide (1–64 caractères alphanumériques, . _ -)")
+
+
+def _paheko_outbound_base_url_configured() -> bool:
+    """True si une URL Paheko est configurée (intégration sortante considérée active — QA M3)."""
+    return bool((settings.PAHEKO_API_BASE_URL or "").strip())
 
 
 def _validate_min_max_amounts(min_amount: Optional[float], max_amount: Optional[float]) -> None:
@@ -48,8 +63,10 @@ class AccountingExpertService:
             row = GlobalAccountingSettings(
                 id=_GLOBAL_SETTINGS_ID_STR,
                 default_sales_account="707",
-                default_donation_account="708",
-                prior_year_refund_account="467",
+                default_donation_account="7541",
+                prior_year_refund_account="672",
+                cash_journal_code=None,
+                default_entry_label_prefix="Z caisse",
             )
             self.db.add(row)
             self.db.commit()
@@ -65,14 +82,25 @@ class AccountingExpertService:
         default_sales_account: str,
         default_donation_account: str,
         prior_year_refund_account: str,
+        cash_journal_code: str = "",
+        default_entry_label_prefix: str = "Z caisse",
     ) -> GlobalAccountingSettings:
         validate_paheko_account_code(default_sales_account)
         validate_paheko_account_code(default_donation_account)
         validate_paheko_account_code(prior_year_refund_account)
+        validate_cash_journal_code(cash_journal_code)
+        if _paheko_outbound_base_url_configured() and not (cash_journal_code or "").strip():
+            raise ValidationError(
+                "Le code journal Paheko est obligatoire : PAHEKO_API_BASE_URL est configuré (intégration sortante)."
+            )
         row = self._ensure_global_row()
         row.default_sales_account = default_sales_account
         row.default_donation_account = default_donation_account
         row.prior_year_refund_account = prior_year_refund_account
+        cj = (cash_journal_code or "").strip()
+        row.cash_journal_code = cj if cj else None
+        pfx = (default_entry_label_prefix or "").strip()
+        row.default_entry_label_prefix = pfx if pfx else "Z caisse"
         self.db.commit()
         self.db.refresh(row)
         return row
@@ -162,18 +190,24 @@ class AccountingExpertService:
         self.db.refresh(pm)
         return pm
 
-    def _used_in_open_session(self, pm_id: UUID) -> bool:
-        q = (
-            self.db.query(PaymentTransaction.id)
-            .join(Sale, Sale.id == PaymentTransaction.sale_id)
-            .join(CashSession, CashSession.id == Sale.cash_session_id)
-            .filter(
-                PaymentTransaction.payment_method_id == pm_id,
-                CashSession.status == CashSessionStatus.OPEN,
-            )
-            .first()
+    def _used_in_open_session(self, pm_id: UUID, site_id: Optional[UUID] = None) -> bool:
+        q = self.db.query(PaymentTransaction.id).join(Sale, Sale.id == PaymentTransaction.sale_id).join(
+            CashSession, CashSession.id == Sale.cash_session_id
+        ).filter(
+            PaymentTransaction.payment_method_id == pm_id,
+            CashSession.status == CashSessionStatus.OPEN,
         )
-        return q is not None
+        if site_id is not None:
+            q = q.filter(CashSession.site_id == site_id)
+        return q.first() is not None
+
+    def is_payment_method_used_in_open_session(self, pm_id: UUID, site_id: Optional[UUID] = None) -> bool:
+        """True si un encaissement d'une session **ouverte** référence ce moyen (GET usage, modal UI).
+
+        Si ``site_id`` est fourni, seules les sessions ouvertes de ce site sont prises en compte (contexte caisse).
+        """
+        self.get_payment_method(pm_id)
+        return self._used_in_open_session(pm_id, site_id=site_id)
 
     def set_active(self, pm_id: UUID, active: bool) -> PaymentMethodDefinition:
         pm = self.get_payment_method(pm_id)
@@ -183,10 +217,7 @@ class AccountingExpertService:
             validate_paheko_account_code(pm.paheko_refund_credit_account)
             pm.active = True
         else:
-            if self._used_in_open_session(pm.id):
-                raise ConflictError(
-                    "Impossible de désactiver ce moyen : il est utilisé dans une session de caisse ouverte."
-                )
+            # Désactivation toujours autorisée (session ouverte : avertissement côté UI via GET open-session-usage).
             pm.active = False
         self.db.commit()
         self.db.refresh(pm)
@@ -218,12 +249,16 @@ class AccountingExpertService:
                     "archived_at": m.archived_at.isoformat() if m.archived_at else None,
                 }
             )
+        cj = getattr(g, "cash_journal_code", None)
+        pfx = getattr(g, "default_entry_label_prefix", None) or "Z caisse"
         return {
             "schema_version": 1,
             "global_accounts": {
                 "default_sales_account": g.default_sales_account,
                 "default_donation_account": g.default_donation_account,
                 "prior_year_refund_account": g.prior_year_refund_account,
+                "cash_journal_code": (cj or "").strip(),
+                "default_entry_label_prefix": str(pfx).strip() or "Z caisse",
             },
             "payment_methods": pm_snapshot,
         }

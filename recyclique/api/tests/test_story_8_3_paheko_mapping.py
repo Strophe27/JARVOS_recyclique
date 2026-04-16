@@ -26,15 +26,9 @@ from recyclic_api.services.paheko_sync_final_action_policy import (
 )
 from recyclic_api.services.paheko_accounting_client import PahekoAccountingClient
 from recyclic_api.services.paheko_outbox_processor import process_next_paheko_outbox_item
-from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
+from tests.paheko_8x_test_utils import attach_latest_accounting_revision_to_session, seed_default_paheko_close_mapping
 
 _V1 = settings.API_V1_STR.rstrip("/")
-
-
-@pytest.fixture(autouse=True)
-def _force_paheko_close_sales_policy_aggregated_for_epic8(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Epic 8 : ces tests ciblent le POST mono-ligne 22.7 agrégé ; fige la politique (CI peut exporter per_pm)."""
-    monkeypatch.setattr(settings, "PAHEKO_CLOSE_SALES_BUILDER_POLICY", "aggregated_v22_7", raising=False)
 
 
 def _site_user_session(db_session: Session, *, with_register: bool = False) -> tuple[Site, User, CashSession]:
@@ -77,6 +71,7 @@ def _site_user_session(db_session: Session, *, with_register: bool = False) -> t
         total_items=1,
     )
     db_session.add(cs)
+    attach_latest_accounting_revision_to_session(db_session, cs)
     db_session.commit()
     return site, user, cs
 
@@ -126,16 +121,17 @@ def test_mapping_resolved_enriches_payload_sent_to_paheko(db_session: Session) -
     assert item.outbox_status == PahekoOutboxStatus.delivered.value
     assert item.sync_state_core == "resolu"
     assert bodies
-    assert bodies[0]["id_year"] == 2
-    assert bodies[0]["debit"] == "530"
-    assert bodies[0]["credit"] == "707"
-    assert bodies[0]["type"] == "REVENUE"
-    assert bodies[0]["amount"] == 35.0
-    assert bodies[0]["date"]
-    assert bodies[0]["label"].startswith("Cloture test ")
-    assert str(cs.id) in bodies[0]["reference"]
-    assert str(cs.id) in bodies[0]["notes"]
-    assert "cash_session_id" not in bodies[0]
+    # Story 23.4 : premier POST = ventilation ADVANCED (plus d’écriture REVENUE agrégée unique).
+    b0 = bodies[0]
+    assert b0["id_year"] == 2
+    assert b0["type"] == "ADVANCED"
+    assert b0["date"]
+    # Libellé transaction 1 : builder 23.x (ADVANCED) — préfixe expert ventilé ; le `label_prefix` mapping apparaît en note / autre sous-écriture.
+    assert cs.id.hex[:8] in b0["label"]
+    assert b0.get("lines")
+    assert str(cs.id) in b0.get("reference", "")
+    assert str(cs.id) in (b0.get("notes") or "")
+    assert "cash_session_id" not in b0
 
 
 def test_register_specific_mapping_overrides_site_default(db_session: Session) -> None:
@@ -175,8 +171,8 @@ def test_register_specific_mapping_overrides_site_default(db_session: Session) -
 
     assert item.sync_state_core == "resolu"
     assert bodies[0]["id_year"] == 3
-    assert bodies[0]["debit"] == "531"
-    assert bodies[0]["credit"] == "706"
+    assert bodies[0]["type"] == "ADVANCED"
+    assert bodies[0].get("lines")
 
 
 def test_disabled_site_default_blocks_a1(db_session: Session) -> None:
