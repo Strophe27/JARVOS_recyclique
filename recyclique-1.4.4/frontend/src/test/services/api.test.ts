@@ -150,14 +150,8 @@ describe('API Service', () => {
   })
 
   describe('Sales API', () => {
-    it('should get all sales', async () => {
-      const mockSales = [{ id: 1, total: 50 }]
-      mockAxiosInstance.get.mockResolvedValue({ data: mockSales })
-
-      const result = await SalesApi.salesapiv1salesget()
-
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/sales/?')
-      expect(result).toEqual(mockSales)
+    it('salesv1salesget est retiré (liste globale supprimée côté API)', async () => {
+      await expect(SalesApi.salesv1salesget()).rejects.toThrow(/obsolète/)
     })
 
     it('should get sale by id', async () => {

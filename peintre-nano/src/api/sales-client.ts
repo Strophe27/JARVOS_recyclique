@@ -57,7 +57,7 @@ export type SaleCreateBody = {
   items: SaleItemCreateBody[];
   total_amount: number;
   donation?: number;
-  payment_method?: 'cash' | 'card' | 'check' | 'free';
+  payment_method?: string;
   payments?: Array<{ payment_method: string; amount: number }>;
   /** Story 22.4 — journal serveur `donation_surplus`, distinct du règlement */
   donation_surplus?: Array<{ payment_method: string; amount: number }>;
@@ -104,7 +104,7 @@ export type SaleHoldCreateBody = {
 
 export type SaleFinalizeHeldBody = {
   donation?: number | null;
-  payment_method?: 'cash' | 'card' | 'check' | 'free';
+  payment_method?: string;
   payments?: Array<{ payment_method: string; amount: number }>;
   donation_surplus?: Array<{ payment_method: string; amount: number }>;
   note?: string | null;
@@ -113,6 +113,108 @@ export type SaleFinalizeHeldBody = {
 export type GetSaleResult = { ok: true; sale: SaleResponseV1 } | SalesHttpError;
 
 export type SaleCreateResult = { ok: true; saleId: string; raw: unknown } | SalesHttpError;
+
+/** GET /v1/sales/payment-method-options — référentiel expert actif (UI caisse). */
+export type SalePaymentMethodOption = {
+  readonly code: string;
+  readonly label: string;
+  readonly kind: 'cash' | 'bank' | 'third_party' | 'other';
+};
+
+const PAYMENT_METHOD_KINDS: ReadonlySet<SalePaymentMethodOption['kind']> = new Set([
+  'cash',
+  'bank',
+  'third_party',
+  'other',
+]);
+
+/** Aligné sur `PaymentMethodDefinition.code` côté API (VARCHAR 64). */
+export const SALE_PAYMENT_METHOD_OPTION_MAX_CODE_LEN = 64;
+/** Aligné sur `PaymentMethodDefinition.label` côté API (VARCHAR 120). */
+export const SALE_PAYMENT_METHOD_OPTION_MAX_LABEL_LEN = 120;
+
+/**
+ * Filtre la réponse API (pas de cast aveugle — évite données malformées / XSS en libellés UI).
+ * Mode **lenient** : lignes invalides ignorées ; **codes dupliqués** : toute la réponse est rejetée côté
+ * {@link getSalePaymentMethodOptions} si au moins un doublon apparaît après filtrage des lignes valides.
+ */
+export function parseSalePaymentMethodOptionsJson(json: unknown): SalePaymentMethodOption[] {
+  if (!Array.isArray(json)) return [];
+  const out: SalePaymentMethodOption[] = [];
+  const seenCodes = new Set<string>();
+  for (const row of json) {
+    if (!row || typeof row !== 'object') continue;
+    const o = row as Record<string, unknown>;
+    const code = typeof o.code === 'string' ? o.code.trim() : '';
+    const label = typeof o.label === 'string' ? o.label.trim() : '';
+    const kindRaw = typeof o.kind === 'string' ? o.kind.trim() : '';
+    if (
+      !code ||
+      !label ||
+      code.length > SALE_PAYMENT_METHOD_OPTION_MAX_CODE_LEN ||
+      label.length > SALE_PAYMENT_METHOD_OPTION_MAX_LABEL_LEN ||
+      !PAYMENT_METHOD_KINDS.has(kindRaw as SalePaymentMethodOption['kind'])
+    ) {
+      continue;
+    }
+    if (seenCodes.has(code)) {
+      return [];
+    }
+    seenCodes.add(code);
+    out.push({ code, label, kind: kindRaw as SalePaymentMethodOption['kind'] });
+  }
+  return out;
+}
+
+export async function getSalePaymentMethodOptions(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<
+  | { ok: true; data: readonly SalePaymentMethodOption[] }
+  | { ok: false; detail: string; status: number }
+> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/sales/payment-method-options`;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = auth.getAccessToken?.();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  let res: Response;
+  try {
+    // `include` : cookies httpOnly (OpenAPI bearerOrCookie) ; garder tant que l’auth peut reposer sur les cookies seuls.
+    res = await fetch(url, { method: 'GET', credentials: 'include', headers });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return { ok: false, detail: msg, status: 0 };
+  }
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+  if (!res.ok) {
+    const p = parseRecycliqueApiErrorBody(json, res.status, text || res.statusText);
+    return {
+      ok: false,
+      detail: toRecycliqueClientFailure(res.status, p, false).message,
+      status: res.status,
+    };
+  }
+  if (!Array.isArray(json)) {
+    return { ok: false, detail: 'Réponse moyens de paiement invalide', status: res.status };
+  }
+  const parsed = parseSalePaymentMethodOptionsJson(json);
+  if (parsed.length === 0 && json.length > 0) {
+    return {
+      ok: false,
+      detail: 'Réponse moyens de paiement invalide (schéma inattendu ou codes dupliqués)',
+      status: res.status,
+    };
+  }
+  return { ok: true, data: parsed };
+}
 
 /**
  * POST /v1/sales/ — `operationId` contractuel `recyclique_sales_createSale`.

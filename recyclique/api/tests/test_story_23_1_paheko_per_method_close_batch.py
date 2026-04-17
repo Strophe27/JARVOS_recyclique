@@ -273,3 +273,53 @@ def test_merge_preserves_observability_on_redelivery_template(db_session: Sessio
     )
     assert merged["sub_writes"][0]["status"] == "delivered"
     assert merged["sub_writes"][0].get("observability") is not None
+
+
+def test_per_method_observability_transfer_and_card_distinct(db_session: Session) -> None:
+    """Snapshot aligné agrégat réel : trois codes (cash + deux BANK) → trois lignes ventilées observables."""
+    rev_snap = _revision_snapshot()
+    rev_snap["payment_methods"] = [
+        *rev_snap["payment_methods"],
+        {
+            "code": "transfer",
+            "label": "Virement",
+            "active": True,
+            "kind": "bank",
+            "paheko_debit_account": "5121",
+            "paheko_refund_credit_account": "5121",
+        },
+    ]
+    max_seq = db_session.query(func.max(AccountingConfigRevision.revision_seq)).scalar()
+    next_seq = (max_seq or 0) + 1
+    rev = AccountingConfigRevision(
+        revision_seq=next_seq,
+        snapshot_json=json.dumps(rev_snap),
+        note="pytest-23-1-dual-bank",
+    )
+    db_session.add(rev)
+    db_session.commit()
+    db_session.refresh(rev)
+
+    snap = _snap_base(
+        by_pm={"cash": 10.0, "transfer": 40.0, "card": 25.0},
+        rev_id=str(rev.id),
+        donation=0.0,
+    )
+    snap["totals"]["payment_transaction_line_count"] = 3
+    enr = _enr(snap)
+    rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
+        enr,
+        batch_idempotency_key="cash_session_close:dual-bank-pm",
+        db=db_session,
+    )
+    assert err is None and rows
+    st = initial_batch_state_v1(batch_idempotency_key="cash_session_close:dual-bank-pm", planned=rows)
+    obs_lines = (st["sub_writes"][0].get("observability") or {}).get("lines") or []
+    codes_with_pm = {ln.get("payment_method_code") for ln in obs_lines if ln.get("payment_method_code")}
+    assert codes_with_pm == {"cash", "transfer", "card"}
+    body0 = rows[0][1]
+    assert body0 is not None and body0.get("type") == "ADVANCED"
+    adv_lines = body0.get("lines") or []
+    td = sum(float(x.get("debit") or 0) for x in adv_lines)
+    tc = sum(float(x.get("credit") or 0) for x in adv_lines)
+    assert abs(td - tc) <= 0.01

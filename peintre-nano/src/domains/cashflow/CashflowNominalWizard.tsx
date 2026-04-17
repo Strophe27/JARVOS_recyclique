@@ -58,6 +58,7 @@ import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowSocialDonWizard } from './CashflowSocialDonWizard';
 import { makeCashflowSpecialEncaissementWizard } from './CashflowSpecialEncaissementWizard';
 import { CashflowOperationalSyncNotice } from './cashflow-operational-sync-notice';
+import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import classes from './CashflowNominalWizard.module.css';
 
 const CashflowSpecialDonWizard = makeCashflowSpecialEncaissementWizard('DON_SANS_ARTICLE');
@@ -1582,9 +1583,13 @@ function PaymentStep({
 }): ReactNode {
   const draft = useCashflowDraft();
   const auth = useAuthPort();
+  const { options: methodOptions, loading: pmLoading, error: pmError } = useCaissePaymentMethodOptions(auth);
+  const paymentMethodsReady = !pmLoading && pmError === null && methodOptions.length > 0;
   const envelope = useContextEnvelope();
   const stale = draft.widgetDataState === 'DATA_STALE';
   const [busy, setBusy] = useState(false);
+
+  const financialCodes = useMemo(() => methodOptions.map((o) => o.code), [methodOptions]);
 
   useEffect(() => {
     const fromEnv = envelope.cashSessionId?.trim();
@@ -1593,11 +1598,20 @@ function PaymentStep({
     }
   }, [envelope.cashSessionId, draft.cashSessionIdInput]);
 
+  useEffect(() => {
+    if (financialCodes.length === 0) return;
+    if (draft.paymentMethod === 'free') return;
+    if (!financialCodes.includes(draft.paymentMethod)) {
+      setPaymentMethod(financialCodes[0]!);
+    }
+  }, [draft.paymentMethod, financialCodes]);
+
   const canSubmit =
     !stale &&
     draft.cashSessionIdInput.trim().length > 0 &&
     draft.lines.length > 0 &&
     draft.totalAmount > 0;
+  const canSubmitSale = canSubmit && paymentMethodsReady;
 
   const onSubmit = async () => {
     clearCashflowDraftSubmitError();
@@ -1683,12 +1697,27 @@ function PaymentStep({
           className={classes.nativeSelect}
           data-testid="cashflow-select-payment"
           value={draft.paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value === 'card' ? 'card' : 'cash')}
+          onChange={(e) => setPaymentMethod(e.target.value)}
+          disabled={pmLoading || !paymentMethodsReady}
         >
-          <option value="cash">Espèces</option>
-          <option value="card">Carte</option>
+          {methodOptions.map((o) => (
+            <option key={o.code} value={o.code}>
+              {o.label}
+            </option>
+          ))}
+          <option value="free">Gratuit / don</option>
         </select>
       </Text>
+      {pmLoading ? (
+        <Text size="sm" c="dimmed" mt="xs" data-testid="cashflow-nominal-pm-options-loading">
+          Chargement des moyens de paiement…
+        </Text>
+      ) : null}
+      {pmError ? (
+        <Text size="sm" c="red" mt="xs" data-testid="cashflow-nominal-pm-options-error">
+          {pmError}
+        </Text>
+      ) : null}
       <>
         <Button
           mt="md"
@@ -1708,7 +1737,7 @@ function PaymentStep({
         mt="lg"
         size="sm"
         onClick={() => void onSubmit()}
-        disabled={!canSubmit || busy}
+        disabled={!canSubmitSale || busy}
         loading={busy}
         data-testid="cashflow-submit-sale"
       >

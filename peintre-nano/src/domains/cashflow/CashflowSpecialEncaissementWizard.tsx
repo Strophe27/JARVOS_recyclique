@@ -11,6 +11,8 @@ import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import type { CashflowSubmitSurfaceError } from './cashflow-submit-error';
 import { setAfterSuccessfulSale, useCashflowDraft } from './cashflow-draft-store';
+import { DEFAULT_FREE_PAYMENT_LABEL } from './payment-method-display';
+import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import classes from './CashflowSpecialEncaissementWizard.module.css';
 
 type EntryBlock =
@@ -64,23 +66,25 @@ function useSpecialEncaissementEntryBlock(): EntryBlock {
   }, [envelope]);
 }
 
-const PAYMENT_OPTIONS = [
-  { value: 'cash', label: 'Espèces' },
-  { value: 'card', label: 'Carte' },
-  { value: 'check', label: 'Chèque' },
-  { value: 'free', label: 'Gratuit / don (free)' },
-] as const;
-
 function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissementKindV1 }): ReactNode {
   const { kind } = props;
   const entry = useSpecialEncaissementEntryBlock();
   const auth = useAuthPort();
+  const { options: pmOpts, loading: pmLoading, error: pmError } = useCaissePaymentMethodOptions(auth);
+  const paymentMethodsReady = !pmLoading && pmError === null && pmOpts.length > 0;
+  const paymentSelectData = useMemo(
+    () => [
+      ...pmOpts.map((o) => ({ value: o.code, label: o.label })),
+      { value: 'free', label: `${DEFAULT_FREE_PAYMENT_LABEL} (free)` },
+    ],
+    [pmOpts],
+  );
   const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
   const stale = draft.widgetDataState === 'DATA_STALE';
   const [sessionInput, setSessionInput] = useState('');
   const [total, setTotal] = useState(kind === 'DON_SANS_ARTICLE' ? 0 : 10);
-  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [adherentRef, setAdherentRef] = useState('');
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [busy, setBusy] = useState(false);
@@ -98,11 +102,29 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
     }
   }, [envelope.cashSessionId, draft.cashSessionIdInput, sessionInput]);
 
+  const firstPayantCode = pmOpts[0]?.code ?? '';
+  useEffect(() => {
+    if (!paymentMethodsReady || !firstPayantCode) return;
+    setPaymentMethod((prev) => {
+      const valid = new Set(pmOpts.map((o) => o.code));
+      valid.add('free');
+      if (prev && valid.has(prev)) return prev;
+      return firstPayantCode;
+    });
+  }, [paymentMethodsReady, firstPayantCode, pmOpts]);
+
   const testIdRoot =
     kind === 'DON_SANS_ARTICLE' ? 'cashflow-special-don-wizard' : 'cashflow-special-adhesion-wizard';
 
   const onSubmit = useCallback(async () => {
     setError(null);
+    if (!paymentMethodsReady) {
+      setError({
+        kind: 'local',
+        message: 'Moyens de paiement indisponibles — chargement ou erreur serveur.',
+      });
+      return;
+    }
     const sid = sessionInput.trim();
     if (!sid) {
       setError({ kind: 'local', message: 'Indiquez l’identifiant de session de caisse.' });
@@ -126,7 +148,7 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
         items: [] as [],
         total_amount: total,
         special_encaissement_kind: kind,
-        payment_method: paymentMethod as 'cash' | 'card' | 'check' | 'free',
+        payment_method: paymentMethod,
         ...(kind === 'ADHESION_ASSOCIATION' && adherentRef.trim()
           ? { adherent_reference: adherentRef.trim() }
           : {}),
@@ -142,7 +164,7 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
     } finally {
       setBusy(false);
     }
-  }, [auth, adherentRef, kind, paymentMethod, sessionInput, total]);
+  }, [auth, adherentRef, kind, paymentMethod, paymentMethodsReady, sessionInput, total]);
 
   if (entry.blocked) {
     return (
@@ -194,11 +216,22 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
       />
       <NativeSelect
         label="Moyen de paiement"
-        data={[...PAYMENT_OPTIONS]}
-        value={paymentMethod}
+        data={paymentSelectData}
+        value={paymentMethodsReady && paymentSelectData.some((d) => d.value === paymentMethod) ? paymentMethod : ''}
         onChange={(e) => setPaymentMethod(e.currentTarget.value)}
+        disabled={pmLoading || !paymentMethodsReady || stale}
         data-testid={`${testIdRoot}-payment`}
       />
+      {pmLoading ? (
+        <Text size="sm" c="dimmed" data-testid={`${testIdRoot}-pm-loading`}>
+          Chargement des moyens de paiement…
+        </Text>
+      ) : null}
+      {pmError ? (
+        <Text size="sm" c="red" data-testid={`${testIdRoot}-pm-error`}>
+          {pmError}
+        </Text>
+      ) : null}
       {kind === 'ADHESION_ASSOCIATION' ? (
         <TextInput
           label="Référence adhérent (optionnel, max 200 car.)"
@@ -209,7 +242,12 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
         />
       ) : null}
       <CashflowClientErrorAlert error={error} testId={`${testIdRoot}-error`} />
-      <Button loading={busy} onClick={() => void onSubmit()} data-testid={`${testIdRoot}-submit`} disabled={stale}>
+      <Button
+        loading={busy}
+        onClick={() => void onSubmit()}
+        data-testid={`${testIdRoot}-submit`}
+        disabled={stale || !paymentMethodsReady}
+      >
         Enregistrer (POST /v1/sales/)
       </Button>
     </div>

@@ -47,6 +47,31 @@ def redis_key_idempotent_sale_correction(user_id: str, sale_id: str, idempotency
     return f"idem:v1:sale_correct:{user_id}:{sale_id}:{ik}"
 
 
+def body_fingerprint_sale_create_json(payload: Dict[str, Any]) -> str:
+    """Empreinte stable du corps POST /v1/sales/ (JSON canonique trié)."""
+    return body_fingerprint_close_json(payload)
+
+
+def body_fingerprint_sale_finalize_held_json(payload: Dict[str, Any]) -> str:
+    """Empreinte stable du corps POST /v1/sales/{id}/finalize-held."""
+    return body_fingerprint_close_json(payload)
+
+
+def redis_key_idempotent_sale_create(operator_user_id: str, idempotency_key: str) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:sale_create:{_norm_key_part(operator_user_id)}:{ik}"
+
+
+def redis_key_idempotent_sale_finalize(
+    operator_user_id: str, sale_id: str, idempotency_key: str
+) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return (
+        f"idem:v1:sale_finalize:{_norm_key_part(operator_user_id)}:"
+        f"{_norm_key_part(sale_id)}:{ik}"
+    )
+
+
 def body_fingerprint_db_import(filename: str, file_size: int) -> str:
     """Story 16.3 — empreinte upload import (nom + taille) pour Idempotency-Key."""
     payload = {"filename": filename or "", "size": int(file_size)}

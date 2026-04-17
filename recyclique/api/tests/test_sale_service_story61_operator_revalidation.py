@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from recyclic_api.core.exceptions import AuthorizationError
+from recyclic_api.core.exceptions import NotFoundError
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import PaymentMethod
 from recyclic_api.models.user import User, UserRole
@@ -58,5 +58,5 @@ def test_create_sale_raises_when_jwt_operator_not_session_operator():
         payment_method=PaymentMethod.CASH,
     )
 
-    with pytest.raises(AuthorizationError, match="opérateur"):
+    with pytest.raises(NotFoundError, match="Session de caisse non trouvée"):
         SaleService(db).create_sale(sale_data, str(intruder_uuid))

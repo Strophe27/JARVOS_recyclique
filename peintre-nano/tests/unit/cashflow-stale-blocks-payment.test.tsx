@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@mantine/core/styles.css';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RootProviders } from '../../src/app/providers/RootProviders';
 import { CashflowNominalWizard } from '../../src/domains/cashflow/CashflowNominalWizard';
@@ -16,6 +16,7 @@ describe('Story 6.1 — DATA_STALE bloque le paiement', () => {
   afterEach(() => {
     cleanup();
     resetCashflowDraft();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
@@ -50,9 +51,23 @@ describe('Story 6.1 — DATA_STALE bloque le paiement', () => {
     });
     setTotalAmount(5);
     setCashSessionIdInput('00000000-0000-4000-8000-000000000001');
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes('payment-method-options')) {
+          return new Response(JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response('{}', { status: 200 });
+      }),
+    );
   });
 
-  it('désactive le POST vente lorsque le widget critique est DATA_STALE', () => {
+  it('désactive le POST vente lorsque le widget critique est DATA_STALE', async () => {
     render(
       <RootProviders disableUserPrefsPersistence>
         <CashflowNominalWizard widgetProps={{}} />
@@ -64,7 +79,9 @@ describe('Story 6.1 — DATA_STALE bloque le paiement', () => {
     fireEvent.click(screen.getByRole('tab', { name: /paiement/i }));
 
     const submitBefore = screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement;
-    expect(submitBefore.disabled).toBe(false);
+    await waitFor(() => {
+      expect(submitBefore.disabled).toBe(false);
+    });
 
     fireEvent.click(screen.getByTestId('cashflow-trigger-stale'));
     expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(true);

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -8,7 +8,6 @@ from recyclic_api.core.database import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from recyclic_api.core.security import verify_token
-from recyclic_api.models.sale import Sale
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import (
     SaleCorrectionCreate,
@@ -20,6 +19,7 @@ from recyclic_api.schemas.sale import (
     SaleItemWeightUpdate,
     SaleHoldCreate,
     SaleFinalizeHeld,
+    SalePaymentMethodOption,
     SaleReversalCreate,
     SaleReversalResponse,
 )
@@ -34,14 +34,18 @@ from recyclic_api.core.step_up import (
 )
 from recyclic_api.services.idempotency_support import (
     body_fingerprint_sale_correction_json,
+    body_fingerprint_sale_create_json,
+    body_fingerprint_sale_finalize_held_json,
     get_cached_idempotent_close,
     redis_key_idempotent_sale_correction,
+    redis_key_idempotent_sale_create,
+    redis_key_idempotent_sale_finalize,
     store_idempotent_close,
     validate_or_raise_idempotency_conflict,
 )
 from recyclic_api.services.sale_service import SaleService
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
-from sqlalchemy.orm import selectinload
+from recyclic_api.utils.rate_limit import conditional_rate_limit
 
 router = APIRouter()
 auth_scheme = HTTPBearer(auto_error=False)
@@ -157,18 +161,31 @@ _SALE_CORRECTION_DOMAIN_HTTP = {
     "validation_status": 400,
 }
 
-@router.get("/", response_model=List[SaleResponse])
-async def get_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all sales"""
-    # Story B52-P1: Eager load payments pour éviter N+1 queries
-    sales = db.query(Sale).options(
-        selectinload(Sale.payments),
-        selectinload(Sale.items)
-    ).offset(skip).limit(limit).all()
-    return sales
-
-
 # Story 6.3 — chemins statiques avant /{sale_id} pour éviter « held » capturé comme UUID.
+@conditional_rate_limit("120/minute")
+@router.get(
+    "/payment-method-options",
+    response_model=list[SalePaymentMethodOption],
+    summary="Moyens de paiement caisse (référentiel expert actif)",
+    operation_id="recyclique_sales_listPaymentMethodOptions",
+)
+async def list_sale_payment_method_options(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+):
+    """Codes et libellés pour UI caisse — alignés sur l’admin comptable expert (pas d’import Paheko)."""
+    response.headers["Cache-Control"] = "private, no-store"
+    user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    try:
+        return SaleService(db).list_payment_method_options_for_caisse(user_id)
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @router.get("/held", response_model=List[SaleResponse])
 async def list_held_sales_for_session(
     request: Request,
@@ -402,6 +419,7 @@ async def create_sale(
     sale_data: SaleCreate,
     db: Session = Depends(get_db),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+    redis_client=Depends(get_redis),
 ):
     """
     Create new sale with items and operator traceability.
@@ -414,12 +432,27 @@ async def create_sale(
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     rid = getattr(request.state, "request_id", None)
 
+    idem_key = (request.headers.get(IDEMPOTENCY_KEY_HEADER) or "").strip() or None
+    body_fp = body_fingerprint_sale_create_json(sale_data.model_dump(mode="json"))
+    rkey = None
+    if idem_key:
+        rkey = redis_key_idempotent_sale_create(user_id, idem_key)
+        cached = get_cached_idempotent_close(redis_client, rkey)
+        if cached:
+            status_c, response_body = validate_or_raise_idempotency_conflict(cached, body_fp)
+            return JSONResponse(status_code=status_c, content=response_body)
+
     try:
-        return SaleService(db).create_sale(sale_data, user_id, request_id=rid)
+        result = SaleService(db).create_sale(sale_data, user_id, request_id=rid)
     except AuthorizationError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
     except (NotFoundError, ValidationError, ConflictError) as e:
         raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
+
+    encoded = jsonable_encoder(result)
+    if idem_key and rkey:
+        store_idempotent_close(redis_client, rkey, body_fp, 200, encoded)
+    return result
 
 
 @router.post("/{sale_id}/finalize-held", response_model=SaleResponse)
@@ -429,16 +462,33 @@ async def finalize_held_sale(
     payload: SaleFinalizeHeld,
     db: Session = Depends(get_db),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
+    redis_client=Depends(get_redis),
 ):
     """Finalise un ticket précédemment mis en attente (paiement + agrégats session)."""
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     rid = getattr(request.state, "request_id", None)
+
+    idem_key = (request.headers.get(IDEMPOTENCY_KEY_HEADER) or "").strip() or None
+    body_fp = body_fingerprint_sale_finalize_held_json(payload.model_dump(mode="json"))
+    rkey = None
+    if idem_key:
+        rkey = redis_key_idempotent_sale_finalize(user_id, sale_id, idem_key)
+        cached = get_cached_idempotent_close(redis_client, rkey)
+        if cached:
+            status_c, response_body = validate_or_raise_idempotency_conflict(cached, body_fp)
+            return JSONResponse(status_code=status_c, content=response_body)
+
     try:
-        return SaleService(db).finalize_held_sale(sale_id, payload, user_id, request_id=rid)
+        result = SaleService(db).finalize_held_sale(sale_id, payload, user_id, request_id=rid)
     except AuthorizationError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
     except (NotFoundError, ValidationError, ConflictError) as e:
         raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
+
+    encoded = jsonable_encoder(result)
+    if idem_key and rkey:
+        store_idempotent_close(redis_client, rkey, body_fp, 200, encoded)
+    return result
 
 
 @router.post("/{sale_id}/abandon-held", response_model=SaleResponse)

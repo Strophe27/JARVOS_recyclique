@@ -66,6 +66,18 @@ def _seed(db_session):
                 display_order=order,
             )
         )
+    db_session.add(
+        PaymentMethodDefinition(
+            id=uuid.uuid4(),
+            code="wire",
+            label="Virement test",
+            active=True,
+            kind=PaymentMethodKind.BANK,
+            paheko_debit_account="512",
+            paheko_refund_credit_account="512",
+            display_order=5,
+        )
+    )
     db_session.commit()
     return cashier, session
 
@@ -378,3 +390,37 @@ def test_session_rollups_separate_net_sales_donation_and_gross_current_amount(cl
     preview = svc.get_closing_preview(session, 0.0)
     assert preview["total_donations"] == pytest.approx(2.0)
     assert preview["theoretical_amount"] == pytest.approx(init + 15.0)
+
+
+def test_payment_method_options_endpoint(client, db_session):
+    cashier, session = _seed(db_session)
+    token = create_access_token(data={"sub": str(cashier.id)})
+    r = client.get("/v1/sales/payment-method-options", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200, r.text
+    assert r.headers.get("Cache-Control") == "private, no-store"
+    data = r.json()
+    codes = {row["code"] for row in data}
+    assert "cash" in codes and "wire" in codes
+    assert all("label" in row and "kind" in row for row in data)
+
+
+def test_sale_with_expert_only_payment_code(client, db_session):
+    """Code référentiel hors enum legacy (ex. wire) : accepté si actif en base."""
+    cashier, session = _seed(db_session)
+    token = create_access_token(data={"sub": str(cashier.id)})
+    r = client.post(
+        "/v1/sales/",
+        json={
+            "cash_session_id": str(session.id),
+            "items": [_item_block()],
+            "total_amount": 12.0,
+            "payment_method": "wire",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    sale = r.json()
+    assert sale["payment_method"] == "card"
+    pays = [p for p in sale["payments"] if p.get("nature") == "sale_payment"]
+    assert len(pays) == 1
+    assert pays[0]["payment_method_code"] == "wire"

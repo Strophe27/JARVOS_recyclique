@@ -43,6 +43,12 @@ import {
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import {
+  labelForCode,
+  paymentMethodLabelMapFromOptions,
+  type PaymentMethodLabelMap,
+} from './payment-method-display';
+import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowSaleCorrectionWizard } from './CashflowSaleCorrectionWizard';
 import type { CashflowSubmitSurfaceError } from './cashflow-submit-error';
@@ -67,18 +73,28 @@ function saleIdOf(s: Record<string, unknown>): string {
   return typeof s.id === 'string' ? s.id : '';
 }
 
-function getPaymentMethodLabel(code?: string | null): string {
+function paymentCodeFromPaymentLike(p: Record<string, unknown>): string {
+  const pc = p.payment_method_code;
+  if (typeof pc === 'string' && pc.trim()) return pc.trim();
+  const pm = p.payment_method;
+  return typeof pm === 'string' ? pm.trim() : '';
+}
+
+function paymentCodeFromSaleRow(row: Record<string, unknown>): string {
+  const pc = row.payment_method_code;
+  if (typeof pc === 'string' && pc.trim()) return pc.trim();
+  const pm = row.payment_method;
+  return typeof pm === 'string' ? pm.trim() : '';
+}
+
+function formatPaymentLineLabel(
+  code: string,
+  map: PaymentMethodLabelMap,
+  pmLoading: boolean,
+): string {
+  if (pmLoading && code) return '…';
   if (!code) return 'Non spécifié';
-  const labels: Record<string, string> = {
-    cash: 'Espèces',
-    card: 'Carte bancaire',
-    check: 'Chèque',
-    free: 'Sans paiement',
-    espèces: 'Espèces',
-    'carte bancaire': 'Carte bancaire',
-    chèque: 'Chèque',
-  };
-  return labels[code] ?? code;
+  return labelForCode(code, map);
 }
 
 function formatCurrency(value: number | null | undefined): string {
@@ -115,26 +131,31 @@ function lifecyclePresentation(code: string): string {
   return code ? code : '—';
 }
 
-function paymentSummaryForRow(row: Record<string, unknown>): ReactNode {
+function paymentSummaryForRow(
+  row: Record<string, unknown>,
+  labelMap: PaymentMethodLabelMap,
+  pmLoading: boolean,
+): ReactNode {
   const payments = row.payments;
   if (Array.isArray(payments) && payments.length > 0) {
     return (
       <Stack gap={2}>
         {payments.map((p, index) => {
           const pr = p as Record<string, unknown>;
-          const method = typeof pr.payment_method === 'string' ? pr.payment_method : '';
+          const method = paymentCodeFromPaymentLike(pr);
           const amount = typeof pr.amount === 'number' ? pr.amount : Number(pr.amount);
           return (
             <Text key={typeof pr.id === 'string' ? pr.id : index} size="sm">
-              {getPaymentMethodLabel(method)} : {formatCurrency(Number.isFinite(amount) ? amount : 0)}
+              {formatPaymentLineLabel(method, labelMap, pmLoading)} :{' '}
+              {formatCurrency(Number.isFinite(amount) ? amount : 0)}
             </Text>
           );
         })}
       </Stack>
     );
   }
-  const legacy = typeof row.payment_method === 'string' ? row.payment_method : undefined;
-  return <Text size="sm">{getPaymentMethodLabel(legacy)}</Text>;
+  const legacy = paymentCodeFromSaleRow(row);
+  return <Text size="sm">{formatPaymentLineLabel(legacy, labelMap, pmLoading)}</Text>;
 }
 
 function saleRowDate(row: Record<string, unknown>): string {
@@ -173,6 +194,9 @@ type TicketPeekState =
 export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): ReactNode {
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
+  const { options: pmOptions, loading: pmLoading, error: pmError } =
+    useCaissePaymentMethodOptions(auth);
+  const pmLabelMap = useMemo(() => paymentMethodLabelMapFromOptions(pmOptions), [pmOptions]);
   const canCorrect = envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_SALE_CORRECT);
   const canEditSaleNote = envelope.permissions.permissionKeys.includes(TRANSVERSE_PERMISSION_ADMIN_VIEW);
 
@@ -340,6 +364,12 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
       ) : null}
 
       <CashflowClientErrorAlert error={error} testId="admin-cash-session-error" />
+
+      {pmError ? (
+        <Text size="sm" c="red" data-testid="admin-cash-session-pm-error">
+          {pmError}
+        </Text>
+      ) : null}
 
       {initialLoad ? (
         <Stack align="center" py="xl" gap="sm" data-testid="admin-cash-session-loading">
@@ -603,7 +633,7 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
                         <Table.Td>
                           <Text size="sm">{formatWeight(Number.isFinite(weight) ? weight : 0)}</Text>
                         </Table.Td>
-                        <Table.Td>{paymentSummaryForRow(row)}</Table.Td>
+                        <Table.Td>{paymentSummaryForRow(row, pmLabelMap, pmLoading)}</Table.Td>
                         <Table.Td>
                           <Text size="sm">{opName}</Text>
                         </Table.Td>
@@ -697,6 +727,8 @@ export function AdminCashSessionDetailWidget(_props: RegisteredWidgetProps): Rea
             operatorLabel={ticketPeek.operatorLabel}
             canEditNote={canEditSaleNote}
             onNoteSaved={onTicketNoteSaved}
+            pmLabelMap={pmLabelMap}
+            pmLoading={pmLoading}
           />
         ) : null}
       </Modal>
@@ -709,8 +741,10 @@ function TicketDetailBody(props: {
   operatorLabel: string;
   canEditNote: boolean;
   onNoteSaved: (sale: SaleResponseV1) => void;
+  pmLabelMap: PaymentMethodLabelMap;
+  pmLoading: boolean;
 }): ReactNode {
-  const { sale: initialSale, operatorLabel, canEditNote, onNoteSaved } = props;
+  const { sale: initialSale, operatorLabel, canEditNote, onNoteSaved, pmLabelMap, pmLoading } = props;
   const auth = useAuthPort();
   const [sale, setSale] = useState<SaleResponseV1>(initialSale);
   const [editingNote, setEditingNote] = useState(false);
@@ -780,11 +814,17 @@ function TicketDetailBody(props: {
           <div style={{ textAlign: 'right' }}>
             {Array.isArray(sale.payments) && sale.payments.length > 0 ? (
               <Stack gap={4} align="flex-end">
-                {(sale.payments as Array<{ payment_method?: string; amount?: number }>).map((p, i) => (
+                {(sale.payments as Array<Record<string, unknown>>).map((raw, i) => {
+                  const pr = raw;
+                  const code = paymentCodeFromPaymentLike(pr);
+                  const amt = typeof pr.amount === 'number' ? pr.amount : Number(pr.amount);
+                  return (
                   <Text key={i} size="sm">
-                    {getPaymentMethodLabel(p.payment_method)} : {formatCurrency(p.amount ?? 0)}
+                    {formatPaymentLineLabel(code, pmLabelMap, pmLoading)} :{' '}
+                    {formatCurrency(Number.isFinite(amt) ? amt : 0)}
                   </Text>
-                ))}
+                  );
+                })}
                 <Text size="sm" fw={700} pt={4} style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
                   Total :{' '}
                   {formatCurrency(
@@ -794,7 +834,11 @@ function TicketDetailBody(props: {
               </Stack>
             ) : (
               <Text size="sm" fw={600}>
-                {getPaymentMethodLabel(sale.payment_method)}
+                {formatPaymentLineLabel(
+                  typeof sale.payment_method === 'string' ? sale.payment_method.trim() : '',
+                  pmLabelMap,
+                  pmLoading,
+                )}
               </Text>
             )}
           </div>

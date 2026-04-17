@@ -137,6 +137,8 @@ def test_matrix_simple_payment_report_struct(client, db_session):
     rep = build_dual_read_compare_report(db_session, MATRIX_SIMPLE)
     assert rep.legacy_brownfield.sum_sales_total_amount == pytest.approx(25.0)
     assert rep.canonical_journal.totals.payment_transaction_line_count >= 1
+    # Clés journal = codes expert (jointure payment_method_id), alignés seed _seed_pm_definitions
+    assert rep.canonical_journal.totals.by_payment_method_signed.get("cash") == pytest.approx(25.0)
     assert rep.cutover_indicator_ok is True
     assert rep.gap_findings == []
 
@@ -160,6 +162,9 @@ def test_matrix_mixed_payments_aligned(client, db_session):
     assert r.status_code == 200, r.text
     rep = build_dual_read_compare_report(db_session, MATRIX_MIXED)
     assert rep.journal_derived.sale_payment_inflow_sum == pytest.approx(12.0)
+    by_pm = rep.canonical_journal.totals.by_payment_method_signed
+    assert by_pm.get("cash") == pytest.approx(5.0)
+    assert by_pm.get("check") == pytest.approx(7.0)
     assert rep.cutover_indicator_ok is True
 
 

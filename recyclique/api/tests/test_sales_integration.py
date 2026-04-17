@@ -19,7 +19,9 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.core.security import create_access_token
+from recyclic_api.core.step_up import IDEMPOTENCY_KEY_HEADER
 from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
+from tests.memory_redis_for_tests import MemoryRedisForTests
 
 
 class TestSalesIntegration:
@@ -310,14 +312,13 @@ class TestSalesIntegration:
         )
         assert response.status_code == 422  # Validation error
 
-    def test_get_sales_list(self, client: TestClient, cashier_token):
-        """Test de récupération de la liste des ventes"""
+    def test_get_sales_list_removed_returns_404(self, client: TestClient, cashier_token):
+        """GET liste globale supprimée (durcissement surface d'attaque) — 404 ou 405 selon routage FastAPI."""
         response = client.get(
             "/v1/sales/",
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert response.status_code in (404, 405)
 
     def test_create_sale_with_note(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):
         """
@@ -1328,3 +1329,115 @@ class TestSalesIntegration:
         assert "payments" in data
         assert len(data["payments"]) == 2
         assert sum(p["amount"] for p in data["payments"]) == 100.0
+
+    def test_create_sale_idempotent_replay_same_body(
+        self,
+        monkeypatch,
+        client: TestClient,
+        test_cashier,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        cashier_token,
+        db_session,
+    ):
+        """Même Idempotency-Key + même corps → une seule vente en base (Redis aligné fermeture session)."""
+        mem = MemoryRedisForTests()
+        monkeypatch.setattr(
+            "recyclic_api.api.api_v1.endpoints.sales.get_redis",
+            lambda: mem,
+        )
+
+        user = User(**test_cashier)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        db_session.add(user)
+        db_session.add(site)
+        db_session.add(cash_register)
+        db_session.add(cash_session)
+        db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
+
+        sale_data = {
+            "cash_session_id": str(test_cash_session["id"]),
+            "items": [
+                {
+                    "category": "EEE-1",
+                    "quantity": 1,
+                    "weight": 1.0,
+                    "unit_price": 7.0,
+                    "total_price": 7.0,
+                }
+            ],
+            "total_amount": 7.0,
+            "donation": 0.0,
+            "payment_method": "cash",
+        }
+        headers = {
+            "Authorization": f"Bearer {cashier_token}",
+            IDEMPOTENCY_KEY_HEADER: "idem-sale-create-sec-1",
+        }
+        r1 = client.post("/v1/sales/", json=sale_data, headers=headers)
+        assert r1.status_code == 200, r1.text
+        j1 = r1.json()
+        r2 = client.post("/v1/sales/", json=sale_data, headers=headers)
+        assert r2.status_code == 200, r2.text
+        j2 = r2.json()
+        assert j2["id"] == j1["id"]
+        assert j2["total_amount"] == j1["total_amount"]
+
+        from recyclic_api.models.sale import Sale
+
+        n = db_session.query(Sale).filter(Sale.cash_session_id == test_cash_session["id"]).count()
+        assert n == 1
+
+    def test_create_sale_idempotency_conflict_different_body(
+        self,
+        monkeypatch,
+        client: TestClient,
+        test_cashier,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        cashier_token,
+        db_session,
+    ):
+        mem = MemoryRedisForTests()
+        monkeypatch.setattr(
+            "recyclic_api.api.api_v1.endpoints.sales.get_redis",
+            lambda: mem,
+        )
+
+        user = User(**test_cashier)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        db_session.add(user)
+        db_session.add(site)
+        db_session.add(cash_register)
+        db_session.add(cash_session)
+        db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, site.id)
+
+        base = {
+            "cash_session_id": str(test_cash_session["id"]),
+            "items": [
+                {
+                    "category": "EEE-1",
+                    "quantity": 1,
+                    "weight": 1.0,
+                    "unit_price": 3.0,
+                    "total_price": 3.0,
+                }
+            ],
+            "donation": 0.0,
+            "payment_method": "cash",
+        }
+        key = "idem-sale-create-conflict-2"
+        h = {"Authorization": f"Bearer {cashier_token}", IDEMPOTENCY_KEY_HEADER: key}
+        r1 = client.post("/v1/sales/", json={**base, "total_amount": 3.0}, headers=h)
+        assert r1.status_code == 200, r1.text
+        r2 = client.post("/v1/sales/", json={**base, "total_amount": 4.0}, headers=h)
+        assert r2.status_code == 409
+        assert r2.json().get("code") == "IDEMPOTENCY_KEY_CONFLICT"

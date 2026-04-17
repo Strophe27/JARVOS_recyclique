@@ -214,9 +214,10 @@ export class SalesApi {
     /**
    * Get Sales
    */
-  static async salesv1salesget(params?: any): Promise<SaleResponse[]> {
-    const response: AxiosResponse<SaleResponse[]> = await apiClient.get(`/v1/sales/?${new URLSearchParams(params).toString()}`);
-    return response.data;
+  static async salesv1salesget(_params?: any): Promise<SaleResponse[]> {
+    throw new Error(
+      'SalesApi.salesv1salesget est obsolète : GET /v1/sales/ (liste globale) a été retiré côté API.',
+    );
   }
 
     /**

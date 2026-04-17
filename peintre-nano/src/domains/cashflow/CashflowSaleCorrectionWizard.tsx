@@ -10,6 +10,8 @@ import {
 import { PERMISSION_CASHFLOW_SALE_CORRECT } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { DEFAULT_FREE_PAYMENT_LABEL } from './payment-method-display';
+import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowOperationalSyncNotice } from './cashflow-operational-sync-notice';
 import type { CashflowSubmitSurfaceError } from './cashflow-submit-error';
@@ -65,14 +67,6 @@ const KIND_OPTIONS = [
   { value: 'finalize_fields', label: 'Champs de finalisation (liste fermée)' },
 ] as const;
 
-const PAYMENT_OPTIONS = [
-  { value: '', label: '(inchangé)' },
-  { value: 'cash', label: 'Espèces' },
-  { value: 'card', label: 'Carte' },
-  { value: 'check', label: 'Chèque' },
-  { value: 'free', label: 'Gratuit / don' },
-] as const;
-
 /**
  * Story 6.8 — correction bornée : chargement ticket, saisie whitelist + motif + PIN step-up.
  * Permissions : enveloppe uniquement (`caisse.sale_correct`) ; pas de seconde vérité métier locale.
@@ -82,6 +76,16 @@ const PAYMENT_OPTIONS = [
 export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetProps): ReactNode {
   const entry = useSaleCorrectionEntryBlock();
   const auth = useAuthPort();
+  const { options: pmOpts, loading: pmLoading, error: pmError } = useCaissePaymentMethodOptions(auth);
+  const paymentMethodsReady = !pmLoading && pmError === null && pmOpts.length > 0;
+  const paymentCorrectionSelectData = useMemo(
+    () => [
+      { value: '', label: '(inchangé)' },
+      ...pmOpts.map((o) => ({ value: o.code, label: o.label })),
+      { value: 'free', label: DEFAULT_FREE_PAYMENT_LABEL },
+    ],
+    [pmOpts],
+  );
   const draft = useCashflowDraft();
   const stale = draft.widgetDataState === 'DATA_STALE';
   const initialSaleId =
@@ -103,6 +107,17 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+
+  const validPaymentCorrectionValues = useMemo(() => {
+    const s = new Set(['', 'free']);
+    for (const o of pmOpts) s.add(o.code);
+    return s;
+  }, [pmOpts]);
+
+  useEffect(() => {
+    if (kind !== 'finalize_fields') return;
+    setPaymentMethod((prev) => (validPaymentCorrectionValues.has(prev) ? prev : ''));
+  }, [kind, validPaymentCorrectionValues]);
 
   const applyLoadedSale = useCallback((sale: SaleResponseV1) => {
       setLoadedSaleId(sale.id);
@@ -220,6 +235,17 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
       any = true;
     }
     if (paymentMethod.trim() !== '') {
+      if (paymentMethod !== 'free' && !paymentMethodsReady) {
+        setError({
+          kind: 'local',
+          message: 'Moyens de paiement indisponibles — impossible de modifier le mode de paiement pour l’instant.',
+        });
+        return null;
+      }
+      if (paymentMethod !== 'free' && paymentMethod !== '' && !pmOpts.some((o) => o.code === paymentMethod)) {
+        setError({ kind: 'local', message: 'Mode de paiement invalide par rapport au référentiel actif.' });
+        return null;
+      }
       payload.payment_method = paymentMethod;
       any = true;
     }
@@ -349,11 +375,22 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
               />
               <NativeSelect
                 label="Mode de paiement"
-                data={[...PAYMENT_OPTIONS]}
-                value={paymentMethod}
+                data={paymentCorrectionSelectData}
+                value={validPaymentCorrectionValues.has(paymentMethod) ? paymentMethod : ''}
                 onChange={(e) => setPaymentMethod(e.currentTarget.value)}
+                disabled={pmLoading || stale}
                 data-testid="cashflow-sale-correction-payment"
               />
+              {pmLoading ? (
+                <Text size="sm" c="dimmed" data-testid="cashflow-sale-correction-pm-loading">
+                  Chargement des moyens de paiement…
+                </Text>
+              ) : null}
+              {pmError ? (
+                <Text size="sm" c="red" data-testid="cashflow-sale-correction-pm-error">
+                  {pmError}
+                </Text>
+              ) : null}
               <TextInput
                 label="Note ticket (modifier pour envoyer une correction ; laisser inchangé sinon)"
                 value={note}

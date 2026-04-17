@@ -10,11 +10,40 @@ export const DEFAULT_LIVE_SNAPSHOT_POLLING_INTERVAL_S = 30;
 /**
  * Préfixe API same-origin : en dev Vite/Docker, proxy `/api` → backend (voir `vite.config.ts`).
  * Surcharge : `VITE_RECYCLIQUE_API_PREFIX` (sans slash final).
+ *
+ * Durcissement : chemin relatif (`/` + segments, pas de `..`, pas de `//`) ou URL absolue
+ * `https:` ; `http:` uniquement pour localhost / 127.0.0.1 (dev).
  */
 export function getLiveSnapshotBasePrefix(): string {
   const raw = import.meta.env.VITE_RECYCLIQUE_API_PREFIX as string | undefined;
-  const trimmed = (raw ?? '/api').replace(/\/$/, '');
-  return trimmed || '/api';
+  const trimmed = (raw ?? '/api').trim().replace(/\/$/, '');
+  const candidate = trimmed || '/api';
+
+  if (candidate.startsWith('/')) {
+    if (candidate.startsWith('//') || candidate.includes('..')) {
+      throw new Error('VITE_RECYCLIQUE_API_PREFIX relatif invalide (pas de chemins ambigus ni ..).');
+    }
+    return candidate;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(candidate);
+  } catch {
+    throw new Error('VITE_RECYCLIQUE_API_PREFIX doit être un chemin relatif (/api) ou une URL absolue valide.');
+  }
+
+  const host = url.hostname.toLowerCase();
+  const isLocal = host === 'localhost' || host === '127.0.0.1';
+  if (url.protocol === 'https:') {
+    return candidate.replace(/\/$/, '') || url.origin;
+  }
+  if (url.protocol === 'http:' && isLocal) {
+    return candidate.replace(/\/$/, '') || `${url.protocol}//${url.host}`;
+  }
+  throw new Error(
+    'VITE_RECYCLIQUE_API_PREFIX : en absolu, seuls https: ou http://localhost|127.0.0.1 sont autorisés.',
+  );
 }
 
 export function getLiveSnapshotUrl(): string {

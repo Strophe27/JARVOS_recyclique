@@ -21,6 +21,7 @@ from recyclic_api.models.category import Category
 from recyclic_api.models.preset_button import PresetButton, ButtonType
 from recyclic_api.core.config import settings
 from recyclic_api.core.security import create_access_token, hash_password
+from tests.caisse_sale_eligibility import grant_user_caisse_sale_eligibility
 
 _V1 = settings.API_V1_STR.rstrip("/")
 _TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "")
@@ -38,18 +39,6 @@ class TestUpdateSaleItem:
     def client(self):
         """Client de test FastAPI"""
         return TestClient(app)
-
-    @pytest.fixture
-    def test_user(self):
-        """Utilisateur standard pour les tests"""
-        return {
-            "id": uuid.uuid4(),
-            "username": "test_user",
-            "hashed_password": hash_password("testpass"),
-            "role": UserRole.USER,
-            "status": UserStatus.ACTIVE,
-            "is_active": True
-        }
 
     @pytest.fixture
     def test_admin(self):
@@ -73,6 +62,19 @@ class TestUpdateSaleItem:
             "city": "Test City",
             "postal_code": "12345",
             "country": "France"
+        }
+
+    @pytest.fixture
+    def test_user(self, test_site):
+        """Utilisateur standard pour les tests (site affecté — garde lecture vente / PATCH item)."""
+        return {
+            "id": uuid.uuid4(),
+            "username": "test_user",
+            "hashed_password": hash_password("testpass"),
+            "role": UserRole.USER,
+            "status": UserStatus.ACTIVE,
+            "is_active": True,
+            "site_id": test_site["id"],
         }
 
     @pytest.fixture
@@ -161,6 +163,7 @@ class TestUpdateSaleItem:
         
         db_session.add_all([category, preset, user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, test_site["id"])
 
         # Mettre à jour le preset
         response = client.patch(
@@ -188,6 +191,7 @@ class TestUpdateSaleItem:
         
         db_session.add_all([admin, user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, test_site["id"])
 
         # Mettre à jour le prix
         new_price = 15.0
@@ -216,6 +220,7 @@ class TestUpdateSaleItem:
         
         db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, test_site["id"])
 
         # Tentative de mise à jour du prix par un utilisateur standard
         response = client.patch(
@@ -241,6 +246,7 @@ class TestUpdateSaleItem:
         
         db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, test_site["id"])
 
         # Mettre à jour la quantité
         new_quantity = 5
@@ -268,6 +274,7 @@ class TestUpdateSaleItem:
         
         db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, test_site["id"])
 
         # Mettre à jour le poids
         new_weight = 2.5
@@ -295,6 +302,7 @@ class TestUpdateSaleItem:
         
         db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, test_site["id"])
 
         # Mettre à jour les notes
         new_notes = "Item modifié"
@@ -423,6 +431,7 @@ class TestUpdateSaleItem:
         sale_item = SaleItem(**test_sale_item)
         db_session.add_all([user, site, cash_register, cash_session, sale, sale_item])
         db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, user, test_site["id"])
 
         response = client.patch(
             f"{_V1}/sales/{test_sale['id']}/items/not-a-uuid",
@@ -529,4 +538,44 @@ class TestUpdateSaleItem:
         assert response.status_code == 400
         assert response.json()["detail"] == "Invalid ID format"
 
+    def test_update_sale_item_other_operator_forbidden(
+        self,
+        client: TestClient,
+        test_user,
+        test_site,
+        test_cash_register,
+        test_cash_session,
+        test_sale,
+        test_sale_item,
+        db_session,
+    ):
+        """Un autre caissier (même site, permission caisse) ne peut pas PATCH les lignes d'une vente d'autrui."""
+        intruder_id = uuid.uuid4()
+        intruder = User(
+            id=intruder_id,
+            username="intruder_b52",
+            hashed_password=hash_password("x"),
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True,
+            site_id=test_site["id"],
+        )
+        owner = User(**test_user)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+        sale = Sale(**test_sale)
+        sale_item = SaleItem(**test_sale_item)
+        db_session.add_all([intruder, owner, site, cash_register, cash_session, sale, sale_item])
+        db_session.commit()
+        grant_user_caisse_sale_eligibility(db_session, intruder, test_site["id"])
 
+        intruder_token = create_access_token(data={"sub": str(intruder_id)})
+        response = client.patch(
+            f"{_V1}/sales/{test_sale['id']}/items/{test_sale_item['id']}",
+            json={"notes": "tentative IDOR"},
+            headers={"Authorization": f"Bearer {intruder_token}"},
+        )
+        assert response.status_code == 403
+        detail = response.json().get("detail", "")
+        assert "périmètre" in str(detail).lower() or "opérateur" in str(detail).lower()

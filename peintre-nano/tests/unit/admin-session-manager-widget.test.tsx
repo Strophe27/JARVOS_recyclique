@@ -7,6 +7,7 @@ import type { AuthContextPort } from '../../src/app/auth/auth-context-port';
 import { RootProviders } from '../../src/app/providers/RootProviders';
 import { SessionManagerAdminWidget } from '../../src/domains/admin-config/SessionManagerAdminWidget';
 import '../../src/styles/tokens.css';
+import { paymentMethodOptionsJsonBody } from './fixtures/payment-method-options-api';
 
 const authStub: AuthContextPort = {
   getSession: () => ({ authenticated: true, userId: '550e8400-e29b-41d4-a716-446655440001', userDisplayLabel: 'Test' }),
@@ -146,6 +147,15 @@ describe('SessionManagerAdminWidget', () => {
             text: async () => JSON.stringify(body),
           };
         }
+        if (url.includes('/v1/sales/payment-method-options')) {
+          const body = paymentMethodOptionsJsonBody();
+          return {
+            ok: true,
+            status: 200,
+            json: async () => body,
+            text: async () => JSON.stringify(body),
+          };
+        }
         return { ok: true, status: 200, json: async () => [], text: async () => '[]' };
       }),
     );
@@ -235,6 +245,15 @@ describe('SessionManagerAdminWidget', () => {
             text: async () => JSON.stringify(body),
           };
         }
+        if (url.includes('/v1/sales/payment-method-options')) {
+          const body = paymentMethodOptionsJsonBody();
+          return {
+            ok: true,
+            status: 200,
+            json: async () => body,
+            text: async () => JSON.stringify(body),
+          };
+        }
         return { ok: true, status: 200, json: async () => [], text: async () => '[]' };
       }),
     );
@@ -305,6 +324,15 @@ describe('SessionManagerAdminWidget', () => {
             text: async () => JSON.stringify(body),
           };
         }
+        if (url.includes('/v1/sales/payment-method-options')) {
+          const body = paymentMethodOptionsJsonBody();
+          return {
+            ok: true,
+            status: 200,
+            json: async () => body,
+            text: async () => JSON.stringify(body),
+          };
+        }
         return { ok: true, status: 200, json: async () => [], text: async () => '[]' };
       }),
     );
@@ -332,6 +360,75 @@ describe('SessionManagerAdminWidget', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('admin-session-manager-bulk-export-blocked')).toBeNull();
       expect((screen.getByTestId('admin-session-manager-bulk-csv') as HTMLButtonElement).disabled).toBe(false);
+    });
+  });
+
+  it('filtre moyens de paiement : libellés issus de GET payment-method-options (ordre serveur / fixture)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes('/v1/users') && !url.includes('/v1/users/me')) {
+          const body = [
+            { id: '550e8400-e29b-41d4-a716-446655440001', username: 'op', first_name: 'Pat', last_name: 'Op' },
+          ];
+          return {
+            ok: true,
+            status: 200,
+            json: async () => body,
+            text: async () => JSON.stringify(body),
+          };
+        }
+        if (url.includes('/v1/cash-sessions/stats/summary')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => kpiPayload,
+            text: async () => JSON.stringify(kpiPayload),
+          };
+        }
+        if (url.includes('/v1/cash-sessions/') && !url.includes('by-session') && !url.includes('stats/summary')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => listPayload,
+            text: async () => JSON.stringify(listPayload),
+          };
+        }
+        if (url.includes('/v1/sites/')) {
+          const body = [{ id: '550e8400-e29b-41d4-a716-446655440000', name: 'Site test' }];
+          return {
+            ok: true,
+            status: 200,
+            json: async () => body,
+            text: async () => JSON.stringify(body),
+          };
+        }
+        if (url.includes('/v1/sales/payment-method-options')) {
+          const body = paymentMethodOptionsJsonBody();
+          return {
+            ok: true,
+            status: 200,
+            json: async () => body,
+            text: async () => JSON.stringify(body),
+          };
+        }
+        return { ok: true, status: 200, json: async () => [], text: async () => '[]' };
+      }),
+    );
+
+    render(wrap(<SessionManagerAdminWidget widgetProps={{}} />));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-session-manager-sessions-table')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filtres avancés/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('checkbox', { name: 'Virement SEPA' })).toBeTruthy();
+      expect(screen.getByRole('checkbox', { name: 'Chèque cadeau' })).toBeTruthy();
+      expect(screen.getByRole('checkbox', { name: 'Espèces caisse' })).toBeTruthy();
     });
   });
 });

@@ -34,6 +34,7 @@ import { isUuidLikeString } from '../../api/cash-session-client';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { useCaissePaymentMethodOptions } from '../cashflow/use-caisse-payment-method-options';
 
 type SortField =
   | 'opened_at'
@@ -117,6 +118,7 @@ function userLabel(u: AdminLegacyUserListRow): string {
 export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
+  const { options: pmOpts, loading: pmOptsLoading, error: pmOptsError } = useCaissePaymentMethodOptions(auth);
 
   const defaultSite = useMemo(() => {
     const s = envelope.siteId?.trim() ?? '';
@@ -147,6 +149,16 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
       setUi((prev) => ({ ...prev, site_id: defaultSite }));
     }
   }, [defaultSite, ui.site_id]);
+
+  useEffect(() => {
+    if (pmOptsLoading || pmOptsError || pmOpts.length === 0) return;
+    const allowed = new Set(pmOpts.map((o) => o.code));
+    setUi((prev) => {
+      const next = prev.payment_methods.filter((c) => allowed.has(c));
+      if (next.length === prev.payment_methods.length) return prev;
+      return { ...prev, skip: 0, payment_methods: next };
+    });
+  }, [pmOpts, pmOptsLoading, pmOptsError]);
 
   const [users, setUsers] = useState<readonly AdminLegacyUserListRow[]>([]);
   const usersRef = useRef(users);
@@ -554,20 +566,26 @@ export function SessionManagerAdminWidget(_: RegisteredWidgetProps): ReactNode {
                       <Text size="sm" fw={500} mb={6}>
                         Moyens de paiement
                       </Text>
+                      {pmOptsLoading ? (
+                        <Text size="xs" c="dimmed" data-testid="admin-session-manager-pm-filters-loading">
+                          Chargement des moyens…
+                        </Text>
+                      ) : null}
+                      {pmOptsError ? (
+                        <Text size="xs" c="red" data-testid="admin-session-manager-pm-filters-error">
+                          {pmOptsError}
+                        </Text>
+                      ) : null}
                       <Group gap="md">
-                        {(
-                          [
-                            ['cash', 'Espèces'],
-                            ['card', 'Carte'],
-                            ['check', 'Chèque'],
-                          ] as const
-                        ).map(([value, label]) => (
+                        {pmOpts.map((o) => (
                           <Checkbox
-                            key={value}
-                            label={label}
-                            checked={ui.payment_methods.includes(value)}
+                            key={o.code}
+                            label={o.label}
+                            disabled={pmOptsLoading || Boolean(pmOptsError)}
+                            checked={ui.payment_methods.includes(o.code)}
                             onChange={(e) => {
                               const on = e.currentTarget.checked;
+                              const value = o.code;
                               setUi((prev) => ({
                                 ...prev,
                                 skip: 0,

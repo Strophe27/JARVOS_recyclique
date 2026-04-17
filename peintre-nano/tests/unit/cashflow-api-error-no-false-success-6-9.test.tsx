@@ -70,7 +70,15 @@ describe('Story 6.9 — erreur API : pas d’écran succès', () => {
               }),
           });
         }
-        if (url.includes('/v1/sales/') && !url.includes('/v1/sales/held')) {
+        if (url.includes('payment-method-options')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: async () =>
+              JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]),
+          });
+        }
+        if (url.includes('/v1/sales/') && !url.includes('/v1/sales/held') && !url.includes('payment-method-options')) {
           return Promise.resolve({
             ok: false,
             status: 409,
@@ -105,6 +113,9 @@ describe('Story 6.9 — erreur API : pas d’écran succès', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByRole('tab', { name: /paiement/i }));
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
 
     await waitFor(() => {
@@ -173,7 +184,15 @@ describe('Story 6.9 — erreur API retryable (AR21 / UI)', () => {
               }),
           });
         }
-        if (url.includes('/v1/sales/') && !url.includes('/v1/sales/held')) {
+        if (url.includes('payment-method-options')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: async () =>
+              JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]),
+          });
+        }
+        if (url.includes('/v1/sales/') && !url.includes('/v1/sales/held') && !url.includes('payment-method-options')) {
           return Promise.resolve({
             ok: false,
             status: 503,
@@ -208,6 +227,9 @@ describe('Story 6.9 — erreur API retryable (AR21 / UI)', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByRole('tab', { name: /paiement/i }));
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
 
     await waitFor(() => {

@@ -13,6 +13,7 @@ Tout ce qui sert a la **communication publique** : presentations (partenaires, f
 | Fichier | Usage |
 |---------|--------|
 | [modes-emploi/mode-emploi-parametrage-comptable-superadmin.md](modes-emploi/mode-emploi-parametrage-comptable-superadmin.md) | Mode d'emploi **public** (v1.1) : SuperAdmin **Paramétrage comptable** (4 onglets), sommaire, PIN, révisions, Paheko, glossaire, dépannage, chemins dépôt. |
+| [exploitation-revision-vs-live-paiement.md](exploitation-revision-vs-live-paiement.md) | Exploitation : écart accepté entre révision figée (clôture / Paheko) et options caisse live (`payment-method-options`) ; la révision doit couvrir les codes utilisés en session. |
 | *(a deposer si besoin)* | Versions **epurees** pretes a envoyer (presentations, modes d'emploi). Matiere premiere → **references/vision-projet/** (ex. `matiere_presentation-plateforme-recyclic.md`). |
 
 ---

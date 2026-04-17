@@ -4,6 +4,7 @@ from typing import Annotated, List, Literal, Optional, Union
 from datetime import datetime
 from recyclic_api.models.payment_transaction import PaymentTransactionDirection, PaymentTransactionNature
 from recyclic_api.models.sale import PaymentMethod, SaleLifecycleStatus, SocialActionKind, SpecialEncaissementKind
+from recyclic_api.models.payment_method import PaymentMethodKind
 from recyclic_api.models.sale_reversal import RefundReasonCode
 
 
@@ -13,14 +14,31 @@ class PaymentBase(BaseModel):
     amount: float
 
 
-class PaymentCreate(PaymentBase):
+def _normalize_payment_method_str(v: object) -> str:
+    if isinstance(v, PaymentMethod):
+        return v.value
+    s = str(v).strip().lower()
+    if not s:
+        raise ValueError("payment_method ne peut pas être vide.")
+    return s
+
+
+class PaymentCreate(BaseModel):
+    """Ligne de paiement : code référentiel expert (table ``payment_methods``) ou legacy cash|card|check."""
+
+    payment_method: str = Field(max_length=64)
     # Story 22.4 : rejeter tôt les montants non positifs (évite filtrage silencieux dans sale_service)
     amount: float = Field(gt=0, description="Montant strictement positif pour chaque ligne de paiement ou de don.")
 
+    @field_validator("payment_method", mode="before")
+    @classmethod
+    def _coerce_payment_method_str(cls, v: object) -> str:
+        return _normalize_payment_method_str(v)
+
     @field_validator("payment_method")
     @classmethod
-    def _reject_free_explicit_payment(cls, v: PaymentMethod) -> PaymentMethod:
-        if v == PaymentMethod.FREE:
+    def _reject_free_explicit_payment(cls, v: str) -> str:
+        if v == PaymentMethod.FREE.value:
             raise ValueError(
                 "Le moyen de paiement 'free' n'est pas autorise dans payments[]. "
                 "Utilisez payment_method=free sur la vente gratuite sans ligne financiere."
@@ -92,9 +110,18 @@ class SaleBase(BaseModel):
     cash_session_id: str
     total_amount: float
     donation: Optional[float] = 0.0
-    payment_method: Optional[PaymentMethod] = PaymentMethod.CASH
+    payment_method: Optional[str] = Field(default=PaymentMethod.CASH.value, max_length=64)
     note: Optional[str] = None  # Story B40-P5: Notes sur les tickets de caisse
     # Story 1.1.2: notes et preset_id déplacés vers sale_items (par item individuel)
+
+    @field_validator("payment_method", mode="before")
+    @classmethod
+    def _coerce_sale_base_pm(cls, v: object) -> Optional[str]:
+        if v is None:
+            return None
+        if isinstance(v, PaymentMethod):
+            return v.value
+        return _normalize_payment_method_str(v)
 
     @field_validator('cash_session_id', mode='before')
     @classmethod
@@ -106,7 +133,10 @@ class SaleCreate(BaseModel):
     items: List[SaleItemCreate] = Field(default_factory=list)
     total_amount: float
     donation: Optional[float] = 0.0
-    payment_method: Optional[PaymentMethod] = PaymentMethod.CASH  # Déprécié - utiliser payments à la place
+    payment_method: Optional[str] = Field(
+        default=PaymentMethod.CASH.value,
+        max_length=64,
+    )  # Déprécié - utiliser payments à la place
     payments: Optional[List[PaymentCreate]] = None  # Story B52-P1: Paiements multiples
     # Story 22.4 — don / surplus hors règlement de vente (journal `donation_surplus`)
     donation_surplus: Optional[List[PaymentCreate]] = None
@@ -117,6 +147,13 @@ class SaleCreate(BaseModel):
     # Story 6.6 : action sociale — exige permission caisse.social_encaissement ; exclusif de special_encaissement_kind.
     social_action_kind: Optional[SocialActionKind] = None
     adherent_reference: Optional[str] = Field(None, max_length=200)
+
+    @field_validator("payment_method", mode="before")
+    @classmethod
+    def _coerce_sale_create_top_pm(cls, v: object) -> Optional[str]:
+        if v is None:
+            return None
+        return _normalize_payment_method_str(v)
 
     @model_validator(mode="after")
     def _exclusive_encaissement_discriminants(self) -> "SaleCreate":
@@ -141,10 +178,27 @@ class SaleFinalizeHeld(BaseModel):
     """Story 6.3 — finalisation d'un ticket précédemment mis en attente."""
 
     donation: Optional[float] = None
-    payment_method: Optional[PaymentMethod] = PaymentMethod.CASH
+    payment_method: Optional[str] = Field(default=PaymentMethod.CASH.value, max_length=64)
     payments: Optional[List[PaymentCreate]] = None
     donation_surplus: Optional[List[PaymentCreate]] = None
     note: Optional[str] = None
+
+    @field_validator("payment_method", mode="before")
+    @classmethod
+    def _coerce_finalize_top_pm(cls, v: object) -> Optional[str]:
+        if v is None:
+            return None
+        return _normalize_payment_method_str(v)
+
+
+class SalePaymentMethodOption(BaseModel):
+    """Moyen de paiement actif pour UI caisse (référentiel expert, pas import Paheko)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=120)
+    kind: PaymentMethodKind
 
 
 class SaleUpdate(BaseModel):
@@ -262,9 +316,16 @@ class SaleCorrectionFinalizeFieldsPayload(BaseModel):
     kind: Literal["finalize_fields"]
     donation: Optional[float] = None
     total_amount: Optional[float] = None
-    payment_method: Optional[PaymentMethod] = None
+    payment_method: Optional[str] = None
     note: Optional[str] = Field(None, max_length=10000)
     reason: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("payment_method", mode="before")
+    @classmethod
+    def _coerce_correction_pm(cls, v: object) -> Optional[str]:
+        if v is None:
+            return None
+        return _normalize_payment_method_str(v)
 
     @model_validator(mode="after")
     def _at_least_one_finalize_field(self) -> "SaleCorrectionFinalizeFieldsPayload":

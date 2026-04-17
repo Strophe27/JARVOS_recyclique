@@ -9,8 +9,9 @@ from uuid import UUID
 from sqlalchemy import String, cast, func, select
 from sqlalchemy.orm import Session
 
+from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentMethodKind
 from recyclic_api.models.payment_transaction import PaymentTransaction, PaymentTransactionNature
-from recyclic_api.models.sale import PaymentMethod, Sale
+from recyclic_api.models.sale import PaymentMethod, Sale, _normalize_payment_method_token
 from recyclic_api.schemas.cash_session_close_snapshot import (
     CashSessionAccountingCloseSnapshotV1,
     CashSessionCloseSnapshotClosingV1,
@@ -26,6 +27,15 @@ def _signed_amount_raw(amount: float, direction: Optional[str]) -> float:
     return amt
 
 
+def _legacy_journal_agg_key(raw: Optional[str]) -> str:
+    """Clé agrégée brownfield à partir de la colonne VARCHAR legacy (FK absente)."""
+    token = _normalize_payment_method_token(raw or "")
+    if token is not None:
+        return token
+    s = (raw or "").strip().lower()
+    return s if s else "unknown"
+
+
 def compute_payment_journal_aggregates(
     db: Session,
     *,
@@ -36,19 +46,28 @@ def compute_payment_journal_aggregates(
     sid = cash_session_id
     # CAST en VARCHAR côté SQL + pas d'hydratation Enum Python : tolère le brownfield
     # (`CASH`, …) tout en conservant un bind UUID correct (SQLite / PostgreSQL).
-    pm_txt = cast(PaymentTransaction.payment_method, String)
+    legacy_pm_txt = cast(PaymentTransaction.payment_method, String)
     nat_txt = cast(PaymentTransaction.nature, String)
     dir_txt = cast(PaymentTransaction.direction, String)
+    expert_code_txt = cast(PaymentMethodDefinition.code, String)
+    pm_kind_txt = cast(PaymentMethodDefinition.kind, String)
     stmt = (
         select(
             PaymentTransaction.amount.label("amount"),
-            func.lower(func.trim(pm_txt)).label("pm"),
+            PaymentTransaction.payment_method_id.label("payment_method_id"),
+            func.lower(func.trim(legacy_pm_txt)).label("legacy_pm_raw"),
+            func.lower(func.trim(expert_code_txt)).label("expert_code"),
+            func.lower(func.trim(pm_kind_txt)).label("pm_kind"),
             func.lower(func.trim(nat_txt)).label("nature"),
             func.lower(func.trim(dir_txt)).label("direction"),
             PaymentTransaction.is_prior_year_special_case.label("prior_flag"),
         )
         .select_from(PaymentTransaction)
         .join(Sale, Sale.id == PaymentTransaction.sale_id)
+        .outerjoin(
+            PaymentMethodDefinition,
+            PaymentMethodDefinition.id == PaymentTransaction.payment_method_id,
+        )
         .where(Sale.cash_session_id == sid)
     )
     rows = db.execute(stmt).mappings().all()
@@ -62,17 +81,16 @@ def compute_payment_journal_aggregates(
     nat_donation = PaymentTransactionNature.DONATION_SURPLUS.value
     nat_refund = PaymentTransactionNature.REFUND_PAYMENT.value
 
+    cash_kind = PaymentMethodKind.CASH.value
+
     for row in rows:
         amount = float(row["amount"])
-        pm_key = (row["pm"] or "").strip().lower()
-        if pm_key in ("cash", "card", "check", "free"):
-            pass
+        pm_fk = row["payment_method_id"]
+        if pm_fk is not None:
+            expert = (row["expert_code"] or "").strip().lower()
+            pm_key = expert if expert else "unknown"
         else:
-            legacy = (row["pm"] or "").strip().upper()
-            if legacy in ("CASH", "CARD", "CHECK", "FREE"):
-                pm_key = legacy.lower()
-            else:
-                pm_key = pm_key or "unknown"
+            pm_key = _legacy_journal_agg_key(row["legacy_pm_raw"])
 
         direction = row["direction"]
         signed = _signed_amount_raw(amount, direction)
@@ -89,7 +107,10 @@ def compute_payment_journal_aggregates(
             else:
                 refunds_current += amt_abs
 
-        if pm_key == PaymentMethod.CASH.value:
+        if pm_fk is not None:
+            if (row["pm_kind"] or "").strip().lower() == cash_kind:
+                cash_net += signed
+        elif pm_key == PaymentMethod.CASH.value:
             cash_net += signed
 
     line_count = len(rows)

@@ -31,7 +31,11 @@ export type CashflowOperatingMode = 'real' | 'virtual' | 'deferred';
 export type CashflowDraftState = {
   readonly lines: readonly TicketLine[];
   readonly totalAmount: number;
-  readonly paymentMethod: 'cash' | 'card' | 'check' | 'free';
+  /**
+   * Code référentiel expert (`payment_methods.code`) ou `free` pour gratuité.
+   * Chaîne vide tant que les options caisse n'ont pas permis de choisir le premier moyen actif.
+   */
+  readonly paymentMethod: string;
   /** Saisie locale si l'enveloppe ne fournit pas encore `cashSessionId`. */
   readonly cashSessionIdInput: string;
   /** Renseigné après POST d’ouverture explicite depuis `/caisse` (réel / virtuel / différé). */
@@ -54,7 +58,7 @@ export type CashflowDraftState = {
 const initialState: CashflowDraftState = {
   lines: [],
   totalAmount: 0,
-  paymentMethod: 'cash',
+  paymentMethod: '',
   cashSessionIdInput: '',
   operatingMode: null,
   widgetDataState: 'NOMINAL',
@@ -102,7 +106,7 @@ export function setTotalAmount(n: number): void {
   emit();
 }
 
-export function setPaymentMethod(m: 'cash' | 'card' | 'check' | 'free'): void {
+export function setPaymentMethod(m: string): void {
   state = { ...state, paymentMethod: m };
   emit();
 }
@@ -153,7 +157,7 @@ export function setAfterSuccessfulSale(saleId: string): void {
     lastSaleId: saleId,
     activeHeldSaleId: null,
     totalAmount: 0,
-    paymentMethod: 'cash',
+    paymentMethod: '',
     localIssueMessage:
       'Vente enregistrée localement dans Recyclique. La synchronisation comptable avec Paheko n’est pas prétendue finalisée sur cet écran.',
     widgetDataState: 'NOMINAL',

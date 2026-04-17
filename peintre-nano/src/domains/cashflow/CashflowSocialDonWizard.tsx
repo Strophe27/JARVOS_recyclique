@@ -16,6 +16,8 @@ import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowOperationalSyncNotice } from './cashflow-operational-sync-notice';
 import type { CashflowSubmitSurfaceError } from './cashflow-submit-error';
 import { useCashflowDraft } from './cashflow-draft-store';
+import { DEFAULT_FREE_PAYMENT_LABEL } from './payment-method-display';
+import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import classes from './CashflowSocialDonWizard.module.css';
 
 type EntryBlock =
@@ -69,13 +71,6 @@ function useSocialDonEntryBlock(): EntryBlock {
   }, [envelope]);
 }
 
-const PAYMENT_OPTIONS = [
-  { value: 'cash', label: 'Espèces' },
-  { value: 'card', label: 'Carte' },
-  { value: 'check', label: 'Chèque' },
-  { value: 'free', label: 'Gratuit / don (free)' },
-] as const;
-
 const KIND_SELECT_DATA = SOCIAL_ACTION_KIND_LOT1.map((e) => ({
   value: e.kind,
   label: e.label,
@@ -88,13 +83,22 @@ const KIND_SELECT_DATA = SOCIAL_ACTION_KIND_LOT1.map((e) => ({
 export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNode {
   const entry = useSocialDonEntryBlock();
   const auth = useAuthPort();
+  const { options: pmOpts, loading: pmLoading, error: pmError } = useCaissePaymentMethodOptions(auth);
+  const paymentMethodsReady = !pmLoading && pmError === null && pmOpts.length > 0;
+  const paymentSelectData = useMemo(
+    () => [
+      ...pmOpts.map((o) => ({ value: o.code, label: o.label })),
+      { value: 'free', label: `${DEFAULT_FREE_PAYMENT_LABEL} (free)` },
+    ],
+    [pmOpts],
+  );
   const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
   const stale = draft.widgetDataState === 'DATA_STALE';
   const [sessionInput, setSessionInput] = useState('');
   const [socialKind, setSocialKind] = useState<SocialActionKindV1>(SOCIAL_ACTION_KIND_LOT1[0].kind);
   const [total, setTotal] = useState(5);
-  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [note, setNote] = useState('');
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,10 +111,28 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
     }
   }, [envelope.cashSessionId, sessionInput]);
 
+  const firstPayantCode = pmOpts[0]?.code ?? '';
+  useEffect(() => {
+    if (!paymentMethodsReady || !firstPayantCode) return;
+    setPaymentMethod((prev) => {
+      const valid = new Set(pmOpts.map((o) => o.code));
+      valid.add('free');
+      if (prev && valid.has(prev)) return prev;
+      return firstPayantCode;
+    });
+  }, [paymentMethodsReady, firstPayantCode, pmOpts]);
+
   const testIdRoot = 'cashflow-social-don-wizard';
 
   const onSubmit = useCallback(async () => {
     setError(null);
+    if (!paymentMethodsReady) {
+      setError({
+        kind: 'local',
+        message: 'Moyens de paiement indisponibles — chargement ou erreur serveur.',
+      });
+      return;
+    }
     const sid = sessionInput.trim();
     if (!sid) {
       setError({ kind: 'local', message: 'Indiquez l’identifiant de session de caisse.' });
@@ -130,7 +152,7 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
         items: [] as [],
         total_amount: total,
         social_action_kind: socialKind,
-        payment_method: paymentMethod as 'cash' | 'card' | 'check' | 'free',
+        payment_method: paymentMethod,
         ...(note.trim() ? { note: note.trim() } : {}),
       };
       const res = await postCreateSale(body, auth);
@@ -143,7 +165,7 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
     } finally {
       setBusy(false);
     }
-  }, [auth, note, paymentMethod, sessionInput, socialKind, total]);
+  }, [auth, note, paymentMethod, paymentMethodsReady, sessionInput, socialKind, total]);
 
   if (entry.blocked) {
     return (
@@ -203,11 +225,22 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
       />
       <NativeSelect
         label="Moyen de paiement"
-        data={[...PAYMENT_OPTIONS]}
-        value={paymentMethod}
+        data={paymentSelectData}
+        value={paymentMethodsReady && paymentSelectData.some((d) => d.value === paymentMethod) ? paymentMethod : ''}
         onChange={(e) => setPaymentMethod(e.currentTarget.value)}
+        disabled={pmLoading || !paymentMethodsReady || stale}
         data-testid={`${testIdRoot}-payment`}
       />
+      {pmLoading ? (
+        <Text size="sm" c="dimmed" data-testid={`${testIdRoot}-pm-loading`}>
+          Chargement des moyens de paiement…
+        </Text>
+      ) : null}
+      {pmError ? (
+        <Text size="sm" c="red" data-testid={`${testIdRoot}-pm-error`}>
+          {pmError}
+        </Text>
+      ) : null}
       <TextInput
         label="Note (optionnelle)"
         value={note}
@@ -215,7 +248,12 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
         data-testid={`${testIdRoot}-note`}
       />
       <CashflowClientErrorAlert error={error} testId={`${testIdRoot}-error`} />
-      <Button loading={busy} onClick={() => void onSubmit()} data-testid={`${testIdRoot}-submit`} disabled={stale}>
+      <Button
+        loading={busy}
+        onClick={() => void onSubmit()}
+        data-testid={`${testIdRoot}-submit`}
+        disabled={stale || !paymentMethodsReady}
+      >
         Enregistrer (POST /v1/sales/)
       </Button>
     </div>

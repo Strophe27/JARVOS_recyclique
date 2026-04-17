@@ -10,13 +10,30 @@ import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import { RootProviders } from '../../src/app/providers/RootProviders';
 import { CashflowSocialDonWizard } from '../../src/domains/cashflow/CashflowSocialDonWizard';
 import '../../src/registry';
+import { paymentMethodOptionsJsonBody } from './fixtures/payment-method-options-api';
 
 describe('Story 6.6 — garde encaissements sociaux (caisse.social_encaissement)', () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes('/v1/sales/payment-method-options')) {
+          const body = paymentMethodOptionsJsonBody();
+          return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        if (url.includes('/v2/exploitation/live-snapshot')) {
+          const body = { observed_at: '2026-04-01T12:00:00.000Z' };
+          return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }),
+    );
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({

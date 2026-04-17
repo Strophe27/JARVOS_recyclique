@@ -103,10 +103,11 @@ export const createDeposit = async (depositData: any): Promise<any> => {
   return response.data;
 };
 
-// Sales
+// Sales — GET liste globale supprimé côté API v2 (404) ; ne plus appeler.
 export const getSales = async (): Promise<any> => {
-  const response: AxiosResponse = await api.get('/v1/sales');
-  return response.data;
+  throw new Error(
+    'getSales est obsolète : GET /v1/sales/ (liste globale) a été retiré. Utiliser des endpoints scoppés (session, ticket).',
+  );
 };
 
 export const getSale = async (id: string): Promise<any> => {

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from recyclic_api.core.exceptions import AuthorizationError
+from recyclic_api.core.exceptions import NotFoundError
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import PaymentMethod
 from recyclic_api.models.user import User, UserRole
@@ -72,7 +72,7 @@ def test_create_sale_rejects_site_mismatch_with_mock_db():
     db = _db_chain_for_cash_session_and_user(cash_session, operator_user)
 
     with patch("recyclic_api.services.sale_service.user_has_permission", return_value=True):
-        with pytest.raises(AuthorizationError, match="site"):
+        with pytest.raises(NotFoundError, match="Session de caisse non trouvée"):
             SaleService(db).create_sale(_sale_create(session_uuid), str(op_uuid))
 
 
@@ -95,7 +95,7 @@ def test_create_sale_rejects_without_caisse_permission_mock():
     db = _db_chain_for_cash_session_and_user(cash_session, operator_user)
 
     with patch("recyclic_api.services.sale_service.user_has_permission", return_value=False):
-        with pytest.raises(AuthorizationError, match="au moins une des permissions"):
+        with pytest.raises(NotFoundError, match="Session de caisse non trouvée"):
             SaleService(db).create_sale(_sale_create(session_uuid), str(op_uuid))
 
 

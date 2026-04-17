@@ -2540,6 +2540,56 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/payment-method-options:
+    get:
+      operationId: recyclique_sales_listPaymentMethodOptions
+      tags:
+        - sales
+      summary: Moyens de paiement caisse (référentiel expert actif)
+      description: |
+        Codes et libellés pour l’UI caisse — mêmes entrées que le paramétrage comptable expert (super-admin).
+        Garde d’accès alignée sur `POST /v1/sales/` (permissions caisse réel / virtuel / différé, ou rôle privilégié).
+        **Cache** : réponse `Cache-Control: private, no-store`. Limitation de débit côté serveur (hors tests).
+      security:
+        - bearerOrCookie: []
+      responses:
+        "200":
+          description: Moyens actifs triés par `display_order`
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Toujours `private, no-store`
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalePaymentMethodOptionV1"
+        "400":
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission caisse absente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Limite de débit (hors environnement de test)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/sales/held:
     get:
       operationId: recyclique_sales_listHeldSalesForSession
@@ -2872,8 +2922,19 @@ paths:
         **Story 6.6** : si `social_action_kind` est renseigné (lot actions sociales), `items` doit être `[]`, `total_amount` > 0,
         `special_encaissement_kind` doit être absent (exclusivité mutuelle), et la permission effective `caisse.social_encaissement` est exigée.
         Aligné sur l'implémentation `POST /api/v1/sales/`.
+        **Idempotence** : en-tête optionnel `Idempotency-Key` ; rejeu même clé + même corps → même **200** ; corps différent → **409** `IDEMPOTENCY_KEY_CONFLICT` (Redis indisponible : pas de rejeu, comportement aligné fermeture session).
       security:
         - bearerOrCookie: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+          description: >
+            Optionnel. Rejoue la réponse JSON d'une création réussie si le corps canonique est identique ;
+            conflit si la clé a déjà été utilisée avec un autre corps.
       requestBody:
         required: true
         content:
@@ -2901,14 +2962,20 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "403":
           description: >
-            Opérateur / site / permission caisse incohérents (messages stables : opérateur, site, `caisse.access`,
-            `caisse.special_encaissement` pour encaissements spéciaux Story 6.5, ou `caisse.social_encaissement` pour Story 6.6).
+            Refus métier avec message explicite (ex. permissions `caisse.special_encaissement` ou `caisse.social_encaissement`).
+            Pour un utilisateur standard, une session inexistante ou hors périmètre opérateur/site est indistinguée d’une **404** (oracle d’existence réduit).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "404":
-          description: Session de caisse introuvable
+          description: Session de caisse introuvable ou inaccessible pour l’opérateur (utilisateur non privilégié)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) — `Idempotency-Key` déjà utilisée avec un autre corps
           content:
             application/json:
               schema:
@@ -2978,6 +3045,7 @@ paths:
       description: |
         **Story 6.3** — Attache les paiements, passe la vente en `completed`, met à jour les agrégats de session.
         Refus si la vente n'est pas `held` ou si les garde-fous caisse échouent.
+        **Idempotence** : `Idempotency-Key` optionnelle (même logique que `POST /v1/sales/`).
       security:
         - bearerOrCookie: []
       parameters:
@@ -2987,6 +3055,13 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+          description: Optionnel — rejeu même clé + même corps de finalisation.
       requestBody:
         required: true
         content:
@@ -3020,6 +3095,12 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "404":
           description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`)
           content:
             application/json:
               schema:
@@ -10015,6 +10096,29 @@ components:
       description: |
         Story 6.6 — lot 1 figé des actions sociales / solidaires (distinct de `SpecialEncaissementKindV1`).
         Toujours `items` = [] et `total_amount` > 0 ; `note` optionnelle. Mutuellement exclusif avec `special_encaissement_kind`.
+    SalePaymentMethodOptionV1:
+      type: object
+      required:
+        - code
+        - label
+        - kind
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        label:
+          type: string
+          minLength: 1
+          maxLength: 120
+        kind:
+          type: string
+          enum:
+            - cash
+            - bank
+            - third_party
+            - other
     PaymentCreateV1:
       type: object
       required:
@@ -10023,11 +10127,11 @@ components:
       properties:
         payment_method:
           type: string
-          enum:
-            - cash
-            - check
-            - card
-          description: Moyen de paiement financier explicite dans `payments[]`. `free` est interdit ici ; pour une vente gratuite non financière, utiliser `payment_method=free` sur la vente sans créer de ligne `payments[]`.
+          minLength: 1
+          maxLength: 64
+          description: |
+            Code référentiel expert (`payment_methods.code`, actif) ou valeur legacy `cash` | `check` | `card`.
+            `free` est interdit dans `payments[]` ; pour une vente gratuite non financière, utiliser `payment_method=free` sur la vente sans créer de ligne `payments[]`.
         amount:
           type: number
       additionalProperties: false
@@ -10063,6 +10167,7 @@ components:
         payment_method:
           type: string
           nullable: true
+          maxLength: 64
         payments:
           type: array
           items:
@@ -10105,6 +10210,9 @@ components:
         payment_method:
           type: string
           nullable: true
+          maxLength: 64
+          description: |
+            Code expert actif ou legacy `cash` | `card` | `check` | `free` (raccourci mono-moyen si `payments[]` absent).
         payments:
           type: array
           items:

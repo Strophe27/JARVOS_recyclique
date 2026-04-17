@@ -9,6 +9,7 @@ ARCH-03 : erreurs métier via core.exceptions ; traduction HTTP au routeur ;
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional, Union
 from uuid import UUID
@@ -24,14 +25,20 @@ from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.core.logging import log_transaction_event
 from recyclic_api.models.audit_log import AuditActionType
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
-from recyclic_api.models.payment_method import PaymentMethodDefinition
+from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentMethodKind
 from recyclic_api.models.payment_transaction import (
     PaymentTransaction,
     PaymentTransactionDirection,
     PaymentTransactionNature,
 )
 from recyclic_api.models.preset_button import PresetButton
-from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus, SpecialEncaissementKind
+from recyclic_api.models.sale import (
+    PaymentMethod,
+    Sale,
+    SaleLifecycleStatus,
+    SpecialEncaissementKind,
+    _normalize_payment_method_token,
+)
 from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.user import User, UserRole
@@ -43,6 +50,7 @@ from recyclic_api.schemas.sale import (
     SaleFinalizeHeld,
     SaleHoldCreate,
     SaleItemUpdate,
+    SalePaymentMethodOption,
     SaleReversalCreate,
 )
 from recyclic_api.services.accounting_period_authority_service import (
@@ -66,6 +74,10 @@ MAX_HELD_SALES_PER_SESSION = 10
 
 # Story 22.4 — comparaisons montants caisse (float ticket / paiements)
 _ARBITRAGE_EPS = 1e-6
+
+logger = logging.getLogger(__name__)
+
+_SESSION_NOT_FOUND_ORACLE_MSG = "Session de caisse non trouvée"
 
 
 def user_has_any_cash_sale_access(user: User, db: Session) -> bool:
@@ -94,6 +106,76 @@ class SaleService:
 
     def __init__(self, db: Session) -> None:
         self.db = db
+
+    @staticmethod
+    def _kind_to_legacy_payment_method_column(kind: PaymentMethodKind) -> PaymentMethod:
+        """Colonne legacy ``sales.payment_method`` / ``payment_transactions.payment_method`` (agrégat UI)."""
+        if kind == PaymentMethodKind.CASH:
+            return PaymentMethod.CASH
+        if kind == PaymentMethodKind.BANK:
+            return PaymentMethod.CARD
+        if kind == PaymentMethodKind.THIRD_PARTY:
+            return PaymentMethod.CHECK
+        return PaymentMethod.CHECK
+
+    def parse_sale_payment_method_string(self, raw: str | None) -> tuple[PaymentMethod, PaymentMethodDefinition | None]:
+        """Code expert (``payment_methods.code``) ou legacy cash|card|check|free → colonne agrégée + définition."""
+        if raw is None or not str(raw).strip():
+            pm = PaymentMethod.CASH
+            return pm, self._resolve_payment_method_definition(pm)
+        token = str(raw).strip().lower()
+        if token == PaymentMethod.FREE.value:
+            return PaymentMethod.FREE, None
+        leg = _normalize_payment_method_token(token)
+        if leg is not None:
+            pm = PaymentMethod(leg)
+            return pm, self._resolve_payment_method_definition(pm)
+        ref = (
+            self.db.query(PaymentMethodDefinition)
+            .filter(
+                PaymentMethodDefinition.code == token,
+                PaymentMethodDefinition.archived_at.is_(None),
+                PaymentMethodDefinition.active.is_(True),
+            )
+            .first()
+        )
+        if ref is None:
+            logger.warning(
+                "parse_sale_payment_method_string: code expert inconnu ou inactif (longueur=%s)",
+                len(token),
+            )
+            raise ValidationError("Moyen de paiement inconnu ou inactif.")
+        return self._kind_to_legacy_payment_method_column(ref.kind), ref
+
+    @staticmethod
+    def payment_method_token_is_free(raw: str | None) -> bool:
+        if raw is None:
+            return False
+        return str(raw).strip().lower() == PaymentMethod.FREE.value
+
+    def list_payment_method_options_for_caisse(self, operator_id: str) -> list[SalePaymentMethodOption]:
+        """Référentiel expert actif — même permission qu'une vente caisse (hors session)."""
+        db = self.db
+        try:
+            op_uuid = UUID(str(operator_id))
+        except ValueError as e:
+            raise ValidationError("Identifiant opérateur invalide") from e
+        operator_user = db.query(User).filter(User.id == op_uuid).first()
+        if not operator_user:
+            raise AuthorizationError("Utilisateur authentifié introuvable — accès refusé.")
+        privileged = operator_user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)
+        if not privileged and not user_has_any_cash_sale_access(operator_user, db):
+            raise AuthorizationError(cash_sale_access_error_message())
+        rows = (
+            db.query(PaymentMethodDefinition)
+            .filter(
+                PaymentMethodDefinition.archived_at.is_(None),
+                PaymentMethodDefinition.active.is_(True),
+            )
+            .order_by(PaymentMethodDefinition.display_order, PaymentMethodDefinition.code)
+            .all()
+        )
+        return [SalePaymentMethodOption(code=r.code, label=r.label, kind=r.kind) for r in rows]
 
     @staticmethod
     def recompute_cash_session_completed_rollups(db: Session, cash_session: CashSession) -> None:
@@ -194,6 +276,8 @@ class SaleService:
         """
         Met à jour un item de vente (authentification / 401 déjà vérifiés par la route).
 
+        Garde lecture alignée sur ``GET /v1/sales/{id}`` avant toute mutation (durcissement IDOR).
+
         Raises:
             ValidationError: UUID ou valeurs numériques invalides (→ 400).
             NotFoundError: vente ou item absent (→ 404).
@@ -201,25 +285,18 @@ class SaleService:
         """
         db = self.db
         try:
-            sale_uuid = UUID(sale_id)
-        except ValueError:
-            raise ValidationError("Invalid sale ID format") from None
-        try:
             item_uuid = UUID(item_id)
         except ValueError:
             raise ValidationError("Invalid item ID format") from None
 
-        sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
-        if not sale:
-            raise NotFoundError("Sale not found")
+        sale = self.get_sale_readable_by_user(sale_id, str(user.id))
 
-        if sale.lifecycle_status == SaleLifecycleStatus.ABANDONED:
-            raise NotFoundError("Sale not found")
         if sale.lifecycle_status == SaleLifecycleStatus.HELD:
             raise ConflictError(
                 "Ticket en attente : modification de ligne interdite — utiliser finalisation ou abandon côté caisse."
             )
 
+        sale_uuid = sale.id
         item = db.query(SaleItem).filter(SaleItem.id == item_uuid, SaleItem.sale_id == sale_uuid).first()
         if not item:
             raise NotFoundError("Sale item not found")
@@ -389,7 +466,7 @@ class SaleService:
         db = self.db
         cash_session = db.query(CashSession).filter(CashSession.id == cash_session_id).first()
         if not cash_session:
-            raise NotFoundError("Session de caisse non trouvée")
+            raise NotFoundError(_SESSION_NOT_FOUND_ORACLE_MSG)
 
         try:
             op_uuid = UUID(str(operator_id))
@@ -402,22 +479,15 @@ class SaleService:
 
         privileged = operator_user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)
 
-        if not privileged and cash_session.operator_id != op_uuid:
-            raise AuthorizationError(
-                "L'opérateur authentifié ne correspond pas à la session de caisse cible."
-            )
-
         if not privileged:
+            if cash_session.operator_id != op_uuid:
+                raise NotFoundError(_SESSION_NOT_FOUND_ORACLE_MSG)
             if operator_user.site_id is None:
-                raise AuthorizationError(
-                    "Aucun site d'exploitation affecté — impossible d'enregistrer une vente."
-                )
+                raise NotFoundError(_SESSION_NOT_FOUND_ORACLE_MSG)
             if operator_user.site_id != cash_session.site_id:
-                raise AuthorizationError(
-                    "Le site de la session de caisse ne correspond pas à votre affectation."
-                )
+                raise NotFoundError(_SESSION_NOT_FOUND_ORACLE_MSG)
             if not user_has_any_cash_sale_access(operator_user, db):
-                raise AuthorizationError(cash_sale_access_error_message())
+                raise NotFoundError(_SESSION_NOT_FOUND_ORACLE_MSG)
 
         if cash_session.status != CashSessionStatus.OPEN:
             raise ConflictError(
@@ -436,7 +506,7 @@ class SaleService:
         Crée une vente avec lignes, paiements, mise à jour session caisse et log PAYMENT_VALIDATED.
 
         Raises:
-            NotFoundError: session de caisse absente (traduite en 404 par POST /sales/).
+            NotFoundError: session absente ou hors périmètre pour l’opérateur standard (→ 404, oracle unifié).
             ConflictError: session non ouverte (traduite en 422, contrat historique).
             ValidationError: totaux / paiements incohérents (traduite en 400).
         """
@@ -494,6 +564,10 @@ class SaleService:
 
         sale_payments, donation_surplus_to_create = self._resolve_payments(sale_data)
 
+        sale_row_pm, _ = self.parse_sale_payment_method_string(sale_data.payment_method)
+        if sale_payments:
+            sale_row_pm, _ = self.parse_sale_payment_method_string(sale_payments[0].payment_method)
+
         now = datetime.now(timezone.utc)
         session_opened_at = None
         is_deferred_session = False
@@ -524,7 +598,7 @@ class SaleService:
             operator_id=op_for_sale,
             total_amount=sale_data.total_amount,
             donation=sale_data.donation,
-            payment_method=sale_data.payment_method,
+            payment_method=sale_row_pm,
             note=sale_data.note,
             sale_date=sale_date,
             lifecycle_status=SaleLifecycleStatus.COMPLETED,
@@ -590,10 +664,7 @@ class SaleService:
         cart_state_after = {"items_count": 0, "items": [], "total": 0.0}
 
         payments_for_log = sale_payments + donation_surplus_to_create
-        payment_methods_log = [
-            p.payment_method.value if hasattr(p.payment_method, "value") else str(p.payment_method)
-            for p in payments_for_log
-        ]
+        payment_methods_log = [p.payment_method for p in payments_for_log]
         payment_amounts_log = [float(p.amount) for p in payments_for_log]
 
         tx_payload: dict = {
@@ -823,14 +894,14 @@ class SaleService:
 
         if payload.payments:
             for p in payload.payments:
-                if p.payment_method == PaymentMethod.FREE:
+                if self.payment_method_token_is_free(p.payment_method):
                     raise ValidationError(
                         "Le moyen « free » est interdit dans la répartition explicite des paiements (payments)."
                     )
             sale_lines = list(payload.payments)
-        elif total_amount <= _ARBITRAGE_EPS and payload.payment_method == PaymentMethod.FREE:
+        elif total_amount <= _ARBITRAGE_EPS and self.payment_method_token_is_free(payload.payment_method):
             sale_lines = []
-        elif payload.payment_method and payload.payment_method != PaymentMethod.FREE:
+        elif payload.payment_method and not self.payment_method_token_is_free(payload.payment_method):
             if total_amount <= _ARBITRAGE_EPS:
                 sale_lines = []
             else:
@@ -840,7 +911,7 @@ class SaleService:
                         amount=total_amount,
                     )
                 ]
-        elif payload.payment_method == PaymentMethod.FREE and total_amount > _ARBITRAGE_EPS:
+        elif self.payment_method_token_is_free(payload.payment_method) and total_amount > _ARBITRAGE_EPS:
             raise ValidationError(
                 "Le mode gratuité (free) est incompatible avec un total de ticket positif pour cette finalisation."
             )
@@ -850,7 +921,7 @@ class SaleService:
             else:
                 sale_lines = [
                     PaymentCreate(
-                        payment_method=PaymentMethod.CASH,
+                        payment_method=PaymentMethod.CASH.value,
                         amount=total_amount,
                     )
                 ]
@@ -924,10 +995,15 @@ class SaleService:
 
         if payload.note is not None:
             sale.note = payload.note
-        if payload.payment_method is not None:
-            sale.payment_method = payload.payment_method
 
         sale_pays, donation_surplus_final = self._resolve_payments_for_finalize(float(sale.total_amount), payload)
+
+        if sale_pays:
+            leg_pm, _ = self.parse_sale_payment_method_string(sale_pays[0].payment_method)
+            sale.payment_method = leg_pm
+        elif payload.payment_method is not None:
+            leg_pm, _ = self.parse_sale_payment_method_string(payload.payment_method)
+            sale.payment_method = leg_pm
 
         for payment_data in sale_pays:
             db_payment = self._build_payment_transaction(
@@ -970,10 +1046,7 @@ class SaleService:
         cart_state_after = {"items_count": 0, "items": [], "total": 0.0}
 
         payments_for_held_log = sale_pays + donation_surplus_final
-        payment_methods_log = [
-            p.payment_method.value if hasattr(p.payment_method, "value") else str(p.payment_method)
-            for p in payments_for_held_log
-        ]
+        payment_methods_log = [p.payment_method for p in payments_for_held_log]
         payment_amounts_log = [float(p.amount) for p in payments_for_held_log]
 
         log_transaction_event(
@@ -1369,15 +1442,15 @@ class SaleService:
 
             if fin.payment_method is not None:
                 pays_pm = list(sale.payments or [])
+                leg_pm, pm_ref = self.parse_sale_payment_method_string(fin.payment_method)
                 if len(pays_pm) == 1:
-                    pm_ref = self._resolve_payment_method_definition(fin.payment_method)
-                    pays_pm[0].payment_method = fin.payment_method
+                    pays_pm[0].payment_method = leg_pm
                     pays_pm[0].payment_method_id = pm_ref.id if pm_ref else None
                 elif len(pays_pm) > 1:
                     raise ValidationError(
                         "Correction du moyen de paiement interdite : vente avec plusieurs lignes de paiement (Story 6.8)."
                     )
-                sale.payment_method = fin.payment_method
+                sale.payment_method = leg_pm
                 fields_touched.append("payment_method")
 
             if fin.note is not None:
@@ -1456,7 +1529,7 @@ class SaleService:
         total_amount: float,
         sale_lines: List[PaymentCreate],
         donation_surplus_lines: List[PaymentCreate],
-        payment_method_top: PaymentMethod | None,
+        payment_method_top: str | None,
         forbid_free_with_financial_lines: bool,
     ) -> None:
         """
@@ -1469,7 +1542,7 @@ class SaleService:
         sum_don = sum(float(p.amount) for p in donation_surplus_lines)
         total = float(total_amount)
 
-        if forbid_free_with_financial_lines and payment_method_top == PaymentMethod.FREE:
+        if forbid_free_with_financial_lines and self.payment_method_token_is_free(payment_method_top):
             if sale_lines or donation_surplus_lines:
                 raise ValidationError(
                     "Une vente en gratuité (payment_method=free) ne peut pas comporter de lignes "
@@ -1506,15 +1579,15 @@ class SaleService:
         nature: PaymentTransactionNature,
         direction: PaymentTransactionDirection,
     ) -> PaymentTransaction:
-        if payment_data.payment_method == PaymentMethod.FREE:
+        if self.payment_method_token_is_free(payment_data.payment_method):
             raise ValidationError(
                 "Le moyen de paiement 'free' n'est pas autorise dans payments[]. "
                 "Utilisez payment_method=free sur la vente gratuite sans ligne financiere."
             )
-        payment_method_ref = self._resolve_payment_method_definition(payment_data.payment_method)
+        legacy_pm, payment_method_ref = self.parse_sale_payment_method_string(payment_data.payment_method)
         return PaymentTransaction(
             sale_id=sale_id,
-            payment_method=payment_data.payment_method,
+            payment_method=legacy_pm,
             payment_method_id=payment_method_ref.id if payment_method_ref else None,
             nature=nature,
             direction=direction,
@@ -1527,14 +1600,14 @@ class SaleService:
 
         if sale_data.payments:
             for p in sale_data.payments:
-                if p.payment_method == PaymentMethod.FREE:
+                if self.payment_method_token_is_free(p.payment_method):
                     raise ValidationError(
                         "Le moyen « free » est interdit dans la répartition explicite des paiements (payments)."
                     )
             sale_lines = list(sale_data.payments)
-        elif sale_data.total_amount <= _ARBITRAGE_EPS and sale_data.payment_method == PaymentMethod.FREE:
+        elif sale_data.total_amount <= _ARBITRAGE_EPS and self.payment_method_token_is_free(sale_data.payment_method):
             sale_lines = []
-        elif sale_data.payment_method == PaymentMethod.FREE and sale_data.total_amount > _ARBITRAGE_EPS:
+        elif self.payment_method_token_is_free(sale_data.payment_method) and sale_data.total_amount > _ARBITRAGE_EPS:
             raise ValidationError(
                 "Le mode gratuité (free) est incompatible avec un total de vente positif — utilisez des paiements explicites."
             )
@@ -1554,7 +1627,7 @@ class SaleService:
             else:
                 sale_lines = [
                     PaymentCreate(
-                        payment_method=PaymentMethod.CASH,
+                        payment_method=PaymentMethod.CASH.value,
                         amount=sale_data.total_amount,
                     )
                 ]

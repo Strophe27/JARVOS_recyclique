@@ -19,10 +19,41 @@ import '../../src/styles/tokens.css';
 
 const SESSION = '00000000-0000-4000-8000-000000000099';
 
+const MOCK_PAYMENT_METHOD_OPTIONS_JSON = JSON.stringify([
+  { code: 'cash', label: 'Espèces', kind: 'cash' },
+  { code: 'check', label: 'Chèque', kind: 'bank' },
+  { code: 'card', label: 'Carte', kind: 'bank' },
+]);
+
+function paymentMethodOptionsResponse(): Response {
+  return new Response(MOCK_PAYMENT_METHOD_OPTIONS_JSON, {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.href;
   return input.url;
+}
+
+/** POST création vente `POST /v1/sales/` (exclut options, hold, finalize, etc.). */
+function isV1SaleCreatePost(call: readonly unknown[]): boolean {
+  const raw = String(call[0]);
+  const method = String((call[1] as RequestInit | undefined)?.method ?? 'GET').toUpperCase();
+  if (method !== 'POST') return false;
+  const path = raw.split('?')[0] ?? raw;
+  if (!path.includes('/v1/sales')) return false;
+  if (path.includes('payment-method-options')) return false;
+  if (path.includes('/hold')) return false;
+  if (path.includes('/held')) return false;
+  if (path.includes('/finalize-held')) return false;
+  if (path.includes('/abandon-held')) return false;
+  if (path.includes('/reversals')) return false;
+  if (path.includes('/corrections')) return false;
+  const parts = path.split('/').filter(Boolean);
+  return parts[parts.length - 1] === 'sales';
 }
 
 beforeAll(() => {
@@ -63,7 +94,17 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     resetCashflowDraft();
   });
 
-  it('expose le hint et aria-keyshortcuts quand la finalisation est possible', () => {
+  it('expose le hint et aria-keyshortcuts quand la finalisation est possible', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u-kiosk-enter' },
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
@@ -74,7 +115,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
     const btn = screen.getByTestId('cashflow-submit-sale');
-    expect(btn.getAttribute('aria-keyshortcuts')).toBe('Enter');
+    await waitFor(() => {
+      expect(btn.getAttribute('aria-keyshortcuts')).toBe('Enter');
+    });
     expect(btn.getAttribute('aria-label') ?? '').toMatch(/Entrée/i);
     expect(btn.getAttribute('aria-describedby')).toBeTruthy();
     expect(screen.getByTestId('cashflow-kiosk-finalize-enter-hint')).toBeTruthy();
@@ -84,6 +127,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
       if (method === 'POST' && url.includes('/v1/sales/') && !url.includes('hold') && !url.includes('finalize')) {
         return {
           ok: true,
@@ -112,24 +158,24 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     (document.body as HTMLBodyElement).focus();
     fireEvent.keyDown(document.body, { key: 'Enter', bubbles: true, cancelable: true });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('cashflow-submit-sale-confirm')).toBeTruthy();
-    });
+    expect(await screen.findByTestId('cashflow-submit-sale-confirm')).toBeTruthy();
     const amountInput = screen.getByTestId('cashflow-finalize-amount-received');
     expect(document.activeElement).toBe(screen.getByTestId('cashflow-select-payment-dock-modal'));
     expect((amountInput as HTMLInputElement).value).toBe('');
     expect(screen.getByTestId('cashflow-finalize-amount-due').textContent ?? '').toMatch(/5.00 €/i);
     expect(screen.getByTestId('cashflow-select-payment-dock-modal').textContent ?? '').toMatch(/Chèque/);
-    expect(screen.getByTestId('cashflow-select-payment-dock-modal').textContent ?? '').toMatch(/Carte \(indisponible\)/);
+    expect(screen.getByTestId('cashflow-select-payment-dock-modal').textContent ?? '').toMatch(/Carte/);
     expect(screen.getByTestId('cashflow-select-payment-dock-modal').textContent ?? '').toMatch(/Gratuit \/ don/);
-    expect(screen.getByTestId('cashflow-finalize-card-note').textContent ?? '').toMatch(/legacy/i);
-    expect(screen.getByRole('option', { name: /Carte \(indisponible\)/i }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByTestId('cashflow-finalize-card-note').textContent ?? '').toMatch(/expert/i);
     expect((screen.getByTestId('cashflow-submit-sale-confirm') as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByTestId('cashflow-finalize-payment-balance').textContent ?? '').toMatch(/montant à renseigner/i);
-    const postCallsBeforeConfirm = fetchMock.mock.calls.filter((c) => (c[1]?.method ?? 'GET').toUpperCase() === 'POST');
+    const postCallsBeforeConfirm = fetchMock.mock.calls.filter((c) => isV1SaleCreatePost(c));
     expect(postCallsBeforeConfirm.length).toBe(0);
 
     fireEvent.change(amountInput, { target: { value: '0' } });
@@ -150,7 +196,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     fireEvent.click(screen.getByTestId('cashflow-submit-sale-confirm'));
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/sales/'))).toBe(true);
+      expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(true);
     });
   });
 
@@ -181,6 +227,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
       if (method === 'POST' && url.includes('/v1/sales/') && !url.includes('hold') && !url.includes('finalize')) {
         return {
           ok: true,
@@ -209,6 +258,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-kiosk-finalize-modal')).toBeTruthy();
@@ -218,8 +270,11 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('cashflow-finalize-amount-received')).toBeNull();
     });
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/sales/'))).toBe(false);
+    expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(false);
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-finalize-amount-received')).toBeTruthy();
@@ -235,12 +290,19 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/sales/'))).toBe(true);
+      expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(true);
     });
   });
 
   it('n’enregistre pas la vente quand Annuler ferme la modale', async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, text: async () => '{}' } as Response));
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     const auth = createMockAuthAdapter({
@@ -253,6 +315,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-kiosk-finalize-modal')).toBeTruthy();
@@ -260,15 +325,25 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
 
     const cancelButton = await screen.findByRole('button', { name: /Annuler/i });
     fireEvent.keyDown(cancelButton, { key: 'Enter', bubbles: true, cancelable: true });
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/sales/'))).toBe(false);
+    expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(false);
     fireEvent.click(cancelButton);
     await waitFor(() => {
       expect(screen.queryByTestId('cashflow-finalize-amount-received')).toBeNull();
     });
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/sales/'))).toBe(false);
+    expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(false);
   });
 
   it('accepte la rangée haute AZERTY dans le montant reçu puis Tab vers le don', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u-kiosk-enter-azerty' },
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
@@ -279,6 +354,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-finalize-amount-received')).toBeTruthy();
@@ -303,6 +381,16 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
   });
 
   it('utilise Tab pour entrer dans le workflow mixte puis saisir le montant suivant en AZERTY', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u-kiosk-enter-tab-mixed' },
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
@@ -313,6 +401,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-finalize-amount-received')).toBeTruthy();
@@ -353,6 +444,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
       if (method === 'POST' && url.includes('/v1/sales/') && !url.includes('hold') && !url.includes('finalize')) {
         return {
           ok: true,
@@ -384,6 +478,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-finalize-amount-received')).toBeTruthy();
@@ -395,7 +492,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     fireEvent.click(screen.getByTestId('cashflow-submit-sale-confirm'));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(true);
     });
     const salePost = fetchMock.mock.calls.find(
       (call) => (call[1]?.method ?? 'GET').toUpperCase() === 'POST' && String(call[0]).includes('/v1/sales/'),
@@ -413,6 +510,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
       if (method === 'POST' && url.includes('/v1/sales/') && !url.includes('hold') && !url.includes('finalize')) {
         return {
           ok: true,
@@ -444,6 +544,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-finalize-amount-received')).toBeTruthy();
@@ -452,7 +555,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     fireEvent.change(screen.getByTestId('cashflow-select-payment-dock-modal'), { target: { value: 'check' } });
     fireEvent.change(screen.getByTestId('cashflow-finalize-amount-received'), { target: { value: '2' } });
     expect(screen.getByTestId('cashflow-finalize-mixed-payment-block').textContent ?? '').toMatch(/Ajouter un autre paiement/i);
-    expect(screen.getByTestId('cashflow-finalize-mixed-payment-block').textContent ?? '').toMatch(/Montant du paiement/i);
+    expect(screen.getByTestId('cashflow-finalize-mixed-payment-block').textContent ?? '').toMatch(/Montant/i);
     expect(screen.getByTestId('cashflow-finalize-add-payment').textContent ?? '').toMatch(/Ajouter/i);
     fireEvent.click(screen.getByTestId('cashflow-finalize-add-payment'));
 
@@ -460,12 +563,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       expect(screen.getByTestId('cashflow-finalize-payments-list').textContent ?? '').toMatch(/Chèque : 2.00 €/i);
       expect(screen.getByTestId('cashflow-finalize-payments-total').textContent ?? '').toMatch(/reste : 3.00 €/i);
     });
-    expect(
-      screen
-        .getAllByRole('option', { name: /Carte \(indisponible\)/i })
-        .every((option) => option.hasAttribute('disabled')),
-    ).toBe(true);
-    expect(screen.getByTestId('cashflow-finalize-loop-card-note').textContent ?? '').toMatch(/legacy/i);
+    expect(screen.getByTestId('cashflow-finalize-loop-card-note').textContent ?? '').toMatch(/expert/i);
 
     fireEvent.change(screen.getByTestId('cashflow-select-payment-dock-loop'), { target: { value: 'cash' } });
     fireEvent.change(screen.getByTestId('cashflow-finalize-loop-amount'), { target: { value: '3' } });
@@ -479,7 +577,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     fireEvent.click(screen.getByTestId('cashflow-submit-sale-confirm'));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(true);
     });
     const salePost = fetchMock.mock.calls.find(
       (call) => (call[1]?.method ?? 'GET').toUpperCase() === 'POST' && String(call[0]).includes('/v1/sales/'),
@@ -501,6 +599,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
       if (method === 'POST' && url.includes('/v1/sales/') && !url.includes('hold') && !url.includes('finalize')) {
         return {
           ok: true,
@@ -530,6 +631,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-finalize-donation')).toBeTruthy();
@@ -543,7 +647,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     fireEvent.click(screen.getByTestId('cashflow-submit-sale-confirm'));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(true);
     });
     const salePost = fetchMock.mock.calls.find(
       (call) => (call[1]?.method ?? 'GET').toUpperCase() === 'POST' && String(call[0]).includes('/v1/sales/'),
@@ -560,6 +664,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
       if (method === 'POST' && url.includes('/v1/sales/') && !url.includes('hold') && !url.includes('finalize')) {
         return {
           ok: true,
@@ -590,6 +697,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-finalize-note')).toBeTruthy();
@@ -600,7 +710,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     fireEvent.click(screen.getByTestId('cashflow-submit-sale-confirm'));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock.mock.calls.some((c) => isV1SaleCreatePost(c))).toBe(true);
     });
     const salePost = fetchMock.mock.calls.find(
       (call) => (call[1]?.method ?? 'GET').toUpperCase() === 'POST' && String(call[0]).includes('/v1/sales/'),
@@ -614,7 +724,7 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     });
   });
 
-  it('revient à Espèces après une vente réussie même si Gratuit / don avait été choisi avant', async () => {
+  it('revient au premier moyen actif après une vente réussie même si Gratuit / don avait été choisi avant', async () => {
     setPaymentMethod('free');
     setAfterSuccessfulSale('sale-reset-default');
     addTicketLine({
@@ -626,6 +736,16 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     });
     setTotalAmount(5);
 
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u-kiosk-enter-3' },
       envelope: createDefaultDemoEnvelope({ cashSessionId: SESSION }),
@@ -636,6 +756,9 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-select-payment-dock-modal')).toBeTruthy();
@@ -645,8 +768,18 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
     expect((screen.getByTestId('cashflow-submit-sale-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('replie Carte vers Espèces dans la modal kiosque pour rester fidèle au legacy', async () => {
+  it('affiche Carte comme option active quand le référentiel expert l’expose', async () => {
     setPaymentMethod('card');
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return paymentMethodOptionsResponse();
+      }
+      return { ok: true, status: 200, text: async () => '{}' } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
 
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u-kiosk-enter-card-disabled' },
@@ -658,13 +791,16 @@ describe('KioskFinalizeSaleDock — raccourci Entrée', () => {
       </RootProviders>,
     );
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-select-payment-dock-modal')).toBeTruthy();
     });
 
     const select = screen.getByTestId('cashflow-select-payment-dock-modal') as HTMLSelectElement;
-    expect(select.value).toBe('cash');
-    expect(screen.getByRole('option', { name: /Carte \(indisponible\)/i }).hasAttribute('disabled')).toBe(true);
+    expect(select.value).toBe('card');
+    expect(screen.getByRole('option', { name: /^Carte$/i })).toBeTruthy();
   });
 });

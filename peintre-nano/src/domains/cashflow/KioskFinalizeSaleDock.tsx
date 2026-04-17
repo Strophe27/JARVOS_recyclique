@@ -1,8 +1,13 @@
 import { Button, Modal, Text, Textarea, TextInput } from '@mantine/core';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
-import { postCreateSale, postFinalizeHeldSale, type SaleCreateBody } from '../../api/sales-client';
+import { postCreateSale, postFinalizeHeldSale, type SaleCreateBody, type SalePaymentMethodOption } from '../../api/sales-client';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import {
+  labelForCode,
+  paymentMethodLabelMapFromOptions,
+} from './payment-method-display';
+import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import {
   bumpHeldTicketsListRefresh,
@@ -18,13 +23,21 @@ import dockClasses from './KioskFinalizeSaleDock.module.css';
 
 const KIOSK_FINALIZE_FOCUS_EVENT = 'cashflow:kiosk-finalize-focus';
 
-type FinalizePaymentMethod = 'cash' | 'card' | 'check' | 'free';
 type FinalizePaymentLine = {
-  readonly payment_method: Exclude<FinalizePaymentMethod, 'free'>;
+  readonly payment_method: string;
   readonly amount: number;
   readonly cash_given?: number;
   readonly change?: number;
 };
+
+function methodKind(code: string, options: readonly SalePaymentMethodOption[]): SalePaymentMethodOption['kind'] | null {
+  const row = options.find((o) => o.code === code);
+  return row?.kind ?? null;
+}
+
+function isCashKind(code: string, options: readonly SalePaymentMethodOption[]): boolean {
+  return methodKind(code, options) === 'cash';
+}
 
 function isInteractiveActionTarget(target: HTMLElement | null): boolean {
   if (!target) return false;
@@ -93,36 +106,19 @@ function parseFinalizeAmount(raw: string): number | null {
   return parsed;
 }
 
-function paymentMethodLabel(method: FinalizePaymentMethod): string {
-  if (method === 'cash') return 'Espèces';
-  if (method === 'check') return 'Chèque';
-  if (method === 'card') return 'Carte';
-  return 'Gratuit / don';
+function nextFinancialCode(current: string, options: readonly SalePaymentMethodOption[]): string {
+  const codes = options.map((o) => o.code);
+  if (codes.length === 0) return current;
+  const i = Math.max(0, codes.indexOf(current));
+  return codes[(i + 1) % codes.length] ?? codes[0] ?? current;
 }
 
-function coerceLegacyAvailableFinalizeMethod(method: FinalizePaymentMethod): Exclude<FinalizePaymentMethod, 'card'> {
-  if (method === 'card') return 'cash';
-  return method;
-}
-
-function nextLoopPaymentMethod(
-  current: Exclude<FinalizePaymentMethod, 'free'>,
-): Exclude<FinalizePaymentMethod, 'free'> {
-  if (current === 'cash') return 'check';
-  return 'cash';
-}
-
-function amountReceivedLabel(method: Exclude<FinalizePaymentMethod, 'free'>): string {
-  if (method === 'cash') return 'Montant reçu';
-  if (method === 'check') return 'Montant du paiement';
-  return 'Montant carte';
-}
-
-/** Moyen financier pour l’API (modal carte souvent désactivée → legacy cash). */
-function apiPaymentMethodFromDock(m: Exclude<FinalizePaymentMethod, 'free'>): 'cash' | 'check' | 'card' {
-  if (m === 'check') return 'check';
-  if (m === 'card') return 'card';
-  return 'cash';
+function amountReceivedLabel(method: string, options: readonly SalePaymentMethodOption[]): string {
+  const k = methodKind(method, options);
+  if (k === 'cash') return 'Montant reçu';
+  if (k === 'bank') return 'Montant du paiement';
+  if (k === 'third_party') return 'Montant (tiers)';
+  return 'Montant encaissé';
 }
 
 function slimPaymentLines(lines: readonly FinalizePaymentLine[]): Array<{ payment_method: string; amount: number }> {
@@ -136,6 +132,14 @@ function slimPaymentLines(lines: readonly FinalizePaymentLine[]): Array<{ paymen
 export function KioskFinalizeSaleDock(): ReactNode {
   const draft = useCashflowDraft();
   const auth = useAuthPort();
+  const {
+    options: methodOptions,
+    loading: paymentMethodsLoading,
+    error: paymentMethodsError,
+  } = useCaissePaymentMethodOptions(auth);
+  const paymentMethodsReady =
+    !paymentMethodsLoading && paymentMethodsError === null && methodOptions.length > 0;
+  const pmLabelMap = useMemo(() => paymentMethodLabelMapFromOptions(methodOptions), [methodOptions]);
   const envelope = useContextEnvelope();
   const stale = draft.widgetDataState === 'DATA_STALE';
   const [busy, setBusy] = useState(false);
@@ -144,7 +148,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
   const [donation, setDonation] = useState('0');
   const [saleNote, setSaleNote] = useState('');
   const [payments, setPayments] = useState<FinalizePaymentLine[]>([]);
-  const [loopPaymentMethod, setLoopPaymentMethod] = useState<Exclude<FinalizePaymentMethod, 'free'>>('cash');
+  const [loopPaymentMethod, setLoopPaymentMethod] = useState<string>('');
   const [loopAmount, setLoopAmount] = useState('');
   const amountReceivedInputRef = useRef<HTMLInputElement | null>(null);
   const donationInputRef = useRef<HTMLInputElement | null>(null);
@@ -162,6 +166,16 @@ export function KioskFinalizeSaleDock(): ReactNode {
     }
   }, [draft.cashSessionIdInput, envelope.cashSessionId]);
 
+  const financialCodes = useMemo(() => methodOptions.map((o) => o.code), [methodOptions]);
+
+  useEffect(() => {
+    if (financialCodes.length === 0) return;
+    if (draft.paymentMethod === 'free') return;
+    if (!financialCodes.includes(draft.paymentMethod)) {
+      setPaymentMethod(financialCodes[0]!);
+    }
+  }, [draft.paymentMethod, financialCodes]);
+
   /** Story 22.4 — gratuité : pas d’encaissement cumulé au même ticket. */
   useEffect(() => {
     if (!confirmOpen || busy) return;
@@ -177,6 +191,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
     draft.cashSessionIdInput.trim().length > 0 &&
     draft.lines.length > 0 &&
     draft.totalAmount > 0;
+  const canOpenFinalize = canSubmit && paymentMethodsReady;
   const parsedAmountReceived = parseFinalizeAmount(amountReceived);
   const parsedDonation = parseFinalizeAmount(donation) ?? 0;
   const parsedLoopAmount = parseFinalizeAmount(loopAmount);
@@ -203,6 +218,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
   const showMixedPaymentBlock = paymentMethodNeedsAmount && remainingAmount > 0 && (hasPayments || canStartMixedPayment);
   const canConfirmPayment =
     canSubmit &&
+    paymentMethodsReady &&
     (!paymentMethodNeedsAmount
       ? true
       : hasPayments
@@ -211,8 +227,8 @@ export function KioskFinalizeSaleDock(): ReactNode {
   const paymentBalanceDelta =
     !paymentMethodNeedsAmount
       ? null
-      : hasPayments
-        ? currentPendingMethod === 'cash' && parsedLoopAmount !== null
+        : hasPayments
+        ? isCashKind(currentPendingMethod, methodOptions) && parsedLoopAmount !== null
           ? parsedLoopAmount - remainingAmount
           : null
         : parsedAmountReceived !== null
@@ -220,7 +236,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
           : null;
   const currentChange =
     paymentMethodNeedsAmount &&
-    currentPendingMethod === 'cash' &&
+    isCashKind(currentPendingMethod, methodOptions) &&
     paymentBalanceDelta !== null &&
     paymentBalanceDelta > 0
       ? paymentBalanceDelta
@@ -289,48 +305,47 @@ export function KioskFinalizeSaleDock(): ReactNode {
       return { added: false, nextRemaining: currentCoverageTarget };
     }
     const amount = Math.min(currentPendingAmount, currentCoverageTarget);
-    const method = currentPendingMethod as Exclude<FinalizePaymentMethod, 'free'>;
+    const method = currentPendingMethod;
     const nextRemaining = Math.max(0, currentCoverageTarget - amount);
+    const cashLike = isCashKind(method, methodOptions);
     setPayments((prev) => [
       ...prev,
       {
         payment_method: method,
         amount,
-        cash_given: method === 'cash' ? currentPendingAmount : undefined,
-        change: method === 'cash' && currentPendingAmount > amount ? currentPendingAmount - amount : undefined,
+        cash_given: cashLike ? currentPendingAmount : undefined,
+        change: cashLike && currentPendingAmount > amount ? currentPendingAmount - amount : undefined,
       },
     ]);
     if (hasPayments) {
       setLoopAmount('');
       if (nextRemaining > 0) {
-        setLoopPaymentMethod(nextLoopPaymentMethod(method));
+        setLoopPaymentMethod(nextFinancialCode(method, methodOptions));
       }
     } else {
       setAmountReceived('');
-      setLoopPaymentMethod(nextLoopPaymentMethod(method));
+      setLoopPaymentMethod(nextFinancialCode(method, methodOptions));
     }
     return { added: true, nextRemaining };
-  }, [canAddCurrentPayment, currentCoverageTarget, currentPendingAmount, currentPendingMethod, hasPayments]);
+  }, [canAddCurrentPayment, currentCoverageTarget, currentPendingAmount, currentPendingMethod, hasPayments, methodOptions]);
 
   useEffect(() => {
     if (!confirmOpen) return;
-    if (draft.paymentMethod === 'card') {
-      setPaymentMethod('cash');
-    }
     setAmountReceived('');
     setDonation('0');
     setSaleNote('');
     setPayments([]);
     setLoopAmount('');
     {
-      const m = coerceLegacyAvailableFinalizeMethod(draft.paymentMethod);
-      setLoopPaymentMethod(m === 'free' ? 'cash' : m);
+      const first = financialCodes[0] ?? '';
+      const m = draft.paymentMethod === 'free' ? first : draft.paymentMethod;
+      setLoopPaymentMethod(financialCodes.includes(m) ? m : first);
     }
     const timer = window.setTimeout(() => {
       paymentMethodSelectRef.current?.focus();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [confirmOpen, draft.paymentMethod, draft.totalAmount]);
+  }, [confirmOpen, draft.paymentMethod, draft.totalAmount, financialCodes]);
 
   const handleFinalizeTabNavigation = (target: EventTarget | null, reverse: boolean): boolean => {
     const targetElement = target instanceof HTMLElement ? target : null;
@@ -428,9 +443,12 @@ export function KioskFinalizeSaleDock(): ReactNode {
     try {
       const noteOpt = saleNote.trim() ? { note: saleNote.trim() } : {};
       const baseDon = { donation: parsedDonation, ...noteOpt };
-      const legacyPm = apiPaymentMethodFromDock(
-        coerceLegacyAvailableFinalizeMethod(draft.paymentMethod) as Exclude<FinalizePaymentMethod, 'free'>,
-      );
+      const surplusCode =
+        payments.length > 0
+          ? payments[0].payment_method
+          : draft.paymentMethod === 'free'
+            ? (financialCodes[0] ?? '')
+            : draft.paymentMethod;
 
       if (draft.activeHeldSaleId) {
         let finalizePayload: Parameters<typeof postFinalizeHeldSale>[1];
@@ -441,12 +459,12 @@ export function KioskFinalizeSaleDock(): ReactNode {
         } else if (parsedAmountReceived !== null && parsedAmountReceived > amountDue + 1e-6) {
           const excess = parsedAmountReceived - amountDue;
           finalizePayload = {
-            payments: [{ payment_method: legacyPm, amount: amountDue }],
-            donation_surplus: [{ payment_method: legacyPm, amount: excess }],
+            payments: [{ payment_method: surplusCode, amount: amountDue }],
+            donation_surplus: [{ payment_method: surplusCode, amount: excess }],
             ...baseDon,
           };
         } else {
-          finalizePayload = { payment_method: legacyPm, ...baseDon };
+          finalizePayload = { payment_method: surplusCode, ...baseDon };
         }
 
         const res = await postFinalizeHeldSale(draft.activeHeldSaleId, finalizePayload, auth);
@@ -478,10 +496,10 @@ export function KioskFinalizeSaleDock(): ReactNode {
         body.payment_method = 'free';
       } else if (parsedAmountReceived !== null && parsedAmountReceived > amountDue + 1e-6) {
         const excess = parsedAmountReceived - amountDue;
-        body.payments = [{ payment_method: legacyPm, amount: amountDue }];
-        body.donation_surplus = [{ payment_method: legacyPm, amount: excess }];
+        body.payments = [{ payment_method: surplusCode, amount: amountDue }];
+        body.donation_surplus = [{ payment_method: surplusCode, amount: excess }];
       } else {
-        body.payment_method = legacyPm;
+        body.payment_method = surplusCode;
       }
 
       const res = await postCreateSale(body, auth);
@@ -502,7 +520,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
   const finalizeEnterHintId = useId();
 
   useEffect(() => {
-    if (!canSubmit || busy) return;
+    if (!canOpenFinalize || busy) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' || e.defaultPrevented) return;
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
@@ -520,16 +538,16 @@ export function KioskFinalizeSaleDock(): ReactNode {
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [busy, canSubmit]);
+  }, [busy, canOpenFinalize]);
 
   useEffect(() => {
     const onFocusRequest = () => {
-      if (!canSubmit || busyRef.current) return;
+      if (!canOpenFinalize || busyRef.current) return;
       openButtonRef.current?.focus();
     };
     window.addEventListener(KIOSK_FINALIZE_FOCUS_EVENT, onFocusRequest);
     return () => window.removeEventListener(KIOSK_FINALIZE_FOCUS_EVENT, onFocusRequest);
-  }, [canSubmit]);
+  }, [canOpenFinalize]);
 
   useEffect(() => {
     if (!confirmOpen) return;
@@ -666,29 +684,26 @@ export function KioskFinalizeSaleDock(): ReactNode {
                 className={`${wizardClasses.nativeSelect} ${dockClasses.nativeSelect}`}
                 data-testid="cashflow-select-payment-dock-modal"
                 value={draft.paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(
-                    e.target.value === 'check' || e.target.value === 'free' ? e.target.value : 'cash',
-                  )
-                }
-                disabled={hasPayments || busy}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                disabled={hasPayments || busy || !paymentMethodsReady}
               >
-                <option value="cash">Espèces</option>
-                <option value="check">Chèque</option>
-                <option value="card" disabled>
-                  Carte (indisponible)
-                </option>
+                {methodOptions.map((o) => (
+                  <option key={o.code} value={o.code}>
+                    {o.label}
+                  </option>
+                ))}
                 <option value="free">Gratuit / don</option>
               </select>
               <Text size="xs" c="dimmed" mt={4} data-testid="cashflow-finalize-card-note">
-                Carte indisponible dans cette modale, comme sur le legacy.
+                Liste alignée sur le paramétrage comptable expert (super-admin).{' '}
+                {paymentMethodsLoading ? 'Chargement…' : paymentMethodsError ? paymentMethodsError : ''}
               </Text>
             </label>
 
             {paymentMethodNeedsAmount ? (
               <TextInput
                 ref={amountReceivedInputRef}
-                label={amountReceivedLabel(draft.paymentMethod as Exclude<FinalizePaymentMethod, 'free'>)}
+                label={amountReceivedLabel(draft.paymentMethod, methodOptions)}
                 value={amountReceived}
                 onChange={(e) => setAmountReceived(e.currentTarget.value)}
                 data-testid="cashflow-finalize-amount-received"
@@ -741,7 +756,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
           {payments.length > 0 ? (
             <div className={dockClasses.paymentsBlock}>
               <div className={dockClasses.blockTitleRow}>
-                <div className={dockClasses.blockTitle}>Paiements ajoutes</div>
+                <div className={dockClasses.blockTitle}>Paiements ajoutés</div>
                 <Text size="sm" fw={600} data-testid="cashflow-finalize-payments-total">
                   Total encaissé : {totalPaid.toFixed(2)} €
                   {remainingAmount > 0 ? ` · reste : ${remainingAmount.toFixed(2)} €` : ' · ticket couvert'}
@@ -752,7 +767,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
                   <div key={`${payment.payment_method}-${index}`} className={dockClasses.paymentRow}>
                     <div>
                       <div className={dockClasses.paymentTitle}>
-                        {paymentMethodLabel(payment.payment_method)} : {payment.amount.toFixed(2)} €
+                        {labelForCode(payment.payment_method, pmLabelMap)} : {payment.amount.toFixed(2)} €
                       </div>
                       <div className={dockClasses.paymentMeta}>
                         {payment.change && payment.change > 0 ? `Monnaie : ${payment.change.toFixed(2)} €` : ''}
@@ -794,24 +809,22 @@ export function KioskFinalizeSaleDock(): ReactNode {
                     className={`${wizardClasses.nativeSelect} ${dockClasses.nativeSelect}`}
                     data-testid="cashflow-select-payment-dock-loop"
                     value={loopPaymentMethod}
-                    onChange={(e) =>
-                      setLoopPaymentMethod(e.target.value === 'check' ? 'check' : 'cash')
-                    }
-                    disabled={busy}
+                    onChange={(e) => setLoopPaymentMethod(e.target.value)}
+                    disabled={busy || !paymentMethodsReady}
                   >
-                    <option value="cash">Espèces</option>
-                    <option value="check">Chèque</option>
-                    <option value="card" disabled>
-                      Carte (indisponible)
-                    </option>
+                    {methodOptions.map((o) => (
+                      <option key={o.code} value={o.code}>
+                        {o.label}
+                      </option>
+                    ))}
                   </select>
                   <Text size="xs" c="dimmed" mt={4} data-testid="cashflow-finalize-loop-card-note">
-                    Carte indisponible dans cette modale, comme sur le legacy.
+                    Complément de règlement : mêmes moyens que le paramétrage expert.
                   </Text>
                 </label>
                 <TextInput
                   ref={loopPaymentInputRef}
-                  label="Montant du paiement"
+                  label={amountReceivedLabel(loopPaymentMethod, methodOptions)}
                   value={loopAmount}
                   onChange={(e) => setLoopAmount(e.currentTarget.value)}
                   data-testid="cashflow-finalize-loop-amount"
@@ -894,18 +907,28 @@ export function KioskFinalizeSaleDock(): ReactNode {
         size="md"
         color="green"
         onClick={() => setConfirmOpen(true)}
-        disabled={!canSubmit || busy}
+        disabled={!canOpenFinalize || busy}
         data-testid="cashflow-submit-sale"
         aria-label={
-          canSubmit && !busy ? 'Finaliser la vente, touche Entrée pour ouvrir la finalisation' : undefined
+          canOpenFinalize && !busy ? 'Finaliser la vente, touche Entrée pour ouvrir la finalisation' : undefined
         }
-        {...(canSubmit && !busy
+        {...(canOpenFinalize && !busy
           ? { 'aria-keyshortcuts': 'Enter', 'aria-describedby': finalizeEnterHintId }
           : {})}
       >
         Ouvrir la finalisation
       </Button>
-      {canSubmit && !busy ? (
+      {paymentMethodsLoading ? (
+        <Text size="sm" c="dimmed" mt="xs" data-testid="cashflow-kiosk-pm-options-loading">
+          Chargement des moyens de paiement…
+        </Text>
+      ) : null}
+      {paymentMethodsError ? (
+        <Text size="sm" c="red" mt="xs" data-testid="cashflow-kiosk-pm-options-error">
+          {paymentMethodsError}
+        </Text>
+      ) : null}
+      {canOpenFinalize && !busy ? (
         <Text
           component="p"
           size="xs"

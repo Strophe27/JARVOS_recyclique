@@ -62,6 +62,14 @@ describe('Story 6.3 — finalisation ticket en attente via API', () => {
   it('appelle …/finalize-held au submit paiement quand activeHeldSaleId est défini', async () => {
     const fetchMock = vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes('payment-method-options')) {
+        return Promise.resolve(
+          new Response(JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
       if (url.includes('/finalize-held')) {
         return Promise.resolve(
           new Response(
@@ -92,6 +100,9 @@ describe('Story 6.3 — finalisation ticket en attente via API', () => {
     fireEvent.click(screen.getByTestId('cashflow-step-next'));
     fireEvent.click(screen.getByRole('tab', { name: /paiement/i }));
 
+    await waitFor(() => {
+      expect((screen.getByTestId('cashflow-submit-sale') as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByTestId('cashflow-submit-sale'));
 
     await waitFor(() => {
