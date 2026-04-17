@@ -12,7 +12,7 @@ description: >-
 
 ## Revue des limites (à ne pas contredire)
 
-- Les **titres affichés dans l’UI Cursor** ne sont en général **pas** dans les `.jsonl` ; l’index utilise un **extrait du premier message utilisateur** et l’**UUID** du dossier.
+- Les **titres affichés dans l’UI Cursor** ne sont en général **pas** dans les `.jsonl` ; l’index utilise un **extrait du premier message utilisateur** et l’**UUID** du dossier. Si `first_user_snippet` est **vide** (format atypique), **lire les premières lignes** du fichier `.jsonl` ciblé plutôt que conclure à une conversation vide.
 - Ce flux **ne réinjecte pas** l’historique dans Cursor ; il **documente et résume** ce qui reste sur disque.
 - Du contenu peut être **`[REDACTED]`** ou absent : récupération **partielle** seulement.
 - **Confidentialité** : secrets, tokens, données perso peuvent figurer dans les transcripts ; ne pas copier des extraits vers le dépôt sans accord ; ne pas publier d’index complet dans un ticket public.
@@ -27,6 +27,8 @@ description: >-
 
 1. **D’abord** exécuter le script d’index (sortie JSON compacte) ou `rg` sur les chemins ; **ensuite seulement** ouvrir un `.jsonl` ciblé (extraits) si nécessaire.
 2. **Ne pas** coller des transcripts entiers dans le chat sauf **audit ponctuel** sur **un** UUID après choix utilisateur.
+
+**Coût disque / CPU** : sans `--limit`, le script parcourt **tous** les dossiers parents et **lit chaque ligne** de chaque `<uuid>.jsonl` (pour un `line_count` fiable et les outils). Sur des centaines de gros fichiers, prévoir un délai ; pour un **aperçu rapide**, utiliser `--limit N` (déjà trié par date de modification décroissante).
 
 ## Où sont les fichiers
 
@@ -62,9 +64,21 @@ Chemin direct vers `agent-transcripts` :
 python .cursor/skills/explorer-transcripts-cursor/scripts/index_transcripts.py --agent-transcripts "CHEMIN/VERS/agent-transcripts"
 ```
 
-Options utiles : `--limit 50`, `--snippet-chars 200`, `--max-tool-names 40`.
+Options utiles : `--limit 50`, `--snippet-chars 200`, `--max-tool-names 40`, `--verbose` (stderr : lignes JSON non valides).
 
-**Prérequis** : Python 3, bibliothèque standard uniquement.
+**Prérequis** : Python 3 (commande `python` ou `python3` selon l’OS), bibliothèque standard uniquement.
+
+### Sortie JSON (schéma)
+
+- `agent_transcripts_dir` : chemin résolu vers `agent-transcripts`.
+- `parent_conversation_count` : nombre d’entrées dans `conversations`.
+- `conversations[]` : `uuid`, `jsonl`, `has_subagents`, `line_count` (lignes physiques du fichier), `mtime_utc`, `first_user_snippet`, `tool_names_head` (liste plafonnée par `--max-tool-names`).
+
+### Vérification locale du script
+
+```bash
+python .cursor/skills/explorer-transcripts-cursor/scripts/test_index_transcripts.py -v
+```
 
 ## Recherche plein texte (hors modèle)
 

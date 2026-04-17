@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from recyclic_api.models.accounting_config import GLOBAL_ACCOUNTING_SETTINGS_ROW_ID, GlobalAccountingSettings
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.paheko_cash_session_close_mapping import PahekoCashSessionCloseMapping
+from recyclic_api.models.site import Site
+from recyclic_api.models.user import User
 from recyclic_api.services.paheko_transaction_payload_builder import validate_destination_params_for_transaction
 
 def _valid_destination_params(raw: Any) -> bool:
@@ -108,6 +110,23 @@ def resolve_enriched_payload_for_item(
             pref = str(getattr(ga, "default_entry_label_prefix", None) or "").strip()
             if pref:
                 merged["label_prefix"] = pref
+
+    if session.closed_at is not None:
+        merged["session_date"] = session.closed_at.date().isoformat()
+
+    if session.site_id is not None:
+        site = db.get(Site, session.site_id)
+        if site is not None and (site.name or "").strip():
+            merged["site_display_name"] = str(site.name).strip()
+
+    if session.operator_id is not None:
+        op = db.get(User, session.operator_id)
+        if op is not None:
+            parts = [p for p in [(op.first_name or "").strip(), (op.last_name or "").strip()] if p]
+            display = " ".join(parts) if parts else (op.username or "").strip()
+            if display:
+                merged["operator_display_name"] = display
+
     return merged, None, None
 
 

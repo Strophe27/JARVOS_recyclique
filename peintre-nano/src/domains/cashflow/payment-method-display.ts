@@ -11,7 +11,8 @@ export function paymentMethodLabelMapFromOptions(
 ): PaymentMethodLabelMap {
   const m = new Map<string, string>();
   for (const o of options) {
-    m.set(o.code, o.label);
+    const k = o.code.trim().toLowerCase();
+    m.set(k, o.label);
   }
   return m;
 }
@@ -30,8 +31,9 @@ export function labelForCode(
   map: PaymentMethodLabelMap,
   freeLabel: string = DEFAULT_FREE_PAYMENT_LABEL,
 ): string {
-  if (code === 'free') return freeLabel;
-  const fromMap = map.get(code);
+  const norm = code.trim().toLowerCase();
+  if (norm === 'free') return freeLabel;
+  const fromMap = map.get(norm);
   if (fromMap !== undefined) return fromMap;
-  return unknownPaymentMethodLabel(code);
+  return unknownPaymentMethodLabel(norm || code);
 }

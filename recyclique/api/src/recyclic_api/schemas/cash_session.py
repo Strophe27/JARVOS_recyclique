@@ -237,11 +237,22 @@ class PaymentDetail(BaseModel):
     
     id: str = Field(..., description="ID du paiement")
     sale_id: str = Field(..., description="ID de la vente")
-    payment_method: str = Field(..., description="Méthode de paiement")
+    payment_method: str = Field(
+        ...,
+        description="Colonne legacy agrégée (tous les moyens banque → « card ») — ne pas seul pour l'UI",
+    )
+    payment_method_id: Optional[str] = Field(
+        None,
+        description="FK vers le référentiel expert ``payment_methods``",
+    )
+    payment_method_code: Optional[str] = Field(
+        None,
+        description="Code expert (ex. transfer, card) — aligné ``PaymentTransaction.payment_method_code``",
+    )
     amount: float = Field(..., description="Montant du paiement")
     created_at: datetime = Field(..., description="Date et heure du paiement")
     
-    @field_validator('id', 'sale_id', mode='before')
+    @field_validator('id', 'sale_id', 'payment_method_id', mode='before')
     @classmethod
     def convert_uuid_to_str(cls, v):
         """Convertit les UUIDs en strings pour la sérialisation"""
@@ -250,6 +261,16 @@ class PaymentDetail(BaseModel):
         if hasattr(v, '__str__'):
             return str(v)
         return v
+
+    @field_validator('payment_method', mode='before')
+    @classmethod
+    def coerce_legacy_payment_method_enum(cls, v):
+        """Colonne ORM ``PaymentMethod`` enum → chaîne ``cash``/``card``/…"""
+        if v is None:
+            return v
+        if hasattr(v, 'value'):
+            return str(v.value)
+        return str(v)
 
 
 class SaleDetail(BaseModel):

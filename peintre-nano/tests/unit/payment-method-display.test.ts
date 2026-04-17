@@ -16,6 +16,12 @@ describe('payment-method-display', () => {
     expect(map.get('cash')).toBe('Espèces');
   });
 
+  it('résolution insensible à la casse (code API vs référentiel)', () => {
+    const map = paymentMethodLabelMapFromOptions([{ code: 'CARD', label: 'Carte', kind: 'bank' }]);
+    expect(labelForCode('card', map)).toBe('Carte');
+    expect(labelForCode('CARD', map)).toBe('Carte');
+  });
+
   it('labelForCode : free explicite', () => {
     const map = paymentMethodLabelMapFromOptions([]);
     expect(labelForCode('free', map, 'Don gratuit')).toBe('Don gratuit');

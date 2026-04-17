@@ -39,6 +39,11 @@ def _parse_args() -> argparse.Namespace:
         default=24,
         help="Max noms d'outils distincts listés par conversation.",
     )
+    p.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Sur stderr : lignes JSONL non parseables (JSONDecodeError).",
+    )
     return p.parse_args()
 
 
@@ -59,6 +64,7 @@ _USER_QUERY_RE = re.compile(r"<user_query>\s*(.*?)\s*</user_query>", re.DOTALL |
 
 
 def _extract_user_snippet(obj: dict, max_chars: int) -> str:
+    # Schéma message hétérogène : on ignore toute forme inattendue sans bruit.
     try:
         parts = obj.get("message", {}).get("content", [])
         texts: list[str] = []
@@ -112,6 +118,9 @@ def index_one_transcript(
     jsonl_path: Path,
     snippet_chars: int,
     max_tool_names: int,
+    *,
+    mtime_utc: str | None = None,
+    verbose: bool = False,
 ) -> dict:
     first_user_snippet = ""
     tool_names: list[str] = []
@@ -124,7 +133,13 @@ def index_one_transcript(
                 continue
             try:
                 obj = json.loads(line)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as err:
+                if verbose:
+                    preview = line[:120] + ("…" if len(line) > 120 else "")
+                    print(
+                        f"{jsonl_path}:{line_count}: JSONDecodeError: {err!s} | {preview!r}",
+                        file=sys.stderr,
+                    )
                 continue
             role = obj.get("role")
             if role == "user" and not first_user_snippet:
@@ -135,9 +150,10 @@ def index_one_transcript(
                         tool_names.append(n)
                     if len(tool_names) >= max_tool_names:
                         break
+    mt = mtime_utc if mtime_utc is not None else _iso_mtime(jsonl_path)
     return {
         "line_count": line_count,
-        "mtime_utc": _iso_mtime(jsonl_path),
+        "mtime_utc": mt,
         "first_user_snippet": first_user_snippet,
         "tool_names_head": tool_names,
     }
@@ -172,9 +188,15 @@ def main() -> None:
         candidates = candidates[: args.limit]
 
     rows: list[dict] = []
-    for jsonl, _mkey, has_subagents in candidates:
+    for jsonl, mkey, has_subagents in candidates:
         uuid = jsonl.parent.name
-        meta = index_one_transcript(jsonl, args.snippet_chars, args.max_tool_names)
+        meta = index_one_transcript(
+            jsonl,
+            args.snippet_chars,
+            args.max_tool_names,
+            mtime_utc=mkey,
+            verbose=args.verbose,
+        )
         rows.append(
             {
                 "uuid": uuid,

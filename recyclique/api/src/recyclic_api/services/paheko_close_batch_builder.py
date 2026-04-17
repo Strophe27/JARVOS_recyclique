@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 from recyclic_api.services.paheko_transaction_payload_builder import (
     build_close_transaction_advanced_payload,
     build_close_transaction_line_payload,
+    paheko_close_document_reference_base,
+    session_date_iso_for_paheko,
 )
 
 if TYPE_CHECKING:
@@ -28,6 +30,33 @@ SUB_KIND_REFUNDS_PRIOR_CLOSED = "refunds_prior_closed_fiscal"
 
 # Story 23.4 — seul mode supporté : ventilation détaillée (valeur d'observabilité `builder_policy`).
 POLICY_DETAILED = "detailed"
+
+_PM_ENC_FR: dict[str, str] = {
+    "cash": "Encaissement espèces",
+    "check": "Encaissement chèque",
+    "cheque": "Encaissement chèque",
+    "card": "Encaissement carte",
+    "transfer": "Encaissement virement",
+    "bank": "Encaissement virement",
+}
+_PM_DEC_FR: dict[str, str] = {
+    "cash": "Décaissement espèces",
+    "check": "Décaissement chèque",
+    "cheque": "Décaissement chèque",
+    "card": "Décaissement carte",
+    "transfer": "Décaissement virement",
+    "bank": "Décaissement virement",
+}
+
+
+def _paheko_pm_encaissement_label_fr(code: str) -> str:
+    c = (code or "").strip().lower()
+    return _PM_ENC_FR.get(c, f"Encaissement {c}")
+
+
+def _paheko_pm_decaissement_label_fr(code: str) -> str:
+    c = (code or "").strip().lower()
+    return _PM_DEC_FR.get(c, f"Décaissement {c}")
 
 
 class PlannedSubWrite(TypedDict, total=False):
@@ -162,7 +191,9 @@ def _build_sales_donations_planned_row_per_pm(
     lines: list[dict[str, Any]] = []
     obs_lines: list[dict[str, Any]] = []
     csid = str(enriched_payload.get("cash_session_id") or "").strip()
-    ref_base = f"cash-session-close-pm:{csid}"
+    ref_doc = paheko_close_document_reference_base(enriched_payload)
+    if not ref_doc:
+        return None, "invalid_outbox_payload", "cash_session_id absent pour références Paheko."
 
     for code, amt in entries:
         acc = accounts_by_code.get(code)
@@ -173,8 +204,8 @@ def _build_sales_donations_planned_row_per_pm(
                 {
                     "account": acc,
                     "debit": amt,
-                    "label": f"Encaissement {code}",
-                    "reference": f"{ref_base}:{code}:in",
+                    "label": _paheko_pm_encaissement_label_fr(code),
+                    "reference": f"{ref_doc}:{code}:in",
                 }
             )
         else:
@@ -183,8 +214,8 @@ def _build_sales_donations_planned_row_per_pm(
                 {
                     "account": acc,
                     "credit": cred,
-                    "label": f"Décaissement {code}",
-                    "reference": f"{ref_base}:{code}:out",
+                    "label": _paheko_pm_decaissement_label_fr(code),
+                    "reference": f"{ref_doc}:{code}:out",
                 }
             )
         obs_lines.append(
@@ -206,8 +237,8 @@ def _build_sales_donations_planned_row_per_pm(
             {
                 "account": sales_acc,
                 "credit": sales_credit,
-                "label": "Ventes (compte global révision)",
-                "reference": f"{ref_base}:credit:sales",
+                "label": "Ventes de la session",
+                "reference": f"{ref_doc}:credit:sales",
             }
         )
         obs_lines.append(
@@ -227,8 +258,8 @@ def _build_sales_donations_planned_row_per_pm(
             {
                 "account": dont_acc,
                 "credit": donation,
-                "label": "Dons surplus (compte global révision)",
-                "reference": f"{ref_base}:credit:donation",
+                "label": "Dons de la session",
+                "reference": f"{ref_doc}:credit:donation",
             }
         )
         obs_lines.append(
@@ -275,18 +306,20 @@ def _build_sales_donations_planned_row_per_pm(
         if abs(_r2(td - tc)) > 0.01:
             return None, "unbalanced_advanced", f"Écriture ADVANCED non équilibrée après reprise d'arrondi ({td} / {tc})."
 
-    label = f"Cloture VentesDonsPm {csid[:8]}"
-    reference = f"{ref_base}:sd_pm"
+    prefix = str(enriched_payload.get("label_prefix") or "").strip() or "Clôture caisse"
+    session_date = session_date_iso_for_paheko(enriched_payload)
+    label = (
+        f"{prefix} — {session_date}"
+        if session_date
+        else f"{prefix} — {csid[:8]}"
+    )
+    reference = ref_doc
     adv_body, code, msg = build_close_transaction_advanced_payload(
         enriched_payload,
         lines=lines,
         label=label,
         reference=reference,
-        extra_note_lines=[
-            "sub_write_index=0",
-            f"sub_kind={SUB_KIND_SALES_DONATIONS_PER_PM}",
-            f"accounting_config_revision_id={rev_id}",
-        ],
+        extra_note_lines=None,
     )
     if code is not None or adv_body is None:
         return None, code or "invalid_sub_write", msg or "Construction ADVANCED impossible."
@@ -373,6 +406,10 @@ def build_paheko_bodies_for_planned_sub_writes(
     if not csid:
         return None, "invalid_outbox_payload", "cash_session_id absent."
 
+    ref_base = paheko_close_document_reference_base(enriched_payload)
+    if not ref_base:
+        return None, "invalid_outbox_payload", "Référence pièce Paheko impossible (session)."
+
     out: list[tuple[PlannedSubWrite, dict[str, Any] | None]] = []
     for p in plan:
         if p.get("http_body") is not None:
@@ -382,9 +419,14 @@ def build_paheko_bodies_for_planned_sub_writes(
             out.append((p, None))
             continue
         # Aligner sur l'ancien POST mono-ligne (8.3) : préfixe expert issu du mapping, pas le token interne.
-        lp = str(enriched_payload.get("label_prefix") or "").strip() or "Cloture caisse"
-        label = f"{lp} {csid[:8]}"
-        reference = f"cash-session-close:{csid}:{p['reference_token']}"
+        lp = str(enriched_payload.get("label_prefix") or "").strip() or "Clôture caisse"
+        session_date = session_date_iso_for_paheko(enriched_payload)
+        label = (
+            f"{lp} — {session_date}"
+            if session_date
+            else f"{lp} — {csid[:8]}"
+        )
+        reference = f"{ref_base}:{p['reference_token']}"
         body, code, msg = build_close_transaction_line_payload(
             enriched_payload,
             amount=float(p["amount"]),
@@ -392,7 +434,7 @@ def build_paheko_bodies_for_planned_sub_writes(
             reference=reference,
             tx_type=p["tx_type"],
             swap_debit_credit=p["swap_debit_credit"],
-            extra_note_lines=[f"sub_write_index={p['index']}", f"sub_kind={p['kind']}"],
+            extra_note_lines=None,
         )
         if code is not None or body is None:
             return None, code or "invalid_sub_write", msg or "Sous-écriture Paheko invalide."

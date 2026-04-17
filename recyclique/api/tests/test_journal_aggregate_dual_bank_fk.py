@@ -6,7 +6,7 @@ import uuid
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.orm import noload
+from sqlalchemy.orm import noload, selectinload
 
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentMethodKind
@@ -18,6 +18,7 @@ from recyclic_api.models.payment_transaction import (
 from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.schemas.cash_session import SaleDetail
 from recyclic_api.services.cash_session_journal_snapshot import compute_payment_journal_aggregates
 
 
@@ -246,3 +247,98 @@ def test_compute_payment_journal_aggregates_bank_only_no_cash_in_cash_net(db_ses
     assert totals.by_payment_method_signed["transfer"] == pytest.approx(7.0)
     assert totals.by_payment_method_signed["card"] == pytest.approx(8.0)
     assert totals.cash_signed_net_from_journal == pytest.approx(0.0)
+
+
+def test_compute_payment_journal_donation_from_sale_without_donation_surplus_rows(db_session):
+    """P1 : ``sale.donation`` sans lignes ``DONATION_SURPLUS`` → total dons aligné pour Paheko."""
+    site = Site(
+        name="Jdon site",
+        address="1 rue D",
+        city="V",
+        postal_code="75000",
+        country="FR",
+        is_active=True,
+    )
+    db_session.add(site)
+    db_session.flush()
+    uid = uuid.uuid4()
+    user = User(
+        id=uid,
+        username=f"ujdon_{uid.hex[:10]}@t.com",
+        hashed_password="pw",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True,
+        site_id=site.id,
+    )
+    db_session.add(user)
+    pm_card = PaymentMethodDefinition(
+        id=uuid.uuid4(),
+        code="card",
+        label="Carte",
+        active=True,
+        kind=PaymentMethodKind.BANK,
+        paheko_debit_account="512",
+        paheko_refund_credit_account="512",
+        display_order=10,
+    )
+    db_session.add(pm_card)
+    cs = CashSession(
+        operator_id=user.id,
+        site_id=site.id,
+        initial_amount=0.0,
+        current_amount=10.0,
+        status=CashSessionStatus.OPEN,
+        total_sales=7.0,
+        total_items=1,
+    )
+    db_session.add(cs)
+    db_session.flush()
+    sale = Sale(
+        cash_session_id=cs.id,
+        operator_id=user.id,
+        total_amount=10.0,
+        donation=3.0,
+        payment_method=PaymentMethod.CARD,
+        lifecycle_status=SaleLifecycleStatus.COMPLETED,
+    )
+    db_session.add(sale)
+    db_session.flush()
+    db_session.add(
+        PaymentTransaction(
+            sale_id=sale.id,
+            payment_method=PaymentMethod.CARD,
+            payment_method_id=pm_card.id,
+            nature=PaymentTransactionNature.SALE_PAYMENT,
+            direction=PaymentTransactionDirection.INFLOW,
+            amount=10.0,
+        )
+    )
+    db_session.commit()
+
+    totals = compute_payment_journal_aggregates(
+        db_session,
+        cash_session_id=cs.id,
+        use_legacy_preview_if_no_journal=False,
+    )
+    assert totals.by_payment_method_signed.get("card") == pytest.approx(10.0)
+    assert totals.donation_surplus_total == pytest.approx(3.0)
+
+
+def test_sale_detail_payment_exposes_expert_code_not_only_legacy_card(db_session, session_sale_two_bank_fk_and_cash):
+    """GET détail session : ``PaymentDetail`` doit exposer ``payment_method_code`` (transfer/card), pas seulement legacy."""
+    cs = session_sale_two_bank_fk_and_cash
+    sale = (
+        db_session.query(Sale)
+        .options(selectinload(Sale.payments).selectinload(PaymentTransaction.payment_method_ref))
+        .filter(Sale.cash_session_id == cs.id)
+        .first()
+    )
+    assert sale is not None
+    sd = SaleDetail.model_validate(sale)
+    assert sd.payments
+    codes = {p.payment_method_code for p in sd.payments if p.payment_method_code}
+    assert codes == {"cash", "transfer", "card"}
+    for p in sd.payments:
+        if p.payment_method_code in ("transfer", "card"):
+            assert p.payment_method == "card"

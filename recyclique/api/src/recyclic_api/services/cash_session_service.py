@@ -201,6 +201,7 @@ class CashSessionService:
     def get_session_with_details(self, session_id: str) -> Optional[CashSession]:
         """Récupère une session avec toutes ses relations (opérateur, site, ventes)."""
         from sqlalchemy.orm import selectinload
+        from recyclic_api.models.payment_transaction import PaymentTransaction
         from recyclic_api.models.sale import Sale
 
         sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
@@ -209,7 +210,9 @@ class CashSessionService:
             .options(
                 selectinload(CashSession.operator),
                 selectinload(CashSession.site),
-                selectinload(CashSession.sales).selectinload(Sale.payments),  # Story B52-P1: Charger les paiements multiples
+                selectinload(CashSession.sales).selectinload(Sale.payments).selectinload(
+                    PaymentTransaction.payment_method_ref
+                ),
                 selectinload(CashSession.register)  # Story B49-P1: Charger le register pour les options
             )
             .filter(CashSession.id == sid)

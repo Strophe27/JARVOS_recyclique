@@ -62,6 +62,9 @@ def enqueue_cash_session_close_outbox(
         "actual_amount": closed_session.actual_amount,
         "theoretical_amount": closed_session.closing_amount,
         "variance": closed_session.variance,
+        # Remarques Paheko : décomposer fond de caisse vs ventes nettes (≠ encaissements bruts par moyen).
+        "session_initial_amount": closed_session.initial_amount,
+        "session_total_sales_rollups": closed_session.total_sales,
     }
     # Story 22.6 — charge figée pour le builder Paheko (22.7) sans relire le legacy vente.
     if accounting_close_snapshot is not None:

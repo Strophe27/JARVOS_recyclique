@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentMethodKind
 from recyclic_api.models.payment_transaction import PaymentTransaction, PaymentTransactionNature
-from recyclic_api.models.sale import PaymentMethod, Sale, _normalize_payment_method_token
+from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus, _normalize_payment_method_token
 from recyclic_api.schemas.cash_session_close_snapshot import (
     CashSessionAccountingCloseSnapshotV1,
     CashSessionCloseSnapshotClosingV1,
@@ -117,6 +117,22 @@ def compute_payment_journal_aggregates(
     fallback = bool(
         use_legacy_preview_if_no_journal and line_count == 0
     )
+
+    # Dons portés sur `sale.donation` sans lignes `DONATION_SURPLUS` (données historiques ou chemins incomplets) :
+    # aligner le total dons Paheko sur la somme des tickets complétés pour ne pas tout créditer en 707.
+    sale_donation_sum = float(
+        db.execute(
+            select(func.coalesce(func.sum(Sale.donation), 0.0)).where(
+                Sale.cash_session_id == sid,
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+            )
+        ).scalar_one()
+        or 0.0
+    )
+    t_net_signed = round(sum(float(v) for v in by_pm.values()), 2)
+    donation_surplus = round(max(float(donation_surplus), sale_donation_sum), 2)
+    if donation_surplus > t_net_signed + 0.01:
+        donation_surplus = round(max(0.0, t_net_signed), 2)
 
     return CashSessionJournalTotalsV1(
         by_payment_method_signed=dict(by_pm),

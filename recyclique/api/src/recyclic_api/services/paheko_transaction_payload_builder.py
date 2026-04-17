@@ -31,6 +31,83 @@ def _as_float(value: Any) -> float | None:
         return None
 
 
+def session_date_iso_for_paheko(enriched_payload: dict[str, Any]) -> str:
+    """Date comptable ``YYYY-MM-DD`` : ``session_date`` explicite sinon dérivée de ``closed_at``."""
+    raw = _as_non_empty_str(enriched_payload.get("session_date"))
+    if raw and len(raw) >= 10:
+        return raw[:10]
+    closed = _as_non_empty_str(enriched_payload.get("closed_at"))
+    if not closed:
+        return ""
+    try:
+        return datetime.fromisoformat(closed.replace("Z", "+00:00")).date().isoformat()
+    except ValueError:
+        return ""
+
+
+def paheko_close_document_reference_base(enriched_payload: dict[str, Any]) -> str | None:
+    """
+    Numéro de pièce lisible : ``CAISSE-YYYYMMDD-{8 premiers car. session}``.
+    """
+    csid = _as_non_empty_str(enriched_payload.get("cash_session_id"))
+    if not csid:
+        return None
+    date_iso = session_date_iso_for_paheko(enriched_payload)
+    compact = date_iso.replace("-", "") if date_iso else ""
+    suffix = csid[:8]
+    if compact:
+        return f"CAISSE-{compact}-{suffix}"
+    return f"CAISSE-{suffix}"
+
+
+def _format_euro_fr(amount: float) -> str:
+    return f"{amount:.2f}".replace(".", ",") + " €"
+
+
+def build_paheko_cash_session_close_note_lines(
+    enriched_payload: dict[str, Any],
+    *,
+    extra_note_lines: list[str] | None = None,
+) -> list[str]:
+    """
+    Remarques Paheko lisibles (plus d'UUID site/opérateur ni dump ``cash_session_id``).
+    ``accounting_config_revision_id`` : extrait du snapshot figé si présent.
+    """
+    site_label = _as_non_empty_str(enriched_payload.get("site_display_name")) or "—"
+    op_label = _as_non_empty_str(enriched_payload.get("operator_display_name")) or "—"
+    note_lines = [
+        f"Site : {site_label}",
+        f"Opérateur : {op_label}",
+    ]
+    init = _as_float(enriched_payload.get("session_initial_amount"))
+    ts_net = _as_float(enriched_payload.get("session_total_sales_rollups"))
+    theoretical_amount = _as_float(enriched_payload.get("theoretical_amount"))
+    variance = _as_float(enriched_payload.get("variance"))
+    if init is not None and ts_net is not None:
+        note_lines.append(f"Fond de caisse : {_format_euro_fr(init)}")
+        note_lines.append(f"Ventes encaissées (net) : {_format_euro_fr(ts_net)}")
+    elif theoretical_amount is not None:
+        note_lines.append(f"Total théorique en caisse : {_format_euro_fr(theoretical_amount)}")
+    if variance is not None:
+        note_lines.append(f"Écart de caisse : {_format_euro_fr(variance)}")
+    rev_short: str | None = None
+    snap = enriched_payload.get("accounting_close_snapshot_frozen")
+    if isinstance(snap, dict):
+        rid = snap.get("accounting_config_revision_id")
+        if rid is not None:
+            rs = str(rid).strip()
+            if rs:
+                rev_short = rs[:8]
+    if rev_short:
+        note_lines.append(f"Révision config : {rev_short}")
+    extra_notes = _as_non_empty_str(enriched_payload.get("notes"))
+    if extra_notes:
+        note_lines.append(extra_notes)
+    if extra_note_lines:
+        note_lines.extend(extra_note_lines)
+    return note_lines
+
+
 def validate_destination_params_for_transaction(destination_params: Any) -> bool:
     if not isinstance(destination_params, dict) or not destination_params:
         return False
@@ -79,27 +156,13 @@ def build_close_transaction_line_payload(
     cash_session_id = _as_non_empty_str(enriched_payload.get("cash_session_id"))
     if not cash_session_id:
         return None, "invalid_outbox_payload", "cash_session_id absent du payload outbox."
-    site_id = _as_non_empty_str(enriched_payload.get("site_id"))
-    operator_id = _as_non_empty_str(enriched_payload.get("operator_id"))
 
     d_acc, c_acc = (credit, debit) if swap_debit_credit else (debit, credit)
-    theoretical_amount = _as_float(enriched_payload.get("theoretical_amount"))
-    variance = _as_float(enriched_payload.get("variance"))
 
-    note_lines = [
-        f"cash_session_id={cash_session_id}",
-        f"site_id={site_id or '-'}",
-        f"operator_id={operator_id or '-'}",
-    ]
-    if theoretical_amount is not None:
-        note_lines.append(f"theoretical_amount={theoretical_amount:.2f}")
-    if variance is not None:
-        note_lines.append(f"variance={variance:.2f}")
-    extra_notes = _as_non_empty_str(enriched_payload.get("notes"))
-    if extra_notes:
-        note_lines.append(extra_notes)
-    if extra_note_lines:
-        note_lines.extend(extra_note_lines)
+    note_lines = build_paheko_cash_session_close_note_lines(
+        enriched_payload,
+        extra_note_lines=extra_note_lines,
+    )
 
     t_type = (tx_type or "REVENUE").upper()
     body: dict[str, Any] = {
@@ -154,25 +217,11 @@ def build_close_transaction_advanced_payload(
     cash_session_id = _as_non_empty_str(enriched_payload.get("cash_session_id"))
     if not cash_session_id:
         return None, "invalid_outbox_payload", "cash_session_id absent du payload outbox."
-    site_id = _as_non_empty_str(enriched_payload.get("site_id"))
-    operator_id = _as_non_empty_str(enriched_payload.get("operator_id"))
 
-    note_lines = [
-        f"cash_session_id={cash_session_id}",
-        f"site_id={site_id or '-'}",
-        f"operator_id={operator_id or '-'}",
-    ]
-    theoretical_amount = _as_float(enriched_payload.get("theoretical_amount"))
-    variance = _as_float(enriched_payload.get("variance"))
-    if theoretical_amount is not None:
-        note_lines.append(f"theoretical_amount={theoretical_amount:.2f}")
-    if variance is not None:
-        note_lines.append(f"variance={variance:.2f}")
-    extra_notes = _as_non_empty_str(enriched_payload.get("notes"))
-    if extra_notes:
-        note_lines.append(extra_notes)
-    if extra_note_lines:
-        note_lines.extend(extra_note_lines)
+    note_lines = build_paheko_cash_session_close_note_lines(
+        enriched_payload,
+        extra_note_lines=extra_note_lines,
+    )
 
     sanitized: list[dict[str, Any]] = []
     for i, raw in enumerate(lines):
@@ -248,11 +297,18 @@ def build_cash_session_close_transaction_payload(
     cash_session_id = _as_non_empty_str(enriched_payload.get("cash_session_id"))
     if not cash_session_id:
         return None, "invalid_outbox_payload", "cash_session_id absent du payload outbox."
-    label_prefix = _as_non_empty_str(enriched_payload.get("label_prefix")) or "Cloture caisse"
+    label_prefix = _as_non_empty_str(enriched_payload.get("label_prefix")) or "Clôture caisse"
     session_short = cash_session_id[:8]
-    label = f"{label_prefix} {session_short}"
-    reference_prefix = _as_non_empty_str(enriched_payload.get("reference_prefix")) or "cash-session-close"
-    reference = f"{reference_prefix}:{cash_session_id}"
+    session_date = session_date_iso_for_paheko(enriched_payload)
+    label = (
+        f"{label_prefix} — {session_date}"
+        if session_date
+        else f"{label_prefix} — {session_short}"
+    )
+    reference = paheko_close_document_reference_base(enriched_payload)
+    if not reference:
+        reference_prefix = _as_non_empty_str(enriched_payload.get("reference_prefix")) or "cash-session-close"
+        reference = f"{reference_prefix}:{cash_session_id}"
 
     return build_close_transaction_line_payload(
         enriched_payload,

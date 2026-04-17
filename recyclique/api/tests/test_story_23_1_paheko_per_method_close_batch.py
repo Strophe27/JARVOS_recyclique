@@ -104,6 +104,8 @@ def _enr(snap: dict) -> dict:
         "actual_amount": 60.0,
         "theoretical_amount": 60.0,
         "variance": 0.0,
+        "session_initial_amount": 0.0,
+        "session_total_sales_rollups": 60.0,
     }
 
 
@@ -121,7 +123,28 @@ def test_per_method_builds_advanced_balanced(db_session: Session) -> None:
     body0 = rows[0][1]
     assert body0 is not None
     assert body0.get("type") == "ADVANCED"
+    csid = enr["cash_session_id"]
+    assert body0.get("label") == "Clôture caisse — 2026-01-15"
+    assert body0.get("reference") == f"CAISSE-20260115-{csid[:8]}"
+    notes0 = body0.get("notes") or ""
+    assert "cash_session_id=" not in notes0
+    assert "site_id=" not in notes0
+    assert "sub_kind=" not in notes0
+    assert "Fond de caisse :" in notes0
+    assert "Ventes encaissées (net) :" in notes0
+    assert "Révision config :" in notes0
     lines = body0.get("lines") or []
+    for ln in lines:
+        ref = ln.get("reference") or ""
+        assert ref.startswith(f"CAISSE-20260115-{csid[:8]}:")
+    assert any(ln.get("label") == "Encaissement espèces" for ln in lines)
+    assert any(ln.get("label") == "Encaissement carte" for ln in lines)
+    assert any(ln.get("label") == "Ventes de la session" for ln in lines)
+    assert any(ln.get("label") == "Dons de la session" for ln in lines)
+    cr707 = sum(float(x.get("credit") or 0) for x in lines if x.get("account") == "7070")
+    cr754 = sum(float(x.get("credit") or 0) for x in lines if x.get("account") == "7541")
+    assert cr707 == pytest.approx(55.0)
+    assert cr754 == pytest.approx(5.0)
     td = sum(float(x.get("debit") or 0) for x in lines)
     tc = sum(float(x.get("credit") or 0) for x in lines)
     assert abs(td - tc) <= 0.01
