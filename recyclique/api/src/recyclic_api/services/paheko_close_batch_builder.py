@@ -25,8 +25,12 @@ RETRY_POLICY_RESUME_FAILED_SUB_WRITES = "resume_failed_sub_writes_v1"
 
 SUB_KIND_SALES_DONATIONS = "sales_donations"
 SUB_KIND_SALES_DONATIONS_PER_PM = "sales_donations_per_pm_v1"
+# Remboursements mono-ligne REVENUE (compat snapshots schema_version 1 sans ventilation par moyen).
 SUB_KIND_REFUNDS_CURRENT = "refunds_current_fiscal"
 SUB_KIND_REFUNDS_PRIOR_CLOSED = "refunds_prior_closed_fiscal"
+# P2 — ventilation ADVANCED par moyen (index 1 / 2 inchangés, **kind** distinct → idempotence sous-écriture).
+SUB_KIND_REFUNDS_CURRENT_PER_PM_V1 = "refunds_current_fiscal_per_pm_v1"
+SUB_KIND_REFUNDS_PRIOR_CLOSED_PER_PM_V1 = "refunds_prior_closed_fiscal_per_pm_v1"
 
 # Story 23.4 — seul mode supporté : ventilation détaillée (valeur d'observabilité `builder_policy`).
 POLICY_DETAILED = "detailed"
@@ -122,7 +126,8 @@ def _sum_by_payment_methods(snapshot: dict[str, Any]) -> float:
 def _load_revision_payment_accounts(
     db: Session,
     revision_id: str,
-) -> tuple[dict[str, str], str, str] | None:
+) -> tuple[dict[str, str], dict[str, str], str, str, str | None] | None:
+    """Retourne (débit encaissement par code, crédit remboursement par code, ventes, dons, compte N-1 remb.)."""
     from uuid import UUID
 
     from recyclic_api.models.accounting_config import AccountingConfigRevision
@@ -143,17 +148,219 @@ def _load_revision_payment_accounts(
     ga = snap.get("global_accounts") or {}
     sales = str(ga.get("default_sales_account") or "").strip()
     dont = str(ga.get("default_donation_account") or "").strip()
+    prior_refund = str(ga.get("prior_year_refund_account") or "").strip() or None
     if not sales or not dont:
         return None
-    by_code: dict[str, str] = {}
+    debit_by_code: dict[str, str] = {}
+    refund_credit_by_code: dict[str, str] = {}
     for m in snap.get("payment_methods") or []:
         if not isinstance(m, dict):
             continue
         code = str(m.get("code") or "").strip().lower()
         acc = str(m.get("paheko_debit_account") or "").strip()
+        ref_acc = str(m.get("paheko_refund_credit_account") or "").strip()
         if code and acc:
-            by_code[code] = acc
-    return by_code, sales, dont
+            debit_by_code[code] = acc
+        if code and ref_acc:
+            refund_credit_by_code[code] = ref_acc
+    return debit_by_code, refund_credit_by_code, sales, dont, prior_refund
+
+
+def _snapshot_uses_refund_per_pm_paheko(snapshot: dict[str, Any]) -> bool:
+    """
+    True → sous-écritures 1/2 en ADVANCED par moyen (kinds ``*_per_pm_v1``), pas en REVENUE mono-montant.
+
+    Toute valeur de ``schema_version`` : ventilation si au moins un bucket a un scalaire > 0 **et** un dict
+    dont la somme ≈ le scalaire ; sinon repli mono-ligne REVENUE (données partielles / migration).
+    """
+    totals = snapshot.get("totals") or {}
+    rc_m_raw = totals.get("refunds_current_fiscal_by_payment_method") or {}
+    rp_m_raw = totals.get("refunds_prior_closed_fiscal_by_payment_method") or {}
+    rc_m: dict[str, Any] = rc_m_raw if isinstance(rc_m_raw, dict) else {}
+    rp_m: dict[str, Any] = rp_m_raw if isinstance(rp_m_raw, dict) else {}
+    rc_tot = _r2(float(totals.get("refunds_current_fiscal_total") or 0.0))
+    rp_tot = _r2(float(totals.get("refunds_prior_closed_fiscal_total") or 0.0))
+
+    def _dict_covers_scalar(amount: float, m: dict[str, Any]) -> bool:
+        if amount <= 0.005:
+            return False
+        if not m:
+            return False
+        s = _r2(sum(_r2(float(v)) for v in m.values()))
+        return abs(s - amount) <= 0.02
+
+    return _dict_covers_scalar(rc_tot, rc_m) or _dict_covers_scalar(rp_tot, rp_m)
+
+
+def _fr_refund_pm_line_label(code: str, *, prior_closed: bool) -> str:
+    c = (code or "").strip().lower() or "inconnu"
+    if prior_closed:
+        return f"Remboursement {c} (N-1 clos)"
+    return f"Remboursement {c} (exercice courant)"
+
+
+def _build_refund_bucket_per_pm_planned_write(
+    snapshot: dict[str, Any],
+    enriched_payload: dict[str, Any],
+    *,
+    db: Session,
+    index: int,
+    kind: str,
+    prior_closed: bool,
+    by_pm_raw: dict[str, Any],
+    total_scalar: float,
+    label_token: str,
+    reference_token: str,
+) -> tuple[PlannedSubWrite | None, str | None, str | None]:
+    """Une sous-écriture ADVANCED : crédits ``paheko_refund_credit_account`` par code, débit compte de contrepartie."""
+    ts = _r2(float(total_scalar))
+    if ts <= 0.005:
+        row_zero: PlannedSubWrite = {
+            "index": index,
+            "kind": kind,
+            "amount": 0.0,
+            "swap_debit_credit": False,
+            "tx_type": "ADVANCED",
+            "label_token": label_token,
+            "reference_token": reference_token,
+            "observability": {
+                "builder_policy": POLICY_DETAILED,
+                "body_format": "skipped_zero",
+                "bucket": "prior_closed" if prior_closed else "current_fiscal",
+            },
+        }
+        return row_zero, None, None
+
+    if not isinstance(by_pm_raw, dict):
+        return None, "invalid_snapshot", "Ventilation remboursements : dict par moyen invalide."
+
+    entries: list[tuple[str, float]] = []
+    for code in sorted(by_pm_raw.keys()):
+        raw_amt = float(by_pm_raw[code])
+        amt = _r2(raw_amt)
+        if amt <= 0.005:
+            continue
+        entries.append((str(code).strip().lower(), amt))
+
+    sum_lines = _r2(sum(a for _, a in entries))
+    if not entries or abs(sum_lines - ts) > 0.02:
+        return (
+            None,
+            "refund_per_pm_breakdown_mismatch",
+            f"Remboursements {'N-1 clos' if prior_closed else 'courant'} : total {ts} vs ventilation {sum_lines}.",
+        )
+
+    rev_id = snapshot.get("accounting_config_revision_id")
+    if not rev_id or not str(rev_id).strip():
+        return None, "snapshot_missing_revision", "accounting_config_revision_id absent — ventilation remboursements impossible."
+    resolved = _load_revision_payment_accounts(db, str(rev_id))
+    if resolved is None:
+        return None, "revision_not_found", "Révision comptable introuvable ou snapshot JSON invalide."
+    _deb, refund_by_code, sales_acc, _dont, prior_refund_acc = resolved
+
+    contra = prior_refund_acc if prior_closed else sales_acc
+    if prior_closed and not (prior_refund_acc or "").strip():
+        return (
+            None,
+            "prior_refund_account_missing",
+            "global_accounts.prior_year_refund_account absent — remboursements N-1 clos impossibles.",
+        )
+
+    csid = str(enriched_payload.get("cash_session_id") or "").strip()
+    ref_doc = paheko_close_document_reference_base(enriched_payload)
+    if not ref_doc:
+        return None, "invalid_outbox_payload", "cash_session_id absent pour références Paheko."
+
+    lines: list[dict[str, Any]] = []
+    obs_lines: list[dict[str, Any]] = []
+    for code, amt in entries:
+        r_acc = refund_by_code.get(code)
+        if not r_acc:
+            return None, "unknown_payment_method_code", f"Code moyen « {code} » sans paheko_refund_credit_account en révision {rev_id}."
+        lines.append(
+            {
+                "account": r_acc,
+                "credit": amt,
+                "label": _fr_refund_pm_line_label(code, prior_closed=prior_closed),
+                "reference": f"{ref_doc}:{reference_token}:{code}:credit",
+            }
+        )
+        obs_lines.append(
+            {
+                "line_index": len(obs_lines),
+                "payment_method_code": code,
+                "amount": amt,
+                "account": r_acc,
+                "direction": "credit",
+                "bucket": "prior_closed" if prior_closed else "current_fiscal",
+            }
+        )
+
+    lines.append(
+        {
+            "account": contra,
+            "debit": ts,
+            "label": "Ventilation remboursements — N-1 clos"
+            if prior_closed
+            else "Ventilation remboursements — exercice courant",
+            "reference": f"{ref_doc}:{reference_token}:debit",
+        }
+    )
+    obs_lines.append(
+        {
+            "line_index": len(obs_lines),
+            "payment_method_code": None,
+            "amount": ts,
+            "account": contra,
+            "direction": "debit",
+            "role": "contra_refund_bucket",
+        }
+    )
+
+    td = sum(float(x.get("debit") or 0) for x in lines)
+    tc = sum(float(x.get("credit") or 0) for x in lines)
+    drift = _r2(td - tc)
+    if abs(drift) > 0.01:
+        return None, "unbalanced_advanced", f"Remboursements ADVANCED non équilibrés ({td} / {tc})."
+
+    prefix = str(enriched_payload.get("label_prefix") or "").strip() or "Clôture caisse"
+    session_date = session_date_iso_for_paheko(enriched_payload)
+    label = (
+        f"{prefix} — {session_date}"
+        if session_date
+        else f"{prefix} — {csid[:8]}"
+    )
+    reference = f"{ref_doc}:{reference_token}"
+    adv_body, adv_err, adv_msg = build_close_transaction_advanced_payload(
+        enriched_payload,
+        lines=lines,
+        label=label,
+        reference=reference,
+        extra_note_lines=None,
+    )
+    if adv_err is not None or adv_body is None:
+        return None, adv_err or "invalid_sub_write", adv_msg or "Construction ADVANCED remboursements impossible."
+
+    obs = {
+        "builder_policy": POLICY_DETAILED,
+        "accounting_config_revision_id": str(rev_id),
+        "body_format": "ADVANCED",
+        "bucket": "prior_closed" if prior_closed else "current_fiscal",
+        "lines": obs_lines,
+        "totals": {"bucket_total": ts, "scalar_total_check": ts},
+    }
+    row: PlannedSubWrite = {
+        "index": index,
+        "kind": kind,
+        "amount": ts,
+        "swap_debit_credit": False,
+        "tx_type": "ADVANCED",
+        "label_token": label_token,
+        "reference_token": reference_token,
+        "http_body": adv_body,
+        "observability": obs,
+    }
+    return row, None, None
 
 
 def _build_sales_donations_planned_row_per_pm(
@@ -174,7 +381,7 @@ def _build_sales_donations_planned_row_per_pm(
     resolved = _load_revision_payment_accounts(db, str(rev_id))
     if resolved is None:
         return None, "revision_not_found", "Révision comptable introuvable ou snapshot JSON invalide."
-    accounts_by_code, sales_acc, dont_acc = resolved
+    accounts_by_code, _refund_credit_by_pm, sales_acc, dont_acc, _prior_ref = resolved
 
     entries: list[tuple[str, float]] = []
     for code in sorted(by_pm_raw.keys()):
@@ -359,34 +566,78 @@ def build_planned_sub_writes(
     """
     Ordre stable : index 0, 1, 2 — même snapshot → même liste (sauf erreur métier explicite).
 
-    Story 23.4 : une seule politique — sous-écriture 0 = ventilation détaillée par moyen de paiement (ADVANCED).
+    Story 23.4 : sous-écriture 0 = ventilation encaissements/dons par moyen (ADVANCED).
+    P2 : remboursements 1/2 = ADVANCED par moyen si ``schema_version`` 2 ou dicts non vides ;
+    sinon mono-ligne REVENUE (compat snapshots v1 historiques).
     """
-    _, rc, rp = amounts_from_frozen_snapshot(snapshot)
-    refunds_rows: list[PlannedSubWrite] = [
-        {
-            "index": 1,
-            "kind": SUB_KIND_REFUNDS_CURRENT,
-            "amount": rc,
-            "swap_debit_credit": True,
-            "tx_type": "REVENUE",
-            "label_token": "RembCourant",
-            "reference_token": "rc",
-        },
-        {
-            "index": 2,
-            "kind": SUB_KIND_REFUNDS_PRIOR_CLOSED,
-            "amount": rp,
-            "swap_debit_credit": True,
-            "tx_type": "REVENUE",
-            "label_token": "RembN1Clos",
-            "reference_token": "rp",
-        },
-    ]
-
     if db is None:
         return [], "revision_resolution_requires_db", "Ventilation par moyen : session SQLAlchemy requise (révision publiée)."
     if enriched_payload is None or not isinstance(enriched_payload, dict):
         return [], "invalid_outbox_payload", "enriched_payload requis pour le builder Paheko clôture."
+
+    _, rc, rp = amounts_from_frozen_snapshot(snapshot)
+    use_refund_per_pm = _snapshot_uses_refund_per_pm_paheko(snapshot)
+    refunds_rows: list[PlannedSubWrite]
+    if use_refund_per_pm:
+        totals = snapshot.get("totals") or {}
+        rc_map = totals.get("refunds_current_fiscal_by_payment_method") or {}
+        rp_map = totals.get("refunds_prior_closed_fiscal_by_payment_method") or {}
+        if not isinstance(rc_map, dict):
+            rc_map = {}
+        if not isinstance(rp_map, dict):
+            rp_map = {}
+        r_cur, e_cur, m_cur = _build_refund_bucket_per_pm_planned_write(
+            snapshot,
+            enriched_payload,
+            db=db,
+            index=1,
+            kind=SUB_KIND_REFUNDS_CURRENT_PER_PM_V1,
+            prior_closed=False,
+            by_pm_raw=rc_map,
+            total_scalar=rc,
+            label_token="RembCourantPm",
+            reference_token="rc_pm",
+        )
+        if e_cur is not None:
+            return [], e_cur, m_cur or e_cur
+        assert r_cur is not None
+        r_pri, e_pri, m_pri = _build_refund_bucket_per_pm_planned_write(
+            snapshot,
+            enriched_payload,
+            db=db,
+            index=2,
+            kind=SUB_KIND_REFUNDS_PRIOR_CLOSED_PER_PM_V1,
+            prior_closed=True,
+            by_pm_raw=rp_map,
+            total_scalar=rp,
+            label_token="RembN1ClosPm",
+            reference_token="rp_pm",
+        )
+        if e_pri is not None:
+            return [], e_pri, m_pri or e_pri
+        assert r_pri is not None
+        refunds_rows = [r_cur, r_pri]
+    else:
+        refunds_rows = [
+            {
+                "index": 1,
+                "kind": SUB_KIND_REFUNDS_CURRENT,
+                "amount": rc,
+                "swap_debit_credit": True,
+                "tx_type": "REVENUE",
+                "label_token": "RembCourant",
+                "reference_token": "rc",
+            },
+            {
+                "index": 2,
+                "kind": SUB_KIND_REFUNDS_PRIOR_CLOSED,
+                "amount": rp,
+                "swap_debit_credit": True,
+                "tx_type": "REVENUE",
+                "label_token": "RembN1Clos",
+                "reference_token": "rp",
+            },
+        ]
     pm_row, err, msg = _build_sales_donations_planned_row_per_pm(snapshot, enriched_payload, db=db)
     if err is not None:
         return [], err, msg or err
@@ -460,7 +711,7 @@ def build_cash_session_close_batch_from_enriched_payload(
     snap = enriched_payload.get("accounting_close_snapshot_frozen")
     if not isinstance(snap, dict):
         return None, "snapshot_missing", "accounting_close_snapshot_frozen absent — batch 22.7 impossible."
-    if snap.get("schema_version") != 1:
+    if snap.get("schema_version") not in (1, 2):
         return None, "snapshot_version", "schema_version snapshot non supportée pour le builder 22.7."
 
     plan, perr, pmsg = build_planned_sub_writes(
@@ -552,7 +803,9 @@ __all__ = [
     "POLICY_DETAILED",
     "RETRY_POLICY_RESUME_FAILED_SUB_WRITES",
     "SUB_KIND_REFUNDS_CURRENT",
+    "SUB_KIND_REFUNDS_CURRENT_PER_PM_V1",
     "SUB_KIND_REFUNDS_PRIOR_CLOSED",
+    "SUB_KIND_REFUNDS_PRIOR_CLOSED_PER_PM_V1",
     "SUB_KIND_SALES_DONATIONS",
     "SUB_KIND_SALES_DONATIONS_PER_PM",
     "PlannedSubWrite",

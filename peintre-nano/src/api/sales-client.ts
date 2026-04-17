@@ -514,14 +514,17 @@ export async function postFinalizeHeldSale(
 
 export type AbandonHeldResult = { ok: true; raw: unknown } | SalesHttpError;
 
+/** Aligné sur OpenAPI `PaymentMethod` pour `SaleReversalCreate.refund_payment_method` (hors `free`, rejeté serveur). */
+export type SaleReversalRefundPaymentMethod = 'cash' | 'card' | 'check';
+
 export type SaleReversalCreateBody = {
   source_sale_id: string;
   reason_code: 'ERREUR_SAISIE' | 'RETOUR_ARTICLE' | 'ANNULATION_CLIENT' | 'AUTRE';
   detail?: string | null;
   idempotency_key?: string | null;
-  /** Story 22.5 — moyen de sortie réel (défaut serveur cash). */
-  refund_payment_method?: 'cash' | 'check' | 'card';
-  /** Parcours expert N-1 clos + permission accounting.prior_year_refund. */
+  /** Story 22.5 — moyen de sortie réel (`SaleReversalCreate`, défaut serveur `cash` si absent). */
+  refund_payment_method?: SaleReversalRefundPaymentMethod;
+  /** Parcours expert N-1 clos + permission `accounting.prior_year_refund`. */
   expert_prior_year_refund?: boolean;
 };
 
@@ -542,6 +545,8 @@ export async function postCreateSaleReversal(
   };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  const ik = (body.idempotency_key ?? '').trim();
+  if (ik) headers['Idempotency-Key'] = ik;
 
   let res: Response;
   try {

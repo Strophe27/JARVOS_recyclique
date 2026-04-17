@@ -1,18 +1,46 @@
-import { Alert, Button, NativeSelect, Text, TextInput } from '@mantine/core';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { Alert, Button, Checkbox, NativeSelect, ScrollArea, Stack, Table, Text, TextInput } from '@mantine/core';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { getCashSessionDetail } from '../../api/cash-session-client';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
-import { getSale, postCreateSaleReversal } from '../../api/sales-client';
 import {
+  getSale,
+  isPlausibleCashSessionUuid,
+  postCreateSaleReversal,
+  type SaleReversalRefundPaymentMethod,
+} from '../../api/sales-client';
+import {
+  PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
   PERMISSION_CASHFLOW_NOMINAL,
   PERMISSION_CASHFLOW_REFUND,
 } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
+import { buildRefundWizardPaymentMethodSelectData } from './cashflow-refund-payment-method-options';
+import {
+  filterRefundSaleCandidates,
+  parseRefundSaleCandidatesFromSessionDetail,
+  type RefundSaleCandidateRow,
+} from './cashflow-refund-session-candidates';
 import { CashflowOperationalSyncNotice } from './cashflow-operational-sync-notice';
 import type { CashflowSubmitSurfaceError } from './cashflow-submit-error';
 import { useCashflowDraft } from './cashflow-draft-store';
+import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import classes from './CashflowRefundWizard.module.css';
+
+const PRIOR_YEAR_REFUND_REQUIRES_EXPERT = '[PRIOR_YEAR_REFUND_REQUIRES_EXPERT_PATH]';
+
+const SESSION_FILTER_DEBOUNCE_MS = 320;
+
+type LoadedSaleSummary = {
+  readonly id: string;
+  readonly total_amount: number;
+  readonly lifecycle_status?: string;
+  readonly sale_date?: string | null;
+  readonly note?: string | null;
+  readonly adherent_reference?: string | null;
+  readonly payment_method?: string | null;
+};
 
 type EntryBlock =
   | { readonly blocked: false }
@@ -79,16 +107,69 @@ const REASON_OPTIONS = [
 export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
   const entry = useRefundEntryBlock();
   const auth = useAuthPort();
+  const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
   const stale = draft.widgetDataState === 'DATA_STALE';
+  const { options: paymentMethodOptions } = useCaissePaymentMethodOptions(auth);
+  const refundMethodSelectData = useMemo(
+    () => buildRefundWizardPaymentMethodSelectData(paymentMethodOptions),
+    [paymentMethodOptions],
+  );
+  const hasPriorYearRefundPermission = envelope.permissions.permissionKeys.includes(
+    PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
+  );
   const [step, setStep] = useState<1 | 2>(1);
   const [saleIdInput, setSaleIdInput] = useState('');
-  const [loadedSale, setLoadedSale] = useState<{ id: string; total_amount: number } | null>(null);
+  const [loadedSale, setLoadedSale] = useState<LoadedSaleSummary | null>(null);
   const [reason, setReason] = useState<string>('RETOUR_ARTICLE');
   const [detail, setDetail] = useState('');
+  const [refundPaymentMethod, setRefundPaymentMethod] = useState<SaleReversalRefundPaymentMethod>('cash');
+  const [priorYearExpertGateOpen, setPriorYearExpertGateOpen] = useState(false);
+  const [expertPriorYearRefundConfirmed, setExpertPriorYearRefundConfirmed] = useState(false);
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [busy, setBusy] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+
+  const [sessionBrowseId, setSessionBrowseId] = useState('');
+  const sessionBrowseSeededRef = useRef(false);
+  const [sessionCandidates, setSessionCandidates] = useState<readonly RefundSaleCandidateRow[]>([]);
+  const [sessionFilterInput, setSessionFilterInput] = useState('');
+  const [debouncedSessionFilter, setDebouncedSessionFilter] = useState('');
+  const [sessionListLoading, setSessionListLoading] = useState(false);
+  const [sessionListError, setSessionListError] = useState<CashflowSubmitSurfaceError | null>(null);
+  /** Une clé par chargement de ticket (étape 2) — évite doubles remboursements si le serveur rejoue la même clé corps. */
+  const saleReversalIdempotencyKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (sessionBrowseSeededRef.current) return;
+    const sid = envelope.cashSessionId?.trim();
+    if (sid) {
+      setSessionBrowseId(sid);
+      sessionBrowseSeededRef.current = true;
+    }
+  }, [envelope.cashSessionId]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedSessionFilter(sessionFilterInput.trim());
+    }, SESSION_FILTER_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [sessionFilterInput]);
+
+  const filteredSessionCandidates = useMemo(
+    () => filterRefundSaleCandidates(sessionCandidates, debouncedSessionFilter),
+    [sessionCandidates, debouncedSessionFilter],
+  );
+
+  const refundMethodLabel = useMemo(() => {
+    const row = refundMethodSelectData.find((o) => o.value === refundPaymentMethod);
+    return row?.label ?? refundPaymentMethod;
+  }, [refundMethodSelectData, refundPaymentMethod]);
+
+  const reasonLabel = useMemo(
+    () => REASON_OPTIONS.find((o) => o.value === reason)?.label ?? reason,
+    [reason],
+  );
 
   const resetFlow = useCallback(() => {
     setStep(1);
@@ -96,8 +177,16 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
     setLoadedSale(null);
     setReason('RETOUR_ARTICLE');
     setDetail('');
+    setRefundPaymentMethod('cash');
+    setPriorYearExpertGateOpen(false);
+    setExpertPriorYearRefundConfirmed(false);
     setError(null);
     setSuccessId(null);
+    setSessionCandidates([]);
+    setSessionFilterInput('');
+    setDebouncedSessionFilter('');
+    setSessionListError(null);
+    saleReversalIdempotencyKeyRef.current = null;
   }, []);
 
   if (entry.blocked) {
@@ -108,10 +197,10 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
     );
   }
 
-  const onLoadSale = async () => {
-    const id = saleIdInput.trim();
+  const loadSaleByIdAndAdvance = async (rawId: string) => {
+    const id = rawId.trim();
     if (!id) {
-      setError({ kind: 'local', message: 'Saisissez l’identifiant du ticket source.' });
+      setError({ kind: 'local', message: 'Saisissez ou choisissez l’identifiant du ticket source.' });
       return;
     }
     setError(null);
@@ -119,7 +208,10 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
     try {
       const res = await getSale(id, auth);
       if (!res.ok) {
-        setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+        setError({
+          kind: 'api',
+          failure: recycliqueClientFailureFromSalesHttp(res),
+        });
         setLoadedSale(null);
         return;
       }
@@ -127,15 +219,63 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         setError({
           kind: 'local',
           message:
-            'Ce ticket n’est pas finalisé (completed) côté serveur — remboursement refusé par politique métier.',
+            'Ce ticket n’est pas finalisé (statut « completed » attendu) — remboursement impossible depuis cet écran.',
         });
         setLoadedSale(null);
         return;
       }
-      setLoadedSale({ id: res.sale.id, total_amount: res.sale.total_amount });
+      setPriorYearExpertGateOpen(false);
+      setExpertPriorYearRefundConfirmed(false);
+      setSaleIdInput(res.sale.id);
+      setLoadedSale({
+        id: res.sale.id,
+        total_amount: res.sale.total_amount,
+        lifecycle_status: res.sale.lifecycle_status,
+        sale_date: res.sale.sale_date,
+        note: res.sale.note ?? null,
+        adherent_reference: res.sale.adherent_reference ?? null,
+        payment_method: res.sale.payment_method ?? null,
+      });
+      saleReversalIdempotencyKeyRef.current = crypto.randomUUID();
       setStep(2);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onLoadSale = () => void loadSaleByIdAndAdvance(saleIdInput);
+
+  const onLoadSessionSales = async () => {
+    const sid = sessionBrowseId.trim();
+    if (!isPlausibleCashSessionUuid(sid)) {
+      setSessionListError({
+        kind: 'local',
+        message: 'Indiquez un UUID de session caisse complet (format 8-4-4-4-12).',
+      });
+      return;
+    }
+    setSessionListError(null);
+    setSessionListLoading(true);
+    setSessionCandidates([]);
+    try {
+      const res = await getCashSessionDetail(sid, auth);
+      if (!res.ok) {
+        setSessionListError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+        return;
+      }
+      const rows = parseRefundSaleCandidatesFromSessionDetail(res.session.sales);
+      setSessionCandidates(rows);
+      if (rows.length === 0) {
+        setSessionListError({
+          kind: 'local',
+          message:
+            'Aucune ligne « sales » exploitable dans la réponse (session vide ou agrégat sans détail). Saisissez l’UUID complet du ticket ou vérifiez les droits admin sur le détail session.',
+        });
+      } else {
+        setSessionListError(null);
+      }
+    } finally {
+      setSessionListLoading(false);
     }
   };
 
@@ -148,16 +288,25 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
     setError(null);
     setBusy(true);
     try {
-      const res = await postCreateSaleReversal(
-        {
-          source_sale_id: loadedSale.id,
-          reason_code: reason as 'ERREUR_SAISIE' | 'RETOUR_ARTICLE' | 'ANNULATION_CLIENT' | 'AUTRE',
-          detail: detail.trim() || undefined,
-        },
-        auth,
-      );
+      const idem = saleReversalIdempotencyKeyRef.current?.trim() || crypto.randomUUID();
+      saleReversalIdempotencyKeyRef.current = idem;
+      const body = {
+        source_sale_id: loadedSale.id,
+        reason_code: reason as 'ERREUR_SAISIE' | 'RETOUR_ARTICLE' | 'ANNULATION_CLIENT' | 'AUTRE',
+        detail: detail.trim() || undefined,
+        refund_payment_method: refundPaymentMethod,
+        idempotency_key: idem,
+        ...(priorYearExpertGateOpen && expertPriorYearRefundConfirmed
+          ? { expert_prior_year_refund: true as const }
+          : {}),
+      };
+      const res = await postCreateSaleReversal(body, auth);
       if (!res.ok) {
-        setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
+        const failure = recycliqueClientFailureFromSalesHttp(res);
+        if (failure.message.includes(PRIOR_YEAR_REFUND_REQUIRES_EXPERT)) {
+          setPriorYearExpertGateOpen(true);
+        }
+        setError({ kind: 'api', failure });
         return;
       }
       setSuccessId(res.reversalId);
@@ -169,14 +318,18 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
   if (successId) {
     return (
       <div className={classes.step} data-testid="cashflow-refund-success">
-        <Text fw={700} c="teal">
-          Reversal enregistré dans Recyclique (avoir)
-        </Text>
-        <Text size="sm" c="dimmed">
-          Ne présumez pas que l’écriture comptable aval est finalisée sans confirmation serveur.
+        <Text fw={700} c="teal" data-testid="cashflow-refund-success-title">
+          Remboursement enregistré
         </Text>
         <Text size="sm">
-          Identifiant reversal : <code>{successId}</code>
+          L’avoir (reversal) a été accepté par le serveur Recyclique. Conservez la référence ci-dessous pour le suivi
+          caisse ou comptable.
+        </Text>
+        <Text size="sm" c="dimmed">
+          L’intégration aval (grand livre, exports) peut rester asynchrone : vérifiez côté outillage métier si besoin.
+        </Text>
+        <Text size="sm">
+          Référence reversal : <code>{successId}</code>
         </Text>
         <Button variant="light" onClick={resetFlow} data-testid="cashflow-refund-reset">
           Nouveau remboursement
@@ -200,15 +353,101 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
           <code>recyclique_sales_createSaleReversal</code>). Ceci est un reversal, pas une vente nominale.
         </Text>
         <TextInput
-          label="ID vente source (UUID)"
+          label="Identifiant ticket (UUID complet)"
+          description="Saisie directe : correspond au GET /v1/sales/{sale_id} (reçu papier ou copier-coller)."
           value={saleIdInput}
           onChange={(e) => setSaleIdInput(e.currentTarget.value)}
           data-testid="cashflow-refund-sale-id-input"
         />
         <CashflowClientErrorAlert error={error} testId="cashflow-refund-error" />
-        <Button loading={busy} onClick={() => void onLoadSale()} data-testid="cashflow-refund-load-sale" disabled={stale}>
-          Charger le ticket (GET recyclique_sales_getSale)
+        <Button loading={busy} onClick={onLoadSale} data-testid="cashflow-refund-load-sale" disabled={stale}>
+          Charger ce ticket (GET recyclique_sales_getSale)
         </Button>
+
+        <Alert color="gray" title="Recherche assistée (session caisse)" data-testid="cashflow-refund-session-panel">
+          <Stack gap="sm">
+            <Text size="sm">
+              Le détail session <code>GET /v1/cash-sessions/{'{session_id}'}</code> peut inclure la liste des ventes
+              (OpenAPI : profils <strong>admin</strong>). Après chargement, filtre local (debounce {SESSION_FILTER_DEBOUNCE_MS}
+              ms) sur identifiant, note, référence adhérent ou montant — puis sélection d’une ligne (validation toujours
+              par <code>getSale</code>).
+            </Text>
+            <TextInput
+              label="UUID session caisse"
+              value={sessionBrowseId}
+              onChange={(e) => setSessionBrowseId(e.currentTarget.value)}
+              data-testid="cashflow-refund-session-id-input"
+            />
+            <Button
+              variant="light"
+              loading={sessionListLoading}
+              onClick={() => void onLoadSessionSales()}
+              disabled={stale}
+              data-testid="cashflow-refund-session-load"
+            >
+              Charger les ventes de la session
+            </Button>
+            <CashflowClientErrorAlert error={sessionListError} testId="cashflow-refund-session-error" />
+            {sessionCandidates.length > 0 ? (
+              <>
+                <TextInput
+                  label="Filtrer la liste"
+                  placeholder="Préfixe UUID, note, adhérent, montant…"
+                  value={sessionFilterInput}
+                  onChange={(e) => setSessionFilterInput(e.currentTarget.value)}
+                  data-testid="cashflow-refund-session-filter"
+                />
+                <Text size="xs" c="dimmed">
+                  Filtre appliqué après {SESSION_FILTER_DEBOUNCE_MS} ms sans frappe.
+                </Text>
+                <ScrollArea h={220} type="auto" offsetScrollbars>
+                  <Table striped highlightOnHover withTableBorder withColumnBorders>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Ticket</Table.Th>
+                        <Table.Th>Montant</Table.Th>
+                        <Table.Th>Statut</Table.Th>
+                        <Table.Th />
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {filteredSessionCandidates.map((row) => (
+                        <Table.Tr key={row.id} data-testid={`cashflow-refund-session-row-${row.id}`}>
+                          <Table.Td>
+                            <Text size="xs" ff="monospace">
+                              {row.id}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>{Number(row.total_amount).toFixed(2)} €</Table.Td>
+                          <Table.Td>
+                            <Text size="xs">{row.lifecycle_status}</Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Button
+                              size="xs"
+                              variant="filled"
+                              loading={busy}
+                              disabled={stale}
+                              onClick={() => void loadSaleByIdAndAdvance(row.id)}
+                              data-testid={`cashflow-refund-session-pick-${row.id}`}
+                            >
+                              Choisir
+                            </Button>
+                          </Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </ScrollArea>
+                {filteredSessionCandidates.length === 0 ? (
+                  <Text size="sm" c="dimmed" data-testid="cashflow-refund-session-filter-empty">
+                    Aucun ticket ne correspond au filtre.
+                  </Text>
+                ) : null}
+              </>
+            ) : null}
+          </Stack>
+        </Alert>
       </div>
     );
   }
@@ -222,12 +461,60 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         </Alert>
       ) : null}
       <Text fw={700}>Confirmation — reversal</Text>
-      <Alert color="gray" title="Récapitulatif">
-        <Text size="sm">
-          Ticket <code>{loadedSale?.id}</code> — montant total remboursé (serveur) :{' '}
-          <strong>{loadedSale ? Number(loadedSale.total_amount).toFixed(2) : '—'} €</strong>
-        </Text>
+      <Alert color="gray" title="Récapitulatif avant envoi" data-testid="cashflow-refund-recap">
+        <Stack gap="xs">
+          <Text size="sm">
+            <strong>Vente source</strong> : <code>{loadedSale?.id}</code>
+            {loadedSale?.lifecycle_status ? (
+              <>
+                {' '}
+                (statut <code>{loadedSale.lifecycle_status}</code>)
+              </>
+            ) : null}
+          </Text>
+          <Text size="sm">
+            <strong>Montant remboursé</strong> (imposé par le serveur sur le ticket) :{' '}
+            <strong>{loadedSale ? Number(loadedSale.total_amount).toFixed(2) : '—'} €</strong>
+          </Text>
+          {loadedSale?.payment_method ? (
+            <Text size="sm">
+              <strong>Moyen de paiement d’origine</strong> (information ticket) :{' '}
+              <code>{loadedSale.payment_method}</code>
+            </Text>
+          ) : null}
+          {loadedSale?.adherent_reference ? (
+            <Text size="sm">
+              <strong>Réf. adhérent</strong> : {loadedSale.adherent_reference}
+            </Text>
+          ) : null}
+          {loadedSale?.note ? (
+            <Text size="sm">
+              <strong>Note ticket</strong> : {loadedSale.note}
+            </Text>
+          ) : null}
+          <Text size="sm">
+            <strong>Moyen de remboursement effectif</strong> : {refundMethodLabel} (
+            <code>refund_payment_method</code> → serveur)
+          </Text>
+          <Text size="sm">
+            <strong>Motif prévu</strong> : {reasonLabel}
+            {detail.trim() ? (
+              <>
+                {' '}
+                — <em>{detail.trim()}</em>
+              </>
+            ) : null}
+          </Text>
+        </Stack>
       </Alert>
+      <NativeSelect
+        label="Moyen de remboursement (effectif)"
+        description="Valeur envoyée au serveur dans « refund_payment_method » (enum cash, carte, chèque)."
+        data={refundMethodSelectData}
+        value={refundPaymentMethod}
+        onChange={(e) => setRefundPaymentMethod(e.currentTarget.value as SaleReversalRefundPaymentMethod)}
+        data-testid="cashflow-refund-payment-method"
+      />
       <NativeSelect
         label="Motif"
         data={[...REASON_OPTIONS]}
@@ -241,8 +528,42 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         onChange={(e) => setDetail(e.currentTarget.value)}
         data-testid="cashflow-refund-detail"
       />
+      {priorYearExpertGateOpen ? (
+        <Alert
+          color="yellow"
+          title="Remboursement sur exercice antérieur clos"
+          mb="sm"
+          data-testid="cashflow-refund-prior-year-panel"
+        >
+          <Text size="sm" mb="xs">
+            Le serveur impose le parcours expert : permission « accounting.prior_year_refund » et envoi de{' '}
+            <code>expert_prior_year_refund=true</code>. Cochez la case puis relancez la confirmation.
+          </Text>
+          {!hasPriorYearRefundPermission ? (
+            <Text size="sm" c="orange" mb="xs">
+              Votre enveloppe ne contient pas « accounting.prior_year_refund » : sans droit supplémentaire le
+              serveur répondra en 403.
+            </Text>
+          ) : null}
+          <Checkbox
+            checked={expertPriorYearRefundConfirmed}
+            onChange={(e) => setExpertPriorYearRefundConfirmed(e.currentTarget.checked)}
+            label="Je confirme le parcours expert (remboursement N-1 / exercice clos)"
+            data-testid="cashflow-refund-expert-prior-year"
+          />
+        </Alert>
+      ) : null}
       <CashflowClientErrorAlert error={error} testId="cashflow-refund-error" />
-      <Button variant="default" onClick={() => setStep(1)} disabled={busy} data-testid="cashflow-refund-back">
+      <Button
+        variant="default"
+        onClick={() => {
+          setStep(1);
+          setPriorYearExpertGateOpen(false);
+          setExpertPriorYearRefundConfirmed(false);
+        }}
+        disabled={busy}
+        data-testid="cashflow-refund-back"
+      >
         Retour
       </Button>
       <Button

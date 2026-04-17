@@ -17,6 +17,14 @@ class CashSessionJournalTotalsV1(BaseModel):
         ...,
         description="Somme signée par code de moyen de paiement (encaissements − décaissements).",
     )
+    refunds_current_fiscal_by_payment_method: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Remboursements exercice courant (REFUND_PAYMENT, hors N−1) par code expert / clé agrégée.",
+    )
+    refunds_prior_closed_fiscal_by_payment_method: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Remboursements N−1 clos (REFUND_PAYMENT + is_prior_year_special_case) par code.",
+    )
     donation_surplus_total: float = Field(
         0.0,
         description="Total dons en surplus (nature donation_surplus, flux entrants).",
@@ -54,7 +62,9 @@ class CashSessionCloseSnapshotClosingV1(BaseModel):
 class CashSessionAccountingCloseSnapshotV1(BaseModel):
     """Snapshot immutable persisté — les consommateurs aval (ex. 22.7 Paheko) ne relisent pas le live."""
 
-    schema_version: Literal[1] = 1
+    # 1 = historique (remboursements scalaires seuls côté Paheko mono-ligne si dicts vides).
+    # 2 = courant : ventilation remboursements par moyen + dicts journal (P2 Paheko).
+    schema_version: Literal[1, 2] = 2
     correction_policy: CorrectionPolicyV1 = "append_only_v1"
 
     session_id: str

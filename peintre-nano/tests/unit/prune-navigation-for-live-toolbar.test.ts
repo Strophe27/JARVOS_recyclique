@@ -16,18 +16,20 @@ function entry(id: string): NavigationEntry {
 }
 
 describe('pruneNavigationEntriesForLiveToolbar', () => {
-  it('ordonne les entrées comme le menu legacy (dashboard, caisse, réception, admin)', () => {
+  it('ordonne les entrées comme le menu legacy (dashboard, caisse, remboursement, réception, admin)', () => {
     const mixed: NavigationEntry[] = [
       entry('transverse-admin'),
       entry('transverse-dashboard'),
       entry('bandeau-live-sandbox'),
       entry('cashflow-nominal'),
+      entry('cashflow-refund'),
       entry('reception-nominal'),
     ];
     const pruned = pruneNavigationEntriesForLiveToolbar(mixed);
     expect(pruned.map((e) => e.id)).toEqual([
       'transverse-dashboard',
       'cashflow-nominal',
+      'cashflow-refund',
       'reception-nominal',
       'transverse-admin',
     ]);
@@ -52,7 +54,7 @@ describe('pruneNavigationEntriesForLiveToolbar', () => {
   });
 
   it('expose la liste canonique des ids toolbar', () => {
-    expect(LIVE_LEGACY_TOOLBAR_ENTRY_IDS.length).toBe(4);
+    expect(LIVE_LEGACY_TOOLBAR_ENTRY_IDS.length).toBe(5);
   });
 });
 
@@ -74,8 +76,8 @@ describe('toolbarSelectedEntryIdFromResolved', () => {
     expect(toolbarSelectedEntryIdFromResolved('transverse-admin-reception-sessions', true)).toBe('transverse-admin');
   });
 
-  it('remonte remboursement / clôture vers cashflow-nominal', () => {
-    expect(toolbarSelectedEntryIdFromResolved('cashflow-refund', true)).toBe('cashflow-nominal');
+  it('remboursement a son propre onglet toolbar ; clôture remonte vers cashflow-nominal', () => {
+    expect(toolbarSelectedEntryIdFromResolved('cashflow-refund', true)).toBe('cashflow-refund');
     expect(toolbarSelectedEntryIdFromResolved('cashflow-close', true)).toBe('cashflow-nominal');
   });
 

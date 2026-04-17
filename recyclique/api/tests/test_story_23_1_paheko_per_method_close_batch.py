@@ -14,6 +14,8 @@ from recyclic_api.models.accounting_config import AccountingConfigRevision
 from recyclic_api.services.paheko_close_batch_builder import (
     POLICY_DETAILED,
     SUB_KIND_REFUNDS_CURRENT,
+    SUB_KIND_REFUNDS_CURRENT_PER_PM_V1,
+    SUB_KIND_REFUNDS_PRIOR_CLOSED_PER_PM_V1,
     SUB_KIND_SALES_DONATIONS_PER_PM,
     build_cash_session_close_batch_from_enriched_payload,
     build_planned_sub_writes,
@@ -66,9 +68,19 @@ def _insert_revision(db_session: Session) -> AccountingConfigRevision:
     return rev
 
 
-def _snap_base(*, by_pm: dict[str, float], rev_id: str, donation: float = 0.0, rc: float = 0.0, rp: float = 0.0) -> dict:
+def _snap_base(
+    *,
+    by_pm: dict[str, float],
+    rev_id: str,
+    donation: float = 0.0,
+    rc: float = 0.0,
+    rp: float = 0.0,
+    schema_version: int = 1,
+    rc_by_pm: dict[str, float] | None = None,
+    rp_by_pm: dict[str, float] | None = None,
+) -> dict:
     return {
-        "schema_version": 1,
+        "schema_version": schema_version,
         "session_id": str(uuid.uuid4()),
         "site_id": str(uuid.uuid4()),
         "sync_correlation_id": "c1",
@@ -77,6 +89,8 @@ def _snap_base(*, by_pm: dict[str, float], rev_id: str, donation: float = 0.0, r
             "by_payment_method_signed": by_pm,
             "refunds_current_fiscal_total": rc,
             "refunds_prior_closed_fiscal_total": rp,
+            "refunds_current_fiscal_by_payment_method": dict(rc_by_pm or {}),
+            "refunds_prior_closed_fiscal_by_payment_method": dict(rp_by_pm or {}),
             "donation_surplus_total": donation,
             "cash_signed_net_from_journal": 10.0,
             "payment_transaction_line_count": 2,
@@ -181,8 +195,9 @@ def test_per_method_missing_revision_id(db_session: Session) -> None:
 
 
 def test_refunds_blocks_unchanged_under_per_method(db_session: Session) -> None:
+    """schema_version 1 sans ventilation dict → mono-ligne REVENUE (migration / compat)."""
     rev = _insert_revision(db_session)
-    snap = _snap_base(by_pm={"cash": 10.0}, rev_id=str(rev.id), rc=3.0, rp=2.0)
+    snap = _snap_base(by_pm={"cash": 10.0}, rev_id=str(rev.id), rc=3.0, rp=2.0, schema_version=1)
     enr = _enr(snap)
     rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
         enr,
@@ -193,6 +208,183 @@ def test_refunds_blocks_unchanged_under_per_method(db_session: Session) -> None:
     assert rows[1][0]["amount"] == 3.0 and rows[1][1] is not None
     assert rows[1][1].get("type") == "REVENUE"
     assert rows[2][0]["amount"] == 2.0 and rows[2][1] is not None
+
+
+def test_schema_v2_refunds_per_pm_advanced_and_balanced(db_session: Session) -> None:
+    rev = _insert_revision(db_session)
+    snap = _snap_base(
+        by_pm={"cash": 10.0, "card": 5.0},
+        rev_id=str(rev.id),
+        rc=7.0,
+        rp=0.0,
+        schema_version=2,
+        rc_by_pm={"cash": 3.0, "card": 4.0},
+        rp_by_pm={},
+    )
+    enr = _enr(snap)
+    rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
+        enr,
+        batch_idempotency_key="cash_session_close:v2-ref",
+        db=db_session,
+    )
+    assert err is None and rows is not None
+    assert rows[1][0]["kind"] == SUB_KIND_REFUNDS_CURRENT_PER_PM_V1
+    body1 = rows[1][1]
+    assert body1 is not None and body1.get("type") == "ADVANCED"
+    lines = body1.get("lines") or []
+    td = sum(float(x.get("debit") or 0) for x in lines)
+    tc = sum(float(x.get("credit") or 0) for x in lines)
+    assert abs(td - tc) <= 0.01
+    cr511 = sum(float(x.get("credit") or 0) for x in lines if x.get("account") == "511")
+    cr512 = sum(float(x.get("credit") or 0) for x in lines if x.get("account") == "512")
+    assert cr511 == pytest.approx(3.0)
+    assert cr512 == pytest.approx(4.0)
+    db707 = sum(float(x.get("debit") or 0) for x in lines if x.get("account") == "7070")
+    assert db707 == pytest.approx(7.0)
+    assert rows[2][0]["kind"] == SUB_KIND_REFUNDS_PRIOR_CLOSED_PER_PM_V1
+    assert rows[2][1] is None
+
+
+def test_schema_v2_prior_refunds_per_pm_debit_672(db_session: Session) -> None:
+    rev = _insert_revision(db_session)
+    snap = _snap_base(
+        by_pm={"cash": 20.0},
+        rev_id=str(rev.id),
+        rc=0.0,
+        rp=5.0,
+        schema_version=2,
+        rc_by_pm={},
+        rp_by_pm={"cash": 5.0},
+    )
+    enr = _enr(snap)
+    rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
+        enr,
+        batch_idempotency_key="cash_session_close:v2-n1",
+        db=db_session,
+    )
+    assert err is None and rows
+    body2 = rows[2][1]
+    assert body2 is not None and body2.get("type") == "ADVANCED"
+    lines = body2.get("lines") or []
+    d672 = sum(float(x.get("debit") or 0) for x in lines if x.get("account") == "672")
+    assert d672 == pytest.approx(5.0)
+    cr511 = sum(float(x.get("credit") or 0) for x in lines if x.get("account") == "511")
+    assert cr511 == pytest.approx(5.0)
+
+
+def test_schema_v2_scalar_refund_without_dict_falls_back_to_revenue_mono(db_session: Session) -> None:
+    """schema_version 2 mais dicts vides / incohérents : repli REVENUE (compat outbox historique)."""
+    rev = _insert_revision(db_session)
+    snap = _snap_base(
+        by_pm={"cash": 10.0},
+        rev_id=str(rev.id),
+        rc=3.0,
+        rp=0.0,
+        schema_version=2,
+        rc_by_pm={},
+        rp_by_pm={},
+    )
+    enr = _enr(snap)
+    rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
+        enr,
+        batch_idempotency_key="cash_session_close:v2-fallback",
+        db=db_session,
+    )
+    assert err is None and rows
+    assert rows[1][0]["kind"] == SUB_KIND_REFUNDS_CURRENT
+    assert rows[1][1] is not None and rows[1][1].get("type") == "REVENUE"
+
+
+def test_schema_v1_opt_in_non_empty_refund_dict_uses_per_pm_adv(db_session: Session) -> None:
+    """schema_version 1 + dicts remboursement présents → même ventilation ADVANCED que v2 (migration partielle)."""
+    rev = _insert_revision(db_session)
+    snap = _snap_base(
+        by_pm={"cash": 10.0},
+        rev_id=str(rev.id),
+        rc=2.0,
+        rp=0.0,
+        schema_version=1,
+        rc_by_pm={"cash": 2.0},
+    )
+    enr = _enr(snap)
+    rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
+        enr,
+        batch_idempotency_key="cash_session_close:v1-opt",
+        db=db_session,
+    )
+    assert err is None and rows
+    assert rows[1][0]["kind"] == SUB_KIND_REFUNDS_CURRENT_PER_PM_V1
+    assert rows[1][1] is not None and rows[1][1].get("type") == "ADVANCED"
+
+
+def test_schema_v2_idempotency_sub_keys_distinct_from_legacy_refund_kinds(db_session: Session) -> None:
+    rev = _insert_revision(db_session)
+    snap = _snap_base(
+        by_pm={"cash": 10.0},
+        rev_id=str(rev.id),
+        rc=2.0,
+        rp=0.0,
+        schema_version=2,
+        rc_by_pm={"cash": 2.0},
+    )
+    enr = _enr(snap)
+    pm, err, _ = build_cash_session_close_batch_from_enriched_payload(
+        enr,
+        batch_idempotency_key="idem-v2",
+        db=db_session,
+    )
+    assert err is None and pm
+    assert pm[1][0]["kind"] == SUB_KIND_REFUNDS_CURRENT_PER_PM_V1
+    k1 = sub_write_idempotency_key("idem-v2", 1, pm[1][0]["kind"])
+    k_legacy = sub_write_idempotency_key("idem-v2", 1, SUB_KIND_REFUNDS_CURRENT)
+    assert k1 != k_legacy
+
+
+def test_merge_state_refund_per_pm_kind_mismatch_resets_sub_write(db_session: Session) -> None:
+    """Ancien état batch (kind legacy index 1) ne fusionne pas avec le plan v2 (nouveau kind) — pas de double livraison."""
+    rev = _insert_revision(db_session)
+    snap = _snap_base(
+        by_pm={"cash": 5.0},
+        rev_id=str(rev.id),
+        rc=1.0,
+        rp=0.0,
+        schema_version=2,
+        rc_by_pm={"cash": 1.0},
+    )
+    enr = _enr(snap)
+    rows, err, _ = build_cash_session_close_batch_from_enriched_payload(
+        enr,
+        batch_idempotency_key="cash_session_close:merge-rf",
+        db=db_session,
+    )
+    assert err is None and rows
+    prev = {
+        "schema_version": 1,
+        "batch_idempotency_key": "cash_session_close:merge-rf",
+        "sub_writes": [
+            {
+                "index": 1,
+                "kind": SUB_KIND_REFUNDS_CURRENT,
+                "idempotency_sub_key": sub_write_idempotency_key(
+                    "cash_session_close:merge-rf",
+                    1,
+                    SUB_KIND_REFUNDS_CURRENT,
+                ),
+                "status": "delivered",
+                "remote_transaction_id": "legacy-tx",
+                "last_http_status": 200,
+                "last_error": None,
+            },
+        ],
+    }
+    merged = merge_state_with_planned(
+        prev,
+        batch_idempotency_key="cash_session_close:merge-rf",
+        planned=rows,
+    )
+    sw1 = next(s for s in merged["sub_writes"] if s["index"] == 1)
+    assert sw1["kind"] == SUB_KIND_REFUNDS_CURRENT_PER_PM_V1
+    assert sw1.get("remote_transaction_id") != "legacy-tx"
 
 
 def test_idempotency_sub_key_uses_per_pm_kind(db_session: Session) -> None:

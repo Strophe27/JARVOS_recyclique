@@ -96,11 +96,12 @@ def test_close_persists_snapshot_and_outbox_frozen_payload(db_session, snapshot_
     db_session.refresh(closed)
     assert closed.accounting_close_snapshot is not None
     snap = closed.accounting_close_snapshot
-    assert snap["schema_version"] == 1
+    assert snap["schema_version"] == 2
     assert snap["correction_policy"] == "append_only_v1"
     assert snap["sync_correlation_id"] == corr
     assert snap["totals"]["payment_transaction_line_count"] == 1
     assert snap["totals"]["cash_signed_net_from_journal"] == 25.0
+    assert snap["totals"].get("refunds_current_fiscal_by_payment_method") == {}
     assert snap["closing"]["theoretical_cash_amount"] == 35.0
     assert snap["closing"]["actual_cash_amount"] == 35.0
 
@@ -109,7 +110,7 @@ def test_close_persists_snapshot_and_outbox_frozen_payload(db_session, snapshot_
     )
     assert row is not None
     assert "accounting_close_snapshot_frozen" in row.payload
-    assert row.payload["accounting_close_snapshot_frozen"]["schema_version"] == 1
+    assert row.payload["accounting_close_snapshot_frozen"]["schema_version"] == 2
 
 
 def test_prefilled_snapshot_on_open_session_raises_conflict(db_session, snapshot_close_fixtures):
@@ -227,3 +228,5 @@ def test_snapshot_reflects_multiple_journal_lines(db_session, snapshot_close_fix
     assert snap["closing"]["theoretical_cash_amount"] == 45.0
     assert snap["closing"]["actual_cash_amount"] == 35.0
     assert snap["closing"]["cash_variance"] == pytest.approx(-10.0)
+    assert snap["schema_version"] == 2
+    assert "refunds_current_fiscal_by_payment_method" in snap["totals"]

@@ -30,7 +30,7 @@ export function toolbarSelectedEntryIdFromResolved(
   ) {
     return 'transverse-admin';
   }
-  if (resolvedEntryId === 'cashflow-refund' || resolvedEntryId === 'cashflow-close') {
+  if (resolvedEntryId === 'cashflow-close') {
     return 'cashflow-nominal';
   }
   if (resolvedEntryId === 'transverse-dashboard-benevole') {

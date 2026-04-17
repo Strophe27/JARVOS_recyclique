@@ -7,6 +7,8 @@ import { labelSyncOperationalState } from './recyclique-api-error';
 function failureTitle(f: RecycliqueClientFailure): string {
   if (f.networkError) return 'Réseau ou serveur injoignable';
   if (f.httpStatus === 401 || f.httpStatus === 403) return 'Contexte ou permissions';
+  if (f.httpStatus === 422) return 'Validation refusée';
+  if (f.httpStatus === 409) return 'Conflit métier';
   if (f.httpStatus >= 500) return 'Erreur serveur';
   return 'Opération refusée ou invalide';
 }

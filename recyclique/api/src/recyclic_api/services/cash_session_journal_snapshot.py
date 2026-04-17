@@ -74,8 +74,8 @@ def compute_payment_journal_aggregates(
 
     by_pm: Dict[str, float] = defaultdict(float)
     donation_surplus = 0.0
-    refunds_current = 0.0
-    refunds_prior = 0.0
+    refunds_current_by_pm: Dict[str, float] = defaultdict(float)
+    refunds_prior_by_pm: Dict[str, float] = defaultdict(float)
     cash_net = 0.0
 
     nat_donation = PaymentTransactionNature.DONATION_SURPLUS.value
@@ -103,9 +103,9 @@ def compute_payment_journal_aggregates(
             amt_abs = float(row["amount"])
             prior = bool(row["prior_flag"])
             if prior:
-                refunds_prior += amt_abs
+                refunds_prior_by_pm[pm_key] += amt_abs
             else:
-                refunds_current += amt_abs
+                refunds_current_by_pm[pm_key] += amt_abs
 
         if pm_fk is not None:
             if (row["pm_kind"] or "").strip().lower() == cash_kind:
@@ -134,8 +134,15 @@ def compute_payment_journal_aggregates(
     if donation_surplus > t_net_signed + 0.01:
         donation_surplus = round(max(0.0, t_net_signed), 2)
 
+    rc_by_pm = {k: round(float(v), 2) for k, v in refunds_current_by_pm.items() if abs(float(v)) > 1e-9}
+    rp_by_pm = {k: round(float(v), 2) for k, v in refunds_prior_by_pm.items() if abs(float(v)) > 1e-9}
+    refunds_current = round(sum(rc_by_pm.values()), 2)
+    refunds_prior = round(sum(rp_by_pm.values()), 2)
+
     return CashSessionJournalTotalsV1(
         by_payment_method_signed=dict(by_pm),
+        refunds_current_fiscal_by_payment_method=rc_by_pm,
+        refunds_prior_closed_fiscal_by_payment_method=rp_by_pm,
         donation_surplus_total=float(donation_surplus),
         refunds_current_fiscal_total=float(refunds_current),
         refunds_prior_closed_fiscal_total=float(refunds_prior),

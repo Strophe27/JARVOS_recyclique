@@ -26,6 +26,9 @@ export const PERMISSION_CASHFLOW_DEFERRED = 'caisse.deferred.access';
 /** Story 6.4 — remboursement : permission dédiée (ne pas inférer depuis le seul accès caisse). */
 export const PERMISSION_CASHFLOW_REFUND = 'caisse.refund';
 
+/** Story 22.5 — remboursement sur exercice antérieur clos (parcours expert, POST `expert_prior_year_refund`). */
+export const PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND = 'accounting.prior_year_refund';
+
 /** Story 6.5 — don sans article / adhésion : permission dédiée (`POST recyclique_sales_createSale` avec discriminant). */
 export const PERMISSION_CASHFLOW_SPECIAL_ENCAISSEMENT = 'caisse.special_encaissement';
 

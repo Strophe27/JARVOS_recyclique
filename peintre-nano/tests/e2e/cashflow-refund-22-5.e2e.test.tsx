@@ -76,6 +76,7 @@ describe('E2E — remboursement Story 22.5 (409 autorité / expert)', () => {
 
   afterEach(() => {
     window.history.pushState({}, '', '/');
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     cleanup();
@@ -137,6 +138,7 @@ describe('E2E — remboursement Story 22.5 (409 autorité / expert)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-refund-error')).toBeTruthy();
     });
+    expect(screen.getByTestId('cashflow-refund-prior-year-panel')).toBeTruthy();
     expect(within(screen.getByTestId('cashflow-refund-error')).getByTestId('cashflow-error-http-status').textContent).toMatch(
       /409/,
     );

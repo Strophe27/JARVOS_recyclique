@@ -152,6 +152,53 @@ def test_compute_payment_journal_aggregates_two_bank_codes_via_fk(
     assert totals.cash_signed_net_from_journal == pytest.approx(10.0)
 
 
+def test_compute_payment_journal_refunds_by_expert_pm_current_and_prior(
+    db_session, session_sale_two_bank_fk_and_cash
+):
+    """P2 — remboursements ventilés par code expert (courant vs N-1 clos), alignés scalaires."""
+    cs = session_sale_two_bank_fk_and_cash
+    sale = db_session.execute(select(Sale).where(Sale.cash_session_id == cs.id)).scalar_one()
+    pm_transfer = db_session.execute(
+        select(PaymentMethodDefinition).where(PaymentMethodDefinition.code == "transfer")
+    ).scalar_one()
+    pm_card = db_session.execute(
+        select(PaymentMethodDefinition).where(PaymentMethodDefinition.code == "card")
+    ).scalar_one()
+    db_session.add_all(
+        [
+            PaymentTransaction(
+                sale_id=sale.id,
+                payment_method=PaymentMethod.CARD,
+                payment_method_id=pm_transfer.id,
+                nature=PaymentTransactionNature.REFUND_PAYMENT,
+                direction=PaymentTransactionDirection.OUTFLOW,
+                amount=6.0,
+                is_prior_year_special_case=False,
+            ),
+            PaymentTransaction(
+                sale_id=sale.id,
+                payment_method=PaymentMethod.CARD,
+                payment_method_id=pm_card.id,
+                nature=PaymentTransactionNature.REFUND_PAYMENT,
+                direction=PaymentTransactionDirection.OUTFLOW,
+                amount=2.5,
+                is_prior_year_special_case=True,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    totals = compute_payment_journal_aggregates(
+        db_session,
+        cash_session_id=cs.id,
+        use_legacy_preview_if_no_journal=False,
+    )
+    assert totals.refunds_current_fiscal_total == pytest.approx(6.0)
+    assert totals.refunds_prior_closed_fiscal_total == pytest.approx(2.5)
+    assert totals.refunds_current_fiscal_by_payment_method.get("transfer") == pytest.approx(6.0)
+    assert totals.refunds_prior_closed_fiscal_by_payment_method.get("card") == pytest.approx(2.5)
+
+
 def test_compute_payment_journal_aggregates_bank_only_no_cash_in_cash_net(db_session):
     """Deux BANK FK sans espèces : ``cash_signed_net_from_journal`` reste nul."""
     site = Site(
