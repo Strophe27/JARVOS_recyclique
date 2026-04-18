@@ -357,7 +357,8 @@ async def get_sale(
         raise HTTPException(status_code=401, detail="User not found")
 
     try:
-        return SaleService(db).get_sale_readable_by_user(sale_id, user_id)
+        sale = SaleService(db).get_sale_readable_by_user(sale_id, user_id)
+        return SaleService(db).build_sale_response(sale)
     except AuthorizationError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
     except NotFoundError as e:

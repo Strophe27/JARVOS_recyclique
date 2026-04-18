@@ -10441,6 +10441,20 @@ components:
         adherent_reference:
           type: string
           nullable: true
+        fiscal_branch:
+          type: string
+          nullable: true
+          description: >
+            Story 24.4 — prévisualisation autorité remboursement (GET vente), alignée sur POST /sales/reversals :
+            ``current`` (exercice ouvert) ou ``prior_closed`` (exercice antérieur clos ; parcours expert requis).
+        sale_fiscal_year:
+          type: integer
+          nullable: true
+          description: Année fiscale de rattachement de la vente source (cadrage N vs N-1).
+        current_open_fiscal_year:
+          type: integer
+          nullable: true
+          description: Exercice ouvert issu du snapshot autorité au moment de la résolution.
       additionalProperties: false
     RefundReasonCodeV1:
       type: string

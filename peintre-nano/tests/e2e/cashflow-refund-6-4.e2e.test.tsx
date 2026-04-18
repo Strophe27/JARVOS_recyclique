@@ -656,6 +656,16 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
   });
 
   it('N-1 : case cochée mais 403 permission accounting : message affiché (AC P1)', async () => {
+    const keys = [
+      ...createDefaultDemoEnvelope().permissions.permissionKeys,
+      'accounting.prior_year_refund',
+    ];
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-story64-prior-403' },
+      envelope: createDefaultDemoEnvelope({
+        permissions: { permissionKeys: keys },
+      }),
+    });
     let reversalPosts = 0;
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
@@ -689,7 +699,12 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    renderRefundPage();
+    window.history.pushState({}, '', '/caisse/remboursement');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
     await waitFor(() => screen.getByTestId('cashflow-refund-step-select'));
     fireEvent.change(screen.getByTestId('cashflow-refund-sale-id-input'), {
       target: { value: SALE_COMPLETED_ID },
@@ -708,6 +723,83 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
       expect(t).toMatch(/accounting\.prior_year_refund|Permission/i);
     });
     expect(reversalPosts).toBe(2);
+  });
+
+  it('Story 24.4 : GET fiscal_branch prior_closed → bannière + panneau visibles, POST unique avec expert (AC)', async () => {
+    const keys = [
+      ...createDefaultDemoEnvelope().permissions.permissionKeys,
+      'accounting.prior_year_refund',
+    ];
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-story244-prior-get' },
+      envelope: createDefaultDemoEnvelope({
+        permissions: { permissionKeys: keys },
+      }),
+    });
+    let reversalPosts = 0;
+    const priorClosedBody = {
+      ...completedSaleBody(),
+      fiscal_branch: 'prior_closed' as const,
+      sale_fiscal_year: 2024,
+      current_open_fiscal_year: 2025,
+    };
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes(`/v1/sales/${SALE_COMPLETED_ID}`) && !url.includes('reversals')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify(priorClosedBody),
+        });
+      }
+      if (method === 'POST' && url.includes('/v1/sales/reversals')) {
+        reversalPosts += 1;
+        const raw = init?.body != null ? String(init.body) : '{}';
+        const body = JSON.parse(raw) as { expert_prior_year_refund?: boolean };
+        expect(body.expert_prior_year_refund).toBe(true);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: REVERSAL_ID,
+              fiscal_branch: 'prior_closed',
+              sale_fiscal_year: 2024,
+              current_open_fiscal_year: 2025,
+            }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    window.history.pushState({}, '', '/caisse/remboursement');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+
+    await waitFor(() => screen.getByTestId('cashflow-refund-step-select'));
+    fireEvent.change(screen.getByTestId('cashflow-refund-sale-id-input'), {
+      target: { value: SALE_COMPLETED_ID },
+    });
+    fireEvent.click(screen.getByTestId('cashflow-refund-load-sale'));
+
+    await waitFor(() => screen.getByTestId('cashflow-refund-step-confirm'));
+    expect(screen.getByTestId('cashflow-refund-prior-closed-banner')).toBeTruthy();
+    expect(screen.getByTestId('cashflow-refund-prior-year-panel')).toBeTruthy();
+    expect((screen.getByTestId('cashflow-refund-confirm-submit') as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByTestId('cashflow-refund-expert-prior-year'));
+    fireEvent.click(screen.getByTestId('cashflow-refund-confirm-submit'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-refund-success')).toBeTruthy();
+    });
+    expect(screen.getByTestId('cashflow-refund-success-expert-n1-label')).toBeTruthy();
+    expect(reversalPosts).toBe(1);
   });
 
   it('P3 : liste session (GET détail) → filtre debounce → choix ligne → étape confirmation', async () => {

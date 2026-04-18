@@ -183,6 +183,27 @@ def test_prior_year_blocked_without_expert_path(client: TestClient, db_session, 
     assert "PRIOR_YEAR_REFUND_REQUIRES_EXPERT_PATH" in (r.json().get("detail") or "")
 
 
+def test_get_sale_includes_refund_fiscal_preview_prior_closed(client: TestClient, db_session, s225_fixtures):
+    """Story 24.4 — GET ticket expose la même autorité que POST reversals (visibilité proactive terrain)."""
+    h = s225_fixtures["headers"]
+    sid = s225_fixtures["session_id"]
+    _ensure_snapshot_row(db_session, year=2026)
+
+    sale_id = _create_completed_sale(client, h, sid, 10.0)
+    from recyclic_api.models.sale import Sale
+
+    srow = db_session.query(Sale).filter(Sale.id == uuid.UUID(sale_id)).first()
+    srow.sale_date = datetime(2024, 3, 15, tzinfo=timezone.utc)
+    db_session.commit()
+
+    r = client.get(f"/v1/sales/{sale_id}", headers=h)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("fiscal_branch") == "prior_closed"
+    assert body.get("sale_fiscal_year") == 2024
+    assert body.get("current_open_fiscal_year") == 2026
+
+
 def test_prior_year_expert_path_ok(client: TestClient, db_session, s225_fixtures):
     h = s225_fixtures["headers"]
     sid = s225_fixtures["session_id"]

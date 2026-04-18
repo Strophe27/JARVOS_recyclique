@@ -228,6 +228,19 @@ class SaleResponse(SaleBase):
     special_encaissement_kind: Optional[SpecialEncaissementKind] = None
     social_action_kind: Optional[SocialActionKind] = None
     adherent_reference: Optional[str] = None
+    # Story 24.4 — même résolution que le reversal (resolve_refund_branch) ; lecture seule pour le terrain.
+    fiscal_branch: Optional[str] = Field(
+        default=None,
+        description="Branche fiscale si ce remboursement était tenté : current | prior_closed (serveur, GET vente).",
+    )
+    sale_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Année fiscale de rattachement de la vente source (cadrage N vs N-1).",
+    )
+    current_open_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Exercice ouvert connu au moment de la résolution (snapshot autorité).",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

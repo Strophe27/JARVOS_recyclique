@@ -4095,6 +4095,10 @@ export interface components {
             special_encaissement_kind?: components["schemas"]["SpecialEncaissementKindV1"] | null;
             social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
             adherent_reference?: string | null;
+            /** Story 24.4 — prévisualisation autorité remboursement (`current` \| `prior_closed`). */
+            fiscal_branch?: string | null;
+            sale_fiscal_year?: number | null;
+            current_open_fiscal_year?: number | null;
         };
         /**
          * @description Motif de remboursement (Story 6.4).

@@ -52,6 +52,7 @@ from recyclic_api.schemas.sale import (
     SaleItemUpdate,
     SalePaymentMethodOption,
     PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND,
+    SaleResponse,
     SaleReversalCreate,
     SaleReversalResponse,
 )
@@ -267,6 +268,22 @@ class SaleService:
             raise AuthorizationError("Vente hors de votre périmètre opérateur.")
 
         return sale
+
+    def build_sale_response(self, sale: Sale) -> SaleResponse:
+        """Story 24.4 — ticket enrichi avec la prévisualisation autorité remboursement (cohérent POST reversals / 22.5)."""
+        base = SaleResponse.model_validate(sale)
+        try:
+            authority = AccountingPeriodAuthorityService(self.db)
+            auth_view = authority.resolve_refund_branch(sale_date=sale.sale_date, created_at=sale.created_at)
+            return base.model_copy(
+                update={
+                    "fiscal_branch": auth_view.branch.value,
+                    "sale_fiscal_year": auth_view.sale_fiscal_year,
+                    "current_open_fiscal_year": auth_view.current_open_fiscal_year,
+                }
+            )
+        except (ConflictError, ValidationError):
+            return base
 
     def update_sale_item(
         self,

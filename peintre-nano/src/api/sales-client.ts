@@ -90,6 +90,10 @@ export type SaleResponseV1 = {
   special_encaissement_kind?: SpecialEncaissementKindV1 | null;
   social_action_kind?: SocialActionKindV1 | null;
   adherent_reference?: string | null;
+  /** Story 24.4 — aligné GET vente / autorité remboursement (22.5). */
+  fiscal_branch?: string | null;
+  sale_fiscal_year?: number | null;
+  current_open_fiscal_year?: number | null;
   created_at?: string;
   updated_at?: string;
 };

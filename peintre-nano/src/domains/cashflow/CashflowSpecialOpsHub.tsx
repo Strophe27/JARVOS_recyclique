@@ -1,6 +1,7 @@
 import { Button, Card, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
 import {
+  PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
   PERMISSION_CASHFLOW_NOMINAL,
   PERMISSION_CASHFLOW_REFUND,
   TRANSVERSE_PERMISSION_ADMIN_VIEW,
@@ -72,6 +73,33 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
             <Text size="sm" c="dimmed" mt="md" data-testid="cashflow-special-ops-rembourser-blocked">
               Permissions <code>caisse.access</code> et <code>caisse.refund</code> requises — aligné{' '}
               <code>page-cashflow-refund</code> / entrée nav <code>cashflow-refund</code>.
+            </Text>
+          )}
+        </Card>
+
+        <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-remboursement-n1-expert">
+          <Text fw={600}>Remboursement exercice antérieur clos (expert N-1)</Text>
+          <Text size="sm" c="dimmed" mt="xs">
+            Distinct du remboursement standard : même URL <code>/caisse/remboursement</code>, mais parcours et
+            habilitation séparés. Le ticket est signalé <strong>avant</strong> la validation finale lorsque l&apos;exercice
+            source est clos ; double contrôle serveur (<code>expert_prior_year_refund</code> + permission{' '}
+            <code>{PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND}</code>).
+          </Text>
+          {canRefund ? (
+            <Button
+              mt="md"
+              variant="outline"
+              color="grape"
+              data-testid="cashflow-special-ops-remboursement-n1-expert-cta"
+              onClick={() => spaNavigateTo('/caisse/remboursement')}
+            >
+              Ouvrir le remboursement (parcours expert N-1)
+            </Button>
+          ) : (
+            <Text size="sm" c="dimmed" mt="md" data-testid="cashflow-special-ops-remboursement-n1-blocked">
+              Base caisse standard requise (<code>caisse.access</code>, <code>caisse.refund</code>) pour ouvrir
+              l&apos;écran ; la permission expert est distincte (<code>{PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND}</code>
+              ).
             </Text>
           )}
         </Card>
