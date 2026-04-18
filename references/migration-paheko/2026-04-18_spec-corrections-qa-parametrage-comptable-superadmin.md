@@ -2,6 +2,17 @@
 
 > Document déplacé le 2026-04-18 depuis `references/_depot/prompt-agent-dev-qa-compta.md` ; chemin canonique pour la grille de corrections ci-dessous.
 
+---
+
+## Décisions produit (2026-04-18) — surcharge du document
+
+Les corrections ci-dessous restent la référence technique. Les **décisions suivantes** priment sur les paragraphes en contradiction :
+
+- **M1 — Comportement caisse :** hors périmètre des correctifs « surplus automatique » décrits plus bas. Le flux et les règles **caisse** (saisie du don, Story 22.4) ne sont **pas** modifiés par ce chantier. Le périmètre **M1** pour la livraison = **référentiel moyen de paiement `donation`** (seed / admin expert), pas un nouveau déclenchement automatique côté caisse.
+- **M5 — Exercice Paheko :** **Option B** — saisie manuelle de l’identifiant d’exercice recopié depuis Paheko ; pas d’appel HTTP GET vers Paheko dans ce chantier. Une **extension future** (liste / validation via API Paheko) est documentée dans le code (`PahekoAccountingClient`, écran clôture). Voir aussi `references/artefacts/2026-04-18_03_inventaire-qa-parametrage-comptable-superadmin.md`.
+
+---
+
 ## Contexte
 
 Tu travailles sur Recyclique, une application de caisse PWA pour ressourceries françaises (associations loi 1901, non assujetties à la TVA), intégrée avec Paheko (logiciel de comptabilité associative open source).
@@ -73,7 +84,7 @@ display_order: 40
 notes: "Surplus volontaire du client. Ne pas utiliser comme moyen de règlement standard."
 ```
 
-**Comportement attendu dans la caisse :** ce moyen n'est pas proposé dans la liste de paiement standard. Il est activé automatiquement quand le total encaissé dépasse le montant de la vente.
+**Comportement attendu dans la caisse (cadrage produit 2026-04-18) :** le moyen « Don » reste dans le **référentiel expert** pour la ventilation Paheko. La **saisie à la caisse** (don volontaire, Story 22.4) suit les règles applicatives actuelles — **sans** imposer ici un nouveau déclenchement automatique « surplus » (voir encart « Décisions produit » ci-dessus).
 
 ---
 
@@ -124,10 +135,11 @@ Ajouter les deux champs suivants à l'écran "Comptes globaux" :
 
 **Situation actuelle :** le champ "Exercice Paheko" est un champ numérique libre. Rien n'empêche de saisir un identifiant d'exercice inexistant.
 
-**Correction attendue (dans l'ordre de faisabilité) :**
-- Option A (préférable) : appel API Paheko pour lister les exercices disponibles et les proposer dans un `<select>` avec libellé lisible (ex. "Exercice 2026 [id: 2]").
-- Option B (acceptable si l'API n'est pas disponible au moment du dev) : ajouter une validation en sortie de champ qui teste l'existence de l'exercice via l'API Paheko et affiche une erreur inline si l'exercice n'existe pas.
-- Dans tous les cas, ajouter une description sous le champ : `"Identifiant numérique de l'exercice dans Paheko. Visible dans Paheko > Comptabilité > Exercices."`.
+**Livraison retenue (2026-04-18) — Option B uniquement pour ce chantier :** saisie manuelle de l’ID exercice ; textes d’aide et mode d’emploi alignés ; **aucun** GET Paheko dans cette livraison. Les options ci-dessous restent la vision **long terme** :
+
+- Option A (préférable, story ultérieure) : appel API Paheko pour lister les exercices disponibles et les proposer dans un `<select>` avec libellé lisible (ex. "Exercice 2026 [id: 2]").
+- Option B (alternative story ultérieure) : validation en sortie de champ qui teste l'existence de l'exercice via l'API Paheko et affiche une erreur inline si l'exercice n'existe pas.
+- Dans tous les cas, une description sous le champ rappelle : `"Identifiant numérique de l'exercice dans Paheko. Visible dans Paheko > Comptabilité > Exercices."`.
 
 ---
 
@@ -194,7 +206,7 @@ Les champs "Compte Paheko (débit)" et "Compte Paheko (crédit remboursement)" n
 | 🔴 P0 | B1 | Corriger compte dons : `708` → `7541` |
 | 🔴 P0 | B2 | Corriger compte remboursements exercice antérieur : `467` → `672` |
 | 🔴 P0 | B3 | Clarifier/corriger l'ambiguïté compte débit clôture vs moyens de paiement |
-| 🟠 P1 | M1 | Ajouter moyen de paiement "Don" |
+| 🟠 P1 | M1 | Référentiel : moyen de paiement « Don » (seed/admin) — pas de nouveau comportement caisse automatique (décision 2026-04-18) |
 | 🟠 P1 | M2 | Ajouter moyen de paiement "Virement" |
 | 🟠 P1 | M3 | Ajouter champs `cash_journal_code` et `default_entry_label_prefix` |
 | 🟡 P2 | I1 | Corriger `7073` → `707` dans réglage La Clique |
@@ -204,7 +216,7 @@ Les champs "Compte Paheko (débit)" et "Compte Paheko (crédit remboursement)" n
 | 🟡 P2 | I5 | Ajouter tooltips sur champs comptables |
 | 🟡 P2 | I6 | Vérifier session ouverte avant désactivation |
 | 🟢 P3 | M4 | Documenter comportement si aucun réglage ne correspond |
-| 🟢 P3 | M5 | Valider exercice Paheko via API ou select dynamique |
+| 🟢 P3 | M5 | Exercice Paheko : saisie manuelle + doc (Option B) ; liste/validation API = story ultérieure |
 
 ---
 

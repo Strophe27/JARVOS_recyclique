@@ -1,6 +1,6 @@
 # Mode d’emploi — Paramétrage comptable (SuperAdmin)
 
-**Version :** 1.2 · **Dernière mise à jour :** 2026-04-18 (aperçu sync F4 : agrégat indisponible, succès partiel, suppression outbox prudente).
+**Version :** 1.2 · **Dernière mise à jour :** 2026-04-18 (aperçu sync F4 : agrégat indisponible, succès partiel, suppression outbox prudente ; exercice Paheko : saisie manuelle option B, extension API liste exercices à venir, alignement décisions produit spec QA).
 
 **Public :** bénévoles ou salariés qui gèrent la caisse et la compta dans une ressourcerie, avec le profil **super-admin** Recyclique. Aucun prérequis comptable : les notions Paheko sont expliquées pas à pas.
 
@@ -160,7 +160,7 @@ Sans réglage actif pour le couple site / poste de la session, la clôture peut 
 
 ### Exercice Paheko
 
-Le champ attend l’**identifiant numérique** de l’exercice dans Paheko (Comptabilité → Exercices). L’interface ne liste pas encore les exercices depuis Paheko : la valeur doit être **lue dans Paheko** puis recopiée.
+Le champ attend l’**identifiant numérique** de l’exercice dans Paheko (Comptabilité → Exercices). **Livraison actuelle :** saisie manuelle (recopie depuis Paheko). Une future évolution pourra lister ou valider les exercices via l’API Paheko (voir documentation projet / backend).
 
 <a id="section-6"></a>
 

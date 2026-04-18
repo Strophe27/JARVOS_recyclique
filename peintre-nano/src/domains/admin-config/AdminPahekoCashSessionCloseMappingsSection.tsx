@@ -569,7 +569,7 @@ export function AdminPahekoCashSessionCloseMappingsSection() {
               label="Exercice Paheko"
               value={form.accountingYearId}
               onChange={(e) => setForm((prev) => ({ ...prev, accountingYearId: e.currentTarget.value }))}
-              description="Identifiant numérique interne de l’exercice dans Paheko (Comptabilité → Exercices). Recyclique ne liste pas encore les exercices via l’API Paheko : vérifiez l’ID dans Paheko avant d’enregistrer."
+              description="Option livrée : saisie manuelle de l’ID exercice Paheko (Option B). Option A : alimenter ce champ depuis l’API Paheko — non implémenté ; voir commentaire dans PahekoAccountingClient (backend). Identifiant dans Paheko : Comptabilité → Exercices."
               data-testid="admin-paheko-close-mappings-form-id-year"
             />
             <TextInput
