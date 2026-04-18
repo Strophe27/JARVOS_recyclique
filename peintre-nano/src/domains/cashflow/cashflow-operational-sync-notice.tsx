@@ -115,6 +115,18 @@ export function CashflowOperationalSyncNotice(props: {
     );
   }
 
+  if (entry.snapshot?.sync_aggregate_unavailable === true) {
+    return (
+      <Alert color="orange" variant="light" mb="sm" data-testid="cashflow-sync-notice-aggregate-unavailable">
+        <Text size="sm">
+          Synthèse de synchronisation Paheko non calculée sur ce cliché (agrégat serveur indisponible). Ne présumez
+          pas que tout est « résolu » — la caisse locale reste autoritaire pour les encaissements immédiats ; consultez
+          le support pour l’historique distant.
+        </Text>
+      </Alert>
+    );
+  }
+
   const sync = entry.snapshot?.sync_operational_summary;
   if (sync == null || sync.worst_state == null) {
     return (
@@ -146,12 +158,20 @@ export function CashflowOperationalSyncNotice(props: {
   }
 
   if (ws === 'a_reessayer') {
+    const partial =
+      sync.partial_success === true ? (
+        <Text size="xs" mt="xs" c="orange">
+          Livraison partielle Paheko signalée sur ce site : au moins une sous-écriture est déjà partie ; le retry ne
+          couvre pas forcément tout le lot — vérifiez le support ou la ligne outbox avant de conclure.
+        </Text>
+      ) : null;
     return (
       <Alert color="blue" variant="light" mb="sm" data-testid="cashflow-sync-notice-deferred">
         <Text size="sm">
           {label} : des écritures peuvent être en file côté serveur. Ce n’est pas un blocage de caisse tant que le
           backend n’indique pas une quarantaine. Ne présumez pas que tout est répercuté comptablement à l’instant T.
         </Text>
+        {partial}
       </Alert>
     );
   }

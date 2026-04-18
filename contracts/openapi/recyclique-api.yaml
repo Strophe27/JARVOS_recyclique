@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.23-draft
+  version: 0.1.24-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -1446,7 +1446,9 @@ paths:
         Supprime définitivement la ligne si ``outbox_status=failed`` (quarantaine, rejet, échec HTTP).
         Très réservé : pas de livraison Paheko traçable via l’outbox après suppression ; le journal
         d’audit des transitions est supprimé en cascade. **403** si le rôle n’est pas super-admin.
-        **409** si la ligne n’est pas en échec (pending, processing, delivered).
+        **409** si la ligne n’est pas en échec (pending, processing, delivered), ou si l’état batch interdit
+        une suppression prudente (**DEL-01** : `code` = `DELETE_BLOCKED_BATCH_CLOSE_STATE`,
+        `policy_reason_code` = `PAHEKO_DELETE_BLOCKED_PARTIAL_OR_AMBIGUOUS_BATCH`).
       security:
         - bearerOrCookie: []
       parameters:
@@ -1478,7 +1480,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "409":
-          description: Statut hors « failed » — suppression refusée
+          description: |
+            Statut hors « failed » — suppression refusée ; ou refus DEL-01 (batch partiel / sous-écritures
+            livrées / payload batch illisible) avec `code` = `DELETE_BLOCKED_BATCH_CLOSE_STATE`.
           content:
             application/json:
               schema:
@@ -10018,6 +10022,11 @@ components:
         **Story 8.2** : `sync_operational_summary.deferred_remote_retry` — au moins une ligne outbox du site
         en backoff (`next_retry_at` futur, `pending`).
 
+        **REL-01 / SNAP-01** : `sync_aggregate_unavailable` (booléen optionnel) — true lorsque l’agrégat outbox
+        SQL n’a pas pu être calculé honnêtement ; dans ce cas `sync_operational_summary` est null (pas de
+        `resolu` factice). `sync_operational_summary.partial_success` (optionnel) signale un batch clôture
+        avec livraison partielle Paheko au niveau site.
+
         Absence vs null : artefact 1.7 section 6.
       properties:
         bandeau_live_slice_enabled:
@@ -10060,7 +10069,18 @@ components:
             deferred_remote_retry:
               type: boolean
               description: True si backoff actif sur au moins une ligne outbox du site (Story 8.2).
+            partial_success:
+              type: boolean
+              nullable: true
+              description: |
+                SNAP-01 — true si au moins une ligne outbox du site a un snapshot batch avec livraison partielle
+                Paheko ; false si des snapshots batch existent mais aucun partiel ; null si aucun snapshot batch.
           additionalProperties: false
+        sync_aggregate_unavailable:
+          type: boolean
+          description: |
+            REL-01 — true si l’agrégat outbox par site n’a pas pu être obtenu (erreur SQL, schéma incomplet).
+            Dans ce cas `sync_operational_summary` doit être null.
         observed_at:
           type: string
           format: date-time

@@ -502,7 +502,16 @@ export interface paths {
         get: operations["recyclique_pahekoOutbox_getItem"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Supprimer une ligne outbox en erreur (failed uniquement, super-admin)
+         * @description Supprime définitivement la ligne si ``outbox_status=failed`` (quarantaine, rejet, échec HTTP).
+         *     Très réservé : pas de livraison Paheko traçable via l’outbox après suppression ; le journal
+         *     d’audit des transitions est supprimé en cascade. **403** si le rôle n’est pas super-admin.
+         *     **409** si la ligne n’est pas en échec (pending, processing, delivered), ou si l’état batch interdit
+         *     une suppression prudente (**DEL-01** : `code` = `DELETE_BLOCKED_BATCH_CLOSE_STATE`,
+         *     `policy_reason_code` = `PAHEKO_DELETE_BLOCKED_PARTIAL_OR_AMBIGUOUS_BATCH`).
+         */
+        delete: operations["recyclique_pahekoOutbox_deleteItemFailed"];
         options?: never;
         head?: never;
         patch?: never;
@@ -645,6 +654,224 @@ export interface paths {
         patch: operations["recyclique_pahekoMapping_updateCashSessionCloseMapping"];
         trace?: never;
     };
+    "/v1/admin/accounting-expert/global-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comptes globaux Paheko (paramétrage expert)
+         * @description Stories **22.3** (fondation API) et **23.3** (cockpit Peintre) — **SUPER_ADMIN** uniquement. Comptes globaux (`default_sales_account`, etc.), distincts
+         *     de la config admin « simple » (Epic 9.6). Source vérité encaissements : `payment_transactions`,
+         *     pas `sales.payment_method`.
+         */
+        get: operations["accountingExpertGetGlobalAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mettre à jour les comptes globaux (step-up PIN requis)
+         * @description Stories **22.3** (fondation API) et **23.3** (cockpit Peintre) — mutation sensible : `X-Step-Up-Pin` obligatoire (`accounting.expert.mutation`), audit
+         *     `accounting_global_settings_updated`.
+         */
+        patch: operations["accountingExpertPatchGlobalAccounts"];
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/payment-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lister le référentiel des moyens de paiement (expert)
+         * @description Stories **22.3** (fondation API) et **23.2** (cockpit Peintre) — SUPER_ADMIN. Lecture seule ; vérité des encaissements côté ventes : `payment_transactions`,
+         *     pas `sales.payment_method`.
+         */
+        get: operations["accountingExpertListPaymentMethods"];
+        put?: never;
+        /**
+         * Créer un moyen de paiement (step-up PIN requis)
+         * @description Stories **22.3** (fondation API) et **23.2** (cockpit Peintre) — mutation sensible : `X-Step-Up-Pin` obligatoire (`accounting.expert.mutation`); audit
+         *     `accounting_payment_method_changed`.
+         */
+        post: operations["accountingExpertCreatePaymentMethod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/payment-methods/{payment_method_id}/open-session-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Usage du moyen dans une session ouverte (lecture)
+         * @description Indique si le moyen est encore utilisé par un `payment_transaction` lié à une session **ouverte** — pour afficher
+         *     un avertissement avant désactivation (les ventes en cours ne sont pas bloquées).
+         *     Si `site_id` est fourni, seules les sessions ouvertes de ce site sont prises en compte.
+         */
+        get: operations["accountingExpertGetPaymentMethodOpenSessionUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/payment-methods/{payment_method_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mettre à jour un moyen de paiement (step-up PIN requis)
+         * @description Stories **22.3** (fondation API) et **23.2** (Peintre) — mutation sensible avec audit `accounting_payment_method_changed`.
+         */
+        patch: operations["accountingExpertPatchPaymentMethod"];
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/payment-methods/{payment_method_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activer ou désactiver un moyen (step-up PIN requis)
+         * @description Stories **22.3** (fondation API) et **23.2** (Peintre) — la désactivation est toujours possible ; si une session ouverte
+         *     utilise encore le moyen, l’UI peut prévenir via `GET …/open-session-usage`. Audit `accounting_payment_method_changed`.
+         */
+        post: operations["accountingExpertSetPaymentMethodActive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/revisions/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publier une révision comptable (snapshot immuable)
+         * @description Stories **22.3** (API) et **23.2**\/**23.3** (Peintre, publication) — produit un `accounting_config_revisions.id` stable pour la chaîne canonique et le snapshot 22.6.
+         *     Step-up PIN obligatoire ; audit `accounting_config_published`.
+         */
+        post: operations["accountingExpertPublishRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/revisions/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dernière révision comptable publiée
+         * @description Stories **22.3** (API) et **23.2**\/**23.3** (Peintre) — SUPER_ADMIN ; inclut le snapshot immuable (comptes globaux + moyens de paiement).
+         */
+        get: operations["accountingExpertGetLatestRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Historique des révisions comptables publiées
+         * @description Stories **22.3** (API) et **23.2**\/**23.3** (Peintre) — liste paginée (`skip`, `limit`), la plus récente en premier.
+         */
+        get: operations["accountingExpertListRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/revisions/{revision_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Détail d'une révision (snapshot immuable)
+         * @description Stories **22.3** (API) et **23.2**\/**23.3** (Peintre) — référence stable `id` pour chaîne 22.6 ; pas de substitution par « config courante ».
+         */
+        get: operations["accountingExpertGetRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/accounting-expert/cash-sessions/{cash_session_id}/dual-read-compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Double lecture legacy vs journal canonique (Story 22.2)
+         * @description Rapport comparatif structuré (agrégats brownfield `sales` / `cash_sessions.total_sales` vs journal
+         *     `payment_transactions`) pour pilotage cutover — ne supprime pas les lectures legacy.
+         */
+        get: operations["accountingExpertDualReadCompare"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/_contract-governance/ping": {
         parameters: {
             query?: never;
@@ -722,6 +949,28 @@ export interface paths {
         patch: operations["recyclique_exploitation_patchBandeauLiveSlice"];
         trace?: never;
     };
+    "/v1/sales/payment-method-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Moyens de paiement caisse (référentiel expert actif)
+         * @description Codes et libellés pour l’UI caisse — mêmes entrées que le paramétrage comptable expert (super-admin).
+         *     Garde d’accès alignée sur `POST /v1/sales/` (permissions caisse réel / virtuel / différé, ou rôle privilégié).
+         *     **Cache** : réponse `Cache-Control: private, no-store`. Limitation de débit côté serveur (hors tests).
+         */
+        get: operations["recyclique_sales_listPaymentMethodOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sales/held": {
         parameters: {
             query?: never;
@@ -779,7 +1028,13 @@ export interface paths {
          *     montant = total de la vente (remboursement total uniquement). Revalidation session ouverte,
          *     site, opérateur (6.2) et permission effective **``caisse.refund``** (en plus de ``caisse.access``
          *     pour les utilisateurs standard). Vente source non modifiée. Idempotence optionnelle via
-         *     ``idempotency_key``. Conflits (double remboursement, ticket ``held``, etc.) → **409**.
+         *     ``idempotency_key``. **Story 22.5** — double contexte comptable (moyen de remboursement effectif,
+         *     journal ``payment_transactions``) et autorité non devinable sur l'exercice clos : instantané serveur
+         *     périmé ou absent → **409** avec préfixe stable ``[ACCOUNTING_PERIOD_AUTHORITY_STALE]`` ou
+         *     ``[ACCOUNTING_PERIOD_AUTHORITY_UNAVAILABLE]`` ; remboursement sur exercice antérieur clos sans
+         *     parcours explicite → **409** ``[PRIOR_YEAR_REFUND_REQUIRES_EXPERT_PATH]`` ; parcours expert requiert
+         *     ``expert_prior_year_refund=true`` et permission **``accounting.prior_year_refund``**.
+         *     Conflits (double remboursement, ticket ``held``, etc.) → **409**.
          */
         post: operations["recyclique_sales_createSaleReversal"];
         delete?: never;
@@ -852,6 +1107,7 @@ export interface paths {
          *     **Story 6.6** : si `social_action_kind` est renseigné (lot actions sociales), `items` doit être `[]`, `total_amount` > 0,
          *     `special_encaissement_kind` doit être absent (exclusivité mutuelle), et la permission effective `caisse.social_encaissement` est exigée.
          *     Aligné sur l'implémentation `POST /api/v1/sales/`.
+         *     **Idempotence** : en-tête optionnel `Idempotency-Key` ; rejeu même clé + même corps → même **200** ; corps différent → **409** `IDEMPOTENCY_KEY_CONFLICT` (Redis indisponible : pas de rejeu, comportement aligné fermeture session).
          */
         post: operations["recyclique_sales_createSale"];
         delete?: never;
@@ -895,6 +1151,7 @@ export interface paths {
          * Finaliser un ticket en attente (encaissement)
          * @description **Story 6.3** — Attache les paiements, passe la vente en `completed`, met à jour les agrégats de session.
          *     Refus si la vente n'est pas `held` ou si les garde-fous caisse échouent.
+         *     **Idempotence** : `Idempotency-Key` optionnelle (même logique que `POST /v1/sales/`).
          */
         post: operations["recyclique_sales_finalizeHeldSale"];
         delete?: never;
@@ -1510,7 +1767,8 @@ export interface paths {
         };
         /**
          * Liste des catégories actives (réception)
-         * @description Équivalent opérationnel à une liste pour saisie ticket ; le backend filtre `is_active`.
+         * @description Équivalent opérationnel à une liste pour saisie ticket ; le backend filtre `is_active`, `is_visible`
+         *     et exclut les catégories archivées. `parent_id` permet la hiérarchie opérateur racine → enfant.
          */
         get: operations["recyclique_reception_listCategories"];
         put?: never;
@@ -3163,6 +3421,24 @@ export interface components {
              * @description Story 8.5 — id ligne outbox ; null si session ouverte ou sans outbox.
              */
             paheko_outbox_item_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Stories **22.3** (révision publiée) et **22.6** (snapshot) — identifiant de la révision comptable publiée figée à l'ouverture de session
+             *     (référence stable pour snapshot 22.6 ; pas « dernière config lue » au moment de la clôture).
+             */
+            accounting_config_revision_id?: string | null;
+            /**
+             * @description Story 22.6 — snapshot comptable figé après clôture (journal payment_transactions, corrélation, politique append-only) ;
+             *     null tant que la session est ouverte.
+             */
+            accounting_close_snapshot?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * @description Montant théorique caisse aligné sur ``get_closing_preview`` / POST ``/close`` : fond initial + total des ventes + dons.
+             *     Présent pour les sessions ouvertes ; null si session fermée.
+             */
+            closing_preview_theoretical_amount?: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -3174,6 +3450,152 @@ export interface components {
         } & {
             [key: string]: unknown;
         }) & components["schemas"]["CashSessionResponse"];
+        AccountingExpertGlobalAccounts: {
+            default_sales_account: string;
+            default_donation_account: string;
+            prior_year_refund_account: string;
+            /** @description Code journal Paheko pour les écritures de clôture (vide si non renseigné). */
+            cash_journal_code: string;
+            /** @description Préfixe des libellés d'écriture Paheko si le mapping ne fournit pas `label_prefix`. */
+            default_entry_label_prefix: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        AccountingExpertGlobalAccountsPatch: {
+            default_sales_account: string;
+            default_donation_account: string;
+            prior_year_refund_account: string;
+            /** @default  */
+            cash_journal_code: string;
+            /** @default Z caisse */
+            default_entry_label_prefix: string;
+        };
+        AccountingExpertPaymentMethodOpenSessionUsage: {
+            /** @description True si le moyen est référencé par un encaissement d'une session de caisse ouverte. */
+            used_in_open_session: boolean;
+        };
+        AccountingExpertPublishBody: {
+            note?: string | null;
+        };
+        AccountingExpertRevisionDetail: {
+            /** Format: uuid */
+            id: string;
+            revision_seq: number;
+            /** Format: date-time */
+            published_at: string;
+            /** Format: uuid */
+            actor_user_id?: string | null;
+            note?: string | null;
+            snapshot: {
+                [key: string]: unknown;
+            };
+        };
+        AccountingExpertRevisionSummary: {
+            /** Format: uuid */
+            id: string;
+            revision_seq: number;
+            /** Format: date-time */
+            published_at: string;
+            /** Format: uuid */
+            actor_user_id?: string | null;
+            note?: string | null;
+        };
+        /** @enum {string} */
+        AccountingExpertPaymentMethodKind: "cash" | "bank" | "third_party" | "other";
+        AccountingExpertPaymentMethod: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            label: string;
+            kind: components["schemas"]["AccountingExpertPaymentMethodKind"];
+            paheko_debit_account: string;
+            paheko_refund_credit_account: string;
+            min_amount?: number | null;
+            max_amount?: number | null;
+            display_order: number;
+            notes?: string | null;
+            active: boolean;
+            /** Format: date-time */
+            archived_at?: string | null;
+        };
+        AccountingExpertPaymentMethodCreate: {
+            code: string;
+            label: string;
+            kind: components["schemas"]["AccountingExpertPaymentMethodKind"];
+            paheko_debit_account: string;
+            paheko_refund_credit_account: string;
+            min_amount?: number | null;
+            max_amount?: number | null;
+            display_order: number;
+            notes?: string | null;
+            active: boolean;
+        };
+        AccountingExpertPaymentMethodPatch: {
+            label?: string;
+            kind?: components["schemas"]["AccountingExpertPaymentMethodKind"];
+            paheko_debit_account?: string;
+            paheko_refund_credit_account?: string;
+            min_amount?: number | null;
+            max_amount?: number | null;
+            display_order?: number;
+            notes?: string | null;
+        };
+        /** @enum {string} */
+        DualReadTaxonomy: "MODEL" | "HISTORICAL_DATA" | "ROUNDING" | "BUG" | "MISSING_CONTRACT" | "OUT_OF_SCOPE" | "UNCLASSIFIED";
+        CashSessionJournalTotalsV1: {
+            by_payment_method_signed: {
+                [key: string]: number;
+            };
+            donation_surplus_total: number;
+            refunds_current_fiscal_total: number;
+            refunds_prior_closed_fiscal_total: number;
+            cash_signed_net_from_journal: number;
+            payment_transaction_line_count: number;
+            preview_fallback_legacy_totals: boolean;
+        };
+        DualReadGapFinding: {
+            metric_key: string;
+            legacy_value?: number | null;
+            canonical_value?: number | null;
+            delta?: number | null;
+            taxonomy: components["schemas"]["DualReadTaxonomy"];
+            blocks_cutover: boolean;
+            notes: string;
+        };
+        LegacyBrownfieldSessionRollups: {
+            cash_session_total_sales_field: number;
+            sum_sales_total_amount: number;
+            sum_sales_donation_field: number;
+            sale_row_count: number;
+        };
+        CanonicalJournalStrict: {
+            totals: components["schemas"]["CashSessionJournalTotalsV1"];
+        };
+        JournalDerivedScalar: {
+            sale_payment_inflow_sum: number;
+            settlement_inflow_sum: number;
+            refund_outflow_sum_current: number;
+            refund_outflow_sum_prior_closed: number;
+        };
+        FrozenSnapshotTotalsDigest: {
+            present: boolean;
+            sync_correlation_id?: string | null;
+            totals_from_snapshot?: components["schemas"]["CashSessionJournalTotalsV1"];
+        };
+        DualReadCompareReport: {
+            cash_session_id: string;
+            schema_version: number;
+            legacy_brownfield: components["schemas"]["LegacyBrownfieldSessionRollups"];
+            canonical_journal: components["schemas"]["CanonicalJournalStrict"];
+            journal_derived: components["schemas"]["JournalDerivedScalar"];
+            frozen_snapshot: components["schemas"]["FrozenSnapshotTotalsDigest"];
+            gap_findings: components["schemas"]["DualReadGapFinding"][];
+            cutover_indicator_ok: boolean;
+            cutover_criteria_version: number;
+            cutover_criteria: {
+                [key: string]: unknown;
+            };
+        };
         LoginRequestV2: {
             username: string;
             /** Format: password */
@@ -3224,10 +3646,57 @@ export interface components {
          * @enum {string}
          */
         SyncStateCore: "a_reessayer" | "en_quarantaine" | "resolu" | "rejete";
+        PahekoResolvedTransactionPreview: {
+            /** @description Montant transmis à Paheko pour l'écriture. */
+            amount: number;
+            /** @description Compte de débit utilisé. */
+            debit: string;
+            /** @description Compte de crédit utilisé. */
+            credit: string;
+            /** @description Identifiant d'exercice Paheko utilisé. */
+            id_year: number;
+            label?: string | null;
+            reference?: string | null;
+            /**
+             * @description Story 23.1 — REVENUE (ligne simplifiee) ou ADVANCED (ecriture multi-lignes Paheko).
+             * @default REVENUE
+             */
+            body_type: string;
+            /** @description Story 23.1 — nombre de lignes si body_type=ADVANCED. */
+            advanced_line_count?: number | null;
+        };
+        /** @description Story 22.7 — sous-écriture du batch clôture (statut + idempotence distante). */
+        PahekoCloseBatchSubWritePublic: {
+            index: number;
+            kind: string;
+            status: string;
+            idempotency_sub_key: string;
+            remote_transaction_id?: string | null;
+            last_http_status?: number | null;
+            last_error?: string | null;
+            /**
+             * @description Story 23.1 — detail ventilation (codes moyen, montants, index de ligne, revision) pour support ;
+             *     null en mode agrege 22.7.
+             */
+            observability?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** @description Story 22.7 — agrégat batch (snapshot figé) pour corrélation et succès partiel. */
+        PahekoCloseBatchStatePublic: {
+            schema_version: number;
+            retry_policy: string;
+            partial_success: boolean;
+            all_delivered: boolean;
+            sub_writes: components["schemas"]["PahekoCloseBatchSubWritePublic"][];
+        };
         /**
          * @description Vue liste outbox Paheko (Stories 8.1–8.3). `outbox_status` = cycle technique ; `sync_state_core` = état métier FR24.
          *     `next_retry_at` : backoff ; `rejection_reason` : si `rejete`. **8.3** : `mapping_resolution_error` si échec **avant**
-         *     tout POST Paheko (distinct des erreurs HTTP `last_remote_http_status`). En-tête sortant : `Idempotency-Key` = `idempotency_key`.
+         *     tout POST Paheko (distinct des erreurs HTTP `last_remote_http_status`).
+         *     **Idempotence sortante Paheko** : en clôture simple (sans snapshot batch), chaque POST utilise `Idempotency-Key` = `idempotency_key`.
+         *     **Story 22.7** : si `close_batch_state` est présent (snapshot `accounting_close_snapshot_frozen`), chaque sous-écriture envoie sa propre clé stable
+         *     (`idempotency_sub_key` dans `close_batch_state.sub_writes`, dérivée de `idempotency_key` + index + nature de ligne).
          */
         PahekoOutboxItemPublic: {
             /** Format: uuid */
@@ -3261,6 +3730,10 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+            /** @description Résumé calculé de l'écriture comptable Paheko quand la résolution mapping est possible. */
+            transaction_preview?: components["schemas"]["PahekoResolvedTransactionPreview"] | null;
+            /** @description Story 22.7 — états des sous-écritures batch (présent si payload persisté côté transport). */
+            close_batch_state?: components["schemas"]["PahekoCloseBatchStatePublic"] | null;
         };
         PahekoOutboxRejectBody: {
             /** @description Motif traçable du rejet (8.2), levée de quarantaine ou constat resolu (8.4). */
@@ -3429,6 +3902,11 @@ export interface components {
          *     **Story 8.2** : `sync_operational_summary.deferred_remote_retry` — au moins une ligne outbox du site
          *     en backoff (`next_retry_at` futur, `pending`).
          *
+         *     **REL-01 / SNAP-01** : `sync_aggregate_unavailable` (booléen optionnel) — true lorsque l’agrégat outbox
+         *     SQL n’a pas pu être calculé honnêtement ; dans ce cas `sync_operational_summary` est null (pas de
+         *     `resolu` factice). `sync_operational_summary.partial_success` (optionnel) signale un batch clôture
+         *     avec livraison partielle Paheko au niveau site.
+         *
          *     Absence vs null : artefact 1.7 section 6.
          */
         ExploitationLiveSnapshot: {
@@ -3459,7 +3937,17 @@ export interface components {
                 source_reachable?: boolean;
                 /** @description True si backoff actif sur au moins une ligne outbox du site (Story 8.2). */
                 deferred_remote_retry?: boolean;
+                /**
+                 * @description SNAP-01 — true si au moins une ligne outbox du site a un snapshot batch avec livraison partielle
+                 *     Paheko ; false si des snapshots batch existent mais aucun partiel ; null si aucun snapshot batch.
+                 */
+                partial_success?: boolean | null;
             } | null;
+            /**
+             * @description REL-01 — true si l’agrégat outbox par site n’a pas pu être obtenu (erreur SQL, schéma incomplet).
+             *     Dans ce cas `sync_operational_summary` doit être null.
+             */
+            sync_aggregate_unavailable?: boolean;
             /**
              * Format: date-time
              * @description Horodatage serveur autoritaire pour affichage coherent (AR39).
@@ -3503,8 +3991,17 @@ export interface components {
          * @enum {string}
          */
         SocialActionKindV1: "DON_LIBRE" | "DON_MOINS_18" | "MARAUDE" | "KIT_INSTALLATION_ETUDIANT" | "DON_AUX_ANIMAUX" | "FRIPERIE_AUTO_GEREE";
+        SalePaymentMethodOptionV1: {
+            code: string;
+            label: string;
+            /** @enum {string} */
+            kind: "cash" | "bank" | "third_party" | "other";
+        };
         PaymentCreateV1: {
-            /** @description Enum métier aligné modèle Sale (cash, card, …) */
+            /**
+             * @description Code référentiel expert (`payment_methods.code`, actif) ou valeur legacy `cash` | `check` | `card`.
+             *     `free` est interdit dans `payments[]` ; pour une vente gratuite non financière, utiliser `payment_method=free` sur la vente sans créer de ligne `payments[]`.
+             */
             payment_method: string;
             amount: number;
         };
@@ -3520,6 +4017,11 @@ export interface components {
             donation?: number | null;
             payment_method?: string | null;
             payments?: components["schemas"]["PaymentCreateV1"][] | null;
+            /**
+             * @description Story 22.4 — surplus laissé en don, distinct des lignes de règlement (journal `donation_surplus`).
+             *     Obligatoire si l'encaissement dépasse le total sans quoi la finalisation est refusée.
+             */
+            donation_surplus?: components["schemas"]["PaymentCreateV1"][] | null;
             note?: string | null;
         };
         /**
@@ -3533,8 +4035,14 @@ export interface components {
             items?: components["schemas"]["SaleItemCreateV1"][];
             total_amount: number;
             donation?: number | null;
+            /** @description Code expert actif ou legacy `cash` | `card` | `check` | `free` (raccourci mono-moyen si `payments[]` absent). */
             payment_method?: string | null;
             payments?: components["schemas"]["PaymentCreateV1"][] | null;
+            /**
+             * @description Story 22.4 — don en surplus explicite (nature `donation_surplus`), séparé du règlement de vente.
+             *     Requis dès qu'un trop-perçu sur les lignes `payments[]` serait autrement implicite.
+             */
+            donation_surplus?: components["schemas"]["PaymentCreateV1"][] | null;
             note?: string | null;
             special_encaissement_kind?: components["schemas"]["SpecialEncaissementKindV1"] | null;
             social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
@@ -3544,7 +4052,21 @@ export interface components {
         PaymentResponseV1: {
             id: string;
             sale_id: string;
+            /** @description Code legacy-compatible conservé pour compatibilité brownfield. */
             payment_method: string;
+            /** @description Référence canonique vers `payment_methods` quand la transaction a pu être qualifiée. */
+            payment_method_id?: string | null;
+            /** @description Code canonique résolu depuis `payment_methods`. */
+            payment_method_code?: string | null;
+            /** @enum {string|null} */
+            nature?: "sale_payment" | "donation_surplus" | "refund_payment" | null;
+            /** @enum {string|null} */
+            direction?: "inflow" | "outflow" | null;
+            original_sale_id?: string | null;
+            original_payment_method_id?: string | null;
+            is_prior_year_special_case?: boolean;
+            paheko_account_override?: string | null;
+            notes?: string | null;
             amount: number;
             /** Format: date-time */
             created_at: string;
@@ -3620,6 +4142,19 @@ export interface components {
             detail?: string | null;
             /** @description Clé client pour rejouer la même intention sans doublon. */
             idempotency_key?: string | null;
+            /**
+             * @description Story 22.5 — moyen effectif de sortie (journal canonique ``REFUND_PAYMENT``) ;
+             *     distinct du legacy sur la vente source. Défaut serveur ``cash`` ; ``free`` interdit.
+             * @default cash
+             * @enum {string}
+             */
+            refund_payment_method: "cash" | "check" | "card";
+            /**
+             * @description Parcours expert : requis avec permission ``accounting.prior_year_refund`` lorsque
+             *     l'autorité tranche un remboursement sur exercice antérieur clos (hors borne terrain 6.4).
+             * @default false
+             */
+            expert_prior_year_refund: boolean;
         };
         SaleReversalResponseV1: {
             /** Format: uuid */
@@ -3807,6 +4342,7 @@ export interface components {
         ReceptionCategoryRow: {
             id: string;
             name: string;
+            parent_id?: string | null;
         };
         ReceptionTicketSummaryRow: {
             id: string;
@@ -5251,6 +5787,65 @@ export interface operations {
             };
         };
     };
+    recyclique_pahekoOutbox_deleteItemFailed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ligne supprimée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Super-admin requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Élément introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /**
+             * @description Statut hors « failed » — suppression refusée ; ou refus DEL-01 (batch partiel / sous-écritures
+             *     livrées / payload batch illisible) avec `code` = `DELETE_BLOCKED_BATCH_CLOSE_STATE`.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_pahekoOutbox_rejectItem: {
         parameters: {
             query?: never;
@@ -5680,6 +6275,651 @@ export interface operations {
             };
         };
     };
+    accountingExpertGetGlobalAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comptes globaux courants (brouillon jusqu'à prochaine publication de révision). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertGlobalAccounts"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé (super-admin requis) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertPatchGlobalAccounts: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountingExpertGlobalAccountsPatch"];
+            };
+        };
+        responses: {
+            /** @description Comptes globaux mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertGlobalAccounts"];
+                };
+            };
+            /** @description PIN step-up requis ou invalide */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON / validation (ex. codes Paheko invalides) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertListPaymentMethods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste des moyens (non archivés), tri ordre d'affichage + code. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertPaymentMethod"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé (super-admin requis) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertCreatePaymentMethod: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountingExpertPaymentMethodCreate"];
+            };
+        };
+        responses: {
+            /** @description Moyen créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertPaymentMethod"];
+                };
+            };
+            /** @description PIN step-up requis ou invalide */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertGetPaymentMethodOpenSessionUsage: {
+        parameters: {
+            query?: {
+                /** @description Filtrer sur les sessions ouvertes de ce site (UUID). */
+                site_id?: string;
+            };
+            header?: never;
+            path: {
+                payment_method_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Indicateur d'usage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertPaymentMethodOpenSessionUsage"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé (super-admin requis) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Moyen introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertPatchPaymentMethod: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+            };
+            path: {
+                payment_method_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountingExpertPaymentMethodPatch"];
+            };
+        };
+        responses: {
+            /** @description Moyen mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertPaymentMethod"];
+                };
+            };
+            /** @description PIN step-up requis ou invalide */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Moyen introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit métier (ex. moyen archivé) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON / validation (ex. incohérence min/max montants) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertSetPaymentMethodActive: {
+        parameters: {
+            query: {
+                /** @description true = actif, false = inactif */
+                active: boolean;
+            };
+            header: {
+                "X-Step-Up-Pin": string;
+            };
+            path: {
+                payment_method_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statut actif mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertPaymentMethod"];
+                };
+            };
+            /** @description PIN step-up requis ou invalide */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Moyen introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit métier (désactivation impossible, moyen archivé, etc.) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Paramètre `active` ou requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertPublishRevision: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Step-Up-Pin": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AccountingExpertPublishBody"];
+            };
+        };
+        responses: {
+            /** @description Révision publiée (contient le snapshot JSON complet). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertRevisionDetail"];
+                };
+            };
+            /** @description PIN step-up requis ou invalide */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit sur la séquence de révision (publication concurrente) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Corps JSON invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Verrouillage temporaire après échecs PIN répétés — `STEP_UP_LOCKED` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertGetLatestRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Détail révision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertRevisionDetail"];
+                };
+            };
+            /** @description Aucune révision publiée */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Snapshot illisible ou données incohérentes */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertListRevisions: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions (sans snapshot complet ; utiliser GET détail) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertRevisionSummary"][];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé (super-admin requis) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Paramètres de pagination invalides (`skip`, `limit`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertGetRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révision avec snapshot JSON complet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingExpertRevisionDetail"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé (super-admin requis) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Révision introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Snapshot illisible ou données incohérentes */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    accountingExpertDualReadCompare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cash_session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rapport 22.2 — indicateur cutover jamais « prêt » si écart bloquant ou non classé significatif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DualReadCompareReport"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé (super-admin requis) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_contractGovernance_ping: {
         parameters: {
             query?: never;
@@ -5803,6 +7043,64 @@ export interface operations {
             };
             /** @description Site introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_listPaymentMethodOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Moyens actifs triés par `display_order` */
+            200: {
+                headers: {
+                    /** @description Toujours `private, no-store` */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalePaymentMethodOptionV1"][];
+                };
+            };
+            /** @description Requête invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission caisse absente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Limite de débit (hors environnement de test) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5998,7 +7296,11 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Conflit métier (déjà remboursé, vente non ``completed``, session fermée, etc.) */
+            /**
+             * @description Conflit métier (déjà remboursé, vente non ``completed``, session fermée, etc.) ;
+             *     Story 22.5 : autorité exercice indisponible / périmée, ou remboursement N-1 clos sans
+             *     parcours expert (codes stables dans ``detail`` texte).
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -6164,7 +7466,10 @@ export interface operations {
     recyclique_sales_createSale: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optionnel. Rejoue la réponse JSON d'une création réussie si le corps canonique est identique ; conflit si la clé a déjà été utilisée avec un autre corps. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -6201,7 +7506,7 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Opérateur / site / permission caisse incohérents (messages stables : opérateur, site, `caisse.access`, `caisse.special_encaissement` pour encaissements spéciaux Story 6.5, ou `caisse.social_encaissement` pour Story 6.6). */
+            /** @description Refus métier avec message explicite (ex. permissions `caisse.special_encaissement` ou `caisse.social_encaissement`). Pour un utilisateur standard, une session inexistante ou hors périmètre opérateur/site est indistinguée d’une **404** (oracle d’existence réduit). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6210,8 +7515,17 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Session de caisse introuvable */
+            /** @description Session de caisse introuvable ou inaccessible pour l’opérateur (utilisateur non privilégié) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) — `Idempotency-Key` déjà utilisée avec un autre corps */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6291,7 +7605,10 @@ export interface operations {
     recyclique_sales_finalizeHeldSale: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optionnel — rejeu même clé + même corps de finalisation. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 sale_id: string;
             };
@@ -6341,6 +7658,15 @@ export interface operations {
             };
             /** @description Vente introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8114,7 +9440,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Liste `{ id, name }` */
+            /** @description Liste `{ id, name, parent_id }` */
             200: {
                 headers: {
                     [name: string]: unknown;

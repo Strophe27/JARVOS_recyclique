@@ -246,6 +246,19 @@ async def paheko_outbox_delete_item_failed(
     err = delete_paheko_outbox_item_failed(db, item_id)
     if err == "not_found":
         raise HTTPException(status_code=404, detail="Élément outbox introuvable")
+    if err == "delete_blocked_batch":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "DELETE_BLOCKED_BATCH_CLOSE_STATE",
+                "message": (
+                    "Suppression refusée : état batch clôture présent avec livraison partielle Paheko, sous-écritures "
+                    "livré(es), ou payload batch illisible — suppression manuelle trop risquée sans arbitrage "
+                    "(DEL-01)."
+                ),
+                "policy_reason_code": "PAHEKO_DELETE_BLOCKED_PARTIAL_OR_AMBIGUOUS_BATCH",
+            },
+        )
     if err == "not_deletable":
         raise HTTPException(
             status_code=409,

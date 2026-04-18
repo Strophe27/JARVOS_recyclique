@@ -661,6 +661,17 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
                 <Text size="sm">{snapshot.bandeau_live_slice_enabled ? 'activé' : 'désactivé'}</Text>
               </div>
             ) : null}
+            {snapshot.sync_aggregate_unavailable === true ? (
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Alert color="orange" variant="light" title="Agrégat synchronisation">
+                  <Text size="sm">
+                    L’agrégat outbox Paheko pour ce site n’a pas pu être calculé honnêtement (erreur ou schéma
+                    incomplet). Les détails ligne à ligne restent dans l’outil support — ne présumez pas un état{' '}
+                    « résolu » depuis ce cliché seul.
+                  </Text>
+                </Alert>
+              </div>
+            ) : null}
             {syncSummary ? (
               <div style={{ gridColumn: '1 / -1' }}>
                 <Text size="xs" c="dimmed" mb={4}>
@@ -682,6 +693,11 @@ export function AdminSystemHealthWidget(_props: RegisteredWidgetProps) {
                   {syncSummary.deferred_remote_retry === true ? (
                     <Badge size="sm" color="orange">
                       Nouvel essai prévu
+                    </Badge>
+                  ) : null}
+                  {syncSummary.partial_success === true ? (
+                    <Badge size="sm" color="yellow">
+                      Livraison partielle Paheko (site)
                     </Badge>
                   ) : null}
                 </Group>

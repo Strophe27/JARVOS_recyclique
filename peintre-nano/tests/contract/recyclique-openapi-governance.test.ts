@@ -330,13 +330,21 @@ describe("contracts/openapi/recyclique-api.yaml (gouvernance 1.4)", () => {
     const props = Object.keys(snap?.properties ?? {});
     expect(props).toEqual(
       expect.arrayContaining([
+        "bandeau_live_slice_enabled",
         "daily_kpis_aggregate",
         "context",
         "effective_open_state",
         "cash_session_effectiveness",
         "sync_operational_summary",
+        "sync_aggregate_unavailable",
         "observed_at",
       ]),
+    );
+    const syncSum = snap?.properties?.sync_operational_summary as
+      | { properties?: Record<string, unknown> }
+      | undefined;
+    expect(Object.keys(syncSum?.properties ?? {})).toEqual(
+      expect.arrayContaining(["partial_success"]),
     );
   });
 

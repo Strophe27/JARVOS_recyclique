@@ -1,6 +1,6 @@
 # Mode d’emploi — Paramétrage comptable (SuperAdmin)
 
-**Version :** 1.1 · **Dernière mise à jour :** 2026-04-16 (relecture QA : navigation, PIN comptes globaux, sommaire, précision débit / Paheko, chemins dépôt).
+**Version :** 1.2 · **Dernière mise à jour :** 2026-04-18 (aperçu sync F4 : agrégat indisponible, succès partiel, suppression outbox prudente).
 
 **Public :** bénévoles ou salariés qui gèrent la caisse et la compta dans une ressourcerie, avec le profil **super-admin** Recyclique. Aucun prérequis comptable : les notions Paheko sont expliquées pas à pas.
 
@@ -171,6 +171,10 @@ Le champ attend l’**identifiant numérique** de l’exercice dans Paheko (Comp
 **Diagnostiquer** les envois vers Paheko après une clôture : file d’attente (`outbox`), statuts, erreurs HTTP, **quarantaine**, relecture du payload envoyé et de la réponse Paheko.
 
 Les **réglages** comptables se font dans **Paheko : clôture** et dans les **comptes globaux / moyens de paiement** ; cet onglet sert à **comprendre pourquoi** quelque chose n’est pas parti ou est en erreur.
+
+**Aperçu « situation la plus défavorable » (bandeau / santé) :** le serveur calcule un **résumé** par site. En cas d’**indisponibilité** de l’agrégat (ex. schéma ou lecture SQL), le champ `sync_aggregate_unavailable` est vrai et le résumé n’affiche **pas** un état « tout est résolu » par défaut. Lorsqu’une clôture a un **lot multi-écritures** avec **livraison partielle** côté Paheko, le résumé peut signaler un **succès partiel** : le message de la caisse le met en avant **même** si un retry est encore en attente. **Rejet** et **quarantaine** priment sur un simple « à réessayer » si les deux coexistent.
+
+**Suppression d’une ligne d’outbox en erreur (super-admin) :** la suppression d’une ligne en statut d’**échec** peut être **refusée** (réponse 409) si l’état **batch** enregistré indique un **succès partiel**, des **sous-écritures déjà livrées** côté Paheko, ou un **payload batch illisible** — le but est d’éviter d’effacer une preuve d’envoi partiel sans arbitrage. En cas de refus, suivez le support plutôt que de forcer.
 
 <a id="section-7"></a>
 
