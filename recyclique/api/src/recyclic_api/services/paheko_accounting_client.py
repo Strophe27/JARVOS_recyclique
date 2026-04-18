@@ -1,4 +1,9 @@
-"""Client HTTP minimal vers Paheko — slice comptable (Story 8.1)."""
+"""Client HTTP minimal vers Paheko — slice comptable (Story 8.1).
+
+Extension prévue (paramétrage exercice Paheko, décision produit 2026-04-18) :
+GET liste des exercices comptables Paheko — voir ``references/paheko/liste-endpoints-api-paheko.md``.
+Aucun appel GET avant une story dédiée ; auth identique au POST actuel (Basic ou Bearer legacy).
+"""
 
 from __future__ import annotations
 
