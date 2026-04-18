@@ -29,6 +29,9 @@ export const PERMISSION_CASHFLOW_REFUND = 'caisse.refund';
 /** Story 24.6 — échange matière / différence financière (sous-flux vente ou reversal). */
 export const PERMISSION_CASHFLOW_EXCHANGE = 'caisse.exchange';
 
+/** Story 24.7 — décaissement hors ticket (sous-types obligatoires). */
+export const PERMISSION_CASHFLOW_DISBURSEMENT = 'cash.disbursement';
+
 /** Story 24.5 — remboursement exceptionnel sans ticket. */
 export const PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND = 'refund.exceptional';
 
@@ -72,6 +75,7 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
         PERMISSION_CASHFLOW_DEFERRED,
         PERMISSION_CASHFLOW_REFUND,
         PERMISSION_CASHFLOW_EXCHANGE,
+        PERMISSION_CASHFLOW_DISBURSEMENT,
         PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND,
         PERMISSION_CASHFLOW_SPECIAL_ENCAISSEMENT,
         PERMISSION_CASHFLOW_SOCIAL_ENCAISSEMENT,
@@ -93,6 +97,7 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
       'nav.cashflow.close': 'Clôture de caisse',
       'nav.cashflow.specialOpsHub': 'Opérations spéciales',
       'nav.cashflow.exchange': 'Échange matière',
+      'nav.cashflow.disbursement': 'Décaissement',
       'nav.cashflow.saleCorrection': 'Correction ticket (super-admin)',
     },
   };

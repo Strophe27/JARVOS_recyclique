@@ -417,6 +417,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cash-sessions/{session_id}/disbursements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Décaissement typé hors ticket (Story 24.7)
+         * @description Enregistre un décaissement avec sous-type fermé (PRD §10.5). Permission `cash.disbursement`.
+         *     Step-up PIN (`X-Step-Up-Pin`) requis pour `validated_exceptional_outflow` et `other_admin_coded`.
+         *     **Nota 24.8** : le mouvement interne (`cash.transfer`) est un flux distinct — ne pas confondre.
+         */
+        post: operations["recyclique_cashSessions_createDisbursement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cash-sessions/{session_id}/material-exchanges": {
         parameters: {
             query?: never;
@@ -4186,6 +4208,55 @@ export interface components {
             /** @description Rappel chaîne canonique Paheko (synchro via clôture). */
             paheko_accounting_sync_hint: string;
         };
+        /**
+         * @description Sous-types fermés PRD §10.5 (distinct mouvement interne 24.8).
+         * @enum {string}
+         */
+        CashDisbursementSubtypeV1: "volunteer_expense_reimbursement" | "small_operating_expense" | "validated_exceptional_outflow" | "other_admin_coded";
+        /** @enum {string} */
+        CashDisbursementMotifCodeV1: "office_supplies" | "postage" | "volunteer_travel" | "short_external_fee" | "board_approved_other";
+        CashDisbursementCreateV1: {
+            subtype: components["schemas"]["CashDisbursementSubtypeV1"];
+            motif_code: components["schemas"]["CashDisbursementMotifCodeV1"];
+            counterparty_label: string;
+            amount: number;
+            payment_method: string;
+            free_comment?: string | null;
+            justification_reference: string;
+            /** Format: date-time */
+            actual_settlement_at: string;
+            /** @description Obligatoire si subtype = other_admin_coded (clé d'administration fermée). */
+            admin_coded_reason_key?: string | null;
+        };
+        CashDisbursementResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            /** Format: uuid */
+            sale_id: string;
+            amount: number;
+            subtype: string;
+            motif_code: string;
+            counterparty_label: string;
+            payment_method: string;
+            free_comment?: string | null;
+            justification_reference: string;
+            /** Format: date-time */
+            actual_settlement_at: string;
+            admin_coded_reason_key?: string | null;
+            /** Format: uuid */
+            initiator_user_id: string;
+            /** Format: uuid */
+            approver_user_id: string;
+            /** Format: date-time */
+            approved_at: string;
+            idempotency_key: string;
+            request_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            paheko_accounting_sync_hint: string;
+        };
         MaterialExchangeCreateV1: {
             /** @description Positif = complément (création vente) ; négatif = remboursement (reversal total sur vente source) ; zéro = matière seule (aucun PaymentTransaction pour la différence). */
             delta_amount_cents: number;
@@ -5725,6 +5796,65 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
+            };
+        };
+    };
+    recyclique_cashSessions_createDisbursement: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                /** @description Obligatoire pour les sous-types à preuve N3. */
+                "X-Step-Up-Pin"?: string;
+                "X-Request-Id"?: string;
+            };
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashDisbursementCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Décaissement enregistré */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashDisbursementResponseV1"];
+                };
+            };
+            /** @description Erreur de validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Permission ou step-up */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflit idempotence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

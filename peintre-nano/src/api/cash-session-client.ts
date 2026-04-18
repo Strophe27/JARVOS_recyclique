@@ -673,6 +673,86 @@ export async function postMaterialExchange(
   return sessionHttpError(res.status, json, 'Réponse échange matière invalide');
 }
 
+export type CashDisbursementPayload = {
+  subtype: string;
+  motif_code: string;
+  counterparty_label: string;
+  amount: number;
+  payment_method: string;
+  justification_reference: string;
+  free_comment?: string | null;
+  actual_settlement_at: string;
+  admin_coded_reason_key?: string | null;
+};
+
+export type CashDisbursementResult =
+  | { ok: true; disbursement: Record<string, unknown> }
+  | CashSessionHttpError;
+
+export type CashDisbursementOptions = {
+  idempotencyKey?: string;
+  requestId?: string;
+  /** Obligatoire pour les sous-types à preuve N3 (step-up). */
+  stepUpPin?: string;
+};
+
+/**
+ * POST /v1/cash-sessions/{session_id}/disbursements — décaissement typé (Story 24.7).
+ */
+export async function postCashDisbursement(
+  sessionId: string,
+  body: CashDisbursementPayload,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  opts?: CashDisbursementOptions,
+): Promise<CashDisbursementResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/disbursements`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const idem = opts?.idempotencyKey?.trim() || crypto.randomUUID();
+  headers['Idempotency-Key'] = idem;
+  headers['X-Request-Id'] = opts?.requestId?.trim() || crypto.randomUUID();
+  const pin = opts?.stepUpPin?.trim();
+  if (pin) {
+    headers['X-Step-Up-Pin'] = pin;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json === 'object' && json !== null && 'id' in json) {
+    return { ok: true, disbursement: json as Record<string, unknown> };
+  }
+
+  return sessionHttpError(res.status, json, 'Réponse décaissement invalide');
+}
+
 /** Détail session + ventes (GET admin) — aligné OpenAPI `CashSessionDetailResponseV1` / Story 6.8. */
 export type CashSessionDetailV1 = CashSessionCurrentV1 & {
   readonly sales?: ReadonlyArray<Record<string, unknown>>;

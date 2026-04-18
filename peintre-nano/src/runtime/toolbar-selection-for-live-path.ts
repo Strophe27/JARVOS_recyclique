@@ -33,7 +33,9 @@ export function toolbarSelectedEntryIdFromResolved(
   if (
     resolvedEntryId === 'cashflow-close' ||
     resolvedEntryId === 'cashflow-refund' ||
-    resolvedEntryId === 'cashflow-special-ops-hub'
+    resolvedEntryId === 'cashflow-special-ops-hub' ||
+    resolvedEntryId === 'cashflow-exchange' ||
+    resolvedEntryId === 'cashflow-disbursement'
   ) {
     return 'cashflow-nominal';
   }

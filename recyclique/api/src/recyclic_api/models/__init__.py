@@ -7,6 +7,7 @@ from .sale import Sale
 from .sale_reversal import SaleReversal, RefundReasonCode
 from .exceptional_refund import ExceptionalRefund
 from .material_exchange import MaterialExchange
+from .cash_disbursement import ADMIN_CODED_REASON_KEYS, CashDisbursement, CashDisbursementMotifCode, CashDisbursementSubtype
 from .sale_item import SaleItem
 from .payment_method import PaymentMethodDefinition, PaymentMethodKind
 from .payment_transaction import PaymentTransaction
@@ -50,6 +51,10 @@ __all__ = [
     "RefundReasonCode",
     "ExceptionalRefund",
     "MaterialExchange",
+    "ADMIN_CODED_REASON_KEYS",
+    "CashDisbursement",
+    "CashDisbursementMotifCode",
+    "CashDisbursementSubtype",
     "SaleItem",
     "PaymentMethodDefinition",
     "PaymentMethodKind",

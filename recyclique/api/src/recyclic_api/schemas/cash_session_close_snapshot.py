@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
 CorrectionPolicyV1 = Literal["append_only_v1"]
 """Politique unique retenue (story 22.6) : corrections post-clôture = lignes d'ajustement append-only ; pas d'UPDATE du snapshot figé."""
+
+
+class CashSessionDisbursementLineV1(BaseModel):
+    """Story 24.7 — ligne de décaissement pour libellés Paheko traçables (hors remboursement client)."""
+
+    payment_method_code: str
+    amount: float = Field(..., description="Montant décaissé (positif).")
+    subtype: str
+    label_fr: str
 
 
 class CashSessionJournalTotalsV1(BaseModel):
@@ -48,6 +57,10 @@ class CashSessionJournalTotalsV1(BaseModel):
     preview_fallback_legacy_totals: bool = Field(
         False,
         description="True si aucune ligne journal pour la session : le préavis clôture a utilisé totaux legacy.",
+    )
+    cash_disbursement_lines: List[CashSessionDisbursementLineV1] = Field(
+        default_factory=list,
+        description="Story 24.7 — détails décaissements pour libellés d'export (distinct remboursement / 24.8).",
     )
 
 

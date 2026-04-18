@@ -88,6 +88,22 @@ def redis_key_idempotent_exceptional_refund(
     )
 
 
+def body_fingerprint_cash_disbursement_json(payload: Dict[str, Any]) -> str:
+    """Story 24.7 — empreinte stable du corps décaissement typé."""
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def redis_key_idempotent_cash_disbursement(
+    operator_user_id: str, session_id: str, idempotency_key: str
+) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return (
+        f"idem:v1:cash_disbursement:{_norm_key_part(operator_user_id)}:"
+        f"{_norm_key_part(session_id)}:{ik}"
+    )
+
+
 def body_fingerprint_db_import(filename: str, file_size: int) -> str:
     """Story 16.3 — empreinte upload import (nom + taille) pour Idempotency-Key."""
     payload = {"filename": filename or "", "size": int(file_size)}

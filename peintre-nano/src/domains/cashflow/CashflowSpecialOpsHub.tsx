@@ -2,6 +2,7 @@ import { Button, Card, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
 import {
   PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
+  PERMISSION_CASHFLOW_DISBURSEMENT,
   PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND,
   PERMISSION_CASHFLOW_EXCHANGE,
   PERMISSION_CASHFLOW_NOMINAL,
@@ -25,6 +26,8 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
     keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND);
   const canExchange =
     keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_EXCHANGE);
+  const canDisburse =
+    keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_DISBURSEMENT);
   const canAdminSessions = keys.includes(TRANSVERSE_PERMISSION_ADMIN_VIEW);
 
   return (
@@ -139,8 +142,24 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
         <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-decaisser">
           <Text fw={600}>Décaisser</Text>
           <Text size="sm" c="dimmed" mt="xs">
-            À venir — story 24.7 (sous-types obligatoires, sans catégorie poubelle). Pas de parcours factice.
+            Décaissement hors ticket : sous-types fermés (PRD §10.5) — route <code>/caisse/decaissement</code>,{' '}
+            <code>page_key</code> <code>cashflow-disbursement</code>.
           </Text>
+          {canDisburse ? (
+            <Button
+              mt="md"
+              variant="light"
+              data-testid="cashflow-special-ops-decaisser-cta"
+              onClick={() => spaNavigateTo('/caisse/decaissement')}
+            >
+              Ouvrir le décaissement
+            </Button>
+          ) : (
+            <Text size="sm" c="dimmed" mt="md" data-testid="cashflow-special-ops-decaisser-blocked">
+              Permissions <code>caisse.access</code> et <code>{PERMISSION_CASHFLOW_DISBURSEMENT}</code> requises — aligné{' '}
+              <code>page-cashflow-disbursement</code>.
+            </Text>
+          )}
         </Card>
 
         <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-mouvement-interne">

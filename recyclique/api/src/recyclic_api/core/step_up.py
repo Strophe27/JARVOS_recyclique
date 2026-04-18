@@ -30,6 +30,8 @@ SENSITIVE_OPERATION_CASH_SESSION_CLOSE = "cash_session.close"
 SENSITIVE_OPERATION_CASH_SALE_CORRECT = "cash_sale.correct"
 # Story 24.5 — remboursement exceptionnel sans ticket
 SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND = "cash_session.exceptional_refund"
+# Story 24.7 — sous-types N3 (sortie exceptionnelle / autre codifié admin)
+SENSITIVE_OPERATION_CASH_DISBURSEMENT_STEP_UP = "cash_session.disbursement_step_up"
 
 # Story 16.3 — opérations base super-admin (alignement cash_session.close)
 SENSITIVE_OPERATION_DB_EXPORT = "db.export"

@@ -12,9 +12,11 @@ from sqlalchemy.orm import Session
 from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentMethodKind
 from recyclic_api.models.payment_transaction import PaymentTransaction, PaymentTransactionNature
 from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus, _normalize_payment_method_token
+from recyclic_api.models.cash_disbursement import CashDisbursement
 from recyclic_api.schemas.cash_session_close_snapshot import (
     CashSessionAccountingCloseSnapshotV1,
     CashSessionCloseSnapshotClosingV1,
+    CashSessionDisbursementLineV1,
     CashSessionJournalTotalsV1,
 )
 
@@ -25,6 +27,30 @@ def _signed_amount_raw(amount: float, direction: Optional[str]) -> float:
     if d == "outflow":
         return -amt
     return amt
+
+
+_PM_DEC_FR: dict[str, str] = {
+    "cash": "Décaissement espèces",
+    "check": "Décaissement chèque",
+    "cheque": "Décaissement chèque",
+    "card": "Décaissement carte",
+    "transfer": "Décaissement virement",
+    "bank": "Décaissement virement",
+}
+
+
+def _pm_decaissement_label_fr(code: str) -> str:
+    c = (code or "").strip().lower()
+    return _PM_DEC_FR.get(c, f"Décaissement {c}")
+
+
+def _disbursement_subtype_caption_fr(subtype: str) -> str:
+    return {
+        "volunteer_expense_reimbursement": "remboursement frais bénévole",
+        "small_operating_expense": "petite dépense de fonctionnement",
+        "validated_exceptional_outflow": "sortie exceptionnelle validée",
+        "other_admin_coded": "autre (codifié administrativement)",
+    }.get(subtype, subtype)
 
 
 def _legacy_journal_agg_key(raw: Optional[str]) -> str:
@@ -139,6 +165,25 @@ def compute_payment_journal_aggregates(
     refunds_current = round(sum(rc_by_pm.values()), 2)
     refunds_prior = round(sum(rp_by_pm.values()), 2)
 
+    disbursement_rows = (
+        db.query(CashDisbursement)
+        .filter(CashDisbursement.cash_session_id == sid)
+        .order_by(CashDisbursement.created_at.asc())
+        .all()
+    )
+    cash_disbursement_lines: list[CashSessionDisbursementLineV1] = []
+    for dr in disbursement_rows:
+        pm_key = (dr.payment_method or "").strip().lower() or "unknown"
+        cap = _disbursement_subtype_caption_fr((dr.subtype or "").strip())
+        cash_disbursement_lines.append(
+            CashSessionDisbursementLineV1(
+                payment_method_code=pm_key,
+                amount=round(float(dr.amount), 2),
+                subtype=str(dr.subtype),
+                label_fr=f"{_pm_decaissement_label_fr(pm_key)} — {cap}",
+            )
+        )
+
     return CashSessionJournalTotalsV1(
         by_payment_method_signed=dict(by_pm),
         refunds_current_fiscal_by_payment_method=rc_by_pm,
@@ -149,6 +194,7 @@ def compute_payment_journal_aggregates(
         cash_signed_net_from_journal=float(cash_net),
         payment_transaction_line_count=line_count,
         preview_fallback_legacy_totals=fallback,
+        cash_disbursement_lines=cash_disbursement_lines,
     )
 
 

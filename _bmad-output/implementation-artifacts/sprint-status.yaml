@@ -1,3 +1,5 @@
+# last_updated: 2026-04-19 — story 24-7 Story Runner fin : CS→VS→DS→GATE (lint TS fix wizard)→tests HTTP pytest→GATE→QA→CR×2 PASS ; 24-7 review→done ; vs=0 qa=0 cr=1 ; prochaine 24-8 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-7 DS bmad-dev-story : 24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle ready-for-dev → review ; permission cash.disbursement + POST disbursements + UI /caisse/decaissement ; epic-24 inchangé in-progress
 # last_updated: 2026-04-19 — story 24-6 Story Runner BMAD (brief orchestrateur parent) : CS→VS→DS→GATE×2 (répétés après QA)→QA e2e `cashflow-exchange-24-6.e2e.test.tsx`→CR PASS ; 24-6 déjà done (YAML inchangé hors trace) ; vs=0 qa=0 cr=0 ; prochaine story 24-7 backlog ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-6 Story Runner fin : CS→VS→DS→GATE FAIL (lint TS)→DS fix CashflowSubmitSurfaceError + handler NotFound/Conflict→GATE→QA→CR×2 APPROVE ; 24-6 review→done ; vs=0 qa=0 cr=1 ; prochaine 24-7 ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-6 DS bmad-dev-story Task : 24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement ready-for-dev → review ; POST /material-exchanges + permission caisse.exchange + hub /caisse/echange ; pytest story246 + vitest hub/registry ; branche epic/24-operations-speciales-orchestration
@@ -500,7 +502,7 @@ development_status:
   24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1: done
   24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification: done
   24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement: done
-  24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle: backlog
+  24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle: done
   24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client: backlog
   24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe: backlog
   24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: backlog

@@ -1216,6 +1216,62 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}/disbursements:
+    post:
+      operationId: recyclique_cashSessions_createDisbursement
+      tags:
+        - cash-sessions
+      summary: Décaissement typé hors ticket (Story 24.7)
+      description: |
+        Enregistre un décaissement avec sous-type fermé (PRD §10.5). Permission `cash.disbursement`.
+        Step-up PIN (`X-Step-Up-Pin`) requis pour `validated_exceptional_outflow` et `other_admin_coded`.
+        **Nota 24.8** : le mouvement interne (`cash.transfer`) est un flux distinct — ne pas confondre.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Step-Up-Pin
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Obligatoire pour les sous-types à preuve N3.
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashDisbursementCreateV1"
+      responses:
+        "201":
+          description: Décaissement enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashDisbursementResponseV1"
+        "400":
+          description: Erreur de validation
+        "403":
+          description: Permission ou step-up
+        "404":
+          description: Session introuvable
+        "409":
+          description: Conflit idempotence
   /v1/cash-sessions/{session_id}/material-exchanges:
     post:
       operationId: recyclique_cashSessions_createMaterialExchange
@@ -10666,6 +10722,132 @@ components:
         paheko_accounting_sync_hint:
           type: string
           description: Rappel chaîne canonique Paheko (synchro via clôture).
+      additionalProperties: false
+    CashDisbursementSubtypeV1:
+      type: string
+      enum:
+        - volunteer_expense_reimbursement
+        - small_operating_expense
+        - validated_exceptional_outflow
+        - other_admin_coded
+      description: Sous-types fermés PRD §10.5 (distinct mouvement interne 24.8).
+    CashDisbursementMotifCodeV1:
+      type: string
+      enum:
+        - office_supplies
+        - postage
+        - volunteer_travel
+        - short_external_fee
+        - board_approved_other
+    CashDisbursementCreateV1:
+      type: object
+      required:
+        - subtype
+        - motif_code
+        - counterparty_label
+        - amount
+        - payment_method
+        - justification_reference
+        - actual_settlement_at
+      properties:
+        subtype:
+          $ref: "#/components/schemas/CashDisbursementSubtypeV1"
+        motif_code:
+          $ref: "#/components/schemas/CashDisbursementMotifCodeV1"
+        counterparty_label:
+          type: string
+          minLength: 1
+          maxLength: 500
+        amount:
+          type: number
+          minimum: 0.01
+        payment_method:
+          type: string
+        free_comment:
+          type: string
+          nullable: true
+          maxLength: 2000
+        justification_reference:
+          type: string
+          minLength: 1
+          maxLength: 256
+        actual_settlement_at:
+          type: string
+          format: date-time
+        admin_coded_reason_key:
+          type: string
+          nullable: true
+          description: Obligatoire si subtype = other_admin_coded (clé d'administration fermée).
+      additionalProperties: false
+    CashDisbursementResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - sale_id
+        - amount
+        - subtype
+        - motif_code
+        - counterparty_label
+        - payment_method
+        - justification_reference
+        - actual_settlement_at
+        - initiator_user_id
+        - approver_user_id
+        - approved_at
+        - idempotency_key
+        - created_at
+        - paheko_accounting_sync_hint
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        sale_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        subtype:
+          type: string
+        motif_code:
+          type: string
+        counterparty_label:
+          type: string
+        payment_method:
+          type: string
+        free_comment:
+          type: string
+          nullable: true
+        justification_reference:
+          type: string
+        actual_settlement_at:
+          type: string
+          format: date-time
+        admin_coded_reason_key:
+          type: string
+          nullable: true
+        initiator_user_id:
+          type: string
+          format: uuid
+        approver_user_id:
+          type: string
+          format: uuid
+        approved_at:
+          type: string
+          format: date-time
+        idempotency_key:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        paheko_accounting_sync_hint:
+          type: string
       additionalProperties: false
     MaterialExchangeCreateV1:
       type: object

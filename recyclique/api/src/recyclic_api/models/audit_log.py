@@ -48,6 +48,7 @@ class AuditActionType(str, enum.Enum):
     CASH_EXCEPTIONAL_REFUND = "cash_exceptional_refund"
     # Story 24.6 — échange matière (conteneur ; sous-flux vente / reversal liés)
     CASH_MATERIAL_EXCHANGE = "cash_material_exchange"
+    CASH_DISBURSEMENT = "cash_disbursement"
 
     # Actions système
     SYSTEM_CONFIG_CHANGED = "system_config_changed"
