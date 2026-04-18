@@ -31,7 +31,7 @@ Charger des fichiers plus anciens uniquement si le sujet l'exige explicitement.
 
 ## Mise a jour des index
 
-- Nouveau fichier dans `artefacts/`, `recherche/`, `ecosysteme/`, `migration-paeco/`, `vision-projet/`, `ancien-repo/` : mettre a jour le index du dossier concerne (`references/<dossier>/index.md`).
+- Nouveau fichier dans `artefacts/`, `recherche/`, `ecosysteme/`, `migration-paheko/`, `vision-projet/`, `ancien-repo/` : mettre a jour le index du dossier concerne (`references/<dossier>/index.md`).
 - `references/idees-kanban/` : gere par le skill **idees-kanban** — ne pas mettre a jour `references/idees-kanban/index.md` manuellement.
 - `references/_depot/` : ventilation geree par le skill **traiter-depot** — ne pas ventiler manuellement sans suivre ce skill.
 - Nouveau sous-dossier dans `references/` : mettre a jour `references/index.md`. Liste complete des dossiers et regles : `references/INSTRUCTIONS-PROJET.md`.

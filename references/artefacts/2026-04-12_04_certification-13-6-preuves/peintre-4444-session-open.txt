@@ -1,0 +1,16 @@
+uid=26_0 RootWebArea "Peintre_nano — socle v2" url="http://localhost:4444/cash-register/session/open?register_id=31d56e8f-08ec-4907-9163-2a5c49c5f2fe"
+  uid=26_1 navigation "Zone navigation"
+    uid=26_2 StaticText "RecyClique"
+    uid=26_3 button "Tableau de bord"
+    uid=26_4 button "Caisse"
+    uid=26_5 button "Réception"
+    uid=26_6 button "Administration"
+    uid=26_7 button "admin" expandable haspopup="menu"
+  uid=26_8 main
+    uid=26_9 heading "Ouverture de Session de Caisse" level="2"
+    uid=26_10 StaticText "Indiquez le fond de caisse initial, puis validez pour ouvrir la session, ou annulez pour revenir à la sélection du poste."
+    uid=26_11 StaticText "Fond de caisse initial"
+    uid=26_12 textbox "Fond de caisse initial"
+    uid=26_13 button "Annuler"
+    uid=26_14 button "Ouvrir la Session" disableable disabled
+    uid=26_15 StaticText "Saisissez le fond de caisse initial."

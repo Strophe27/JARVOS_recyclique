@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "page_key": "transverse-consultation-article",
+  "required_permission_keys": ["transverse.consultation.hub.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "consultation.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Consultation transverse — fiche-type article",
+        "body": "Placeholder compositionnel sous PageManifest : structure de slots pour une future fiche article branchée sur l'API. Aucune donnée métier simulée."
+      }
+    },
+    {
+      "slot_id": "consultation.context",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Permissions et site",
+        "body": "Garde alignée sur required_permission_keys du manifeste et sur l'enveloppe autoritative ; requires_site exige un site actif dans le ContextEnvelope."
+      }
+    },
+    {
+      "slot_id": "consultation.not-migrated",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Hors périmètre flows riches",
+        "body": "Les parcours caisse, réception, sync et modules sensibles (Epic 6 à 9) ne sont pas exposés depuis cette vue. Utilisez la navigation latérale pour les zones déjà sous contrat (dashboard, admin placeholder, listings hubs)."
+      }
+    },
+    {
+      "slot_id": "consultation.data-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Champs et relations (gap documenté)",
+        "body": "Aucun data_contract : les attributs article, stocks et historiques suivront les schémas OpenAPI ; jusqu'alors seuls des blocs demo.text.block allowlistés sont rendus."
+      }
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+.root {
+  font-size: var(--pn-text-sm, 0.875rem);
+  color: var(--pn-color-fg, inherit);
+}
+
+.list {
+  margin: 0;
+  padding-inline-start: 1rem;
+  list-style: disc;
+}
+
+.item {
+  margin-block: 0.25rem;
+}
+
+.label {
+  font-weight: 500;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--pn-space-xs, 0.25rem);
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+  border-radius: var(--pn-radius-sm, 4px);
+}
+
+.navButton:hover {
+  text-decoration: underline;
+}
+
+.navButton[aria-current='true'] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.empty {
+  margin: 0;
+  color: var(--pn-color-muted, #868e96);
+  font-size: var(--pn-text-sm, 0.875rem);
+}
+
+.rootToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-md, 1rem);
+}
+
+.rootToolbar .list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pn-space-xs, 0.25rem) var(--pn-space-md, 1rem);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.rootToolbar .item {
+  margin: 0;
+}
+
+.rootToolbar .navButton {
+  padding: var(--pn-space-xs, 0.25rem) var(--pn-space-sm, 0.5rem);
+  border-radius: var(--pn-radius-sm, 4px);
+  color: var(--pn-color-text, inherit);
+}
+
+.rootToolbar .navButton:hover {
+  background: rgb(0 0 0 / 4%);
+  text-decoration: none;
+}
+
+.rootToolbar .navButton[aria-current='true'] {
+  color: #2b8a3e;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: inset 0 -2px 0 #2b8a3e;
+}
+
+.toolbarEnd {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+
+/* --- Auth live : parité barre `Header.jsx` (recyclique-1.4.4) --- */
+.rootToolbarLegacy {
+  color: #fff;
+  font-size: 0.9375rem;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 12%);
+}
+
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-md, 1rem);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.rootToolbarLegacy .list {
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 0.25rem 1.75rem;
+}
+
+.rootToolbarLegacy .navButton {
+  color: #fff;
+  padding: 0.45rem 0.85rem;
+  border-radius: 4px;
+}
+
+.rootToolbarLegacy .navButton:hover {
+  background: rgb(255 255 255 / 10%);
+  text-decoration: none;
+}
+
+.rootToolbarLegacy .navButton[aria-current='true'] {
+  background: rgb(255 255 255 / 20%);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: none;
+}

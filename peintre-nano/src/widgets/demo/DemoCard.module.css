@@ -1,0 +1,16 @@
+.root {
+  box-sizing: border-box;
+  padding: var(--pn-space-md);
+  background: var(--pn-color-surface);
+  border: 1px solid var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+}
+
+.title {
+  margin: 0 0 var(--pn-space-sm);
+  color: var(--pn-color-text);
+}
+
+.body {
+  margin: 0;
+}

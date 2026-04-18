@@ -1,0 +1,34 @@
+{
+  "version": "1",
+  "page_key": "cashflow-nominal",
+  "required_permission_any_keys": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "caisse-brownfield-dashboard",
+      "widget_props": {
+        "presentation_surface": "hub",
+        "workspace_heading": "Sélection du Poste de Caisse",
+        "workspace_intro": "Choisissez un poste de caisse, vérifiez son statut, puis ouvrez une session pour accéder à la vente. Les accès caisse virtuelle et saisie différée suivent vos permissions.",
+        "show_virtual_special_card": true,
+        "show_deferred_special_card": true,
+        "fund_field_label": "Fond de caisse (€)",
+        "submit_session_label": "Ouvrir la session",
+        "register_row_heading": "Poste de caisse",
+        "open_register_cta_label": "Ouvrir",
+        "modes_section_title": "Caisse virtuelle, saisie différée et poste réel (permissions)"
+      }
+    },
+    {
+      "slot_id": "aside",
+      "widget_type": "caisse-current-ticket",
+      "widget_props": {}
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-nominal-wizard",
+      "widget_props": {}
+    }
+  ]
+}

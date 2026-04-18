@@ -1,0 +1,10 @@
+.root {
+  margin: 0;
+  padding-left: var(--pn-list-indent);
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text);
+}
+
+.item {
+  margin: var(--pn-space-xs) 0;
+}

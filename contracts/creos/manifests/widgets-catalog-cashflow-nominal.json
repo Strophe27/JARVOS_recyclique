@@ -1,0 +1,171 @@
+{
+  "version": "1",
+  "description": "Catalogue CREOS — slice caisse nominal v2 (Story 6.1). Référence OpenAPI : recyclique_sales_* sous /v1/sales.",
+  "widgets": [
+    {
+      "type": "caisse-brownfield-dashboard",
+      "component": "caisse-brownfield-dashboard",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "6.1"
+      }
+    },
+    {
+      "type": "caisse-current-ticket",
+      "component": "caisse-current-ticket",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "6.1"
+      },
+      "data_contract": {
+        "source": "sales",
+        "operation_id": "recyclique_sales_getSale",
+        "endpoint_hint": "GET /v1/sales/{sale_id}",
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "cashflow-nominal-wizard",
+      "component": "cashflow-nominal-wizard",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "6.1"
+      }
+    },
+    {
+      "type": "cashflow-refund-wizard",
+      "component": "cashflow-refund-wizard",
+      "meta_props": {
+        "slice": "cashflow-refund",
+        "story": "6.4"
+      },
+      "data_contract": {
+        "source": "sales",
+        "operation_id": "recyclique_sales_createSaleReversal",
+        "endpoint_hint": "POST /v1/sales/reversals",
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "cashflow-special-don-wizard",
+      "component": "cashflow-special-don-wizard",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "6.5"
+      },
+      "data_contract": {
+        "source": "sales",
+        "operation_id": "recyclique_sales_createSale",
+        "endpoint_hint": "POST /v1/sales/",
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "cashflow-special-adhesion-wizard",
+      "component": "cashflow-special-adhesion-wizard",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "6.5"
+      },
+      "data_contract": {
+        "source": "sales",
+        "operation_id": "recyclique_sales_createSale",
+        "endpoint_hint": "POST /v1/sales/",
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "cashflow-social-don-wizard",
+      "component": "cashflow-social-don-wizard",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "6.6"
+      },
+      "data_contract": {
+        "source": "sales",
+        "operation_id": "recyclique_sales_createSale",
+        "endpoint_hint": "POST /v1/sales/",
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "cashflow-close-wizard",
+      "component": "cashflow-close-wizard",
+      "meta_props": {
+        "slice": "cashflow-close",
+        "story": "6.7"
+      },
+      "data_contract": {
+        "source": "cash-sessions",
+        "operation_id": "recyclique_cashSessions_getCurrentOpenSession",
+        "endpoint_hint": "GET /v1/cash-sessions/current ; mutation close : operationId recyclique_cashSessions_closeSession (POST /v1/cash-sessions/{id}/close)",
+        "secondary_sources": [
+          {
+            "source": "cash-sessions",
+            "operation_id": "recyclique_cashSessions_closeSession",
+            "endpoint_hint": "POST /v1/cash-sessions/{session_id}/close"
+          }
+        ],
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "cashflow-sale-correction-wizard",
+      "component": "cashflow-sale-correction-wizard",
+      "meta_props": {
+        "slice": "cashflow-sale-correction",
+        "story": "6.8"
+      },
+      "data_contract": {
+        "source": "sales",
+        "operation_id": "recyclique_sales_correctSaleSensitive",
+        "endpoint_hint": "PATCH /v1/sales/{sale_id}/corrections",
+        "secondary_sources": [
+          {
+            "source": "sales",
+            "operation_id": "recyclique_sales_getSale",
+            "endpoint_hint": "GET /v1/sales/{sale_id}"
+          }
+        ],
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "admin-cash-session-detail",
+      "component": "admin-cash-session-detail",
+      "meta_props": {
+        "slice": "admin-cash-session-detail",
+        "story": "6.8"
+      },
+      "data_contract": {
+        "source": "cash-sessions",
+        "operation_id": "recyclique_cashSessions_getSessionDetail",
+        "endpoint_hint": "GET /v1/cash-sessions/{session_id}",
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "category-hierarchy-picker",
+      "component": "category-hierarchy-picker",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "13.8"
+      },
+      "data_contract": {
+        "source": "stats-legacy",
+        "operation_id": "legacy_list_categories",
+        "endpoint_hint": "GET /v1/categories/",
+        "refresh": "manual",
+        "critical": false
+      }
+    }
+  ]
+}

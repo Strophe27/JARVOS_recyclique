@@ -1,0 +1,144 @@
+"""
+Stockage Redis des réponses idempotentes (Story 2.4) — mutations sensibles.
+
+Clé : utilisateur + périmètre métier + Idempotency-Key ; TTL limité.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+from typing import Any, Dict, Optional, Tuple
+
+import redis
+from fastapi import HTTPException, status
+
+logger = logging.getLogger(__name__)
+
+_IDEMPOTENCY_TTL_SEC = 86400
+_MAX_IDEMPOTENCY_KEY_LEN = 128
+
+
+def _norm_key_part(s: str) -> str:
+    return s.strip()[:_MAX_IDEMPOTENCY_KEY_LEN]
+
+
+def body_fingerprint_close_json(payload: Dict[str, Any]) -> str:
+    """Empreinte stable du corps de fermeture de session (ordre de clés fixe)."""
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def body_fingerprint_sale_correction_json(payload: Dict[str, Any]) -> str:
+    """Story 6.8 — empreinte stable du corps PATCH correction vente."""
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def redis_key_idempotent_close(user_id: str, session_id: str, idempotency_key: str) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:close:{user_id}:{session_id}:{ik}"
+
+
+def redis_key_idempotent_sale_correction(user_id: str, sale_id: str, idempotency_key: str) -> str:
+    """Story 6.8 — clé Redis idempotence correction vente."""
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:sale_correct:{user_id}:{sale_id}:{ik}"
+
+
+def body_fingerprint_sale_create_json(payload: Dict[str, Any]) -> str:
+    """Empreinte stable du corps POST /v1/sales/ (JSON canonique trié)."""
+    return body_fingerprint_close_json(payload)
+
+
+def body_fingerprint_sale_finalize_held_json(payload: Dict[str, Any]) -> str:
+    """Empreinte stable du corps POST /v1/sales/{id}/finalize-held."""
+    return body_fingerprint_close_json(payload)
+
+
+def redis_key_idempotent_sale_create(operator_user_id: str, idempotency_key: str) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:sale_create:{_norm_key_part(operator_user_id)}:{ik}"
+
+
+def redis_key_idempotent_sale_finalize(
+    operator_user_id: str, sale_id: str, idempotency_key: str
+) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return (
+        f"idem:v1:sale_finalize:{_norm_key_part(operator_user_id)}:"
+        f"{_norm_key_part(sale_id)}:{ik}"
+    )
+
+
+def body_fingerprint_db_import(filename: str, file_size: int) -> str:
+    """Story 16.3 — empreinte upload import (nom + taille) pour Idempotency-Key."""
+    payload = {"filename": filename or "", "size": int(file_size)}
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def body_fingerprint_sensitive_no_body() -> str:
+    """Story 16.3 — mutation sensible sans corps JSON (ex. purge DB)."""
+    return body_fingerprint_close_json({})
+
+
+def redis_key_db_import_idempotent(user_id: str, idempotency_key: str) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:db_import:{_norm_key_part(user_id)}:{ik}"
+
+
+def redis_key_db_purge_idempotent(user_id: str, idempotency_key: str) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return f"idem:v1:db_purge:{_norm_key_part(user_id)}:{ik}"
+
+
+def get_cached_idempotent_close(
+    redis_client: redis.Redis, redis_key: str
+) -> Optional[Dict[str, Any]]:
+    try:
+        raw = redis_client.get(redis_key)
+        if not raw:
+            return None
+        return json.loads(raw)
+    except Exception as e:
+        logger.warning("idempotency get failed key=%s err=%s", redis_key, type(e).__name__)
+        return None
+
+
+def validate_or_raise_idempotency_conflict(
+    cached: Dict[str, Any], body_fp: str
+) -> Tuple[int, Dict[str, Any]]:
+    """
+    Si une entrée existe déjà, exige la même empreinte de corps ; sinon 409.
+    Retourne (status_code, body) à rejouer.
+    """
+    prev_fp = cached.get("body_fingerprint")
+    if prev_fp != body_fp:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "IDEMPOTENCY_KEY_CONFLICT",
+                "message": "Idempotency-Key déjà utilisé avec un corps différent.",
+            },
+        )
+    return int(cached["status_code"]), cached["body"]
+
+
+def store_idempotent_close(
+    redis_client: redis.Redis,
+    redis_key: str,
+    body_fp: str,
+    status_code: int,
+    response_body: Dict[str, Any],
+) -> None:
+    try:
+        payload = {
+            "body_fingerprint": body_fp,
+            "status_code": status_code,
+            "body": response_body,
+        }
+        redis_client.setex(redis_key, _IDEMPOTENCY_TTL_SEC, json.dumps(payload))
+    except Exception as e:
+        logger.warning("idempotency set failed key=%s err=%s", redis_key, type(e).__name__)

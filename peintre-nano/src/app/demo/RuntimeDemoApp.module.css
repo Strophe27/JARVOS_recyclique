@@ -1,0 +1,36 @@
+/* Bac à sable runtime : CSS Modules + tokens (ADR P1) — pas de layout shell Mantine. */
+.sandboxBanner {
+  box-sizing: border-box;
+  padding: var(--pn-space-sm) var(--pn-space-md);
+  border: 1px dashed var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+  background: color-mix(in srgb, var(--pn-color-surface) 85%, var(--pn-color-border));
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text-muted);
+}
+
+.sandboxTitle {
+  margin: 0 0 var(--pn-space-xs);
+  font-size: var(--pn-font-size-sm);
+  font-weight: 600;
+  color: var(--pn-color-text);
+}
+
+.sandboxHint {
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Bandeau diagnostic `restriction_message` (story 5.5) — présentation seule, au-dessus du shell grille. */
+.contextRestrictionBanner {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 var(--pn-space-sm);
+  padding: var(--pn-space-xs) var(--pn-space-md);
+  border-radius: var(--pn-radius-md);
+  background: color-mix(in srgb, var(--pn-color-warning, #b45309) 12%, var(--pn-color-surface));
+  border: 1px solid color-mix(in srgb, var(--pn-color-warning, #b45309) 35%, var(--pn-color-border));
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text);
+  line-height: 1.4;
+}

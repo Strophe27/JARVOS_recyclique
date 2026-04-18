@@ -1,0 +1,264 @@
+"""
+Tests for Story B48-P1: Soft Delete des Catégories
+
+Tests unitaires et d'intégration pour :
+- Soft Delete avec deleted_at
+- Restauration de catégories archivées
+- Validation hiérarchie (empêche désactivation si enfants actifs)
+- Filtrage dans APIs opérationnelles vs admin
+"""
+
+import pytest
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+from uuid import uuid4
+
+from recyclic_api.core.exceptions import ConflictError, ValidationError
+from recyclic_api.models.category import Category
+from recyclic_api.services.category_service import CategoryService
+from recyclic_api.services.category_management import CategoryManagementService
+
+
+class TestCategorySoftDelete:
+    """Tests unitaires pour le Soft Delete avec deleted_at"""
+
+    @pytest.mark.asyncio
+    async def test_soft_delete_sets_deleted_at(self, db_session: Session):
+        """Test que soft_delete_category() définit deleted_at au lieu de is_active=False"""
+        service = CategoryService(db_session)
+        
+        # Créer une catégorie
+        category = Category(
+            id=uuid4(),
+            name="Test Category",
+            is_active=True
+        )
+        db_session.add(category)
+        db_session.commit()
+        
+        # Soft delete
+        result = await service.soft_delete_category(str(category.id))
+        
+        # Vérifier que deleted_at est défini
+        assert result is not None
+        assert result.deleted_at is not None
+        assert isinstance(result.deleted_at, datetime)
+        
+        # Vérifier dans la DB
+        db_session.refresh(category)
+        assert category.deleted_at is not None
+        assert category.is_active is True  # is_active reste True
+
+    @pytest.mark.asyncio
+    async def test_soft_delete_with_active_children_fails(self, db_session: Session):
+        """Test que soft_delete_category() échoue si la catégorie a des enfants actifs"""
+        service = CategoryService(db_session)
+        
+        # Créer catégorie parente
+        parent = Category(
+            id=uuid4(),
+            name="Parent Category",
+            is_active=True
+        )
+        db_session.add(parent)
+        db_session.commit()
+        
+        # Créer catégorie enfant active
+        child = Category(
+            id=uuid4(),
+            name="Child Category",
+            is_active=True,
+            parent_id=parent.id,
+            deleted_at=None  # Enfant actif (non archivé)
+        )
+        db_session.add(child)
+        db_session.commit()
+        
+        # Tentative de soft delete du parent (doit échouer)
+        with pytest.raises(ConflictError) as exc_info:
+            await service.soft_delete_category(str(parent.id))
+        
+        error_detail = exc_info.value.detail
+        assert isinstance(error_detail, dict)
+        assert "active_children_count" in error_detail
+        assert error_detail["active_children_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_soft_delete_with_archived_children_succeeds(self, db_session: Session):
+        """Test que soft_delete_category() réussit si tous les enfants sont archivés"""
+        service = CategoryService(db_session)
+        
+        # Créer catégorie parente
+        parent = Category(
+            id=uuid4(),
+            name="Parent Category",
+            is_active=True
+        )
+        db_session.add(parent)
+        db_session.commit()
+        
+        # Créer catégorie enfant archivée
+        child = Category(
+            id=uuid4(),
+            name="Child Category",
+            is_active=True,
+            parent_id=parent.id,
+            deleted_at=datetime.now(timezone.utc)  # Enfant archivé
+        )
+        db_session.add(child)
+        db_session.commit()
+        
+        # Soft delete du parent (doit réussir)
+        result = await service.soft_delete_category(str(parent.id))
+        
+        assert result is not None
+        assert result.deleted_at is not None
+
+
+class TestCategoryRestore:
+    """Tests pour la restauration de catégories archivées"""
+
+    @pytest.mark.asyncio
+    async def test_restore_category_sets_deleted_at_to_none(self, db_session: Session):
+        """Test que restore_category() remet deleted_at à NULL"""
+        service = CategoryService(db_session)
+        
+        # Créer une catégorie archivée
+        category = Category(
+            id=uuid4(),
+            name="Archived Category",
+            is_active=True,
+            deleted_at=datetime.now(timezone.utc)
+        )
+        db_session.add(category)
+        db_session.commit()
+        
+        # Restaurer
+        result = await service.restore_category(str(category.id))
+        
+        # Vérifier que deleted_at est NULL
+        assert result is not None
+        assert result.deleted_at is None
+        
+        # Vérifier dans la DB
+        db_session.refresh(category)
+        assert category.deleted_at is None
+
+    @pytest.mark.asyncio
+    async def test_restore_already_active_category_fails(self, db_session: Session):
+        """Test que restore_category() échoue si la catégorie n'est pas archivée"""
+        service = CategoryService(db_session)
+        
+        # Créer une catégorie active (non archivée)
+        category = Category(
+            id=uuid4(),
+            name="Active Category",
+            is_active=True,
+            deleted_at=None
+        )
+        db_session.add(category)
+        db_session.commit()
+        
+        # Tentative de restauration (doit échouer)
+        with pytest.raises(ValidationError) as exc_info:
+            await service.restore_category(str(category.id))
+        
+        assert "already active" in str(exc_info.value).lower()
+
+
+class TestCategoryFiltering:
+    """Tests pour le filtrage des catégories archivées"""
+
+    @pytest.mark.asyncio
+    async def test_get_categories_excludes_archived_by_default(self, db_session: Session):
+        """Test que get_categories() exclut les catégories archivées par défaut"""
+        service = CategoryService(db_session)
+
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None)
+        archived = Category(
+            id=uuid4(), name=f"Archived_{tag}", is_active=True, deleted_at=datetime.now(timezone.utc)
+        )
+
+        db_session.add_all([active, archived])
+        db_session.commit()
+
+        categories = await service.get_categories(include_archived=False)
+
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 1
+        assert ours[0].name == f"Active_{tag}"
+        assert ours[0].deleted_at is None
+
+    @pytest.mark.asyncio
+    async def test_get_categories_includes_archived_when_requested(self, db_session: Session):
+        """Test que get_categories() inclut les catégories archivées si include_archived=True"""
+        service = CategoryService(db_session)
+
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None)
+        archived = Category(
+            id=uuid4(), name=f"Archived_{tag}", is_active=True, deleted_at=datetime.now(timezone.utc)
+        )
+
+        db_session.add_all([active, archived])
+        db_session.commit()
+
+        categories = await service.get_categories(include_archived=True)
+
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 2
+        names = {cat.name for cat in ours}
+        assert f"Active_{tag}" in names
+        assert f"Archived_{tag}" in names
+
+    @pytest.mark.asyncio
+    async def test_operational_endpoints_exclude_archived(self, db_session: Session):
+        """Test que les endpoints opérationnels excluent les catégories archivées"""
+        management_service = CategoryManagementService(db_session)
+
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None, is_visible=True)
+        archived = Category(
+            id=uuid4(),
+            name=f"Archived_{tag}",
+            is_active=True,
+            deleted_at=datetime.now(timezone.utc),
+            is_visible=True,
+        )
+
+        db_session.add_all([active, archived])
+        db_session.commit()
+
+        categories = await management_service.get_categories_for_entry_tickets()
+
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 1
+        assert ours[0].name == f"Active_{tag}"
+        assert ours[0].deleted_at is None
+
+    @pytest.mark.asyncio
+    async def test_operational_endpoints_sale_tickets_exclude_archived(self, db_session: Session):
+        """Test que les endpoints sale tickets excluent aussi les catégories archivées"""
+        management_service = CategoryManagementService(db_session)
+
+        tag = uuid4().hex[:8]
+        active = Category(id=uuid4(), name=f"Active_{tag}", is_active=True, deleted_at=None)
+        archived = Category(
+            id=uuid4(), name=f"Archived_{tag}", is_active=True, deleted_at=datetime.now(timezone.utc)
+        )
+
+        db_session.add_all([active, archived])
+        db_session.commit()
+
+        categories = await management_service.get_categories_for_sale_tickets()
+
+        our_names = {f"Active_{tag}", f"Archived_{tag}"}
+        ours = [c for c in categories if c.name in our_names]
+        assert len(ours) == 1
+        assert ours[0].name == f"Active_{tag}"
+        assert ours[0].deleted_at is None
+

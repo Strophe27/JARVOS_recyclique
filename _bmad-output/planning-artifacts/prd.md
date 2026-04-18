@@ -1,461 +1,1142 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-02b-vision, step-02c-executive-summary, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional, step-11-polish, step-12-complete, step-e-01-discovery, step-e-02-review, step-e-03-edit]
-inputDocuments:
-  - _bmad-output/planning-artifacts/product-brief-JARVOS_recyclique-2026-02-25.md
-  - _bmad-output/planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md
-  - references/index.md
-  - references/ou-on-en-est.md
-  - references/versioning.md
-  - references/artefacts/2026-02-24_06_brainstorm-migration-paheko.md
-  - references/artefacts/2026-02-24_07_design-systeme-modules.md
-  - references/artefacts/2026-02-25_06_point-global-avant-prd.md
-  - references/artefacts/2026-02-25_07_decisions-push-redis-source-eee.md
-  - references/artefacts/2026-02-25_08_session-confrontation-recyclic-paheko.md
-  - references/migration-paeco/audits/matrice-correspondance-caisse-poids.md
-  - references/artefacts/2026-02-26_01_analyse-separation-frontend-backend-recyclic.md
-  - references/artefacts/2026-02-26_02_track-enterprise-multi-utilisateur.md
-workflowType: 'prd'
-briefCount: 1
-researchCount: 1
-brainstormingCount: 1
-projectDocsCount: 8
+stepsCompleted:
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
+workflowType: prd
+workflow: edit
 classification:
-  projectType: web_app_fullstack_api
-  domain: ressourcerie_economie_circulaire
-  complexity: high
-  projectContext: brownfield
-bmadTrack: enterprise
-date: 2026-02-26
-author: Strophe
-lastEdited: '2026-02-26'
+  domain: logiciel-metier-terrain-compta-oss
+  projectType: web_app
+  complexity: medium
+inputDocuments:
+  - _bmad-output/planning-artifacts/product-brief-JARVOS_recyclique-2026-03-31.md
+  - references/vision-projet/2026-03-31_decision-directrice-v2.md
+  - .cursor/plans/cadrage-v2-global_c2cc7c6d.plan.md
+  - .cursor/plans/separation-peintre-recyclique_4777808d.plan.md
+  - .cursor/plans/profil-creos-minimal_6cf1006d.plan.md
+  - references/vision-projet/2026-03-31_peintre-nano-concept-architectural.md
+  - references/peintre/index.md
+  - references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md
+  - references/peintre/2026-04-01_fondations-concept-peintre-nano-extraits.md
+  - references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md
+  - references/peintre/2026-04-01_instruction-cursor-p1-p2.md
+  - references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md
+  - _bmad-output/brainstorming/brainstorming-session-2026-03-31-195824.md
+  - references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md
+  - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-15-caisse-compta-paheko-rebaseline.md
+source_of_truth: references/vision-projet/2026-03-31_decision-directrice-v2.md
+validationReportUsed: _bmad-output/planning-artifacts/prd-validation-report-2026-04-15-post-edit.md
+priorValidationReport: _bmad-output/planning-artifacts/prd-validation-report-2026-04-01.md
+document_date: '2026-03-31'
+lastEdited: '2026-04-15'
 editHistory:
-  - date: '2026-02-26'
-    changes: Intégration décision un container RecyClique (front + middleware), préconisations migration v1 (artefact 2026-02-26_01). Sections mises à jour : Project Classification, Technical Success, Implementation Considerations, nouvelle sous-section Déploiement et préconisations, FR18, Références.
-  - date: '2026-02-26'
-    changes: Track BMAD Enterprise. Frontmatter bmadTrack; sections Modèle de déploiement / tenancy, Rôles et permissions (matrice RBAC), Compliance (track Enterprise) avec référence NFR-S.
-  - date: '2026-02-26'
-    changes: Post-validation (rapport 2026-02-26). NFR-P2 borné à 10 s ; FR13b précision périmètre module correspondance (figé quand BDD/instance dev stabilisées) ; nouvelle section Traçabilité FR → Parcours (tableau annexe).
-  - date: '2026-02-26'
-    changes: Ajout FR27 — Gestion documentaire RecyClique (statutaire, com, prise de notes, stockage K-Drive ou volume dédié, évolution JARVOS Nano/Mini pour recherche et édition intelligentes).
+  - date: '2026-04-15'
+    changes: 'Post-validation BMAD — ajout d un resume executif et du diagnostic brownfield, durcissement des exigences web_app (navigateurs, accessibilite, SEO), criteres plus testables sur parcours/gates/NFR, reduction des fuites d implementation residuelles et fermeture de plusieurs gaps de tracabilite.'
+  - date: '2026-04-15'
+    changes: 'Edit-prd BMAD post-correct-course approuve — integration canonique mince du delta caisse/compta/Paheko (source de verite comptable locale, paiement mixte/don/free/remboursement, snapshot de session, lot de sync Paheko, distinction admin simple vs parametrage comptable sensible) avec renvois vers le PRD specialise et la sprint change proposal.'
+  - date: '2026-04-01'
+    changes: 'Post-validation BMAD — frontmatter classification, note decisions perimetre/contrats, index trace FR/NFR vers epics, synthese UX canal web, cadre mesures perf sans nouveaux seuils.'
+  - date: '2026-04-01'
+    changes: 'Post-QA2 — validationReport chain (post-edit + prior), complexity medium, §17/§16/HelloAsso, §14.3 renvoi §16.3-FR73-NFR27, §11.5 hors Debian, §10.1/§10.2 preuve mapping et extension liste actions critiques ; QA finale typo livrables §17.'
 ---
 
-# Product Requirements Document - JARVOS_recyclique
+# PRD — JARVOS Recyclique v2
 
-**Author:** Strophe
-**Date:** 2026-02-26
+**Auteur :** Strophe  
+**Date de redaction initiale :** 2026-03-31  
+**Derniere revision documentaire :** 2026-04-15 (delta canonique caisse/compta/Paheko + durcissement post-validation BMAD)  
+**Source de verite de cadrage :** `references/vision-projet/2026-03-31_decision-directrice-v2.md`  
+**Statut :** Actif — base pour architecture et epics  
+**Documentation de travail Peintre (pipeline, extraits, index) :** `references/peintre/index.md` — alignee PRD ; en cas d'ecart, ce PRD et l'architecture BMAD font foi.
 
-## Executive Summary
+**Sous-domaine specialise caisse/compta/Paheko :**
+- **PRD detaille :** `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md`
+- **Correct course approuve :** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-15-caisse-compta-paheko-rebaseline.md`
 
-JARVOS Recyclique est la refonte complète de RecyClique (v1.4.4) au service des ressourceries. L'objectif est une plateforme unifiée où **RecyClique est l'interface principale** : caisse, réception, compta, utilisateurs, adhésions, vie associative. **Dans l'idéal, aucun utilisateur n'ouvre Paheko** : Paheko (compta, utilisateurs, adhésions, plugins) et, plus tard, JARVOS Nano puis Mini (surcouche cognitive) sont des moteurs derrière RecyClique. Le problème adressé : double saisie caisse–compta, dette technique et risques de la 1.4.4, absence d'intégration réelle entre RecyClique et Paheko. Utilisateurs cibles : opérateurs terrain (caisse, réception), responsables compta/admin, bénévoles ; La Clique en premier, puis d'autres ressourceries.
+**Regle de lecture :** le present `prd.md` reste la **source canonique haut niveau** pour le produit v2 ; le PRD specialise caisse/compta/Paheko porte le **detail operatoire** du sous-domaine (regles comptables, exemples d'ecritures, tables et phasage fin) tant qu'il reste aligne sur ce PRD canonique et sur l'architecture active.
 
-### What Makes This Special
+### Stack Peintre_nano (figée)
 
-- **Interface unique** : tout se fait depuis RecyClique, y compris toute la compta (sync automatique caisse, scan factures, notes de frais, bilan, rapprochement) via le front-end et des workflows RecyClique ; Paheko reste le backend, jamais ouvert au quotidien.
-- **Double écosystème** : plugins Paheko et modules RecyClique (TOML, ModuleBase, EventBus Redis Streams, slots) se combinent ; les frameworks permettront d'activer de nouvelles fonctionnalités en assemblant les deux plateformes.
-- **Continuité d'usage** : remplacement de la prod sans rupture pour La Clique ; sync caisse → compta par push par ticket, file Redis Streams, clôture avec contrôle et syncAccounting.
-- **Évolutivité** : socle modulaire prêt pour les décla éco-organismes, des modules optionnels et, à terme, un modèle **open core** (options commercialisables, projet open source).
+Les decisions **P1** (stack CSS / styling) et **P2** (stockage des surcharges de configuration admin) sont **fermees**. Sources d'autorite :
 
-## Project Classification
+- **ADR** : `references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md`
+- **Instruction agents (code, CI, garde-fous)** : `references/peintre/2026-04-01_instruction-cursor-p1-p2.md`
 
-- **Type** : application web full-stack (SPA/PWA RecyClique + API FastAPI + Paheko).
-- **Domaine** : gestion ressourcerie / économie circulaire.
-- **Complexité** : élevée (double backend, flux financiers, conformité éco-organismes, brownfield).
-- **Contexte** : brownfield (refonte RecyClique 1.4.4, même usage, nouvelle architecture).
-- **Déploiement RecyClique** : un seul container (front + middleware) ; build React servi en statics par FastAPI, routes API dans le même processus ; Paheko en service séparé. Pas de séparation front/back en déploiement côté RecyClique.
+En cas d'ecart avec d'anciens extraits, briefs ou archives, **l'ADR et cette instruction priment** sur le reste de la documentation Peintre pour P1 et P2.
 
-## Modèle de déploiement / tenancy
+**Priorite de resolution :** pour **P1** et **P2** uniquement, en cas d'ecart entre le **corps** de ce PRD et l'ADR, **l'ADR fait foi** (le present PRD et l'architecture BMAD restent la reference pour le reste du perimetre v2).
 
-- **Une instance par ressourcerie** : chaque ressourcerie déploie sa propre instance (RecyClique + Paheko). Pas de multi-tenant ; aucune instance partagée entre plusieurs organisations.
-- **Multi-utilisateur** : plusieurs rôles coexistent sur la même instance (opérateur caisse, opérateur réception, responsable compta/admin, admin technique, bénévole). Voir section Rôles et permissions (matrice RBAC).
+**Decisions de perimetre et contrats (lecture WHAT/HOW) :** les choix explicitement nommes dans ce PRD — canal web et adaptateur **React**, surfaces **OpenAPI** / manifests **CREOS JSON**, persistance **PostgreSQL** pour la config admin simple (**P2**), environnement **Debian**, references **TypeScript** pour le pont semantique widget / etats CREOS — sont des **decisions de perimetre, de gouvernance contractuelle ou brownfield** alignees sur l'architecture BMAD active (`_bmad-output/planning-artifacts/architecture/`) et les ADR Peintre. Ils ne remplacent pas les specs d'implementation detaillees (stories, code, CI).
 
-## Success Criteria
+---
 
-### User Success
+## 1. Objet du document
 
-- **Opérateurs terrain** : clôturer une session de caisse sans double saisie ; réception (postes, tickets, lignes) fluide ; sync automatique vers la compta sans action manuelle.
-- **Responsables compta/admin** : en v1, administration de la compta possible via l'interface Paheko en attendant les interfaces RecyClique ; à terme, ne plus ouvrir Paheko (bilan, rapprochement, scan factures, notes de frais depuis RecyClique).
-- **Bénévoles / vie asso** : accéder aux fonctions nécessaires depuis RecyClique ; en v1.0, placeholders acceptables.
-- **Moment de valeur** : « plus de double saisie caisse–compta », « tout au même endroit », « ça valait le coup » (gain de temps, moins d'erreurs).
+### 1.1 Resume executif
 
-### Business Success
+`JARVOS Recyclique v2` est une evolution brownfield de `recyclique-1.4.4` destinee a fournir :
 
-- **v1.0.0 livrée en production** chez La Clique, stable, **sans rupture** des usages actuels.
-- **Adoption** : une **deuxième ressourcerie** utilise la plateforme en prod (réplicabilité).
-- **Indicateurs** : sync caisse → Paheko opérationnelle ; déclarations éco-organismes réalisées via RecyClique (périmètre v1.0 si inclus, sinon post-MVP).
+- un socle terrain exploitable en production sur ressourcerie reelle ;
+- une articulation explicable entre `Recyclique` (terrain, contexte, resilience, sync) et `Paheko` (verite comptable finale) ;
+- une UI entierement portee par `Peintre_nano` sans refonte from scratch du metier ;
+- un cadre suffisamment stable pour produire architecture, epics et stories sans ambiguite majeure.
 
-### Technical Success
+La v2 est consideree en reussite si elle demontre quatre qualites primaires :
 
-- **Architecture modulaire** en place et documentée : TOML, ModuleBase, EventBus Redis Streams, slots React, monorepo.
-- **RecyClique** : un seul container (front + middleware) ; Paheko en service séparé. Pas de séparation front/back en déploiement côté RecyClique.
-- **Résilience** : push par ticket, file Redis Streams, retry sans perte si Paheko indisponible.
-- **Qualité** : import 1.4.4 selon checklist (copy + consolidate + security) ; base propre et sécurisée.
+- **fiabilite terrain** ;
+- **justesse comptable** ;
+- **resilience** ;
+- **modularite reelle de bout en bout**.
 
-### Measurable Outcomes
+### 1.2 Probleme produit
 
-- Clôtures de caisse sans erreur (contrôle totaux + syncAccounting).
-- Zéro double saisie caisse–compta pour les flux couverts par le push.
-- v1.0.0 déployée en prod chez La Clique avec usages actuels conservés.
-- (Post-MVP) Au moins une deuxième ressourcerie en production.
+La base `recyclique-1.4.4` reste exploitable comme point de depart, mais pas comme cible long terme. Le probleme produit n'est pas de refaire integralement Recyclique : il est de sortir d'une logique de **dette accumulee**, de **couplages implicites** et d'**outillage terrain limite**, tout en conservant les acquis operationnels sains.
 
-## Product Scope
+La v2 doit donc reconstruire un socle plus fiable a partir du reel :
 
-### MVP – Minimum Viable Product (v1.0.0)
+- garder la continuite terrain ;
+- articuler correctement `Recyclique` et `Paheko` ;
+- rendre la donnee exploitable pour execution, audit, rejeu et analyse ;
+- faire passer toute l'UI v2 par `Peintre_nano` sans sur-architecture prematuree.
 
-- **Périmètre v1** : mêmes fonctionnalités que RecyClique 1.4.4 **plus** la synchronisation caisse ↔ Paheko (push par ticket, Redis Streams, plugin PHP, clôture + syncAccounting).
-- **Compta en v1** : tant que les interfaces compta ne sont pas dans RecyClique, l'administration de la compta peut se faire **via l'interface Paheko** ; cette répartition pourra évoluer au fil du développement.
-- **Roadmap v0.1.0 → v1.0.0** : premier découpage (socle, caisse, réception, auth/users/admin, éco-organismes, prod) ; à **revoir** avec la technique actuelle (ex. backend RecyClique existant). Développement **couche par couche** jusqu'à v1, en un même long run.
-- **Structure de livraison** : les versions (v0.1, v0.2, …) sont des **grandes étapes** ; chacune peut contenir **plusieurs epics** et **nombreuses stories** ; stories complexes à **sous-découper** ; identifier le **parallélisable**.
-- **UX v1** : mêmes écrans que 1.4.4 (copy + consolidate + security), pas de refonte UX pour la v1. Référence : `_bmad-output/planning-artifacts/ux-design-specification.md`.
-- **Hors périmètre v1** : fonctionnalités Paheko non couvertes en RecyClique 1.4.4 (ardoises, porte-monnaie membre, code-barres produit, produits liés, gestion stock, reçu PDF, etc.) — à ignorer en v1 ou à traiter en v0.2+ selon priorisation. **Réception hors ligne** (saisie différée, template CSV, etc.) : module complémentaire à développer après v1, pas dans le scope initial. Source : `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md` section 4.
+Ce PRD definit le perimetre, les exigences et les contraintes de JARVOS Recyclique v2 en tant qu'evolution brownfield de `recyclique-1.4.4`.
 
-### Growth Features (Post-MVP)
+Il ne remplace ni l'architecture detaillee ni les specs techniques fines. Il fournit le cadre produit suffisant pour :
 
-- Interfaces compta complètes dans RecyClique (scan factures, notes de frais, bilan, rapprochement) — plus besoin d'ouvrir Paheko pour la compta.
-- Module déclarations éco-organismes complet ; vie associative au-delà des placeholders.
-- Deuxième (et plus) ressourceries en production.
-- Éventuellement : outils de développement (ex. spawn d'agents automatiques) — à cadrer plus tard.
+- ecrire l'architecture v2 sans ambiguite majeure ;
+- decouper les epics et stories ;
+- maintenir la coherence entre les chantiers.
 
-### Vision (Future)
+Les arbitrages fondamentaux ont ete valides dans le brief et la decision directrice v2. Ce PRD les integre sans les rediscuter sauf contradiction explicite detectee.
 
-- Plusieurs ressourceries ; open core ; JARVOS Nano/Mini ; combinaison plugins Paheko + modules RecyClique.
+---
 
-## User Journeys
+## 2. Vision produit
 
-### 1. Opérateur terrain (caisse) — Parcours principal
+### 2.1 Enonce
 
-**Contexte multi-sites / multi-caisses** : Plusieurs lieux et plusieurs caisses sont supportés. Chaque poste (caisse) est démarré avec un compte administrateur (ou équivalent). En **mode caisse**, l'écran est verrouillé sur le menu caisse uniquement — aucun autre menu n'est accessible. À la fermeture de session, un **code PIN** est requis pour déverrouiller ; chaque personne habilitée à la caisse dispose de **son propre PIN** qui déverrouille la session (pattern POS courant). Le détail (workflow exact, gestion des habilitations) pourra être affiné en brainstorming technique ou en spec dédiée.
+Produire une v2 de Recyclique **exploitable en production par des ressourceries**, **installable sur l'environnement cible officiellement supporte**, **publiable en open source**, et suffisamment gouvernee pour soutenir des evolutions futures sans dette strategique majeure immediate.
 
-**Ouverture** : L'opérateur ouvre RecyClique, démarre sa session de caisse (fond de caisse). Il enregistre les ventes (lignes, catégories, poids éventuels, paiements multi-moyens) comme en 1.4.4.
+### 2.2 Critere de reussite primaire
 
-**Montée** : Chaque ticket est poussé en arrière-plan vers Paheko ; il ne fait aucune saisie compta. En fin de journée il lance la clôture : comptage physique, saisie des totaux, éventuel écart.
+La reussite ne se mesure pas a la richesse fonctionnelle immediate ni a la sophistication du moteur UI. Elle se mesure a :
 
-**Point critique** : La clôture déclenche le contrôle côté Paheko et la sync comptable. Plus de double saisie : ce qu'il a encaissé est déjà en compta.
+1. la **fiabilite terrain** ;
+2. la **justesse comptable** ;
+3. la **resilience** ;
+4. la **modularite reelle de bout en bout**.
 
-**Résolution** : Session clôturée sans erreur ; il quitte l'écran. La compta est à jour sans qu'il ouvre Paheko.
+### 2.3 Posture brownfield
 
-*Exigences révélées* : multi-sites / multi-caisses ; démarrage poste (compte admin ou équivalent) ; mode caisse = UI verrouillée (menu caisse uniquement) ; déverrouillage par PIN (un PIN par opérateur habilité) ; ouverture/fermeture session caisse ; saisie ventes (lignes, catégories, poids, paiements) ; push par ticket ; clôture avec contrôle et syncAccounting.
+- La v2 repart de `recyclique-1.4.4` sur les logiques metier critiques.
+- Les flows terrain prioritaires (`cashflow`, `reception flow`) conservent les memes bases metier.
+- Les ameliorations UX sont autorisees si elles reduisent le nombre d'actions, d'erreurs ou d'hesitations sur un parcours critique, sans augmenter le risque metier ou comptable.
+- Pas de refonte from scratch comme hypothese de depart. Refonte ciblee autorisee au cas par cas si un ecran est veritablement catastrophique ou bloquant.
 
-### 2. Opérateur réception — Parcours principal
+---
 
-**Ouverture** : Il ouvre un poste de réception dans RecyClique, crée des tickets de dépôt, saisit les lignes (poids, catégorie, destination).
+## 3. Repartition des roles systeme
 
-**Montée** : Les données restent dans RecyClique (source de vérité matière/poids). Aucune sync manuelle vers Paheko ; pas d'étape compta pour lui.
+### 3.1 Recyclique
 
-**Point critique** : Réception enregistrée et traçable ; les flux matière sont disponibles pour les déclarations éco-organismes (RecyClique).
+`Recyclique` porte :
 
-**Résolution** : Réception terminée ; exports ou stats possibles depuis RecyClique. En v1 il n'ouvre pas Paheko.
+- les workflows terrain (caisse, reception, cloture) ;
+- la logique metier et les modules metier ;
+- les contrats backend (OpenAPI, DTO, permissions, evenements) ;
+- les permissions, les contextes et leur calcul ;
+- la resilience operationnelle ;
+- la zone tampon / journalisation de synchronisation ;
+- la preparation comptable locale des sessions avant integration `Paheko` ;
+- la verite principale du **flux matiere** ;
+- l'historique exploitable pour rejeu, audit et analyse ;
+- les manifests CREOS de ses modules metier.
 
-*Exigences révélées* : postes de réception, tickets dépôt, lignes (poids, catégorie), pas de sync manuelle, source de vérité RecyClique.
+Pour le sous-domaine caisse/compta, `Recyclique` porte donc aussi la **verite comptable locale operatoire** necessaire a la cloture de session : calculs a partir des paiements enregistres, preparation d'un snapshot comptable fige, et emission d'un lot de synchronisation corrigeable vers `Paheko` sans remettre en cause le principe `terrain d'abord`.
 
-### 3. Responsable compta / admin — v1 (transition) puis post-MVP
+Les widgets critiques doivent pouvoir declarer explicitement leur dependance a des donnees metier fraiches, de maniere contractuelle et verifiable, afin de permettre un blocage produit explicite lorsque la donnee critique n'est plus fiable.
 
-**Ouverture (v1)** : Il doit faire la compta (bilan, rapprochement, factures, notes de frais). En v1 les interfaces compta ne sont pas encore dans RecyClique.
+### 3.2 Paheko
 
-**Montée** : Il ouvre **Paheko** pour administrer la compta. Les écritures caisse sont déjà là (push + syncAccounting) ; il complète le reste (saisie manuelle, scan, notes de frais) dans l'interface Paheko.
+`Paheko` porte :
 
-**Point critique** : La caisse est déjà synchronisée ; il ne ressaisit pas les ventes. Son travail se limite au reste de la compta.
+- la verite comptable officielle du **flux financier** ;
+- les classifications et contraintes comptables sur leur perimetre ;
+- l'autorite finale pour la comptabilite.
 
-**Résolution (v1)** : Compta à jour via Paheko. **Plus tard** : mêmes actions depuis RecyClique (scan, notes de frais, bilan, rapprochement), sans ouvrir Paheko.
+Integration : approche **API-first**. Plugin Paheko minimal autorise uniquement si un besoin metier n'est pas expose par l'API officielle. Pas d'ecriture SQL transactionnelle comme chemin nominal.
 
-*Exigences révélées* : en v1 accès admin Paheko pour compta ; post-MVP interfaces compta dans RecyClique, workflows prêts à l'emploi.
+### 3.3 Peintre_nano
 
-### 4. Admin technique / déploiement
+`Peintre_nano` porte :
 
-**Ouverture** : Il configure l'instance (RecyClique + Paheko), déploie, assure la maintenance. Accès super-admin Paheko si besoin.
+- le shell UI ;
+- le registre des modules actifs et disponibles ;
+- le systeme de slots nommes ;
+- le catalogue de widgets avec contrat de props ;
+- le rendu des flows declaratifs ;
+- les raccourcis et actions declaratives ;
+- les fallbacks visuels et la reaction runtime aux contrats invalides ;
+- l'application des droits et contextes pour l'affichage.
 
-**Montée** : Configuration Docker/Compose, paramétrage du plugin RecyClique (secret, endpoint), surveillance des workers Redis Streams et des clôtures.
+`Peintre_nano` ne connait pas le metier Recyclique. Il consomme les manifests CREOS et les informations de contexte/permissions fournies par Recyclique.
 
-**Point critique** : Une clôture échoue (Paheko down) ; les tickets restent dans la file Redis ; après retour de Paheko, retry sans perte.
+Packaging initial : package interne / workspace dans le meme depot. Extraction vers repo dedie preparee des la conception, mais pas un prerequis immediat.
 
-**Résolution** : Instance stable ; objectif à terme : tout pilotable depuis RecyClique, moins de recours direct à l'admin Paheko.
+Invariant v2 : `Peintre_nano` doit rester un runtime de rendu / composition borne, extractible plus tard sans devenir des maintenant un produit separe ni un chantier de split multi-repo. Pour le cadrage post-v2 et les garde-fous operatoires, voir `guide-pilotage-v2.md`, `architecture/post-v2-hypothesis-peintre-autonome-applications-contributrices.md` et `../../references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md`.
 
-*Exigences révélées* : déploiement monorepo, config plugin (sécurité endpoint), résilience file push, monitoring, accès Paheko super-admin pour dépannage.
+### 3.4 CREOS
 
-### 5. Bénévole / vie associative (v1 placeholder)
+`CREOS` porte :
 
-**Ouverture** : Il consulte le calendrier ou les activités. En v1 ce sont des placeholders dans RecyClique.
+- la grammaire commune des manifests, actions, widgets, flows et etats minimaux ;
+- la base contractuelle partagee entre Recyclique et Peintre_nano ;
+- la compatibilite avec l'ecosysteme JARVOS (meme grammaire, transport variable : documentaire en nano, bus en mini/macro).
 
-**Montée** : Accès à des écrans « vie asso » minimalistes ; le cœur (calendrier, événements) sera déroulé après v1.
+### 3.5 Adaptateur de canal (React)
 
-**Point critique** : Un seul point d'entrée (RecyClique) ; pas d'obligation d'ouvrir Paheko pour la vie asso courante.
+L'adaptateur React porte :
 
-**Résolution** : Placeholders acceptables en v1 ; parcours complet (calendrier, événements, activités) en growth.
+- le rendu concret du shell, des slots et des widgets resolus ;
+- les fallbacks visuels ;
+- les comportements d'affichage lies au canal web (responsive, multi-device) ;
+- sans remonter de logique metier dans Peintre_nano.
 
-*Exigences révélées* : placeholders vie asso en v1, évolution post-MVP.
+Clarification : `Peintre_nano` porte la **composition et la politique de rendu** ; l'adaptateur React porte le **rendu concret dans le canal web**.
 
-### Journey Requirements Summary
+---
 
-| Capacité | Source(s) |
-|----------|-----------|
-| Caisse : multi-sites, multi-caisses ; mode verrouillé ; PIN par opérateur ; session, ventes, clôture, push, syncAccounting | J1 |
-| Réception : postes, tickets, lignes, source de vérité matière | J2 |
-| Compta : en v1 via Paheko ; plus tard via RecyClique | J3 |
-| Déploiement, config plugin, résilience, monitoring | J4 |
-| Vie asso : placeholders v1, parcours complets post-MVP | J5 |
-| Aucun utilisateur métier n'a besoin d'ouvrir Paheko pour le flux quotidien (sauf admin compta en v1) | J1–J5 |
+## 4. Invariants non negociables
 
-*Note* : Le détail du workflow POS (multi-sites, multi-caisses, habilitations, PIN) pourra faire l'objet d'un brainstorming technique ou d'une spec dédiée pour affiner les exigences.
+### 4.1 Contexte avant ecran
 
-## Rôles et permissions (matrice RBAC)
+Le contexte est plus fondamental que l'ecran. Le minimum a stabiliser tot :
 
-| Rôle | Caisse (session, ventes, clôture) | Réception (postes, tickets, lignes) | Compta (v1 via Paheko) | Admin technique / déploiement | Vie asso |
-|------|-----------------------------------|-------------------------------------|-------------------------|-------------------------------|----------|
-| Opérateur caisse | Oui (mode verrouillé, PIN propre) | Non | Non | Non | Non |
-| Opérateur réception | Non | Oui | Non | Non | Non |
-| Responsable compta / admin | Déverrouillage / accès selon config | Selon config | Oui (v1 via Paheko) | Accès admin Paheko si besoin | Selon config |
-| Admin technique | Non (config seulement) | Non | Non | Oui (Docker, plugin, monitoring) | Non |
-| Bénévole | Non | Non | Non | Non | Oui (placeholders v1) |
+| Contexte | Role |
+|----------|------|
+| `site` | Ressourcerie / lieu physique |
+| `caisse` | Point de vente actif |
+| `session` | Session de caisse en cours |
+| `poste de reception` | Point de reception matiere |
+| `role` | Role de l'operateur (definissable par ressourcerie, label personnalisable) |
+| `groupe` | Groupe(s) d'appartenance pour l'affectation de permissions |
+| `permissions` | Droits calcules par Recyclique a partir des roles et groupes |
+| `PIN` | Validations sensibles selon le cas |
 
-*Source* : parcours J1–J5, FR4, FR5, FR14, FR15, FR16. Démarrer un poste (caisse ou réception) nécessite un compte administrateur (ou équivalent) ; le mode caisse est verrouillé sur le menu caisse seul, déverrouillage par PIN par opérateur habilité.
+**Comportement en cas d'ambiguite ou de contexte incomplet :**
 
-## Domain-Specific Requirements
+- rechargement / recalcul explicite ;
+- mode degrade ou restreint explicite ;
+- revalidation si necessaire ;
+- **la securite gagne sur la fluidite**.
 
-### Compliance (track Enterprise)
+**Changement de contexte sensible** (site, caisse, session, poste) : tout le contexte doit etre recharge/recalcule explicitement. Ce mecanisme peut devenir un workflow explicite dans Peintre_nano.
 
-Ce projet suit le **track BMAD Enterprise** : la couverture Security et DevOps est assurée dans le PRD et sera détaillée dans le document d'architecture (catégories Authentication & Security, Infrastructure & Deployment). Les exigences ci-dessous regroupent conformité réglementaire, sécurité (voir aussi NFR-S1 à NFR-S4 en section Non-Functional Requirements) et traçabilité.
+**Modele minimal v2 pour roles et groupes :**
 
-### Compliance & réglementation
+- chaque role possede une **cle technique stable** et un **libelle personnalisable** par ressourcerie ;
+- les groupes servent a regrouper les utilisateurs pour l'affectation de permissions ;
+- un utilisateur peut appartenir a plusieurs groupes ;
+- en v2, le calcul des droits est **additif** : les permissions effectives sont l'union des permissions accordees par les roles et groupes associes ;
+- les labels affiches dans l'UI ne font jamais foi pour la securite : seules les cles techniques et les permissions calculees par Recyclique font autorite.
 
-- **Déclarations éco-organismes (REP)** : RecyClique est source des données déclaratives (poids, flux, catégories, périodes) ; module décla dans RecyClique, aligné aux exigences des éco-organismes (ex. Ecologic) ; traçabilité et export pour les déclarations officielles.
-- **Comptabilité** : écritures et clôtures conformes aux attentes Paheko (comptes, exercices, config) ; pas de règle métier compta inventée côté RecyClique ; sync à la clôture (syncAccounting) comme référence.
-- **Données personnelles (RGPD)** : gestion des utilisateurs et adhésions via Paheko ; droits d'accès, consentement et durée de conservation à respecter dans le périmètre association/adhérents.
+**Decision de cadrage v2 :**
 
-### Contraintes techniques
+- la v2 est cadree par defaut sur un modele de permissions **additif et simple** ;
+- l'introduction de refus explicites n'est pas un prerequis v2 ;
+- si la couche d'authentification / droits retenue fournit nativement un mecanisme de refus explicites sans complexite structurelle supplementaire, ce point pourra etre reouvert en architecture ; sinon il reste hors socle v2.
 
-- **Sécurité** : authentification (compte admin pour démarrage poste, PIN par opérateur habilité) ; canal push RecyClique → Paheko sécurisé (secret partagé + HTTPS) ; pas de secrets en clair dans les requêtes ; secrets en env / secrets manager.
-- **Traçabilité / audit** : traçabilité des sessions caisse, des push et des clôtures ; file Redis Streams réutilisable pour audit et replay si besoin.
-- **Résilience** : push par ticket, file Redis Streams, retry sans perte si Paheko indisponible ; pas de perte de données de vente.
-- **Multi-sites / multi-caisses** : isolation logique par lieu et par caisse ; mapping site/emplacement RecyClique ↔ Paheko (config ou à la volée) pour les écritures compta.
-- **Unité de poids** : réception RecyClique en kg (source de vérité) ; caisse Paheko en g (`plugin_pos_tabs_items.weight`) ; conversion au push si nécessaire (kg → g). Convention à figer en implémentation.
-- **Optionnel Saisie au poids Paheko** : le plugin peut optionnellement écrire dans `module_data_saisie_poids` après push caisse pour traçabilité / stats locales ; pas d'obligation (décision session 08).
+### 4.2 Modularite de bout en bout
 
-### Intégrations
+Un module n'est considere comme modulaire que si la **chaine complete** existe :
 
-- **Paheko** : compta (plugin caisse, syncAccounting), utilisateurs, adhésions, vie asso ; API et plugin PHP custom (endpoint sécurisé) ; config Paheko (comptes, moyens de paiement, exercice) comme référence.
-- **Redis** : EventBus (Redis Streams) pour les événements métier ; file de push caisse → Paheko (même stack).
-- **Compatibilité** : respect des workflows et paramétrages Paheko pour ne pas casser les écritures ni les habitudes compta.
+1. contrat metier (schema, regles) ;
+2. recepteur backend ;
+3. contrat UI (manifest CREOS) ;
+4. runtime frontend (rendu via Peintre_nano) ;
+5. permissions et contexte ;
+6. fallback, audit et feedback.
 
-### Risques et mitigations
+Si une brique manque, un mock bien balise et explicite est acceptable en phase de construction, mais pas comme etat final.
 
-| Risque | Mitigation |
-|--------|------------|
-| Perte de données de vente lors du push | File Redis Streams, pas d'ACK tant que Paheko n'a pas confirmé ; retry et surveillance. |
-| Écart caisse / compta (totaux, centimes) | Contrôle à la clôture (totaux RecyClique vs Paheko) ; convention centimes ; validation BDD. |
-| Non-conformité déclarations éco-organismes | RecyClique = source de vérité ; module décla dédié ; exports et traçabilité documentés. |
-| Accès non autorisé à une caisse | Mode caisse verrouillé (menu caisse seul) ; déverrouillage par PIN par opérateur habilité. |
-| Fuite de secret (endpoint plugin) | Secret partagé en env ; HTTPS ; pas de secret en clair dans les requêtes. |
+### 4.3 Robustesse et explicabilite
 
-**Politique fichiers** : Frontière RecyClique ↔ Paheko pour documents, scan factures, upload — chantier ouvert (artefact 2026-02-25_02), hors périmètre v1 ; à trancher en versions futures.
+Les contrats invalides, widgets non rendables ou flows incomplets doivent produire :
 
-## Innovation & Novel Patterns
+- un **fallback visible** ou un **blocage** selon la criticite ;
+- une **journalisation** ;
+- un **retour d'information exploitable** (par un humain, un developpeur ou un futur LLM) ;
+- la possibilite de **correction et nouvelle tentative**.
 
-### Detected Innovation Areas
+Pour les elements critiques terrain (caisse, reception, cloture) :
 
-- **Absence de concurrence directe** : Les plateformes existantes sont soit anciennes (Windows, orientées legacy), soit récentes mais centrées sur le shop. Aucune n'offre la combinaison **caisse + réception + compta + vie associative + pilotage** dans une interface unique avec double moteur (RecyClique terrain + Paheko association).
-- **Périmètre intégré** : Gestion simultanée de la compta, de toutes les activités de la vie associative et de tout ce qui sert à organiser la ressourcerie, depuis une seule interface (RecyClique), sans ouvrir Paheko au quotidien.
-- **Surcouche cognitive (JARVOS Nano puis Mini)** : Pilotage plus efficace, meilleure utilisation de la communication et de la rédaction ; moteur de site internet Paheko activable pour rendre les contenus dynamiques (flux sortants, compta ouverte, etc.). Combinaison inédite par rapport aux plateformes existantes.
-- **Double écosystème** : Plugins Paheko et modules RecyClique qui fonctionnent ensemble pour activer de nouvelles fonctionnalités ; trajectoire open core.
+- fallback explicite et sobre quand la securite metier reste garantie ;
+- blocage clair quand la securite metier/comptable n'est plus garantie.
 
-### Market Context & Competitive Landscape
+### 4.4 Zero fuite de contexte
 
-- **Concurrents** : Une plateforme ancienne sous Windows ; une plateforme récente axée shop. Aucune ne couvre compta + vie asso + organisation + terrain caisse/réception de façon unifiée.
-- **Positionnement** : Plateforme ressourcerie unifiée (terrain + compta + vie asso + site dynamique + surcouche cognitive à venir).
+Invariant transversal absolu. Aucune vue, aucun widget, aucun slot ne doit laisser fuiter des donnees d'un site, d'une caisse ou d'un operateur vers un autre contexte.
 
-### Validation Approach
+Les vues globales admin/super-admin sont envisageables, mais ne doivent jamais compromettre cet invariant.
 
-- **v1.0** : Livraison en prod chez La Clique sans rupture ; sync caisse–compta opérationnelle ; adoption par une deuxième ressourcerie comme indicateur de valeur.
-- **Post-MVP** : Interfaces compta dans RecyClique, module décla, vie asso complète ; puis intégration JARVOS Nano/Mini et site dynamique Paheko.
+**Exigences minimales pour les vues globales :**
 
-### Risk Mitigation
+- selection explicite du contexte ou du perimetre de consultation ;
+- tracabilite de l'acces et du perimetre consulte ;
+- absence de cache ou de reutilisation silencieuse de donnees d'un autre contexte ;
+- impossibilite d'executer une action sensible hors du contexte explicitement valide.
 
-- **Innovation non adoptée** : Livrer d'abord la parité 1.4.4 + sync (v1.0) pour prouver la valeur sans dépendre des briques les plus novatrices.
-- **Surcouche cognitive retardée** : Architecture modulaire et extension points (ex. recherche technique Peintre/layout) déjà prévus en v1 ; branchement Nano/Mini possible plus tard sans refonte.
+### 4.5 Donnee exploitable
 
-## Web Application & API Specific Requirements
+La donnee v2 doit etre concue des le depart pour :
 
-### Project-Type Overview
+- **execution** quotidienne ;
+- **historicisation** (minimum = existant `1.4.4`, cible = nettement au-dela) ;
+- **rejeu** (capacite a comprendre/refaire apres coup) ;
+- **analyse** et correlations futures ;
+- **tracabilite** des mappings sensibles et de leurs changements.
 
-Application web en SPA/PWA (RecyClique, React-Vite-TS) avec API FastAPI et backend Paheko (PHP). Interface unique pour le terrain ; double back-end (RecyClique + Paheko).
+---
 
-### Technical Architecture Considerations
+## 5. Double flux a articuler
 
-- **SPA / PWA** : SPA ; PWA pour usage terrain (offline possible).
-- **Temps réel** : sync caisse → Paheko asynchrone (push, Redis Streams) ; pas de WebSocket requis en v1.
-- **API** : REST FastAPI (caisse, réception, sessions, auth) ; JSON ; auth JWT v0.1, SSO v0.2+.
+### 5.1 Flux financier
 
-### Navigateurs et devices
+| Aspect | Autorite | Role |
+|--------|----------|------|
+| Verite comptable finale | **Paheko** | Classifications, ecritures, contraintes comptables |
+| Verite comptable locale operatoire | **Recyclique** | Calcul de cloture, snapshot comptable de session, preparation du lot de sync |
+| Terrain + zone tampon | **Recyclique** | Saisie, journalisation, resilience, sync |
 
-- **Navigateurs** : Chrome, Firefox, Safari, Edge (versions récentes) ; contexte principal = postes fixes et tablettes (caisse, réception).
-- **Responsive** : écrans caisse et réception utilisables sur tablette ; v1 = mêmes écrans que 1.4.4 (copy + consolidate + security).
+**Politique de synchronisation retenue :**
 
-### Performance
+- **terrain d'abord** : les donnees sont enregistrees dans Recyclique ;
+- **source de verite locale** : les calculs de cloture s'appuient sur les donnees de paiement enregistrees dans Recyclique avant emission vers `Paheko` ;
+- **sync reportable** : la synchronisation vers Paheko peut etre retardee ;
+- **blocage selectif** : seules certaines actions critiques finales peuvent etre bloquees si la sync n'est pas a jour ;
+- un probleme de sync **ne bloque pas** le terrain par defaut ;
+- resilience par **zone tampon Recyclique** avec reprise ulterieure.
 
-- Enregistrement d'une vente : temps de réponse acceptable (cible < 2 s).
-- Clôture : pas de blocage long ; push et syncAccounting en arrière-plan.
+**Decision canonique pour la caisse/compta :**
 
-### SEO
+- la comptabilisation reste **par session de caisse**, pas ticket par ticket ;
+- la source de verite comptable locale des paiements devient un **journal detaille des transactions de paiement** ;
+- les moyens de paiement administrables deviennent un **referentiel metier explicite** ;
+- la cloture produit un **snapshot comptable fige de session** ;
+- la synchronisation vers `Paheko` s'opere sur un **lot de session corrigeable**, pouvant contenir plusieurs sous-ecritures equilibrees selon la strategie retenue en architecture.
 
-- Secondaire en v1 (outil interne) ; moteur site Paheko pour communication publique post-MVP.
+**Gouvernance minimale des ecarts de sync :**
 
-### Accessibilité
+- tout ecart persistant de sync doit entrer dans un etat explicite : `a_reessayer`, `en_quarantaine`, `resolu`, `rejete` ;
+- le passage en quarantaine est obligatoire en cas d'echec persistant, d'incoherence comptable detectee, ou d'absence de correspondance comptable requise ;
+- la levee de quarantaine doit etre tracee et realisee uniquement par un **responsable de ressourcerie** ou un **super-admin** ; l'architecture precisera ensuite le detail exact du workflow ;
+- toute levee de quarantaine ou resolution manuelle doit laisser une trace d'audit avec auteur, date, contexte et motif ;
+- le support doit pouvoir s'appuyer sur un identifiant de correlation inter-systemes pour suivre un flux de bout en bout.
 
-- Bonnes pratiques de base (contraste, navigation clavier) ; renforcement post-MVP si besoin.
+### 5.2 Flux matiere
 
-### Implementation Considerations
+| Aspect | Autorite |
+|--------|----------|
+| Poids, quantites, categories, sous-categories | **Recyclique** |
+| Classifications officielles pour les declarations | **Recyclique** (avec mappings eco-organismes) |
 
-- **Monorepo ; Docker Compose** : RecyClique en un seul container (front + middleware : build React servi par FastAPI + routes API), Paheko, PostgreSQL, Redis. Séparation **logique** dans le code : dossiers `frontend/` et `api/` (ou `backend/`), contrat API clair ; une seule image Docker « recyclic ». Surcouche cognitive (JARVOS Nano/Mini) : routes et logique dans le même FastAPI (même container).
-- **Auth** : compte admin pour démarrage poste ; PIN par opérateur (mode caisse).
-- **API** : JSON ; montants en centimes ; poids en kg (réception) / conversion vers Paheko (g si besoin).
+### 5.3 Consequence produit
 
-### Déploiement RecyClique et préconisations migration v1
+La v2 doit articuler ces deux flux sans les confondre. Elle doit permettre :
 
-RecyClique est déployé en **un seul container** (front + middleware). Paheko reste un service séparé. Dans le code : séparation logique nette (`frontend/`, `api/`), contrat API clair ; pas de duplication de cette frontière en déploiement.
+- le fonctionnement quotidien ;
+- la reconciliation ;
+- l'historique ;
+- les futures lectures analytiques ;
+- les declarations eco-organismes (croisement flux financier + flux matiere).
 
-**Préconisations migration v1** (refonte 1.4.4, stack cible) :
+---
 
-| Sujet | Préconisation |
-|--------|----------------|
-| **Containers** | Un seul container RecyClique (front + middleware), Paheko à part. |
-| **Front ↔ serveur en v1** | Garder **SPA + API REST** ; pas de bascule SSR/full-page pour v1. |
-| **Forme de l'API** | REST structuré, contrat et types partagés (monorepo), routes par module. |
-| **Événements** | EventBus / Redis Streams côté serveur uniquement ; le front passe par l'API. |
-| **Import 1.4.4** | Checklist copy + consolidate + security ; séparation logique front/back dans le code. |
-| **Surcouche cognitive** | Routes et logique dans le même FastAPI (même container). |
-| **À éviter en v1** | GraphQL, mélange SSR + SPA, deuxième stack de rendu. |
+## 6. Utilisateurs cibles
 
-## Project Scoping & Phased Development
+### 6.1 Utilisateurs principaux
 
-Cette section détaille la stratégie MVP et le découpage en phases, en cohérence avec le Product Scope ci-dessus.
+| Profil | Besoins cles |
+|--------|-------------|
+| **Operateurs terrain** | Encaisser, receptionner et cloturer sur parcours nominal sans souris ; contexte garanti ; etats d'erreur et de reprise explicites |
+| **Responsables de ressourcerie** | Superviser localement ; suivre les ecarts ; relire une cloture et son snapshot ; piloter les reglages admin simples sans intervention technique |
+| **Comptabilite / administration** | Retrouver une verite comptable lisible dans Paheko ; comprendre l'etat d'un lot de session ; traiter les ecarts avec tracabilite |
 
-### MVP Strategy & Philosophy
+### 6.2 Utilisateurs secondaires
 
-- **Approche MVP** : MVP de parité + valeur — même usage que RecyClique 1.4.4 **plus** sync caisse ↔ Paheko (plus de double saisie). Objectif : « utile dès le premier jour » pour La Clique, sans rupture.
-- **Ressources** : Développement solo (Strophe) ; roadmap en grandes étapes (v0.1 → v1.0) avec epics et stories sous-découpées ; parallélisation identifiée où possible.
+| Profil | Besoins cles |
+|--------|-------------|
+| **Super-admin / expert** | Mappings sensibles, parametrages structures, controle des reglages critiques, parametrage comptable sensible, audit |
+| **Futures ressourceries adoptantes** | Installer le socle sur environnement supporte, creer un premier contexte exploitable, comprendre les contrats et contribuer sans ambiguite majeure |
 
-### MVP Feature Set (Phase 1)
+### 6.3 Roles, labels et groupes
 
-- **Parcours couverts** : Opérateur caisse (multi-sites, multi-caisses, mode verrouillé, PIN) ; opérateur réception ; admin compta via Paheko (v1) ; admin technique / déploiement ; placeholders vie asso.
-- **Capacités indispensables** : Socle Docker (Frontend, Backend, Paheko, PostgreSQL, Redis) ; caisse (sessions, ventes, clôture, push par ticket, Redis Streams, plugin PHP) ; réception (postes, tickets, lignes) ; auth (compte admin + PIN par opérateur) ; architecture modulaire (TOML, ModuleBase, EventBus, slots) en place.
+Chaque ressourcerie doit pouvoir adapter la terminologie et la structure de roles a son propre fonctionnement. Les roles ne sont pas des constantes codees en dur.
 
-### Post-MVP Features
+**Socle v2 obligatoire :**
 
-- **Phase 2 (croissance)** : Interfaces compta dans RecyClique (scan factures, notes de frais, bilan, rapprochement) ; module décla éco-organismes complet ; vie associative (calendrier, événements, activités) ; adoption par une 2e ressourcerie.
-- **Phase 3 (expansion)** : Open core ; JARVOS Nano puis Mini (surcouche cognitive) ; site dynamique Paheko ; combinaison plugins Paheko + modules RecyClique pour nouvelles fonctionnalités.
+- roles definissables par ressourcerie (pas un jeu fixe impose par le code) ;
+- labels personnalisables sur les designations d'utilisateurs et de roles (ex. « operateur » → « valoriste », « benevole caisse », ou tout autre terme propre a la ressourcerie) ;
+- groupes simples permettant de regrouper des utilisateurs pour l'affectation de permissions.
 
-### Risk Mitigation Strategy
+**Contraintes :**
 
-- **Technique** : Développement couche par couche ; roadmap v0.x à revoir avec la technique actuelle ; résilience push (Redis Streams, retry) ; checklist import 1.4.4.
-- **Marché** : v1 prouve la valeur (parité + sync) avant les briques les plus innovantes ; 2e ressourcerie comme validation.
-- **Ressources** : Découpage en epics/stories fines ; priorisation stricte MVP ; possibilité de report éco-organismes en v1 si nécessaire.
+- chaque role et chaque groupe doivent avoir une **cle technique stable** distincte du libelle affiche ;
+- le systeme de permissions de Recyclique doit etre capable de calculer les droits a partir de roles definis par la ressourcerie, pas uniquement a partir d'un jeu predefini ;
+- en v2, les permissions sont **additives** entre roles et groupes ; les mecanismes de refus explicite, heritage complexe ou exceptions avancees sont hors socle initial ;
+- les labels personnalises doivent etre propages dans l'UI via les contextes de rendu Peintre_nano (un widget qui affiche « operateur » doit afficher le label reel de la ressourcerie) ;
+- l'isolation multi-sites s'applique aussi aux roles et groupes : un role ou un label defini sur un site ne doit pas fuiter vers un autre.
 
-## Functional Requirements
+**Hors socle v2 (reportable) :**
 
-### Caisse / POS
+- heritage de permissions entre groupes ;
+- editeur graphique de roles ;
+- workflows d'approbation par role.
 
-- **FR1** : Un opérateur habilité peut démarrer une session de caisse (avec fond de caisse) sur un poste donné.
-- **FR2** : Un opérateur habilité peut enregistrer des ventes (lignes, catégories, quantités, prix, poids éventuels, paiements multi-moyens) pendant la session.
-- **FR3** : Un opérateur habilité peut clôturer la session de caisse (comptage physique, totaux, écart éventuel) et déclencher le contrôle et la sync comptable.
-- **FR4** : Le système peut restreindre l'accès au menu caisse uniquement lorsque le poste est en mode caisse (écran verrouillé sur la caisse).
-- **FR5** : Une personne habilitée peut déverrouiller la session (ou quitter le mode caisse) en saisissant son code PIN.
-- **FR6** : Le système peut gérer plusieurs lieux et plusieurs caisses (multi-sites, multi-caisses).
-- **FR7** : Le système peut pousser chaque ticket de vente vers Paheko (push par ticket, file résiliente) sans double saisie compta.
-- **FR7b** : Le système peut permettre la saisie caisse hors ligne (buffer local) et synchroniser les tickets vers Paheko au retour en ligne (file Redis Streams côté backend).
+### 6.4 Exigences UX (canal web, synthese)
 
-### Réception / flux matière
+Cette section formalise le volet **UX / UI** attendu pour un PRD type **web_app** BMAD, sans dupliquer les invariants deja poses (contexte avant ecran, zero fuite, matrice fallback SS 10, SS 3.5 adaptateur canal).
 
-- **FR8** : Un opérateur peut ouvrir un poste de réception et créer des tickets de dépôt.
-- **FR9** : Un opérateur peut saisir des lignes de réception (poids, catégorie, destination) sur un ticket.
-- **FR10** : Le système conserve la réception comme source de vérité matière/poids (aucune sync manuelle obligatoire vers Paheko).
+- **Shell et navigation :** parcours coherents du login aux flows terrain ; la structure informationnelle et la composition d'ecran restent **commandees par Recyclique** et rendues par **Peintre_nano** (SS 3, SS 7, SS 8.8).
+- **Canal web :** comportements **responsive** et **multi-poste** pris en charge par l'adaptateur de canal (SS 3.5) dans les limites du perimetre v2 (pas de personnalisation riche ni d'interfaces analytiques avancees hors scope).
+- **Feedback utilisateur :** etats charges / vides / erreurs / degrades **visibles et explicites** sur les flows critiques ; alignement avec la matrice SS 10 et les etats de donnees widget du socle canonique.
+- **Securite percue :** l'UI peut masquer ou guider, mais **ne substitue pas** l'autorisation backend (SS 11.2) ; labels et libelles personnalises **ne font pas foi** pour la securite (SS 4.1, SS 6.3).
+- **Ameliorations UX terrain :** autorisees lorsqu'elles reduisent la friction sur un parcours critique sans diminuer les garde-fous metier ou comptables (SS 2.3).
 
-### Compta & synchronisation
+### 6.5 Exigences web_app minimales
 
-- **FR11** : Le système peut synchroniser les données caisse (sessions, tickets, lignes, paiements) vers Paheko à la clôture (contrôle totaux, syncAccounting). Une **session** désigne une **session de caisse** (ouverture avec fond de caisse → clôture avec comptage) ; une session RecyClique = une session Paheko **par caisse** (en multi-caisses, chaque caisse a sa propre session). L'ouverture côté RecyClique crée la session Paheko correspondante via le plugin.
-- **FR12** : Un responsable compta peut administrer la compta via l'interface Paheko (v1) en attendant les interfaces RecyClique.
-- **FR13** : (Post-MVP) Un responsable compta peut effectuer les opérations compta (bilan, rapprochement, scan factures, notes de frais) depuis RecyClique.
+Pour le type de projet `web_app`, la v2 retient les exigences suivantes :
 
-### Correspondance / mapping RecyClique ↔ Paheko
+- **Matrice navigateurs officielle v2 :** support nominal desktop sur **Chromium stable** et **Firefox ESR** dans l'environnement cible ; usage **best-effort** sur `Edge` recent ; mobile et tablettes hors parcours nominal v2 hors besoins ponctuels de consultation.
+- **Accessibilite cible :** les parcours `login`, `cashflow`, `reception flow`, `cloture`, `config admin simple` et les ecrans de reprise doivent respecter un niveau **WCAG 2.1 AA** sur navigation clavier, contrastes, labels et messages d'erreur exploitables.
+- **SEO :** non applicable au coeur authentifie de la v2. Si des pages publiques de presentation, documentation ou onboarding web sont produites, elles relevent d'un livrable distinct et ne conditionnent pas la sortie produit du coeur metier.
+- **Contexte de mesure web :** les exigences de rendu, d'accessibilite et de performance sont verifiees sur l'environnement officiellement supporte de `§ 11.5`, avec donnees nominales et poste de travail de ressourcerie de reference.
 
-- **FR13b** : Le système peut gérer un mapping prédéfini entre RecyClique et Paheko (moyens de paiement, catégories caisse, sites/emplacements, etc.) pour la v1 ; tout est configurable à l'avance même si certains éléments ne sont pas encore utilisés ou mappés. Le détail des champs et règles (module correspondance) s'appuie sur la recherche déjà réalisée (matrice, grille confrontation, dumps BDD) et sera affiné après confrontation BDD + instance dev + analyste. Le périmètre exact sera figé lorsque la BDD et l'instance dev sont stabilisées.
-- **Presets / boutons rapides (Don, Recyclage, Déchèterie, etc.)** : selon les cas, correspondance vers catégories Paheko ou conservation dans RecyClique uniquement (flux non éco) ; l'étude (éco vs non-éco, règles de mapping) reste à faire et sera documentée (matrice ou spec dédiée).
+---
 
-### Utilisateurs & authentification
+## 7. Perimetre fonctionnel v2
 
-- **FR14** : Un administrateur peut démarrer un poste (caisse ou réception) avec un compte administrateur (ou équivalent).
-- **FR15** : Le système peut associer un code PIN à chaque personne habilitée à la caisse pour le déverrouillage de session.
-- **FR16** : (v0.1) Le système peut authentifier les utilisateurs terrain via JWT (FastAPI) et les utilisateurs admin via Paheko (auth séparée).
-- **FR17** : (v0.2+) Le système peut offrir un SSO entre RecyClique et Paheko (à documenter).
+### 7.1 Capacites coeur
 
-### Administration & déploiement
+#### UI integrale via Peintre_nano
 
-- **FR18** : Un admin technique peut déployer et configurer l'instance (RecyClique en un container : front + middleware, Paheko, PostgreSQL, Redis) via Docker Compose.
-- **FR19** : Un admin technique peut configurer le canal push RecyClique → Paheko (endpoint, secret, résilience).
-- **FR20** : Le système peut conserver les tickets non poussés en file (Redis Streams) et les repousser après indisponibilité de Paheko (retry sans perte).
+Toute l'UI v2 passe par Peintre_nano, du login au dernier ecran. Ce qui est phase, ce ne sont pas les ecrans, mais les **capacites** du moteur :
 
-### Vie associative (v1 placeholders)
+**Capacites minimales v2 :**
 
-- **FR21** : Un utilisateur peut accéder à des écrans ou placeholders « vie associative » depuis RecyClique (calendrier, activités à dérouler post-MVP).
+- shell ;
+- slots nommes ;
+- widgets avec contrat de props ;
+- activation / desactivation de modules ;
+- contrats d'affichage ;
+- actions declaratives ;
+- raccourcis declaratifs ;
+- flows simples (`wizard`, `tabbed`, et le flow `cashflow` comme priorite terrain) ;
+- fallback et journalisation ;
+- gestion des droits et contextes au rendu.
 
-### Données déclaratives & éco-organismes
+#### Modules metier
 
-- **FR22** : Le système peut produire et conserver les données déclaratives (poids, flux, catégories, périodes) dans RecyClique pour les déclarations éco-organismes.
-- **FR23** : (Post-MVP) Le système peut exposer un module décla éco-organismes (exports, multi-éco-organismes) depuis RecyClique.
+| Module | Statut v2 | Role dans la validation |
+|--------|-----------|----------------------|
+| Cashflow (caisse) | Obligatoire | Preuve terrain critique |
+| Reception flow | Obligatoire | Preuve terrain critique |
+| Bandeau live | Obligatoire | Preuve modulaire legere mais complete |
+| Declaration eco-organismes | Obligatoire | Premier grand module metier |
+| Adherents / vie associative minimale | Obligatoire | Preuve metier complementaire, evite biais mono-module |
+| Synchronisation Paheko | Obligatoire | Articulation terrain/compta |
+| Integration HelloAsso | Obligatoire | Capacite confirmee dans le brief |
+| Config admin simple | Obligatoire (v2 vendable) | Pilotage minimal du shell et des modules |
 
-### Architecture modulaire
+**Lecture du statut « Obligatoire » dans ce tableau :** il impose de livrer le **minimum v2** decrit dans les sous-sections du perimetre (parcours ou capacites utilisables, reprises manuelles encadrees lorsque le PRD les prevoit). Il **n'exige pas** une automatisation maximale lorsqu'une sous-section renvoie explicitement a une **etude ou un livrable d'architecture** pour fixer le niveau exact — cas **HelloAsso** : le **Scope minimum HelloAsso** (SS 7.1) et l'etude de cadrage (deux voies API / plugin Paheko) definissent l'ampleur **sans** contredire l'obligation de couvrir le parcours adherents a ce minimum.
 
-- **FR24** : Le système peut charger et activer des modules RecyClique via configuration (TOML, ModuleBase, EventBus Redis Streams, slots React).
-- **FR25** : Le système peut faire coexister des plugins Paheko et des modules RecyClique pour activer de nouvelles fonctionnalités (combinaison des deux écosystèmes).
-- **FR26** : Le système peut exposer des points d'extension (interfaces type LayoutConfigService, VisualProvider) avec implémentations stub en v1, pour brancher ultérieurement affichage dynamique et service Peintre (JARVOS Mini) ; détail dans la recherche technique `_bmad-output/planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md`.
+#### Synchronisation Paheko
 
-### Gestion documentaire RecyClique
+La v2 doit livrer un contrat de synchronisation couvrant au minimum :
 
-- **FR27** : (Post-MVP) Le système peut gérer un fonds documentaire RecyClique (statutaire, communication interne et externe, documentation de la ressourcerie, prise de notes — idées, transcriptions de réunions, etc.) distinct de la gestion documentaire compta/factures Paheko. Le stockage peut s'appuyer sur un drive externe (ex. K-Drive) ou sur un espace de fichiers dédié (ex. volume dédié dans l'instance). L'évolution vers JARVOS Nano puis Mini permettra la recherche intelligente, l'édition intelligente et l'assistance à la rédaction. Périmètre détaillé et frontière avec Paheko à préciser (voir politique fichiers, artefact 2026-02-25_02).
+- sessions de caisse et cloture ;
+- ecritures comptables ;
+- politique de reconciliation en cas d'echec de sync ;
+- granularite du push ;
+- idempotence et retry ;
+- gestion des rejets ;
+- reprise apres incident ;
+- statut final d'une operation cote Recyclique et cote Paheko.
 
-## Non-Functional Requirements
+**Delta canonique caisse/compta/Paheko (2026-04-15) :**
 
-### Performance
+- la caisse v2 doit supporter des **paiements mixtes**, le **don en surplus**, la **gratuite** (`free` comme vente a `0`, pas moyen de paiement) et les **remboursements** y compris sur **exercice anterieur clos** ;
+- les calculs comptables de cloture doivent partir du **journal detaille des transactions de paiement**, et non du **champ legacy de paiement porte par la vente** ;
+- la cloture de session doit produire un **snapshot comptable fige** avant emission vers `Paheko` ;
+- le lot de synchronisation d'une session peut contenir plusieurs sous-ecritures equilibrees (par exemple ventes/dons, remboursements exercice courant, remboursements exercice anterieur clos), sans changer le principe d'une supervision et d'une correlation communes ;
+- le **parametrage comptable sensible** de ce sous-domaine est distinct de la **config admin simple** et reste reserve au **super-admin / expert** avec forte tracabilite.
 
-- **NFR-P1** : L'enregistrement d'une vente (saisie + envoi) se termine en moins de 2 secondes dans des conditions normales.
-- **NFR-P2** : La clôture de session ne bloque pas l'opérateur plus de 10 secondes ; le push et la sync comptable peuvent s'achever en arrière-plan.
+**Source detaillee du sous-domaine :** `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md`
 
-### Security
+Hierarchie technique :
 
-- **NFR-S1** : Les échanges RecyClique ↔ Paheko (push) passent par HTTPS avec un secret partagé (header ou paramètre) ; aucun secret en clair dans les requêtes.
-- **NFR-S2** : Les secrets (endpoint plugin, credentials) sont gérés via variables d'environnement ou secrets manager, pas en dur dans le code.
-- **NFR-S3** : Accès caisse restreint par mode verrouillé (menu caisse seul) et déverrouillage par PIN par opérateur habilité.
-- **NFR-S4** : Données personnelles (utilisateurs, adhésions) conformes au RGPD dans le périmètre géré par Paheko/RecyClique.
+1. API officielle Paheko en priorite ;
+2. plugin Paheko minimal si un besoin n'est pas expose par l'API ;
+3. SQL limite a l'analyse, au controle ou a l'administration, jamais comme chemin transactionnel nominal.
 
-### Integration & Reliability
+**Note de clarification :** un mecanisme de queue ou d'outbox durable, ou equivalent, peut etre retenu pour la resilience **interne** de synchronisation cote Recyclique. Cela ne constitue pas un bus CREOS v2 et ne remet pas en cause le principe `CREOS documentaire` pour les manifests UI.
 
-- **NFR-I1** : La file de push (Redis Streams) garantit qu'aucun ticket n'est perdu en cas d'indisponibilité temporaire de Paheko ; retry jusqu'à succès (ou traitement manuel documenté).
-- **NFR-I2** : Les écritures compta (syncAccounting) respectent la configuration Paheko (comptes, exercice, moyens de paiement) ; la config Paheko est la référence.
+#### Multi-sites / multi-caisses / postes
 
-### Accessibility
+La v2 doit supporter la granularite : `ressourcerie → site → caisse → session → poste de reception`.
 
-- **NFR-A1** : Bonnes pratiques d'accessibilité de base (contraste, navigation clavier) pour les écrans caisse et réception ; renforcement possible post-MVP.
+Exigences a figer avant implementation large :
 
-*Scalability* : Non détaillée en v1 (une instance par ressourcerie ; 2e ressourcerie = objectif de validation).
+- une session, un ticket ou une cloture ne doivent jamais etre visibles ni actionnables hors du contexte `site/caisse/session` explicitement valide ;
+- les habilitations doivent pouvoir limiter un utilisateur a un sous-ensemble explicite de sites et de caisses ;
+- deux caisses actives en parallele sur un meme site ne doivent ni partager silencieusement une session ni produire une collision silencieuse sur les identifiants de ticket ou de cloture ;
+- chaque ticket, session et cloture doit porter un identifiant metier relisible et un identifiant technique tracable ;
+- la cloture et la reprise apres incident doivent laisser un evenement horodate et rejouable ;
+- la projection vers `Paheko` doit reposer sur une correspondance explicite entre le contexte Recyclique et l'emplacement comptable cible ;
+- si cette correspondance manque, l'operation reste locale, visible en supervision et non synchronisee tant qu'une correction explicite n'est pas faite.
 
-## Traçabilité FR → Parcours
+**Comportement minimal retenu en cas de correspondance absente ou invalide :**
 
-| Parcours | FR couverts |
-|----------|-------------|
-| J1 (Opérateur caisse) | FR1–FR7, FR11, FR14, FR15, FR18–FR20 |
-| J2 (Réception) | FR8–FR10 |
-| J3 (Compta / admin) | FR11–FR13, FR16, FR17 |
-| J4 (Admin technique) | FR18–FR20 |
-| J5 (Vie asso) | FR21 |
-| Domaine / scope | FR13b, FR22–FR27 |
+- l'operation terrain reste enregistree dans Recyclique ;
+- l'operation est marquee comme non syncable et doit entrer dans un etat visible pour support et supervision ;
+- les actions critiques finales dependantes de cette correspondance peuvent etre bloquees selon la matrice produit de blocage ;
+- aucune ecriture silencieuse vers un axe ou emplacement de substitution ne fait partie du chemin nominal v2.
 
-*Source :* tableau Journey Requirements Summary, matrice RBAC, Product Scope.
+Schema de deploiement cible : une instance Paheko par ressourcerie, projection de plusieurs sites et caisses Recyclique dans le modele Paheko.
 
-## Références projet
+#### Configuration admin simple
 
-- **Versioning** : `references/versioning.md` (v0.1.0 → v1.0.0).
-- **Matrice correspondance caisse/poids** : `references/migration-paeco/audits/matrice-correspondance-caisse-poids.md`.
-- **Grille confrontation** : `references/artefacts/2026-02-25_05_grille-confrontation-recyclic-paheko.md`.
-- **Checklist import 1.4.4** : `references/ancien-repo/checklist-import-1.4.4.md` (copy, consolidate, security à chaque pioche).
-- **Vision module décla éco-organismes** : `references/vision-projet/vision-module-decla-eco-organismes.md`.
-- **Extension points / Peintre (recherche)** : `_bmad-output/planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md`.
-- **Décision déploiement RecyClique + préconisations migration v1** : `references/artefacts/2026-02-26_01_analyse-separation-frontend-backend-recyclic.md`.
-- **Track BMAD Enterprise (multi-utilisateur, une instance par ressourcerie)** : `references/artefacts/2026-02-26_02_track-enterprise-multi-utilisateur.md`.
-- **Spécification UX v1 (stratégie, périmètre écrans, extension points)** : `_bmad-output/planning-artifacts/ux-design-specification.md`.
+Ce n'est **pas** un grand panneau admin metier. C'est un pilotage minimal du shell et des modules :
+
+- activation / desactivation de modules ou blocs ;
+- ordre de certains blocs ;
+- variantes simples d'affichage ;
+- aide ou overlay de raccourcis.
+
+**Persistance de cette couche (P2, ADR)** : les reglages qui relevent du paragraphe ci-dessus (activation, ordre, variantes simples, parametres prevus par le build dans le perimetre « admin simple ») sont stockes en **PostgreSQL** comme **surcharges** fusionnees de maniere deterministe avec les **valeurs par defaut** des manifests livres au build — voir l'ADR P2 dans le bloc « Stack Peintre_nano ». **Pas de fichier JSON sur disque en production** pour cette configuration dynamique ; la **tracabilite** des changements (auteur, date, motif) suit la decision directrice.
+
+Les **mappings sensibles** et **reglages critiques** (hors perimetre « admin simple » ci-dessus) restent reserves au niveau **super-admin/expert**, avec forte tracabilite. Supports possibles : fichiers structures (TOML, YAML, JSON) ou base de donnees, selon le domaine, avec ouverture future a une assistance admin plus riche — **sans contredire** P2 pour ce qui est deja couvert par la config admin simple versionnee.
+
+**Clarification produit :** le parametrage des **moyens de paiement**, des **comptes globaux de cloture** et des **cas comptables speciaux** du domaine caisse/compta/Paheko fait partie de ces reglages **sensibles** et **n'entre pas** dans le perimetre de la `config admin simple`.
+
+**Modele de deploiement des manifests et contributions UI en v2 :**
+
+- les manifests et contributions supportes en v2 sont **versionnes et livres avec le build** comme source primaire ;
+- la configuration runtime ne peut agir que sur l'activation, l'ordre, les variantes simples et les parametres prevus par le build ;
+- le chargement dynamique de manifests tiers hors build n'est pas un prerequis v2 ; il reste une ouverture future soumise a la gouvernance contractuelle.
+
+#### Scope minimum HelloAsso
+
+L'integration HelloAsso est un connecteur metier du perimetre v2, pas une dependance bloquante pour l'installabilite du coeur produit.
+
+**Minimum v2 attendu :**
+
+- capacite a ingerer ou rapprocher les informations utiles aux parcours `adherents / vie associative minimale` ;
+- prevention des doublons silencieux ;
+- journalisation des echecs de rapprochement ;
+- possibilite de reprise ou traitement manuel encadre en cas d'echec du connecteur.
+
+**Decision de cadrage :**
+
+- le niveau exact d'integration HelloAsso en v2 depend d'une etude d'architecture dediee ;
+- cette etude devra comparer au minimum deux voies :
+  - usage direct de l'API HelloAsso ;
+  - usage ou adaptation du plugin HelloAsso existant cote Paheko ;
+- la voie retenue devra privilegier la solution la plus simple, la plus maintenable et la plus compatible avec les parcours `adherents` et la gouvernance `Recyclique` / `Paheko`.
+
+**Livrable d'arbitrage (trace 2026-04-12) :** le resultat ecrit de l'etude (decision, promesse produit, points dev) est consolide dans `references/migration-paheko/2026-04-12_specification-integration-helloasso-recyclique-paheko.md` et `references/migration-paheko/2026-04-12_brouillon-arbitrage-helloasso-et-promesse-recyclique-paheko.md` ; la recherche externe associee porte un **erratum** dans `references/recherche/2026-04-12_helloasso-api-v5-paheko-perimetre-recyclique_perplexity_reponse.md` (quotas OAuth vs interpretation initiale). La story **9.4** (`epics.md`) renvoie a ces chemins pour la preuve d'arbitrage.
+
+**Hors scope v2 :**
+
+- automatisation riche de bout en bout sur tous les cas HelloAsso ;
+- moteur de reconciliation avance ou configurable librement par un non-expert.
+
+### 7.2 Hors perimetre initial
+
+Ne sont pas des prerequis de la v2 :
+
+- personnalisation riche ;
+- editeur convivial de flows ;
+- pilotage agentique riche ;
+- interfaces analytiques avancees ;
+- edition admin riche facon back-office complet ;
+- composition dynamique par IA (Peintre_mini) ;
+- bus CREOS Redis/RabbitMQ obligatoire ;
+- gates Capitaine_Balance pleinement branchees ;
+- experimentation DivKit ;
+- optimisation fine de layout CSS non indispensable a la preuve produit v2 ;
+- telemetrie d'interaction fine non indispensable a la preuve produit v2 ;
+- strategie avancee de decoupage du chargement front non indispensable a la preuve produit v2 ;
+- fusion des couches de manifests au-dela du profil CREOS minimal.
+
+Ces sujets restent des ouvertures volontaires. L'architecture doit les rendre possibles sans les imposer.
+
+---
+
+## 8. Profil CREOS minimal v2
+
+### 8.1 Objets obligatoires
+
+| Objet | Description |
+|-------|-------------|
+| `ModuleManifest` | Declaration complete d'un module UI (routes, slots, widgets, actions, shortcuts, flows) |
+| `SlotDefinition` | Declaration d'un point d'extension dans le shell |
+| `WidgetDeclaration` | Declaration d'un widget avec type stable, meta_props et props_schema |
+| `ModuleAction` | Action metier exposee par un module (bouton, commande), multi-slots |
+
+### 8.2 Objets toleres (preparation, pas obligatoires partout)
+
+- `PageTemplate` ;
+- `ZoneRole` ;
+- `LayoutComposition`.
+
+### 8.3 Rules minimales
+
+- `ModulePermissions` ;
+- `SlotConstraints`.
+
+### 8.4 States minimaux
+
+- `ACTIVE`, `INACTIVE`, `ERROR`.
+
+### 8.5 Events minimaux
+
+- `ModuleActivatedEvent`, `ModuleDeactivatedEvent`, `SlotContentChangedEvent`.
+
+### 8.6 Commands minimales
+
+- `ACTIVATE_MODULE`, `DEACTIVATE_MODULE`, `REGISTER_WIDGET`.
+
+### 8.7 Hors noyau minimal
+
+- `COMPOSE_LAYOUT` pilote par agent ;
+- bus CREOS obligatoire ;
+- gates Capitaine_Balance branchees ;
+- optimisation automatique ou IA des layouts.
+
+### 8.8 Repartition emission / consommation
+
+| Acteur | Responsabilite |
+|--------|---------------|
+| **Recyclique** emet | Manifests CREOS de ses modules, routes symboliques, actions, permissions, contextes de rendu, declarations de contributions aux slots, DTO et contrats backend via OpenAPI |
+| **Peintre_nano** valide et consomme | Manifests conformes au profil CREOS, widgets declares et leur props_schema, etats activation/desactivation, regles de contraintes de slots |
+| **Adaptateur React** rend | Shell, slots, widgets resolus, fallback visuels, comportements d'affichage lies au canal |
+
+Regle de gouvernance : les routes symboliques, actions et contrats UI doivent rester traces a une source versionnee et coherentement relies aux contrats backend ; aucune convention locale non versionnee ne doit devenir une seconde source de verite.
+
+---
+
+## 9. Parcours et flows critiques
+
+### 9.1 Cashflow (passage en caisse)
+
+**Criticite :** maximale — preuve terrain critique v2.
+
+Parcours type : scan/recherche produit → saisie prix → mode de paiement → emission ticket.
+
+Exigences :
+
+- le parcours nominal `scan -> prix -> validation -> paiement` doit etre realisable **entierement au clavier**, sans souris, sur poste de reference ;
+- contexte garanti : site, caisse, session, operateur ;
+- blocage si contexte incomplet ou ambigu ;
+- validations metier et comptables avant cloture de ticket ;
+- journalisation complete ;
+- resilience : la transaction reste enregistree dans Recyclique meme si `Paheko` est indisponible au moment de la vente ;
+- fallback explicite si un widget ou une contribution UI n'est pas rendable.
+
+Le parcours caisse v2 doit aussi couvrir, sans demander une culture comptable a l'operatrice :
+
+- les **paiements mixtes** ;
+- le **don en surplus** distinct du paiement de vente ;
+- la **gratuite** comme vente a `0` ;
+- le **remboursement** standard ;
+- le **remboursement sur exercice anterieur clos** avec aide explicative et garde-fous renforces.
+
+### 9.2 Reception flow (reception de marchandise)
+
+**Criticite :** maximale — preuve terrain critique v2.
+
+Exigences :
+
+- contexte garanti : site, poste de reception, operateur ;
+- categorisation (flux matiere), pesee, qualification ;
+- journalisation des entrees ;
+- lien avec le flux matiere (verite Recyclique) ;
+- fallback et blocage sur les memes principes que le cashflow.
+
+### 9.3 Cloture de session / cloture de caisse
+
+Exigences :
+
+- controle des totaux ;
+- calcul a partir de la source de verite comptable locale des paiements ;
+- production d'un **snapshot comptable fige** de session avant emission vers `Paheko` ;
+- reconciliation avec les donnees en zone tampon ;
+- declenchement de la sync vers Paheko (si pas deja fait en temps reel) ;
+- blocage possible si ecart critique detecte avant sync finale ;
+- journalisation et historisation.
+
+### 9.4 Bandeau live
+
+**Role :** preuve modulaire legere.
+
+Exigences :
+
+- premier module a prouver la chaine complete : contrat backend → manifest CREOS → registre Peintre_nano → slot → rendu → fallback ;
+- activation/desactivation via config admin ;
+- preuve explicite du profil CREOS minimal sur au moins `ModuleManifest`, `WidgetDeclaration`, `SlotDefinition` et `ModuleAction` ;
+- si le bandeau live ne prouve pas la chaine modulaire, **la chaine doit etre corrigee avant d'aller plus loin**.
+
+### 9.5 Declaration eco-organismes
+
+**Role :** premier grand module metier.
+
+Exigences :
+
+- agnostique des categories boutique : categories internes libres → mapping vers categories officielles par eco-organisme ;
+- croisement flux matiere + flux financier ;
+- appui sur le socle modulaire deja prouve (ne doit pas inventer son propre socle) ;
+- contrat backend, manifest CREOS, runtime frontend, permissions, fallback ;
+- configurabilite des mappings en super-admin.
+
+**Perimetre minimum v2 pour ce module :**
+
+- produire, a partir des flux terrain deja saisis, les agregats et details necessaires a une declaration par periode et par perimetre ;
+- conserver la tracabilite du mapping entre categories internes et categories officielles ;
+- permettre une lecture par periode et par perimetre de ressourcerie/site selon la spec multi-contextes ;
+- ne pas embarquer en v2 un moteur de parametrage reglementaire generaliste.
+
+### 9.6 Adherents / vie associative minimale
+
+**Role :** preuve metier complementaire (evite un biais de conception sur un seul module).
+
+Exigences :
+
+- gestion minimum des benevoles et adhesions ;
+- integration HelloAsso ;
+- module construit sur la meme chaine modulaire que les autres.
+
+**Minimum vendable v2 :**
+
+- creation et consultation des adherents ;
+- suivi minimum de l'etat d'adhesion ;
+- rapprochement minimum avec HelloAsso ;
+- droits et contextes coherents avec le modele roles/groupes de la ressourcerie.
+
+**Hors scope v2 :**
+
+- CRM associatif complet ;
+- automatisations avancees de communication ;
+- workflows riches de validation associative.
+
+### 9.7 Configuration admin minimale
+
+**Role :** preuve de pilotage local du shell et des modules sans basculer dans un back-office expert.
+
+Exigences :
+
+- un responsable habilite peut activer ou desactiver un module ou bloc supporte par la `config admin simple` ;
+- un responsable habilite peut modifier l'ordre d'un bloc et choisir une variante simple prevue par le build ;
+- chaque changement est trace avec auteur, date, contexte et motif ;
+- un changement valide devient visible au prochain rechargement autorise du shell, sans redeploiement ni edition manuelle de base ;
+- les reglages comptables sensibles restent exclus de ce parcours et renvoyes au niveau `super-admin / expert`.
+
+### 9.8 Installation et onboarding d'une ressourcerie
+
+**Role :** preuve d'installabilite officielle et d'adoptabilite du socle v2.
+
+Exigences :
+
+- a partir d'un environnement vierge officiellement supporte, l'installation nominale doit permettre d'atteindre un shell authentifie sans edition manuelle de base de donnees ;
+- la procedure documentee doit permettre de creer un premier contexte exploitable (`site`, `caisse`, compte admin initial, modules de base) ;
+- les prerequis, etapes et points de verification doivent etre documentes de maniere rejouable ;
+- toute etape hors procedure standard doit etre explicitement marquee comme support, migration ou intervention expert, pas comme chemin nominal.
+
+---
+
+## 10. Matrice fallback / blocage / retry
+
+### 10.1 Principes generaux
+
+| Situation | Comportement |
+|-----------|-------------|
+| Widget non rendable | Fallback visible + journalisation |
+| Module non critique en echec | Isolation de l'erreur, reste de l'ecran intact |
+| Flow invalide ou incomplet | Blocage du flow concerne, retour a un mode simple si possible, feedback explicite |
+| Contexte ambigu ou incomplet | Mode restreint/degrade explicite, pas de supposition silencieuse |
+| Action sensible | Controle supplementaire (confirmation, PIN, revalidation role) |
+| Sync Paheko indisponible | Enregistrement dans Recyclique, retry ulterieur, pas de blocage terrain par defaut |
+| Ecart de sync persistant | Signalement, passage en quarantaine, resolution tracee par un role habilite |
+| Conflit securite vs fluidite | **La securite gagne** |
+| Donnees widget en cours / chargees / erreur / vide / perimees | Etats de presentation dedies (`chargement`, `erreur`, `vide`) ; si un contrat de donnees critique declare une donnee perimee, cet etat peut **bloquer** les actions sensibles en coherence avec la securite > fluidite |
+| Parametrage comptable sensible invalide ou incomplet | Blocage explicite des actions comptables finales dependantes, correction reservee au role habilite, pas de valeur de substitution silencieuse |
+| Lot de sync partiellement applique cote Paheko | Etat explicite de reprise / reconciliation, trace commune du lot, pas de succes global implicite |
+
+**Note de compatibilite avec la matrice ci-dessus :** les lignes existantes (widget non rendable, module non critique, flow invalide, etc.) restent valides pour la **composition** et le **runtime CREOS** ; la ligne ajoutee couvre la **couche donnees metier** par widget, orthogonale aux etats de cycle de vie module (`ACTIVE` / `INACTIVE` / `ERROR`).
+
+**Lexique runtime :** le vocabulaire des etats de donnees doit rester **unique et documente** entre les contrats et l'UI. La v2 n'accepte pas deux semantiques paralleles non raccordees pour parler d'une meme situation de donnees.
+
+**Preuve et non-regression :** cette coherence doit etre verifiable par la validation contractuelle et les tests de rendu des manifests critiques — objectif : eviter deux vocabulaires paralleles sans pont explicite.
+
+### 10.2 Actions critiques finales pouvant etre bloquees
+
+- cloture comptable definitive ;
+- validation financiere irreversible ;
+- generation ou validation finale d'une ecriture qui doit etre reputee comptablement exacte ;
+- operation finale necessitant une correspondance site/caisse/emplacement Paheko valide ;
+- validation finale d'un ecart ou d'une reprise manuelle de sync.
+
+Le blocage selectif s'applique uniquement quand la securite metier/comptable n'est plus garantissable autrement. Pour les **nouveaux** types d'operations sensibles hors liste, la matrice produit / architecture peut **etendre** la liste tout en conservant ce principe.
+
+### 10.3 Cas nominaux de cloture et d'ecart critique
+
+| Cas | Statut attendu |
+|-----|----------------|
+| Cloture avec sync disponible et totaux coherents | Autoriser la cloture |
+| Cloture avec sync indisponible mais donnees terrain coherentes et aucune exigence comptable finale immediatement requise | Autoriser la cloture locale, placer en attente de sync, signaler l'etat |
+| Cloture avec correspondance comptable absente ou incoherence comptable detectee | Bloquer l'action finale concernee et placer le flux en quarantaine |
+| Cloture avec besoin de reprise manuelle deja identifie | Autoriser uniquement selon role habilite, avec trace d'audit et motif |
+
+**Definition produit minimale d'un ecart critique :** tout ecart qui empeche de garantir soit l'exactitude comptable finale, soit la bonne affectation de l'operation au bon contexte site/caisse/emplacement, soit la capacite de rejouer et expliquer correctement l'operation apres coup.
+
+---
+
+## 11. Exigences non fonctionnelles
+
+### 11.1 Resilience
+
+- Toute operation terrain finalisee est enregistree dans `Recyclique` avant qu'un succes externe `Paheko` ne soit suppose.
+- Un scenario de reprise apres indisponibilite `Paheko` doit permettre de rejouer un lot en attente **sans perte silencieuse** et **sans duplication silencieuse**.
+- Le terrain doit pouvoir continuer a fonctionner en mode degrade lorsqu'une dependance externe est indisponible, hors actions finales explicitement bloquees par `§ 10`.
+
+### 11.2 Securite
+
+- Authentification et permissions sous autorite Recyclique.
+- L'affichage dans Peintre_nano ne vaut jamais autorisation effective : toute action sensible doit etre revalidee cote Recyclique.
+- PIN et validations sensibles sur les actions critiques.
+- Zero fuite de contexte entre sites/caisses/operateurs.
+- Manifests CREOS livres avec le build comme source primaire (securite > flexibilite au demarrage).
+
+**Politique minimale PIN v2 :**
+
+- le PIN est distinct des autres secrets d'authentification utilises par l'utilisateur ;
+- il ne doit jamais apparaitre en clair dans les logs ;
+- les usages du PIN doivent etre traces pour les actions sensibles ;
+- blocage temporaire apres **5 erreurs consecutives** sur une fenetre de **15 minutes** ;
+- la longueur minimale par defaut est de **6 caracteres numeriques** ; la duree de blocage par defaut est de **15 minutes** ; le nombre d'essais autorises avant blocage et la duree du blocage restent des **settings** reconfigurables ;
+- ces settings font partie des parametres de base editables par un **super-admin** ;
+- ces parametres doivent pouvoir etre portes par la configuration structuree retenue (JSON, YAML ou equivalent) et exposes via un editeur integre leger cote super-admin ;
+- la reinitialisation du PIN doit etre reservee a un **super-admin** ou a un **responsable habilite** selon le perimetre retenu par l'architecture.
+
+### 11.3 Tracabilite et audit
+
+- Journalisation des actions sensibles : resultat, qui, quand, quel contexte.
+- Journalisation des fallbacks, blocages et degradations.
+- Retour d'information exploitable pour support/admin.
+- Boucle correction/retry avec message d'erreur contenant au minimum l'operation concernee, la consequence immediate, l'action suivante attendue et un identifiant de correlation si escalation necessaire.
+- Sur la compta et les flux sensibles : capacite de rejouer/comprendre apres coup.
+- Sur la caisse/compta : historisation des changements de parametrage comptable sensible, des remboursements speciaux et des traitements de lots de session.
+
+**Schema minimal attendu pour les journaux critiques :**
+
+- `correlation_id` commun au flux quand pertinent ;
+- identifiants de contexte (`site`, `caisse`, `session`, `poste`) ;
+- identifiant interne utilisateur ou operateur ;
+- type d'operation, etat, motif d'echec ou de blocage ;
+- masquage des donnees sensibles non necessaires au support.
+
+### 11.4 Performance
+
+- Sur poste de reference et donnees nominales, le parcours `cashflow` doit amener l'utilisateur de la saisie au prochain etat exploitable en **moins de 200 ms p95** sur les actions clavier critiques (`scan`, `validation prix`, `selection paiement`).
+- Sur poste de reference et donnees nominales, le shell web authentifie doit rendre un ecran critique exploitable en **moins de 2 secondes p95** apres navigation ou rechargement autorise.
+- La strategie de chargement front n'est pas un prerequis produit en soi ; elle est acceptable tant qu'elle respecte les criteres de performance ci-dessus et n'introduit pas de blocage visible sur les flows critiques.
+
+**Cadre de mesure :** les seuils ci-dessus sont verifies sur l'environnement officiellement supporte, avec jeux de donnees nominaux et plan de tests performance versionne. L'architecture et l'observabilite peuvent completer ces mesures, sans les contredire ni les affaiblir.
+
+### 11.5 Installabilite et open source
+
+- Installation documentee et reproductible sur environnement cible.
+- Socle lisible et documente pour ouverture communautaire.
+- Pas de dependance a un service propriataire pour le fonctionnement de base.
+- La matrice d'environnements officiellement supportes doit etre publiee avant release candidate v2.
+- La matrice navigateurs officiellement supportes doit etre publiee avec la documentation d'installation du coeur web.
+- Une installation nominale est consideree complete lorsque le shell authentifie est accessible et qu'un premier contexte exploitable peut etre cree sans edition manuelle de base.
+
+**Decision de cadrage v2 :**
+
+- une seule installation officielle est supportee pour la v2 ;
+- l'environnement cible officiel est **Debian** ;
+- c'est aussi l'environnement de reference utilise pour le projet lui-meme ;
+- les autres environnements peuvent etre explores plus tard, mais ne font pas partie du support officiel v2.
+
+**Posture communautaire :** les installations sur d'autres OS (ex. derivés Debian/Ubuntu, conteneurs) peuvent etre **best-effort** par la communaute mais restent **hors support officiel** et hors **matrice publiee** (§ 11.5, gates § 13) tant qu'aucune extension explicite du perimetre supporte n'est decidee.
+
+### 11.6 Donnees
+
+- Le modele de donnees doit supporter l'articulation des deux flux (financier / matiere).
+- Historicisation permettant de relire une operation, une cloture de session et la version de mapping appliquee au moment des faits.
+- Grain de donnees : totaux **et** operations detaillees accessibles.
+- Mappings super-admin historises (savoir a partir de quand un mapping a change).
+- Pour toute session cloturee, les donnees exportees ou relues doivent permettre de retrouver au minimum : contexte, lignes de detail, totaux, version de mapping et identifiant de correlation.
+- Donnees exportables et relisibles sans transformation ad hoc pour les usages d'audit, de rapprochement et d'analyse v2.
+- Les donnees de cloture de session doivent pouvoir etre figees dans un **snapshot comptable** non recalcule silencieusement apres cloture.
+
+---
+
+## 12. Dependances et contraintes structurantes
+
+### 12.1 Ordre structurant
+
+L'ordre suivant minimise le risque systemique et doit etre respecte comme preference forte (ajustable si un audit reel l'impose) :
+
+| # | Etape | Statut |
+|---|-------|--------|
+| 1 | Decision directrice v2 | **Fait** — document pivot `2026-03-31` |
+| 2 | Separation Recyclique / Peintre_nano | **Fait** — plan valide |
+| 3 | Profil CREOS minimal | **Fait conceptuellement** — plan valide, reste a figer en schemas formels |
+| 4 | Audit backend / API / donnees + retro-engineering Paheko | A produire |
+| 5 | Spec multi-sites / multi-caisses / postes + mapping Paheko | A produire |
+| 6 | Contrat socle sync / reconciliation Recyclique / Paheko | A produire sur base des etapes 4 et 5 |
+| 7 | Gouvernance contractuelle + schemas CREOS formels | A produire |
+| 8 | Architecture modulaire + socle UI transverse | A produire |
+| 9 | PRD actif + architecture active sans ambiguite majeure | Ce document + architecture a venir |
+
+**Guide operationnel d'execution** : pour suivre en parallele les **deux rythmes** possibles (sequence structurante ci-dessus vs Pistes A/B dans les epics), les **jalons** a cocher et la **cartographie** des livrables documentaires (audits, donnees, tests), voir [`guide-pilotage-v2.md`](guide-pilotage-v2.md) — sans dupliquer les tableaux de cette section.
+
+**Delta structurant 2026-04-15 :** pour le sous-domaine caisse/compta/Paheko, la sequence doit aussi expliciter la chaine `referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable de session -> lot de synchronisation Paheko`, ainsi que son articulation avec les epics `6`, `8`, `10`, `13`, `14`, `16` et `18` via le correct course approuve.
+
+### 12.2 Sequence de validation produit
+
+| # | Etape | Ce qu'elle prouve |
+|---|-------|------------------|
+| 1 | Audit backend / API / donnees | Compatibilite du socle existant avec la cible v2 |
+| 2 | Retro-engineering Paheko sur donnees reelles | Limites reelles de l'API, mapping metier/compta |
+| 3 | Spec multi-sites / multi-caisses / postes + mapping Paheko | Invariants de contexte et de projection comptable pour tous les chantiers |
+| 4 | Contrat socle sync / reconciliation | Politique claire de livraison, retry, quarantaine, resolution |
+| 5 | Gouvernance contractuelle + schemas CREOS formels | Grammaire machine stable pour manifests et compatibilite |
+| 6 | Runtime minimal Peintre_nano | Moteur de composition reel |
+| 7 | Preuve chaine modulaire sur `bandeau live` | Chaine complete backend → manifest → registre → slot → rendu → fallback |
+| 8 | Recomposition transverse shell, navigation, dashboard, admin (**epic-5**, sprint) | Prerequis UI entre bandeau live et parcours terrain lourds ; aligne `epics.md` et `sprint-status.yaml` |
+| 9 | Preuves terrain critiques : `cashflow` + `reception flow` | Robustesse terrain, contexte, raccourcis, flows, blocage/fallback |
+| 10 | Premier grand module metier : `eco-organismes` | Validation du socle sur un domaine metier complet |
+| 11 | Chantiers paralleles : `adherents`, config admin simple, HelloAsso, autres | Couverture fonctionnelle v2 |
+
+**Regle :** si `bandeau live` ne prouve pas la chaine modulaire, corriger la chaine avant d'aller plus loin. L'etape **8** explicite le jalon **epic-5** absent de certaines sequences courtes de brainstorming mais presente dans le plan d'execution. Si un audit contredit le plan, arbitrer au cas par cas.
+
+### 12.3 Dependances entre chantiers
+
+| Chantier | Depend de | Peut demarrer en parallele avec |
+|----------|-----------|---------------------------------|
+| A — Socle integration Paheko | Contrat de sync valide, politique API/plugin/SQL | - |
+| B — Multi-sites/multi-caisses | Audit backend/API/donnees | A (partiellement) |
+| C — Separation Recyclique/Peintre_nano + CREOS | Decision directrice | B (les invariants de B contraignent C) |
+| D — Socle UI transverse (Peintre_nano) | C (contrats) + B (contextes) | - |
+| E — Module eco-organismes | A, B, C, D prouves | Config admin simple |
+| Config admin simple | C, D | E, Adherents |
+| Adherents | C, D | E, Config admin |
+
+Regle de preemption : en cas de conflit entre un choix UI/contrat et un invariant de contexte, de permissions ou de projection comptable, l'invariant metier gagne et le chantier UI doit s'aligner.
+
+### 12.4 Goulots d'etranglement identifies
+
+1. **Noyau donnees / API / contextes** — doit etre clarifie avant de dessiner les modules.
+2. **CREOS minimal reellement fige en schemas JSON** — doit etre suffisant sans etre surdimensionne.
+3. **Peintre_nano appliquant droits + contexte + fallback** — doit etre prouve en vrai.
+4. **Chaine modulaire complete en petit** — doit etre prouvee avant un gros module metier.
+
+---
+
+## 13. Gates de sortie
+
+### 13.1 Beta interne ressourcerie test
+
+| Critere | Description |
+|---------|-------------|
+| Terrain fiable | Scenarios nominaux et de degradation critiques `cashflow` et `reception flow` executes sans defaut bloquant ouvert sur le contexte ou la perte de donnee |
+| Compta acceptable | Scenarios critiques de sync/reconciliation documentes et verifies sur les parcours prioritaires |
+| Modularite prouvee partiellement | `Bandeau live` prouve la chaine modulaire minimale et le passage d'un contrat CREOS au rendu effectif |
+| Zero fuite de contexte | Aucun defaut critique detecte sur site, caisse, session, poste |
+
+**Preuves attendues pour declarer la beta interne :**
+
+- liste de scenarios critiques executes avec resultat documente ;
+- verification explicite des comportements de fallback, blocage et quarantaine sur les parcours prioritaires ;
+- constats terrain remontes sur au moins un contexte reel de ressourcerie test.
+- pour la caisse/compta : preuve explicite sur paiements mixtes, don en surplus, gratuite, remboursement standard, remboursement sur exercice anterieur clos, snapshot de session et lot de synchronisation associe.
+- pour le `bandeau live` : preuve documentee qu'un `ModuleManifest`, ses contributions de slot et son rendu nominal peuvent etre valides sans convention locale non versionnee.
+
+### 13.2 V2 vendable / commercialisable
+
+| Critere | Description |
+|---------|-------------|
+| Terrain fiable | Parcours `cashflow`, `reception flow` et `cloture` executes sur environnement supporte avec preuves documentees et sans defaut critique ouvert sur perte de donnee ou fuite de contexte |
+| Compta propre | Politique de reconciliation explicite, parcours critiques verifies, traitement clair des ecarts de sync |
+| Modularite front prouvee de bout en bout | Preuves confirmees sur bandeau live, eco-organismes et adherents |
+| Zero fuite de contexte | Aucun defaut critique sur les contextes sensibles |
+| Config admin minimale reelle | Un responsable habilite peut modifier activation, ordre et variante simple sur environnement supporte, avec audit et sans redeploiement |
+| Installation open source | Installation nominale documentee, reproductible et verifiee sur environnement cible officiel, jusqu'au shell authentifie et au premier contexte exploitable |
+| Ouverture communautaire | Contrats, documentation d'installation et guide de contribution minimum publies de facon coherente avec la gouvernance contractuelle |
+
+**Preuves attendues pour declarer la v2 vendable :**
+
+- scenarios critiques de caisse, reception, cloture et sync executes et documentes ;
+- preuve explicite de la modularite sur `bandeau live`, `eco-organismes` et `adherents` ;
+- publication de la matrice d'environnements supportes et de la documentation d'installation associee ;
+- publication de la matrice navigateurs supportes et du niveau d'accessibilite cible ;
+- absence de defaut critique ouvert sur fuite de contexte, blocage comptable ou perte de tracabilite.
+- pour le sous-domaine caisse/compta/Paheko : preuve documentee d'un lot de session complet, de sa reprise en cas d'echec et de l'absence de succes global implicite en cas d'application partielle cote `Paheko`.
+- pour `config admin simple` : preuve documentee d'au moins un changement de configuration applique et trace sans intervention technique hors procedure.
+
+---
+
+## 14. Gouvernance contractuelle
+
+### 14.1 Source de verite des schemas
+
+Emplacement canonique des artefacts reviewables : repertoire `contracts/` a la racine du depot — `contracts/openapi/recyclique-api.yaml`, `contracts/creos/schemas/` (voir architecture BMAD et `contracts/README.md`). Les chemins historiques sous `_bmad-output` ne remplacent pas cette source pour le code et la CI cible.
+
+### 14.2 Versionnement
+
+- Manifests CREOS : SemVer, aligne avec les conventions JARVOS.
+- OpenAPI : versionne separement mais de facon coordonnee.
+- Numero de compatibilite explicite dans chaque manifest (couple API/manifest ↔ version Peintre).
+
+### 14.3 Breaking changes
+
+- **Politique minimale v2 :** toute rupture de contrat `OpenAPI` ou `CREOS` doit etre annoncee explicitement, versionnee, accompagnee d'un impact note et d'un chemin de migration ou de compatibilite.
+- **Propagation** vers les instances deployees (OSS et cloud) sans rupture silencieuse du rendu ou des parcours critiques.
+- Pour le sous-domaine caisse/compta/Paheko, cette gouvernance devra aussi couvrir le **versionnement du lot de sync de session**, la pluralite d'identifiants distants eventuels et le traitement des succes partiels ou des reprises manuelles.
+
+### 14.4 Validation CI
+
+- Les contrats critiques doivent etre validables de maniere automatisable, de sorte qu'un manifest conforme sur le fond ne degrade pas silencieusement le rendu nominal attendu.
+
+### 14.5 Definition of done contractuelle avant implementation large
+
+Avant implementation large des modules v2, les points suivants doivent etre consideres comme closes :
+
+- emplacement canonique des schemas defini ;
+- regles de versionnement `OpenAPI` / `CREOS` fixees ;
+- politique de breaking changes explicite ;
+- schemas formels minimaux publies pour `ModuleManifest`, `WidgetDeclaration`, `SlotDefinition`, `ModuleAction` ;
+- mecanisme automatise minimal disponible pour verifier la validite des schemas et la non-regression de rendu des manifests critiques.
+
+---
+
+## 15. Risques principaux
+
+| Risque | Impact | Mitigation |
+|--------|--------|-----------|
+| Rater la modularite de base | Blocage de tous les modules metier | Prouver la chaine en petit (bandeau live) avant le grand (eco-organismes) |
+| Sur-complexifier Peintre_nano / CREOS | Retard de sortie v2 | Profil de capacites minimal, pas de sur-architecture prematuree |
+| Sous-estimer les invariants multi-contextes | Fuites de contexte, erreurs comptables | Stabiliser tot site/caisse/session/poste/role/PIN, spec dediee |
+| Mal formaliser l'articulation terrain/compta/zone tampon | Ecarts de sync non recuperables | Contrat de sync explicite avec idempotence, retry, quarantaine |
+| Laisser le champ legacy de paiement porte par la vente survivre comme referentiel reel | Clotures incoherentes et doubles verites | Basculer les calculs comptables sur le journal detaille des transactions de paiement avec transition encadree |
+| Dupliquer la verite du sous-domaine entre PRD canonique et PRD specialise | Divergence documentaire et backlog ambigu | Garder ici un delta canonique mince et renvoyer le detail operatoire au PRD specialise |
+| Ouvrir trop tot les sujets riches | Dilution du socle, dette strategique | Hors perimetre initial strictement delimite |
+| Cout d'onboarding OSS de la separation Peintre/Recyclique | Barriere a la contribution communautaire | Documentation claire des contrats, exemples de manifests publics |
+| Donnees existantes incompatibles avec la cible multi-sites | Rework massif du modele | Audit backend/API/donnees en amont de l'implementation |
+
+---
+
+## 16. Points encore a verrouiller avant architecture finale
+
+Les points suivants sont des **verrous reels** — pas des questions ouvertes residuelles, mais des **prealables explicites** a l'architecture active :
+
+### 16.1 Contrat de synchronisation Recyclique / Paheko
+
+A produire : matrice definitive `API / plugin minimal / SQL hors flux`, couvrant idempotence, retry, quarantaine, reconciliation, semantique de livraison, cles de correlation inter-systemes, versionnement des payloads, et traduction detaillee de la gouvernance minimale deja posee dans ce PRD.
+
+Pour le sous-domaine caisse/compta/Paheko, ce contrat devra aussi figer :
+
+- la source de verite comptable locale des paiements ;
+- le role du **snapshot comptable fige de session** ;
+- la granularite du **lot de synchronisation de session** ;
+- la gestion de plusieurs sous-ecritures equilibrees pour une meme session ;
+- la semantique de succes partiel, de reprise et de correlation commune.
+
+### 16.2 Spec multi-contextes
+
+A produire : granularite exacte `ressourcerie → site → caisse → session → poste`, regles d'isolation, mapping vers entites/emplacements Paheko, comportement en contexte incomplet, risques d'integrite connus dans la base active (notamment autour de `site_id`). Doit aussi couvrir : modele de roles definissables par ressourcerie, groupes, labels personnalisables, et leur interaction avec le calcul de permissions et les contextes de rendu.
+
+### 16.3 Gouvernance contractuelle
+
+A trancher : source canonique des schemas, articulation OpenAPI / schemas CREOS, politique de versionnement et de breaking changes, mecanisme de validation CI.
+
+### 16.4 Schemas CREOS formels
+
+Le profil CREOS minimal est conceptuellement fige. Il reste a produire les **schemas JSON formels** validables automatiquement pour `ModuleManifest`, `WidgetDeclaration`, `SlotDefinition`, `ModuleAction`.
+
+### 16.5 Mecanisme de sync concret
+
+A confirmer ou reviser : mecanisme de file durable, politique de reprise et semantique de livraison retenue pour la resilience de sync.
+
+Le **mecanisme concret** ne change pas la decision produit de haut niveau : la cloture de caisse prepare un **lot de session** corrigeable et tracable vers `Paheko`. Le detail de transport reste de la responsabilite de l'architecture.
+
+## 17. Statut des questions produit
+
+Il ne reste plus de **lacune redactionnelle** ni de **question produit bloquante non cadrée** dans les sections de ce document, **y compris** sur le sous-domaine caisse/compta/Paheko au niveau **canonique** : les sujets encore ouverts (ex. **niveau exact HelloAsso**, **sync** concrete, **politique breaking changes**, detail du lot de sync Paheko) sont **deja renvoyes** aux paragraphes de perimetre (SS 7, SS 14–16), au **PRD specialise** du `2026-04-15`, et aux **livrables d'architecture**.
+
+Les points encore a **produire** pour passer a l'implementation relevent :
+
+- de l'architecture et des specs techniques derivees ;
+- des **verrous § 16** (contrat sync, multi-contextes, gouvernance contractuelle incluant breaking changes, schemas CREOS, mecanisme de sync) ;
+- et du choix de mise en oeuvre concret des settings, du stockage de configuration et des mecanismes de synchronisation.
+
+---
+
+## Annexe A — Contradictions detectees dans les sources
+
+Aucune contradiction bloquante n'a ete detectee entre les sources actives sur les arbitrages centraux. Le point de vigilance principal concerne l'existence historique d'anciens recits dans le depot (strategie `Paheko = backend principal`, `caisse native Paheko`, etc.) qui restent en dehors du perimetre canonique actuel. Le document pivot `2026-03-31_decision-directrice-v2.md` fait foi.
+
+---
+
+## Annexe B — Glossaire
+
+| Terme | Definition dans ce PRD |
+|-------|----------------------|
+| `Recyclique` | Noyau metier, contrats backend, contexte, resilience, sync, historique |
+| `Paheko` | Autorite comptable officielle du flux financier |
+| `Peintre_nano` | Moteur de composition d'interface cote client |
+| `CREOS` | Grammaire commune minimale des declarations UI (manifests, actions, widgets, flows, etats) |
+| `Adaptateur de canal` | Couche de rendu concret (React pour le web) |
+| `Manifest CREOS` | Declaration d'un module (routes, slots, widgets, actions, shortcuts, flows) au format CREOS documentaire (JSON) |
+| `Slot` | Point d'extension nomme dans le shell UI |
+| `Widget` | Composant reutilisable avec type stable et props_schema |
+| `Flow` | Sequence d'etapes (state machine legere) declaree en JSON |
+| `Zone tampon` | Espace de stockage local Recyclique pour les donnees en attente de sync vers Paheko |
+| `Quarantaine` | Etat explicite d'un flux ou d'une operation qui ne peut pas etre synchronise ou valide sans traitement trace |
+| `Correlation_id` | Identifiant de suivi d'un meme flux ou evenement a travers plusieurs composants ou systemes |
+| `Payment_methods` | Referentiel des moyens de paiement administrables et relies a leurs comptes comptables |
+| `Payment_transactions` | Source de verite comptable locale des paiements et remboursements pour la cloture de session |
+| `Snapshot comptable de session` | Etat fige de synthese comptable produit a la cloture avant emission vers `Paheko` |
+| `Lot de sync de session` | Ensemble corrigeable et trace des sous-ecritures comptables preparees pour une meme cloture de session |
+| `Cashflow` | Parcours passage en caisse |
+| `Reception flow` | Parcours reception de marchandise |
+| `Bandeau live` | Module d'affichage temps reel servant de preuve modulaire |
+| `Config admin simple` | Pilotage minimal du shell et des modules (activation, ordre, variantes) |
+
+---
+
+## Annexe C — Index de tracabilite des exigences (renvoi epics)
+
+Les **identifiants stables** des exigences fonctionnelles **FR1 a FR73** et non fonctionnelles **NFR1 a NFR28** sont definis dans l'inventaire du fichier **`_bmad-output/planning-artifacts/epics.md`** (sections *Functional Requirements* et *NonFunctional Requirements*). Ce PRD en est la source narrative ; l'inventaire epics fait foi pour les **ID machine** et le decoupage story.
+
+**Note de lecture :** les numerotations de sections du PRD (ex. `§9.7`, `§9.8`) sont des **identifiants de section documentaire** ; elles ne designent pas des numéros de story ou d'epic et ne doivent pas etre lues comme tels.
+
+| Zone thematique dans ce PRD | ID stables (epics.md) |
+|-----------------------------|------------------------|
+| SS 2 Vision, SS 2.3 brownfield, SS 3 Repartition des roles | FR1 a FR10 |
+| SS 4 Invariants non negociables | FR11 a FR22 |
+| SS 5 Double flux | FR23 a FR30 |
+| SS 6 Utilisateurs, roles, labels, groupes | FR31 a FR36 |
+| SS 7 Perimetre fonctionnel v2 (modules, sync, multi-sites, admin, HelloAsso, delta canonique caisse/compta/Paheko) | FR37 a FR47 |
+| SS 8 Profil CREOS, SS 8.8 Emission / consommation | FR48 a FR54 |
+| SS 9 Parcours et flows critiques | FR55 a FR60 |
+| SS 10 Matrice fallback / blocage / donnees widget | FR61 a FR70 |
+| SS 11.2 Securite, SS 11.3 Tracabilite (exigences fonctionnelles associees) | FR71, FR72 |
+| SS 14.5 Definition of done contractuelle | FR73 |
+| SS 11 Exigences non fonctionnelles (synthese) | NFR1 a NFR28 |
+
+**Usage pour les stories :** chaque story peut pointer vers une **plage de sections PRD** (ex. SS 9.1 + SS 10.x) et vers les **FR/NFR** correspondants dans `epics.md`, comme recommande par le rapport de validation du PRD. Les parcours `§9.7` et `§9.8` se lisent conjointement avec `§11.5` et `§13.2` pour justifier respectivement la preuve de `config admin simple` et celle d'`installation open source`. Pour le sous-domaine caisse/compta/Paheko, le present PRD fournit le **cadre canonique** ; le detail operatoire renvoie au PRD specialise `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md`.

@@ -1,0 +1,73 @@
+schema: 1
+story: 'b52.p5'
+story_title: 'Story B52-P5: Améliorations cosmétiques et terminologie'
+gate: PASS
+status_reason: >
+  Terminologie harmonisée (paniers/lignes de vente/lignes de réception) et
+  nouvelles métriques Poids sorties intégrées, en réutilisant les stats
+  existantes sans complexifier le backend.
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-01-06T00:00:00Z'
+
+top_issues:
+  - id: tests-libelles-b52-p5
+    title: Tests d’affichage/terminologie à compléter
+    severity: low
+    description: >
+      La story note que les tests sur les nouveaux libellés/terminologie et
+      métriques doivent encore être mis à jour pour refléter les changements
+      d’UI.
+    suggested_owner: dev
+
+waiver:
+  active: false
+
+quality_score: 90
+expires: '2026-01-20T00:00:00Z'
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: >
+      Changement purement UI/lecture de stats existantes, pas de surface
+      d’attaque supplémentaire identifiée.
+  performance:
+    status: PASS
+    notes: >
+      Réutilisation de métriques existantes (stats live / poids session) sans
+      recalculs lourds supplémentaires ; impact marginal.
+  reliability:
+    status: PASS
+    notes: >
+      Nouveaux champs d’affichage basés sur des données déjà utilisées par
+      d’autres écrans ; aucun chemin critique modifié côté backend.
+  maintainability:
+    status: PASS
+    notes: >
+      Les changements sont localisés dans les pages Dashboard/CashSessionDetail
+      et les cartes d’analyse rapide, avec terminologie documentée dans la
+      story.
+
+recommendations:
+  immediate:
+    - action: Ajouter/mettre à jour des tests frontend pour valider les nouveaux libellés et valeurs affichées
+      refs:
+        - 'frontend/src/pages/Admin/CashSessionDetail.tsx'
+        - 'frontend/src/pages/Dashboard.jsx'
+        - 'frontend/src/pages/UnifiedDashboard.tsx'
+        - 'frontend/src/components/Admin/ComparisonCards.tsx'
+  future:
+    - action: Garder la documentation utilisateur alignée sur la terminologie validée (paniers, lignes de vente/réception)
+      refs:
+        - 'docs/'
+
+
+
+

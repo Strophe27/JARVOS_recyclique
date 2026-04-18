@@ -1,0 +1,43 @@
+schema: 1
+story: "b48.p3"
+story_title: "Sorties de Stock depuis Écran Réception"
+gate: "PASS"
+status_reason: "Implémentation complète et conforme aux critères d'acceptation. Fonctionnalité de sorties de stock opérationnelle avec validation robuste, calculs de comptabilité matière corrects, et UX soignée."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-09T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 95
+
+expires: "2025-12-23T00:00:00Z"
+
+evidence:
+  tests_reviewed: 10
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Validation backend robuste empêche les incohérences (is_exit=true avec MAGASIN), pas d'exposition de données sensibles"
+  performance:
+    status: PASS
+    notes: "Index sur is_exit créé pour accélérer les requêtes, calculs de stats optimisés avec requêtes SQL directes"
+  reliability:
+    status: PASS
+    notes: "Rétrocompatibilité assurée (valeur par défaut False, filtrage is_exit IS NULL), validation robuste, calculs corrects"
+  maintainability:
+    status: PASS
+    notes: "Code propre, bien structuré, docstrings présents, tests complets, migration DB propre"
+
+recommendations:
+  immediate: []
+  future: []
+
+
+

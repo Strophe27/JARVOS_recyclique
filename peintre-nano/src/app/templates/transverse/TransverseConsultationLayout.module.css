@@ -1,0 +1,28 @@
+.shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-md);
+}
+
+.pageHeader {
+  margin: 0;
+  width: 100%;
+}
+
+.twoColumnBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--pn-space-md);
+}
+
+@media (max-width: 48rem) {
+  .twoColumnBody {
+    grid-template-columns: 1fr;
+  }
+}
+
+.footerZone {
+  margin: 0;
+  width: 100%;
+}

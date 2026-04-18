@@ -1,0 +1,10 @@
+# -----------------------------------------------------------------------------
+# Compatibilité / historique (story 10.6b, 2026-04-07)
+# Point d'entrée canonique : `docker-compose.yml` à la racine du mono-repo.
+# Ce fichier inclut le compose racine pour permettre d'exécuter `docker compose`
+# depuis ce dossier (variables : `.env` local inchangé).
+# Voir README.md à la racine du dépôt JARVOS_recyclique.
+# -----------------------------------------------------------------------------
+
+include:
+  - path: ../docker-compose.yml

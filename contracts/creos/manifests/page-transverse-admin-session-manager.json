@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-session-manager",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.session-manager.demo",
+      "widget_props": {}
+    }
+  ]
+}

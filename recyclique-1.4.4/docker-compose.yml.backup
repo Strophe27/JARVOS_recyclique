@@ -1,0 +1,185 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recyclic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-network
+
+  api:
+    build:
+      context: ./api
+      args:
+        APP_VERSION: ${APP_VERSION:-$(./scripts/get-version.sh)}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: recyclic-api:${API_IMAGE_TAG:-latest}
+    command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      TESTING: "true"
+      HOST: 0.0.0.0
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:4444}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:4444}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
+      API_V1_STR: ${API_V1_STR:-/v1}
+      ROOT_PATH: ${ROOT_PATH:-}
+      # Email Service (Brevo)
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_WEBHOOK_SECRET: ${BREVO_WEBHOOK_SECRET}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+      # Variables pour Alembic migrations
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: recyclic
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./api/src:/app/src
+      - ./api/tests:/app/tests:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - recyclic-network
+
+  # Ancien service Telegram bot : code retire (paquet assainissement 1.4.5, 2026-03-26).
+
+  # Service dédié pour les migrations Alembic avec configuration Docker optimisée
+  api-migrations:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.migrations
+    image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
+    command: alembic upgrade head
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      API_V1_STR: ${API_V1_STR:-/v1}
+      ROOT_PATH: ${ROOT_PATH:-}
+      # Variables pour Alembic migrations
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: recyclic
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+    restart: "no"
+
+  # # Service dédié pour les tests avec volumes pour développement rapide
+  # api-tests:
+  #   build:
+  #     context: ./api
+  #     dockerfile: Dockerfile.tests
+  #   image: recyclic-api-tests:${API_TESTS_IMAGE_TAG:-latest}
+  #   environment:
+  #     TESTING: "true"
+  #     ENVIRONMENT: "test"
+  #     DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+  #     TEST_DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+  #     REDIS_URL: redis://redis:6379
+  #     SECRET_KEY: ${SECRET_KEY}
+  #   volumes:
+  #     # Volumes pour éviter les rebuilds lors du développement
+  #     - ./api/src:/app/src:ro
+  #     - ./api/tests:/app/tests:ro
+  #     - ./api/migrations:/app/migrations
+  #     - ./api/alembic.ini:/app/alembic.ini:ro
+  #     - ./api/pytest.ini:/app/pytest.ini:ro
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   command: bash -lc "python generate_openapi.py && alembic upgrade head && python -m pytest -v --tb=short"
+  #   networks:
+  #     - recyclic-network
+
+  # ============================================================
+  # FRONTEND SERVICES - DEV ONLY
+  # ============================================================
+
+  # DEV: Frontend with hot-reload for local development
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args:
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+    image: recyclic-frontend-dev:${FRONTEND_IMAGE_TAG:-latest}
+    environment:
+      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "4444:5173"
+    volumes:
+      # Mount source code for hot-reloading
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/vite.config.js:/app/vite.config.js
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tsconfig.node.json:/app/tsconfig.node.json
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+
+volumes:
+  postgres_data:
+
+networks:
+  recyclic-network:
+    driver: bridge

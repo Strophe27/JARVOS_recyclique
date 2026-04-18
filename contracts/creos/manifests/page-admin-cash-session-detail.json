@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "admin-cash-session-detail",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "admin-cash-session-detail",
+      "widget_props": {}
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+.root {
+  width: 100%;
+}
+
+.operationalButton {
+  width: 100%;
+  min-height: 48px;
+  height: 64px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.operationalButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.superAdminButton {
+  width: 100%;
+  min-height: 48px;
+  height: 64px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 12px 16px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.superAdminButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #e2e8f0;
+}
+
+.statRow {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  flex: 1;
+  min-width: 160px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+@media (max-width: 768px) {
+  .operationalButton,
+  .superAdminButton {
+    height: 60px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .operationalButton,
+  .superAdminButton {
+    height: 56px;
+    font-size: 0.9rem;
+  }
+}

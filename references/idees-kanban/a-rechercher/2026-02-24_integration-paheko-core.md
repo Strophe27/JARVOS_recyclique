@@ -4,7 +4,7 @@
 
 ## 2026-02-24 — Mary (brainstorm migration)
 
-Dual-backend Recyclic + Paheko : Docker setup, modules Paheko optionnels, auth/users natif Paheko, comptabilité asso. Lien vers `references/migration-paeco/`. Cartographier ce qui existe déjà dans les guides et ce qui reste à valider.
+Dual-backend Recyclic + Paheko : Docker setup, modules Paheko optionnels, auth/users natif Paheko, comptabilité asso. Lien vers `references/migration-paheko/`. Cartographier ce qui existe déjà dans les guides et ce qui reste à valider.
 
 Intention : a-rechercher
 
@@ -20,7 +20,7 @@ Intention : a-rechercher
 
 ## 2026-02-24 — Cartographie 1re passe (session migration)
 
-Cartographie realisee : contenu des guides migration-paeco (architecture, Docker, extensions listees, middleware). Artefact : `references/artefacts/2026-02-24_09_cartographie-integration-paheko-core.md`. Points a valider : version Paheko cible, un seul compose monorepo, auth/users Recyclic–Paheko. Agenda 2e passe inchange (API caisse, Saisie au poids, catalogue, dumps).
+Cartographie realisee : contenu des guides migration-paheko (architecture, Docker, extensions listees, middleware). Artefact : `references/artefacts/2026-02-24_09_cartographie-integration-paheko-core.md`. Points a valider : version Paheko cible, un seul compose monorepo, auth/users Recyclic–Paheko. Agenda 2e passe inchange (API caisse, Saisie au poids, catalogue, dumps).
 
 ---
 

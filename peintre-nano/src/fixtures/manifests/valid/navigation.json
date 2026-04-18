@@ -1,0 +1,45 @@
+{
+  "version": "1",
+  "entries": [
+    {
+      "id": "root-home",
+      "route_key": "home",
+      "path": "/",
+      "page_key": "demo-home",
+      "shortcut_id": "go-home",
+      "label_key": "nav.home",
+      "required_permission_keys": ["demo.permission.view-home"]
+    },
+    {
+      "id": "runtime-demo-sandbox",
+      "route_key": "runtime-demo",
+      "path": "/runtime-demo",
+      "page_key": "demo-home",
+      "label_key": "nav.runtimeDemo",
+      "required_permission_keys": ["demo.permission.view-home"]
+    },
+    {
+      "id": "demo-fallback-unknown-widget",
+      "route_key": "demo-unknown-widget",
+      "path": "/demo-unknown-widget",
+      "page_key": "demo-unknown-widget",
+      "label_key": "nav.demoUnknownWidget",
+      "required_permission_keys": ["demo.permission.view-home"]
+    },
+    {
+      "id": "demo-guarded-nav",
+      "route_key": "demo-guarded",
+      "path": "/demo-guarded",
+      "page_key": "demo-guarded-page",
+      "label_key": "nav.demoGuardedPage"
+    },
+    {
+      "id": "admin-area",
+      "route_key": "admin-demo",
+      "path": "/admin-demo",
+      "page_key": "demo-home",
+      "label_key": "nav.admin",
+      "required_permission_keys": ["demo.permission.admin-only"]
+    }
+  ]
+}

@@ -39,7 +39,7 @@ Si le **nom** du fichier évoque des idées (idees, ids, list d'idees, etc.) **o
 |-----------------|-------------|--------------------|
 | Vision projet, présentations (matière première), RAG, roadmap, Brief | **references/vision-projet/** | `matiere_` si matière première ; notice en tête si « utiliser avec précaution » |
 | Versions épurées prêtes à envoyer (présentation, modes d'emploi) | **doc/** (racine) | Communication publique uniquement |
-| Guides Paheko/RecyClique, TODO, CR réunion, decla éco-organismes | **references/migration-paeco/** | Dates + tirets, pas d’espaces |
+| Guides Paheko/RecyClique, TODO, CR réunion, decla éco-organismes | **references/migration-paheko/** | Dates + tirets, pas d’espaces |
 | Brownfield, API 1.4.x, architecture actuelle, liste endpoints | **references/ancien-repo/** | Conserver noms explicites (ex. architecture-brownfield.md) |
 | Dump BDD prod (Paheko SQLite, Recyclic PostgreSQL, sauvegardes sensibles) | **references/dumps/** | Nommer explicitement (ex. paheko-prod.sqlite, recyclic-prod.sql). Gitignore. |
 | Références écosystème JARVOS | **references/ecosysteme/** | Emplacement canonique ; une fois ventilé là, ne pas dupliquer ce contenu ailleurs |

@@ -1,0 +1,38 @@
+/**
+ * Titre de page sous la barre shell (auth live) — évite un second bandeau vert ; la barre globale
+ * est portée par `FilteredNavEntries` + `RootShell` (`navPresentation=legacyToolbar`).
+ */
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-md);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--pn-space-sm) 0;
+  margin: 0;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--pn-color-text, #212529);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--pn-font-size-lg, 1.125rem);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.sub {
+  margin: 0;
+  font-size: var(--pn-font-size-sm, 0.875rem);
+  color: var(--pn-color-text-muted, #868e96);
+}

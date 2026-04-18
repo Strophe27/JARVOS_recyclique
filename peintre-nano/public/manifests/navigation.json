@@ -1,0 +1,352 @@
+{
+  "version": "1",
+  "entries": [
+    {
+      "id": "transverse-dashboard",
+      "route_key": "transverse-dashboard",
+      "path": "/dashboard",
+      "page_key": "transverse-dashboard",
+      "shortcut_id": "go-transverse-dashboard",
+      "label_key": "nav.transverse.dashboard",
+      "visibility": {
+        "permission_any": ["transverse.dashboard.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-dashboard-benevole",
+      "route_key": "transverse-dashboard-benevole",
+      "path": "/dashboard/benevole",
+      "page_key": "transverse-dashboard-benevole",
+      "shortcut_id": "go-transverse-dashboard-benevole",
+      "label_key": "nav.transverse.dashboard.personal",
+      "visibility": {
+        "permission_any": ["transverse.dashboard.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-nominal",
+      "route_key": "cashflow-nominal",
+      "path": "/caisse",
+      "page_key": "cashflow-nominal",
+      "shortcut_id": "go-cashflow-nominal",
+      "label_key": "nav.cashflow.nominal",
+      "visibility": {
+        "permission_any": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "reception-nominal",
+      "route_key": "reception-nominal",
+      "path": "/reception",
+      "page_key": "reception-nominal",
+      "shortcut_id": "go-reception-nominal",
+      "label_key": "nav.reception.nominal",
+      "visibility": {
+        "permission_any": ["reception.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin",
+      "route_key": "transverse-admin",
+      "path": "/admin",
+      "page_key": "transverse-admin-reports-hub",
+      "shortcut_id": "go-transverse-admin",
+      "label_key": "nav.transverse.admin",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-access",
+      "route_key": "transverse-admin-access",
+      "path": "/admin/access",
+      "page_key": "transverse-admin-access-overview",
+      "shortcut_id": "go-transverse-admin-access",
+      "label_key": "nav.transverse.admin.access",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-site",
+      "route_key": "transverse-admin-site",
+      "path": "/admin/site",
+      "page_key": "transverse-admin-site-overview",
+      "shortcut_id": "go-transverse-admin-site",
+      "label_key": "nav.transverse.admin.site",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-users",
+      "route_key": "transverse-admin-users",
+      "path": "/admin/users",
+      "page_key": "transverse-admin-users",
+      "shortcut_id": "go-transverse-admin-users",
+      "label_key": "nav.transverse.admin.users",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-groups",
+      "route_key": "transverse-admin-groups",
+      "path": "/admin/groups",
+      "page_key": "transverse-admin-groups",
+      "shortcut_id": "go-transverse-admin-groups",
+      "label_key": "nav.transverse.admin.groups",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-categories",
+      "route_key": "transverse-admin-categories",
+      "path": "/admin/categories",
+      "page_key": "transverse-admin-categories",
+      "shortcut_id": "go-transverse-admin-categories",
+      "label_key": "nav.transverse.admin.categories",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-audit-log",
+      "route_key": "transverse-admin-audit-log",
+      "path": "/admin/audit-log",
+      "page_key": "transverse-admin-audit-log",
+      "shortcut_id": "go-transverse-admin-audit-log",
+      "label_key": "nav.transverse.admin.auditLog",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-cash-registers",
+      "route_key": "transverse-admin-cash-registers",
+      "path": "/admin/cash-registers",
+      "page_key": "transverse-admin-cash-registers",
+      "shortcut_id": "go-transverse-admin-cash-registers",
+      "label_key": "nav.transverse.admin.cashRegisters",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-sites",
+      "route_key": "transverse-admin-sites",
+      "path": "/admin/sites",
+      "page_key": "transverse-admin-sites",
+      "shortcut_id": "go-transverse-admin-sites",
+      "label_key": "nav.transverse.admin.sites",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-accounting",
+      "route_key": "transverse-admin-accounting",
+      "path": "/admin/compta",
+      "page_key": "transverse-admin-accounting",
+      "shortcut_id": "go-transverse-admin-accounting",
+      "label_key": "nav.transverse.admin.accounting",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-accounting-expert",
+      "route_key": "transverse-admin-accounting-expert",
+      "path": "/admin/compta/parametrage",
+      "page_key": "transverse-admin-accounting-expert",
+      "shortcut_id": "go-transverse-admin-accounting-expert",
+      "label_key": "nav.transverse.admin.accountingExpert",
+      "required_permission_keys": ["transverse.admin.view", "caisse.sale_correct"],
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-sites-and-registers",
+      "route_key": "transverse-admin-sites-and-registers",
+      "path": "/admin/sites-and-registers",
+      "page_key": "transverse-admin-sites-and-registers",
+      "shortcut_id": "go-transverse-admin-sites-and-registers",
+      "label_key": "nav.transverse.admin.sitesAndRegisters",
+      "required_permission_keys": ["transverse.admin.view", "caisse.sale_correct"],
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-session-manager",
+      "route_key": "transverse-admin-session-manager",
+      "path": "/admin/session-manager",
+      "page_key": "transverse-admin-session-manager",
+      "shortcut_id": "go-transverse-admin-session-manager",
+      "label_key": "nav.transverse.admin.sessionManager",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-settings",
+      "route_key": "transverse-admin-settings",
+      "path": "/admin/settings",
+      "page_key": "transverse-admin-settings",
+      "shortcut_id": "go-transverse-admin-settings",
+      "label_key": "nav.transverse.admin.settings",
+      "required_permission_keys": ["transverse.admin.view", "caisse.sale_correct"],
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-health",
+      "route_key": "transverse-admin-health",
+      "path": "/admin/health",
+      "page_key": "transverse-admin-health",
+      "shortcut_id": "go-transverse-admin-health",
+      "label_key": "nav.transverse.admin.systemHealth",
+      "required_permission_keys": ["transverse.admin.view", "caisse.sale_correct"],
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-reception-stats",
+      "route_key": "transverse-admin-reception-stats",
+      "path": "/admin/reception-stats",
+      "page_key": "transverse-admin-reception-stats",
+      "shortcut_id": "go-transverse-admin-reception-stats",
+      "label_key": "nav.transverse.admin.receptionStats",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-admin-reception-sessions",
+      "route_key": "transverse-admin-reception-sessions",
+      "path": "/admin/reception-sessions",
+      "page_key": "transverse-admin-reception-sessions",
+      "shortcut_id": "go-transverse-admin-reception-sessions",
+      "label_key": "nav.transverse.admin.receptionSessions",
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-listing-articles",
+      "route_key": "transverse-listing-articles",
+      "path": "/listings/articles",
+      "page_key": "transverse-listing-articles",
+      "shortcut_id": "go-transverse-listing-articles",
+      "label_key": "nav.transverse.listings.articles",
+      "visibility": {
+        "permission_any": ["transverse.listings.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-listing-dons",
+      "route_key": "transverse-listing-dons",
+      "path": "/listings/dons",
+      "page_key": "transverse-listing-dons",
+      "shortcut_id": "go-transverse-listing-dons",
+      "label_key": "nav.transverse.listings.dons",
+      "visibility": {
+        "permission_any": ["transverse.listings.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-consultation-article",
+      "route_key": "transverse-consultation-article",
+      "path": "/consultation/article",
+      "page_key": "transverse-consultation-article",
+      "shortcut_id": "go-transverse-consultation-article",
+      "label_key": "nav.transverse.consultation.article",
+      "visibility": {
+        "permission_any": ["transverse.consultation.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "transverse-consultation-don",
+      "route_key": "transverse-consultation-don",
+      "path": "/consultation/don",
+      "page_key": "transverse-consultation-don",
+      "shortcut_id": "go-transverse-consultation-don",
+      "label_key": "nav.transverse.consultation.don",
+      "visibility": {
+        "permission_any": ["transverse.consultation.hub.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "bandeau-live-sandbox",
+      "route_key": "bandeau-live-sandbox",
+      "path": "/bandeau-live-sandbox",
+      "page_key": "bandeau-live-sandbox",
+      "shortcut_id": "go-bandeau-live-sandbox",
+      "label_key": "nav.bandeauLiveSandbox",
+      "required_permission_keys": ["recyclique.exploitation.view-live-band"]
+    },
+    {
+      "id": "cashflow-refund",
+      "route_key": "cashflow-refund",
+      "path": "/caisse/remboursement",
+      "page_key": "cashflow-refund",
+      "shortcut_id": "go-cashflow-refund",
+      "label_key": "nav.cashflow.refund",
+      "required_permission_keys": ["caisse.access", "caisse.refund"],
+      "visibility": {
+        "permission_any": ["caisse.refund"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-close",
+      "route_key": "cashflow-close",
+      "path": "/caisse/cloture",
+      "page_key": "cashflow-close",
+      "shortcut_id": "go-cashflow-close",
+      "label_key": "nav.cashflow.close",
+      "visibility": {
+        "permission_any": ["caisse.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "root-home",
+      "route_key": "home",
+      "path": "/",
+      "page_key": "demo-home",
+      "shortcut_id": "go-home",
+      "label_key": "nav.home",
+      "required_permission_keys": ["demo.permission.view-home"]
+    }
+  ]
+}

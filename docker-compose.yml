@@ -1,0 +1,239 @@
+# Point d'entrée canonique — stack Docker locale « recyclique » (recyclic-local), mono-repo JARVOS.
+# Lancer depuis la racine du dépôt : `docker compose up --build`
+# Backend vivant (FastAPI) : recyclique/api/ — les chemins ci-dessous sont relatifs à la racine du repo.
+# Frontend dev officiel v2 : peintre-nano/ (même origine navigateur `http://localhost:4444` + proxy Vite vers l'API).
+# Frontend legacy transitoire : recyclique-1.4.4/frontend sur `http://localhost:4445`.
+# Variables : fichier `.env` à la racine (copier recyclique-1.4.4/env.example) ou
+#   `docker compose --env-file recyclique-1.4.4/.env up` si votre `.env` est encore dans ce dossier.
+
+services:
+  postgres:
+    # Image cible ADR-INFRA-PG17 (story 10.6d). Sur volume existant en 15 : migration données obligatoire — runbook
+    # _bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-recyclic}
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./recyclique-1.4.4/backups:/backups
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-network
+
+  api:
+    build:
+      context: ./recyclique/api
+      args:
+        APP_VERSION: ${APP_VERSION:-1.4.4}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: recyclic-api:${API_IMAGE_TAG:-latest}
+    command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-recyclic}
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      HOST: 0.0.0.0
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:4444,http://localhost:4445}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:4444,http://localhost:4445}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
+      API_V1_STR: ${API_V1_STR:-/v1}
+      ROOT_PATH: ${ROOT_PATH:-}
+      APP_VERSION: ${APP_VERSION:-1.4.4}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_WEBHOOK_SECRET: ${BREVO_WEBHOOK_SECRET}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-recyclic}
+      FIRST_SUPER_ADMIN_USERNAME: ${FIRST_SUPER_ADMIN_USERNAME:-}
+      FIRST_SUPER_ADMIN_PASSWORD: ${FIRST_SUPER_ADMIN_PASSWORD:-}
+      # Optionnel (dev) : PIN 4 chiffres pour step-up (clôture caisse, corrections sensibles) — création + backfill si compte sans PIN
+      FIRST_SUPER_ADMIN_PIN: ${FIRST_SUPER_ADMIN_PIN:-}
+      TEST_DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+      LEGACY_IMPORT_LLM_PROVIDER: ${LEGACY_IMPORT_LLM_PROVIDER:-}
+      LEGACY_IMPORT_LLM_MODEL: ${LEGACY_IMPORT_LLM_MODEL:-}
+      LEGACY_IMPORT_LLM_BATCH_SIZE: ${LEGACY_IMPORT_LLM_BATCH_SIZE:-20}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_API_BASE_URL: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
+      PAHEKO_API_BASE_URL: ${PAHEKO_API_BASE_URL:-http://paheko}
+      PAHEKO_API_USER: ${PAHEKO_API_USER:-}
+      PAHEKO_API_PASSWORD: ${PAHEKO_API_PASSWORD:-}
+      PAHEKO_API_TOKEN: ${PAHEKO_API_TOKEN:-}
+      PAHEKO_HTTP_TIMEOUT_SECONDS: ${PAHEKO_HTTP_TIMEOUT_SECONDS:-15}
+      PAHEKO_ACCOUNTING_CASH_SESSION_CLOSE_PATH: ${PAHEKO_ACCOUNTING_CASH_SESSION_CLOSE_PATH:-/api/accounting/transaction}
+      PAHEKO_OUTBOX_MAX_ATTEMPTS: ${PAHEKO_OUTBOX_MAX_ATTEMPTS:-8}
+      PAHEKO_OUTBOX_RETRY_BASE_SECONDS: ${PAHEKO_OUTBOX_RETRY_BASE_SECONDS:-2}
+      PAHEKO_OUTBOX_RETRY_MAX_SECONDS: ${PAHEKO_OUTBOX_RETRY_MAX_SECONDS:-900}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./recyclique/api/src:/app/src
+      - ./recyclique/api/tests:/app/tests
+      - ./recyclique-1.4.4/backups:/backups
+      - ./recyclique-1.4.4/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # Évite un démarrage API sur une base vide / en retard de migration (ex. 500 sur live-snapshot si `paheko_outbox_items` absente).
+      api-migrations:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - recyclic-network
+
+  paheko:
+    image: paheko/paheko@sha256:fa2b4a6188802447cc3c43f51d3bac55a73cb203e17e05ed68c8a2d4d29a15ec
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Bootstrap API headless : Paheko expose un compte système API si ces variables
+      # sont présentes (mappées en constantes côté app). Recyclique doit recevoir
+      # les mêmes secrets via PAHEKO_API_USER / PAHEKO_API_PASSWORD côté service `api`.
+      PAHEKO_API_USER: ${PAHEKO_API_USER:-}
+      PAHEKO_API_PASSWORD: ${PAHEKO_API_PASSWORD:-}
+    ports:
+      - "${PAHEKO_PORT:-8080}:80"
+    volumes:
+      - paheko_data:/var/www/paheko/data
+      - ./paheko-www.htaccess:/var/www/paheko/www/.htaccess:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://127.0.0.1/admin/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - recyclic-network
+
+  api-migrations:
+    build:
+      context: ./recyclique/api
+      dockerfile: Dockerfile.migrations
+    image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
+    command: alembic upgrade head
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-recyclic}
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      API_V1_STR: ${API_V1_STR:-/v1}
+      ROOT_PATH: ${ROOT_PATH:-}
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-recyclic}
+      LEGACY_IMPORT_LLM_PROVIDER: ${LEGACY_IMPORT_LLM_PROVIDER:-}
+      LEGACY_IMPORT_LLM_MODEL: ${LEGACY_IMPORT_LLM_MODEL:-}
+      LEGACY_IMPORT_LLM_BATCH_SIZE: ${LEGACY_IMPORT_LLM_BATCH_SIZE:-20}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_API_BASE_URL: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+    restart: "no"
+
+  frontend:
+    build:
+      context: ./peintre-nano
+      dockerfile: Dockerfile.dev
+    image: peintre-nano-dev:${FRONTEND_IMAGE_TAG:-latest}
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      PEINTRE_DEV_PROXY_TARGET: ${PEINTRE_DEV_PROXY_TARGET:-http://api:8000}
+      VITE_DEV_PROXY_TARGET: ${VITE_DEV_PROXY_TARGET:-http://api:8000}
+      # Login terrain (LiveAuthShell) : même logique que `v === 'true' || v === '1'` dans App.tsx
+      VITE_LIVE_AUTH: ${VITE_LIVE_AUTH:-true}
+    ports:
+      - "4444:5173"
+    volumes:
+      - ./peintre-nano/src:/app/src
+      - ./peintre-nano/public:/app/public
+      - ./peintre-nano/tests:/app/tests
+      - ./contracts:/contracts
+      - ./peintre-nano/package.json:/app/package.json
+      - ./peintre-nano/package-lock.json:/app/package-lock.json
+      - ./peintre-nano/vite.config.ts:/app/vite.config.ts
+      - ./peintre-nano/tsconfig.json:/app/tsconfig.json
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+
+  frontend-legacy:
+    build:
+      context: ./recyclique-1.4.4/frontend
+      dockerfile: Dockerfile.dev
+      args:
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+    image: recyclic-frontend-dev:${FRONTEND_LEGACY_IMAGE_TAG:-latest}
+    environment:
+      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "4445:5173"
+    volumes:
+      - ./recyclique-1.4.4/frontend/src:/app/src
+      - ./recyclique-1.4.4/frontend/public:/app/public
+      - ./recyclique-1.4.4/frontend/tests:/app/tests
+      - ./recyclique-1.4.4/frontend/package.json:/app/package.json
+      - ./recyclique-1.4.4/frontend/package-lock.json:/app/package-lock.json
+      - ./recyclique-1.4.4/frontend/vite.config.js:/app/vite.config.js
+      - ./recyclique-1.4.4/frontend/tsconfig.json:/app/tsconfig.json
+      - ./recyclique-1.4.4/frontend/tsconfig.node.json:/app/tsconfig.node.json
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+
+volumes:
+  postgres_data:
+  paheko_data:
+
+networks:
+  recyclic-network:
+    driver: bridge

@@ -1,0 +1,12 @@
+.blocked {
+  padding: 1rem;
+  border-radius: 8px;
+  background: var(--mantine-color-dark-7, #f1f3f5);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 32rem;
+}

@@ -13,7 +13,7 @@ Tu es en **session de travail sur la migration Paheko** (refactoring Recyclic + 
 4. **{project-root}/references/idees-kanban/index.md** — vue globale du Kanban (idees par stade)
 5. **{project-root}/references/todo.md** — taches de reflexion et recherche
 
-Optionnel si la session porte sur la doc migration : **{project-root}/references/migration-paeco/index.md**
+Optionnel si la session porte sur la doc migration : **{project-root}/references/migration-paheko/index.md**
 
 ---
 

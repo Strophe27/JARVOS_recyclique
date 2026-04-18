@@ -1,0 +1,16 @@
+# Index — references/operations-speciales-recyclique/
+
+Pack **produit + exécution agent** pour le chantier **opérations spéciales de caisse** (parcours annulation, remboursement, décaissement, mouvement interne, échange, tags métier, Paheko), aligné PRD v1.1 du 2026-04-18.
+
+> Charger si : cadrage ou implémentation du périmètre « opérations spéciales », découpage stories BMAD, audit repo avant dev, synchronisation flux financiers vers Paheko.
+
+---
+
+## Fichiers
+
+| Fichier | Contenu |
+|---------|---------|
+| `2026-04-18_prd-recyclique-operations-speciales-sorties-matiere-paheko_v1-1.md` | **PRD** — périmètre fonctionnel cible, résumé exécutif, objectifs, parcours N1–N3, tags métier, intégration Paheko ; destiné équipe produit et Story Runner. |
+| `2026-04-18_prompt-ultra-operationnel-operations-speciales-recyclique_v1-1.md` | **Prompt agent ultra opérationnel** — mission ordonnée (audit repo-aware, découpage P0–P3, BMAD/stories, garde-fous compta et PIN). |
+
+**Suite logique :** lire le PRD, puis le prompt comme checklist d’exécution ; croiser avec `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md` et l’état réel du code (`recyclique/api/`, `peintre-nano/`).

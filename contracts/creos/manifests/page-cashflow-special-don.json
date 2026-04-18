@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "page_key": "cashflow-special-don",
+  "required_permission_keys": ["caisse.access", "caisse.special_encaissement"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Don (sans article) — Story 6.5",
+        "body": "Parcours dédié : encaissement sans lignes article. Permission `caisse.special_encaissement` et mutation `recyclique_sales_createSale` avec `special_encaissement_kind: DON_SANS_ARTICLE`. Montant ≥ 0 ; pas de `adherent_reference`."
+      }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-special-don-wizard",
+      "widget_props": {}
+    }
+  ]
+}

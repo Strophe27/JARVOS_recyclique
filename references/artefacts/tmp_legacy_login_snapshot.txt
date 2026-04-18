@@ -1,0 +1,12 @@
+uid=1_0 RootWebArea "Peintre_nano — socle v2" url="http://localhost:4444/login"
+  uid=1_1 banner
+    uid=1_2 StaticText "RecyClique"
+  uid=1_3 main
+    uid=1_4 heading "Connexion" level="1"
+    uid=1_5 StaticText "Nom d'utilisateur"
+    uid=1_6 textbox "Nom d'utilisateur" required
+    uid=1_7 StaticText "Mot de passe"
+    uid=1_8 textbox "Mot de passe" required
+    uid=1_9 button "Se connecter"
+    uid=1_10 link "Mot de passe oublié ?" url="http://localhost:4444/forgot-password"
+      uid=1_11 StaticText "Mot de passe oublié ?"

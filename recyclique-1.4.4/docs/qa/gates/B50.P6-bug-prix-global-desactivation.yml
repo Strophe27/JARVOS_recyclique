@@ -1,0 +1,41 @@
+schema: 1
+story: "B50.P6"
+story_title: "Investigation Bug Prix Global - Désactivation Subite"
+gate: PASS
+status_reason: "Investigation approfondie et correction rigoureuse. Cause racine identifiée : perte des options lors de fetchCurrentSession/resumeSession. Solution implémentée avec conservation des options persistées. Tests de reproduction créés."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T14:30:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 90
+
+evidence:
+  tests_reviewed: 3
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun problème de sécurité. Correction de bug uniquement."
+  performance:
+    status: PASS
+    notes: "Aucun impact sur les performances. Conservation des options en mémoire."
+  reliability:
+    status: PASS
+    notes: "Bug critique corrigé. Conservation des options lors de rafraîchissement et réhydratation. Tests de reproduction créés."
+  maintainability:
+    status: PASS
+    notes: "Code bien documenté avec logs de traçage. Solution robuste avec conservation des options persistées."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer tests manuels en conditions réelles (rafraîchissement page, sortie de veille) pour validation finale"
+      refs: ["frontend/src/test/integration/bug-prix-global-desactivation.test.tsx"]
+

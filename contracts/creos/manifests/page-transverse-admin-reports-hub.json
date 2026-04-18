@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-reports-hub",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.dashboard.legacy",
+      "widget_type": "admin.legacy.dashboard.home",
+      "widget_props": {}
+    }
+  ]
+}

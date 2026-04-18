@@ -1,0 +1,8 @@
+.strip {
+  margin-bottom: var(--pn-space-md);
+  background: var(--pn-color-surface);
+}
+
+.title {
+  color: var(--pn-color-text);
+}

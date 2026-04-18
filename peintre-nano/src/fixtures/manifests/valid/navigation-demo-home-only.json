@@ -1,0 +1,14 @@
+{
+  "version": "1",
+  "entries": [
+    {
+      "id": "root-home",
+      "route_key": "home",
+      "path": "/",
+      "page_key": "demo-home",
+      "shortcut_id": "go-home",
+      "label_key": "nav.home",
+      "required_permission_keys": ["demo.permission.view-home"]
+    }
+  ]
+}

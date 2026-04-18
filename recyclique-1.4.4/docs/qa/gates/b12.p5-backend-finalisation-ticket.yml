@@ -1,0 +1,45 @@
+schema: 1
+story: "b12.p5-backend-finalisation-ticket"
+story_title: "Finalisation du Ticket de Caisse avec la Nouvelle Logique"
+gate: PASS
+status_reason: "Endpoint and data model correctly persist weight/unit_price/total_price; total_amount equals sum of item total_price. Auth enforced. Tests pass (7/7). Session counters updated consistently."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-07T00:00:00Z"
+
+top_issues: []
+
+waiver:
+  active: false
+
+quality_score: 96
+
+evidence:
+  tests_reviewed: 7
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "HTTPBearer enforced; token validated; 401 without token."
+  performance:
+    status: PASS
+    notes: "DB interactions straightforward; aggregate queries limited to session scope."
+  reliability:
+    status: PASS
+    notes: "Post-commit refresh and session counters update; tests verify correctness."
+  maintainability:
+    status: PASS
+    notes: "Clear docstrings and inline comments; tests document intended behavior."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Add negative tests for extremely large weights/prices and float precision edge cases."
+      refs: ["api/tests/test_sales_integration.py"]
+    - action: "Consider service/repository layer extraction for sale creation logic to match standards."
+      refs: ["api/src/recyclic_api/api/api_v1/endpoints/sales.py"]
+
+

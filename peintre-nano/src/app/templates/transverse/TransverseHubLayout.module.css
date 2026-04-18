@@ -1,0 +1,36 @@
+/**
+ * Grille hub transverse : en-tête de page pleine largeur, corps en 2 colonnes.
+ * Tokens uniquement (ADR P1).
+ */
+.shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-md);
+}
+
+/**
+ * Hub admin (Epic 14.1) — rapproche la carte principale du legacy `AdminLayout` (`MainContent` blanche, ombre légère).
+ */
+.shellAdmin {
+  padding: var(--pn-space-lg);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.pageHeader {
+  margin: 0;
+  width: 100%;
+}
+
+.bodyGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pn-space-md);
+}
+
+.bodyGridTrailFull > :last-child {
+  grid-column: 1 / -1;
+}

@@ -1,0 +1,14 @@
+{
+  "version": "1",
+  "entries": [
+    {
+      "id": "bandeau-live-sandbox",
+      "route_key": "bandeau-live-sandbox",
+      "path": "/bandeau-live-sandbox",
+      "page_key": "bandeau-live-sandbox",
+      "shortcut_id": "go-bandeau-live-sandbox",
+      "label_key": "nav.bandeauLiveSandbox",
+      "required_permission_keys": ["recyclique.exploitation.view-live-band"]
+    }
+  ]
+}

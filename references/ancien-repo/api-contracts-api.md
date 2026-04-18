@@ -1,6 +1,6 @@
 # Contrats API — RecyClique 1.4.4 (part: api)
 
-**Base URL :** `/v1` (config `API_V1_STR`). En dev : `http://localhost:4433`.  
+**Base URL :** `/v1` (config `API_V1_STR`). En dev : selon compose ; stack Docker **`recyclic-local`** (`recyclique-1.4.4/docker-compose.yml`) : API souvent **`http://localhost:8000`**, schéma **`/v1/openapi.json`**, Swagger **`/docs`**. (Autres ports possibles, ex. 4433.)  
 **Auth :** JWT (Bearer), durée 30 min. Rôles : cashier, admin, super-admin.
 
 ---
@@ -11,9 +11,9 @@
 |---------|---------|----------------------|
 | `/v1/health` | Santé | GET /, GET /version |
 | `/v1/auth` | Auth | POST /login, /signup, /forgot-password, /reset-password, /pin, /logout, refresh |
-| `/v1/users` | Utilisateurs | GET/PUT /me, PUT /me/password, /me/pin, /me/permissions, GET/POST /, GET/PUT/DELETE /{id}, POST /link-telegram, GET /active-operators |
+| `/v1/users` | Utilisateurs | GET/PUT /me, PUT /me/password, /me/pin, /me/permissions, GET/POST /, GET/PUT/DELETE /{id}, GET /active-operators (`link-telegram` : voir inventaire détaillé — absent OpenAPI live réconcilié 2026-04-02) |
 | `/v1/sites` | Sites | CRUD /, /{site_id} |
-| `/v1/deposits` | Dépôts | GET/POST /, GET/PUT /{id}, POST /from-bot, POST /{id}/classify, GET /metrics/validation-performance |
+| `/v1/deposits` | Dépôts | GET/POST /, GET/PUT /{id}, GET /metrics/validation-performance (`from-bot` / `classify` : retirés — consolidation mars 2026, voir artefacts paquet 3–4) |
 | `/v1/sales` | Ventes | GET/POST /, GET/PUT/PATCH /{id}, PATCH /{id}/items/{item_id}, /{id}/items/{item_id}/weight |
 | `/v1/cash-sessions` | Sessions caisse | POST (open/close), GET /current, /stats/summary, PUT /{id}, nombreux GET list/detail |
 | `/v1/cash-registers` | Postes caisse | CRUD /, GET /status |
@@ -42,6 +42,6 @@
 - **Réception :** postes (open/close), tickets (création, fermeture, liste, détail), lignes (CRUD, weight), categories, export CSV, stats live.
 - **Caisse :** cash-sessions (cycle ouvert/fermé), cash-registers (postes), sales (ventes, lignes, poids), presets.
 - **Admin :** users, groups, permissions, admin/settings (alertes, session, email), reports, dashboard, db export/import/purge, legacy_import.
-- **Deposits / Bot :** deposits (CRUD, from-bot, classify) pour intégration bot Telegram.
+- **Deposits :** CRUD HTTP standard ; chemins bot historiques retirés (même source que l'inventaire réconcilié `v1.4.4-liste-endpoints-api.md`).
 
-Tous les endpoints sont documentés dans le schéma OpenAPI généré (`/v1/openapi.json` en test).
+Inventaire exhaustif et preuve de continuité (diff vs OpenAPI live) : **`v1.4.4-liste-endpoints-api.md`** + `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md` §1 bis. Schéma généré : **`/v1/openapi.json`**.

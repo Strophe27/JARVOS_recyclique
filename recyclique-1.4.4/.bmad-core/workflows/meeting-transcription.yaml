@@ -1,0 +1,189 @@
+# <!-- Powered by BMAD™ Core -->
+workflow:
+  id: meeting-transcription
+  name: Meeting Transcription & Analysis
+  description: >-
+    Workflow BMAD complet pour la transcription, analyse, et synthèse automatique
+    de réunions à partir d'audios multiples (FR), via AssemblyAI et un enchaînement
+    d'agents BMAD (Orchestrator, Dev, Analyst, QA, PM, PO).
+  type: brownfield
+  project_types:
+    - meeting-transcription
+    - document-generation
+    - workflow-automation
+
+  sequence:
+    - step: generate_stories
+      agent: orchestrator
+      action: generate_meeting_stories
+      creates: meeting_specific_stories
+      tasks:
+        - generate_meeting_stories
+      notes: |
+        Orchestrator génère les 7 stories spécifiques à la réunion à partir des templates.
+        Input: meeting_id, participants (saisis manuellement)
+        Output: Stories dans docs/stories/meeting-transcription/<meeting-id>/
+
+    - step: setup
+      agent: orchestrator
+      action: setup_meeting
+      creates: meeting_folder_structure
+      requires: meeting_specific_stories
+      tasks:
+        - create_meeting_folder
+        - prompt_copy_audio
+        - validate_audio_presence
+      notes: |
+        Orchestrator crée la structure de dossiers et valide la présence des fichiers audio.
+        Output: Structure meetings/<meeting-id>/ avec fichiers audio dans audio/
+
+    - step: transcription
+      agent: dev
+      action: transcribe_audio
+      creates: transcription_files
+      requires: meeting_folder_structure
+      tasks:
+        - transcribe_aai
+      notes: |
+        Dev lance le script aai_transcribe.py pour uploader les fichiers vers AssemblyAI
+        et récupérer les transcriptions diarisées.
+        Output: Fichiers JSON dans transcriptions/
+
+    - step: prepare_segments
+      agent: sm
+      action: segment_transcriptions
+      creates: segments_and_index
+      requires: transcription_files
+      tasks:
+        - prepare_segments
+        - compute_metrics
+      notes: |
+        SM découpe les transcriptions en segments exploitables et calcule les métriques.
+        Output: Segments dans working/segments/ + index.json
+
+    - step: analysis
+      agent: analyst
+      action: analyze_and_summarize
+      creates: summaries_and_threads
+      requires: segments_and_index
+      tasks:
+        - summarize_segments
+        - build_threads
+      notes: |
+        Analyst résume chaque segment et agrège les sujets récurrents.
+        Output: Résumés dans working/summaries/ + threads.md
+
+    - step: validation
+      agent: qa
+      action: inverse_validation
+      creates: validation_report
+      requires: summaries_and_threads
+      tasks:
+        - inverse_validation
+      notes: |
+        QA compare les documents finaux avec les transcriptions pour détecter incohérences.
+        Output: Rapport de validation dans working/validation-report.md
+
+    - step: synthesis
+      agent: pm
+      action: generate_final_report
+      creates: final_compte_rendu
+      requires: validation_report
+      tasks:
+        - generate_meeting_report
+      notes: |
+        PM consolide les résumés et threads pour produire le compte-rendu final structuré.
+        Output: final/compte-rendu.md
+
+    - step: closure
+      agent: po
+      action: verify_and_archive
+      creates: final_validation
+      requires: final_compte_rendu
+      tasks:
+        - verify_artifacts_consistency
+        - approve_and_archive
+      notes: |
+        PO vérifie la cohérence finale des artefacts et archive si nécessaire.
+        Output: Validation finale + archivage
+
+  flow_diagram: |
+    ```mermaid
+    graph TD
+        A[Start: Nouvelle Réunion] --> B[orchestrator: Setup]
+        B --> C{Création dossier OK?}
+        C -->|Non| D[Erreur: Retry]
+        C -->|Oui| E{Fichiers audio présents?}
+        E -->|Non| F[Prompt utilisateur]
+        F --> E
+        E -->|Oui| G[dev: Transcription]
+        G --> H{AssemblyAI OK?}
+        H -->|Erreur| I[Retry ou Notification]
+        H -->|OK| J[sm: Segmentation]
+        J --> K[analyst: Analyse]
+        K --> L[qa: Validation]
+        L --> M{Incohérences?}
+        M -->|Oui| N[Rapport validation]
+        M -->|Non| O[pm: Synthèse]
+        N --> O
+        O --> P[po: Clôture]
+        P --> Q{Validation finale OK?}
+        Q -->|Non| R[Corrections]
+        R --> P
+        Q -->|Oui| S[Archive & End]
+
+        style S fill:#90EE90
+        style B fill:#ADD8E6
+        style G fill:#ADD8E6
+        style J fill:#ADD8E6
+        style K fill:#ADD8E6
+        style L fill:#F0E68C
+        style O fill:#ADD8E6
+        style P fill:#F0E68C
+    ```
+
+  decision_guidance:
+    when_to_use:
+      - Réunions avec enregistrements audio multiples
+      - Besoin de transcription automatique
+      - Génération de comptes-rendus structurés
+      - Validation de cohérence documents ↔ transcriptions
+
+    prerequisites:
+      - Clé API AssemblyAI configurée (.env)
+      - Fichiers audio disponibles
+      - Agents BMAD configurés (orchestrator, dev, sm, analyst, qa, pm, po)
+
+  handoff_prompts:
+    orchestrator_to_dev: |
+      Structure de réunion créée dans meetings/<meeting-id>/.
+      Fichiers audio présents dans audio/.
+      Prêt pour transcription AssemblyAI.
+    
+    dev_to_sm: |
+      Transcription complète. Fichiers JSON disponibles dans transcriptions/.
+      Prêt pour découpage en segments.
+    
+    sm_to_analyst: |
+      Segments créés dans working/segments/.
+      Index disponible dans working/index.json.
+      Prêt pour analyse et résumés.
+    
+    analyst_to_qa: |
+      Résumés disponibles dans working/summaries/.
+      Threads agrégés dans working/threads.md.
+      Prêt pour validation inverse.
+    
+    qa_to_pm: |
+      Validation terminée. Rapport disponible dans working/validation-report.md.
+      Prêt pour synthèse finale.
+    
+    pm_to_po: |
+      Compte-rendu final généré dans final/compte-rendu.md.
+      Prêt pour vérification et clôture.
+    
+    complete: |
+      Workflow terminé avec succès.
+      Tous les artefacts disponibles dans meetings/<meeting-id>/.
+      Compte-rendu final validé et prêt.
+

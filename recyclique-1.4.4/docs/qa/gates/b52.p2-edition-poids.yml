@@ -1,0 +1,64 @@
+schema: 1
+story: 'b52.p2'
+story_title: 'Story B52-P2: Édition du poids après validation'
+gate: PASS
+status_reason: >
+  Fonctionnalité principale implémentée avec succès, tests de permissions et
+  de performance ajoutés, et stratégie explicite de gestion des erreurs de
+  recalcul (log d’audit sans blocage de la correction de poids).
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-01-06T00:00:00Z'
+
+top_issues:
+  - id: docs-service-recalc
+    title: Documentation à finaliser sur le service de recalcul
+    severity: low
+    description: >
+      La documentation technique et utilisateur sur le service de recalcul et
+      le workflow d’édition du poids reste à compléter.
+    suggested_owner: dev
+
+waiver:
+  active: false
+
+quality_score: 95
+expires: '2026-01-20T00:00:00Z'
+
+evidence:
+  tests_reviewed: 5
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: >
+      Permissions admin appliquées avec tests négatifs backend, audit détaillé
+      incluant ancien/nouveau poids et résultat du recalcul.
+  performance:
+    status: PASS
+    notes: >
+      Test de performance ajouté pour valider un temps de recalcul raisonnable
+      sur un volume réaliste et détecter les régressions majeures.
+  reliability:
+    status: PASS
+    notes: >
+      En cas d’erreur de recalcul, la modification de poids est conservée et
+      l’erreur est tracée en audit, ce qui est acceptable pour ce niveau de
+      risque.
+  maintainability:
+    status: PASS
+    notes: >
+      Design basé sur un service dédié et un point d’extension pour un futur
+      cache (invalidate_cache_for_date_range), cohérent avec l’architecture.
+
+recommendations:
+  immediate: []
+  future:
+    - action: Finaliser et maintenir la documentation technique/utilisateur sur le service de recalcul
+      refs:
+        - 'docs/'
+
+

@@ -1,0 +1,46 @@
+/* Contenu dans la zone main : structure interne via flex + tokens (pas le layout shell global). */
+.mainInner {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: var(--pn-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-md);
+  background: var(--pn-color-surface);
+  border: 1px solid var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+}
+
+/** Colonne main sur kiosque vente : permet au wizard (`flex:1`) de remplir la hauteur sous le strip dashboard minimal */
+.cashflowKioskSaleMainStretch {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cashflowKioskSaleMainStretch > div {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cashflowKioskSaleMainStretch [data-pn-main-slot-stack='true'] {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.list {
+  margin: 0;
+  padding-left: var(--pn-list-indent);
+  color: var(--pn-color-text-muted);
+  font-size: var(--pn-font-size-sm);
+}
+
+.prefsToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-space-sm);
+  margin-bottom: var(--pn-space-sm);
+}

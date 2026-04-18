@@ -1,12 +1,28 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-02-26
+Mis a jour : 2026-04-13
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
 
+## Bascule BMAD (2026-03-31)
+
+Les sorties BMAD **actives** (`_bmad-output/planning-artifacts/`, `_bmad-output/implementation-artifacts/`) ont été **réinitialisées** pour repartir sur une nouvelle ligne (évolution incrémentale depuis `recyclique-1.4.4` stabilisé, sans le récit « refonte complète » comme plan directeur).
+
+**Archive complète** de l’ancienne chaîne (brief, PRD, architecture, epics, sprint-status, recherche, sous-dossiers) : `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`. Explications : [_bmad-output/README.md](../_bmad-output/README.md).
+
+Dans les sections historiques **datées d’avant le 2026-03-31**, lorsqu’un journal cite `_bmad-output/planning-artifacts/...` ou `implementation-artifacts/...` **sans** préfixe d’archive, entendre la copie sous `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/` (même arborescence relative).
+
+**Raccourci pour ouvrir les fichiers :** préfixe d’archive  
+`_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`  
+(ex. le PRD archivé : `.../planning-artifacts/prd.md`). Les dossiers **actifs** `planning-artifacts/` et `implementation-artifacts/` sous `_bmad-output/` portent la chaîne courante (ex. `epics.md`, `sprint-status.yaml`) ; l’archive ci-dessus conserve l’ancienne ligne 1.4.4.
+
+**Pilotage d’exécution v2** — Abstract canonique : voir l’entrée **guide-pilotage-v2** dans [references/index.md](index.md). Fichier : [_bmad-output/planning-artifacts/guide-pilotage-v2.md](../_bmad-output/planning-artifacts/guide-pilotage-v2.md). Le journal **daté** ci-dessous reste la trace des sessions ; les **cases jalons** se maintiennent dans le guide aux grands événements (convergences, fin d’epic majeur).
+
 ## Etat actuel
 
-Projet JARVOS Recyclique v0.1.0 initialise. **Analyse brownfield 1.4.4 disponible** dans `references/ancien-repo/`. **Analyse brownfield Paheko faite** : extensions (plugins/modules), API HTTP, gestion des fichiers et upload, WebDAV — voir [references/paheko/analyse-brownfield-paheko.md](paheko/analyse-brownfield-paheko.md) (index : [references/paheko/index.md](paheko/index.md)). Workflow Git en place. Aucun code source encore.
+Projet JARVOS Recyclique v0.1.0 initialise. **Analyse brownfield 1.4.4 disponible** dans `references/ancien-repo/`. **Analyse brownfield Paheko faite** : extensions (plugins/modules), API HTTP, gestion des fichiers et upload, WebDAV — voir [references/paheko/analyse-brownfield-paheko.md](paheko/analyse-brownfield-paheko.md) (index : [references/paheko/index.md](paheko/index.md)). Workflow Git en place. **Code et contrats dans le mono-repo** : notamment `recyclique/`, `peintre-nano/`, reference d'import `recyclique-1.4.4/`, contrats `contracts/` ; le grain fin des stories = `_bmad-output/implementation-artifacts/sprint-status.yaml`.
+
+**Repere BMAD Epics 6 a 10** : pour toute reprise ou create-story / dev-story sur la suite `6.x` a `10.x`, utiliser comme point d'entree documentaire [references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md](artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md) puis [references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md](artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md). Le pack `02` donne la vue de lecture par epic et le corpus de captures ; le tableau `03` donne la navigation **story par story**. Pour l'etat **story par story** (y compris cloture des Epics 6, 7, 8), se fier a `sprint-status.yaml` ; le pack et le tableau restent la lecture operationnelle des captures et de la matrice.
 
 **Framework de modules : design complet et arbitré.** Artefact : `references/artefacts/2026-02-24_07_design-systeme-modules.md`. Décisions finales posées : TOML, ModuleBase, EventBus Redis Streams (multi-workers), slots React, monorepo. **Product Brief v0.1.0 complété** (2026-02-25) : `_bmad-output/planning-artifacts/product-brief-JARVOS_recyclique-2026-02-25.md`. **PRD complété** (2026-02-26) : `_bmad-output/planning-artifacts/prd.md` — exigences fonctionnelles (caisse, réception, compta, correspondance, auth, déploiement, vie asso, éco-organismes, extension points), NFR, scope v1 et hors scope (dont réception hors ligne = module complémentaire post-v1). **UX v1.0** : mêmes écrans que 1.4.4, copie du code des mises en page (copy+consolidate+security), pas de refonte écrans pour la v1.0.
 
@@ -24,10 +40,33 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 
 ## Derniere session
 
+2026-04-13 — **Cloture documentaire (agent)** : correction de la section **Etat actuel** (le depot contient bien le code v2 et le brownfield ; l'ancienne phrase « aucun code source » etait obsolete). Renvoi explicite au grain fin dans `sprint-status.yaml`. Alignement des cases **Epics 1 a 8** dans `_bmad-output/planning-artifacts/guide-pilotage-v2.md` sur ce YAML ; **pas** de modification de `sprint-status.yaml` ni des fichiers story.
+
+2026-04-02 — **Piste B / Epic 1 — Stories 1.3 et 1.4 (documentation contrats & authz)** : spec canonique **multi-contextes / invariants d’autorisation** → [artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md](artefacts/2026-04-02_03_spec-multi-contextes-invariants-autorisation-v2.md) (story [_bmad-output/implementation-artifacts/1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2.md](../_bmad-output/implementation-artifacts/1-3-specifier-le-modele-multi-contextes-et-les-invariants-dautorisation-v2.md)) ; **gouvernance OpenAPI / CREOS / ContextEnvelope** → [artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md](artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md) (story [_bmad-output/implementation-artifacts/1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope.md](../_bmad-output/implementation-artifacts/1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope.md)). Pointeurs regroupés dans [references/index.md](index.md) (section **artefacts/**). **Ordre de lecture pour un agent :** **1.3** d’abord (sémantique métier, PIN, step-up, AR39/AR19 côté « quoi »), puis **1.4** (emplacements reviewables, `operationId`, drift, manifests). Entrée pratique côté repo : [contracts/README.md](../contracts/README.md). Suite logique Epic 1 : story **1.5** (sync / réconciliation Paheko).
+
+2026-04-02 — **Epic 3 / Story 3.0 clôturée** : socle `peintre-nano/` (Vite, React, TS strict, Mantine P1), quatre artefacts typés + `conceptual-artifacts.stub.ts`, tests Vitest, script `npm run lint` (`tsc -b`) ; passage QA2 (5 passes) et correctifs P1 (layout CSS Modules, tokens, smoke). `sprint-status.yaml` : clé `3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux` → **done** ; epic-3 → **in-progress** (suite 3.1+). Story et check-list de clôture : [_bmad-output/implementation-artifacts/3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux.md](../_bmad-output/implementation-artifacts/3-0-initialiser-peintre-nano-et-ses-quatre-artefacts-minimaux.md). **Rien d’autre n’est attendu sur 3.0** avant d’ouvrir la story 3.1.
+
+2026-04-01 — **Correctifs post-QA** (guide pilotage) : note chemins dans [_bmad-output/README.md](../_bmad-output/README.md) (actif vs archive) ; renvoi [`guide-pilotage-v2`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) en tête d’[Epic 3](../_bmad-output/planning-artifacts/epics.md) ; harmonisation français / accents dans le guide et le bloc « Voir aussi » des *Epic Sequencing Notes*.
+
+2026-04-01 — **Guide de pilotage v2** : ajout de [_bmad-output/planning-artifacts/guide-pilotage-v2.md](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) (deux récits, jalons, carte documentaire, frictions, prompt superviseur) ; entrée dans [references/index.md](index.md), pointeur dans ce fichier, [_bmad-output/README.md](../_bmad-output/README.md), [architecture/index.md](../_bmad-output/planning-artifacts/architecture/index.md), renvois dans [epics.md](../_bmad-output/planning-artifacts/epics.md) et [prd.md](../_bmad-output/planning-artifacts/prd.md) §12.
+
+2026-04-01 — Sprint Planning (BMAD) relancé sur `epics.md` v2.
+
+Réalisé :
+- **Sprint Status** : `_bmad-output/implementation-artifacts/sprint-status.yaml` régénéré. Inventaire : **10 epics**, **75 stories**, **10** rétrospectives ; statuts par défaut `backlog` / `optional` (aucun fichier story `{story-key}.md` à la racine de `implementation-artifacts` pour l’instant). Deux clés corrigées à la main après génération automatique : `1-2-…-api-existante-…` (éviter `lapi` pour *l’API*) et `5-5-…-ui-transverse` (éviter `lui` pour *l’UI*). Prochaine étape : Create Story → Dev Story → Code Review.
+
+**Correct Course (même jour, post-approbation)** — alignement **P1/P2** ADR Peintre ↔ BMAD ; puis **correctifs QA** (PRD §7.1 / P2, **AR45**, Story 9.6, addendum readiness, note « Prochaine étape ») :
+- **PRD** : section « Stack Peintre_nano (figée) » + liens ADR / instruction ; frontmatter enrichi.
+- **Architecture active** : `core-architectural-decisions.md`, `starter-template-evaluation.md`, `implementation-patterns-consistency-rules.md`, `project-structure-boundaries.md` ; bannière **P1/P2** sur `archive/architecture.md`.
+- **Epics** : AR3, AR15 et lignes de traçabilité epic mises à jour.
+- **Sprint Change Proposal** : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-01.md` — implémentation documentaire marquée faite ; **à faire** : re-run `check implementation readiness` quand tu veux rafraîchir le rapport.
+
+---
+
 2026-02-26 — Sprint Planning complété (workflow BMAD).
 
 Réalisé :
-- **Sprint Status** : `_bmad-output/implementation-artifacts/sprint-status.yaml` généré à partir de `epics.md`. Inventaire : 8 epics, 22 stories, 8 rétrospectives ; tous les éléments en `backlog` (aucun fichier story dans implementation-artifacts pour l’instant). Prochaine étape : lancer le cycle Create Story → Dev Story → Code Review (ou Check Implementation Readiness si pas encore fait).
+- **Sprint Status** (ancienne chaîne, désormais obsolète pour le pilotage v2) : voir archive ; l’inventaire d’alors était 8 epics, 22 stories.
 
 ---
 
@@ -53,7 +92,7 @@ Brief disponible : `_bmad-output/planning-artifacts/product-brief-JARVOS_recycli
 
 2026-02-25 — Décisions matrice caisse/poids (session=session, manques v0.2+, compatibilité Paheko).
 
-Matrice [references/migration-paeco/audits/matrice-correspondance-caisse-poids.md](migration-paeco/audits/matrice-correspondance-caisse-poids.md) mise à jour : 1 session RecyClique = 1 session Paheko (ouverture → clôture) ; clôture RecyClique déclenche clôture Paheko (contrôle totaux + syncAccounting) ; section 2.5 unité de poids (kg ↔ g, convention PRD) ; section 4 fonctionnalités Paheko absentes (v0.1 ignorer, v0.2+ à développer) ; section 5 principe de compatibilité Paheko (config Paheko = référence). Grille 05 axe 6 (module correspondance) → statut décidé.
+Matrice [references/migration-paheko/audits/matrice-correspondance-caisse-poids.md](migration-paheko/audits/matrice-correspondance-caisse-poids.md) mise à jour : 1 session RecyClique = 1 session Paheko (ouverture → clôture) ; clôture RecyClique déclenche clôture Paheko (contrôle totaux + syncAccounting) ; section 2.5 unité de poids (kg ↔ g, convention PRD) ; section 4 fonctionnalités Paheko absentes (v0.1 ignorer, v0.2+ à développer) ; section 5 principe de compatibilité Paheko (config Paheko = référence). Grille 05 axe 6 (module correspondance) → statut décidé.
 
 ---
 
@@ -173,6 +212,8 @@ Ordre qui a ete suivi ; 1re passe cloturee (2026-02-25).
 5. **Restant Kanban** — nouvelles UI, module store, Le Fil, module correspondance, README, etc.
 
 ## Prochaine etape
+
+> **Note (2026-04-01)** : la ligne directrice **v2 brownfield** vit dans `_bmad-output/planning-artifacts/` (PRD, `epics.md`, `sprint-status.yaml`). Les étapes 1–3 ci-dessous sont l’historique **février 2026** ; l’état courant est dans **Dernière session** (sprint planning v2, Correct Course, alignement ADR P1/P2). Enchaînement logique aujourd’hui : **Create Story** (fichiers `.md` par clé) → **Dev Story** → **Code Review** ; optionnel : re-run **check implementation readiness** pour régénérer le rapport (un addendum 2026-04-01 documente déjà l’alignement ADR dans `implementation-readiness-report-2026-04-01.md`).
 
 1. **Create Epics and Stories** (`/bmad-bmm-create-epics-and-stories`, agent PM John) : découper le PRD et l'architecture en épics et stories (fichier `epics.md`). Workflow en 4 étapes avec tours de réflexion et validation.
 2. **Check Implementation Readiness** (`/bmad-bmm-check-implementation-readiness`, agent Architect Winston) : valider la cohérence PRD / UX / Architecture / Épics & Stories avant le sprint.

@@ -1,0 +1,68 @@
+schema: 1
+story: "b48.p5"
+story_title: "Double Dénomination des Catégories"
+gate: "CONCERNS"
+status_reason: "Implémentation fonctionnelle mais incomplète. Problèmes identifiés : tests obsolètes (display_name au lieu de official_name), tooltips conditionnels partiellement implémentés, exports n'utilisent pas official_name pour conformité."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-09T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - severity: "HIGH"
+    description: "Tests obsolètes : utilisent display_name au lieu de official_name"
+    refs: ["api/tests/test_category_display_name_b48_p5.py"]
+    impact: "Tests ne reflètent pas l'implémentation réelle, peuvent masquer des régressions"
+  - severity: "MEDIUM"
+    description: "Tooltips conditionnels partiellement implémentés : seule TicketForm.tsx vérifie official_name !== name"
+    refs: ["frontend/src/components/business/CategorySelector.tsx:123", "frontend/src/components/business/SaleWizard.tsx:1023"]
+    impact: "Tooltips affichés même si official_name identique à name (contrairement à AC #8)"
+  - severity: "MEDIUM"
+    description: "Exports n'utilisent pas official_name pour conformité (AC #4, #10)"
+    refs: ["api/src/recyclic_api/services/export_service.py:415", "api/src/recyclic_api/services/category_export_service.py:281", "api/src/recyclic_api/services/report_service.py:517"]
+    impact: "Non-conformité avec les déclarations éco-organismes (devrait utiliser official_name si présent)"
+
+quality_score: 70
+
+expires: "2025-12-23T00:00:00Z"
+
+evidence:
+  tests_reviewed: 1
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 5, 6, 7]
+    ac_gaps: [4, 8, 9, 10]  # Exports, tooltips conditionnels, recherche
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun problème de sécurité identifié. Champ official_name optionnel, validation standard"
+  performance:
+    status: PASS
+    notes: "Aucun impact performance. Champ nullable, requêtes inchangées, tooltips conditionnels"
+  reliability:
+    status: PASS
+    notes: "Migration additive (pas de breaking change), rétrocompatible, valeur par défaut NULL"
+  maintainability:
+    status: CONCERNS
+    notes: "Tests obsolètes (display_name) créent confusion, code partiellement conforme aux ACs"
+
+recommendations:
+  immediate:
+    - action: "Mettre à jour les tests : remplacer display_name par official_name"
+      refs: ["api/tests/test_category_display_name_b48_p5.py"]
+      priority: "HIGH"
+    - action: "Corriger tooltips conditionnels : vérifier official_name !== name dans tous les composants"
+      refs: ["frontend/src/components/business/CategorySelector.tsx", "frontend/src/components/business/SaleWizard.tsx"]
+      priority: "MEDIUM"
+    - action: "Implémenter official_name dans exports : utiliser official_name si présent, sinon name (AC #4, #10)"
+      refs: ["api/src/recyclic_api/services/export_service.py", "api/src/recyclic_api/services/category_export_service.py", "api/src/recyclic_api/services/report_service.py"]
+      priority: "MEDIUM"
+  future:
+    - action: "Implémenter recherche dans name ET official_name (AC #9)"
+      refs: ["docs/stories/story-b48-p5-double-denomination-categories.md:90"]
+    - action: "Valider conformité éco-organismes avec official_name dans tous les exports"
+      refs: ["docs/stories/story-b48-p5-double-denomination-categories.md:416-419"]
+
+
+

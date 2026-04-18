@@ -1,0 +1,346 @@
+﻿"""
+Email service for sending transactional emails via Brevo (SendInBlue).
+"""
+import logging
+import time
+from datetime import datetime
+from typing import Optional, List
+import types
+from dataclasses import dataclass
+import base64
+
+try:
+    import sib_api_v3_sdk  # type: ignore
+    from sib_api_v3_sdk.rest import ApiException  # type: ignore
+except Exception:  # pragma: no cover - fallback for test environments without SDK
+    # Provide a lightweight shim so tests can patch attributes under this namespace
+    class ApiException(Exception):
+        pass
+
+    class _SendSmtpEmail:
+        def __init__(self, to=None, sender=None, subject=None, html_content=None):
+            self.to = to
+            self.sender = sender
+            self.subject = subject
+            self.html_content = html_content
+
+    class _ApiClient:
+        def __init__(self, configuration=None):
+            self.configuration = configuration
+
+    class _TransactionalEmailsApi:
+        def __init__(self, api_client=None):
+            self._api_client = api_client
+
+        def send_transac_email(self, email):  # pragma: no cover - replaced by mocks in tests
+            class _Resp:
+                message_id = "mock-message-id"
+            return _Resp()
+
+    sib_api_v3_sdk = types.SimpleNamespace(  # type: ignore
+        Configuration=type("_Cfg", (), {"api_key": {}}),
+        ApiClient=_ApiClient,
+        TransactionalEmailsApi=_TransactionalEmailsApi,
+        SendSmtpEmail=_SendSmtpEmail,
+        rest=types.SimpleNamespace(ApiException=ApiException),
+    )
+
+from recyclic_api.core.config import settings
+from recyclic_api.utils.email_metrics import email_metrics
+from recyclic_api.core.database import get_db
+from recyclic_api.models.email_event import EmailStatusModel
+from recyclic_api.models.email_log import EmailLog, EmailStatus, EmailType
+from recyclic_api.services.email_log_service import EmailLogService
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EmailAttachment:
+    filename: str
+    content: bytes
+    mime_type: str = 'application/octet-stream'
+
+
+class EmailServiceError(Exception):
+    """Base exception for email service errors."""
+    pass
+
+
+class EmailConfigurationError(EmailServiceError):
+    """Exception raised when email service is not properly configured."""
+    pass
+
+
+class EmailService:
+    """Service for sending emails through Brevo API."""
+
+    def __init__(self, require_api_key: bool = True):
+        """
+        Initialize the email service with Brevo API configuration.
+
+        Args:
+            require_api_key: If True, raises ValueError if API key is not set.
+                            If False, allows initialization without API key (for config checking).
+        """
+        # Store API key status
+        self.has_api_key = bool(settings.BREVO_API_KEY)
+
+        # Validate configuration if required
+        if require_api_key and not self.has_api_key:
+            raise ValueError("BREVO_API_KEY is required but not set in environment")
+
+        # Only configure API client if API key exists
+        if self.has_api_key:
+            # Configure API client (real or patched in tests)
+            configuration = sib_api_v3_sdk.Configuration()
+            try:
+                # Some shims may not support dict-style api_key
+                if hasattr(configuration, 'api_key'):
+                    configuration.api_key['api-key'] = settings.BREVO_API_KEY
+            except Exception:
+                pass
+
+            # Create API instance (will be patched to MagicMock in tests)
+            self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
+            )
+        else:
+            self.api_instance = None
+
+    def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        html_content: str,
+        from_email: Optional[str] = None,
+        from_name: Optional[str] = None,
+        db_session=None,
+        attachments: Optional[List[EmailAttachment]] = None,
+        email_type: EmailType = EmailType.OTHER,
+        user_id: Optional[str] = None,
+        recipient_name: Optional[str] = None,
+        body_text: Optional[str] = None
+    ) -> bool:
+        """
+        Send an email via Brevo API.
+
+        Args:
+            to_email: Recipient email address
+            subject: Email subject
+            html_content: HTML content of the email
+            from_email: Sender email (optional, uses default if not provided)
+            from_name: Sender name (optional)
+            db_session: Optional database session for status tracking
+
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+
+        Raises:
+            EmailConfigurationError: If Brevo API key is not configured
+        """
+        start_time = time.time()
+
+        # Check if API key is configured
+        if not self.has_api_key:
+            logger.error("Cannot send email: BREVO_API_KEY is not configured")
+            raise EmailConfigurationError(
+                "Le service email n'est pas configuré. "
+                "Veuillez configurer la variable d'environnement BREVO_API_KEY."
+            )
+
+        try:
+            # Default sender info from configuration
+            if not from_email:
+                from_email = settings.EMAIL_FROM_ADDRESS
+            if not from_name:
+                from_name = settings.EMAIL_FROM_NAME
+
+            # Create email object
+            sender = {"name": from_name, "email": from_email}
+            to = [{"email": to_email}]
+
+            attachments_payload = None
+            if attachments:
+                attachments_payload = []
+                for attachment in attachments:
+                    try:
+                        encoded = base64.b64encode(attachment.content).decode('utf-8')
+                    except Exception as exc:
+                        logger.error("Failed to encode attachment %s: %s", attachment.filename, exc)
+                        continue
+                    payload = {"name": attachment.filename, "content": encoded}
+                    if attachment.mime_type:
+                        payload["type"] = attachment.mime_type
+                    attachments_payload.append(payload)
+                if not attachments_payload:
+                    attachments_payload = None
+
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=to,
+                sender=sender,
+                subject=subject,
+                html_content=html_content,
+                attachment=attachments_payload
+            )
+
+            # Send the email
+            api_response = self.api_instance.send_transac_email(send_smtp_email)
+
+            elapsed_ms = (time.time() - start_time) * 1000
+
+            # Record success metrics
+            email_metrics.record_email_send(
+                to_email=to_email,
+                success=True,
+                elapsed_ms=elapsed_ms,
+                provider="brevo",
+                message_id=api_response.message_id
+            )
+
+            # Create email log record if database session provided
+            if db_session:
+                try:
+                    email_log_service = EmailLogService(db_session)
+                    email_log = email_log_service.create_email_log(
+                        recipient_email=to_email,
+                        subject=subject,
+                        body_text=body_text,
+                        body_html=html_content,
+                        email_type=email_type,
+                        user_id=user_id,
+                        recipient_name=recipient_name,
+                        external_id=api_response.message_id
+                    )
+                    
+                    # Update status to SENT
+                    email_log_service.update_email_status(
+                        email_log_id=str(email_log.id),
+                        status=EmailStatus.SENT,
+                        external_id=api_response.message_id,
+                        timestamp=datetime.fromtimestamp(start_time)
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to create email log record: {e}")
+                    # Don't fail the email send if status tracking fails
+                    db_session.rollback()
+
+            return True
+
+        except ApiException as e:
+            elapsed_ms = (time.time() - start_time) * 1000
+            error_type = "api_exception"
+            error_detail = str(e)
+
+            # Log the error with details
+            logger.error(f"Brevo API Exception when sending email to {to_email}: {error_detail}")
+
+            # Record failure metrics
+            email_metrics.record_email_send(
+                to_email=to_email,
+                success=False,
+                elapsed_ms=elapsed_ms,
+                provider="brevo",
+                error_type=error_type,
+                error_detail=error_detail
+            )
+
+            # Log failed email attempt if database session provided
+            if db_session:
+                try:
+                    email_log_service = EmailLogService(db_session)
+                    email_log = email_log_service.create_email_log(
+                        recipient_email=to_email,
+                        subject=subject,
+                        body_text=body_text,
+                        body_html=html_content,
+                        email_type=email_type,
+                        user_id=user_id,
+                        recipient_name=recipient_name
+                    )
+                    
+                    # Update status to FAILED
+                    email_log_service.update_email_status(
+                        email_log_id=str(email_log.id),
+                        status=EmailStatus.FAILED,
+                        error_message=error_detail
+                    )
+                except Exception as log_error:
+                    logger.warning(f"Failed to create email log record for failed email: {log_error}")
+
+            return False
+
+        except Exception as e:
+            elapsed_ms = (time.time() - start_time) * 1000
+            error_type = "unexpected_error"
+            error_detail = str(e)
+
+            # Log the error with details
+            logger.error(f"Unexpected error when sending email to {to_email}: {error_detail}", exc_info=True)
+
+            # Record failure metrics
+            email_metrics.record_email_send(
+                to_email=to_email,
+                success=False,
+                elapsed_ms=elapsed_ms,
+                provider="brevo",
+                error_type=error_type,
+                error_detail=error_detail
+            )
+
+            # Log failed email attempt if database session provided
+            if db_session:
+                try:
+                    email_log_service = EmailLogService(db_session)
+                    email_log = email_log_service.create_email_log(
+                        recipient_email=to_email,
+                        subject=subject,
+                        body_text=body_text,
+                        body_html=html_content,
+                        email_type=email_type,
+                        user_id=user_id,
+                        recipient_name=recipient_name
+                    )
+                    
+                    # Update status to FAILED
+                    email_log_service.update_email_status(
+                        email_log_id=str(email_log.id),
+                        status=EmailStatus.FAILED,
+                        error_message=error_detail
+                    )
+                except Exception as log_error:
+                    logger.warning(f"Failed to create email log record for failed email: {log_error}")
+
+            return False
+
+
+# Global email service instance (lazy initialization)
+_email_service = None
+
+
+def get_email_service() -> EmailService:
+    """Get the global email service instance (lazy initialization)."""
+    global _email_service
+    if _email_service is None:
+        _email_service = EmailService()
+    return _email_service
+
+
+def send_email(to_email: str, subject: str, html_content: str, attachments: Optional[List[EmailAttachment]] = None) -> bool:
+    """
+    Convenience function to send an email.
+
+    Args:
+        to_email: Recipient email address
+        subject: Email subject
+        html_content: HTML content of the email
+
+    Returns:
+        bool: True if email was sent successfully, False otherwise
+    """
+    service = get_email_service()
+    if attachments is None:
+        return service.send_email(to_email, subject, html_content)
+    return service.send_email(to_email, subject, html_content, attachments=attachments)
+
+

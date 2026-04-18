@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "page_key": "transverse-dashboard-benevole",
+  "required_permission_keys": ["transverse.dashboard.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "demo.legacy.dashboard.personal",
+      "widget_props": {
+        "mainDashboardPath": "/dashboard",
+        "backToSiteDashboardLabel": "Retour au tableau de bord site"
+      }
+    }
+  ]
+}

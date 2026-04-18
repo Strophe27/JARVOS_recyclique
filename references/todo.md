@@ -9,8 +9,9 @@
 - [x] Renseigner l'URL du repo GitHub public Recyclique 1.4.4 dans `references/ancien-repo/README.md`
 - [x] Lancer git clone du repo Recyclique 1.4.4 (`references/ancien-repo/repo/`)
 - [x] Lancer le workflow Document Project sur `references/ancien-repo/repo/` pour l'analyse brownfield
-- [x] Rédiger le PRD (s'appuyer sur grille 05, artefact 08, matrice et audits migration-paeco/audits/)
+- [x] Rédiger le PRD (s'appuyer sur grille 05, artefact 08, matrice et audits migration-paheko/audits/)
 - [x] Decider de l'architecture technique du nouveau backend — fait : architecture.md complété (2026-02-26), READY FOR IMPLEMENTATION
+- [ ] Front caisse/réception (futur) — quand on s’en empare : brainstorm + cadrage BMAD (workflow explicite, config d’écran légère, layout dockable desktop si besoin) ; **pas d’exécution automatique avant décision** — entrée : [artefact 2026-03-26_01](artefacts/2026-03-26_01_blueprint-layout-workflow-ecrans.md) ; à reverser ensuite dans `_bmad-output/planning-artifacts/architecture.md` + `epics.md` (Epic 8) avant Create Story / Dev Story.
 - [ ] v0.1 — Checklist architecture : intégrer loader modules (TOML, ModuleBase) + slots dans les premières stories modulaires ; trancher convention tests frontend ; figer versions Python/Node dans Dockerfile et README (détail : [artefact 2026-02-26_03](artefacts/2026-02-26_03_checklist-v0.1-architecture.md))
 - [x] Clarifier le perimetre v0.1.0 vs fonctionnalites a reporter — source de verite : references/versioning.md (v0.1.0 → v1.0.0) ; detail eventuel dans le Brief quand produit.
 - [ ] Explorer et formaliser politique fichiers (matrice, backends, scan factures, upload RecyClique→Paheko) — chantier versions futures

@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "demo-guarded-page",
+  "required_permission_keys": ["demo.permission.admin-only"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "demo.kpi",
+      "widget_props": { "label": "Page réservée admin", "value": 0 }
+    }
+  ]
+}

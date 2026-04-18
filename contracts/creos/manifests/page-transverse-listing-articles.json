@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "page_key": "transverse-listing-articles",
+  "required_permission_keys": ["transverse.listings.hub.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "listing.hub.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Listing transverse — articles (stock)",
+        "body": "Hub de consultation catalogue : vue liste transverse sous contrat CREOS. Aucun tri, filtre métier ni agrégat inventé côté UI : la composition data suivra les operation_id OpenAPI quand disponibles."
+      }
+    },
+    {
+      "slot_id": "listing.hub.context",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Accès et périmètre",
+        "body": "L'affichage et la navigation visibles dépendent du ContextEnvelope et des permissions servies par le backend ; pas de recalcul des droits effectifs dans Peintre_nano."
+      }
+    },
+    {
+      "slot_id": "listing.hub.not-migrated",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Parcours non livrés dans ce hub",
+        "body": "La caisse (Epic 6), la réception et la qualification terrain (Epic 7), la synchronisation Paheko (Epic 8) et les modules complémentaires (Epic 9) ne sont pas migrés ici. Utilisez la navigation latérale pour le dashboard transverse ou l'admin placeholder (contrats 5.2 / 5.4) — sans simulation de workflow métier."
+      }
+    },
+    {
+      "slot_id": "listing.hub.data-gap",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Données liste (gap documenté)",
+        "body": "Aucun widget data_contract sur ce slice : la liste articles détaillée et les colonnes métier suivront un operation_id résolu dans contracts/openapi/recyclique-api.yaml ; le rendu reste sur widgets de présentation allowlistés."
+      }
+    }
+  ]
+}

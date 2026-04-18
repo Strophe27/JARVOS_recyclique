@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "cmd /c python .cursor/hooks/cursor_hooks_diagnostic.py"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "cmd /c python .cursor/hooks/cursor_hooks_diagnostic.py"
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "cmd /c python .cursor/hooks/log_after_agent_response.py"
+      }
+    ]
+  }
+}

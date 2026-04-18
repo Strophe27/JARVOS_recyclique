@@ -1,0 +1,22 @@
+.slotStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-md);
+}
+
+.mainManifest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-md);
+}
+
+.unmapped {
+  padding: var(--pn-space-sm);
+  border: 1px dashed var(--pn-color-border);
+  border-radius: var(--pn-radius-sm);
+}
+
+.resolveError {
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text-muted);
+}

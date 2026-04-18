@@ -1,0 +1,513 @@
+.chromeShell {
+  overflow: hidden;
+  border: 1px solid rgb(46 125 50 / 28%);
+  box-shadow: none;
+}
+
+.chromeHeader {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.chromeHeaderTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+
+.chromeTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.chromeHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xs);
+}
+
+.chromePrimaryAction {
+  color: #3f3200;
+  border-color: #d7a300;
+  background: #ffc426;
+}
+
+.chromePrimaryAction:hover {
+  background: #ffcf52;
+}
+
+.chromeMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  padding: 0;
+  background: transparent;
+}
+
+.chromeMetaItem {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.chromeMetaLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.chromeMetaValue {
+  font-weight: 700;
+}
+
+.chromeKpiRow {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+  gap: 0;
+  padding: 0;
+  background: linear-gradient(90deg, #6477db 0%, #7d54c6 100%);
+  border-top: 1px solid rgb(255 255 255 / 18%);
+}
+
+.chromeKpiCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid rgb(255 255 255 / 18%);
+  background: transparent;
+}
+
+.chromeKpiCard:last-of-type {
+  border-right: 1px solid rgb(255 255 255 / 18%);
+}
+
+.chromeKpiLabel {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 78%);
+}
+
+.chromeKpiValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.chromeKpiLive {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+}
+
+.chromeLiveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgb(98 206 125 / 22%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chromeLiveDot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #7af27f;
+}
+
+.chromeLiveTime {
+  font-size: 11px;
+  color: rgb(255 255 255 / 75%);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.workspaceShell {
+  background: #fff;
+}
+
+.desktopLayout {
+  display: grid;
+  grid-template-columns: minmax(17.5rem, 1.12fr) minmax(24rem, 1.95fr) minmax(16rem, 1fr);
+  gap: var(--mantine-spacing-sm);
+  align-items: start;
+}
+
+.stickyColumn {
+  position: sticky;
+  top: var(--mantine-spacing-md);
+  align-self: start;
+}
+
+.panel {
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: 4px;
+  background: var(--mantine-color-body);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+  background: linear-gradient(180deg, var(--mantine-color-gray-0) 0%, var(--mantine-color-body) 100%);
+}
+
+.panelTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.panelBody {
+  padding: var(--mantine-spacing-md);
+}
+
+.leftPanelBody {
+  min-height: 20.5rem;
+  padding: 0.45rem;
+}
+
+.centerPanelBody {
+  min-height: 20.5rem;
+  padding: 0.45rem 0.65rem 0.65rem;
+}
+
+.categorySection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+}
+
+.categorySectionLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.categoryRail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.categoryTile {
+  min-height: 4.2rem;
+  padding: 0.55rem 0.6rem;
+}
+
+.categoryTile :global(.mantine-Button-inner) {
+  align-items: stretch;
+}
+
+.categoryTile :global(.mantine-Button-label) {
+  width: 100%;
+}
+
+.categoryTileContent {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.28rem;
+  text-align: left;
+}
+
+.categoryTileLabel {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.categoryTileShortcutBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  align-self: flex-start;
+  padding: 1px 5px;
+  border: 1px solid var(--mantine-color-green-4);
+  border-radius: var(--mantine-radius-xs);
+  background: var(--mantine-color-green-1);
+  color: var(--mantine-color-green-8);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.categoryTileShortcutKey {
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #1b5e20;
+}
+
+.categoryChildrenRow {
+  margin-top: var(--mantine-spacing-xs);
+  padding-top: var(--mantine-spacing-xs);
+  border-top: 1px solid var(--mantine-color-gray-2);
+}
+
+.categoryBackAction {
+  justify-content: flex-end;
+}
+
+.workspaceHint {
+  margin-top: calc(var(--mantine-spacing-xs) * -1);
+  margin-bottom: var(--mantine-spacing-xs);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  opacity: 0.8;
+}
+
+.weightHeaderCard {
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid var(--mantine-color-gray-3);
+  background: #fff;
+}
+
+.weightHeaderLabel {
+  margin-bottom: 0.35rem;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--mantine-color-dimmed);
+}
+
+.weightHeaderValue {
+  font-size: clamp(1.55rem, 3vw, 1.95rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: #555;
+}
+
+.weightCompose {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(12rem, 0.75fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.weightKeypadColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.weightInputShell {
+  padding: 0;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.weightInputShell :global(.mantine-InputWrapper-label) {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--mantine-color-dimmed);
+}
+
+.weightInputShell :global(.mantine-Input-input) {
+  height: 2.7rem;
+  text-align: center;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.keypadGrid {
+  margin-top: 0;
+}
+
+.keypadButton :global(.mantine-Button-root) {
+  min-height: 3.2rem;
+  font-size: 1.22rem;
+  font-weight: 700;
+  color: #222;
+  background: #fff;
+  border-color: var(--mantine-color-gray-3);
+}
+
+.keypadActionRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.keypadActionButton :global(.mantine-Button-root) {
+  min-height: 2.55rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.weightControlsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.compactControl :global(.mantine-InputWrapper-label),
+.compactControl :global(.mantine-Switch-label) {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.compactControl :global(.mantine-Input-input) {
+  min-height: 2.3rem;
+  font-size: 0.9rem;
+}
+
+.compactControl :global(.mantine-Switch-root) {
+  min-height: 1.35rem;
+}
+
+.compactControl :global(.mantine-Switch-track) {
+  height: 1rem;
+  min-width: 1.85rem;
+}
+
+.ctaButton :global(.mantine-Button-root) {
+  min-height: 3rem;
+  font-weight: 700;
+  background: #d8d8d8;
+  border-color: #d8d8d8;
+  color: #fff;
+}
+
+.ticketShell {
+  display: flex;
+  flex-direction: column;
+  min-height: 21rem;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgb(46 125 50 / 38%);
+  box-shadow: none;
+  background: var(--mantine-color-body);
+}
+
+.ticketTitleBar {
+  background: #2e7d32;
+  color: #fff;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+
+.ticketBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm);
+  background: linear-gradient(180deg, var(--mantine-color-gray-0) 0%, var(--mantine-color-body) 48%);
+  min-height: 19.5rem;
+  max-height: calc(100vh - 12rem);
+  overflow: auto;
+}
+
+.ticketList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+}
+
+.ticketListItem {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid var(--mantine-color-gray-3);
+  background: var(--mantine-color-body);
+}
+
+.ticketEmptyState {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 11rem;
+  padding-top: 3.25rem;
+  text-align: center;
+  color: #9aa0a6;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  font-style: italic;
+}
+
+.ticketFooter {
+  margin-top: auto;
+  padding-top: var(--mantine-spacing-xs);
+  border-top: 1px solid var(--mantine-color-gray-3);
+  font-size: 11px;
+  color: var(--mantine-color-dimmed);
+  text-align: right;
+}
+
+@media (max-width: 62em) {
+  .chromeKpiRow,
+  .desktopLayout,
+  .keypadActionRow {
+    grid-template-columns: 1fr;
+  }
+
+  .chromeKpiRow {
+    gap: 0;
+  }
+
+  .stickyColumn {
+    position: static;
+  }
+
+  .ticketBody {
+    max-height: none;
+  }
+
+  .weightCompose {
+    grid-template-columns: 1fr;
+  }
+}

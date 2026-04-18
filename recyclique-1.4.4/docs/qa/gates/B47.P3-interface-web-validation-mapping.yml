@@ -1,0 +1,51 @@
+schema: 1
+story: "B47.P3"
+story_title: "Interface Web de Validation Mapping"
+gate: PASS
+status_reason: "Implémentation complète et bien testée. Interface utilisateur intuitive avec stepper multi-étapes, gestion d'état robuste, intégration correcte avec les endpoints backend. Tests unitaires couvrant les cas principaux. Code de qualité conforme aux standards."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T12:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - action: "Valider l'expérience utilisateur avec un CSV réel de grande taille (630+ lignes)"
+        refs: ["frontend/src/pages/Admin/LegacyImport.tsx"]
+
+quality_score: 90
+
+evidence:
+  tests_reviewed: 12
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Route protégée avec ProtectedRoute requiredRoles={['admin', 'super-admin']}. Validation côté client des fichiers CSV. Pas d'exposition de données sensibles."
+  performance:
+    status: PASS
+    notes: "Timeouts appropriés (5 min pour analyse, 10 min pour import). Progression simulée pour l'import. Gestion efficace de l'état avec useState."
+  reliability:
+    status: PASS
+    notes: "Gestion d'erreurs complète à chaque étape avec notifications utilisateur. Validation des fichiers avant upload. Gestion des cas d'erreur API."
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré avec composant React fonctionnel. Séparation claire des étapes. Utilisation appropriée des hooks. Tests facilitent la maintenance."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer l'ajout d'un mode de progression réel si l'API supporte le streaming"
+      refs: ["frontend/src/pages/Admin/LegacyImport.tsx:263"]
+    - action: "Ajouter tests E2E pour le flux complet avec CSV réel"
+      refs: ["frontend/src/pages/Admin/__tests__/LegacyImport.test.tsx"]
+

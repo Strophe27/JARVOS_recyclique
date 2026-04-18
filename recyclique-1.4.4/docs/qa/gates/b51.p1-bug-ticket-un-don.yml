@@ -1,0 +1,44 @@
+schema: 1
+story: "b51.p1"
+story_title: "Bug ticket avec un seul don - finalisation impossible"
+gate: PASS
+status_reason: "Fix implémenté correctement avec détection automatique des tickets don-seul, pré-sélection Gratuit/Don, et attribut required conditionnel. Tests unitaires présents et valides."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-17T00:56:17Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 95
+expires: "2025-12-31T00:00:00Z"
+
+evidence:
+  tests_reviewed: 3
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun changement de logique de sécurité. Validation frontend préservée."
+  performance:
+    status: PASS
+    notes: "Aucun impact performance - logique de détection légère avec useMemo."
+  reliability:
+    status: PASS
+    notes: "Fix robuste avec pré-sélection automatique et attribut required conditionnel."
+  maintainability:
+    status: PASS
+    notes: "Code bien documenté avec commentaires B51-P1, logique claire."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer tests E2E pour scénario complet ticket don-seul"
+      refs: ["docs/stories/story-b51-p1-bug-ticket-un-don.md:187-188"]
+
+
+

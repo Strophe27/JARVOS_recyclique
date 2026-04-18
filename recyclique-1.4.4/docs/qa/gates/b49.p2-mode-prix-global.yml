@@ -1,0 +1,49 @@
+schema: 1
+story: "b49.p2"
+story_title: "Mode Prix Global (Option \"Item sans prix\")"
+gate: PASS
+status_reason: "Implémentation complète et solide. Tous les 18 critères d'acceptation respectés. Workflow mode prix global fonctionnel avec masquage étape Quantité, comportement prix dynamique, et finalisation avec total manuel. Rétrocompatibilité garantie."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T16:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 0
+    low: 0
+  recommendations:
+    must_fix: []
+    monitor: []
+
+quality_score: 100
+
+evidence:
+  tests_reviewed: 8
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun problème de sécurité identifié. Validation métier côté backend pour total_amount >= sous-total. Option désactivée par défaut."
+  performance:
+    status: PASS
+    notes: "Option chargée une seule fois à l'ouverture de session. Aucun impact performance identifié."
+  reliability:
+    status: PASS
+    notes: "Workflow mode prix global fonctionnel. Tests API complets (8 tests) couvrant tous les scénarios. Rétrocompatibilité vérifiée."
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré avec détection option via register_options. Comportement conditionnel clair dans SaleWizard et FinalizationScreen. Types TypeScript alignés."
+
+recommendations:
+  immediate: []
+  future: []
+

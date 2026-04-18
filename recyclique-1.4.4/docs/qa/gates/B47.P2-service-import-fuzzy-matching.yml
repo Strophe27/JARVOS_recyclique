@@ -1,0 +1,51 @@
+schema: 1
+story: "B47.P2"
+story_title: "Service d'Import avec Fuzzy Matching"
+gate: PASS
+status_reason: "Implémentation complète et bien testée. Service avec fuzzy matching fonctionnel, endpoints API robustes, gestion transactionnelle appropriée. Duplication de code corrigée. Code de qualité conforme aux standards."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T14:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 1, low: 2 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - action: "Valider le comportement avec un CSV legacy réel de grande taille (630+ lignes)"
+        refs: ["api/src/recyclic_api/services/legacy_import_service.py:329"]
+
+quality_score: 92
+
+evidence:
+  tests_reviewed: 19
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Endpoints protégés par require_role_strict([ADMIN, SUPER_ADMIN]). Validation appropriée des inputs (CSV, JSON). Pas d'injection SQL (utilisation ORM)."
+  performance:
+    status: CONCERNS
+    notes: "Chargement synchrone des catégories depuis DB (pas async). Cache des catégories implémenté mais pourrait être optimisé pour très grandes bases. Fuzzy matching O(n*m) pour chaque catégorie unique."
+  reliability:
+    status: PASS
+    notes: "Transaction tout ou rien implémentée avec rollback approprié. Gestion d'erreurs robuste avec messages détaillés. Validation complète des inputs."
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré avec séparation service/endpoints/schémas. Docstrings complètes. Tests exhaustifs facilitent la maintenance. Duplication de code corrigée (DUP-001)."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer migration vers CategoryService async si performance devient un problème"
+      refs: ["api/src/recyclic_api/services/legacy_import_service.py:89"]
+    - action: "Ajouter tests de performance avec CSV de grande taille (630+ lignes) - optionnel"
+      refs: ["api/tests/test_legacy_import_service.py"]
+

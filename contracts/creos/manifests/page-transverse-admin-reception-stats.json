@@ -1,0 +1,22 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-reception-stats",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.transverse-list.header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Supervision réception",
+        "title_level": "1",
+        "body": "Vue admin de synthèse pour la réception : statistiques sur la période, activité en direct et répartition par catégorie pour le site courant."
+      }
+    },
+    {
+      "slot_id": "admin.transverse-list.main",
+      "widget_type": "admin.reception.stats.supervision",
+      "widget_props": {}
+    }
+  ]
+}

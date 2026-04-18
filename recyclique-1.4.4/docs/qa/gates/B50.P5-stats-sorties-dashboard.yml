@@ -1,0 +1,44 @@
+schema: 1
+story: "B50.P5"
+story_title: "Statistiques Matières Sorties - Dashboard"
+gate: PASS
+status_reason: "Implémentation complète avec service backend, endpoint API, service frontend et mise à jour des dashboards. Tests backend complets incluant test de performance. Bug fix appliqué pour l'affichage des noms de catégories. Tous les critères d'acceptation sont satisfaits. Quality Score: 100%."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T15:30:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 100
+
+evidence:
+  tests_reviewed: 5
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun problème de sécurité. Endpoint protégé avec authentification."
+  performance:
+    status: PASS
+    notes: "Requête SQL optimisée avec agrégation. Rate limiting à 60/minute. Test de performance validé : endpoint répond en < 500ms sous charge (50+ ventes avec items). Cohérence avec les autres endpoints stats."
+  reliability:
+    status: PASS
+    notes: "Agrégation correcte vers catégories principales. Gestion des sous-catégories vers parents. Tests complets."
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré, suit le pattern de get_reception_by_category(). Graphiques réutilisent les composants existants. Test de performance ajouté pour validation NFR."
+
+recommendations:
+  immediate: []
+  future: []
+
+# Note: Recommandation future implémentée (2025-01-27)
+# - Test de performance ajouté dans api/tests/test_sales_stats_by_category.py:335-391
+# - Test marqué @pytest.mark.performance validant temps de réponse < 500ms sous charge
+# - Cohérence avec les autres endpoints stats (ex: /v1/reception/stats/live)
+

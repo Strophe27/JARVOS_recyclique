@@ -1,0 +1,115 @@
+{
+  "version": "1",
+  "description": "Catalogue CREOS — slice réception nominal v2 (Stories 7.1–7.5). OpenAPI : recyclique_reception_* sous /v1/reception.",
+  "widgets": [
+    {
+      "type": "reception-nominal-wizard",
+      "component": "reception-nominal-wizard",
+      "meta_props": {
+        "slice": "reception-nominal",
+        "story": "7.3"
+      },
+      "data_contract": {
+        "source": "reception",
+        "operation_id": "recyclique_reception_openPoste",
+        "endpoint_hint": "POST /v1/reception/postes/open",
+        "secondary_sources": [
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_createTicket",
+            "endpoint_hint": "POST /v1/reception/tickets"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_listCategories",
+            "endpoint_hint": "GET /v1/reception/categories"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_createLigne",
+            "endpoint_hint": "POST /v1/reception/lignes"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_getTicketDetail",
+            "endpoint_hint": "GET /v1/reception/tickets/{ticket_id}"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_closeTicket",
+            "endpoint_hint": "POST /v1/reception/tickets/{ticket_id}/close"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_closePoste",
+            "endpoint_hint": "POST /v1/reception/postes/{poste_id}/close"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_updateLigne",
+            "endpoint_hint": "PUT /v1/reception/lignes/{ligne_id}"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_deleteLigne",
+            "endpoint_hint": "DELETE /v1/reception/lignes/{ligne_id}"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_patchLigneWeight",
+            "endpoint_hint": "PATCH /v1/reception/tickets/{ticket_id}/lignes/{ligne_id}/weight"
+          }
+        ],
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
+      "type": "reception-history-panel",
+      "component": "reception-history-panel",
+      "meta_props": {
+        "slice": "reception-nominal",
+        "story": "7.4"
+      },
+      "data_contract": {
+        "source": "reception",
+        "operation_id": "recyclique_reception_listTickets",
+        "endpoint_hint": "GET /v1/reception/tickets",
+        "secondary_sources": [
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_getTicketDetail",
+            "endpoint_hint": "GET /v1/reception/tickets/{ticket_id}"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_createTicketDownloadToken",
+            "endpoint_hint": "POST /v1/reception/tickets/{ticket_id}/download-token"
+          },
+          {
+            "source": "reception",
+            "operation_id": "recyclique_reception_exportTicketCsv",
+            "endpoint_hint": "GET /v1/reception/tickets/{ticket_id}/export-csv"
+          }
+        ],
+        "refresh": "manual",
+        "critical": false
+      }
+    },
+    {
+      "type": "category-hierarchy-picker",
+      "component": "category-hierarchy-picker",
+      "meta_props": {
+        "slice": "reception-nominal",
+        "story": "7.1"
+      },
+      "data_contract": {
+        "source": "reception",
+        "operation_id": "recyclique_reception_listCategories",
+        "endpoint_hint": "GET /v1/reception/categories",
+        "refresh": "manual",
+        "critical": false
+      }
+    }
+  ]
+}

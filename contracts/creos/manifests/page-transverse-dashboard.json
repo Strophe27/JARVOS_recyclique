@@ -1,0 +1,18 @@
+{
+  "version": "1",
+  "page_key": "transverse-dashboard",
+  "required_permission_keys": ["transverse.dashboard.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "demo.legacy.dashboard.workspace",
+      "widget_props": {
+        "welcomeTitle": "Bienvenue sur RecyClique",
+        "welcomeSubtitle": "Plateforme de gestion pour ressourceries. Gérez vos dépôts, suivez vos ventes et analysez vos performances.",
+        "personalDashboardLabel": "Dashboard personnel",
+        "personalDashboardPath": "/dashboard/benevole"
+      }
+    }
+  ]
+}

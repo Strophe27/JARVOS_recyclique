@@ -6,9 +6,9 @@
 
 ---
 
-## Ce qui existe deja (guides migration-paeco)
+## Ce qui existe deja (guides migration-paheko)
 
-Sources : `references/migration-paeco/2025-11_paheko-recyclique-integration-first-search.md`, `2025-11_v1.3.17_recyclique-guide-complet.md`.
+Sources : `references/migration-paheko/2025-11_paheko-recyclique-integration-first-search.md`, `2025-11_v1.3.17_recyclique-guide-complet.md`.
 
 ### Architecture decrite
 
@@ -73,4 +73,4 @@ Reponse Perplexity : `references/recherche/2026-02-24_catalogue-plugins-modules-
 
 - Idee : `references/idees-kanban/a-rechercher/2026-02-24_integration-paheko-core.md`
 - Decision 08 : `references/artefacts/2026-02-24_08_decision-architecture-max-paheko.md`
-- Migration Paheko : `references/migration-paeco/index.md`
+- Migration Paheko : `references/migration-paheko/index.md`

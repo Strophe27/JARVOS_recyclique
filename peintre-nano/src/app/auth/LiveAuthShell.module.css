@@ -1,0 +1,16 @@
+/* Écran login live : laisse le widget occuper toute la hauteur viewport. */
+.liveAuthPublicRoot {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.liveAuthToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+  background: var(--mantine-color-body);
+}

@@ -1,8 +1,8 @@
 # Index — references/recherche/
 
-Prompts et reponses de recherche externe (Perplexity, Claude.ai, GPT, etc.).
+Prompts et réponses de recherche externe (Perplexity, Claude.ai, GPT, etc.) et **rapports de recherche technique BMAD** (workflow `bmad-technical-research`, fichier unique lorsqu’il n’y a pas de paire prompt/réponse).
 
-**Convention** (ordre : date → titre court → IA → type) : `YYYY-MM-DD_titre-court_[IA-name]_prompt.md` / `YYYY-MM-DD_titre-court_[IA-name]_reponse.md`.
+**Convention** (ordre : date → titre court → IA → type) : `YYYY-MM-DD_titre-court_[IA-name]_prompt.md` / `YYYY-MM-DD_titre-court_[IA-name]_reponse.md` ; pour un livrable BMAD seul : `YYYY-MM-DD_titre-court_bmad_recherche.md`.
 
 **Contexte pour IA** : `contexte-pour-recherche-externe.md` — à joindre ou coller en début de recherche (Perplexity, Claude, etc.) pour aligner les réponses sur le projet. Mettre à jour quand décisions ou phase changent.
 
@@ -14,6 +14,14 @@ Prompts et reponses de recherche externe (Perplexity, Claude.ai, GPT, etc.).
 
 | Fichier | Sujet / usage |
 |---------|----------------|
+| **2026-04-12_helloasso-api-v5-paheko-perimetre-recyclique_perplexity_reponse.md** | **Perplexity** : HelloAsso API v5 (OAuth2, checkout, orders, webhooks HMAC, asymétrie lecture/back-office) + Paheko API (membres, compta, limites) — périmètre réaliste pour Recyclique ; P0/P1/P2. **Erratum 2026-04-12** en tête de fichier : quotas 10/20/50 = **OAuth** (`/oauth2/token`), pas plafond global documenté sur les GET métier sur la même page. Croiser `references/migration-paheko/2026-04-12_specification-integration-helloasso-recyclique-paheko.md` §3.6. |
+| **2026-04-02_pin-ouverture-caisse-operateur-pos-rgpd_perplexity_reponse.md** | **Perplexity** : politique **ouverture de caisse** / PIN (distinct mot de passe web), terminal partagé vs identité, POS retail, RGPD/CNIL, lockout & reset, réception vs caisse — prompt + réponse. **Spec 1.3** : décisions **§6.0 E** adoptées dans l'artefact `03` (tableaux spec = foi) ; impl. **Epic 2.4**. |
+| **2026-04-02_remboursements-compta-associations-loi-1901_perplexity_reponse.md** | **Perplexity** : obligations comptables association **non-TVA**, conservation pièces (L123-22), **NF525** hors périmètre ; **avoir** vs ticket immuable ; **Paheko** = clôture agrégée, contre-passation J+N (709 / 512), totaux ventes-remboursements-espèces-écarts ; périmètre **expert-comptable** ; intégré **artefact 06** §6 bis. |
+| **2026-02-25_affichage-dynamique-peintre-extension-points_bmad_recherche.md** | **Recherche technique BMAD** : extension points / stubs v1 pour affichage dynamique, écrans configurables (v2+), service Peintre (JARVOS Mini). Copie canonique sous `references/recherche/` ; copie d’archive BMAD : `_bmad-output/archive/.../planning-artifacts/research/technical-affichage-dynamique-peintre-extension-points-research-2026-02-25.md`. |
+| **2026-03-31_brique-nano-peintre-modularite-json-ui_perplexity_reponse.md** | **Perplexity** : brique « nano » Peintre / RecyClique — choix de framework de modularité (micro-frontends, slots, SDUI, DivKit, JSON UI) et trajectoire. |
+| **2026-03-31_peintre-jarvos-grille-templates-ui-auto-optimisable_perplexity_reponse.md** | **Perplexity** : Peintre / JARVOS — grilles, templates, paramètres DSL pour une UI auto-optimisable (patterns F/Z, CSS Grid, design tokens, métriques). |
+| **2026-03-31_peintre-nano-workflows-navigation-raccourcis-declaratifs_perplexity_reponse.md** | **Perplexity** : Peintre_nano — patterns déclaratifs pour workflows UI, navigation, raccourcis (FSM/statecharts, XState, routage, command palette, hotkeys). |
+| **2026-03-31_peintre-nano-p1-stack-css-styling_perplexity_reponse.md** | **Perplexity** : trancher **P1** — stack CSS / styling pour Peintre_nano (React/Vite, brownfield) : Tailwind vs CSS Modules vs CSS-in-JS vs Mantine ; tableau comparatif, reco (fichier = brief mission + réponse). |
 | contexte-pour-recherche-externe.md | Contexte projet pour recherches externes (joindre en début de session) |
 | 2026-02-24_frameworks-modules-python_perplexity_prompt.md | Frameworks modules/plugins Python — prompt Perplexity Pro |
 | 2026-02-24_frameworks-modules-python_perplexity_reponse-1.md | Réponse 1 : Pluggy, Stevedore, entry points ; reco entry points puis Stevedore |
@@ -32,3 +40,14 @@ Prompts et reponses de recherche externe (Perplexity, Claude.ai, GPT, etc.).
 | 2026-02-24_api-paheko-caisse_perplexity_reponse.md | Réponse Perplexity API caisse Paheko (endpoints, modèles, sessions) |
 | 2026-02-24_extension-saisie-poids-paheko_perplexity_reponse.md | Réponse Perplexity extension Saisie au poids Paheko |
 | 2026-02-24_auth-sso-paheko-app-externe_perplexity_reponse.md | Réponse Perplexity auth/SSO Paheko avec app externe FastAPI |
+
+---
+
+## Fichiers sur disque hors tableau (non « recherche externe »)
+
+Artefacts d’outil / sauvegarde présents dans ce dossier mais **non listés** ci-dessus (à déplacer vers un dossier backup ou `_depot/` si on veut un `recherche/` strictement conventionnel) :
+
+| Fichier / dossier | Nature |
+|-------------------|--------|
+| `normalize_typographic_chars_2026-03-16_23-30-07.log` | Log du script normalize-typographic-chars |
+| `normalize_typographic_backup_2026-03-16_23-30-07/index.md` | Copie de sauvegarde d’un ancien index |

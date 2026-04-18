@@ -1,4 +1,4 @@
-# Dossiers sensibles / confidentiels
+/# Dossiers sensibles / confidentiels
 references/vrac/
 references/ecosysteme/
 references/dumps/
@@ -7,13 +7,73 @@ references/dumps/
 references/_depot/*
 !references/_depot/.gitkeep
 
+# Sauvegarde locale du depot Git imbrique (copie de .git, volumineuse — ne pas versionner)
+references/artefacts/*-nested-git-backup/
+
 # Clone local du repo Recyclique 1.4.4 (volumineux, local uniquement)
 references/ancien-repo/repo/
 
 # Clone local du code source Paheko (reference pour integration)
 references/paheko/repo/
 dev-tampon/
+references/archive/refonte-jarvos-v0.1/
 
 # Sorties normalisation typographique (skill normalize-typographic-chars)
 normalize_typographic_backup_*/
 normalize_typographic_chars_*.log
+
+# Config locale (secrets)
+.env
+.env.*
+!.env.example
+
+# Node (dependances locales — ne jamais versionner)
+node_modules/
+**/node_modules/
+
+# Builds / caches frontend
+frontend/dist/
+**/.vite/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Bases SQLite locales de dev
+test_recyclic.db
+recyclic.sqlite
+
+# Identifiants de test / staging (NE JAMAIS COMMITER)
+**/ref_navigation*.md
+
+# Journaux hook Cursor (réponses agent — peut contenir du confidentiel)
+log/cursor-agent/
+
+# Recyclique API — sorties locales pytest / agents / rapports CSV (ne pas versionner)
+recyclique/api/tmp_dashboard_reports_test/
+recyclique/api/logs/*.log
+recyclique/api/pytest-full*
+recyclique/api/_collect.txt
+recyclique/api/_pytest*
+recyclique/api/agent_pytest.log
+recyclique/api/full_pytest.log
+recyclique/api/junit*.xml
+recyclique/api/pytest-quiet.txt
+recyclique/api/pytest-run.log
+recyclique/api/pytest_*.db
+recyclique/api/pytest_*.db-journal
+recyclique/api/pytest_console.txt
+recyclique/api/pytest_full.log
+recyclique/api/pytest_full_out.txt
+recyclique/api/pytest_report.xml
+recyclique/api/pytest_run_capture.txt
+recyclique/api/pytest_single_run.log
+recyclique/api/pytest_subprocess.log
+recyclique/api/subagent*.log

@@ -1,0 +1,24 @@
+.root {
+  margin: 0;
+  padding: var(--pn-space-sm) 0;
+}
+
+.title {
+  margin: 0 0 var(--pn-space-sm);
+  font-size: var(--pn-font-size-sm);
+  font-weight: 600;
+  color: var(--pn-color-text);
+}
+
+/* Titre principal de page (ex. hub admin Epic 14 — alignement hiérarchie legacy h1) */
+.title[data-demo-text-title-level='1'] {
+  font-size: var(--pn-font-size-xl, 1.35rem);
+  font-weight: 700;
+  text-align: center;
+}
+
+.body {
+  margin: 0;
+  font-size: var(--pn-font-size-sm);
+  color: var(--pn-color-text-muted);
+}

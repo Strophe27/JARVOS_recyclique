@@ -1,0 +1,79 @@
+.root {
+  min-width: 0;
+}
+
+.rootKioskSteps {
+  width: 100%;
+}
+
+.kioskTabsList {
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xs);
+  width: 100%;
+  margin-bottom: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-gray-1);
+  border: 1px solid var(--mantine-color-gray-3);
+  position: relative;
+}
+
+/** Repères type parcours caisse legacy entre les étapes principales (classe tab = classNames.tab Mantine). */
+.kioskTabsList .kioskTab:not(:last-of-type) {
+  position: relative;
+  padding-inline-end: calc(var(--mantine-spacing-sm) + 0.5rem);
+}
+
+.kioskTabsList .kioskTab:not(:last-of-type)::after {
+  content: '';
+  position: absolute;
+  right: 0.1rem;
+  top: 50%;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-right: 2px solid var(--mantine-color-gray-5);
+  border-bottom: 2px solid var(--mantine-color-gray-5);
+  transform: translateY(-50%) rotate(-45deg);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.kioskTab {
+  flex: 1 1 0;
+  min-width: 5.5rem;
+  justify-content: center;
+  height: auto;
+  min-height: 3.25rem;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  font-weight: 600;
+}
+
+.kioskTabInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.kioskTabIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  font-size: var(--mantine-font-size-xs);
+  background: var(--mantine-color-gray-3);
+  color: var(--mantine-color-dark-7);
+}
+
+.kioskTab[data-active] .kioskTabIndex {
+  background: var(--mantine-color-green-7);
+  color: var(--mantine-color-white);
+}
+
+.kioskTabTitle {
+  font-size: var(--mantine-font-size-sm);
+}

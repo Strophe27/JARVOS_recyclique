@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "description": "Catalogue CREOS minimal — module bandeau live (Story 4.1). Le composant React sera enregistré dans Peintre_nano en Story 4.2.",
+  "widgets": [
+    {
+      "type": "bandeau-live",
+      "component": "bandeau-live.placeholder",
+      "meta_props": {
+        "slice": "bandeau-live",
+        "story": "4.1"
+      },
+      "data_contract": {
+        "source": "exploitation",
+        "operation_id": "recyclique_exploitation_getLiveSnapshot",
+        "endpoint_hint": "GET /v2/exploitation/live-snapshot",
+        "refresh": "polling",
+        "polling_interval_s": 30
+      }
+    }
+  ]
+}

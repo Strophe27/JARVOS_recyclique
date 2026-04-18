@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "page_key": "login-public",
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "auth.live.public-login",
+      "widget_props": {
+        "brand_title": "RecyClique",
+        "heading": "Connexion",
+        "username_label": "Nom d'utilisateur",
+        "password_label": "Mot de passe",
+        "submit_label": "Se connecter",
+        "forgot_password_label": "Mot de passe oublié ?",
+        "forgot_password_href": "/forgot-password"
+      }
+    }
+  ]
+}

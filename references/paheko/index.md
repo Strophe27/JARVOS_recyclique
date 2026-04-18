@@ -6,7 +6,7 @@ Guide et reference pour **Paheko** (gestion d'association) dans le cadre de l'in
 
 
 
-> Charger si : session sur integration Paheko, analyse API/extensions, ou croisement avec migration-paeco.
+> Charger si : session sur integration Paheko, analyse API/extensions, ou croisement avec migration-paheko.
 
 
 
@@ -42,9 +42,11 @@ Guide et reference pour **Paheko** (gestion d'association) dans le cadre de l'in
 
 
 
-Pour analyser le code : utiliser `repo/` comme point d'entree. Structure selon l'archive (ex. `include/`, `www/`, `modules/` dont saisie_poids). Voir aussi **references/migration-paeco/** pour les guides RecyClique+Paheko.
+Pour analyser le code : utiliser `repo/` comme point d'entree. Structure selon l'archive (ex. `include/`, `www/`, `modules/` dont saisie_poids). Voir aussi **references/migration-paheko/** pour les guides RecyClique+Paheko.
 
 
 
 **Instance dev locale** : procedure Docker standalone dans **dev-tampon/paheko/** (racine projet ; dossier `dev-tampon/` gitignore, donc non versionné — la procedure n'est disponible qu'en local tant que le tampon existe). Voir [dev-tampon/paheko/README.md](../../dev-tampon/paheko/README.md).
+
+**Voir aussi (2026-03-31) :** audit transversal `references/` — [../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md](../artefacts/2026-03-31_02_audit-references-00-synthese-globale.md).
 

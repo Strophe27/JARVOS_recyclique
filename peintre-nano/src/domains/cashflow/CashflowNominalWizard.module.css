@@ -1,0 +1,587 @@
+.root {
+  min-width: 0;
+}
+
+.rootKiosk {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.step {
+  max-width: 32rem;
+}
+
+.navRow {
+  display: flex;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-md);
+}
+
+.nativeSelect {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  margin-top: var(--mantine-spacing-xs);
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+}
+
+.heldPanel {
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.heldList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--mantine-spacing-sm);
+}
+
+.heldRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.specialPanel {
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-violet-3);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-violet-0);
+}
+
+.specialActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+}
+
+/* Story 6.6 — lot actions sociales (workspace nominal, distinct du panneau violet 6.5) */
+.socialPanel {
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-teal-3);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-teal-0);
+}
+
+/** Story 13.8 — workspace kiosque : grille catégories pleine largeur centre (intention legacy Sale). */
+.stepKiosk {
+  max-width: none;
+  width: 100%;
+}
+
+/** Micro-rail kiosque : catégorie → sous-catégorie → poids → prix (intention parcours legacy) */
+.kioskLineMicroRail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid rgb(46 125 50 / 28%);
+  background: linear-gradient(180deg, rgb(237 247 237) 0%, var(--mantine-color-gray-0) 100%);
+}
+
+.kioskLineMicroRailTrack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.kioskLineMicroStep {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+  cursor: default;
+  text-align: left;
+  min-height: 2rem;
+}
+
+.kioskLineMicroStepActive {
+  border-color: rgb(46 125 50 / 45%);
+  background: var(--mantine-color-body);
+  color: #1b5e20;
+  box-shadow: 0 1px 2px rgb(46 125 50 / 12%);
+}
+
+.kioskLineMicroStepDone {
+  color: var(--mantine-color-dark-6);
+}
+
+.kioskLineMicroStepDoneClickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.kioskLineMicroStepDoneClickable:hover {
+  background: rgb(255 255 255 / 70%);
+}
+
+.kioskLineMicroStepOptional {
+  opacity: 0.72;
+  font-weight: 500;
+}
+
+.kioskLineMicroChev {
+  color: var(--mantine-color-gray-5);
+  font-size: 10px;
+  font-weight: 800;
+  user-select: none;
+  padding: 0 2px;
+}
+
+.kioskLineMicroRailHint {
+  width: 100%;
+  margin: 2px 0 0;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--mantine-color-dimmed);
+  letter-spacing: 0.02em;
+}
+
+.kioskCategorySection {
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.kioskCategoryGrid {
+  width: 100%;
+}
+
+.kioskCategoryButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 4.25rem;
+  width: 100%;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: 1px solid var(--mantine-color-gray-4);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-gray-0);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.kioskCategoryButton:hover {
+  background: var(--mantine-color-green-0);
+  border-color: #2e7d32;
+}
+
+.kioskCategoryShortcut {
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+}
+
+.kioskCategoryButtonMain {
+  font-size: var(--mantine-font-size-md);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.kioskCategoryShortcutBadge {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mantine-color-green-8);
+  background: var(--mantine-color-green-1);
+  border: 1px solid var(--mantine-color-green-4);
+  border-radius: var(--mantine-radius-xs);
+  padding: 2px 6px;
+  align-self: flex-start;
+}
+
+.kioskCategoryShortcutKey {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.kioskCategoryMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.kioskCategoryCountBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dark-6);
+  background: var(--mantine-color-gray-2);
+  border: 1px solid var(--mantine-color-gray-4);
+  border-radius: var(--mantine-radius-xs);
+  padding: 2px 6px;
+}
+
+.kioskLineReadonlyCode {
+  margin-bottom: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  border: 1px dashed var(--mantine-color-gray-4);
+  background: var(--mantine-color-gray-0);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.kioskLineReadonlyCodeMuted {
+  font-weight: 500;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+}
+
+.kioskLinePhaseActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-md);
+}
+
+.kioskPricePrimaryActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: calc(var(--mantine-spacing-sm) * -1);
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.kioskPriceHintCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: 1px solid rgb(46 125 50 / 28%);
+  border-radius: var(--mantine-radius-sm);
+  background: linear-gradient(180deg, rgb(237 247 237) 0%, var(--mantine-color-body) 100%);
+}
+
+.kioskPriceHintLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.kioskPriceHintValue {
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 800;
+  color: #1b5e20;
+  font-variant-numeric: tabular-nums;
+}
+
+/** Chrome kiosque vente : en-tête session (vert legacy) + bandeau KPI — intention Sale / CashSessionHeader / CashKPIBanner */
+.saleKioskChrome {
+  margin-bottom: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  overflow: hidden;
+  border: 1px solid rgb(46 125 50 / 35%);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+}
+
+.saleKioskSessionHeader {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.saleKioskSessionHeaderTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+
+.saleKioskSessionTitle {
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 11px !important;
+}
+
+.saleKioskSessionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-sm);
+  background: linear-gradient(180deg, rgb(0 0 0 / 12%) 0%, rgb(0 0 0 / 6%) 100%);
+}
+
+.saleKioskSessionMetaItem {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.saleKioskSessionMetaLabel {
+  opacity: 0.85;
+  font-weight: 500;
+  font-size: var(--mantine-font-size-xs);
+}
+
+.saleKioskSessionMetaValue {
+  font-weight: 700;
+}
+
+.saleKioskHeaderOutlineBtn {
+  color: #fff !important;
+  border-color: rgb(255 255 255 / 55%) !important;
+}
+
+.saleKioskHeaderOutlineBtn:hover {
+  background: rgb(255 255 255 / 12%) !important;
+}
+
+/** Bandeau KPI kiosque : montant ticket proéminent + ligne session (données GET courant quand dispo). */
+.saleKioskKpiWrap {
+  background: linear-gradient(180deg, rgb(237 247 237) 0%, var(--mantine-color-body) 42%);
+  border-top: 1px solid rgb(46 125 50 / 22%);
+}
+
+.saleKioskKpiRowMain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md) var(--mantine-spacing-sm);
+}
+
+.saleKioskKpiPrimary {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid rgb(46 125 50 / 28%);
+  background: var(--mantine-color-body);
+  box-shadow: 0 1px 2px rgb(46 125 50 / 8%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.saleKioskKpiPrimaryLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.saleKioskKpiPrimaryValue {
+  font-size: clamp(1.35rem, 3.5vw, 1.85rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #1b5e20;
+  line-height: 1.1;
+}
+
+.saleKioskKpiPrimaryHint {
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+  font-weight: 500;
+}
+
+.saleKioskKpiSideGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(5.5rem, 1fr));
+  gap: var(--mantine-spacing-sm);
+  flex: 1 1 10rem;
+  min-width: 0;
+  align-content: center;
+}
+
+.saleKioskKpiCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--mantine-spacing-xs) 0;
+}
+
+.saleKioskKpiLabel {
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+  font-weight: 600;
+}
+
+.saleKioskKpiValue {
+  font-size: var(--mantine-font-size-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.saleKioskKpiRowSession {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+  justify-content: space-between;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-top: 1px solid var(--mantine-color-gray-3);
+  background: rgb(0 0 0 / 3%);
+}
+
+.saleKioskKpiSessionItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 8rem;
+  flex: 1 1 auto;
+}
+
+.saleKioskKpiSessionLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.saleKioskKpiSessionValue {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 36em) {
+  .saleKioskKpiRowMain {
+    flex-direction: column;
+  }
+
+  .saleKioskKpiSideGrid {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+}
+
+.kioskLineEditor {
+  margin-top: var(--mantine-spacing-md);
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-gray-4);
+  background: var(--mantine-color-body);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.kioskLineEditorTitle {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  margin-bottom: var(--mantine-spacing-sm);
+}
+
+.kioskNumpad {
+  margin-top: var(--mantine-spacing-sm);
+}
+
+.kioskNumpadDisplay {
+  margin-bottom: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid rgb(46 125 50 / 28%);
+  background: var(--mantine-color-green-0);
+  color: #1b5e20;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.kioskNumpadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-sm);
+}
+
+.heldPanelKiosk {
+  border-color: var(--mantine-color-gray-4);
+  background: var(--mantine-color-gray-0);
+}
+
+.heldRowKiosk {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid var(--mantine-color-gray-3);
+  background: var(--mantine-color-body);
+  gap: var(--mantine-spacing-xs);
+}
+
+.navRowKiosk {
+  margin-top: auto;
+  padding-top: var(--mantine-spacing-md);
+  gap: var(--mantine-spacing-md);
+}
+
+.navRowKiosk button {
+  min-height: 2.75rem;
+  padding-left: var(--mantine-spacing-lg);
+  padding-right: var(--mantine-spacing-lg);
+}
+
+/** Zone flux scrollable entre chrome et navigation — occupe l’espace vertical restant dans la colonne main */
+.kioskFlowWrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.kioskUnifiedLayout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-height: 100%;
+}
+
+/** Étape règlement kiosque — carte alignée sur le ticket (bordure verte, bandeau). */
+.saleKioskFinalizeCard {
+  margin-top: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid rgb(46 125 50 / 32%);
+  background: var(--mantine-color-body);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+}
+
+.saleKioskFinalizeTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+  margin-bottom: var(--mantine-spacing-sm);
+  padding-bottom: var(--mantine-spacing-xs);
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+}
+

@@ -1,0 +1,8 @@
+.banner {
+  margin-bottom: var(--pn-space-md, 1rem);
+}
+
+.list {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}

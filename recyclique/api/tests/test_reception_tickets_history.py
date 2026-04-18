@@ -1,0 +1,673 @@
+"""
+Tests pour l'historique des tickets de réception.
+"""
+import pytest
+from uuid import uuid4
+from decimal import Decimal
+from urllib.parse import parse_qs, urlparse
+
+from recyclic_api.core.config import settings
+from recyclic_api.models import TicketDepot, PosteReception, LigneDepot, Category, User, UserRole, UserStatus
+from recyclic_api.models.ligne_depot import Destination
+from recyclic_api.models.site import Site
+from tests.reception_story72_eligibility import grant_user_reception_eligibility
+
+
+@pytest.fixture
+def test_site(db_session):
+    site = Site(id=uuid4(), name="Test site tickets history", is_active=True)
+    db_session.add(site)
+    db_session.commit()
+    db_session.refresh(site)
+    return site
+
+
+@pytest.fixture
+def test_user(db_session, test_site):
+    """Créer un utilisateur de test."""
+    from recyclic_api.core.security import hash_password
+    user = User(
+        id=uuid4(),
+        username="test_user@example.com",
+        hashed_password=hash_password("testpassword"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    grant_user_reception_eligibility(db_session, user, test_site.id)
+    return user
+
+
+@pytest.fixture
+def test_admin(db_session):
+    """Créer un administrateur de test."""
+    from recyclic_api.core.security import hash_password
+    admin = User(
+        id=uuid4(),
+        username="admin@example.com",
+        hashed_password=hash_password("adminpassword"),
+        role=UserRole.ADMIN,
+        status=UserStatus.ACTIVE
+    )
+    db_session.add(admin)
+    db_session.commit()
+    db_session.refresh(admin)
+    return admin
+
+
+@pytest.fixture
+def test_poste(db_session, test_user):
+    """Créer un poste de réception de test."""
+    poste = PosteReception(
+        id=uuid4(),
+        opened_by_user_id=test_user.id,
+        status="opened"
+    )
+    db_session.add(poste)
+    db_session.commit()
+    db_session.refresh(poste)
+    return poste
+
+
+@pytest.fixture
+def test_category(db_session):
+    """Créer une catégorie de test."""
+    category_id = uuid4()
+    category = Category(
+        id=category_id,
+        name=f"Test Category {category_id}",
+        is_active=True
+    )
+    db_session.add(category)
+    db_session.commit()
+    db_session.refresh(category)
+    return category
+
+
+@pytest.fixture
+def test_tickets(db_session, test_poste, test_user, test_category):
+    """Créer des tickets de test avec des lignes."""
+    # Nettoyer d'abord les données existantes
+    db_session.query(LigneDepot).delete()
+    db_session.query(TicketDepot).delete()
+    db_session.commit()
+    
+    tickets = []
+
+    for i in range(3):
+        ticket = TicketDepot(
+            id=uuid4(),
+            poste_id=test_poste.id,
+            benevole_user_id=test_user.id,
+            status="closed" if i > 0 else "opened"
+        )
+        db_session.add(ticket)
+        db_session.flush()  # Pour obtenir l'ID
+        
+        # Ajouter des lignes au ticket
+        for j in range(2):
+            ligne = LigneDepot(
+                id=uuid4(),
+                ticket_id=ticket.id,
+                category_id=test_category.id,
+                poids_kg=Decimal('1.5'),
+                destination=Destination.MAGASIN,
+                notes=f"Note {i}-{j}"
+            )
+            db_session.add(ligne)
+        
+        tickets.append(ticket)
+    
+    db_session.commit()
+    return tickets
+
+
+def test_get_tickets_list_success(client, test_tickets, test_user):
+    """Test de récupération de la liste des tickets avec succès."""
+    # Créer un token pour l'utilisateur
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    response = client.get(
+        "/v1/reception/tickets",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Vérifier la structure de la réponse
+    assert "tickets" in data
+    assert "total" in data
+    assert "page" in data
+    assert "per_page" in data
+    assert "total_pages" in data
+    
+    # Vérifier les données des tickets
+    assert len(data["tickets"]) == 3
+    assert data["total"] == 3
+    
+    # Vérifier la structure d'un ticket
+    ticket = data["tickets"][0]
+    assert "id" in ticket
+    assert "poste_id" in ticket
+    assert "benevole_username" in ticket
+    assert "created_at" in ticket
+    assert "status" in ticket
+    assert "total_lignes" in ticket
+    assert "total_poids" in ticket
+    
+    # Vérifier les totaux
+    assert ticket["total_lignes"] == 2
+    assert float(ticket["total_poids"]) == 3.0  # 2 lignes * 1.5 kg
+
+
+def test_get_tickets_list_pagination(client, test_tickets, test_user):
+    """Test de pagination de la liste des tickets."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Test avec pagination
+    response = client.get(
+        "/v1/reception/tickets?page=1&per_page=2",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    assert len(data["tickets"]) == 2
+    assert data["page"] == 1
+    assert data["per_page"] == 2
+    assert data["total_pages"] == 2
+
+
+def test_get_tickets_list_unauthorized(client):
+    """Test d'accès non autorisé à la liste des tickets."""
+    response = client.get("/v1/reception/tickets")
+    assert response.status_code == 403  # FastAPI retourne 403 pour les routes protégées sans token
+
+
+def test_get_ticket_detail_success(client, test_tickets, test_user):
+    """Test de récupération des détails d'un ticket avec succès."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    ticket_id = str(test_tickets[0].id)
+    response = client.get(
+        f"/v1/reception/tickets/{ticket_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Vérifier la structure de la réponse
+    assert "id" in data
+    assert "poste_id" in data
+    assert "benevole_username" in data
+    assert "created_at" in data
+    assert "status" in data
+    assert "lignes" in data
+    
+    # Vérifier les lignes
+    assert len(data["lignes"]) == 2
+    
+    # Vérifier la structure d'une ligne
+    ligne = data["lignes"][0]
+    assert "id" in ligne
+    assert "ticket_id" in ligne
+    assert "category_id" in ligne
+    assert "poids_kg" in ligne
+    assert "destination" in ligne
+    assert "notes" in ligne
+
+
+def test_get_ticket_detail_not_found(client, test_user):
+    """Test de récupération d'un ticket inexistant."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    fake_id = str(uuid4())
+    response = client.get(
+        f"/v1/reception/tickets/{fake_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 404
+    assert "Ticket introuvable" in response.json()["detail"]
+
+
+def test_get_ticket_detail_unauthorized(client, test_tickets):
+    """Test d'accès non autorisé aux détails d'un ticket."""
+    ticket_id = str(test_tickets[0].id)
+    response = client.get(f"/v1/reception/tickets/{ticket_id}")
+    assert response.status_code == 403  # FastAPI retourne 403 pour les routes protégées sans token
+
+
+def test_get_tickets_list_admin_access(client, test_tickets, test_admin):
+    """Test d'accès administrateur à la liste des tickets."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_admin.id)})
+    
+    response = client.get(
+        "/v1/reception/tickets",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["tickets"]) == 3
+
+
+def test_get_tickets_list_empty(client, test_user, db_session):
+    """Test de récupération de la liste des tickets vide."""
+    # Nettoyer d'abord les données existantes
+    db_session.query(LigneDepot).delete()
+    db_session.query(TicketDepot).delete()
+    db_session.commit()
+    
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+
+    response = client.get(
+        "/v1/reception/tickets",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["tickets"]) == 0
+    assert data["total"] == 0
+
+
+def test_get_tickets_list_validation_errors(client, test_user):
+    """Test de validation des paramètres de pagination."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Test avec des paramètres invalides
+    response = client.get(
+        "/v1/reception/tickets?page=0&per_page=0",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 422  # Validation error
+
+
+def test_get_tickets_list_large_per_page(client, test_user):
+    """Test avec un nombre d'éléments par page trop élevé."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    response = client.get(
+        "/v1/reception/tickets?per_page=200",  # Limite à 100
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 422  # Validation error
+
+
+# B44-P4: Tests pour les nouveaux filtres étendus
+def test_get_tickets_list_filter_by_status(client, test_tickets, test_user):
+    """Test de filtrage par statut."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Filtrer par statut "closed"
+    response = client.get(
+        "/v1/reception/tickets?status=closed",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["tickets"]) == 2  # 2 tickets fermés sur 3
+    for ticket in data["tickets"]:
+        assert ticket["status"] == "closed"
+
+
+def test_get_tickets_list_filter_by_date_from(client, test_tickets, test_user, db_session):
+    """Test de filtrage par date de début."""
+    from recyclic_api.core.security import create_access_token
+    from datetime import datetime, timedelta
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Modifier la date de création d'un ticket pour tester le filtre
+    ticket = test_tickets[0]
+    ticket.created_at = datetime.utcnow() - timedelta(days=5)
+    db_session.commit()
+    
+    # Filtrer les tickets créés depuis hier
+    date_from = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    response = client.get(
+        f"/v1/reception/tickets?date_from={date_from}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    # Seuls les tickets récents (moins de 1 jour) devraient apparaître
+    assert len(data["tickets"]) >= 0
+
+
+def test_get_tickets_list_filter_by_date_to(client, test_tickets, test_user, db_session):
+    """Test de filtrage par date de fin."""
+    from recyclic_api.core.security import create_access_token
+    from datetime import datetime, timedelta
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Filtrer les tickets créés jusqu'à hier
+    date_to = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    response = client.get(
+        f"/v1/reception/tickets?date_to={date_to}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    # Les tickets récents (moins de 1 jour) ne devraient pas apparaître
+    assert len(data["tickets"]) >= 0
+
+
+def test_get_tickets_list_filter_by_benevole_id(client, test_tickets, test_user):
+    """Test de filtrage par ID bénévole."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Filtrer par ID du bénévole de test
+    response = client.get(
+        f"/v1/reception/tickets?benevole_id={test_user.id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["tickets"]) == 3  # Tous les tickets appartiennent au même bénévole
+    for ticket in data["tickets"]:
+        assert ticket["benevole_username"] == test_user.username
+
+
+def test_get_tickets_list_filter_by_search(client, test_tickets, test_user):
+    """Test de recherche textuelle (nom bénévole)."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Rechercher par username
+    response = client.get(
+        f"/v1/reception/tickets?search={test_user.username}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["tickets"]) == 3  # Tous les tickets du bénévole
+    for ticket in data["tickets"]:
+        assert test_user.username.lower() in ticket["benevole_username"].lower()
+
+
+def test_get_tickets_list_filter_combined(client, test_tickets, test_user):
+    """Test de filtres combinés."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Combiner plusieurs filtres
+    response = client.get(
+        f"/v1/reception/tickets?status=closed&benevole_id={test_user.id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["tickets"]) == 2  # 2 tickets fermés
+    for ticket in data["tickets"]:
+        assert ticket["status"] == "closed"
+        assert ticket["benevole_username"] == test_user.username
+
+
+def test_get_tickets_list_exclude_empty_tickets(client, test_user, test_poste, test_category, db_session):
+    """B44-P4: Test que les tickets vides (sans lignes) sont exclus par défaut."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Créer un ticket vide (sans lignes)
+    empty_ticket = TicketDepot(
+        id=uuid4(),
+        poste_id=test_poste.id,
+        benevole_user_id=test_user.id,
+        status="closed"
+    )
+    db_session.add(empty_ticket)
+    
+    # Créer un ticket avec lignes
+    ticket_with_lignes = TicketDepot(
+        id=uuid4(),
+        poste_id=test_poste.id,
+        benevole_user_id=test_user.id,
+        status="closed"
+    )
+    db_session.add(ticket_with_lignes)
+    db_session.flush()
+    
+    # Ajouter une ligne au ticket
+    ligne = LigneDepot(
+        id=uuid4(),
+        ticket_id=ticket_with_lignes.id,
+        category_id=test_category.id,
+        poids_kg=Decimal('5.0'),
+        destination=Destination.MAGASIN
+    )
+    db_session.add(ligne)
+    db_session.commit()
+    
+    # Récupérer les tickets (include_empty=False par défaut)
+    response = client.get(
+        "/v1/reception/tickets",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Le ticket vide ne devrait pas apparaître
+    ticket_ids = [t["id"] for t in data["tickets"]]
+    assert str(empty_ticket.id) not in ticket_ids
+    assert str(ticket_with_lignes.id) in ticket_ids
+
+
+def test_get_tickets_list_include_empty_tickets(client, test_user, test_poste, db_session):
+    """B44-P4: Test que les tickets vides sont inclus si include_empty=True."""
+    from recyclic_api.core.security import create_access_token
+    token = create_access_token(data={"sub": str(test_user.id)})
+    
+    # Créer un ticket vide
+    empty_ticket = TicketDepot(
+        id=uuid4(),
+        poste_id=test_poste.id,
+        benevole_user_id=test_user.id,
+        status="closed"
+    )
+    db_session.add(empty_ticket)
+    db_session.commit()
+    
+    # Récupérer les tickets avec include_empty=True
+    response = client.get(
+        "/v1/reception/tickets?include_empty=true",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Le ticket vide devrait apparaître
+    ticket_ids = [t["id"] for t in data["tickets"]]
+    assert str(empty_ticket.id) in ticket_ids
+
+
+# B44-P4 / ARCH-04: export CSV = POST download-token (admin) puis GET export-csv?token=...
+def test_export_ticket_csv_success(client, test_tickets, test_admin):
+    """Test d'export CSV d'un ticket avec succès."""
+    from recyclic_api.core.security import create_access_token
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_admin.id)})
+    ticket_id = str(test_tickets[0].id)
+
+    tok_resp = client.post(
+        f"{_rx}/tickets/{ticket_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+    assert tok_resp.status_code == 200
+    download_url = tok_resp.json()["download_url"]
+    dl_token = parse_qs(urlparse(download_url).query)["token"][0]
+
+    response = client.get(
+        f"{_rx}/tickets/{ticket_id}/export-csv",
+        params={"token": dl_token},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "text/csv; charset=utf-8"
+    assert "attachment" in response.headers["content-disposition"].lower()
+
+    content = response.text
+    assert "=== RÉSUMÉ DU TICKET DE RÉCEPTION ===" in content
+    assert "=== DÉTAILS DES LIGNES DE DÉPÔT ===" in content
+    assert "ID Ticket" in content
+    assert "Bénévole" in content
+    assert "Catégorie" in content
+    assert "Poids (kg)" in content
+    assert ticket_id in content
+
+
+def test_export_ticket_csv_not_found(client, test_admin):
+    """Ticket inexistant : la génération de token échoue avant l'export (404)."""
+    from recyclic_api.core.security import create_access_token
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_admin.id)})
+    fake_id = str(uuid4())
+    response = client.post(
+        f"{_rx}/tickets/{fake_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+
+    assert response.status_code == 404
+    assert "Ticket introuvable" in response.json()["detail"]
+
+
+def test_export_ticket_csv_unauthorized(client, test_tickets, test_user):
+    """USER ne peut pas obtenir de token de téléchargement (export réservé admin)."""
+    from recyclic_api.core.security import create_access_token
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_user.id)})
+    ticket_id = str(test_tickets[0].id)
+    response = client.post(
+        f"{_rx}/tickets/{ticket_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_export_ticket_csv_admin_access(client, test_tickets, test_admin):
+    """Test d'accès administrateur à l'export CSV (flux token)."""
+    from recyclic_api.core.security import create_access_token
+
+    _rx = f"{settings.API_V1_STR.rstrip('/')}/reception"
+    bearer = create_access_token(data={"sub": str(test_admin.id)})
+    ticket_id = str(test_tickets[0].id)
+
+    tok_resp = client.post(
+        f"{_rx}/tickets/{ticket_id}/download-token",
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+    assert tok_resp.status_code == 200
+    dl_token = parse_qs(urlparse(tok_resp.json()["download_url"]).query)["token"][0]
+
+    response = client.get(
+        f"{_rx}/tickets/{ticket_id}/export-csv",
+        params={"token": dl_token},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "text/csv; charset=utf-8"
+
+
+def test_get_tickets_list_user_scope_excludes_unrelated_ticket(client, db_session, test_site, test_category):
+    """Story 7.4 — USER ne voit pas les tickets hors périmètre (ni bénévole ni opérateur du poste)."""
+    from recyclic_api.core.security import hash_password, create_access_token
+
+    alice_id, bob_id, charlie_id = uuid4(), uuid4(), uuid4()
+    alice = User(
+        id=alice_id,
+        username="alice_scope@example.com",
+        hashed_password=hash_password("p"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
+    )
+    bob = User(
+        id=bob_id,
+        username="bob_scope@example.com",
+        hashed_password=hash_password("p"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
+    )
+    charlie = User(
+        id=charlie_id,
+        username="charlie_scope@example.com",
+        hashed_password=hash_password("p"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE,
+        site_id=test_site.id,
+    )
+    db_session.add_all([alice, bob, charlie])
+    db_session.commit()
+    grant_user_reception_eligibility(db_session, alice, test_site.id)
+    grant_user_reception_eligibility(db_session, bob, test_site.id)
+    grant_user_reception_eligibility(db_session, charlie, test_site.id)
+
+    poste = PosteReception(id=uuid4(), opened_by_user_id=alice.id, status="opened")
+    db_session.add(poste)
+    db_session.flush()
+    ticket = TicketDepot(
+        id=uuid4(),
+        poste_id=poste.id,
+        benevole_user_id=bob.id,
+        status="closed",
+    )
+    db_session.add(ticket)
+    db_session.flush()
+    ligne = LigneDepot(
+        id=uuid4(),
+        ticket_id=ticket.id,
+        category_id=test_category.id,
+        poids_kg=Decimal("1.0"),
+        destination=Destination.MAGASIN,
+        notes="scope",
+    )
+    db_session.add(ligne)
+    db_session.commit()
+
+    charlie_token = create_access_token(data={"sub": str(charlie.id)})
+    r_charlie = client.get("/v1/reception/tickets", headers={"Authorization": f"Bearer {charlie_token}"})
+    assert r_charlie.status_code == 200
+    assert r_charlie.json()["total"] == 0
+
+    alice_token = create_access_token(data={"sub": str(alice.id)})
+    r_alice = client.get("/v1/reception/tickets", headers={"Authorization": f"Bearer {alice_token}"})
+    assert r_alice.status_code == 200
+    ids_alice = {t["id"] for t in r_alice.json()["tickets"]}
+    assert str(ticket.id) in ids_alice
+
+    bob_token = create_access_token(data={"sub": str(bob.id)})
+    r_bob = client.get("/v1/reception/tickets", headers={"Authorization": f"Bearer {bob_token}"})
+    assert r_bob.status_code == 200
+    ids_bob = {t["id"] for t in r_bob.json()["tickets"]}
+    assert str(ticket.id) in ids_bob

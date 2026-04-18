@@ -1,0 +1,28 @@
+{
+  "version": "1",
+  "page_key": "transverse-admin-placeholder",
+  "required_permission_keys": ["transverse.admin.view"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "admin.dashboard.title",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Tableau de Bord d'Administration",
+        "title_level": "1"
+      }
+    },
+    {
+      "slot_id": "admin.dashboard.reports.supervision",
+      "widget_type": "admin.reports.supervision.hub",
+      "widget_props": {
+        "presentation": "compact"
+      }
+    },
+    {
+      "slot_id": "admin.dashboard.legacy",
+      "widget_type": "admin.legacy.dashboard.home",
+      "widget_props": {}
+    }
+  ]
+}

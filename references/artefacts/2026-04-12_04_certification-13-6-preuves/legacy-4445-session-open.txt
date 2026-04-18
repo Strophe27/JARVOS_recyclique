@@ -1,0 +1,20 @@
+uid=24_0 RootWebArea "RecyClique" url="http://localhost:4445/cash-register/session/open?register_id=31d56e8f-08ec-4907-9163-2a5c49c5f2fe"
+  uid=24_1 banner
+    uid=24_2 navigation
+      uid=24_3 StaticText "RecyClique"
+      uid=24_4 link "Tableau de bord" url="http://localhost:4445/"
+        uid=24_5 StaticText "Tableau de bord"
+      uid=24_6 link "Caisse" url="http://localhost:4445/caisse"
+        uid=24_7 StaticText "Caisse"
+      uid=24_8 link "Réception" url="http://localhost:4445/reception"
+        uid=24_9 StaticText "Réception"
+      uid=24_10 link "Administration" url="http://localhost:4445/admin"
+        uid=24_11 StaticText "Administration"
+      uid=24_12 button "admin" expandable haspopup="menu"
+  uid=24_13 main
+    uid=24_14 heading "Ouverture de Session de Caisse" level="2"
+    uid=24_15 StaticText "Fond de caisse initial"
+    uid=24_16 StaticText "Montant en euros (ex: 50.00 ou 50,00)"
+    uid=24_17 textbox "Fond de caisse initial" description="Montant en euros (ex: 50.00 ou 50,00)" focusable focused required
+    uid=24_18 button "Annuler"
+    uid=24_19 button "Ouvrir la Session"

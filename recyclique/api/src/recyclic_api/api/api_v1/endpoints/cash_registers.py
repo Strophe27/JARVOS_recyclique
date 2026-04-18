@@ -1,0 +1,127 @@
+from fastapi import APIRouter, Depends, Query, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List, Optional
+
+from recyclic_api.core.database import get_db
+from recyclic_api.core.exceptions import ConflictError, NotFoundError
+from recyclic_api.core.auth import require_role_strict
+from recyclic_api.models.user import User, UserRole
+from recyclic_api.models.cash_register import CashRegister
+from recyclic_api.schemas.cash_register import (
+    CashRegisterResponse,
+    CashRegisterCreate,
+    CashRegisterUpdate,
+)
+from recyclic_api.services.cash_register_service import CashRegisterService
+from recyclic_api.services.cash_session_service import CashSessionService
+
+
+router = APIRouter()
+
+
+@router.get("/", response_model=List[CashRegisterResponse], summary="Lister les postes de caisse")
+async def list_cash_registers(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    site_id: Optional[str] = Query(None, description="Filtrer par site"),
+    only_active: bool = Query(False, description="Ne retourner que les postes actifs"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    service = CashRegisterService(db)
+    return service.list(skip=skip, limit=limit, site_id=site_id, only_active=only_active)
+
+
+@router.get("/status", summary="Statut des postes de caisse")
+async def list_cash_registers_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    """Retourne pour chaque poste de caisse: id, name, is_open (session en cours), enable_virtual, enable_deferred."""
+    reg_service = CashRegisterService(db)
+    sess_service = CashSessionService(db)
+
+    registers = reg_service.list(skip=0, limit=200, site_id=None, only_active=True)
+
+    results = []
+    for r in registers:
+        is_open = bool(sess_service.get_open_session_by_register(str(r.id)))
+        results.append({
+            "id": str(r.id),
+            "name": r.name,
+            "is_open": is_open,
+            "enable_virtual": r.enable_virtual if hasattr(r, 'enable_virtual') else False,
+            "enable_deferred": r.enable_deferred if hasattr(r, 'enable_deferred') else False,
+            "location": r.location,  # Story B49-P5: Toujours retourner location (peut être None)
+        })
+
+    return {"data": results, "total": len(results)}
+
+
+@router.get("/{register_id}", response_model=CashRegisterResponse, summary="Récupérer un poste de caisse par ID")
+async def get_cash_register(
+    register_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    service = CashRegisterService(db)
+    try:
+        return service.get_required(register_id=register_id)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post("/", response_model=CashRegisterResponse, status_code=status.HTTP_201_CREATED, summary="Créer un poste de caisse")
+async def create_cash_register(
+    payload: CashRegisterCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    service = CashRegisterService(db)
+    return service.create(data=payload)
+
+
+@router.patch("/{register_id}", response_model=CashRegisterResponse, summary="Mettre à jour un poste de caisse")
+async def update_cash_register(
+    register_id: str,
+    payload: CashRegisterUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    service = CashRegisterService(db)
+    try:
+        register = service.get_required(register_id=register_id)
+        return service.update(register=register, data=payload)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.delete("/{register_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Supprimer un poste de caisse")
+async def delete_cash_register(
+    register_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    service = CashRegisterService(db)
+    try:
+        register = service.get_required(register_id=register_id)
+        service.delete(register=register)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.detail,
+        ) from exc
+    return None
+
+

@@ -1,6 +1,10 @@
 # Index — Documentation brownfield RecyClique 1.4.4
 
-**Usage :** Point d'entrée pour l'analyse **référentielle** du repo source en vue de la migration vers **JARVOS Recyclique v0.1.0** (nouveau backend). Cette doc ne sert pas au développement continu de la branche 1.4.4.
+**Usage :** Point d'entrée pour l'analyse **référentielle** du repo source Recyclique 1.4.4 (document-project, checklist import). **Onboarding clone et workflow :** voir **[README.md](./README.md)**.
+
+**Note (2026-03-31) :** le depot brownfield **1.4.x** reste ancré sous **`recyclique-1.4.4/`** (frontend, compose `recyclic-local`, docs historiques).
+
+**Note (2026-04-03, story 2.2b) :** le package FastAPI **`recyclic_api`** (Epic 2, gates pytest) est sous **`recyclique/api/`** à la racine du mono-repo ; le compose dans `recyclique-1.4.4/` construit l’image API via `../recyclique/api`. Voir `recyclique/README.md` et `recyclique-1.4.4/README.md`.
 
 ---
 
@@ -21,7 +25,7 @@
 - [Modèles de données (part api)](./data-models-api.md)
 - [Schéma BDD Recyclic dev (tables/colonnes)](../dumps/schema-recyclic-dev.md) — extrait depuis BDD dev (dossier dumps gitignore)
 - [Inventaire composants UI (part frontend)](./component-inventory-frontend.md)
-- [Liste des endpoints API v1.4.4](./v1.4.4-liste-endpoints-api.md)
+- [Liste des endpoints API v1.4.4](./v1.4.4-liste-endpoints-api.md) — réconciliée avec OpenAPI live (`recyclic-local`, 2026-04-02) ; détail §1 bis dans `references/artefacts/2026-04-02_02_audit-brownfield-backend-api-donnees-critiques.md`
 - [Architecture brownfield (état actuel)](./architecture-brownfield.md)
 - [Fonctionnalités actuelles](./fonctionnalites-actuelles.md)
 - [README architecture current](./architecture-current-README.md)

@@ -1,0 +1,42 @@
+schema: 1
+story: "b51.p5"
+story_title: "Fix bloquer ajout d'articles en dehors d'un ticket (tickets fantômes)"
+gate: PASS
+status_reason: "Implémentation solide des 3 fixes avec tests complets pour Fix 1, Fix 2 et Fix 3. Code conforme aux standards, tous les ACs implémentés."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-16T17:17:17Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+quality_score: 95
+expires: "2025-12-30T00:00:00Z"
+
+evidence:
+  tests_reviewed: 8
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Fix 3 implémenté - validation backend empêche création de ventes sur sessions fermées. Fix 1 bloque côté frontend avant création d'item."
+  performance:
+    status: PASS
+    notes: "Aucun impact performance - vérifications simples avant création d'item."
+  reliability:
+    status: PASS
+    notes: "Fix 2 implémenté et testé - tests unitaires vérifient que les articles sont vidés au rehydrate si ticketOpenedLogged n'est pas défini."
+  maintainability:
+    status: PASS
+    notes: "Code bien documenté avec commentaires B51-P5, logique claire et cohérente entre les 3 stores."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer tests E2E pour scénario complet de reproduction du bug"
+      refs: ["docs/stories/story-b51-p5-fix-bloquer-articles-hors-ticket.md:392-395"]
+

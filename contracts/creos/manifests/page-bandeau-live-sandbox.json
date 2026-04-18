@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "page_key": "bandeau-live-sandbox",
+  "required_permission_keys": ["recyclique.exploitation.view-live-band"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "header",
+      "widget_type": "demo.text.block",
+      "widget_props": {
+        "title": "Slice bandeau live (contrats reviewables)",
+        "body": "Page minimale Epic 4 — hors dashboard / admin. Manifests canoniques : contracts/creos/manifests/."
+      }
+    },
+    {
+      "slot_id": "main",
+      "widget_type": "bandeau-live",
+      "widget_props": {
+        "snapshot": {
+          "effective_open_state": "open",
+          "cash_session_effectiveness": "open_effective",
+          "observed_at": "2026-04-07T12:00:00.000Z",
+          "sync_operational_summary": {
+            "worst_state": "resolu",
+            "source_reachable": true
+          }
+        }
+      }
+    },
+    {
+      "slot_id": "aside",
+      "widget_type": "demo.list.simple",
+      "widget_props": {
+        "items": [
+          "Placeholder aside — composition alignée shell démo Epic 3"
+        ]
+      }
+    }
+  ]
+}
