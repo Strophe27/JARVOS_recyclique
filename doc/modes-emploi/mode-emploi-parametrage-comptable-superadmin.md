@@ -29,7 +29,7 @@
 
 ### Accès dans l’interface
 
-Dans **Peintre** (interface Recyclique v2), ouvrez la partie **administration** puis l’entrée qui mène au **paramétrage comptable** expert. L’URL est en général du type **`/admin/compta/parametrage`** (avec éventuellement `?tab=…` pour ouvrir directement un onglet).
+Dans **Peintre** (interface Recyclique v2), ouvrez la partie **administration** puis l’entrée qui mène au **paramétrage comptable** expert. L’URL est en général du type **`/admin/compta/parametrage`** (avec éventuellement `?tab=…` pour ouvrir directement un onglet). 
 
 **Note déploiement :** les libellés exacts du menu et l’arborescence peuvent **légèrement varier** selon le manifeste d’écran chargé (démo, terrain, évolutions produit). Si le libellé diffère, cherchez l’URL ci-dessus ou demandez à la personne qui gère votre instance.
 
