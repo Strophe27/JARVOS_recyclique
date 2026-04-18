@@ -224,9 +224,13 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
       display_order: Number.isFinite(order) ? order : 0,
       active: formActive,
       notes: formNotes.trim() || null,
+      ...(formMin !== '' && formMin !== null
+        ? { min_amount: typeof formMin === 'number' ? formMin : Number(formMin) }
+        : {}),
+      ...(formMax !== '' && formMax !== null
+        ? { max_amount: typeof formMax === 'number' ? formMax : Number(formMax) }
+        : {}),
     };
-    if (formMin !== '' && formMin !== null) body.min_amount = typeof formMin === 'number' ? formMin : Number(formMin);
-    if (formMax !== '' && formMax !== null) body.max_amount = typeof formMax === 'number' ? formMax : Number(formMax);
     const res = await createAccountingExpertPaymentMethod(auth, body, { stepUpPin });
     if (!res.ok) {
       setFormError(res.detail);
@@ -247,11 +251,19 @@ export function AdminAccountingPaymentMethodsWidget(props: RegisteredWidgetProps
       paheko_refund_credit_account: formCredit.trim(),
       display_order: typeof formOrder === 'number' ? formOrder : Number(formOrder),
       notes: formNotes.trim() || null,
+      min_amount:
+        formMin !== '' && formMin !== null
+          ? typeof formMin === 'number'
+            ? formMin
+            : Number(formMin)
+          : null,
+      max_amount:
+        formMax !== '' && formMax !== null
+          ? typeof formMax === 'number'
+            ? formMax
+            : Number(formMax)
+          : null,
     };
-    if (formMin !== '' && formMin !== null) body.min_amount = typeof formMin === 'number' ? formMin : Number(formMin);
-    else body.min_amount = null;
-    if (formMax !== '' && formMax !== null) body.max_amount = typeof formMax === 'number' ? formMax : Number(formMax);
-    else body.max_amount = null;
 
     const orderN = typeof formOrder === 'number' ? formOrder : Number(formOrder);
     const orderChanged = Number.isFinite(orderN) && orderN !== editRow.display_order;

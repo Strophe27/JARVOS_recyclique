@@ -34,6 +34,7 @@ import {
 } from '../../api/admin-db-operations-client';
 import { getAdminAuditLogList, type AdminAuditLogEntryDto } from '../../api/admin-audit-log-client';
 import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
+import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 
 const MIN_MINUTES = 1;
