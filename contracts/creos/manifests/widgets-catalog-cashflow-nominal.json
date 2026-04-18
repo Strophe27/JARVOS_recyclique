@@ -151,6 +151,21 @@
         "refresh": "manual",
         "critical": true
       }
+    },
+    {
+      "type": "category-hierarchy-picker",
+      "component": "category-hierarchy-picker",
+      "meta_props": {
+        "slice": "cashflow-nominal",
+        "story": "13.8"
+      },
+      "data_contract": {
+        "source": "stats-legacy",
+        "operation_id": "legacy_list_categories",
+        "endpoint_hint": "GET /v1/categories/",
+        "refresh": "manual",
+        "critical": false
+      }
     }
   ]
 }

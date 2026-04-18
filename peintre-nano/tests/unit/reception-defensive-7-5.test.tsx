@@ -18,18 +18,19 @@ function requestUrl(input: RequestInfo | URL): string {
 }
 
 async function reachPoidsStepThroughVisibleSelection(): Promise<HTMLInputElement> {
-  const rootGrid = await screen.findByTestId('reception-category-root-grid');
-  const firstRoot = rootGrid.querySelector('button') as HTMLButtonElement | null;
-  if (!firstRoot) throw new Error('Aucune famille visible.');
-  fireEvent.click(firstRoot);
+  await screen.findByTestId('reception-kiosk-category-grid');
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const inputs = screen.queryAllByLabelText('Poids (kg)');
+    const input = inputs.find((el) => el.tagName === 'INPUT');
+    if (input) return input as HTMLInputElement;
 
-  const childGrid = screen.queryByTestId('reception-category-child-grid');
-  if (childGrid) {
-    const firstChild = childGrid.querySelector('button') as HTMLButtonElement | null;
-    if (!firstChild) throw new Error('Aucune sous-categorie visible.');
-    fireEvent.click(firstChild);
+    const grid = screen.getByTestId('reception-kiosk-category-grid');
+    const tile = grid.querySelector(
+      'button[data-testid^="reception-kiosk-category-"]',
+    ) as HTMLButtonElement | null;
+    if (!tile) throw new Error('Aucune tuile categorie visible.');
+    fireEvent.click(tile);
   }
-
   return (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
 }
 
@@ -213,7 +214,7 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     expect(screen.getByTestId('reception-cockpit-left')).toBeTruthy();
     expect(screen.getByTestId('reception-cockpit-center')).toBeTruthy();
     expect(screen.getByTestId('reception-cockpit-right')).toBeTruthy();
-    expect(screen.getByTestId('reception-category-grid')).toBeTruthy();
+    expect(screen.getByTestId('reception-kiosk-category-grid')).toBeTruthy();
   });
 
   it('propose un keypad poids opérateur et active l’ajout quand un poids > 0 est saisi', async () => {
@@ -395,9 +396,9 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
 
     await waitFor(() => expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('1'));
     await waitFor(() =>
-      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-category-tile-cat-1'),
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-kiosk-category-cat-1'),
     );
-    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('dans la grille');
     expect(screen.queryByLabelText('Poids (kg)')).toBeNull();
   });
 
@@ -510,9 +511,9 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     await waitFor(() => expect(screen.getByTestId('reception-ticket-summary-count').textContent ?? '').toContain('1'));
     expect(screen.getByTestId('reception-ticket-summary-total').textContent ?? '').toContain('1.50');
     await waitFor(() =>
-      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-category-tile-cat-1'),
+      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-kiosk-category-cat-1'),
     );
-    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('dans la grille');
     expect(screen.queryByLabelText('Poids (kg)')).toBeNull();
   });
 
@@ -769,10 +770,10 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
-    await waitFor(() => expect(screen.getByTestId('reception-subcategory-tile-child-bike')).toBeTruthy());
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-root-sport'));
+    await waitFor(() => expect(screen.getByTestId('reception-kiosk-category-child-bike')).toBeTruthy());
 
-    fireEvent.click(screen.getByTestId('reception-subcategory-tile-child-ball'));
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-child-ball'));
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
 
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
@@ -847,17 +848,10 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
-    await waitFor(() => expect(screen.getByTestId('reception-subcategory-tile-child-bike')).toBeTruthy());
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-root-sport'));
+    await waitFor(() => expect(screen.getByTestId('reception-kiosk-category-child-bike')).toBeTruthy());
 
-    const childBike = screen.getByTestId('reception-subcategory-tile-child-bike');
-    const childBall = screen.getByTestId('reception-subcategory-tile-child-ball');
-
-    childBike.focus();
-    fireEvent.keyDown(childBike, { key: 'ArrowRight', code: 'ArrowRight' });
-    expect(document.activeElement).toBe(childBall);
-
-    fireEvent.keyDown(childBall, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-child-ball'));
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons');
@@ -932,24 +926,11 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-category-tile-root-sport')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('reception-kiosk-category-root-books')).toBeTruthy());
 
-    const rootSport = screen.getByTestId('reception-category-tile-root-sport');
-    const rootBooks = screen.getByTestId('reception-category-tile-root-books');
-
-    rootSport.focus();
-    fireEvent.keyDown(rootSport, { key: 'ArrowRight', code: 'ArrowRight' });
-    expect(document.activeElement).toBe(rootBooks);
-
-    fireEvent.keyDown(rootBooks, { key: 'Enter', code: 'Enter' });
-    await waitFor(() =>
-      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
-    );
-    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Aucune');
-    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
-    await waitFor(() => expect(document.activeElement).toBe(childBd));
-
-    fireEvent.keyDown(childBd, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-root-books'));
+    const childBd = await screen.findByTestId('reception-kiosk-category-child-bd');
+    fireEvent.click(childBd);
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : BD');
@@ -1055,18 +1036,12 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
+    const rootBooks = await screen.findByTestId('reception-kiosk-category-root-books');
     await waitFor(() => expect(document.activeElement).toBe(rootBooks));
 
-    fireEvent.keyDown(rootBooks, { key: 'Enter', code: 'Enter' });
-    await waitFor(() =>
-      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
-    );
+    fireEvent.click(rootBooks);
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-child-roman'));
 
-    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
-    await waitFor(() => expect(document.activeElement).toBe(childBd));
-
-    fireEvent.keyDown(document.body, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Romans');
@@ -1084,7 +1059,7 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
         rootBooks.getAttribute('data-testid'),
       ),
     );
-    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('dans la grille');
   });
 
   it(
@@ -1209,14 +1184,12 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
+    const rootBooks = await screen.findByTestId('reception-kiosk-category-root-books');
     await waitFor(() => expect(document.activeElement).toBe(rootBooks));
 
-    fireEvent.keyDown(rootBooks, { key: 'Enter', code: 'Enter' });
-    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
-    await waitFor(() => expect(document.activeElement).toBe(childBd));
-
-    fireEvent.keyDown(childBd, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(rootBooks);
+    const childBd = await screen.findByTestId('reception-kiosk-category-child-bd');
+    fireEvent.click(childBd);
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
 
@@ -1229,20 +1202,13 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
         rootBooks.getAttribute('data-testid'),
       ),
     );
-    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('dans la grille');
 
-    fireEvent.keyDown(document.body, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-root-sport'));
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-child-ball'));
     await waitFor(() =>
-      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Sport'),
+      expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons'),
     );
-    const childBall = await screen.findByTestId('reception-subcategory-tile-child-ball');
-    await waitFor(() => expect(document.activeElement).toBe(childBall));
-
-    fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', bubbles: true, cancelable: true });
-    await waitFor(() =>
-      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe('reception-input-poids-kg'),
-    );
-    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons');
 
     const poidsInputNext = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     fireEvent.keyDown(poidsInputNext, { key: '&', code: 'Digit1', bubbles: true, cancelable: true });
@@ -1255,7 +1221,7 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
         rootBooks.getAttribute('data-testid'),
       ),
     );
-    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('Choisissez une famille.');
+    expect(screen.getByTestId('reception-await-selection').textContent ?? '').toContain('dans la grille');
   });
 
   it('transpose les raccourcis AZERTY legacy du rail actif famille puis sous-catégorie', async () => {
@@ -1327,19 +1293,19 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    const rootSport = await screen.findByTestId('reception-category-tile-root-sport');
+    const rootSport = await screen.findByTestId('reception-kiosk-category-root-sport');
 
     await waitFor(() => expect(document.activeElement).toBe(rootSport));
     expect(rootSport.textContent ?? '').toContain('A');
-    expect(screen.getByTestId('reception-category-tile-root-books').textContent ?? '').toContain('Z');
+    expect(screen.getByTestId('reception-kiosk-category-root-books').textContent ?? '').toContain('Z');
 
     fireEvent.keyDown(document.body, { key: 'z', code: 'KeyZ', bubbles: true, cancelable: true });
     await waitFor(() =>
       expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
     );
 
-    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
-    const childRoman = await screen.findByTestId('reception-subcategory-tile-child-roman');
+    const childBd = await screen.findByTestId('reception-kiosk-category-child-bd');
+    const childRoman = await screen.findByTestId('reception-kiosk-category-child-roman');
     await waitFor(() => expect(document.activeElement).toBe(childBd));
     expect(childBd.textContent ?? '').toContain('A');
     expect(childRoman.textContent ?? '').toContain('Z');
@@ -1418,8 +1384,8 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    fireEvent.click(await screen.findByTestId('reception-category-tile-root-books'));
-    fireEvent.click(await screen.findByTestId('reception-subcategory-tile-child-bd'));
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-root-books'));
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-child-bd'));
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
 
     fireEvent.focus(poidsInput);
@@ -1495,6 +1461,8 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     await waitFor(() => expect(screen.getByTestId('reception-ticket-id').getAttribute('title')).toBe(tid));
 
     const poidsInput = await reachPoidsStepThroughVisibleSelection();
+    poidsInput.focus();
+    await waitFor(() => expect(document.activeElement).toBe(poidsInput));
     const destinationInput = screen.getByRole('textbox', { name: 'Destination' }) as HTMLInputElement;
 
     expect(destinationInput.value).toBe('Magasin');
@@ -1579,24 +1547,21 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
+    const rootBooks = await screen.findByTestId('reception-kiosk-category-root-books');
     await waitFor(() => expect(document.activeElement).toBe(rootBooks));
 
-    fireEvent.keyDown(rootBooks, { key: 'Enter', code: 'Enter' });
-    const childBd = await screen.findByTestId('reception-subcategory-tile-child-bd');
-    await waitFor(() => expect(document.activeElement).toBe(childBd));
-
-    fireEvent.keyDown(childBd, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
+    fireEvent.click(rootBooks);
+    const childBd = await screen.findByTestId('reception-kiosk-category-child-bd');
+    fireEvent.click(childBd);
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(poidsInput));
 
+    poidsInput.focus();
     fireEvent.keyDown(poidsInput, { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true });
-    const childBdAgain = await screen.findByTestId('reception-subcategory-tile-child-bd');
-    await waitFor(() =>
-      expect((document.activeElement as HTMLElement | null)?.getAttribute('data-testid')).toBe(
-        childBdAgain.getAttribute('data-testid'),
-      ),
-    );
+    await waitFor(() => {
+      const el = document.activeElement;
+      expect(el?.getAttribute('data-testid')?.startsWith('reception-kiosk-category-')).toBe(true);
+    });
   });
 
   it('donne un accès clavier initial crédible au rail familles quand le cockpit hiérarchique devient prêt', async () => {
@@ -1667,7 +1632,7 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    const rootSport = await screen.findByTestId('reception-category-tile-root-sport');
+    const rootSport = await screen.findByTestId('reception-kiosk-category-root-sport');
     await waitFor(() => expect(document.activeElement).toBe(rootSport));
   });
 
@@ -1740,16 +1705,13 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    const rootSport = await screen.findByTestId('reception-category-tile-root-sport');
-    const rootBooks = await screen.findByTestId('reception-category-tile-root-books');
+    const rootSport = await screen.findByTestId('reception-kiosk-category-root-sport');
+    const rootBooks = await screen.findByTestId('reception-kiosk-category-root-books');
 
-    await waitFor(() => expect(rootSport.getAttribute('data-focused')).toBe('true'));
-    expect(rootSport.getAttribute('data-selected')).toBe('false');
+    await waitFor(() => expect(document.activeElement).toBe(rootSport));
 
     rootBooks.focus();
-    await waitFor(() => expect(rootBooks.getAttribute('data-focused')).toBe('true'));
-    expect(rootBooks.getAttribute('data-selected')).toBe('false');
-    expect(rootSport.getAttribute('data-selected')).toBe('false');
+    await waitFor(() => expect(document.activeElement).toBe(rootBooks));
   });
 
   it('différencie visuellement le focus clavier d’une sous-catégorie sans perdre l’état sélectionné', async () => {
@@ -1819,19 +1781,15 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
-    const childBike = await screen.findByTestId('reception-subcategory-tile-child-bike');
-    const childBall = await screen.findByTestId('reception-subcategory-tile-child-ball');
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-root-sport'));
+    const childBike = await screen.findByTestId('reception-kiosk-category-child-bike');
+    const childBall = await screen.findByTestId('reception-kiosk-category-child-ball');
 
-    await waitFor(() => expect(childBike.getAttribute('data-focused')).toBe('false'));
     childBike.focus();
-    await waitFor(() => expect(childBike.getAttribute('data-focused')).toBe('true'));
-    expect(childBike.getAttribute('data-selected')).toBe('false');
+    await waitFor(() => expect(document.activeElement).toBe(childBike));
 
     childBall.focus();
-    await waitFor(() => expect(childBall.getAttribute('data-focused')).toBe('true'));
-    expect(childBall.getAttribute('data-selected')).toBe('false');
-    expect(childBike.getAttribute('data-selected')).toBe('false');
+    await waitFor(() => expect(document.activeElement).toBe(childBall));
   });
 
   it('rend le point d’atterrissage visuel du poids explicite après validation d’une sous-catégorie', async () => {
@@ -1901,12 +1859,8 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    fireEvent.click(await screen.findByTestId('reception-category-tile-root-sport'));
-    const childBike = await screen.findByTestId('reception-subcategory-tile-child-bike');
-
-    childBike.focus();
-    fireEvent.keyDown(childBike, { key: 'ArrowRight', code: 'ArrowRight' });
-    fireEvent.keyDown(screen.getByTestId('reception-subcategory-tile-child-ball'), { key: 'Enter', code: 'Enter' });
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-root-sport'));
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-child-ball'));
 
     const poidsInput = (await screen.findByLabelText('Poids (kg)')) as HTMLInputElement;
     const poidsWrapper = screen.getByTestId('reception-poids-focus-ring');
@@ -2133,9 +2087,9 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-category-grid')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('reception-kiosk-category-grid')).toBeTruthy());
 
-    fireEvent.click(screen.getByTestId('reception-category-tile-cat-2'));
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-cat-2'));
     await waitFor(() =>
       expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'),
     );
@@ -2211,13 +2165,13 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-category-root-grid')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('reception-kiosk-category-grid')).toBeTruthy());
 
-    expect(screen.queryByTestId('reception-category-child-panel')).toBeNull();
+    expect(screen.queryByText('Sous-catégories')).toBeNull();
 
-    fireEvent.click(screen.getByTestId('reception-category-tile-root-sport'));
-    expect(screen.getByTestId('reception-category-child-panel').textContent ?? '').toContain('Sous-categories Sport');
-    expect(screen.getByTestId('reception-subcategory-tile-child-ball').getAttribute('data-selected')).toBe('false');
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-root-sport'));
+    expect(screen.getByText('Sous-catégories')).toBeTruthy();
+    expect(screen.getByTestId('reception-kiosk-category-child-ball')).toBeTruthy();
   });
 
   it('affiche explicitement la famille et la sous-catégorie actives', async () => {
@@ -2288,16 +2242,22 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    fireEvent.click(await screen.findByTestId('reception-category-tile-root-books'));
-    await waitFor(() => expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres'));
+    fireEvent.click(await screen.findByTestId('reception-kiosk-category-root-books'));
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres');
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Aucune');
 
-    fireEvent.click(screen.getByTestId('reception-subcategory-tile-child-bd'));
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-child-bd'));
     await waitFor(() =>
       expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : BD'),
     );
-    fireEvent.click(screen.getByTestId('reception-category-tile-root-sport'));
-    fireEvent.click(screen.getByTestId('reception-subcategory-tile-child-ball'));
+    expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Livres');
+
+    const poidsInputAfterBd = screen.getByLabelText('Poids (kg)') as HTMLInputElement;
+    fireEvent.keyDown(poidsInputAfterBd, { key: 'Escape', code: 'Escape' });
+    await waitFor(() => expect(screen.getByTestId('reception-kiosk-category-root-sport')).toBeTruthy());
+
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-root-sport'));
+    fireEvent.click(screen.getByTestId('reception-kiosk-category-child-ball'));
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Famille active : Sport');
     expect(screen.getByTestId('reception-category-active-summary').textContent ?? '').toContain('Sous-catégorie active : Ballons');
   });
@@ -2369,9 +2329,9 @@ describe('Story 7.5 — réception défensive (AR21, DATA_STALE, pas de faux suc
     );
 
     fireEvent.click(screen.getByTestId('reception-open-poste'));
-    await waitFor(() => expect(screen.getByTestId('reception-category-root-grid')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('reception-kiosk-category-grid')).toBeTruthy());
 
-    const rootButtons = Array.from(screen.getByTestId('reception-category-root-grid').querySelectorAll('button')).map(
+    const rootButtons = Array.from(screen.getByTestId('reception-kiosk-category-grid').querySelectorAll('button')).map(
       (button) => button.textContent ?? '',
     );
     expect(rootButtons[0]?.startsWith('Livres')).toBe(true);

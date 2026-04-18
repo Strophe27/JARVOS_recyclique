@@ -95,6 +95,21 @@
         "refresh": "manual",
         "critical": false
       }
+    },
+    {
+      "type": "category-hierarchy-picker",
+      "component": "category-hierarchy-picker",
+      "meta_props": {
+        "slice": "reception-nominal",
+        "story": "7.1"
+      },
+      "data_contract": {
+        "source": "reception",
+        "operation_id": "recyclique_reception_listCategories",
+        "endpoint_hint": "GET /v1/reception/categories",
+        "refresh": "manual",
+        "critical": false
+      }
     }
   ]
 }

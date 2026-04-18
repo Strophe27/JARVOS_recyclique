@@ -209,9 +209,9 @@ describe('E2E — parcours réception nominal (Story 7.1)', () => {
 
     await waitFor(() => {
       const step = screen.getByTestId('reception-step-ligne');
-      expect(within(step).getByTestId('reception-category-grid')).toBeTruthy();
+      expect(within(step).getByTestId('reception-kiosk-category-grid')).toBeTruthy();
     });
-    fireEvent.click(screen.getByTestId(`reception-category-tile-${CAT_ID}`));
+    fireEvent.click(screen.getByTestId(`reception-kiosk-category-${CAT_ID}`));
     await waitFor(() => {
       expect(screen.getByTestId('reception-keypad-1')).toBeTruthy();
     });

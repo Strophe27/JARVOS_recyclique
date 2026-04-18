@@ -10,6 +10,7 @@ import { getCashflowDraftSnapshot, resetCashflowDraft } from '../../src/domains/
 import '../../src/registry';
 import '../../src/styles/tokens.css';
 import { expectCashflowNominalSaleSurface } from '../helpers/cashflow-nominal-sale-surface';
+import { paymentMethodOptionsJsonBody } from '../unit/fixtures/payment-method-options-api';
 import { addOneLineKioskSale, kioskFillSessionOpenFinalizeAndConfirmSale } from './helpers/kiosk-sale-add-line';
 
 beforeAll(() => {
@@ -48,6 +49,22 @@ function fetchResponseCashSessionsCurrentNoSession(): Promise<Response> {
     status: 200,
     text: async () => 'null',
   } as Response);
+}
+
+/** `useCaissePaymentMethodOptions` / `KioskFinalizeSaleDock` : liste vide → bouton vente désactivé. */
+function fetchResponseSalePaymentMethodOptions(): Promise<Response> {
+  return Promise.resolve({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify(paymentMethodOptionsJsonBody()),
+  } as Response);
+}
+
+function paymentMethodOptionsIfGet(url: string, method: string): Promise<Response> | null {
+  if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+    return fetchResponseSalePaymentMethodOptions();
+  }
+  return null;
 }
 
 describe('E2E — parcours caisse nominal (Story 6.1)', () => {
@@ -125,6 +142,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
         });
       }
 
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
+      }
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -206,6 +227,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     const SESSION_ID = '00000000-0000-4000-8000-000000000099';
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
       if (url.includes('/v1/cash-sessions/current')) {
         return Promise.resolve({
           ok: true,
@@ -220,6 +242,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
               status: 'open',
             }),
         } as Response);
+      }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
       }
       return Promise.resolve({
         ok: true,
@@ -262,6 +288,7 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
     const REGISTER_ID = '00000000-0000-4000-8000-000000000077';
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
       if (url.includes('/v1/cash-sessions/current')) {
         return Promise.resolve({
           ok: true,
@@ -277,6 +304,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
               status: 'open',
             }),
         } as Response);
+      }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
       }
       return Promise.resolve({
         ok: true,
@@ -344,6 +375,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
               status: 'open',
             }),
         } as Response);
+      }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
       }
       return Promise.resolve({
         ok: true,
@@ -430,6 +465,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
             }),
         } as Response);
       }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
+      }
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -509,6 +548,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
             }),
         } as Response);
       }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
+      }
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -555,10 +598,15 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
   it('sans poste résolu, l’ouverture est bloquée explicitement et la vente n’est pas promue silencieusement', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((input: RequestInfo | URL) => {
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
         const url = requestUrl(input);
+        const method = (init?.method ?? 'GET').toUpperCase();
         if (url.includes('/v1/cash-sessions/current')) {
           return fetchResponseCashSessionsCurrentNoSession();
+        }
+        {
+          const pm = paymentMethodOptionsIfGet(url, method);
+          if (pm) return pm;
         }
         return Promise.resolve({
           ok: true,
@@ -607,6 +655,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
           text: async () => JSON.stringify({ detail: 'indisponible' }),
         });
       }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
+      }
       return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -651,6 +703,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
           text: async () => JSON.stringify({ id: 'sale-invalid-body' }),
         });
       }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
+      }
       return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -691,6 +747,10 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
       if (method === 'GET' && url.includes('/v1/sales/sale-net-err')) {
         return Promise.reject(new Error('Network unreachable'));
       }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
+      }
       return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -717,10 +777,15 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
   it('navigation : entrée manifeste Caisse → /caisse et wizard visible (AC 1)', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((input: RequestInfo | URL) => {
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
         const url = requestUrl(input);
+        const method = (init?.method ?? 'GET').toUpperCase();
         if (url.includes('/v1/cash-sessions/current')) {
           return fetchResponseCashSessionsCurrentNoSession();
+        }
+        {
+          const pm = paymentMethodOptionsIfGet(url, method);
+          if (pm) return pm;
         }
         return Promise.resolve({
           ok: true,
@@ -759,15 +824,20 @@ describe('E2E — parcours caisse nominal (Story 6.1)', () => {
   it('erreur API POST vente : message d’erreur affiché (AC 1)', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
       if (url.includes('/v1/cash-sessions/current')) {
         return fetchResponseCashSessionsCurrentNoSession();
       }
-      if (url.includes('/v1/sales/') && init?.method === 'POST') {
+      if (url.includes('/v1/sales/') && method === 'POST') {
         return Promise.resolve({
           ok: false,
           status: 403,
           text: async () => JSON.stringify({ detail: 'Opérateur non autorisé pour cette session' }),
         });
+      }
+      {
+        const pm = paymentMethodOptionsIfGet(url, method);
+        if (pm) return pm;
       }
       return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
     });

@@ -1,18 +1,7 @@
-import { Alert, Badge, Button, Group, Loader, NumberInput, SimpleGrid, Text, TextInput } from '@mantine/core';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-} from 'react';
+import { Alert, Badge, Button, Group, NumberInput, Text, TextInput } from '@mantine/core';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { type RecycliqueClientFailure, recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
-import {
-  fetchCategoriesList,
-  type CategoryListItem,
-} from '../../api/dashboard-legacy-stats-client';
+import { type CategoryListItem } from '../../api/dashboard-legacy-stats-client';
 import type { CashSessionCurrentV1 } from '../../api/cash-session-client';
 import {
   getHeldSalesForSession,
@@ -34,6 +23,7 @@ import {
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { CategoryHierarchyPicker } from '../../widgets/category-hierarchy-picker/CategoryHierarchyPicker';
 import { CONTEXT_ACTIVE_SITE_DISPLAY_NAME_KEY } from '../../runtime/context-presentation-keys';
 import { FlowRenderer } from '../../flows/FlowRenderer';
 import {
@@ -742,277 +732,6 @@ function HeldTicketsPanel({ kioskSurface }: { readonly kioskSurface: boolean }):
   );
 }
 
-/**
- * Même ordre position → touche que le legacy caisse (`recyclique-1.4.4/frontend/src/utils/cashKeyboardShortcuts.ts`).
- * Utilisé quand `shortcut_key` est absent en base (cas fréquent en recette) pour garder nom accessible + clavier alignés legacy.
- */
-const KIOSK_CATEGORY_POSITION_KEYS = [
-  'A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
-  'Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M',
-  'W', 'X', 'C', 'V', 'B', 'N',
-] as const;
-
-function kioskCategoryEffectiveShortcutKey(category: CategoryListItem, indexInVisibleList: number): string {
-  const fromDb = category.shortcut_key != null ? String(category.shortcut_key).trim() : '';
-  if (fromDb.length > 0) return fromDb;
-  if (indexInVisibleList >= 0 && indexInVisibleList < KIOSK_CATEGORY_POSITION_KEYS.length) {
-    return KIOSK_CATEGORY_POSITION_KEYS[indexInVisibleList]!;
-  }
-  return '';
-}
-
-/**
- * Story 13.8 — intention parcours catégorie → ligne (GET `/v1/categories/` reviewable, même client que stats legacy).
- */
-function KioskCategoryWorkspace({
-  onPickCategoryCode,
-  browseResetEpoch,
-  onDrillIntoChildren,
-  onBrowseDepthChange,
-  onContinueWithoutGrid,
-}: {
-  readonly onPickCategoryCode: (
-    categoryCode: string,
-    categoryDisplayName: string,
-    categoryMeta: CategoryListItem | null,
-  ) => void;
-  /** Incrémenté par le parent pour ramener la navigation racine (retour depuis poids/prix). */
-  readonly browseResetEpoch: number;
-  readonly onDrillIntoChildren?: () => void;
-  readonly onBrowseDepthChange?: (parentId: string | null) => void;
-  /** Grille vide ou indisponible : même API, saisie manuelle du code (démo / secours). */
-  readonly onContinueWithoutGrid?: () => void;
-}): ReactNode {
-  const auth = useAuthPort();
-  const authRef = useRef(auth);
-  authRef.current = auth;
-  const [rows, setRows] = useState<CategoryListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchErr, setFetchErr] = useState<string | null>(null);
-  const [parentId, setParentId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setParentId(null);
-  }, [browseResetEpoch]);
-
-  useEffect(() => {
-    onBrowseDepthChange?.(parentId);
-  }, [parentId, onBrowseDepthChange]);
-
-  /**
-   * Chargement catégories : ne pas dépendre de l’identité `auth` (référence instable possible) —
-   * évite annulations en rafale où `finally` ne repasse jamais `loading` à false. `authRef` garde le port courant ;
-   * `AbortController` annule le fetch au démontage / remount strict.
-   */
-  useEffect(() => {
-    const ac = new AbortController();
-    let disposed = false;
-
-    setLoading(true);
-    setFetchErr(null);
-
-    void (async () => {
-      try {
-        const list = await fetchCategoriesList(authRef.current, ac.signal);
-        if (disposed) return;
-        setRows(list.filter((c) => c.is_active));
-      } catch (e) {
-        if (disposed || ac.signal.aborted) return;
-        setFetchErr(e instanceof Error ? e.message : 'Chargement des catégories impossible.');
-      } finally {
-        if (!disposed) setLoading(false);
-      }
-    })();
-
-    return () => {
-      disposed = true;
-      ac.abort();
-    };
-  }, []);
-
-  const sortByDisplayOrder = useCallback((list: CategoryListItem[]) => [...list].sort((a, b) => a.display_order - b.display_order), []);
-
-  const roots = useMemo(
-    () => sortByDisplayOrder(rows.filter((c) => c.parent_id == null || c.parent_id === '')),
-    [rows, sortByDisplayOrder],
-  );
-
-  const children = useMemo(
-    () => (parentId ? sortByDisplayOrder(rows.filter((c) => c.parent_id === parentId)) : []),
-    [rows, parentId, sortByDisplayOrder],
-  );
-
-  const rowHasChildren = useCallback((id: string) => rows.some((r) => r.parent_id === id), [rows]);
-
-  const childCountFor = useCallback((id: string) => rows.filter((r) => r.parent_id === id).length, [rows]);
-
-  const showList = useMemo(() => (parentId ? children : roots), [parentId, children, roots]);
-
-  const onPickRef = useRef(onPickCategoryCode);
-  onPickRef.current = onPickCategoryCode;
-  const onDrillRef = useRef(onDrillIntoChildren);
-  onDrillRef.current = onDrillIntoChildren;
-  const parentIdRef = useRef(parentId);
-  parentIdRef.current = parentId;
-
-  const activateCategoryShortcut = useCallback(
-    (rawKey: string): boolean => {
-      if (loading || fetchErr || rawKey.length !== 1) return false;
-      if (showList.length === 0) return false;
-      const ch = rawKey.toLowerCase();
-      for (let i = 0; i < showList.length; i++) {
-        const c = showList[i]!;
-        const eff = kioskCategoryEffectiveShortcutKey(c, i);
-        if (eff.length !== 1 || eff.toLowerCase() !== ch) continue;
-        if (rowHasChildren(c.id)) {
-          setParentId(c.id);
-          if (!parentIdRef.current) onDrillRef.current?.();
-        } else {
-          onPickRef.current(c.id, c.name, c);
-        }
-        return true;
-      }
-      return false;
-    },
-    [loading, fetchErr, showList, rowHasChildren],
-  );
-
-  /** Raccourcis : `shortcut_key` API ou, si absent, touche positionnelle legacy (1 caractère). */
-  const handleCategoryGridKeyDown = useCallback(
-    (e: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (e.defaultPrevented) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
-      if (!t) return;
-      const tag = t.tagName;
-      const editable = t.isContentEditable;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable) return;
-      if (!activateCategoryShortcut(e.key)) return;
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    [activateCategoryShortcut],
-  );
-
-  useEffect(() => {
-    if (loading || fetchErr || showList.length === 0) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
-      if (!t) return;
-      const tag = t.tagName;
-      const editable = t.isContentEditable;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable) return;
-      if (!activateCategoryShortcut(e.key)) return;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [loading, fetchErr, showList, activateCategoryShortcut]);
-
-  if (loading) {
-    return (
-      <Group gap="sm" mb="md" data-testid="cashflow-kiosk-category-loading">
-        <Loader size="sm" />
-        <Text size="sm" c="dimmed">
-          Chargement des catégories…
-        </Text>
-      </Group>
-    );
-  }
-
-  if (fetchErr) {
-    return (
-      <Alert color="orange" mb="md" title="Catégories" data-testid="cashflow-kiosk-category-error">
-        {fetchErr}
-        {onContinueWithoutGrid ? (
-          <Button mt="sm" size="xs" variant="light" onClick={onContinueWithoutGrid} data-testid="cashflow-kiosk-category-manual-fallback">
-            Continuer sans grille (saisie manuelle du code)
-          </Button>
-        ) : null}
-      </Alert>
-    );
-  }
-
-  return (
-    <div
-      className={classes.kioskCategorySection}
-      data-testid="cashflow-kiosk-category-grid"
-      onKeyDown={handleCategoryGridKeyDown}
-    >
-      {parentId ? (
-        <Button
-          variant="subtle"
-          size="xs"
-          mb="sm"
-          onClick={() => {
-            const cur = rows.find((r) => r.id === parentId);
-            const up = cur?.parent_id;
-            if (up == null || String(up).trim() === '') setParentId(null);
-            else setParentId(String(up));
-          }}
-          data-testid="cashflow-kiosk-category-back"
-        >
-          ← Niveau parent
-        </Button>
-      ) : null}
-      <Text size="sm" fw={600} mb="xs">
-        {parentId ? 'Sous-catégories' : 'Catégories'}
-      </Text>
-      {showList.length === 0 ? (
-        <div data-testid="cashflow-kiosk-category-empty">
-          <Text size="sm" c="dimmed" mb="sm">
-            Aucune catégorie renvoyée par le serveur pour cette session.
-          </Text>
-          {onContinueWithoutGrid ? (
-            <Button size="sm" variant="light" onClick={onContinueWithoutGrid} data-testid="cashflow-kiosk-category-manual-fallback">
-              Continuer sans grille (saisie manuelle du code)
-            </Button>
-          ) : null}
-        </div>
-      ) : (
-        <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing="md" className={classes.kioskCategoryGrid} mb="md">
-          {showList.map((c, index) => {
-            const nChild = childCountFor(c.id);
-            const shortcutRaw = kioskCategoryEffectiveShortcutKey(c, index);
-            /** Libellé principal non masqué : le nom accessible des `<button>` suit le texte visible (MCP / Chromium). */
-            const mainLine = shortcutRaw ? `${c.name}, touche ${shortcutRaw}` : c.name;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                className={classes.kioskCategoryButton}
-                data-testid={`cashflow-kiosk-category-${c.id}`}
-                {...(shortcutRaw.length === 1 ? { 'aria-keyshortcuts': shortcutRaw } : {})}
-                onClick={() => {
-                  if (rowHasChildren(c.id)) {
-                    setParentId(c.id);
-                    if (!parentId) onDrillIntoChildren?.();
-                    return;
-                  }
-                  onPickCategoryCode(c.id, c.name, c);
-                }}
-              >
-                <span className={classes.kioskCategoryButtonMain}>{mainLine}</span>
-                <span className={classes.kioskCategoryMetaRow}>
-                  {nChild > 0 ? <span className={classes.kioskCategoryCountBadge}>{nChild} sous-cat.</span> : null}
-                </span>
-                {shortcutRaw ? (
-                  <span className={classes.kioskCategoryShortcutBadge} aria-hidden="true">
-                    Clavier&nbsp;: <span className={classes.kioskCategoryShortcutKey}>{shortcutRaw}</span>
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </SimpleGrid>
-      )}
-    </div>
-  );
-}
-
 function normalizeKioskDecimalInput(raw: string): string {
   const cleaned = raw.replace(',', '.').replace(/[^0-9.]/g, '');
   const firstDot = cleaned.indexOf('.');
@@ -1107,7 +826,7 @@ function KioskNumericPad({
   }, [onChange]);
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (isEditableTarget(e.target)) return;
@@ -1322,7 +1041,7 @@ function LinesStep({
 
   useEffect(() => {
     if (!kioskCategoryWorkspace) return;
-    const onKeyDown = (e: KeyboardEvent) => {
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isEditableTarget(e.target)) return;
       if (e.key === 'Escape' || e.key === 'Backspace') {
@@ -1363,7 +1082,9 @@ function LinesStep({
             onGoPrice={() => setKioskMicroPhase('price')}
           />
           {kioskMicroPhase === 'browse' ? (
-            <KioskCategoryWorkspace
+            <CategoryHierarchyPicker
+              presentation="kiosk_drill"
+              categorySource="legacy_categories"
               browseResetEpoch={kioskBrowseResetEpoch}
               onDrillIntoChildren={() => setKioskUsedSubcategoryDrill(true)}
               onBrowseDepthChange={setKioskBrowseParentId}

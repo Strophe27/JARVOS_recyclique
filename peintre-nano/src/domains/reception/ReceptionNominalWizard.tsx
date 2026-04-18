@@ -32,6 +32,7 @@ import {
 import { setReceptionPosteUiState } from './reception-poste-ui-state';
 import styles from './ReceptionNominalWizard.module.css';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { CategoryHierarchyPicker } from '../../widgets/category-hierarchy-picker/CategoryHierarchyPicker';
 import type { CashflowSubmitSurfaceError } from '../cashflow/cashflow-submit-error';
 import { formatReceptionCompactId } from '../admin-config/reception-admin-display';
 
@@ -50,33 +51,6 @@ const DESTINATIONS_EXIT: { value: ReceptionDestinationV1; label: string }[] = [
   { value: 'RECYCLAGE', label: 'Recyclage' },
   { value: 'DECHETERIE', label: 'Déchetterie' },
 ];
-
-const RECEPTION_POSITION_SHORTCUT_KEYS = [
-  'A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
-  'Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M',
-  'W', 'X', 'C', 'V', 'B', 'N',
-] as const;
-
-function getReceptionShortcutKeyForIndex(index: number): string | null {
-  return RECEPTION_POSITION_SHORTCUT_KEYS[index] ?? null;
-}
-
-function getReceptionShortcutIndex(key: string): number {
-  return RECEPTION_POSITION_SHORTCUT_KEYS.indexOf(key.toUpperCase() as (typeof RECEPTION_POSITION_SHORTCUT_KEYS)[number]);
-}
-
-function shouldPreventReceptionShortcut(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  if (
-    target.tagName === 'INPUT' ||
-    target.tagName === 'TEXTAREA' ||
-    target.tagName === 'SELECT' ||
-    target.contentEditable === 'true'
-  ) {
-    return true;
-  }
-  return target.getAttribute('role') === 'textbox';
-}
 
 /**
  * Story 7.1 — parcours nominal réception (poste → ticket → ligne kg → fermetures), vérité serveur uniquement.
@@ -112,19 +86,18 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
   const [editingLigneId, setEditingLigneId] = useState<string | null>(null);
   const [adminPatchLigneId, setAdminPatchLigneId] = useState<string | null>(null);
   const [adminPatchPoidsKg, setAdminPatchPoidsKg] = useState<number>(1);
-  const [focusedRootId, setFocusedRootId] = useState<string | null>(null);
-  const [focusedChildId, setFocusedChildId] = useState<string | null>(null);
   const [poidsInputFocused, setPoidsInputFocused] = useState(false);
   const [poidsEntryZoneFocused, setPoidsEntryZoneFocused] = useState(false);
   const [poidsPostAddFeedback, setPoidsPostAddFeedback] = useState(false);
-  const [keyboardShortcutScope, setKeyboardShortcutScope] = useState<'root' | 'child'>('root');
   const poidsInputWrapperRef = useRef<HTMLDivElement | null>(null);
-  const rootGridRef = useRef<HTMLDivElement | null>(null);
-  const childGridRef = useRef<HTMLDivElement | null>(null);
+  /** Conteneur du `CategoryHierarchyPicker` en mode drill (réception). */
+  const categoryPickerWrapRef = useRef<HTMLDivElement | null>(null);
   const isMountedRef = useRef(true);
   const initialRootFocusDoneRef = useRef(false);
   const poidsPostAddFeedbackTimeoutRef = useRef<number | null>(null);
   const ticketSyncRequestRef = useRef(0);
+  /** Incrémenté pour ramener le drill catégories à la racine (`CategoryHierarchyPicker`). */
+  const [categoryDrillEpoch, setCategoryDrillEpoch] = useState(0);
 
   const destinationChoices = useMemo(
     () => (isExit ? DESTINATIONS_EXIT : DESTINATIONS),
@@ -168,17 +141,15 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
     setEditingLigneId(null);
     setAdminPatchLigneId(null);
     setAdminPatchPoidsKg(1);
-    setFocusedRootId(null);
-    setFocusedChildId(null);
     setPoidsInputFocused(false);
     setPoidsEntryZoneFocused(false);
     setPoidsPostAddFeedback(false);
-    setKeyboardShortcutScope('root');
     if (poidsPostAddFeedbackTimeoutRef.current != null) {
       window.clearTimeout(poidsPostAddFeedbackTimeoutRef.current);
       poidsPostAddFeedbackTimeoutRef.current = null;
     }
     initialRootFocusDoneRef.current = false;
+    setCategoryDrillEpoch((e) => e + 1);
   }, []);
 
   const clearError = () => setSurfaceError(null);
@@ -199,12 +170,18 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
   }, []);
   const focusActiveRootButton = useCallback(() => {
     window.setTimeout(() => {
-      const activeButton =
-        rootGridRef.current?.querySelector<HTMLButtonElement>('button[data-testid^="reception-category-tile-"][data-selected="true"]') ??
-        rootGridRef.current?.querySelector<HTMLButtonElement>('button[data-testid^="reception-category-tile-"]');
-      activeButton?.focus();
+      categoryPickerWrapRef.current
+        ?.querySelector<HTMLButtonElement>('button[data-testid^="reception-kiosk-category-"]')
+        ?.focus();
     }, 0);
   }, []);
+
+  const backToCategoryGridFromPoids = useCallback(() => {
+    setCategoryId(null);
+    setSelectedRootId(null);
+    setCategoryDrillEpoch((e) => e + 1);
+    window.setTimeout(() => focusActiveRootButton(), 0);
+  }, [focusActiveRootButton]);
   const onPoidsEntryZoneBlur = (event: FocusEvent<HTMLDivElement>) => {
     const nextFocusedNode = event.relatedTarget;
     if (nextFocusedNode instanceof Node && event.currentTarget.contains(nextFocusedNode)) return;
@@ -215,11 +192,28 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
       setCategoryId(nextCategoryId);
       const nextCategory = categories.find((category) => category.id === nextCategoryId) ?? null;
       setSelectedRootId(nextCategory ? (nextCategory.parent_id ?? nextCategory.id) : null);
-      setKeyboardShortcutScope(nextCategory?.parent_id ? 'child' : 'root');
       if (!ticketId || dataStale || nextCategoryId == null) return;
       focusPoidsInput();
     },
     [categories, ticketId, dataStale, focusPoidsInput],
+  );
+
+  /** Aligne le résumé SR / métier avec le niveau drill du picker (comme avant le flux rail racine/enfant). */
+  const onCategoryDrillBrowseDepthChange = useCallback(
+    (parentCategoryId: string | null) => {
+      if (parentCategoryId == null || String(parentCategoryId).trim() === '') {
+        setSelectedRootId(null);
+        return;
+      }
+      let cursor = categories.find((c) => c.id === parentCategoryId) ?? null;
+      while (cursor?.parent_id) {
+        const p = categories.find((c) => c.id === cursor!.parent_id);
+        if (!p) break;
+        cursor = p;
+      }
+      setSelectedRootId(cursor?.id ?? null);
+    },
+    [categories],
   );
 
   const refreshTicket = useCallback(async (): Promise<boolean> => {
@@ -323,6 +317,7 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
     setCategories(r.categories);
     setSelectedRootId(null);
     setCategoryId(null);
+    setCategoryDrillEpoch((e) => e + 1);
   }, [auth, resetWizardAfterServerRefusal]);
 
   useEffect(() => {
@@ -412,9 +407,7 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
       setIsExit(false);
       setSelectedRootId(null);
       setCategoryId(null);
-      setKeyboardShortcutScope('root');
-      setFocusedRootId(null);
-      setFocusedChildId(null);
+      setCategoryDrillEpoch((e) => e + 1);
       setPoidsInputFocused(false);
       setPoidsEntryZoneFocused(false);
       setPoidsPostAddFeedback(false);
@@ -594,11 +587,7 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
     if (event.target instanceof HTMLElement && poidsInputWrapperRef.current?.contains(event.target)) {
       if (event.key === 'Escape') {
         event.preventDefault();
-        if (hasHierarchy) {
-          onReturnToChildStage();
-        } else {
-          onReturnToRootStage();
-        }
+        backToCategoryGridFromPoids();
         return;
       }
       const nextRaw = applyReceptionPoidsKeyboardKey(poidsDraft, event.key, event.code);
@@ -638,140 +627,20 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
     () => rootCategories.find((category) => category.id === activeRootId) ?? null,
     [rootCategories, activeRootId],
   );
-  const activeChildren = useMemo(
-    () => (activeRootId ? categories.filter((category) => category.parent_id === activeRootId) : []),
-    [categories, activeRootId],
-  );
-  const hasHierarchy = useMemo(() => categories.some((category) => category.parent_id != null && category.parent_id !== ''), [categories]);
-  const workflowStage = useMemo<'root' | 'child' | 'poids'>(() => {
-    if (categoryId) return 'poids';
-    if (hasHierarchy && selectedRootId) return 'child';
-    return 'root';
-  }, [categoryId, hasHierarchy, selectedRootId]);
   const selectionSummaryLabel = useMemo(() => {
-    if (workflowStage === 'root') return 'Choisir une famille';
-    if (workflowStage === 'child') return activeRoot ? `Choisir une sous-categorie dans ${activeRoot.name}` : 'Choisir une sous-categorie';
+    if (!categoryId) return 'Choisir une categorie';
     return 'Saisie poids';
-  }, [workflowStage, activeRoot]);
-  const isPoidsStepVisible = workflowStage === 'poids';
+  }, [categoryId]);
+  const isPoidsStepVisible = Boolean(categoryId);
   useEffect(() => {
     if (!ticketId) {
       initialRootFocusDoneRef.current = false;
-      setKeyboardShortcutScope('root');
       return;
     }
-    if (!hasHierarchy || dataStale || rootCategories.length === 0 || initialRootFocusDoneRef.current) return;
+    if (dataStale || categories.length === 0 || initialRootFocusDoneRef.current) return;
     initialRootFocusDoneRef.current = true;
-    setKeyboardShortcutScope('root');
     focusActiveRootButton();
-  }, [ticketId, hasHierarchy, dataStale, rootCategories.length, focusActiveRootButton]);
-  const focusSubcategoryButtonByIndex = useCallback((index: number) => {
-    const buttons = childGridRef.current?.querySelectorAll<HTMLButtonElement>('button[data-testid^="reception-subcategory-tile-"]');
-    if (!buttons || index < 0 || index >= buttons.length) return;
-    buttons[index]?.focus();
-  }, []);
-  const onSubcategoryTileKeyDown = (event: KeyboardEvent<HTMLButtonElement>, categoryIdForTile: string, index: number) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      selectCategoryAndFocusPoids(categoryIdForTile);
-      return;
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      onReturnToRootStage();
-      return;
-    }
-    const nextIndexByKey: Record<string, number> = {
-      ArrowRight: index + 1,
-      ArrowLeft: index - 1,
-      ArrowDown: index + 2,
-      ArrowUp: index - 2,
-      Home: 0,
-      End: activeChildren.length - 1,
-    };
-    const nextIndex = nextIndexByKey[event.key];
-    if (nextIndex == null) return;
-    event.preventDefault();
-    focusSubcategoryButtonByIndex(nextIndex);
-  };
-
-  const onSelectRootCategory = useCallback(
-    (rootId: string) => {
-      const children = categories.filter((category) => category.parent_id === rootId);
-      setSelectedRootId(rootId);
-      setKeyboardShortcutScope(children.length > 0 ? 'child' : 'root');
-      if (children.length > 0) {
-        setCategoryId(null);
-        return;
-      }
-      selectCategoryAndFocusPoids(rootId);
-    },
-    [categories, selectCategoryAndFocusPoids],
-  );
-  const onSelectRootCategoryFromKeyboard = useCallback(
-    (rootId: string) => {
-      const children = categories.filter((category) => category.parent_id === rootId);
-      setSelectedRootId(rootId);
-      if (children.length === 0) {
-        setKeyboardShortcutScope('root');
-        selectCategoryAndFocusPoids(rootId);
-        return;
-      }
-      setKeyboardShortcutScope('child');
-      setCategoryId(null);
-      requestAnimationFrame(() => {
-        focusSubcategoryButtonByIndex(0);
-      });
-    },
-    [categories, focusSubcategoryButtonByIndex, selectCategoryAndFocusPoids],
-  );
-  const focusRootButtonByIndex = useCallback((index: number) => {
-    const buttons = rootGridRef.current?.querySelectorAll<HTMLButtonElement>('button[data-testid^="reception-category-tile-"]');
-    if (!buttons || index < 0 || index >= buttons.length) return;
-    buttons[index]?.focus();
-  }, []);
-  const onRootTileKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLButtonElement>, rootId: string, index: number) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        onSelectRootCategoryFromKeyboard(rootId);
-        return;
-      }
-      const nextIndexByKey: Record<string, number> = {
-        ArrowRight: index + 1,
-        ArrowLeft: index - 1,
-        ArrowDown: index + 2,
-        ArrowUp: index - 2,
-        Home: 0,
-        End: rootCategories.length - 1,
-      };
-      const nextIndex = nextIndexByKey[event.key];
-      if (nextIndex == null) return;
-      event.preventDefault();
-      focusRootButtonByIndex(nextIndex);
-    },
-    [focusRootButtonByIndex, onSelectRootCategoryFromKeyboard, rootCategories.length],
-  );
-
-  const onReturnToRootStage = useCallback(() => {
-    setSelectedRootId(null);
-    setCategoryId(null);
-    setKeyboardShortcutScope('root');
-    focusActiveRootButton();
-  }, [focusActiveRootButton]);
-  const onReturnToChildStage = useCallback(() => {
-    if (!hasHierarchy || !selectedRootId || activeChildren.length === 0) {
-      onReturnToRootStage();
-      return;
-    }
-    setCategoryId(null);
-    setKeyboardShortcutScope('child');
-    requestAnimationFrame(() => {
-      const currentIndex =
-        selectedCategory != null ? activeChildren.findIndex((child) => child.id === selectedCategory.id) : -1;
-      focusSubcategoryButtonByIndex(currentIndex >= 0 ? currentIndex : 0);
-    });
-  }, [activeChildren, focusSubcategoryButtonByIndex, hasHierarchy, onReturnToRootStage, selectedCategory, selectedRootId]);
+  }, [ticketId, dataStale, categories.length, focusActiveRootButton]);
 
   useEffect(() => {
     if (!ticketId || dataStale || editingLigneId) return;
@@ -814,86 +683,16 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
       const activeElement = document.activeElement;
       const poidsInput = poidsInputWrapperRef.current?.querySelector('input');
       const activeInPoids = activeElement != null && activeElement === poidsInput;
-      const activeInRoot = activeElement instanceof Node && !!rootGridRef.current?.contains(activeElement);
-      const activeInChild = activeElement instanceof Node && !!childGridRef.current?.contains(activeElement);
-
-      if (!activeInPoids && !activeInRoot && !activeInChild) return;
+      if (!activeInPoids) return;
 
       event.preventDefault();
       event.stopPropagation();
-
-      if (activeInPoids) {
-        if (hasHierarchy) {
-          onReturnToChildStage();
-        } else {
-          onReturnToRootStage();
-        }
-        return;
-      }
-
-      if (activeInChild && activeElement instanceof HTMLButtonElement) {
-        const nextCategoryId = activeElement.getAttribute('data-testid')?.replace('reception-subcategory-tile-', '') ?? null;
-        if (nextCategoryId) {
-          selectCategoryAndFocusPoids(nextCategoryId);
-        }
-        return;
-      }
-
-      if (activeInRoot && activeElement instanceof HTMLButtonElement) {
-        const nextRootId = activeElement.getAttribute('data-testid')?.replace('reception-category-tile-', '') ?? null;
-        if (!nextRootId) return;
-        onSelectRootCategoryFromKeyboard(nextRootId);
-      }
+      backToCategoryGridFromPoids();
     };
 
     document.addEventListener('keydown', onTabKeyDown, true);
     return () => document.removeEventListener('keydown', onTabKeyDown, true);
-  }, [
-    dataStale,
-    editingLigneId,
-    hasHierarchy,
-    onReturnToChildStage,
-    onReturnToRootStage,
-    onSelectRootCategoryFromKeyboard,
-    selectCategoryAndFocusPoids,
-    ticketId,
-  ]);
-
-  useEffect(() => {
-    if (!ticketId || dataStale || editingLigneId) return;
-    const onShortcutKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
-      const targetIsPoidsInput =
-        event.target instanceof Node && !!poidsInputWrapperRef.current?.contains(event.target);
-      if (targetIsPoidsInput) return;
-      if (shouldPreventReceptionShortcut(event.target)) return;
-      const shortcutIndex = getReceptionShortcutIndex(event.key);
-      if (shortcutIndex < 0) return;
-      const scopedCategories =
-        hasHierarchy && keyboardShortcutScope === 'child' && activeChildren.length > 0 ? activeChildren : rootCategories;
-      const nextCategory = scopedCategories[shortcutIndex];
-      if (!nextCategory) return;
-      event.preventDefault();
-      event.stopPropagation();
-      if (hasHierarchy && keyboardShortcutScope === 'child' && activeChildren.length > 0) {
-        selectCategoryAndFocusPoids(nextCategory.id);
-        return;
-      }
-      onSelectRootCategoryFromKeyboard(nextCategory.id);
-    };
-    document.addEventListener('keydown', onShortcutKeyDown, true);
-    return () => document.removeEventListener('keydown', onShortcutKeyDown, true);
-  }, [
-    ticketId,
-    dataStale,
-    editingLigneId,
-    hasHierarchy,
-    keyboardShortcutScope,
-    activeChildren,
-    rootCategories,
-    onSelectRootCategoryFromKeyboard,
-    selectCategoryAndFocusPoids,
-  ]);
+  }, [dataStale, editingLigneId, ticketId, backToCategoryGridFromPoids]);
 
   return (
     <Stack
@@ -1052,117 +851,18 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
                       Famille active : {activeRoot?.name ?? selectedCategory?.name ?? 'Aucune'} Sous-catégorie active :{' '}
                       {selectedCategory?.name ?? 'Aucune'}
                     </div>
-                    <div data-testid="reception-category-grid" className={styles.categoryRail}>
-                      <div className={styles.categorySection}>
-                        <Text className={styles.visuallyHidden}>Familles</Text>
-                        <Grid gutter="xs" data-testid="reception-category-root-grid" ref={rootGridRef}>
-                          {rootCategories.map((category, index) => (
-                            <Grid.Col key={category.id} span={{ base: 6, lg: 4 }}>
-                              <Button
-                                fullWidth
-                                variant={activeRootId === category.id ? 'filled' : 'light'}
-                                color={activeRootId === category.id ? 'green' : 'gray'}
-                                justify="flex-start"
-                                className={styles.categoryTile}
-                                onClick={() => onSelectRootCategory(category.id)}
-                                onKeyDown={(event) => onRootTileKeyDown(event, category.id, index)}
-                                onFocus={() => {
-                                  setFocusedRootId(category.id);
-                                  setKeyboardShortcutScope('root');
-                                }}
-                                onBlur={() => setFocusedRootId((current) => (current === category.id ? null : current))}
-                                disabled={!ticketId || dataStale}
-                                tabIndex={focusedRootId === category.id || (focusedRootId == null && index === 0) ? 0 : -1}
-                                style={
-                                  focusedRootId === category.id
-                                    ? {
-                                        outline: '3px solid var(--mantine-color-blue-5)',
-                                        outlineOffset: 2,
-                                        boxShadow: activeRootId === category.id ? '0 0 0 1px var(--mantine-color-green-8)' : undefined,
-                                      }
-                                    : undefined
-                                }
-                                aria-current={activeRootId === category.id ? 'true' : undefined}
-                                aria-label={
-                                  getReceptionShortcutKeyForIndex(index)
-                                    ? `Selectionner ${category.name}. Raccourci clavier: ${getReceptionShortcutKeyForIndex(index)} (position ${index + 1})`
-                                    : `Selectionner ${category.name}`
-                                }
-                                data-selected={activeRootId === category.id ? 'true' : 'false'}
-                                data-focused={focusedRootId === category.id ? 'true' : 'false'}
-                                data-testid={`reception-category-tile-${category.id}`}
-                              >
-                                <span className={styles.categoryTileContent}>
-                                  <span className={styles.categoryTileLabel}>{category.name}</span>
-                                  {getReceptionShortcutKeyForIndex(index) ? (
-                                    <span className={styles.categoryTileShortcutBadge} aria-hidden="true">
-                                      Touche <span className={styles.categoryTileShortcutKey}>{getReceptionShortcutKeyForIndex(index)}</span>
-                                    </span>
-                                  ) : null}
-                                </span>
-                              </Button>
-                            </Grid.Col>
-                          ))}
-                        </Grid>
-                      </div>
-                      {hasHierarchy && activeRoot && workflowStage === 'child' ? (
-                        <Stack gap="xs" data-testid="reception-category-child-panel" className={styles.categoryChildrenRow}>
-                          <Group justify="space-between" align="center" className={styles.categoryBackAction}>
-                            <Text className={styles.visuallyHidden}>Sous-categories {activeRoot.name}</Text>
-                            <Button variant="subtle" size="compact-xs" onClick={onReturnToRootStage}>
-                              Retour familles
-                            </Button>
-                          </Group>
-                          <Grid gutter="xs" data-testid="reception-category-child-grid" ref={childGridRef}>
-                            {activeChildren.map((category, index) => (
-                              <Grid.Col key={category.id} span={{ base: 6, lg: 4 }}>
-                                <Button
-                                  fullWidth
-                                  variant={categoryId === category.id ? 'filled' : 'default'}
-                                  color={categoryId === category.id ? 'green' : 'gray'}
-                                  justify="flex-start"
-                                  className={styles.categoryTile}
-                                  onClick={() => selectCategoryAndFocusPoids(category.id)}
-                                  onKeyDown={(event) => onSubcategoryTileKeyDown(event, category.id, index)}
-                                  onFocus={() => {
-                                    setFocusedChildId(category.id);
-                                    setKeyboardShortcutScope('child');
-                                  }}
-                                  onBlur={() => setFocusedChildId((current) => (current === category.id ? null : current))}
-                                  disabled={!ticketId || dataStale}
-                                  tabIndex={focusedChildId === category.id || (focusedChildId == null && index === 0) ? 0 : -1}
-                                  style={
-                                    focusedChildId === category.id
-                                      ? {
-                                          outline: '3px solid var(--mantine-color-blue-5)',
-                                          outlineOffset: 2,
-                                          boxShadow: categoryId === category.id ? '0 0 0 1px var(--mantine-color-green-8)' : undefined,
-                                        }
-                                      : undefined
-                                  }
-                                  aria-label={
-                                    getReceptionShortcutKeyForIndex(index)
-                                      ? `Selectionner ${category.name}. Raccourci clavier: ${getReceptionShortcutKeyForIndex(index)} (position ${index + 1})`
-                                      : `Selectionner ${category.name}`
-                                  }
-                                  data-selected={categoryId === category.id ? 'true' : 'false'}
-                                  data-focused={focusedChildId === category.id ? 'true' : 'false'}
-                                  data-testid={`reception-subcategory-tile-${category.id}`}
-                                >
-                                  <span className={styles.categoryTileContent}>
-                                    <span className={styles.categoryTileLabel}>{category.name}</span>
-                                    {getReceptionShortcutKeyForIndex(index) ? (
-                                      <span className={styles.categoryTileShortcutBadge} aria-hidden="true">
-                                        Touche <span className={styles.categoryTileShortcutKey}>{getReceptionShortcutKeyForIndex(index)}</span>
-                                      </span>
-                                    ) : null}
-                                  </span>
-                                </Button>
-                              </Grid.Col>
-                            ))}
-                          </Grid>
-                        </Stack>
-                      ) : null}
+                    <div ref={categoryPickerWrapRef}>
+                      <CategoryHierarchyPicker
+                        presentation="kiosk_drill"
+                        categorySource="reception_categories"
+                        categoriesRows={categories}
+                        browseResetEpoch={categoryDrillEpoch}
+                        disabled={!ticketId || dataStale}
+                        onBrowseDepthChange={onCategoryDrillBrowseDepthChange}
+                        onPickCategoryCode={(code, _displayName, _meta) => {
+                          selectCategoryAndFocusPoids(code);
+                        }}
+                      />
                     </div>
                   </Stack>
                 </div>
@@ -1176,7 +876,7 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
                     {ticketId ? (
                       <div className={styles.workspaceHint}>
                         <Text size="xs" c="dimmed">
-                          Famille {'>'} sous-categorie {'>'} poids, sans masquer le rail article.
+                          Catégorie {'>'} poids — grille identique au kiosque caisse (drill).
                         </Text>
                       </div>
                     ) : null}
@@ -1187,7 +887,7 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
                     {!isPoidsStepVisible ? (
                       <Paper withBorder p="md" radius="md" bg="gray.0" data-testid="reception-await-selection">
                         <Text size="sm" fw={600}>
-                          {workflowStage === 'root' ? 'Choisissez une famille.' : 'Choisissez une sous-categorie.'}
+                          {!categoryId ? 'Choisissez une catégorie dans la grille (même comportement que la caisse).' : null}
                         </Text>
                       </Paper>
                     ) : (

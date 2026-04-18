@@ -262,7 +262,7 @@ describe('E2E — lignes réception Story 7.3 (PUT / DELETE / PATCH mockés)', (
       expect(screen.getByTestId('reception-step-ligne')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByTestId(`reception-category-tile-${CAT_ID}`));
+    fireEvent.click(screen.getByTestId(`reception-kiosk-category-${CAT_ID}`));
     await waitFor(() => {
       expect(screen.getByTestId('reception-keypad-1')).toBeTruthy();
     });
@@ -276,7 +276,7 @@ describe('E2E — lignes réception Story 7.3 (PUT / DELETE / PATCH mockés)', (
     expect(screen.getByTestId('reception-ticket-summary-total').textContent ?? '').toContain('1.00 kg');
     expect(screen.getByTestId('reception-ticket-summary-latest').textContent ?? '').toContain('1');
 
-    fireEvent.click(screen.getByTestId(`reception-category-tile-${CAT_ID}`));
+    fireEvent.click(screen.getByTestId(`reception-kiosk-category-${CAT_ID}`));
     await waitFor(() => {
       expect(screen.getByTestId('reception-keypad-2')).toBeTruthy();
     });
@@ -500,7 +500,7 @@ describe('E2E — lignes réception Story 7.3 (PUT / DELETE / PATCH mockés)', (
         expect(screen.getByTestId('reception-step-ligne')).toBeTruthy();
       });
 
-      fireEvent.click(screen.getByTestId(`reception-category-tile-${CAT_ID}`));
+      fireEvent.click(screen.getByTestId(`reception-kiosk-category-${CAT_ID}`));
       await waitFor(() => {
         expect(screen.getByTestId('reception-keypad-1')).toBeTruthy();
       });
