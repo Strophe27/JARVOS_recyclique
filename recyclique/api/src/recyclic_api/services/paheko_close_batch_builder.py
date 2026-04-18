@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from recyclic_api.services.paheko_transaction_payload_builder import (
     build_close_transaction_advanced_payload,

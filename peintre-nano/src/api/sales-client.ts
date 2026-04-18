@@ -530,6 +530,76 @@ export type SaleReversalCreateBody = {
 
 export type SaleReversalCreateResult = { ok: true; reversalId: string; raw: unknown } | SalesHttpError;
 
+/** Aligné sur OpenAPI `SaleReversalResponseV1` (Story 24.3 — champs optionnels si parse partiel). */
+export type SaleReversalResponseV1 = {
+  readonly id: string;
+  readonly source_sale_id?: string;
+  readonly cash_session_id?: string;
+  readonly operator_id?: string;
+  readonly amount_signed?: number;
+  readonly reason_code?: string;
+  readonly detail?: string | null;
+  readonly idempotency_key?: string | null;
+  readonly created_at?: string;
+  readonly refund_payment_method?: string;
+  readonly source_sale_payment_method?: string | null;
+  readonly fiscal_branch?: string | null;
+  readonly sale_fiscal_year?: number | null;
+  readonly current_open_fiscal_year?: number | null;
+  readonly paheko_accounting_sync_hint?: string;
+};
+
+/**
+ * Parse la réponse GET/POST reversal (garde-fous : refuse les payloads sans `id` UUID plausible).
+ */
+export function parseSaleReversalResponseJson(json: unknown): SaleReversalResponseV1 | null {
+  if (!json || typeof json !== 'object') return null;
+  const o = json as Record<string, unknown>;
+  const id = typeof o.id === 'string' ? o.id.trim() : '';
+  if (!id) return null;
+
+  const num = (k: string): number | undefined => {
+    const v = o[k];
+    return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+  };
+
+  const strOrNull = (k: string): string | null | undefined => {
+    const v = o[k];
+    if (v === null) return null;
+    if (typeof v === 'string') return v;
+    return undefined;
+  };
+
+  const intOrNull = (k: string): number | null | undefined => {
+    const v = o[k];
+    if (v === null) return null;
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    return undefined;
+  };
+
+  return {
+    id,
+    source_sale_id: typeof o.source_sale_id === 'string' ? o.source_sale_id : undefined,
+    cash_session_id: typeof o.cash_session_id === 'string' ? o.cash_session_id : undefined,
+    operator_id: typeof o.operator_id === 'string' ? o.operator_id : undefined,
+    amount_signed: num('amount_signed'),
+    reason_code: typeof o.reason_code === 'string' ? o.reason_code : undefined,
+    detail: strOrNull('detail'),
+    idempotency_key:
+      typeof o.idempotency_key === 'string' || o.idempotency_key === null
+        ? (o.idempotency_key as string | null)
+        : undefined,
+    created_at: typeof o.created_at === 'string' ? o.created_at : undefined,
+    refund_payment_method: typeof o.refund_payment_method === 'string' ? o.refund_payment_method : undefined,
+    source_sale_payment_method: strOrNull('source_sale_payment_method'),
+    fiscal_branch: strOrNull('fiscal_branch'),
+    sale_fiscal_year: intOrNull('sale_fiscal_year'),
+    current_open_fiscal_year: intOrNull('current_open_fiscal_year'),
+    paheko_accounting_sync_hint:
+      typeof o.paheko_accounting_sync_hint === 'string' ? o.paheko_accounting_sync_hint : undefined,
+  };
+}
+
 /**
  * POST /v1/sales/reversals — `operationId` `recyclique_sales_createSaleReversal` (Story 6.4).
  */

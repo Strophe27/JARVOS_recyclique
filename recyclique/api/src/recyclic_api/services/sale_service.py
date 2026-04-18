@@ -51,7 +51,9 @@ from recyclic_api.schemas.sale import (
     SaleHoldCreate,
     SaleItemUpdate,
     SalePaymentMethodOption,
+    PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND,
     SaleReversalCreate,
+    SaleReversalResponse,
 )
 from recyclic_api.services.accounting_period_authority_service import (
     AccountingPeriodAuthorityService,
@@ -1142,12 +1144,73 @@ class SaleService:
         db.refresh(sale)
         return sale
 
+    def build_sale_reversal_response(self, reversal: SaleReversal) -> SaleReversalResponse:
+        """Story 24.3 — agrège journal REFUND_PAYMENT, vente source et autorité fiscale pour le contrat HTTP."""
+        db = self.db
+        sale = (
+            db.query(Sale)
+            .options(selectinload(Sale.payments))
+            .filter(Sale.id == reversal.source_sale_id)
+            .first()
+        )
+        if not sale:
+            raise NotFoundError("Sale not found")
+
+        pt = (
+            db.query(PaymentTransaction)
+            .filter(
+                PaymentTransaction.sale_id == reversal.source_sale_id,
+                PaymentTransaction.nature == PaymentTransactionNature.REFUND_PAYMENT,
+            )
+            .order_by(PaymentTransaction.created_at.desc())
+            .first()
+        )
+        refund_pm = "cash"
+        if pt is not None and pt.payment_method is not None:
+            pm = pt.payment_method
+            refund_pm = pm.value if hasattr(pm, "value") else str(pm)
+
+        src_pm = sale.payment_method
+        source_sale_pm = None
+        if src_pm is not None:
+            source_sale_pm = src_pm.value if hasattr(src_pm, "value") else str(src_pm)
+
+        fiscal_branch = None
+        sale_fy = None
+        open_fy = None
+        try:
+            authority = AccountingPeriodAuthorityService(db)
+            auth_view = authority.resolve_refund_branch(sale_date=sale.sale_date, created_at=sale.created_at)
+            fiscal_branch = auth_view.branch.value
+            sale_fy = auth_view.sale_fiscal_year
+            open_fy = auth_view.current_open_fiscal_year
+        except (ConflictError, ValidationError):
+            pass
+
+        return SaleReversalResponse(
+            id=str(reversal.id),
+            source_sale_id=str(reversal.source_sale_id),
+            cash_session_id=str(reversal.cash_session_id),
+            operator_id=str(reversal.operator_id),
+            amount_signed=float(reversal.amount_signed),
+            reason_code=str(reversal.reason_code),
+            detail=reversal.detail,
+            idempotency_key=reversal.idempotency_key,
+            created_at=reversal.created_at,
+            refund_payment_method=refund_pm,
+            source_sale_payment_method=source_sale_pm,
+            fiscal_branch=fiscal_branch,
+            sale_fiscal_year=sale_fy,
+            current_open_fiscal_year=open_fy,
+            paheko_accounting_sync_hint=PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND,
+        )
+
     def create_sale_reversal(
         self,
         payload: SaleReversalCreate,
         operator_id: str,
         request_id: Optional[str] = None,
-    ) -> SaleReversal:
+    ) -> SaleReversalResponse:
         """
         Story 6.4 — remboursement total lié à une vente ``completed``, même session ouverte.
 
@@ -1170,7 +1233,7 @@ class SaleService:
                     raise ConflictError(
                         "Clé d'idempotence déjà utilisée pour une autre intention de remboursement."
                     )
-                return existing
+                return self.build_sale_reversal_response(existing)
 
         try:
             source_uuid = UUID(str(payload.source_sale_id))
@@ -1295,9 +1358,9 @@ class SaleService:
         )
 
         db.refresh(reversal)
-        return reversal
+        return self.build_sale_reversal_response(reversal)
 
-    def get_sale_reversal_readable(self, reversal_id: str, user_id: str) -> SaleReversal:
+    def get_sale_reversal_readable(self, reversal_id: str, user_id: str) -> SaleReversalResponse:
         """Story 6.4 — lecture reversal si l'utilisateur peut lire la vente source (mêmes règles que GET sale)."""
         db = self.db
         try:
@@ -1310,7 +1373,7 @@ class SaleService:
             raise NotFoundError("Reversal not found")
 
         self.get_sale_readable_by_user(str(rev.source_sale_id), user_id)
-        return rev
+        return self.build_sale_reversal_response(rev)
 
     def _sale_correction_snapshot(self, sale: Sale) -> dict:
         pm = sale.payment_method

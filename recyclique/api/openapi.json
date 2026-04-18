@@ -11040,6 +11040,47 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "admin",
+          "paheko-outbox"
+        ],
+        "summary": "Supprimer une ligne outbox en erreur (failed uniquement, super-admin)",
+        "description": "Efface la ligne **uniquement** si ``outbox_status=failed`` (quarantaine, rejet, échec HTTP).\nPermet de nettoyer des envois de développement ou abandons sans relance. Interdit si la ligne\nest encore ``pending``, ``processing`` ou ``delivered``.",
+        "operationId": "recyclique_pahekoOutbox_deleteItemFailed",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/admin/paheko-outbox/items/{item_id}/reject": {
@@ -13876,6 +13917,22 @@
             "title": "By Payment Method Signed",
             "description": "Somme signée par code de moyen de paiement (encaissements − décaissements)."
           },
+          "refunds_current_fiscal_by_payment_method": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Refunds Current Fiscal By Payment Method",
+            "description": "Remboursements exercice courant (REFUND_PAYMENT, hors N−1) par code expert / clé agrégée."
+          },
+          "refunds_prior_closed_fiscal_by_payment_method": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Refunds Prior Closed Fiscal By Payment Method",
+            "description": "Remboursements N−1 clos (REFUND_PAYMENT + is_prior_year_special_case) par code."
+          },
           "donation_surplus_total": {
             "type": "number",
             "title": "Donation Surplus Total",
@@ -16462,6 +16519,18 @@
               }
             ],
             "description": "F4 — null si signal sync non exposable honnêtement."
+          },
+          "sync_aggregate_unavailable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sync Aggregate Unavailable",
+            "description": "REL-01 — true si l’agrégat outbox par site n’a pas pu être calculé ; `sync_operational_summary` doit alors être null."
           }
         },
         "additionalProperties": false,
@@ -19029,7 +19098,31 @@
           "payment_method": {
             "type": "string",
             "title": "Payment Method",
-            "description": "Méthode de paiement"
+            "description": "Colonne legacy agrégée (tous les moyens banque → « card ») — ne pas seul pour l'UI"
+          },
+          "payment_method_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Id",
+            "description": "FK vers le référentiel expert ``payment_methods``"
+          },
+          "payment_method_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Code",
+            "description": "Code expert (ex. transfer, card) — aligné ``PaymentTransaction.payment_method_code``"
           },
           "amount": {
             "type": "number",
@@ -21114,6 +21207,65 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "refund_payment_method": {
+            "type": "string",
+            "title": "Refund Payment Method",
+            "description": "Moyen effectif de remboursement (journal REFUND_PAYMENT), distinct du legacy vente source si besoin."
+          },
+          "source_sale_payment_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sale Payment Method",
+            "description": "Moyen de paiement porté par la vente source (peut différer du canal de sortie réel)."
+          },
+          "fiscal_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscal Branch",
+            "description": "Branche fiscale courante : current | prior_closed (autorité exercices ; null si indisponible)."
+          },
+          "sale_fiscal_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Fiscal Year",
+            "description": "Année fiscale de rattachement de la vente source (autorité comptable)."
+          },
+          "current_open_fiscal_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Open Fiscal Year",
+            "description": "Exercice ouvert connu (cadrage N vs N-1)."
+          },
+          "paheko_accounting_sync_hint": {
+            "type": "string",
+            "title": "Paheko Accounting Sync Hint",
+            "description": "Rappel chaîne canonique Paheko (pas de second rail ; pas d’instantanéité hors batch clôture).",
+            "default": "Le remboursement est enregistré en caisse ; l’écriture comptable Paheko correspondante est intégrée au snapshot de clôture de session, puis exportée via l’outbox — pas d’écriture Paheko immédiate au moment de l’enregistrement terrain."
           }
         },
         "type": "object",
@@ -21124,10 +21276,11 @@
           "operator_id",
           "amount_signed",
           "reason_code",
-          "created_at"
+          "created_at",
+          "refund_payment_method"
         ],
         "title": "SaleReversalResponse",
-        "description": "Réponse création / lecture reversal (Story 6.4)."
+        "description": "Réponse création / lecture reversal (Story 6.4 + enrichissement visibilité 24.3)."
       },
       "SaleUpdate": {
         "properties": {
@@ -21562,6 +21715,18 @@
             "title": "Deferred Remote Retry",
             "description": "True si au moins une ligne outbox du site a un backoff actif (next_retry_at futur). Story 8.2.",
             "default": false
+          },
+          "partial_success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partial Success",
+            "description": "SNAP-01 — True si au moins une ligne outbox du site porte un batch clôture avec succès partiel Paheko (snapshot figé `paheko_close_batch_state_v1`). Null si aucune donnée batch exploitable."
           }
         },
         "additionalProperties": false,

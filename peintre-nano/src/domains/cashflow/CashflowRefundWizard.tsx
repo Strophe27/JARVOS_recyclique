@@ -5,8 +5,10 @@ import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-e
 import {
   getSale,
   isPlausibleCashSessionUuid,
+  parseSaleReversalResponseJson,
   postCreateSaleReversal,
   type SaleReversalRefundPaymentMethod,
+  type SaleReversalResponseV1,
 } from '../../api/sales-client';
 import {
   PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
@@ -128,7 +130,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
   const [expertPriorYearRefundConfirmed, setExpertPriorYearRefundConfirmed] = useState(false);
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [busy, setBusy] = useState(false);
-  const [successId, setSuccessId] = useState<string | null>(null);
+  const [successReversal, setSuccessReversal] = useState<SaleReversalResponseV1 | null>(null);
 
   const [sessionBrowseId, setSessionBrowseId] = useState('');
   const sessionBrowseSeededRef = useRef(false);
@@ -181,7 +183,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
     setPriorYearExpertGateOpen(false);
     setExpertPriorYearRefundConfirmed(false);
     setError(null);
-    setSuccessId(null);
+    setSuccessReversal(null);
     setSessionCandidates([]);
     setSessionFilterInput('');
     setDebouncedSessionFilter('');
@@ -309,15 +311,55 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         setError({ kind: 'api', failure });
         return;
       }
-      setSuccessId(res.reversalId);
+      const parsed = parseSaleReversalResponseJson(res.raw);
+      setSuccessReversal(
+        parsed ?? {
+          id: res.reversalId,
+          refund_payment_method: refundPaymentMethod,
+        },
+      );
     } finally {
       setBusy(false);
     }
   };
 
-  if (successId) {
+  if (successReversal) {
+    const effectiveCode = (successReversal.refund_payment_method ?? refundPaymentMethod).trim();
+    const effectiveRow = refundMethodSelectData.find((o) => o.value === effectiveCode);
+    const effectiveLabel = effectiveRow?.label ?? effectiveCode;
+    const srcPmRaw = successReversal.source_sale_payment_method ?? null;
+    const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
+    const showDistinctSourcePm =
+      !!srcPmRaw && !!effectiveCode && norm(srcPmRaw) !== norm(effectiveCode);
+    const amountAbs =
+      successReversal.amount_signed !== undefined
+        ? Math.abs(successReversal.amount_signed)
+        : loadedSale
+          ? Math.abs(loadedSale.total_amount)
+          : null;
+    const fiscalBranch = successReversal.fiscal_branch ?? null;
+    const fiscalLine =
+      fiscalBranch === 'current'
+        ? `Branche fiscale : exercice courant${
+            successReversal.sale_fiscal_year != null && successReversal.current_open_fiscal_year != null
+              ? ` (vente ${successReversal.sale_fiscal_year} / ouvert ${successReversal.current_open_fiscal_year})`
+              : ''
+          }`
+        : fiscalBranch === 'prior_closed'
+          ? `Branche fiscale : exercice antérieur clos (N-1)${
+              successReversal.sale_fiscal_year != null && successReversal.current_open_fiscal_year != null
+                ? ` — vente ${successReversal.sale_fiscal_year}, ouvert ${successReversal.current_open_fiscal_year}`
+                : ''
+            }`
+          : null;
+
+    const pahekoHintFallback =
+      'Le remboursement est enregistré en caisse ; l’écriture comptable Paheko correspondante est intégrée au snapshot de clôture de session, puis exportée via l’outbox — pas d’écriture Paheko immédiate au moment de l’enregistrement terrain.';
+    const pahekoHintText = (successReversal.paheko_accounting_sync_hint ?? '').trim() || pahekoHintFallback;
+
     return (
       <div className={classes.step} data-testid="cashflow-refund-success">
+        <CashflowOperationalSyncNotice auth={auth} />
         <Text fw={700} c="teal" data-testid="cashflow-refund-success-title">
           Remboursement enregistré
         </Text>
@@ -325,11 +367,34 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
           L’avoir (reversal) a été accepté par le serveur Recyclique. Conservez la référence ci-dessous pour le suivi
           caisse ou comptable.
         </Text>
-        <Text size="sm" c="dimmed">
-          La comptabilité peut être mise à jour dans les minutes qui suivent selon les traitements serveur.
+        {amountAbs !== null ? (
+          <Text size="sm" data-testid="cashflow-refund-success-amount">
+            <strong>Montant remboursé</strong> : {amountAbs.toFixed(2)} €
+          </Text>
+        ) : null}
+        <Text size="sm" data-testid="cashflow-refund-success-effective-pm">
+          <strong>Moyen effectif de remboursement</strong> (journal) : {effectiveLabel}
         </Text>
+        {showDistinctSourcePm ? (
+          <Text size="sm" c="dimmed">
+            Moyen de paiement d’origine sur le ticket (information vente source) : <code>{srcPmRaw}</code>
+          </Text>
+        ) : null}
+        {fiscalLine ? (
+          <Text size="sm" data-testid="cashflow-refund-success-fiscal">
+            {fiscalLine}
+          </Text>
+        ) : null}
+        {successReversal.cash_session_id ? (
+          <Text size="xs" c="dimmed">
+            Session caisse (rapprochement) : <code>{successReversal.cash_session_id}</code>
+          </Text>
+        ) : null}
+        <Alert color="gray" title="Comptabilité Paheko" mb="sm" data-testid="cashflow-refund-success-paheko-hint">
+          <Text size="sm">{pahekoHintText}</Text>
+        </Alert>
         <Text size="sm">
-          Référence reversal : <code>{successId}</code>
+          Référence reversal : <code>{successReversal.id}</code>
         </Text>
         <Button variant="light" onClick={resetFlow} data-testid="cashflow-refund-reset">
           Nouveau remboursement

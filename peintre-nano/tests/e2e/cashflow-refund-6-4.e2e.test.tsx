@@ -477,6 +477,65 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
     });
   });
 
+  it('Story 24.3 : réponse POST enrichie — moyen effectif vs vente source + hint Paheko (écran succès)', async () => {
+    const pahekoHint =
+      'Écriture incluse au snapshot de clôture de session ; export comptable via outbox (pas d’écriture Paheko immédiate au guichet).';
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestUrl(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes(`/v1/sales/${SALE_COMPLETED_ID}`) && !url.includes('reversals')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify(completedSaleBody()),
+        });
+      }
+      if (method === 'POST' && url.includes('/v1/sales/reversals')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify({
+              id: REVERSAL_ID,
+              refund_payment_method: 'card',
+              source_sale_payment_method: 'cash',
+              amount_signed: -12.5,
+              paheko_accounting_sync_hint: pahekoHint,
+              cash_session_id: SESSION,
+              fiscal_branch: 'current',
+            }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderRefundPage();
+    await waitFor(() => screen.getByTestId('cashflow-refund-step-select'));
+    fireEvent.change(screen.getByTestId('cashflow-refund-sale-id-input'), {
+      target: { value: SALE_COMPLETED_ID },
+    });
+    fireEvent.click(screen.getByTestId('cashflow-refund-load-sale'));
+    await waitFor(() => screen.getByTestId('cashflow-refund-step-confirm'));
+    fireEvent.change(screen.getByTestId('cashflow-refund-payment-method'), { target: { value: 'card' } });
+    fireEvent.click(screen.getByTestId('cashflow-refund-confirm-submit'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-refund-success')).toBeTruthy();
+    });
+
+    const success = screen.getByTestId('cashflow-refund-success');
+    expect(screen.getByTestId('cashflow-refund-success-effective-pm').textContent).toMatch(/Carte bancaire/i);
+    expect(within(success).getByText(/information vente source/i)).toBeTruthy();
+    expect(within(success).getByText('cash')).toBeTruthy();
+
+    const hintBox = screen.getByTestId('cashflow-refund-success-paheko-hint');
+    expect(hintBox.textContent).toMatch(/clôture/i);
+    expect(hintBox.textContent).toMatch(/outbox/i);
+
+    expect(screen.getByTestId('cashflow-refund-success-fiscal').textContent).toMatch(/exercice courant/i);
+  });
+
   it('422 validation : titre et détail lisibles (AC P1)', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);

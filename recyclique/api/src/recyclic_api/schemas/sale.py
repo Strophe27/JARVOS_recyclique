@@ -277,8 +277,16 @@ class SaleReversalCreate(BaseModel):
         return self
 
 
+# Story 24.3 — message métier chaîne canonique (clôture → snapshot → outbox), sans promesse d’écriture instantanée Paheko.
+PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND = (
+    "Le remboursement est enregistré en caisse ; l’écriture comptable Paheko correspondante est intégrée au snapshot "
+    "de clôture de session, puis exportée via l’outbox — pas d’écriture Paheko immédiate au moment de "
+    "l’enregistrement terrain."
+)
+
+
 class SaleReversalResponse(BaseModel):
-    """Réponse création / lecture reversal (Story 6.4)."""
+    """Réponse création / lecture reversal (Story 6.4 + enrichissement visibilité 24.3)."""
 
     id: str
     source_sale_id: str
@@ -289,8 +297,34 @@ class SaleReversalResponse(BaseModel):
     detail: Optional[str] = None
     idempotency_key: Optional[str] = None
     created_at: datetime
+    # Story 24.3 — alignement journal REFUND_PAYMENT / ventilation Epic 23 vs libellé vente source.
+    refund_payment_method: str = Field(
+        ...,
+        description="Moyen effectif de remboursement (journal REFUND_PAYMENT), distinct du legacy vente source si besoin.",
+    )
+    source_sale_payment_method: Optional[str] = Field(
+        default=None,
+        description="Moyen de paiement porté par la vente source (peut différer du canal de sortie réel).",
+    )
+    fiscal_branch: Optional[str] = Field(
+        default=None,
+        description="Branche fiscale courante : current | prior_closed (autorité exercices ; null si indisponible).",
+    )
+    sale_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Année fiscale de rattachement de la vente source (autorité comptable).",
+    )
+    current_open_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Exercice ouvert connu (cadrage N vs N-1).",
+    )
+    paheko_accounting_sync_hint: str = Field(
+        default=PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND,
+        description="Rappel chaîne canonique Paheko (pas de second rail ; pas d’instantanéité hors batch clôture).",
+    )
 
-    model_config = ConfigDict(from_attributes=True)
+    # Construction explicite via ``SaleService.build_sale_reversal_response`` (journal + vente source) — pas d’ORM direct.
+    model_config = ConfigDict(from_attributes=False)
 
     @field_validator("id", "source_sale_id", "cash_session_id", "operator_id", mode="before")
     @classmethod

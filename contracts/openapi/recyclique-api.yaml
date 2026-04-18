@@ -10559,6 +10559,7 @@ components:
         - amount_signed
         - reason_code
         - created_at
+        - refund_payment_method
       properties:
         id:
           type: string
@@ -10586,6 +10587,30 @@ components:
         created_at:
           type: string
           format: date-time
+        refund_payment_method:
+          type: string
+          description: |
+            Story 24.3 — moyen effectif de remboursement (journal ``REFUND_PAYMENT``), distinct du legacy vente source si besoin.
+        source_sale_payment_method:
+          type: string
+          nullable: true
+          description: Moyen de paiement porté par la vente source (peut différer du canal de sortie réel).
+        fiscal_branch:
+          type: string
+          nullable: true
+          description: Branche fiscale courante (``current`` | ``prior_closed``) ; null si autorité indisponible.
+        sale_fiscal_year:
+          type: integer
+          nullable: true
+          description: Année fiscale de rattachement de la vente source.
+        current_open_fiscal_year:
+          type: integer
+          nullable: true
+          description: Exercice ouvert connu (cadrage N vs N-1).
+        paheko_accounting_sync_hint:
+          type: string
+          description: |
+            Story 24.3 — rappel chaîne canonique Paheko (clôture → snapshot de session → outbox) ; pas d’écriture Paheko instantanée au remboursement.
       additionalProperties: false
     ReceptionDestinationV1:
       type: string
