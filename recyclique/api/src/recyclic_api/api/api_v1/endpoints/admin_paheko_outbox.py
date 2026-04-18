@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 
 from recyclic_api.core.auth import require_role_strict
@@ -234,6 +234,7 @@ async def paheko_outbox_get_item(
 )
 async def paheko_outbox_delete_item_failed(
     item_id: uuid.UUID,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role_strict([UserRole.SUPER_ADMIN])),
 ):
@@ -246,6 +247,21 @@ async def paheko_outbox_delete_item_failed(
     err = delete_paheko_outbox_item_failed(db, item_id)
     if err == "not_found":
         raise HTTPException(status_code=404, detail="Élément outbox introuvable")
+    if err == "delete_blocked_batch":
+        rid = getattr(request.state, "request_id", None) or ""
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "DELETE_BLOCKED_BATCH_CLOSE_STATE",
+                "message": (
+                    "Suppression refusée : état batch clôture présent avec livraison partielle Paheko, sous-écritures "
+                    "livré(es), ou payload batch illisible — suppression manuelle trop risquée sans arbitrage "
+                    "(DEL-01)."
+                ),
+                "policy_reason_code": "PAHEKO_DELETE_BLOCKED_PARTIAL_OR_AMBIGUOUS_BATCH",
+                "correlation_id": str(rid).strip(),
+            },
+        )
     if err == "not_deletable":
         raise HTTPException(
             status_code=409,

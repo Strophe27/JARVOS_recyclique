@@ -49,6 +49,8 @@ function syncOperationalSummaryFromRaw(
   }
   const worst_state = v.worst_state ?? v.worstState;
   const source_reachable = v.source_reachable ?? v.sourceReachable;
+  const deferred_remote_retry = v.deferred_remote_retry ?? v.deferredRemoteRetry;
+  const partial_success = v.partial_success ?? v.partialSuccess;
   const out: NonNullable<ExploitationLiveSnapshot['sync_operational_summary']> = {};
   if (typeof worst_state === 'string') {
     out.worst_state = worst_state as NonNullable<
@@ -57,6 +59,14 @@ function syncOperationalSummaryFromRaw(
   }
   if (typeof source_reachable === 'boolean') {
     out.source_reachable = source_reachable;
+  }
+  if (typeof deferred_remote_retry === 'boolean') {
+    out.deferred_remote_retry = deferred_remote_retry;
+  }
+  if (partial_success === null) {
+    out.partial_success = null;
+  } else if (typeof partial_success === 'boolean') {
+    out.partial_success = partial_success;
   }
   return Object.keys(out).length ? out : null;
 }
@@ -72,6 +82,8 @@ function snapshotFromRawRecord(raw: Record<string, unknown>): ExploitationLiveSn
   const sync_operational_summary = syncOperationalSummaryFromRaw(
     raw.sync_operational_summary ?? raw.syncOperationalSummary,
   );
+  const aggRaw = raw.sync_aggregate_unavailable ?? raw.syncAggregateUnavailable;
+  const sync_aggregate_unavailable = typeof aggRaw === 'boolean' ? aggRaw : undefined;
   const bleRaw = raw.bandeau_live_slice_enabled ?? raw.bandeauLiveSliceEnabled;
   const bandeau_live_slice_enabled = typeof bleRaw === 'boolean' ? bleRaw : undefined;
   const daily_kpis_aggregate = dailyKpisAggregateFromRaw(
@@ -87,9 +99,12 @@ function snapshotFromRawRecord(raw: Record<string, unknown>): ExploitationLiveSn
     cash_session_effectiveness !== undefined ||
     observed_at !== undefined ||
     hasDailyKpis ||
+    sync_aggregate_unavailable !== undefined ||
     (sync_operational_summary != null &&
       (sync_operational_summary.worst_state !== undefined ||
-        sync_operational_summary.source_reachable !== undefined));
+        sync_operational_summary.source_reachable !== undefined ||
+        sync_operational_summary.deferred_remote_retry !== undefined ||
+        sync_operational_summary.partial_success !== undefined));
   if (!hasSignal) {
     return null;
   }
@@ -100,6 +115,7 @@ function snapshotFromRawRecord(raw: Record<string, unknown>): ExploitationLiveSn
     ...(observed_at !== undefined ? { observed_at } : {}),
     ...(sync_operational_summary !== undefined ? { sync_operational_summary } : {}),
     ...(daily_kpis_aggregate !== undefined ? { daily_kpis_aggregate } : {}),
+    ...(sync_aggregate_unavailable !== undefined ? { sync_aggregate_unavailable } : {}),
   };
 }
 

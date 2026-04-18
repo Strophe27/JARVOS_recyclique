@@ -80,6 +80,28 @@ describe('widget bandeau-live (Story 4.2)', () => {
     }
   });
 
+  it('affiche les signaux F4 (retry / partiel) sans réserver seul le tiret', () => {
+    const r = resolveWidget('bandeau-live');
+    expect(r.ok).toBe(true);
+    if (!r.ok) {
+      return;
+    }
+    const C = r.Component;
+    const partial: Snapshot = {
+      ...fixture,
+      sync_operational_summary: {
+        worst_state: 'resolu',
+        source_reachable: true,
+        partial_success: true,
+        deferred_remote_retry: true,
+      },
+    };
+    render(<C widgetProps={{ snapshot: partial }} />);
+    const root = screen.getByTestId('widget-bandeau-live');
+    expect(root.querySelector('[data-sync-partial="true"]')).toBeTruthy();
+    expect(root.querySelector('[data-sync-deferred="true"]')).toBeTruthy();
+  });
+
   it('affiche un état dégradé explicite sans snapshot valide', () => {
     const r = resolveWidget('bandeau-live');
     expect(r.ok).toBe(true);

@@ -166,6 +166,14 @@ function BandeauLiveBody({
             </dd>
           </>
         ) : null}
+        {snapshot.sync_aggregate_unavailable === true ? (
+          <>
+            <dt className={classes.dt}>Sync (agrégat)</dt>
+            <dd className={classes.dd} data-field="sync_aggregate_unavailable">
+              <span className={classes.muted}>agrégat outbox indisponible — pas d’inférence locale</span>
+            </dd>
+          </>
+        ) : null}
         {sync != null && isRecord(sync as unknown) ? (
           <>
             <dt className={classes.dt}>Sync (résumé)</dt>
@@ -180,7 +188,20 @@ function BandeauLiveBody({
                   source joignable : {sync.source_reachable ? 'oui' : 'non'}
                 </span>
               ) : null}
-              {sync.worst_state === undefined && sync.source_reachable === undefined ? (
+              {sync.deferred_remote_retry === true ? (
+                <span className={classes.pill} data-sync-deferred="true">
+                  retry différé
+                </span>
+              ) : null}
+              {sync.partial_success === true ? (
+                <span className={classes.pill} data-sync-partial="true">
+                  livraison partielle Paheko
+                </span>
+              ) : null}
+              {sync.worst_state === undefined &&
+              sync.source_reachable === undefined &&
+              sync.deferred_remote_retry !== true &&
+              sync.partial_success !== true ? (
                 <span className={classes.muted}>—</span>
               ) : null}
             </dd>

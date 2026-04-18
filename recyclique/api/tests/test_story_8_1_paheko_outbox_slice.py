@@ -30,7 +30,10 @@ from recyclic_api.services.paheko_accounting_client import PahekoAccountingClien
 from recyclic_api.services.paheko_outbox_processor import process_next_paheko_outbox_item
 from recyclic_api.services.paheko_outbox_service import idempotency_key_cash_session_close
 from recyclic_api.services.reception_stats_service import ReceptionLiveStatsService
-from tests.paheko_8x_test_utils import seed_default_paheko_close_mapping
+from tests.paheko_8x_test_utils import (
+    attach_latest_accounting_revision_to_session,
+    seed_default_paheko_close_mapping,
+)
 
 _V1 = settings.API_V1_STR.rstrip("/")
 
@@ -92,6 +95,9 @@ def _site_user_session(db_session: Session) -> tuple[Site, User, CashSession]:
     cs = db_session.execute(
         select(CashSession).where(CashSession.id == cs.id).options(noload(CashSession.register))
     ).scalar_one()
+    # Outbox Paheko (batch figé 22.7+) : sans révision compta, mapping → snapshot_missing_revision.
+    attach_latest_accounting_revision_to_session(db_session, cs)
+    db_session.commit()
     return site, user, cs
 
 
@@ -224,8 +230,11 @@ def test_admin_list_and_get_item(super_admin_client: Any, db_session: Session) -
     assert one["local_session_persisted"] is True
     assert one["correlation_id"] == "api-corr"
     assert one["transaction_preview"]["amount"] == 25.0
-    assert one["transaction_preview"]["debit"] == "512"
-    assert one["transaction_preview"]["credit"] == "707"
+    # Snapshot figé + ventilation détaillée → preview admin = ADVANCED (pas comptes 512/707 top-level).
+    assert one["transaction_preview"]["debit"] == "(ADVANCED)"
+    assert one["transaction_preview"]["credit"] == "(ADVANCED)"
+    assert one["transaction_preview"]["body_type"] == "ADVANCED"
+    assert (one["transaction_preview"].get("advanced_line_count") or 0) >= 1
 
     g = super_admin_client.get(f"{_V1}/admin/paheko-outbox/items/{item.id}")
     assert g.status_code == 200, g.text
@@ -233,8 +242,9 @@ def test_admin_list_and_get_item(super_admin_client: Any, db_session: Session) -
     assert "payload" in det
     assert det["payload"]["cash_session_id"] == str(cs.id)
     assert det["transaction_preview"]["amount"] == 25.0
-    assert det["transaction_preview"]["debit"] == "512"
-    assert det["transaction_preview"]["credit"] == "707"
+    assert det["transaction_preview"]["debit"] == "(ADVANCED)"
+    assert det["transaction_preview"]["credit"] == "(ADVANCED)"
+    assert det["transaction_preview"]["body_type"] == "ADVANCED"
 
 
 def test_live_snapshot_worst_state_pending_outbox(client: Any, db_session: Session) -> None:
@@ -339,6 +349,7 @@ def test_paheko_client_falls_back_to_bearer_when_only_legacy_token_present() -> 
 
 
 def test_processor_sends_official_paheko_transaction_payload(db_session: Session) -> None:
+    """Avec révision figée : premier POST Paheko = écriture officielle Paheko type ADVANCED (Story 23.x)."""
     site, _, cs = _site_user_session(db_session)
     seed_default_paheko_close_mapping(
         db_session,
@@ -358,10 +369,14 @@ def test_processor_sends_official_paheko_transaction_payload(db_session: Session
     request = captured["request"]
     payload = json.loads(request.read().decode("utf-8"))
     assert request.url.path == "/api/accounting/transaction"
-    assert payload["id_year"] == 2
-    assert payload["debit"] == "512"
-    assert payload["credit"] == "707"
-    assert payload["amount"] == 25.0
+    assert payload.get("type") == "ADVANCED"
+    assert payload.get("id_year") == 2
+    lines = payload.get("lines") or []
+    assert isinstance(lines, list) and len(lines) >= 1
+    td = sum(float(x.get("debit") or 0) for x in lines if isinstance(x, dict))
+    tc = sum(float(x.get("credit") or 0) for x in lines if isinstance(x, dict))
+    assert abs(td - tc) < 0.02
+    assert max(td, tc) == pytest.approx(25.0)
     assert "cash_session_id" not in payload
 
 
