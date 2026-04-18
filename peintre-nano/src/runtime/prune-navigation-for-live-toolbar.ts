@@ -2,7 +2,9 @@ import type { NavigationEntry } from '../types/navigation-manifest';
 
 /**
  * Ordre d’affichage de la barre horizontale auth live — parité observée avec `Header.jsx` (recyclique-1.4.4) :
- * Tableau de bord → Caisse → Remboursement (si autorisé) → Réception → Administration.
+ * Tableau de bord → Caisse → Réception → Administration.
+ *
+ * Le remboursement est une action **depuis la page Caisse** (`/caisse`), pas une entrée du bandeau global.
  *
  * Les autres entrées du {@link NavigationManifest} restent dans le manifest filtré (résolution de route,
  * liens profonds) ; seul le rendu « topbar » est réduit côté shell.
@@ -10,7 +12,6 @@ import type { NavigationEntry } from '../types/navigation-manifest';
 export const LIVE_LEGACY_TOOLBAR_ENTRY_IDS = [
   'transverse-dashboard',
   'cashflow-nominal',
-  'cashflow-refund',
   'reception-nominal',
   'transverse-admin',
 ] as const;

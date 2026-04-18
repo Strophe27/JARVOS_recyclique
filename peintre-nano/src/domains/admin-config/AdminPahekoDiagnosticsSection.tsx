@@ -2,6 +2,7 @@ import { Alert, Badge, Button, Group, Modal, Paper, SimpleGrid, Stack, Table, Te
 import { Activity, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  deletePahekoOutboxFailedItem,
   getPahekoOutboxCorrelationTimeline,
   getPahekoOutboxItem,
   listPahekoOutboxItems,
@@ -80,6 +81,8 @@ export function AdminPahekoDiagnosticsSection() {
   const [timeline, setTimeline] = useState<PahekoOutboxCorrelationTimelineResponse | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -173,6 +176,26 @@ export function AdminPahekoDiagnosticsSection() {
     setActionMessage('Quarantaine levée: la ligne est repassée en file de retry.');
     await load();
   }, [auth, detail, load]);
+
+  const confirmDeleteFailedItem = useCallback(async () => {
+    const targetId = deleteConfirmId;
+    if (!targetId) return;
+    setDeleteBusy(true);
+    setActionMessage(null);
+    const res = await deletePahekoOutboxFailedItem(auth, targetId);
+    setDeleteBusy(false);
+    if (!res.ok) {
+      setActionMessage(res.detail);
+      return;
+    }
+    setDeleteConfirmId(null);
+    if (detail?.id === targetId) {
+      setDetailOpen(false);
+      setDetail(null);
+    }
+    setActionMessage('Ligne outbox supprimée.');
+    await load();
+  }, [auth, deleteConfirmId, detail?.id, load]);
 
   return (
     <Stack gap="md">
@@ -311,9 +334,22 @@ export function AdminPahekoDiagnosticsSection() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Button size="xs" variant="light" onClick={() => void openDetail(item.id)}>
-                      Inspecter
-                    </Button>
+                    <Group gap={6} wrap="nowrap">
+                      <Button size="xs" variant="light" onClick={() => void openDetail(item.id)}>
+                        Inspecter
+                      </Button>
+                      {item.outbox_status === 'failed' ? (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          color="red"
+                          onClick={() => setDeleteConfirmId(item.id)}
+                          data-testid={`admin-paheko-diagnostics-delete-row-${item.id}`}
+                        >
+                          Supprimer
+                        </Button>
+                      ) : null}
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -364,15 +400,25 @@ export function AdminPahekoDiagnosticsSection() {
                   {actionMessage}
                 </Alert>
               ) : null}
-              {detail.sync_state_core === 'en_quarantaine' ? (
+              {detail.outbox_status === 'failed' ? (
                 <Group justify="flex-end">
+                  {detail.sync_state_core === 'en_quarantaine' ? (
+                    <Button
+                      variant="light"
+                      onClick={() => void liftQuarantine()}
+                      loading={actionBusy}
+                      data-testid="admin-paheko-diagnostics-lift-quarantine"
+                    >
+                      Retirer de la quarantaine
+                    </Button>
+                  ) : null}
                   <Button
-                    variant="light"
-                    onClick={() => void liftQuarantine()}
-                    loading={actionBusy}
-                    data-testid="admin-paheko-diagnostics-lift-quarantine"
+                    variant="outline"
+                    color="red"
+                    onClick={() => setDeleteConfirmId(detail.id)}
+                    data-testid="admin-paheko-diagnostics-delete-from-detail"
                   >
-                    Retirer de la quarantaine
+                    Supprimer la ligne
                   </Button>
                 </Group>
               ) : null}
@@ -431,6 +477,29 @@ export function AdminPahekoDiagnosticsSection() {
               </Paper>
             </>
           ) : null}
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        title="Supprimer cette ligne d’outbox ?"
+        size="md"
+      >
+        <Stack gap="sm">
+          <Text size="sm">
+            La trace outbox et l’audit des transitions seront effacés. La session de caisse locale n’est pas annulée :
+            indiquez dans Paheko si une écriture doit quand même exister. Réservé aux lignes en erreur (
+            <strong>failed</strong>) ; opération super-admin.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setDeleteConfirmId(null)}>
+              Annuler
+            </Button>
+            <Button color="red" loading={deleteBusy} onClick={() => void confirmDeleteFailedItem()}>
+              Supprimer définitivement
+            </Button>
+          </Group>
         </Stack>
       </Modal>
     </Stack>

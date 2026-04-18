@@ -163,8 +163,9 @@ export function CashflowOperationalSyncNotice(props: {
           {label} — le serveur signale un point sensible sur la synchronisation. Vérifiez les messages d’erreur des
           opérations et contactez le support si une action caisse est refusée.
         </Text>
-        <Text size="xs" mt="xs" ff="monospace">
-          Réf. cliché : {entry.correlationId}
+        <Text size="xs" mt="xs" c="dimmed">
+          Réf. pour le support (un appel = un numéro dans les journaux serveur, pas un code à saisir quelque part) :{' '}
+          <span style={{ fontFamily: 'var(--mantine-font-family-monospace)' }}>{entry.correlationId}</span>
         </Text>
       </Alert>
     );

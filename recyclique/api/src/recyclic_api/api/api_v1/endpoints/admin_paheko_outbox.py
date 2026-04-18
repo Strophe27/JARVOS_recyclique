@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from recyclic_api.core.auth import require_role_strict
@@ -26,6 +26,7 @@ from recyclic_api.services.paheko_close_batch_builder import build_cash_session_
 from recyclic_api.services.paheko_mapping_service import resolve_enriched_payload_for_item
 from recyclic_api.services.paheko_outbox_service import (
     confirm_paheko_delivered_resolved,
+    delete_paheko_outbox_item_failed,
     get_outbox_item,
     lift_paheko_quarantine_to_retry,
     list_outbox_items,
@@ -223,6 +224,35 @@ async def paheko_outbox_get_item(
         recent_sync_transitions=recent,
         transaction_preview=_build_transaction_preview(db, row),
     )
+
+
+@router.delete(
+    "/items/{item_id}",
+    status_code=204,
+    operation_id="recyclique_pahekoOutbox_deleteItemFailed",
+    summary="Supprimer une ligne outbox en erreur (failed uniquement, super-admin)",
+)
+async def paheko_outbox_delete_item_failed(
+    item_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.SUPER_ADMIN])),
+):
+    """
+    Efface la ligne **uniquement** si ``outbox_status=failed`` (quarantaine, rejet, échec HTTP).
+    Permet de nettoyer des envois de développement ou abandons sans relance. Interdit si la ligne
+    est encore ``pending``, ``processing`` ou ``delivered``.
+    """
+    _ = current_user
+    err = delete_paheko_outbox_item_failed(db, item_id)
+    if err == "not_found":
+        raise HTTPException(status_code=404, detail="Élément outbox introuvable")
+    if err == "not_deletable":
+        raise HTTPException(
+            status_code=409,
+            detail="Suppression refusée : la ligne n'est pas en statut d'échec (failed) — arrêtez le traitement ou utilisez les autres actions support.",
+        )
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.post(

@@ -196,3 +196,28 @@ export async function postPahekoOutboxLiftQuarantine(
   }
   return { ok: true, item: json as PahekoOutboxItemDetail };
 }
+
+export type DeletePahekoOutboxFailedItemResult = { ok: true } | PahekoOutboxHttpError;
+
+/** Supprime définitivement une ligne ``outbox_status=failed`` (super-admin uniquement). */
+export async function deletePahekoOutboxFailedItem(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  itemId: string,
+  signal?: AbortSignal,
+): Promise<DeletePahekoOutboxFailedItemResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/admin/paheko-outbox/items/${encodeURIComponent(itemId)}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'DELETE', credentials: 'include', headers: authHeaders(auth), signal });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return outboxHttpError(0, null, msg, true);
+  }
+  if (res.status === 204) {
+    return { ok: true };
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  return outboxHttpError(res.status, json, text || res.statusText);
+}

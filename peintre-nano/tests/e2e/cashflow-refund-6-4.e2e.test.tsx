@@ -99,7 +99,7 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
     return auth;
   }
 
-  it('navigation : entrée Remboursement → /caisse/remboursement + wizard étape 1 (AC 1)', async () => {
+  it('navigation : depuis la page Caisse, bouton Remboursement → /caisse/remboursement + wizard étape 1 (AC 1)', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -109,7 +109,7 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
       }),
     );
 
-    window.history.pushState({}, '', '/');
+    window.history.pushState({}, '', '/caisse');
 
     render(
       <RootProviders disableUserPrefsPersistence>
@@ -117,9 +117,10 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
       </RootProviders>,
     );
 
-    const nav = screen.getByRole('navigation', { name: 'Zone navigation' });
-    const entry = within(nav).getByTestId('nav-entry-cashflow-refund');
-    fireEvent.click(within(entry).getByRole('button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('caisse-open-refund')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId('caisse-open-refund'));
 
     await waitFor(() => {
       expect(window.location.pathname).toBe('/caisse/remboursement');
@@ -127,10 +128,10 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-refund-step-select')).toBeTruthy();
     });
-    expect(screen.getByText(/reversal, pas une vente nominale/i)).toBeTruthy();
+    expect(screen.getByText(/montant remboursé est toujours le total/i)).toBeTruthy();
   });
 
-  it('toolbar live (VITE_LIVE_AUTH) : entrée Remboursement visible avec caisse.refund + navigation vers wizard (AC toolbar)', async () => {
+  it('toolbar live (VITE_LIVE_AUTH) : pas de Remboursement sur le bandeau ; accès via Caisse puis bouton', async () => {
     vi.stubEnv('VITE_LIVE_AUTH', 'true');
     vi.stubGlobal(
       'fetch',
@@ -155,12 +156,20 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
     );
 
     const nav = await screen.findByRole('navigation', { name: 'Zone navigation' });
-    within(nav).getByTestId('nav-entry-cashflow-refund');
+    expect(within(nav).queryByTestId('nav-entry-cashflow-refund')).toBeNull();
     within(nav).getByTestId('nav-entry-cashflow-nominal');
     within(nav).getByTestId('nav-entry-transverse-dashboard');
 
-    const entry = within(nav).getByTestId('nav-entry-cashflow-refund');
-    fireEvent.click(within(entry).getByRole('button'));
+    const caisseNav = within(nav).getByTestId('nav-entry-cashflow-nominal');
+    fireEvent.click(within(caisseNav).getByRole('button'));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/caisse');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('caisse-open-refund')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId('caisse-open-refund'));
 
     await waitFor(() => {
       expect(window.location.pathname).toBe('/caisse/remboursement');
@@ -336,7 +345,7 @@ describe('E2E — remboursement contrôlé (Story 6.4)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-refund-step-confirm')).toBeTruthy();
     });
-    expect(screen.getByText(/Confirmation — reversal/i)).toBeTruthy();
+    expect(screen.getByText(/Confirmer le remboursement/i)).toBeTruthy();
     expect(screen.getByText(/12\.50/)).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('cashflow-refund-confirm-submit'));

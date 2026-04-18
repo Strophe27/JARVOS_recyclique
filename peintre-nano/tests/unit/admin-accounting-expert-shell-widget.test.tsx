@@ -48,6 +48,7 @@ vi.mock('../../src/api/admin-paheko-outbox-client', () => ({
     limit: 10,
   }),
   postPahekoOutboxLiftQuarantine: vi.fn(),
+  deletePahekoOutboxFailedItem: vi.fn(),
 }));
 
 vi.mock('../../src/api/admin-health-client', () => ({

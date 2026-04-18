@@ -329,3 +329,4 @@ def _collect_openapi_operation_ids(schema: dict[str, Any]) -> set[str]:
 def test_openapi_includes_reject_operation_id(openapi_schema: dict[str, Any]) -> None:
     ids = _collect_openapi_operation_ids(openapi_schema)
     assert "recyclique_pahekoOutbox_rejectItem" in ids
+    assert "recyclique_pahekoOutbox_deleteItemFailed" in ids

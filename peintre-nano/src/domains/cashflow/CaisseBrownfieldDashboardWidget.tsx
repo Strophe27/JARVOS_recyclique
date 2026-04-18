@@ -18,6 +18,7 @@ import { Calendar, PlayCircle, Wallet } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { postOpenCashSession, resolveCashSessionOpeningIds } from '../../api/cash-session-client';
 import { recycliqueClientFailureFromSalesHttp, type RecycliqueClientFailure } from '../../api/recyclique-api-error';
+import { PERMISSION_CASHFLOW_REFUND } from '../../app/auth/default-demo-auth-adapter';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
@@ -528,6 +529,16 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
           <Title order={2} data-testid="caisse-workspace-heading">
             {workspaceHeading}
           </Title>
+          {envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+            <Button
+              variant="light"
+              size="sm"
+              data-testid="caisse-open-refund"
+              onClick={() => spaNavigateTo('/caisse/remboursement')}
+            >
+              Remboursement
+            </Button>
+          ) : null}
         </Group>
         <Text size="sm" c="dimmed">
           {workspaceIntro}
@@ -721,12 +732,26 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
     >
       {!isSessionOpenSurface && !saleKioskMinimal ? (
         <div data-testid="caisse-workspace-heading-block">
-          <Title order={2} data-testid="caisse-workspace-heading">
-            {workspaceHeading}
-          </Title>
-          <Text size="sm" c="dimmed" mt={4}>
-            {workspaceIntro}
-          </Text>
+          <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+            <div>
+              <Title order={2} data-testid="caisse-workspace-heading">
+                {workspaceHeading}
+              </Title>
+              <Text size="sm" c="dimmed" mt={4}>
+                {workspaceIntro}
+              </Text>
+            </div>
+            {envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+              <Button
+                variant="light"
+                size="sm"
+                data-testid="caisse-open-refund"
+                onClick={() => spaNavigateTo('/caisse/remboursement')}
+              >
+                Remboursement
+              </Button>
+            ) : null}
+          </Group>
         </div>
       ) : null}
 

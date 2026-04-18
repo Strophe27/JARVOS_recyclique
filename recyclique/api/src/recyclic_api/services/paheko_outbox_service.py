@@ -16,6 +16,7 @@ from recyclic_api.models.paheko_outbox import (
     PahekoOutboxOperationType,
     PahekoOutboxStatus,
 )
+from recyclic_api.models.paheko_outbox_sync_transition import PahekoOutboxSyncTransition
 from recyclic_api.services.paheko_outbox_transition_audit import (
     TRANSITION_MANUAL_CONFIRM_RESOLU,
     TRANSITION_MANUAL_LIFT,
@@ -246,6 +247,28 @@ def lift_paheko_quarantine_to_retry(
     )
     db.flush()
     return item, None
+
+
+def delete_paheko_outbox_item_failed(
+    db: Session,
+    item_id: uuid.UUID,
+) -> str | None:
+    """
+    Supprime définitivement une ligne outbox dont le statut technique est **failed**
+    (quarantaine, rejet explicite, etc.). Réservé au support — les transitions d'audit sont
+    supprimées en cascade ; ne pas utiliser après livraison Paheko (delivered).
+    """
+    item = get_outbox_item(db, item_id)
+    if item is None:
+        return "not_found"
+    if item.outbox_status != PahekoOutboxStatus.failed.value:
+        return "not_deletable"
+    db.query(PahekoOutboxSyncTransition).filter(PahekoOutboxSyncTransition.outbox_item_id == item_id).delete(
+        synchronize_session=False,
+    )
+    db.delete(item)
+    db.flush()
+    return None
 
 
 def confirm_paheko_delivered_resolved(

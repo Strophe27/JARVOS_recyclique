@@ -86,7 +86,7 @@ function useRefundEntryBlock(): EntryBlock {
       return {
         blocked: true,
         title: 'Remboursement non autorisé',
-        body: `Permission « ${PERMISSION_CASHFLOW_REFUND} » absente — le serveur doit l’accorder explicitement (Story 6.4).`,
+        body: `Permission « ${PERMISSION_CASHFLOW_REFUND} » absente — demandez l’habilitation à votre administrateur.`,
       };
     }
     return { blocked: false };
@@ -101,8 +101,8 @@ const REASON_OPTIONS = [
 ] as const;
 
 /**
- * Parcours Remboursement (Story 6.4) : deux temps (saisie id → confirmation + POST serveur).
- * Aucune règle d’éligibilité métier côté store — erreurs API affichées telles quelles.
+ * Remboursement caisse : sélection du ticket puis confirmation (mutation serveur).
+ * Les erreurs API sont affichées telles quelles.
  */
 export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
   const entry = useRefundEntryBlock();
@@ -326,7 +326,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
           caisse ou comptable.
         </Text>
         <Text size="sm" c="dimmed">
-          L’intégration aval (grand livre, exports) peut rester asynchrone : vérifiez côté outillage métier si besoin.
+          La comptabilité peut être mise à jour dans les minutes qui suivent selon les traitements serveur.
         </Text>
         <Text size="sm">
           Référence reversal : <code>{successId}</code>
@@ -344,36 +344,35 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         <CashflowOperationalSyncNotice auth={auth} />
         {stale ? (
           <Alert color="orange" title="Données périmées" mb="sm" data-testid="cashflow-refund-stale">
-            <Text size="sm">DATA_STALE sur le ticket critique — rechargez le ticket avant un remboursement.</Text>
+            <Text size="sm">Les données du ticket ne sont plus à jour : rechargez le ticket avant de rembourser.</Text>
           </Alert>
         ) : null}
-        <Text fw={700}>Remboursement — sélection du ticket source</Text>
+        <Text fw={700}>Quel ticket rembourser ?</Text>
         <Text size="sm" c="dimmed">
-          Opération sensible : le montant remboursé est celui du ticket (total), imposé par le serveur (
-          <code>recyclique_sales_createSaleReversal</code>). Ceci est un reversal, pas une vente nominale.
+          Le montant remboursé est toujours le total du ticket encaissé (vous choisissez ensuite le moyen utilisé pour
+          payer le client).
         </Text>
         <TextInput
-          label="Identifiant ticket (UUID complet)"
-          description="Saisie directe : correspond au GET /v1/sales/{sale_id} (reçu papier ou copier-coller)."
+          label="Identifiant du ticket"
+          description="Identifiant complet figurant sur le reçu ou copié depuis un autre écran."
           value={saleIdInput}
           onChange={(e) => setSaleIdInput(e.currentTarget.value)}
           data-testid="cashflow-refund-sale-id-input"
         />
         <CashflowClientErrorAlert error={error} testId="cashflow-refund-error" />
         <Button loading={busy} onClick={onLoadSale} data-testid="cashflow-refund-load-sale" disabled={stale}>
-          Charger ce ticket (GET recyclique_sales_getSale)
+          Charger le ticket
         </Button>
 
-        <Alert color="gray" title="Recherche assistée (session caisse)" data-testid="cashflow-refund-session-panel">
+        <Alert color="gray" title="Ou parcourir les ventes de la session" data-testid="cashflow-refund-session-panel">
           <Stack gap="sm">
             <Text size="sm">
-              Le détail session <code>GET /v1/cash-sessions/{'{session_id}'}</code> peut inclure la liste des ventes
-              (OpenAPI : profils <strong>admin</strong>). Après chargement, filtre local (debounce {SESSION_FILTER_DEBOUNCE_MS}
-              ms) sur identifiant, note, référence adhérent ou montant — puis sélection d’une ligne (validation toujours
-              par <code>getSale</code>).
+              Indiquez la session caisse en cours : la liste des ventes s’affiche si votre profil y a accès. Sinon,
+              utilisez l’identifiant du ticket ci-dessus. Vous pouvez filtrer la liste (quelques secondes après la
+              saisie).
             </Text>
             <TextInput
-              label="UUID session caisse"
+              label="Session caisse"
               value={sessionBrowseId}
               onChange={(e) => setSessionBrowseId(e.currentTarget.value)}
               data-testid="cashflow-refund-session-id-input"
@@ -398,7 +397,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
                   data-testid="cashflow-refund-session-filter"
                 />
                 <Text size="xs" c="dimmed">
-                  Filtre appliqué après {SESSION_FILTER_DEBOUNCE_MS} ms sans frappe.
+                  Le filtre s’applique automatiquement après une courte pause lors de la saisie.
                 </Text>
                 <ScrollArea h={220} type="auto" offsetScrollbars>
                   <Table striped highlightOnHover withTableBorder withColumnBorders>
@@ -457,10 +456,10 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
       <CashflowOperationalSyncNotice auth={auth} />
       {stale ? (
         <Alert color="orange" title="Données périmées" mb="sm" data-testid="cashflow-refund-stale">
-          <Text size="sm">DATA_STALE — confirmation remboursement bloquée.</Text>
+          <Text size="sm">Données périmées : rechargez le ticket avant de confirmer le remboursement.</Text>
         </Alert>
       ) : null}
-      <Text fw={700}>Confirmation — reversal</Text>
+      <Text fw={700}>Confirmer le remboursement</Text>
       <Alert color="gray" title="Récapitulatif avant envoi" data-testid="cashflow-refund-recap">
         <Stack gap="xs">
           <Text size="sm">
@@ -493,8 +492,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
             </Text>
           ) : null}
           <Text size="sm">
-            <strong>Moyen de remboursement effectif</strong> : {refundMethodLabel} (
-            <code>refund_payment_method</code> → serveur)
+            <strong>Moyen pour payer le client</strong> : {refundMethodLabel}
           </Text>
           <Text size="sm">
             <strong>Motif prévu</strong> : {reasonLabel}
@@ -508,8 +506,8 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         </Stack>
       </Alert>
       <NativeSelect
-        label="Moyen de remboursement (effectif)"
-        description="Valeur envoyée au serveur dans « refund_payment_method » (enum cash, carte, chèque)."
+        label="Moyen pour payer le client"
+        description="Espèces, carte ou chèque selon ce que vous versez au client."
         data={refundMethodSelectData}
         value={refundPaymentMethod}
         onChange={(e) => setRefundPaymentMethod(e.currentTarget.value as SaleReversalRefundPaymentMethod)}
@@ -536,8 +534,8 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
           data-testid="cashflow-refund-prior-year-panel"
         >
           <Text size="sm" mb="xs">
-            Le serveur impose le parcours expert : permission « accounting.prior_year_refund » et envoi de{' '}
-            <code>expert_prior_year_refund=true</code>. Cochez la case puis relancez la confirmation.
+            Ce ticket concerne un exercice antérieur déjà clos : un habillage « expert » est requis côté serveur.
+            Cochez la case ci-dessous si vous avez l’habilitation comptable, puis confirmez à nouveau.
           </Text>
           {!hasPriorYearRefundPermission ? (
             <Text size="sm" c="orange" mb="xs">
@@ -573,7 +571,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         data-testid="cashflow-refund-confirm-submit"
         disabled={stale}
       >
-        Confirmer le remboursement (POST recyclique_sales_createSaleReversal)
+        Valider le remboursement
       </Button>
     </div>
   );

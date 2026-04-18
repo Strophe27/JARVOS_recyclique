@@ -394,3 +394,60 @@ def test_detail_includes_recent_sync_transitions(super_admin_client: Any, db_ses
     lst = lg.json()
     assert lst["total"] >= 1
     assert lst["data"][0]["transition_name"]
+
+
+def test_super_admin_delete_failed_outbox_removes_row_and_audit(
+    super_admin_client: Any, db_session: Session
+) -> None:
+    """Suppression super-admin : ligne ``failed`` + transitions en cascade."""
+    site, _, cs = _site_user_session(db_session)
+    seed_default_paheko_close_mapping(db_session, site.id)
+    svc = CashSessionService(db_session)
+    svc.close_session_with_amounts(str(cs.id), 35.0, "ok", sync_correlation_id="corr-del")
+    item = db_session.query(PahekoOutboxItem).filter(PahekoOutboxItem.cash_session_id == cs.id).one()
+    bad = PahekoAccountingClient(
+        base_url="http://paheko.test",
+        client_factory=_mock_httpx_client_factory(403, "x"),
+    )
+    process_next_paheko_outbox_item(db_session, client=bad)
+    db_session.refresh(item)
+    assert item.outbox_status == PahekoOutboxStatus.failed.value
+
+    tid = item.id
+    r = super_admin_client.delete(f"{_V1}/admin/paheko-outbox/items/{tid}")
+    assert r.status_code == 204, r.text
+
+    db_session.expire_all()
+    assert db_session.get(PahekoOutboxItem, tid) is None
+    assert (
+        db_session.query(PahekoOutboxSyncTransition)
+        .filter(PahekoOutboxSyncTransition.outbox_item_id == tid)
+        .count()
+        == 0
+    )
+
+
+def test_delete_failed_forbidden_for_admin_role(admin_client: Any, db_session: Session) -> None:
+    site, _, cs = _site_user_session(db_session)
+    seed_default_paheko_close_mapping(db_session, site.id)
+    svc = CashSessionService(db_session)
+    svc.close_session_with_amounts(str(cs.id), 35.0, "ok", sync_correlation_id="corr-adm")
+    item = db_session.query(PahekoOutboxItem).filter(PahekoOutboxItem.cash_session_id == cs.id).one()
+    item.outbox_status = PahekoOutboxStatus.failed.value
+    item.sync_state_core = "en_quarantaine"
+    db_session.commit()
+
+    r = admin_client.delete(f"{_V1}/admin/paheko-outbox/items/{item.id}")
+    assert r.status_code == 403
+
+
+def test_delete_pending_returns_409(super_admin_client: Any, db_session: Session) -> None:
+    site, _, cs = _site_user_session(db_session)
+    seed_default_paheko_close_mapping(db_session, site.id)
+    svc = CashSessionService(db_session)
+    svc.close_session_with_amounts(str(cs.id), 35.0, "ok", sync_correlation_id="corr-pend")
+    item = db_session.query(PahekoOutboxItem).filter(PahekoOutboxItem.cash_session_id == cs.id).one()
+    assert item.outbox_status == PahekoOutboxStatus.pending.value
+
+    r = super_admin_client.delete(f"{_V1}/admin/paheko-outbox/items/{item.id}")
+    assert r.status_code == 409

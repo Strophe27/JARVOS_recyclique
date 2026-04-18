@@ -26,6 +26,7 @@ import {
 import {
   PERMISSION_CASHFLOW_DEFERRED,
   PERMISSION_CASHFLOW_NOMINAL,
+  PERMISSION_CASHFLOW_REFUND,
   PERMISSION_CASHFLOW_SOCIAL_ENCAISSEMENT,
   PERMISSION_CASHFLOW_SPECIAL_ENCAISSEMENT,
   PERMISSION_CASHFLOW_VIRTUAL,
@@ -424,6 +425,7 @@ function SaleKioskSessionHeader({
   operatingMode,
   onRefreshSession,
   onCloseSession,
+  onOpenRefund,
 }: {
   readonly siteLabel: string;
   readonly posteLabel: string;
@@ -431,6 +433,7 @@ function SaleKioskSessionHeader({
   readonly operatingMode: CashflowOperatingMode | null;
   readonly onRefreshSession: () => void;
   readonly onCloseSession: () => void;
+  readonly onOpenRefund?: () => void;
 }): ReactNode {
   const modeLabel = kioskOperatingLabel(operatingMode);
   return (
@@ -440,6 +443,17 @@ function SaleKioskSessionHeader({
           Vente au comptoir
         </Text>
         <Group gap="xs" wrap="wrap" justify="flex-end">
+          {onOpenRefund ? (
+            <Button
+              type="button"
+              size="xs"
+              variant="light"
+              onClick={onOpenRefund}
+              data-testid="caisse-open-refund"
+            >
+              Remboursement
+            </Button>
+          ) : null}
           <Button type="button" size="xs" variant="filled" color="gray" onClick={onRefreshSession} data-testid="cashflow-kiosk-refresh-session">
             Actualiser
           </Button>
@@ -1878,6 +1892,18 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
       data-testid="cashflow-nominal-wizard"
     >
       {!kioskSaleSurface ? <CashflowOperationalSyncNotice auth={auth} /> : null}
+      {!kioskSaleSurface && envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+        <Group justify="flex-end" mb="sm" wrap="wrap">
+          <Button
+            variant="light"
+            size="sm"
+            data-testid="caisse-open-refund"
+            onClick={() => spaNavigateTo('/caisse/remboursement')}
+          >
+            Remboursement
+          </Button>
+        </Group>
+      ) : null}
       {draft.operatingMode === 'virtual' && !kioskSaleSurface ? (
         <Alert color="teal" title="Mode simulation (virtuel)" mb="sm" data-testid="cashflow-operating-mode-virtual-banner">
           Session ouverte depuis « Mode virtuel » sur le tableau de poste : même cadre API et permissions qu’une caisse
@@ -1912,6 +1938,11 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
             operatingMode={draft.operatingMode}
             onRefreshSession={() => refreshServerSession()}
             onCloseSession={() => spaNavigateTo(saleKioskCloseSessionPath())}
+            onOpenRefund={
+              envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND)
+                ? () => spaNavigateTo('/caisse/remboursement')
+                : undefined
+            }
           />
           <SaleKioskKpiBanner
             lineCount={draft.lines.length}

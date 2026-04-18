@@ -1436,6 +1436,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+    delete:
+      operationId: recyclique_pahekoOutbox_deleteItemFailed
+      tags:
+        - admin
+        - paheko-outbox
+      summary: Supprimer une ligne outbox en erreur (failed uniquement, super-admin)
+      description: |
+        Supprime définitivement la ligne si ``outbox_status=failed`` (quarantaine, rejet, échec HTTP).
+        Très réservé : pas de livraison Paheko traçable via l’outbox après suppression ; le journal
+        d’audit des transitions est supprimé en cascade. **403** si le rôle n’est pas super-admin.
+        **409** si la ligne n’est pas en échec (pending, processing, delivered).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Ligne supprimée
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Super-admin requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Élément introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Statut hors « failed » — suppression refusée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/admin/paheko-outbox/items/{item_id}/reject:
     post:
       operationId: recyclique_pahekoOutbox_rejectItem
