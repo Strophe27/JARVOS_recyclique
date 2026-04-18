@@ -1,3 +1,31 @@
+# Synthèse automatisation des tests — Story 24.1 (audit PRD–dépôt, plan P0)
+
+## Contexte
+
+Story **24.1** : audit **documentation uniquement** — matrices PRD–dépôt et plan de tests P0 dans `references/operations-speciales-recyclique/2026-04-18_paquet-audit-p0-operations-speciales-recyclique.md`. **Aucune** nouvelle surface UI/API livrée par cette story.
+
+## Stratégie QA (skill `bmad-qa-generate-e2e-tests`)
+
+| Volet | Approche |
+|--------|-----------|
+| **Tests API** | **NA** — pas d’endpoint nouveau dans le périmètre 24.1. |
+| **E2E UI** | **NA** — pas de parcours produit nouveau à automatiser ; le plan P0 est **cible** pour **24.2+**. |
+| **Synthèse dédiée** | `tests/24-1-audit-repo-aware-doc-qa-summary.md` (checklist skill + justification « aucun e2e nouveau requis pour 24.1 »). |
+
+## Tests générés
+
+- Aucun fichier de test ajouté ou modifié pour 24.1 (bornage documentaire).
+
+## Commande de reproduction
+
+- **Aucune** — pas de test automatisé nouveau pour cette story (politique : pas de suite complète ; pas de commande ciblée sans fichier de test).
+
+## Validation checklist workflow
+
+- Story documentaire : génération API/E2E **non requise** ; synthèse créée — **conforme**.
+
+---
+
 # Synthèse automatisation des tests — Story 10.6c (spike PG 15→17, doc)
 
 ## Contexte

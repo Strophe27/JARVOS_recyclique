@@ -1,3 +1,6 @@
+# last_updated: 2026-04-18 — story 24-1 Story Runner BMAD : CS sauté (story déjà sur disque) → VS→DS→GATE→QA→CR PASS ; 24-1 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; branche attendue epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-18 — story 24-1 CS bmad-create-story (create, Task spawn) : idempotent PASS — story déjà review ; development_status 24-1 inchangé ; alignement epics.md §24.1 vérifié
+# last_updated: 2026-04-18 — story 24-1 CS bmad-create-story (create) : 24-1-audit-repo-aware-matrices-prd-depot-et-plan-de-tests-p0 backlog → ready-for-dev ; epic-24 backlog → in-progress
 # last_updated: 2026-04-18 — BMAD sprint-planning : Epic 24 operations speciales ajoute (backlog) ; stories 24.1–24.10 backlog ; genere depuis epics.md + readiness 2026-04-18
 # last_updated: 2026-04-16 — story 23-4 DS Story Runner : 23-4 ready-for-dev→done ; epic-23 in-progress→done ; builder Paheko unique ventilation detailed
 # last_updated: 2026-04-16 — story 23-4 bmad-create-story : cle 23-4-paheko-close-builder-unique-ventilation-detaillee-supprimer-agregue → ready-for-dev ; epic-23 done→in-progress (correct-course builder Paheko)
@@ -226,7 +229,7 @@ generated: "2026-04-01"
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
 # last_updated: 2026-04-16 — story 22-2 DS bmad-dev-story Task : 22-2 in-progress→review (dual-read compare + OpenAPI)
 # last_updated: 2026-04-16 — story 23-1 Story Runner BMAD (resume_at GATE) : GATE→QA→CR APPROVE ; 23-1 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; gate front omis (story backend)
-last_updated: "2026-04-18" # Epic 24 ajoute (operations speciales) backlog ; sprint-planning BMAD ; readiness 2026-04-18
+last_updated: "2026-04-18" # story 24-1 Story Runner fin : VS→DS→GATE→QA→CR PASS ; 24-1 review→done ; QA doc tests/24-1-audit-repo-aware-doc-qa-summary.md
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -467,8 +470,8 @@ development_status:
   # Epic 24 : trier les clés 24-x par ordre NUMERIQUE (24-1 … 24-10) dans les outils — un tri alphabétique met 24-10 avant 24-2.
   # Dependance METIER (cf. epics.md Epic 24) : ne pas demarrer les stories 24.6–24.8 (P1) tant que le socle P0 (24.1→24.5)
   # n'est pas stabilise — le YAML ne peut pas coder un graphe ; le pilotage reste discipline Story Runner / board.
-  epic-24: backlog
-  24-1-audit-repo-aware-matrices-prd-depot-et-plan-de-tests-p0: backlog
+  epic-24: in-progress
+  24-1-audit-repo-aware-matrices-prd-depot-et-plan-de-tests-p0: done
   24-2-hub-operations-speciales-caisse-et-navigation-vers-parcours: backlog
   24-3-remboursement-standard-visibilite-terrain-et-chaine-paheko-et-statut-sync: backlog
   24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1: backlog
