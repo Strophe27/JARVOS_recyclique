@@ -340,6 +340,19 @@
       }
     },
     {
+      "id": "cashflow-exceptional-refund",
+      "route_key": "cashflow-exceptional-refund",
+      "path": "/caisse/remboursement-exceptionnel",
+      "page_key": "cashflow-exceptional-refund",
+      "shortcut_id": "go-cashflow-exceptional-refund",
+      "label_key": "nav.cashflow.exceptionalRefund",
+      "required_permission_keys": ["caisse.access", "refund.exceptional"],
+      "visibility": {
+        "permission_any": ["refund.exceptional"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "cashflow-close",
       "route_key": "cashflow-close",
       "path": "/caisse/cloture",

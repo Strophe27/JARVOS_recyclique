@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "cashflow-exceptional-refund",
+  "required_permission_keys": ["caisse.access", "refund.exceptional"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-exceptional-refund-wizard",
+      "widget_props": {}
+    }
+  ]
+}

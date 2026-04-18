@@ -1141,6 +1141,81 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}/exceptional-refunds:
+    post:
+      operationId: recyclique_cashSessions_createExceptionalRefund
+      tags:
+        - cash-sessions
+      summary: Remboursement exceptionnel sans ticket (step-up PIN + idempotence)
+      description: |
+        Story 24.5 — remboursement sans ticket source, journalisé via vente technique et `payment_transactions`.
+        **Permission requise :** `refund.exceptional` (sinon **403**).
+        **Preuve step-up** obligatoire via en-tête `X-Step-Up-Pin`. **Idempotence obligatoire** via
+        `Idempotency-Key` (même corps → réponse rejouée ; corps différent → **409** ; clé unique par session).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+          description: PIN opérateur (preuve step-up ; ne pas logger).
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Clé client pour éviter doubles effets (Redis, TTL 24h).
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Identifiant de corrélation ; renvoyé tel quel ou complété par le serveur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExceptionalRefundCreateV1"
+      responses:
+        "201":
+          description: Remboursement exceptionnel enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExceptionalRefundResponseV1"
+        "400":
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission `refund.exceptional` absente, PIN step-up manquant/invalide, ou verrouillage step-up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit idempotence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/cash-sessions/{session_id}/close:
     post:
       operationId: recyclique_cashSessions_closeSession
@@ -10464,6 +10539,90 @@ components:
         - ANNULATION_CLIENT
         - AUTRE
       description: Motif de remboursement (Story 6.4).
+    ExceptionalRefundCreateV1:
+      type: object
+      required:
+        - amount
+        - refund_payment_method
+        - reason_code
+        - justification
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+          description: Montant remboursé (positif, en euros).
+        refund_payment_method:
+          type: string
+          description: Moyen effectif utilisé pour rembourser le client (ex. cash, card, check).
+        reason_code:
+          $ref: "#/components/schemas/RefundReasonCodeV1"
+        justification:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        detail:
+          type: string
+          nullable: true
+          maxLength: 500
+      additionalProperties: false
+    ExceptionalRefundResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - sale_id
+        - amount
+        - refund_payment_method
+        - reason_code
+        - justification
+        - idempotency_key
+        - initiator_user_id
+        - approver_user_id
+        - approved_at
+        - created_at
+        - paheko_accounting_sync_hint
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        sale_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        refund_payment_method:
+          type: string
+        reason_code:
+          type: string
+        justification:
+          type: string
+        detail:
+          type: string
+          nullable: true
+        idempotency_key:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        initiator_user_id:
+          type: string
+          format: uuid
+        approver_user_id:
+          type: string
+          format: uuid
+        approved_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        paheko_accounting_sync_hint:
+          type: string
+          description: Rappel chaîne canonique Paheko (synchro via clôture).
+      additionalProperties: false
     SaleCorrectionSaleDateV1:
       type: object
       required:

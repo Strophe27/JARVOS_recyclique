@@ -57,6 +57,12 @@ def body_fingerprint_sale_finalize_held_json(payload: Dict[str, Any]) -> str:
     return body_fingerprint_close_json(payload)
 
 
+def body_fingerprint_exceptional_refund_json(payload: Dict[str, Any]) -> str:
+    """Story 24.5 — empreinte stable du corps remboursement exceptionnel."""
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def redis_key_idempotent_sale_create(operator_user_id: str, idempotency_key: str) -> str:
     ik = _norm_key_part(idempotency_key)
     return f"idem:v1:sale_create:{_norm_key_part(operator_user_id)}:{ik}"
@@ -69,6 +75,16 @@ def redis_key_idempotent_sale_finalize(
     return (
         f"idem:v1:sale_finalize:{_norm_key_part(operator_user_id)}:"
         f"{_norm_key_part(sale_id)}:{ik}"
+    )
+
+
+def redis_key_idempotent_exceptional_refund(
+    operator_user_id: str, session_id: str, idempotency_key: str
+) -> str:
+    ik = _norm_key_part(idempotency_key)
+    return (
+        f"idem:v1:exceptional_refund:{_norm_key_part(operator_user_id)}:"
+        f"{_norm_key_part(session_id)}:{ik}"
     )
 
 

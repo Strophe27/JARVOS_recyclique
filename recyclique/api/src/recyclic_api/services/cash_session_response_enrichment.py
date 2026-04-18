@@ -10,6 +10,7 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func
 
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.exceptional_refund import ExceptionalRefund
 from recyclic_api.models.sale import Sale, SaleLifecycleStatus
 from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.schemas.cash_session import CashSessionResponse, CashSessionTotalsV1
@@ -111,10 +112,18 @@ def enrich_session_response(
         or 0.0
     )
     refunds_alg = float(refunds_alg)
+    exceptional_refunds = (
+        db.query(func.coalesce(func.sum(ExceptionalRefund.amount), 0))
+        .filter(ExceptionalRefund.cash_session_id == sid)
+        .scalar()
+        or 0.0
+    )
+    exceptional_refunds = -float(exceptional_refunds)
+    refunds_total = refunds_alg + exceptional_refunds
     response_data["totals"] = CashSessionTotalsV1(
         sales_completed=sales_completed,
-        refunds=refunds_alg,
-        net=sales_completed + refunds_alg,
+        refunds=refunds_total,
+        net=sales_completed + refunds_total,
     )
 
     if session.status == CashSessionStatus.OPEN:

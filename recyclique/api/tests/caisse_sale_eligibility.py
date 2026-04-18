@@ -16,6 +16,7 @@ CAISSE_ACCESS_PERMISSION = "caisse.access"
 CAISSE_VIRTUAL_ACCESS_PERMISSION = "caisse.virtual.access"
 CAISSE_DEFERRED_ACCESS_PERMISSION = "caisse.deferred.access"
 CAISSE_REFUND_PERMISSION = "caisse.refund"
+CAISSE_EXCEPTIONAL_REFUND_PERMISSION = "refund.exceptional"
 ACCOUNTING_PRIOR_YEAR_REFUND_PERMISSION = "accounting.prior_year_refund"
 CAISSE_SPECIAL_ENCAISSEMENT_PERMISSION = "caisse.special_encaissement"
 CAISSE_SOCIAL_ENCAISSEMENT_PERMISSION = "caisse.social_encaissement"
@@ -152,6 +153,40 @@ def grant_user_accounting_prior_year_refund_permission(db: Session, user: User) 
         ),
         {"gk": gkey, "pn": ACCOUNTING_PRIOR_YEAR_REFUND_PERMISSION},
     )
+    db.commit()
+    db.refresh(user)
+
+
+def grant_user_exceptional_refund_permission(db: Session, user: User) -> None:
+    """Story 24.5 — ajoute ``refund.exceptional`` au groupe caisse de test."""
+    perm = db.query(Permission).filter(Permission.name == CAISSE_EXCEPTIONAL_REFUND_PERMISSION).first()
+    if not perm:
+        perm = Permission(
+            name=CAISSE_EXCEPTIONAL_REFUND_PERMISSION,
+            description="Remboursement exceptionnel sans ticket (tests 24.5)",
+        )
+        db.add(perm)
+        db.flush()
+
+    gkey = f"story62-caisse-{user.id}"
+    group = db.query(Group).filter(Group.key == gkey).first()
+    if group:
+        if not any(p.name == CAISSE_EXCEPTIONAL_REFUND_PERMISSION for p in group.permissions):
+            group.permissions.append(perm)
+        db.commit()
+        db.refresh(user)
+        return
+
+    group = Group(
+        name=gkey,
+        key=gkey,
+        description="Groupe test Story 24.5 exceptional refund",
+        site_id=None,
+    )
+    group.permissions.append(perm)
+    db.add(group)
+    db.flush()
+    group.users.append(user)
     db.commit()
     db.refresh(user)
 

@@ -14,14 +14,19 @@ from recyclic_api.core.redis import get_redis
 from recyclic_api.core.step_up import (
     IDEMPOTENCY_KEY_HEADER,
     SENSITIVE_OPERATION_CASH_SESSION_CLOSE,
+    SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND,
     STEP_UP_PIN_HEADER,
     verify_step_up_pin_header,
 )
 from recyclic_api.services.idempotency_support import (
     body_fingerprint_close_json,
+    body_fingerprint_exceptional_refund_json,
     get_cached_idempotent_close,
+    get_cached_idempotent_close as get_cached_idempotent_exceptional_refund,
     redis_key_idempotent_close,
+    redis_key_idempotent_exceptional_refund,
     store_idempotent_close,
+    store_idempotent_close as store_idempotent_exceptional_refund,
     validate_or_raise_idempotency_conflict,
 )
 from recyclic_api.core.audit import (
@@ -44,6 +49,10 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStepResponse,
     CashSessionStep
 )
+from recyclic_api.schemas.exceptional_refund import (
+    ExceptionalRefundCreate,
+    ExceptionalRefundResponse,
+)
 from recyclic_api.application.cash_session_close_presentation import (
     present_close_cash_session_outcome,
 )
@@ -51,7 +60,8 @@ from recyclic_api.application.cash_session_closing import run_close_cash_session
 from recyclic_api.application.cash_session_opening import open_cash_session
 from recyclic_api.services.cash_session_response_enrichment import enrich_session_response
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.services.exceptional_refund_service import ExceptionalRefundService
+from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from uuid import UUID
 
@@ -610,6 +620,79 @@ async def update_cash_session(
     
     # Story B49-P1: Enrichir avec les options du register
     return enrich_session_response(updated_session, service)
+
+
+@router.post(
+    "/{session_id}/exceptional-refunds",
+    response_model=ExceptionalRefundResponse,
+    status_code=201,
+    operation_id="recyclique_cashSessions_createExceptionalRefund",
+    summary="Enregistrer un remboursement exceptionnel sans ticket",
+    description="""
+    Enregistre un remboursement exceptionnel sans ticket sur une session ouverte.
+
+    **Permissions requises :** `refund.exceptional`
+    **Step-up PIN :** `X-Step-Up-Pin` obligatoire
+    **Idempotency-Key :** obligatoire (prévention des doubles saisies)
+    """,
+    responses={
+        201: {"description": "Remboursement enregistré"},
+        400: {"description": "Erreur de validation"},
+        403: {"description": "Accès non autorisé / PIN requis ou invalide"},
+        404: {"description": "Session non trouvée"},
+        409: {"description": "Conflit idempotence"},
+    },
+    tags=["Sessions de Caisse"],
+)
+async def create_exceptional_refund(
+    request: Request,
+    session_id: str,
+    payload: ExceptionalRefundCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    redis_client=Depends(get_redis),
+):
+    verify_step_up_pin_header(
+        user=current_user,
+        pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+        redis_client=redis_client,
+        operation=SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND,
+    )
+
+    idem_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+    if not idem_key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key requis")
+
+    body_fp = body_fingerprint_exceptional_refund_json(payload.model_dump())
+    rkey = redis_key_idempotent_exceptional_refund(str(current_user.id), session_id, idem_key)
+    cached = get_cached_idempotent_exceptional_refund(redis_client, rkey)
+    if cached:
+        status_c, body = validate_or_raise_idempotency_conflict(cached, body_fp)
+        return JSONResponse(status_code=status_c, content=body)
+
+    service = ExceptionalRefundService(db)
+    try:
+        result = service.create_exceptional_refund(
+            cash_session_id=session_id,
+            payload=payload,
+            operator=current_user,
+            idempotency_key=idem_key,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (ConflictError, NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
+
+    store_idempotent_exceptional_refund(
+        redis_client,
+        rkey,
+        body_fp,
+        201,
+        jsonable_encoder(result),
+    )
+
+    return result
 
 
 @router.post(

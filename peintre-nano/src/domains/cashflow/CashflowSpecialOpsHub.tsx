@@ -2,6 +2,7 @@ import { Button, Card, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
 import {
   PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
+  PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND,
   PERMISSION_CASHFLOW_NOMINAL,
   PERMISSION_CASHFLOW_REFUND,
   TRANSVERSE_PERMISSION_ADMIN_VIEW,
@@ -19,6 +20,8 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
   const keys = envelope.permissions.permissionKeys;
   const canRefund =
     keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_REFUND);
+  const canExceptionalRefund =
+    keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND);
   const canAdminSessions = keys.includes(TRANSVERSE_PERMISSION_ADMIN_VIEW);
 
   return (
@@ -73,6 +76,32 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
             <Text size="sm" c="dimmed" mt="md" data-testid="cashflow-special-ops-rembourser-blocked">
               Permissions <code>caisse.access</code> et <code>caisse.refund</code> requises — aligné{' '}
               <code>page-cashflow-refund</code> / entrée nav <code>cashflow-refund</code>.
+            </Text>
+          )}
+        </Card>
+
+        <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-remboursement-exceptionnel">
+          <Text fw={600}>Remboursement exceptionnel (sans ticket)</Text>
+          <Text size="sm" c="dimmed" mt="xs">
+            Remboursement sans ticket source : PIN step-up obligatoire, justification et motif codifié.
+          </Text>
+          {canExceptionalRefund ? (
+            <Button
+              mt="md"
+              variant="light"
+              data-testid="cashflow-special-ops-remboursement-exceptionnel-cta"
+              onClick={() => spaNavigateTo('/caisse/remboursement-exceptionnel')}
+            >
+              Ouvrir le remboursement exceptionnel
+            </Button>
+          ) : (
+            <Text
+              size="sm"
+              c="dimmed"
+              mt="md"
+              data-testid="cashflow-special-ops-remboursement-exceptionnel-blocked"
+            >
+              Permissions <code>caisse.access</code> et <code>refund.exceptional</code> requises.
             </Text>
           )}
         </Card>

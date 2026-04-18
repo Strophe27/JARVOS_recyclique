@@ -1,3 +1,7 @@
+# last_updated: 2026-04-19 — story 24-5 Story Runner fin : CS→VS→DS→GATE→QA→CR×2 correctifs (idempotence composite OpenAPI solde SQLite) → APPROVE ; 24-5 review→done ; vs=0 qa=0 cr=2 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-5 DS bmad-dev-story Task : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification in-progress → review ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-5 DS bmad-dev-story Task : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification ready-for-dev → in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-5 CS bmad-create-story (create, Task spawn) : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification backlog → ready-for-dev ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-4 Story Runner BMAD : CS→VS→DS→GATE→QA→CR APPROVE ; e2e cashflow-refund-6-4 (Story 24.4 GET prior_closed) + gates pytest/vitest/lint/build ; vs_loop=0 qa_loop=0 cr_loop=0 ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-4 VS bmad-create-story validate : PASS — checklist ; alignement story ↔ epics §24.4 ↔ YAML (24-4 review) ; epic-24 inchangé in-progress ; prochaine étape GATE/QA/CR (DS déjà fait)
 # last_updated: 2026-04-19 — story 24-4 CS bmad-create-story (create, Task spawn) : idempotent PASS — development_status 24-4 inchangé review (post-DS) ; alignement epics §24.4 + section Alignement sprint story ; epic-24 inchangé in-progress
@@ -490,7 +494,7 @@ development_status:
   24-2-hub-operations-speciales-caisse-et-navigation-vers-parcours: done
   24-3-remboursement-standard-visibilite-terrain-et-chaine-paheko-et-statut-sync: done
   24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1: done
-  24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification: backlog
+  24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification: done
   24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement: backlog
   24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle: backlog
   24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client: backlog

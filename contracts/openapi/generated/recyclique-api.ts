@@ -394,6 +394,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cash-sessions/{session_id}/exceptional-refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remboursement exceptionnel sans ticket (step-up PIN + idempotence)
+         * @description Story 24.5 — remboursement sans ticket source, journalisé via vente technique et `payment_transactions`.
+         *     **Permission requise :** `refund.exceptional` (sinon **403**).
+         *     **Preuve step-up** obligatoire via en-tête `X-Step-Up-Pin`. **Idempotence obligatoire** via
+         *     `Idempotency-Key` (même corps → réponse rejouée ; corps différent → **409** ; clé unique par session).
+         */
+        post: operations["recyclique_cashSessions_createExceptionalRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cash-sessions/{session_id}/close": {
         parameters: {
             query?: never;
@@ -4095,9 +4118,11 @@ export interface components {
             special_encaissement_kind?: components["schemas"]["SpecialEncaissementKindV1"] | null;
             social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
             adherent_reference?: string | null;
-            /** Story 24.4 — prévisualisation autorité remboursement (`current` \| `prior_closed`). */
+            /** @description Story 24.4 — prévisualisation autorité remboursement (GET vente), alignée sur POST /sales/reversals : ``current`` (exercice ouvert) ou ``prior_closed`` (exercice antérieur clos ; parcours expert requis). */
             fiscal_branch?: string | null;
+            /** @description Année fiscale de rattachement de la vente source (cadrage N vs N-1). */
             sale_fiscal_year?: number | null;
+            /** @description Exercice ouvert issu du snapshot autorité au moment de la résolution. */
             current_open_fiscal_year?: number | null;
         };
         /**
@@ -4105,6 +4130,40 @@ export interface components {
          * @enum {string}
          */
         RefundReasonCodeV1: "ERREUR_SAISIE" | "RETOUR_ARTICLE" | "ANNULATION_CLIENT" | "AUTRE";
+        ExceptionalRefundCreateV1: {
+            /** @description Montant remboursé (positif, en euros). */
+            amount: number;
+            /** @description Moyen effectif utilisé pour rembourser le client (ex. cash, card, check). */
+            refund_payment_method: string;
+            reason_code: components["schemas"]["RefundReasonCodeV1"];
+            justification: string;
+            detail?: string | null;
+        };
+        ExceptionalRefundResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            /** Format: uuid */
+            sale_id: string;
+            amount: number;
+            refund_payment_method: string;
+            reason_code: string;
+            justification: string;
+            detail?: string | null;
+            idempotency_key: string;
+            request_id?: string | null;
+            /** Format: uuid */
+            initiator_user_id: string;
+            /** Format: uuid */
+            approver_user_id: string;
+            /** Format: date-time */
+            approved_at: string;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Rappel chaîne canonique Paheko (synchro via clôture). */
+            paheko_accounting_sync_hint: string;
+        };
         SaleCorrectionSaleDateV1: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -4176,6 +4235,18 @@ export interface components {
             idempotency_key?: string | null;
             /** Format: date-time */
             created_at: string;
+            /** @description Story 24.3 — moyen effectif de remboursement (journal ``REFUND_PAYMENT``), distinct du legacy vente source si besoin. */
+            refund_payment_method: string;
+            /** @description Moyen de paiement porté par la vente source (peut différer du canal de sortie réel). */
+            source_sale_payment_method?: string | null;
+            /** @description Branche fiscale courante (``current`` | ``prior_closed``) ; null si autorité indisponible. */
+            fiscal_branch?: string | null;
+            /** @description Année fiscale de rattachement de la vente source. */
+            sale_fiscal_year?: number | null;
+            /** @description Exercice ouvert connu (cadrage N vs N-1). */
+            current_open_fiscal_year?: number | null;
+            /** @description Story 24.3 — rappel chaîne canonique Paheko (clôture → snapshot de session → outbox) ; pas d’écriture Paheko instantanée au remboursement. */
+            paheko_accounting_sync_hint?: string;
         };
         /**
          * @description Destination ligne dépôt (aligné modèle `Destination` backend).
@@ -5526,6 +5597,75 @@ export interface operations {
             };
             /** @description Session introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_createExceptionalRefund: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description PIN opérateur (preuve step-up ; ne pas logger). */
+                "X-Step-Up-Pin": string;
+                /** @description Clé client pour éviter doubles effets (Redis, TTL 24h). */
+                "Idempotency-Key": string;
+                /** @description Identifiant de corrélation ; renvoyé tel quel ou complété par le serveur. */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExceptionalRefundCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Remboursement exceptionnel enregistré */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExceptionalRefundResponseV1"];
+                };
+            };
+            /** @description Erreur de validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission `refund.exceptional` absente, PIN step-up manquant/invalide, ou verrouillage step-up */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit idempotence */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
