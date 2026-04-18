@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "cashflow-exchange",
+  "required_permission_keys": ["caisse.access", "caisse.exchange"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-exchange-wizard",
+      "widget_props": {}
+    }
+  ]
+}

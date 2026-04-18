@@ -57,7 +57,7 @@ describe('E2E — hub opérations spéciales caisse (Story 24.2)', () => {
     cleanup();
   });
 
-  it('URL profonde /caisse/operations-speciales : hub + cinq cartes PRD + mentions « à venir » sur entrées P1', async () => {
+  it('URL profonde /caisse/operations-speciales : hub + cinq cartes PRD + CTA échange + mentions « à venir » P1 restants', async () => {
     const auth = createMockAuthAdapter({
       session: { authenticated: true, userId: 'u-24-2' },
       envelope: createDefaultDemoEnvelope(),
@@ -77,6 +77,7 @@ describe('E2E — hub opérations spéciales caisse (Story 24.2)', () => {
     expect(screen.getByTestId('cashflow-special-ops-card-decaisser')).toBeTruthy();
     expect(screen.getByTestId('cashflow-special-ops-card-mouvement-interne')).toBeTruthy();
     expect(screen.getByTestId('cashflow-special-ops-card-echanger')).toBeTruthy();
+    expect(screen.getByTestId('cashflow-special-ops-echanger-cta')).toBeTruthy();
     expect(within(screen.getByTestId('cashflow-special-ops-card-decaisser')).getByText(/À venir/i)).toBeTruthy();
   });
 
@@ -189,6 +190,33 @@ describe('E2E — hub opérations spéciales caisse (Story 24.2)', () => {
     });
     await waitFor(() => {
       expect(screen.getByTestId('cashflow-refund-step-select')).toBeTruthy();
+    });
+  });
+
+  it('hub → CTA échange : /caisse/echange + wizard (session stub)', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-24-2' },
+      envelope: createDefaultDemoEnvelope({
+        cashSessionId: '00000000-0000-4000-8000-00000000c0de',
+      }),
+    });
+    window.history.pushState({}, '', '/caisse/operations-speciales');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-special-ops-echanger-cta')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId('cashflow-special-ops-echanger-cta'));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/caisse/echange');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-exchange-wizard')).toBeTruthy();
     });
   });
 });

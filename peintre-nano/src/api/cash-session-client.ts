@@ -618,6 +618,61 @@ export async function postExceptionalRefund(
   return sessionHttpError(res.status, json, 'Réponse remboursement exceptionnel invalide');
 }
 
+export type MaterialExchangePayload = Record<string, unknown>;
+
+export type MaterialExchangeResult =
+  | { ok: true; exchange: Record<string, unknown> }
+  | CashSessionHttpError;
+
+/**
+ * POST /v1/cash-sessions/{session_id}/material-exchanges — échange matière (Story 24.6).
+ */
+export async function postMaterialExchange(
+  sessionId: string,
+  body: MaterialExchangePayload,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<MaterialExchangeResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/material-exchanges`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json === 'object' && json !== null && 'id' in json) {
+    return { ok: true, exchange: json as Record<string, unknown> };
+  }
+
+  return sessionHttpError(res.status, json, 'Réponse échange matière invalide');
+}
+
 /** Détail session + ventes (GET admin) — aligné OpenAPI `CashSessionDetailResponseV1` / Story 6.8. */
 export type CashSessionDetailV1 = CashSessionCurrentV1 & {
   readonly sales?: ReadonlyArray<Record<string, unknown>>;

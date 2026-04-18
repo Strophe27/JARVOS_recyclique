@@ -1216,6 +1216,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}/material-exchanges:
+    post:
+      operationId: recyclique_cashSessions_createMaterialExchange
+      tags:
+        - cash-sessions
+      summary: Échange matière (Story 24.6)
+      description: |
+        Conteneur métier « échange » : trace matière et delta financier. Delta nul = pas de vente ni reversal
+        pour la différence ; delta positif = complément via ``SaleCreateV1`` ; delta négatif = reversal total
+        sur la vente source (``SaleReversalCreateV1``). Permissions ``caisse.exchange`` et, si reversal, ``caisse.refund``.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialExchangeCreateV1"
+      responses:
+        "201":
+          description: Échange enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialExchangeResponseV1"
+        "400":
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission manquante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/cash-sessions/{session_id}/close:
     post:
       operationId: recyclique_cashSessions_closeSession
@@ -10622,6 +10666,72 @@ components:
         paheko_accounting_sync_hint:
           type: string
           description: Rappel chaîne canonique Paheko (synchro via clôture).
+      additionalProperties: false
+    MaterialExchangeCreateV1:
+      type: object
+      required:
+        - delta_amount_cents
+        - material_trace
+      properties:
+        delta_amount_cents:
+          type: integer
+          description: >
+            Positif = complément (création vente) ; négatif = remboursement (reversal total sur vente source) ;
+            zéro = matière seule (aucun PaymentTransaction pour la différence).
+        material_trace:
+          type: object
+          description: Retour(s) et sortie(s) matière (références ou saisie minimale).
+          additionalProperties: true
+        complement_sale:
+          allOf:
+            - $ref: "#/components/schemas/SaleCreateV1"
+          nullable: true
+          description: Requis si delta > 0 (vente nominale complément).
+        reversal:
+          allOf:
+            - $ref: "#/components/schemas/SaleReversalCreateV1"
+          nullable: true
+          description: Requis si delta < 0 (reversal canonique sur la vente source).
+        idempotency_key:
+          type: string
+          nullable: true
+          maxLength: 128
+      additionalProperties: false
+    MaterialExchangeResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - delta_amount_cents
+        - material_trace
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        delta_amount_cents:
+          type: integer
+        material_trace:
+          type: object
+          additionalProperties: true
+        complement_sale_id:
+          type: string
+          format: uuid
+          nullable: true
+        sale_reversal_id:
+          type: string
+          format: uuid
+          nullable: true
+        paheko_accounting_sync_hint:
+          type: string
+          nullable: true
+          description: Alignement chaîne Paheko (clôture / snapshot / outbox).
+        created_at:
+          type: string
+          format: date-time
       additionalProperties: false
     SaleCorrectionSaleDateV1:
       type: object

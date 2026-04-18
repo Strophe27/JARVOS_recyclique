@@ -417,6 +417,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cash-sessions/{session_id}/material-exchanges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Échange matière (Story 24.6)
+         * @description Conteneur métier « échange » : trace matière et delta financier. Delta nul = pas de vente ni reversal
+         *     pour la différence ; delta positif = complément via ``SaleCreateV1`` ; delta négatif = reversal total
+         *     sur la vente source (``SaleReversalCreateV1``). Permissions ``caisse.exchange`` et, si reversal, ``caisse.refund``.
+         */
+        post: operations["recyclique_cashSessions_createMaterialExchange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cash-sessions/{session_id}/close": {
         parameters: {
             query?: never;
@@ -4164,6 +4186,37 @@ export interface components {
             /** @description Rappel chaîne canonique Paheko (synchro via clôture). */
             paheko_accounting_sync_hint: string;
         };
+        MaterialExchangeCreateV1: {
+            /** @description Positif = complément (création vente) ; négatif = remboursement (reversal total sur vente source) ; zéro = matière seule (aucun PaymentTransaction pour la différence). */
+            delta_amount_cents: number;
+            /** @description Retour(s) et sortie(s) matière (références ou saisie minimale). */
+            material_trace: {
+                [key: string]: unknown;
+            };
+            /** @description Requis si delta > 0 (vente nominale complément). */
+            complement_sale?: components["schemas"]["SaleCreateV1"] | null;
+            /** @description Requis si delta < 0 (reversal canonique sur la vente source). */
+            reversal?: components["schemas"]["SaleReversalCreateV1"] | null;
+            idempotency_key?: string | null;
+        };
+        MaterialExchangeResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            delta_amount_cents: number;
+            material_trace: {
+                [key: string]: unknown;
+            };
+            /** Format: uuid */
+            complement_sale_id?: string | null;
+            /** Format: uuid */
+            sale_reversal_id?: string | null;
+            /** @description Alignement chaîne Paheko (clôture / snapshot / outbox). */
+            paheko_accounting_sync_hint?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
         SaleCorrectionSaleDateV1: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -5666,6 +5719,50 @@ export interface operations {
             };
             /** @description Conflit idempotence */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_createMaterialExchange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialExchangeCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Échange enregistré */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialExchangeResponseV1"];
+                };
+            };
+            /** @description Erreur de validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission manquante */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

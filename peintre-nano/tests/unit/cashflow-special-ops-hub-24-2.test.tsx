@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMockAuthAdapter } from '../../src/app/auth/mock-auth-adapter';
 import {
   createDefaultDemoEnvelope,
+  PERMISSION_CASHFLOW_EXCHANGE,
   PERMISSION_CASHFLOW_NOMINAL,
   PERMISSION_CASHFLOW_REFUND,
   TRANSVERSE_PERMISSION_ADMIN_VIEW,
@@ -58,6 +59,7 @@ describe('Story 24.2 — hub opérations spéciales caisse', () => {
     expect(screen.getByTestId('cashflow-special-ops-card-decaisser')).toBeTruthy();
     expect(screen.getByTestId('cashflow-special-ops-card-mouvement-interne')).toBeTruthy();
     expect(screen.getByTestId('cashflow-special-ops-card-echanger')).toBeTruthy();
+    expect(screen.getByTestId('cashflow-special-ops-echanger-cta')).toBeTruthy();
   });
 
   it('sans caisse.refund : pas de CTA remboursement, message explicite', () => {
@@ -122,5 +124,22 @@ describe('Story 24.2 — hub opérations spéciales caisse', () => {
     );
     expect(screen.queryByTestId('cashflow-special-ops-annuler-cta')).toBeNull();
     expect(screen.getByTestId('cashflow-special-ops-annuler-blocked')).toBeTruthy();
+  });
+
+  it('sans caisse.exchange : pas de CTA échange matière', () => {
+    const keys = createDefaultDemoEnvelope().permissions.permissionKeys.filter(
+      (k) => k !== PERMISSION_CASHFLOW_EXCHANGE,
+    );
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope({ permissions: { permissionKeys: keys } }),
+    });
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <CashflowSpecialOpsHub widgetProps={{}} />
+      </RootProviders>,
+    );
+    expect(screen.queryByTestId('cashflow-special-ops-echanger-cta')).toBeNull();
+    expect(screen.getByTestId('cashflow-special-ops-echanger-blocked')).toBeTruthy();
   });
 });

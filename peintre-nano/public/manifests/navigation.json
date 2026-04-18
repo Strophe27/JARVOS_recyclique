@@ -353,6 +353,19 @@
       }
     },
     {
+      "id": "cashflow-exchange",
+      "route_key": "cashflow-exchange",
+      "path": "/caisse/echange",
+      "page_key": "cashflow-exchange",
+      "shortcut_id": "go-cashflow-exchange",
+      "label_key": "nav.cashflow.exchange",
+      "required_permission_keys": ["caisse.access", "caisse.exchange"],
+      "visibility": {
+        "permission_any": ["caisse.exchange"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "cashflow-close",
       "route_key": "cashflow-close",
       "path": "/caisse/cloture",

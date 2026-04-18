@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import {
   PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
   PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND,
+  PERMISSION_CASHFLOW_EXCHANGE,
   PERMISSION_CASHFLOW_NOMINAL,
   PERMISSION_CASHFLOW_REFUND,
   TRANSVERSE_PERMISSION_ADMIN_VIEW,
@@ -13,7 +14,7 @@ import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 
 /**
  * Story 24.2 — hub catalogue opérations non nominales (PRD §20.1) : entrées séparées
- * annulation / remboursement ; parcours P1 non livrés explicitement « à venir » (24.6–24.8).
+ * annulation / remboursement ; parcours P1 restants « à venir » (24.7–24.8) ; échange 24.6 manifesté.
  */
 export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode {
   const envelope = useContextEnvelope();
@@ -22,6 +23,8 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
     keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_REFUND);
   const canExceptionalRefund =
     keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND);
+  const canExchange =
+    keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_EXCHANGE);
   const canAdminSessions = keys.includes(TRANSVERSE_PERMISSION_ADMIN_VIEW);
 
   return (
@@ -150,8 +153,24 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
         <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-echanger">
           <Text fw={600}>Échanger</Text>
           <Text size="sm" c="dimmed" mt="xs">
-            À venir — story 24.6 (échange matière et différence financière). Pas de parcours factice.
+            Échange matière : complément (vente) ou remboursement (reversal), alignés PRD §11 — route{' '}
+            <code>/caisse/echange</code>, <code>page_key</code> <code>cashflow-exchange</code>.
           </Text>
+          {canExchange ? (
+            <Button
+              mt="md"
+              variant="light"
+              data-testid="cashflow-special-ops-echanger-cta"
+              onClick={() => spaNavigateTo('/caisse/echange')}
+            >
+              Ouvrir l&apos;échange matière
+            </Button>
+          ) : (
+            <Text size="sm" c="dimmed" mt="md" data-testid="cashflow-special-ops-echanger-blocked">
+              Permissions <code>caisse.access</code> et <code>{PERMISSION_CASHFLOW_EXCHANGE}</code> requises — aligné{' '}
+              <code>page-cashflow-exchange</code>.
+            </Text>
+          )}
         </Card>
       </SimpleGrid>
     </Stack>

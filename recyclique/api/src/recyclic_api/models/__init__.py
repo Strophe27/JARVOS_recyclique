@@ -6,6 +6,7 @@ from .deposit import Deposit
 from .sale import Sale
 from .sale_reversal import SaleReversal, RefundReasonCode
 from .exceptional_refund import ExceptionalRefund
+from .material_exchange import MaterialExchange
 from .sale_item import SaleItem
 from .payment_method import PaymentMethodDefinition, PaymentMethodKind
 from .payment_transaction import PaymentTransaction
@@ -48,6 +49,7 @@ __all__ = [
     "SaleReversal",
     "RefundReasonCode",
     "ExceptionalRefund",
+    "MaterialExchange",
     "SaleItem",
     "PaymentMethodDefinition",
     "PaymentMethodKind",

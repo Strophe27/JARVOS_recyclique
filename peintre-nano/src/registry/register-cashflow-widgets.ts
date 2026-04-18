@@ -3,6 +3,7 @@ import { CaisseCurrentTicketWidget } from '../domains/cashflow/CaisseCurrentTick
 import { CaisseBrownfieldDashboardWidget } from '../domains/cashflow/CaisseBrownfieldDashboardWidget';
 import { CashflowNominalWizard } from '../domains/cashflow/CashflowNominalWizard';
 import { CashflowExceptionalRefundWizard } from '../domains/cashflow/CashflowExceptionalRefundWizard';
+import { CashflowExchangeWizard } from '../domains/cashflow/CashflowExchangeWizard';
 import { CashflowRefundWizard } from '../domains/cashflow/CashflowRefundWizard';
 import { CashflowCloseWizard } from '../domains/cashflow/CashflowCloseWizard';
 import { CashflowSaleCorrectionWizard } from '../domains/cashflow/CashflowSaleCorrectionWizard';
@@ -17,6 +18,7 @@ export function registerCashflowWidgets(): void {
   registerWidget('caisse-current-ticket', CaisseCurrentTicketWidget);
   registerWidget('cashflow-nominal-wizard', CashflowNominalWizard);
   registerWidget('cashflow-exceptional-refund-wizard', CashflowExceptionalRefundWizard);
+  registerWidget('cashflow-exchange-wizard', CashflowExchangeWizard);
   registerWidget('cashflow-refund-wizard', CashflowRefundWizard);
   registerWidget('cashflow-special-don-wizard', makeCashflowSpecialEncaissementWizard('DON_SANS_ARTICLE'));
   registerWidget(

@@ -53,6 +53,7 @@ from recyclic_api.schemas.exceptional_refund import (
     ExceptionalRefundCreate,
     ExceptionalRefundResponse,
 )
+from recyclic_api.schemas.material_exchange import MaterialExchangeCreate, MaterialExchangeResponse
 from recyclic_api.application.cash_session_close_presentation import (
     present_close_cash_session_outcome,
 )
@@ -61,6 +62,7 @@ from recyclic_api.application.cash_session_opening import open_cash_session
 from recyclic_api.services.cash_session_response_enrichment import enrich_session_response
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
 from recyclic_api.services.exceptional_refund_service import ExceptionalRefundService
+from recyclic_api.services.material_exchange_service import MaterialExchangeService
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from uuid import UUID
@@ -693,6 +695,51 @@ async def create_exceptional_refund(
     )
 
     return result
+
+
+@router.post(
+    "/{session_id}/material-exchanges",
+    response_model=MaterialExchangeResponse,
+    status_code=201,
+    operation_id="recyclique_cashSessions_createMaterialExchange",
+    summary="Échange matière (Story 24.6) — conteneur et sous-flux vente ou reversal",
+    description="""
+    Orchestre un échange matière avec différence financière nulle (trace seule), positive (complément = vente canonique)
+    ou négative (reversal total sur vente source).
+
+    **Permissions :** `caisse.exchange` ; pour le reversal, également `caisse.refund`.
+    """,
+    responses={
+        201: {"description": "Échange enregistré"},
+        400: {"description": "Erreur de validation"},
+        403: {"description": "Permission manquante"},
+    },
+    tags=["Sessions de Caisse"],
+)
+async def create_material_exchange(
+    session_id: str,
+    payload: MaterialExchangeCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+):
+    try:
+        sid = UUID(str(session_id))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Session ID invalide") from e
+
+    service = MaterialExchangeService(db)
+    try:
+        return service.create_material_exchange(
+            cash_session_id=sid,
+            payload=payload,
+            operator_user=current_user,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (ConflictError, NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
 
 
 @router.post(

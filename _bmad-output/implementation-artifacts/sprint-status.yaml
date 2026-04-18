@@ -1,3 +1,7 @@
+# last_updated: 2026-04-19 — story 24-6 Story Runner BMAD (brief orchestrateur parent) : CS→VS→DS→GATE×2 (répétés après QA)→QA e2e `cashflow-exchange-24-6.e2e.test.tsx`→CR PASS ; 24-6 déjà done (YAML inchangé hors trace) ; vs=0 qa=0 cr=0 ; prochaine story 24-7 backlog ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-6 Story Runner fin : CS→VS→DS→GATE FAIL (lint TS)→DS fix CashflowSubmitSurfaceError + handler NotFound/Conflict→GATE→QA→CR×2 APPROVE ; 24-6 review→done ; vs=0 qa=0 cr=1 ; prochaine 24-7 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-6 DS bmad-dev-story Task : 24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement ready-for-dev → review ; POST /material-exchanges + permission caisse.exchange + hub /caisse/echange ; pytest story246 + vitest hub/registry ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-6 CS bmad-create-story (create, Task spawn) : 24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement backlog → ready-for-dev ; fichier story PRD §10.7–§11 + ADR D2 ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-5 Story Runner fin : CS→VS→DS→GATE→QA→CR×2 correctifs (idempotence composite OpenAPI solde SQLite) → APPROVE ; 24-5 review→done ; vs=0 qa=0 cr=2 ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-5 DS bmad-dev-story Task : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification in-progress → review ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-5 DS bmad-dev-story Task : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification ready-for-dev → in-progress ; branche epic/24-operations-speciales-orchestration
@@ -248,7 +252,7 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
-last_updated: "2026-04-19" # story 24-4 Story Runner fin : GATE+QA+CR ; 24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1 done
+last_updated: "2026-04-19" # story 24-6 Story Runner BMAD : run complet Tasks + gates doublon post-QA ; CR PASS ; e2e cashflow-exchange-24-6 ; 24-6 done
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -495,7 +499,7 @@ development_status:
   24-3-remboursement-standard-visibilite-terrain-et-chaine-paheko-et-statut-sync: done
   24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1: done
   24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification: done
-  24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement: backlog
+  24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement: done
   24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle: backlog
   24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client: backlog
   24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe: backlog

@@ -248,6 +248,7 @@ from recyclic_api.models.accounting_period_authority import AccountingPeriodAuth
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.exceptional_refund import ExceptionalRefund
+from recyclic_api.models.material_exchange import MaterialExchange
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.paheko_outbox import PahekoOutboxItem
@@ -828,6 +829,7 @@ def create_tables_if_not_exist():
                     Sale.__table__,
                     SaleReversal.__table__,
                     ExceptionalRefund.__table__,
+                    MaterialExchange.__table__,
                     SaleItem.__table__,
                     PaymentTransaction.__table__,
                     Deposit.__table__,
@@ -886,6 +888,7 @@ def _sqlite_skip_audit_log_commit(request):
     from recyclic_api.api.api_v1.endpoints import auth as auth_endpoints
     from recyclic_api.api.api_v1.endpoints import reception as reception_endpoints
     from recyclic_api.services import exceptional_refund_service as exceptional_refund_service_mod
+    from recyclic_api.services import material_exchange_service as material_exchange_service_mod
     from recyclic_api.services import sale_service as sale_service_mod
 
     _noop = lambda *args, **kwargs: None
@@ -898,6 +901,7 @@ def _sqlite_skip_audit_log_commit(request):
         patch.object(reception_endpoints, "log_audit", _noop),
         patch.object(sale_service_mod, "log_audit", _noop),
         patch.object(exceptional_refund_service_mod, "log_audit", _noop),
+        patch.object(material_exchange_service_mod, "log_audit", _noop),
     ):
         yield
 

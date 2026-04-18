@@ -16,6 +16,7 @@ CAISSE_ACCESS_PERMISSION = "caisse.access"
 CAISSE_VIRTUAL_ACCESS_PERMISSION = "caisse.virtual.access"
 CAISSE_DEFERRED_ACCESS_PERMISSION = "caisse.deferred.access"
 CAISSE_REFUND_PERMISSION = "caisse.refund"
+CAISSE_EXCHANGE_PERMISSION = "caisse.exchange"
 CAISSE_EXCEPTIONAL_REFUND_PERMISSION = "refund.exceptional"
 ACCOUNTING_PRIOR_YEAR_REFUND_PERMISSION = "accounting.prior_year_refund"
 CAISSE_SPECIAL_ENCAISSEMENT_PERMISSION = "caisse.special_encaissement"
@@ -86,6 +87,40 @@ def grant_user_caisse_sale_mode_eligibility(
         name=gkey,
         key=gkey,
         description="Groupe test Story 6.x variantes caisse",
+        site_id=None,
+    )
+    group.permissions.append(perm)
+    db.add(group)
+    db.flush()
+    group.users.append(user)
+    db.commit()
+    db.refresh(user)
+
+
+def grant_user_caisse_exchange_permission(db: Session, user: User) -> None:
+    """Story 24.6 — ajoute ``caisse.exchange`` au groupe caisse de test."""
+    perm = db.query(Permission).filter(Permission.name == CAISSE_EXCHANGE_PERMISSION).first()
+    if not perm:
+        perm = Permission(
+            name=CAISSE_EXCHANGE_PERMISSION,
+            description="Échange matière caisse (tests 24.6)",
+        )
+        db.add(perm)
+        db.flush()
+
+    gkey = f"story62-caisse-{user.id}"
+    group = db.query(Group).filter(Group.key == gkey).first()
+    if group:
+        if not any(p.name == CAISSE_EXCHANGE_PERMISSION for p in group.permissions):
+            group.permissions.append(perm)
+        db.commit()
+        db.refresh(user)
+        return
+
+    group = Group(
+        name=gkey,
+        key=gkey,
+        description="Groupe test Story 24.6 material exchange",
         site_id=None,
     )
     group.permissions.append(perm)
