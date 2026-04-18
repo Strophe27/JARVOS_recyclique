@@ -216,7 +216,7 @@ La caisse peut donc être **correcte dans Recyclique** même si Paheko est momen
 
 **Racine du dépôt :** le dépôt Git **JARVOS_recyclique** (mono-repo). Tous les chemins ci-dessous sont **relatifs à cette racine** (dossiers `peintre-nano/`, `recyclique/api/`, `references/`, etc.).
 
-**Note :** le fichier `references/_depot/prompt-agent-dev-qa-compta.md` vit dans un dossier **dépôt / staging** interne ; sur un clone minimal il peut être absent — la grille QA y est listée pour les contributeurs qui l’ont en local.
+**Note :** la grille QA détaillée est dans **`references/migration-paheko/2026-04-18_spec-corrections-qa-parametrage-comptable-superadmin.md`** (matière projet, plus dans le dossier dépôt).
 
 | Fichier | Rôle court |
 |---------|------------|
@@ -231,7 +231,7 @@ La caisse peut donc être **correcte dans Recyclique** même si Paheko est momen
 | `recyclique/api/src/recyclic_api/services/paheko_close_batch_builder.py` | Construction du batch de clôture (ventilation par moyen, seul mode). |
 | `recyclique/api/src/recyclic_api/services/paheko_mapping_service.py` | Résolution mapping + préfixe libellé. |
 | `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md` | PRD produit (principes, workflow, outbox). |
-| `references/_depot/prompt-agent-dev-qa-compta.md` | Grille QA comptable (contrôles attendus) — chemin interne, optionnel selon clone. |
+| `references/migration-paheko/2026-04-18_spec-corrections-qa-parametrage-comptable-superadmin.md` | Grille QA comptable (contrôles attendus) — référence projet. |
 
 ---
 

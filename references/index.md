@@ -79,6 +79,9 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`migration-paheko/`** — Guides Paheko/RecyClique, TODO, comptes-rendus, décla éco-organismes, specs d'intégration tiers (ex. HelloAsso). Croiser avec **consolidation-1.4.5/** pour le code. Détail : **migration-paheko/index.md**. **PRD caisse / compta / Paheko (v1.0, 2026-04-15)** : [migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md](migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md).
   _(Charger : intégration Paheko, décla éco-organismes, historique décisions, cadrage HelloAsso / paiements en ligne.)_
 
+- **`operations-speciales-recyclique/`** — **PRD v1.1 + prompt ultra opérationnel** : opérations spéciales de caisse, sorties matière, tags métier, Paheko (pack ventilé depuis `_depot/` le 2026-04-18). Détail : **operations-speciales-recyclique/index.md**.
+  _(Charger : chantier opérations spéciales, stories BMAD, audit repo avant implémentation.)_
+
 - **`paheko/`** — Guide et référence Paheko : clone, doc officielle (Fossil). Code source dans **paheko/repo/** (gitignore). Détail : **paheko/index.md**.
   _(Charger : intégration Paheko, analyse API/extensions ou croisement avec migration-paheko.)_
 

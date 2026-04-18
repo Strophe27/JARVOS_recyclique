@@ -14,6 +14,7 @@
 | `idees-kanban/` | Kanban d'idees (un fichier par idee) — gere par le skill **idees-kanban** |
 | `ancien-repo/` | Guide et clone local du repo Recyclique 1.4.4 (`repo/` gitignore) + doc brownfield |
 | `migration-paheko/` | Guides Paheko/RecyClique, TODO, CR, decla eco-organismes |
+| `operations-speciales-recyclique/` | PRD + prompt agent pour le chantier operations speciales caisse (tags, Paheko) — pack produit |
 | `paheko/` | Guide et clone local du code source Paheko (`repo/` gitignore) — reference pour integration |
 | `peintre/` | Travail et synthese sur JARVOS Peintre (nano → macro, DSL layout, orchestration UI) ; pas les prompts/reponses Perplexity (voir `recherche/`) |
 | `vision-projet/` | Matière pour vision projet (Brief, roadmap, présentations, contexte RAG / JARVOS nano-mini) |
