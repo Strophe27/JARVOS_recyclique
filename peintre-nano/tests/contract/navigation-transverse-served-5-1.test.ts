@@ -90,6 +90,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).toContain('transverse-consultation-article');
     expect(ids).toContain('transverse-consultation-don');
     expect(ids).toContain('cashflow-nominal');
+    expect(ids).toContain('cashflow-special-ops-hub');
     expect(ids).toContain('cashflow-refund');
     expect(ids).not.toContain('cashflow-special-don');
     expect(ids).not.toContain('cashflow-special-adhesion');

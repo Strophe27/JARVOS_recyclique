@@ -82,6 +82,7 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
       'nav.cashflow.specialAdhesion': 'Adhésion / cotisation',
       'nav.cashflow.socialDon': 'Don',
       'nav.cashflow.close': 'Clôture de caisse',
+      'nav.cashflow.specialOpsHub': 'Opérations spéciales',
       'nav.cashflow.saleCorrection': 'Correction ticket (super-admin)',
     },
   };

@@ -1,3 +1,5 @@
+# last_updated: 2026-04-18 — story 24-2 CS bmad-create-story (create, Task spawn) : 24-2-hub-operations-speciales-caisse-et-navigation-vers-parcours backlog → ready-for-dev ; fichier story PRD §20.1 + CREOS peintre-nano ; epic-24 inchangé in-progress
+# last_updated: 2026-04-18 — story 24-2 Story Runner BMAD : CS→VS(retry1)→DS→GATE→QA→CR1 CHANGES→DS fix permissions→GATE→CR2 APPROVE ; 24-2 review→done ; vs_loop=1 qa_loop=0 cr_loop=1 ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-18 — story 24-1 Story Runner BMAD : CS sauté (story déjà sur disque) → VS→DS→GATE→QA→CR PASS ; 24-1 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; branche attendue epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-18 — story 24-1 CS bmad-create-story (create, Task spawn) : idempotent PASS — story déjà review ; development_status 24-1 inchangé ; alignement epics.md §24.1 vérifié
 # last_updated: 2026-04-18 — story 24-1 CS bmad-create-story (create) : 24-1-audit-repo-aware-matrices-prd-depot-et-plan-de-tests-p0 backlog → ready-for-dev ; epic-24 backlog → in-progress
@@ -229,7 +231,8 @@ generated: "2026-04-01"
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
 # last_updated: 2026-04-16 — story 22-2 DS bmad-dev-story Task : 22-2 in-progress→review (dual-read compare + OpenAPI)
 # last_updated: 2026-04-16 — story 23-1 Story Runner BMAD (resume_at GATE) : GATE→QA→CR APPROVE ; 23-1 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; gate front omis (story backend)
-last_updated: "2026-04-18" # story 24-1 Story Runner fin : VS→DS→GATE→QA→CR PASS ; 24-1 review→done ; QA doc tests/24-1-audit-repo-aware-doc-qa-summary.md
+# last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
+last_updated: "2026-04-18" # story 24-2 Story Runner fin : review→done ; CR2 APPROVE ; vs=1 cr=1 qa=0 ; hub + gates ciblés + correctif CTA remboursement caisse.access+refund
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -472,7 +475,7 @@ development_status:
   # n'est pas stabilise — le YAML ne peut pas coder un graphe ; le pilotage reste discipline Story Runner / board.
   epic-24: in-progress
   24-1-audit-repo-aware-matrices-prd-depot-et-plan-de-tests-p0: done
-  24-2-hub-operations-speciales-caisse-et-navigation-vers-parcours: backlog
+  24-2-hub-operations-speciales-caisse-et-navigation-vers-parcours: done
   24-3-remboursement-standard-visibilite-terrain-et-chaine-paheko-et-statut-sync: backlog
   24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1: backlog
   24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification: backlog

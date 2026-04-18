@@ -5,6 +5,7 @@ import { CashflowNominalWizard } from '../domains/cashflow/CashflowNominalWizard
 import { CashflowRefundWizard } from '../domains/cashflow/CashflowRefundWizard';
 import { CashflowCloseWizard } from '../domains/cashflow/CashflowCloseWizard';
 import { CashflowSaleCorrectionWizard } from '../domains/cashflow/CashflowSaleCorrectionWizard';
+import { CashflowSpecialOpsHub } from '../domains/cashflow/CashflowSpecialOpsHub';
 import { CashflowSocialDonWizard } from '../domains/cashflow/CashflowSocialDonWizard';
 import { makeCashflowSpecialEncaissementWizard } from '../domains/cashflow/CashflowSpecialEncaissementWizard';
 import { registerWidget } from './widget-registry';
@@ -21,6 +22,7 @@ export function registerCashflowWidgets(): void {
     makeCashflowSpecialEncaissementWizard('ADHESION_ASSOCIATION'),
   );
   registerWidget('cashflow-social-don-wizard', CashflowSocialDonWizard);
+  registerWidget('cashflow-special-ops-hub', CashflowSpecialOpsHub);
   registerWidget('cashflow-close-wizard', CashflowCloseWizard);
   registerWidget('cashflow-sale-correction-wizard', CashflowSaleCorrectionWizard);
   registerWidget('admin-cash-session-detail', AdminCashSessionDetailWidget);

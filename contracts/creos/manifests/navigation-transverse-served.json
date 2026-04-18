@@ -38,6 +38,18 @@
       }
     },
     {
+      "id": "cashflow-special-ops-hub",
+      "route_key": "cashflow-special-ops-hub",
+      "path": "/caisse/operations-speciales",
+      "page_key": "cashflow-special-ops-hub",
+      "shortcut_id": "go-cashflow-special-ops-hub",
+      "label_key": "nav.cashflow.specialOpsHub",
+      "visibility": {
+        "permission_any": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "reception-nominal",
       "route_key": "reception-nominal",
       "path": "/reception",

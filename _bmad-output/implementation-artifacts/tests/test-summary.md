@@ -401,3 +401,36 @@ Résultat Vitest : **2** fichiers, **88** tests, **tous passés** (exit code **0
 - [x] Tests exécutés avec succès sur le périmètre ciblé.
 - [x] Synthèse ajoutée dans ce fichier.
 - **MCP `user-chrome-devtools`** : hors exécution automatisée — voir **NEEDS_HITL** story / artefact **08** (AC3).
+
+---
+
+# Synthèse automatisation des tests — Story 24.2 (hub opérations spéciales caisse)
+
+## Contexte
+
+Story **24.2** : hub CREOS `cashflow-special-ops-hub`, route `/caisse/operations-speciales`, navigation manifestée, widget catalogue PRD, tests unitaires existants (`cashflow-special-ops-hub-24-2.test.tsx`).
+
+## Stratégie QA (skill `bmad-qa-generate-e2e-tests`)
+
+| Volet | Approche |
+|--------|-----------|
+| **Tests API** | **NA** — pas d’endpoint nouveau. |
+| **E2E UI (Vitest/jsdom)** | Parcours `App` + `RootProviders` : URL profonde, nav latérale `nav-entry-cashflow-special-ops-hub`, découvrabilité depuis `/caisse` (`caisse-open-special-ops-hub`), gate `caisse.refund`, navigation hub → remboursement. |
+
+## Tests générés
+
+### E2E (`peintre-nano/tests/e2e/`)
+
+- [x] `cashflow-special-ops-hub-24-2.e2e.test.tsx` — 5 scénarios (hub profond, nav, lien caisse, permission remboursement, CTA → `/caisse/remboursement`).
+
+## Commande de reproduction
+
+```powershell
+Set-Location "d:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\peintre-nano"
+npm test -- tests/e2e/cashflow-special-ops-hub-24-2.e2e.test.tsx
+```
+
+## Validation checklist (workflow Quinn)
+
+- [x] E2E générés, `fetch` / `ResizeObserver` alignés sur les autres e2e caisse.
+- [x] Vitest : fichier unique, **5** tests, **tous passés** (exit code **0**).

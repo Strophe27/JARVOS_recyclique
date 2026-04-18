@@ -36,6 +36,7 @@ export const NAV_LABEL_PRESENTATION_FALLBACKS: Readonly<Record<string, string>> 
   'nav.bandeauLiveSandbox': 'Bandeau temps réel',
   'nav.cashflow.nominal': 'Caisse',
   'nav.cashflow.refund': 'Remboursement',
+  'nav.cashflow.specialOpsHub': 'Opérations spéciales',
   'nav.cashflow.close': 'Clôture de caisse',
   'nav.reception.nominal': 'Réception',
 };

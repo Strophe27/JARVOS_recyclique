@@ -18,7 +18,10 @@ import { Calendar, PlayCircle, Wallet } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { postOpenCashSession, resolveCashSessionOpeningIds } from '../../api/cash-session-client';
 import { recycliqueClientFailureFromSalesHttp, type RecycliqueClientFailure } from '../../api/recyclique-api-error';
-import { PERMISSION_CASHFLOW_REFUND } from '../../app/auth/default-demo-auth-adapter';
+import {
+  PERMISSION_CASHFLOW_NOMINAL,
+  PERMISSION_CASHFLOW_REFUND,
+} from '../../app/auth/default-demo-auth-adapter';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
@@ -203,6 +206,8 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
     useCaisseServerCurrentSession(auth);
   const authSession = auth.getSession();
   const keys = envelope.permissions.permissionKeys;
+  const canOpenRefundCta =
+    keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_REFUND);
   const [openingMode, setOpeningMode] = useState<OpeningMode>('real');
   const [registerIdInput, setRegisterIdInput] = useState(() =>
     isSessionOpenSurface ? registerIdFromWindowSearch() : '',
@@ -529,16 +534,26 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
           <Title order={2} data-testid="caisse-workspace-heading">
             {workspaceHeading}
           </Title>
-          {envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+          <Group gap="xs">
             <Button
               variant="light"
               size="sm"
-              data-testid="caisse-open-refund"
-              onClick={() => spaNavigateTo('/caisse/remboursement')}
+              data-testid="caisse-open-special-ops-hub"
+              onClick={() => spaNavigateTo('/caisse/operations-speciales')}
             >
-              Remboursement
+              Opérations spéciales
             </Button>
-          ) : null}
+            {canOpenRefundCta ? (
+              <Button
+                variant="light"
+                size="sm"
+                data-testid="caisse-open-refund"
+                onClick={() => spaNavigateTo('/caisse/remboursement')}
+              >
+                Remboursement
+              </Button>
+            ) : null}
+          </Group>
         </Group>
         <Text size="sm" c="dimmed">
           {workspaceIntro}
@@ -741,16 +756,26 @@ export function CaisseBrownfieldDashboardWidget(_props: RegisteredWidgetProps): 
                 {workspaceIntro}
               </Text>
             </div>
-            {envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+            <Group gap="xs">
               <Button
                 variant="light"
                 size="sm"
-                data-testid="caisse-open-refund"
-                onClick={() => spaNavigateTo('/caisse/remboursement')}
+                data-testid="caisse-open-special-ops-hub"
+                onClick={() => spaNavigateTo('/caisse/operations-speciales')}
               >
-                Remboursement
+                Opérations spéciales
               </Button>
-            ) : null}
+              {canOpenRefundCta ? (
+                <Button
+                  variant="light"
+                  size="sm"
+                  data-testid="caisse-open-refund"
+                  onClick={() => spaNavigateTo('/caisse/remboursement')}
+                >
+                  Remboursement
+                </Button>
+              ) : null}
+            </Group>
           </Group>
         </div>
       ) : null}
