@@ -198,7 +198,10 @@ function BandeauLiveBody({
                   livraison partielle Paheko
                 </span>
               ) : null}
-              {sync.worst_state === undefined && sync.source_reachable === undefined ? (
+              {sync.worst_state === undefined &&
+              sync.source_reachable === undefined &&
+              sync.deferred_remote_retry !== true &&
+              sync.partial_success !== true ? (
                 <span className={classes.muted}>—</span>
               ) : null}
             </dd>

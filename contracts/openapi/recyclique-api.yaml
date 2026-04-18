@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.24-draft
+  version: 0.1.25-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
