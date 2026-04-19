@@ -16,6 +16,9 @@ import {
   liveSnapshotFromJsonBody,
   snapshotFromWidgetProps,
 } from './live-snapshot-normalize';
+import { useKpiLiveBannerSettings } from './kpi-live-banner-settings-provider';
+import { KpiLiveStrip } from './KpiLiveStrip';
+import { useUnifiedLiveKpiPoll } from './use-unified-live-kpi-poll';
 
 /** Codes stables DOM / `reportRuntimeFallback` — alignés story 4.4 (préfixe `BANDEAU_LIVE_*`). */
 export const BANDEAU_LIVE_RUNTIME_CODES = {
@@ -52,6 +55,16 @@ function pollingIntervalFromWidgetProps(
     return r;
   }
   return DEFAULT_LIVE_SNAPSHOT_POLLING_INTERVAL_S;
+}
+
+function siteIdFromWidgetProps(
+  widgetProps: Readonly<Record<string, unknown>> | undefined,
+): string | null {
+  const v = widgetProps?.site_id ?? widgetProps?.siteId;
+  if (typeof v === 'string' && v.trim()) {
+    return v.trim();
+  }
+  return null;
 }
 
 const OPEN_STATE_LABELS: Record<string, string> = {
@@ -268,6 +281,16 @@ function BandeauLiveLive({ widgetProps }: BandeauLiveLiveProps) {
   const reportedDegradedEmptyRef = useRef(false);
   const stopPollingRef = useRef(false);
 
+  const { settings: kpiBannerSettings } = useKpiLiveBannerSettings();
+  /** Aligné panneau admin : si caisse ET réception sont désactivés, pas de ligne KPI dans ce widget non plus. */
+  const showUnifiedKpiChrome =
+    kpiBannerSettings.showOnCaisse || kpiBannerSettings.showOnReception;
+  const kpi = useUnifiedLiveKpiPoll({
+    siteId: siteIdFromWidgetProps(widgetProps),
+    enabled: phase !== 'module_disabled' && showUnifiedKpiChrome,
+    intervalMs: kpiBannerSettings.refreshIntervalMs,
+  });
+
   useEffect(() => {
     if (phase !== 'ready' || !degradedEmpty) {
       reportedDegradedEmptyRef.current = false;
@@ -417,49 +440,69 @@ function BandeauLiveLive({ widgetProps }: BandeauLiveLiveProps) {
     return <BandeauLiveModuleDisabled />;
   }
 
+  const kpiStrip = showUnifiedKpiChrome ? (
+    <KpiLiveStrip
+      stats={kpi.data}
+      isLoading={kpi.isLoading}
+      isRefreshing={kpi.isRefreshing}
+      error={kpi.error}
+      isOnline={kpi.isOnline}
+      lastUpdate={kpi.lastUpdate}
+      variant="default"
+      title="Indicateurs jour (live)"
+      data-testid="bandeau-live-unified-kpi"
+    />
+  ) : null;
+
   if (phase === 'loading') {
     return (
-      <aside
-        className={classes.root}
-        data-testid="widget-bandeau-live"
-        data-bandeau-state="loading"
-        data-runtime-severity="info"
-        data-runtime-code={BANDEAU_LIVE_RUNTIME_CODES.LOADING}
-        role="status"
-      >
-        <p className={classes.muted}>Chargement du live…</p>
-      </aside>
+      <div className={classes.liveStack}>
+        {kpiStrip}
+        <aside
+          className={classes.root}
+          data-testid="widget-bandeau-live"
+          data-bandeau-state="loading"
+          data-runtime-severity="info"
+          data-runtime-code={BANDEAU_LIVE_RUNTIME_CODES.LOADING}
+          role="status"
+        >
+          <p className={classes.muted}>Chargement du live…</p>
+        </aside>
+      </div>
     );
   }
 
   if (phase === 'error' && errorInfo) {
     return (
-      <aside
-        className={classes.root}
-        data-testid="widget-bandeau-live"
-        data-bandeau-state="error"
-        data-runtime-severity="degraded"
-        data-runtime-code={errorInfo.runtimeCode}
-        {...(errorInfo.correlationId ? { 'data-correlation-id': errorInfo.correlationId } : {})}
-        role="alert"
-      >
-        <p className={classes.errorTitle}>{errorInfo.message}</p>
-        {import.meta.env.DEV && errorInfo.correlationId ? (
-          <p className={classes.muted} data-testid="bandeau-live-ref-technique">
-            Réf. technique : {errorInfo.correlationId}
-          </p>
-        ) : null}
-        {import.meta.env.DEV && errorInfo.httpStatus !== undefined ? (
-          <p className={classes.muted} data-http-status={errorInfo.httpStatus}>
-            HTTP {errorInfo.httpStatus}
-          </p>
-        ) : null}
-      </aside>
+      <div className={classes.liveStack}>
+        {kpiStrip}
+        <aside
+          className={classes.root}
+          data-testid="widget-bandeau-live"
+          data-bandeau-state="error"
+          data-runtime-severity="degraded"
+          data-runtime-code={errorInfo.runtimeCode}
+          {...(errorInfo.correlationId ? { 'data-correlation-id': errorInfo.correlationId } : {})}
+          role="alert"
+        >
+          <p className={classes.errorTitle}>{errorInfo.message}</p>
+          {import.meta.env.DEV && errorInfo.correlationId ? (
+            <p className={classes.muted} data-testid="bandeau-live-ref-technique">
+              Réf. technique : {errorInfo.correlationId}
+            </p>
+          ) : null}
+          {import.meta.env.DEV && errorInfo.httpStatus !== undefined ? (
+            <p className={classes.muted} data-http-status={errorInfo.httpStatus}>
+              HTTP {errorInfo.httpStatus}
+            </p>
+          ) : null}
+        </aside>
+      </div>
     );
   }
 
   if (!snapshot) {
-    return null;
+    return <div className={classes.liveStack}>{kpiStrip}</div>;
   }
 
   const banner = degradedEmpty
@@ -467,12 +510,15 @@ function BandeauLiveLive({ widgetProps }: BandeauLiveLiveProps) {
     : null;
 
   return (
-    <BandeauLiveBody
-      snapshot={snapshot}
-      bandeauState={degradedEmpty ? 'degraded' : 'live'}
-      degradedBanner={banner}
-      correlationId={degradedEmpty ? liveCorrelationId : undefined}
-    />
+    <div className={classes.liveStack}>
+      {kpiStrip}
+      <BandeauLiveBody
+        snapshot={snapshot}
+        bandeauState={degradedEmpty ? 'degraded' : 'live'}
+        degradedBanner={banner}
+        correlationId={degradedEmpty ? liveCorrelationId : undefined}
+      />
+    </div>
   );
 }
 

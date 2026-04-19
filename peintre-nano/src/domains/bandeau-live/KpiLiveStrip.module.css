@@ -1,0 +1,137 @@
+.root {
+  margin: 0;
+  padding: var(--pn-space-md);
+  border: 1px solid var(--pn-color-border);
+  border-radius: var(--pn-radius-md);
+  background: var(--pn-color-surface);
+}
+
+.rootCompact {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: 1px solid rgb(46 125 50 / 22%);
+  border-radius: 0;
+  border-bottom: 1px solid rgb(46 125 50 / 18%);
+  background: linear-gradient(135deg, rgb(102 126 234 / 12%) 0%, rgb(118 75 162 / 10%) 100%);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: var(--pn-space-sm) var(--pn-space-md);
+  flex: 1 1 auto;
+  align-items: start;
+  min-width: 0;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pn-color-text-muted);
+  line-height: 1.2;
+}
+
+.rootCompact .label {
+  color: rgb(0 0 0 / 55%);
+}
+
+.value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--pn-color-text);
+  line-height: 1.25;
+}
+
+.rootCompact .value {
+  color: var(--mantine-color-dark-7);
+}
+
+.statusRow {
+  flex-shrink: 0;
+}
+
+.liveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 6%);
+  border: 1px solid rgb(0 0 0 / 8%);
+}
+
+.rootCompact .liveBadge {
+  background: rgb(255 255 255 / 45%);
+  border-color: rgb(46 125 50 / 15%);
+}
+
+.liveBadgeLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--pn-color-text);
+}
+
+.rootCompact .liveBadgeLabel {
+  color: rgb(0 0 0 / 75%);
+}
+
+.statusLed {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%) inset;
+}
+
+.statusLedGreen {
+  background: var(--mantine-color-green-6);
+}
+
+.statusLedRed {
+  background: var(--mantine-color-red-7);
+}
+
+.statusLedBlink {
+  animation: kpi-live-led-pulse 0.85s ease-in-out infinite;
+}
+
+@keyframes kpi-live-led-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.45;
+    filter: brightness(1.35);
+  }
+}
+
+.muted {
+  font-size: 11px;
+  color: var(--pn-color-text-muted);
+}
+
+.timestamp {
+  font-size: 11px;
+  color: var(--pn-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.errorText {
+  margin: 0;
+  font-size: var(--pn-font-size-sm);
+  font-weight: 600;
+  color: var(--mantine-color-red-7);
+}
+
+.title {
+  margin: 0 0 var(--pn-space-sm);
+  font-size: var(--pn-font-size-sm);
+  font-weight: 600;
+  color: var(--pn-color-text);
+}

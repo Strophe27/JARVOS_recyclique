@@ -2,6 +2,7 @@ import { MantineProvider, createTheme } from '@mantine/core';
 import type { ReactNode } from 'react';
 import type { AuthContextPort } from '../auth/auth-context-port';
 import { AuthRuntimeProvider } from '../auth/AuthRuntimeProvider';
+import { KpiLiveBannerSettingsProvider } from '../../domains/bandeau-live/kpi-live-banner-settings-provider';
 import { UserRuntimePrefsProvider } from './UserRuntimePrefsProvider';
 
 const theme = createTheme({
@@ -26,7 +27,7 @@ export function RootProviders({
     <MantineProvider theme={theme}>
       <AuthRuntimeProvider adapter={authAdapter}>
         <UserRuntimePrefsProvider disablePersistence={disableUserPrefsPersistence}>
-          {children}
+          <KpiLiveBannerSettingsProvider>{children}</KpiLiveBannerSettingsProvider>
         </UserRuntimePrefsProvider>
       </AuthRuntimeProvider>
     </MantineProvider>

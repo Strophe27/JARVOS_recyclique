@@ -1,4 +1,5 @@
 import { AdminAdvancedSettingsWidget } from '../domains/admin-config/AdminAdvancedSettingsWidget';
+import { AdminKpiLiveBannerSettingsWidget } from '../domains/admin-config/AdminKpiLiveBannerSettingsWidget';
 import { AdminAccountingGlobalAccountsWidget } from '../domains/admin-config/AdminAccountingGlobalAccountsWidget';
 import { AdminAccountingHubWidget } from '../domains/admin-config/AdminAccountingHubWidget';
 import { AdminAccountingExpertShellWidget } from '../domains/admin-config/AdminAccountingExpertShellWidget';
@@ -30,6 +31,8 @@ export function registerAdminConfigWidgets(): void {
   registerWidget('admin.accounting.payment-methods.expert', AdminAccountingPaymentMethodsWidget);
   /** Paramètres session JWT super-admin (`adminSettingsSessionGet` / `adminSettingsSessionPut`). */
   registerWidget('admin.advanced.settings.demo', AdminAdvancedSettingsWidget);
+  /** Bandeau KPI live — visibilité caisse / réception + intervalle (stockage local navigateur). */
+  registerWidget('admin.kpi.live.banner.settings', AdminKpiLiveBannerSettingsWidget);
   /** Santé exploitation — contexte + live-snapshot + stats live (contrat OpenAPI servi uniquement). */
   registerWidget('admin.system.health', AdminSystemHealthWidget);
   /** Story 14.5 — liste/détail/mutations `adminGroups*` (`admin-groups-client.ts`). */

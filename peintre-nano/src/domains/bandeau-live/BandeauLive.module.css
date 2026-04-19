@@ -1,3 +1,11 @@
+/** Empile indicateurs KPI unifiés (`/v1/stats/live`) et bloc exploitation (`/v2/exploitation/live-snapshot`). */
+.liveStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-sm);
+  min-width: 0;
+}
+
 .root {
   margin: 0;
   padding: var(--pn-space-md);

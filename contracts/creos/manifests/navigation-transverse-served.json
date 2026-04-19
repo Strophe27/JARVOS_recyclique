@@ -233,6 +233,19 @@
       }
     },
     {
+      "id": "transverse-admin-modules",
+      "route_key": "transverse-admin-modules",
+      "path": "/admin/modules",
+      "page_key": "transverse-admin-modules",
+      "shortcut_id": "go-transverse-admin-modules",
+      "label_key": "nav.transverse.admin.modules",
+      "required_permission_keys": ["transverse.admin.view", "caisse.sale_correct"],
+      "visibility": {
+        "permission_any": ["transverse.admin.view"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "transverse-admin-health",
       "route_key": "transverse-admin-health",
       "path": "/admin/health",

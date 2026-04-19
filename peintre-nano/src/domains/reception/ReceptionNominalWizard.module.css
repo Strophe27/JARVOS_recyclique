@@ -31,6 +31,12 @@
   gap: var(--mantine-spacing-xs);
 }
 
+/** Conteneur du `KpiLiveStrip` compact sous la barre verte (aligné chrome caisse kiosque). */
+.chromeUnifiedKpiHost {
+  width: 100%;
+  min-width: 0;
+}
+
 .chromePrimaryAction {
   color: #3f3200;
   border-color: #d7a300;

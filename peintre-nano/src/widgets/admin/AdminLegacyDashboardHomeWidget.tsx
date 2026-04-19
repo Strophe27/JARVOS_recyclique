@@ -22,6 +22,7 @@ import {
   HeartPulse,
   Landmark,
   Euro,
+  LayoutGrid,
   LayoutList,
   Package,
   Scale,
@@ -655,6 +656,17 @@ export function AdminLegacyDashboardHomeWidget(_props: RegisteredWidgetProps) {
                   data-testid="admin-legacy-nav-sites-and-registers"
                 >
                   Sites et caisses
+                </Button>
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+                <Button
+                  variant="default"
+                  className={classes.superAdminButton}
+                  leftSection={<LayoutGrid size={20} />}
+                  onClick={() => handleNavigation('/admin/modules')}
+                  data-testid="admin-legacy-nav-modules"
+                >
+                  Gestion des modules
                 </Button>
               </Grid.Col>
               {isAccountingExpertShell ? (

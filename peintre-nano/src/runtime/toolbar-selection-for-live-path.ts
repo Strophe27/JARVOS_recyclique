@@ -22,6 +22,7 @@ export function toolbarSelectedEntryIdFromResolved(
     resolvedEntryId === 'transverse-admin-sites-and-registers' ||
     resolvedEntryId === 'transverse-admin-session-manager' ||
     resolvedEntryId === 'transverse-admin-settings' ||
+    resolvedEntryId === 'transverse-admin-modules' ||
     resolvedEntryId === 'transverse-admin-health' ||
     resolvedEntryId === 'transverse-admin-reception-stats' ||
     resolvedEntryId === 'transverse-admin-reception-sessions' ||

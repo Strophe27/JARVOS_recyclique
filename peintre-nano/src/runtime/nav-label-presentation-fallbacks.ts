@@ -25,6 +25,7 @@ export const NAV_LABEL_PRESENTATION_FALLBACKS: Readonly<Record<string, string>> 
   'nav.transverse.admin.sitesAndRegisters': 'Sites et caisses',
   'nav.transverse.admin.sessionManager': 'Sessions de Caisse',
   'nav.transverse.admin.settings': 'Paramètres avancés',
+  'nav.transverse.admin.modules': 'Gestion des modules',
   'nav.transverse.admin.systemHealth': 'Santé système',
   'nav.transverse.admin.receptionStats': 'Statistiques réception (supervision)',
   'nav.transverse.admin.receptionSessions': 'Sessions de réception (tickets)',
