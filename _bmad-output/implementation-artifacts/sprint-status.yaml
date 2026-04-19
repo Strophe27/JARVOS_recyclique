@@ -1,3 +1,39 @@
+# last_updated: 2026-04-19 — story 24-10 Story Runner BMAD fin : CS→VS→DS→GATE×2 (CR1 CHANGES wizard+pytest audit)→DS fix→GATE→QA e2e hub 24-10→CR2 faux négatif (vérif parent APPROVE équivalent) ; 24-10 review→done ; epic-24 in-progress→done ; vs=0 qa=0 cr=1 (plafond 3) ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-10 DS bmad-dev-story Task : 24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3 ready-for-dev → review ; P3 workflow_options + approval_evidence_ref + seuil 150€ + audit cash_sensitive_operations + OpenAPI/Peintre ; pytest story 24-10 ; epic-24 inchangé in-progress ; GATE parent ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-10 CS bmad-create-story (create, Task spawn) : 24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3 backlog → ready-for-dev ; fichier story PRD §14–§15 + ADR D6/D8/D1 idempotence ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-9 Story Runner BMAD fin : CS→VS→DS→GATE(pytest API+story24-9 + vitest smoke + lint + build)→QA e2e cashflow-business-tag-24-9→CR1 faux négatif tests→doc NON_TAGUE→CR2 APPROVE ; 24-9 review→done ; vs=0 qa=0 cr=1 ; prochaine 24-10 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-9 DS bmad-dev-story Task : 24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe ready-for-dev → review ; tags ticket/ligne + migration s24_9 + endpoint stats + Peintre nominal + pytest/vitest ; epic-24 inchangé in-progress ; GATE parent ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-9 VS bmad-create-story validate : PASS — checklist + alignement epics §24.9 ↔ story ; development_status 24-9 inchangé ready-for-dev ; epic-24 inchangé in-progress ; prochaine étape bmad-dev-story (DS) ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-9 CS bmad-create-story : 24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe backlog → ready-for-dev ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-8 Story Runner fin : CS→VS→DS→GATE(pytest API + vitest smoke + lint + build)→QA e2e hub→CR PASS ; 24-8 review→done ; vs=0 qa=0 cr=0 ; prochaine 24-9 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-8 DS bmad-dev-story Task : 24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client ready-for-dev → review ; cash.transfer + POST internal-transfers + UI /caisse/mouvement-interne ; pytest + vitest hub ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-8 CS bmad-create-story : 24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client backlog → ready-for-dev ; PRD §10.6 + ADR D1/D2 ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-7 Story Runner fin : CS→VS→DS→GATE (lint TS fix wizard)→tests HTTP pytest→GATE→QA→CR×2 PASS ; 24-7 review→done ; vs=0 qa=0 cr=1 ; prochaine 24-8 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-7 DS bmad-dev-story : 24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle ready-for-dev → review ; permission cash.disbursement + POST disbursements + UI /caisse/decaissement ; epic-24 inchangé in-progress
+# last_updated: 2026-04-19 — story 24-6 Story Runner BMAD (brief orchestrateur parent) : CS→VS→DS→GATE×2 (répétés après QA)→QA e2e `cashflow-exchange-24-6.e2e.test.tsx`→CR PASS ; 24-6 déjà done (YAML inchangé hors trace) ; vs=0 qa=0 cr=0 ; prochaine story 24-7 backlog ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-6 Story Runner fin : CS→VS→DS→GATE FAIL (lint TS)→DS fix CashflowSubmitSurfaceError + handler NotFound/Conflict→GATE→QA→CR×2 APPROVE ; 24-6 review→done ; vs=0 qa=0 cr=1 ; prochaine 24-7 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-6 DS bmad-dev-story Task : 24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement ready-for-dev → review ; POST /material-exchanges + permission caisse.exchange + hub /caisse/echange ; pytest story246 + vitest hub/registry ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-6 CS bmad-create-story (create, Task spawn) : 24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement backlog → ready-for-dev ; fichier story PRD §10.7–§11 + ADR D2 ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-5 Story Runner fin : CS→VS→DS→GATE→QA→CR×2 correctifs (idempotence composite OpenAPI solde SQLite) → APPROVE ; 24-5 review→done ; vs=0 qa=0 cr=2 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-5 DS bmad-dev-story Task : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification in-progress → review ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-5 DS bmad-dev-story Task : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification ready-for-dev → in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-5 CS bmad-create-story (create, Task spawn) : 24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification backlog → ready-for-dev ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-4 Story Runner BMAD : CS→VS→DS→GATE→QA→CR APPROVE ; e2e cashflow-refund-6-4 (Story 24.4 GET prior_closed) + gates pytest/vitest/lint/build ; vs_loop=0 qa_loop=0 cr_loop=0 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-4 VS bmad-create-story validate : PASS — checklist ; alignement story ↔ epics §24.4 ↔ YAML (24-4 review) ; epic-24 inchangé in-progress ; prochaine étape GATE/QA/CR (DS déjà fait)
+# last_updated: 2026-04-19 — story 24-4 CS bmad-create-story (create, Task spawn) : idempotent PASS — development_status 24-4 inchangé review (post-DS) ; alignement epics §24.4 + section Alignement sprint story ; epic-24 inchangé in-progress
+# last_updated: 2026-04-18 — story 24-4 Story Runner fin : 24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1 review → done ; CS/VS/DS/gates/QA/CR PASS
+# last_updated: 2026-04-18 — story 24-4 DS bmad-dev-story Task : 24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1 ready-for-dev → review ; GET sale fiscal preview + wizard/hub N-1 ; gates pytest/vitest réservés Story Runner parent
+# last_updated: 2026-04-18 — story 24-4 CS bmad-create-story (create, Task spawn) : 24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1 backlog → ready-for-dev ; fichier story PRD §10.3 + wizard/hub N-1 ; epic-24 inchangé in-progress
+# last_updated: 2026-04-18 — story 24-3 Story Runner BMAD : CS→VS→DS→GATE(ciblés)→QA→CR APPROVE ; 24-3 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-18 — story 24-3 bmad-create-story (VS validate, Task spawn) : PASS — development_status 24-3 inchangé review ; alignement checklist + epics §24.3 ; story file File List corrigée (pytest story64 + e2e/gate) ; vs_loop inchangé ; prochaine étape GATE/QA/CR (DS déjà fait)
+# last_updated: 2026-04-18 — story 24-3 CS bmad-create-story (create, Task spawn) : idempotent PASS — development_status 24-3 inchangé review (post-DS) ; alignement epics §24.3 + checklist ; epic-24 inchangé in-progress ; branche attendue epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-18 — story 24-3 CS bmad-create-story (create, Task spawn) : 24-3-remboursement-standard-visibilite-terrain-et-chaine-paheko-et-statut-sync backlog → ready-for-dev ; story AC epics §24.3 + ancres CashflowRefundWizard / sale_service / ADR D7 ; epic-24 inchangé in-progress
+# last_updated: 2026-04-18 — story 24-2 CS bmad-create-story (create, Task spawn) : 24-2-hub-operations-speciales-caisse-et-navigation-vers-parcours backlog → ready-for-dev ; fichier story PRD §20.1 + CREOS peintre-nano ; epic-24 inchangé in-progress
+# last_updated: 2026-04-18 — story 24-2 Story Runner BMAD : CS→VS(retry1)→DS→GATE→QA→CR1 CHANGES→DS fix permissions→GATE→CR2 APPROVE ; 24-2 review→done ; vs_loop=1 qa_loop=0 cr_loop=1 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-18 — story 24-1 Story Runner BMAD : CS sauté (story déjà sur disque) → VS→DS→GATE→QA→CR PASS ; 24-1 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; branche attendue epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-18 — story 24-1 CS bmad-create-story (create, Task spawn) : idempotent PASS — story déjà review ; development_status 24-1 inchangé ; alignement epics.md §24.1 vérifié
+# last_updated: 2026-04-18 — story 24-1 CS bmad-create-story (create) : 24-1-audit-repo-aware-matrices-prd-depot-et-plan-de-tests-p0 backlog → ready-for-dev ; epic-24 backlog → in-progress
+# last_updated: 2026-04-18 — BMAD sprint-planning : Epic 24 operations speciales ajoute (backlog) ; stories 24.1–24.10 backlog ; genere depuis epics.md + readiness 2026-04-18
 # last_updated: 2026-04-16 — story 23-4 DS Story Runner : 23-4 ready-for-dev→done ; epic-23 in-progress→done ; builder Paheko unique ventilation detailed
 # last_updated: 2026-04-16 — story 23-4 bmad-create-story : cle 23-4-paheko-close-builder-unique-ventilation-detaillee-supprimer-agregue → ready-for-dev ; epic-23 done→in-progress (correct-course builder Paheko)
 # last_updated: 2026-04-16 — epic-23-retrospective : optional -> done ; artefact epic-23-retro-2026-04-16.md (skill bmad-retrospective)
@@ -225,7 +261,10 @@ generated: "2026-04-01"
 # last_updated: 2026-04-09 — story 7.5 Story Runner : gates Peintre OK ; pytest complet KO pré-existant ; pytest réception OK ; CR APPROVED ; 7-5 → done
 # last_updated: 2026-04-16 — story 22-2 DS bmad-dev-story Task : 22-2 in-progress→review (dual-read compare + OpenAPI)
 # last_updated: 2026-04-16 — story 23-1 Story Runner BMAD (resume_at GATE) : GATE→QA→CR APPROVE ; 23-1 review→done ; vs_loop=0 qa_loop=0 cr_loop=0 ; gate front omis (story backend)
-last_updated: "2026-04-16" # Epic 23 : story 23-4 done (builder Paheko detailed unique) ; epic-23 done ; rétro epic-23-retro-2026-04-16.md ; epic-23-retrospective done
+# last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
+# last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
+# last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
+last_updated: "2026-04-19" # story 24-10 Story Runner fin : 24-10 review→done ; epic-24→done ; vs=0 qa=0 cr=1
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -462,3 +501,19 @@ development_status:
   23-3-cockpit-peintre-comptabilite-caisse-comptes-globaux-expert: done
   23-4-paheko-close-builder-unique-ventilation-detaillee-supprimer-agregue: done
   epic-23-retrospective: done
+
+  # Epic 24 : trier les clés 24-x par ordre NUMERIQUE (24-1 … 24-10) dans les outils — un tri alphabétique met 24-10 avant 24-2.
+  # Dependance METIER (cf. epics.md Epic 24) : ne pas demarrer les stories 24.6–24.8 (P1) tant que le socle P0 (24.1→24.5)
+  # n'est pas stabilise — le YAML ne peut pas coder un graphe ; le pilotage reste discipline Story Runner / board.
+  epic-24: done
+  24-1-audit-repo-aware-matrices-prd-depot-et-plan-de-tests-p0: done
+  24-2-hub-operations-speciales-caisse-et-navigation-vers-parcours: done
+  24-3-remboursement-standard-visibilite-terrain-et-chaine-paheko-et-statut-sync: done
+  24-4-parcours-expert-remboursement-exercice-anterieur-clos-n-1: done
+  24-5-remboursement-exceptionnel-sans-ticket-pin-motifs-et-justification: done
+  24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement: done
+  24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle: done
+  24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client: done
+  24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe: done
+  24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: done
+  epic-24-retrospective: optional
