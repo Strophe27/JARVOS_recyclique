@@ -475,7 +475,7 @@ describe('E2E — correction sensible Story 6.8 (parcours admin / journal sessio
 
     await waitFor(() => {
       const err = screen.getByTestId('cashflow-sale-correction-error');
-      expect(err.textContent).toMatch(/Au moins un champ de finalisation/i);
+      expect(err.textContent).toMatch(/Au moins une modification utile/i);
     });
   });
 });

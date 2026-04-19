@@ -271,10 +271,11 @@ async def correct_sale_sensitive(
     redis_client=Depends(get_redis),
 ):
     """
-    Story 6.8 — correction post-hoc bornée (super-admin, session ouverte).
+    Story 6.8 — correction post-hoc bornée (super-admin).
 
     Liste fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note,
     ``items[]`` lignes article, remplacement ``payments`` / ``donation_surplus``).
+    Une session de caisse **clôturée** n'est plus bloquante (données historiques) ; l'audit porte le statut de session.
     Step-up ``X-Step-Up-Pin`` obligatoire ; ``Idempotency-Key`` optionnel (rejouer la même réponse).
     """
     verify_step_up_pin_header(

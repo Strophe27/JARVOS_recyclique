@@ -1621,8 +1621,10 @@ class SaleService:
             cash_session = db.query(CashSession).filter(CashSession.id == sale.cash_session_id).first()
         if cash_session is None:
             raise NotFoundError("Sale not found")
-        if cash_session.status != CashSessionStatus.OPEN:
-            raise ConflictError("Correction refusée : la session de caisse est déjà clôturée.")
+        correction_on_closed_session = cash_session.status != CashSessionStatus.OPEN
+        # Story 6.8 historique : session ouverte uniquement. Désormais : l'endpoint est réservé au
+        # super-admin — correction après clôture autorisée pour rectifier l'historique ; l'audit
+        # trace l'état de session. Les agrégats `cash_sessions` peuvent être recalculés si montants touchés.
 
         before = self._sale_correction_snapshot(sale)
         fields_touched: List[str] = []
@@ -1738,7 +1740,8 @@ class SaleService:
                     if len(sale_pts_pre) > 1 or len(don_pts_pre) > 0:
                         raise ValidationError(
                             "Correction du total interdite : vente avec plusieurs lignes de paiement (Story 6.8) — "
-                            "fournissez explicitement ``payments`` et éventuellement ``donation_surplus`` dans la même requête."
+                            "fournissez explicitement ``payments`` et éventuellement les lignes complément de don "
+                            "(``donation_surplus``) dans la même requête."
                         )
                     sale.total_amount = new_total
                     sale_pts_pre[0].amount = float(new_total)
@@ -1831,6 +1834,8 @@ class SaleService:
                 "operation": "cash_sale.correct",
                 "sale_id": str(sale.id),
                 "cash_session_id": str(sale.cash_session_id),
+                "cash_session_status": getattr(cash_session.status, "value", str(cash_session.status)),
+                "correction_on_closed_session": correction_on_closed_session,
                 "fields_touched": fields_touched,
                 "before": before,
                 "after": after,

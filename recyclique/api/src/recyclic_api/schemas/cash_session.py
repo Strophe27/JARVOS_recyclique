@@ -292,7 +292,21 @@ class SaleDetail(BaseModel):
     operator_name: Optional[str] = Field(None, description="Nom de l'opérateur")
     note: Optional[str] = Field(None, description="Note associée à la vente")  # Story B40-P4: Notes dans liste sessions
     total_weight: Optional[float] = Field(None, description="B52-P6: Poids total du panier (somme des poids des items)")
-    
+    lifecycle_status: str = Field(
+        ...,
+        description="completed | held | abandoned — Story 6.8 : l'UI admin affiche « Corriger » seulement si ``completed``.",
+    )
+
+    @field_validator('lifecycle_status', mode='before')
+    @classmethod
+    def coerce_sale_lifecycle(cls, v):
+        """ORM ``SaleLifecycleStatus`` ou chaîne brute → valeur API (minuscules)."""
+        if v is None:
+            return "completed"
+        if hasattr(v, "value"):
+            return str(v.value)
+        return str(v)
+
     @field_validator('id', 'operator_id', mode='before')
     @classmethod
     def convert_uuid_to_str(cls, v):

@@ -12,6 +12,7 @@ import {
 } from '@mantine/core';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
+import { getCashSessionDetail } from '../../api/cash-session-client';
 import {
   getSale,
   patchSaleSensitiveCorrection,
@@ -239,10 +240,10 @@ function validatePartitionVsTotal22_4(
     return null;
   }
   if (sumSale > totalNum + PAY_ARBITRAGE_EPS) {
-    return 'La somme des lignes de règlement dépasse le total encaissé — utilisez aussi des lignes « don (surplus) » si besoin.';
+    return 'La somme des lignes de règlement dépasse le total encaissé — ajoutez des lignes de complément de don si besoin.';
   }
   if (sumSale + sumSurplus < totalNum - PAY_ARBITRAGE_EPS) {
-    return 'Encaissement insuffisant : les lignes de règlement + don (surplus) doivent couvrir le total.';
+    return 'Encaissement insuffisant : règlement + compléments de don doivent couvrir le total encaissé.';
   }
   return null;
 }
@@ -289,6 +290,9 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [draftDonationSurplus, setDraftDonationSurplus] = useState<PaymentDraftRow[]>([]);
   const [baselineItems, setBaselineItems] = useState<ItemEditRow[]>([]);
   const [itemRows, setItemRows] = useState<ItemEditRow[]>([]);
+  const [linkedCashSessionId, setLinkedCashSessionId] = useState<string | null>(null);
+  const [linkedSessionStatus, setLinkedSessionStatus] = useState<'open' | 'closed' | null>(null);
+  const [linkedSessionFetchErr, setLinkedSessionFetchErr] = useState<string | null>(null);
   const initialSaleSnapRef = useRef('');
   const initialSurplusSnapRef = useRef('');
   const initialTotalNumRef = useRef<number | null>(null);
@@ -334,6 +338,30 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     };
   }, [auth, loadedSaleId, itemRows.length]);
 
+  useEffect(() => {
+    const sid = linkedCashSessionId?.trim();
+    if (!sid) {
+      setLinkedSessionStatus(null);
+      setLinkedSessionFetchErr(null);
+      return;
+    }
+    let disposed = false;
+    void (async () => {
+      const res = await getCashSessionDetail(sid, auth);
+      if (disposed) return;
+      if (!res.ok) {
+        setLinkedSessionFetchErr(res.detail || 'Session liée introuvable.');
+        setLinkedSessionStatus(null);
+        return;
+      }
+      setLinkedSessionFetchErr(null);
+      setLinkedSessionStatus(res.session.status === 'closed' ? 'closed' : 'open');
+    })();
+    return () => {
+      disposed = true;
+    };
+  }, [auth, linkedCashSessionId]);
+
   const partitionDirty =
     snapshotPaymentDraftRows(draftSalePayments) !== initialSaleSnapRef.current ||
     snapshotPaymentDraftRows(draftDonationSurplus) !== initialSurplusSnapRef.current;
@@ -369,6 +397,7 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     const ir = saleItemsToEditRows(sale.items ?? []);
     setBaselineItems(ir.map((r) => ({ ...r })));
     setItemRows(ir.map((r) => ({ ...r })));
+    setLinkedCashSessionId(typeof sale.cash_session_id === 'string' ? sale.cash_session_id.trim() || null : null);
     setStep(2);
   }, []);
 
@@ -425,6 +454,9 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     initialSalePaymentLineCountRef.current = 0;
     setBaselineItems([]);
     setItemRows([]);
+    setLinkedCashSessionId(null);
+    setLinkedSessionStatus(null);
+    setLinkedSessionFetchErr(null);
     setNote('');
     setInitialNote(null);
     setReason('');
@@ -701,6 +733,25 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
       {!done && step === 2 && loadedSaleId ? (
         <>
           <Text size="sm">Ticket : {loadedSaleId}</Text>
+          {linkedSessionFetchErr ? (
+            <Alert color="orange" variant="light" title="Session liée au ticket">
+              <Text size="sm">{linkedSessionFetchErr}</Text>
+            </Alert>
+          ) : null}
+          {linkedSessionStatus === 'closed' && linkedCashSessionId ? (
+            <Alert
+              color="blue"
+              variant="light"
+              title="Session de caisse clôturée"
+              data-testid="cashflow-sale-correction-session-closed-info"
+            >
+              <Text size="sm">
+                Ce ticket est rattaché à la session <code>{linkedCashSessionId}</code> (statut : clôturée). Les
+                corrections sensibles restent possibles pour super-admin ; les montants de session peuvent être
+                recalculés si vous modifiez total, don ou journal de paiement.
+              </Text>
+            </Alert>
+          ) : null}
           <NativeSelect
             label="Type de correction"
             data={[...KIND_OPTIONS]}
@@ -929,7 +980,7 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                 </Text>
 
                 <Text size="sm" fw={600} mt="md">
-                  Don en surplus (hors règlement), le cas échéant
+                  Complément de don (hors montant du règlement), si besoin
                 </Text>
                 {draftDonationSurplus.map((row, idx) => (
                   <Group key={row.localId} gap="xs" wrap="wrap" align="flex-end">
@@ -968,11 +1019,11 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                     disabled={stale || !paymentMethodsReady}
                     data-testid="cashflow-sale-correction-surplus-add"
                   >
-                    Ajouter une ligne de don (surplus)
+                    Ajouter une ligne de complément de don
                   </Button>
                 </Group>
                 <Text size="sm" c="dimmed">
-                  Somme don surplus :{' '}
+                  Somme compléments de don :{' '}
                   {Number.isFinite(surplusLinesSumPreview) ? surplusLinesSumPreview.toFixed(2) : '—'} — couverture vs
                   total :{' '}
                   {!Number.isNaN(totalPreviewNum)

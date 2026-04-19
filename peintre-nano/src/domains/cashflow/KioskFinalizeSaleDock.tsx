@@ -445,7 +445,8 @@ export function KioskFinalizeSaleDock(): ReactNode {
       const noteOpt = saleNote.trim() ? { note: saleNote.trim() } : {};
       const baseDon = { donation: parsedDonation, ...noteOpt };
       const ticketTagFields = buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom);
-      const surplusCode =
+      /** Code moyen pour lignes journal règlement / complément de don (API ``donation_surplus``). */
+      const journalPaymentMethodCode =
         payments.length > 0
           ? payments[0].payment_method
           : draft.paymentMethod === 'free'
@@ -461,13 +462,13 @@ export function KioskFinalizeSaleDock(): ReactNode {
         } else if (parsedAmountReceived !== null && parsedAmountReceived > amountDue + 1e-6) {
           const excess = parsedAmountReceived - amountDue;
           finalizePayload = {
-            payments: [{ payment_method: surplusCode, amount: amountDue }],
-            donation_surplus: [{ payment_method: surplusCode, amount: excess }],
+            payments: [{ payment_method: journalPaymentMethodCode, amount: amountDue }],
+            donation_surplus: [{ payment_method: journalPaymentMethodCode, amount: excess }],
             ...baseDon,
             ...ticketTagFields,
           };
         } else {
-          finalizePayload = { payment_method: surplusCode, ...baseDon, ...ticketTagFields };
+          finalizePayload = { payment_method: journalPaymentMethodCode, ...baseDon, ...ticketTagFields };
         }
 
         const res = await postFinalizeHeldSale(draft.activeHeldSaleId, finalizePayload, auth);
@@ -501,10 +502,10 @@ export function KioskFinalizeSaleDock(): ReactNode {
         body.payment_method = 'free';
       } else if (parsedAmountReceived !== null && parsedAmountReceived > amountDue + 1e-6) {
         const excess = parsedAmountReceived - amountDue;
-        body.payments = [{ payment_method: surplusCode, amount: amountDue }];
-        body.donation_surplus = [{ payment_method: surplusCode, amount: excess }];
+        body.payments = [{ payment_method: journalPaymentMethodCode, amount: amountDue }];
+        body.donation_surplus = [{ payment_method: journalPaymentMethodCode, amount: excess }];
       } else {
-        body.payment_method = surplusCode;
+        body.payment_method = journalPaymentMethodCode;
       }
 
       const res = await postCreateSale(body, auth);

@@ -75,7 +75,7 @@ export type SaleCreateBody = {
   donation?: number;
   payment_method?: string;
   payments?: Array<{ payment_method: string; amount: number }>;
-  /** Story 22.4 — journal serveur `donation_surplus`, distinct du règlement */
+  /** Story 22.4 — journal serveur `donation_surplus` (complément de don volontaire / trop-perçu), distinct du règlement */
   donation_surplus?: Array<{ payment_method: string; amount: number }>;
   note?: string | null;
   special_encaissement_kind?: SpecialEncaissementKindV1;
@@ -108,7 +108,7 @@ export type SalePaymentSplitV1 = {
 };
 
 /**
- * Scinde ``payments[]`` du ticket selon ``nature`` (sale_payment vs donation_surplus).
+ * Scinde ``payments[]`` du ticket selon ``nature`` : ``sale_payment`` vs journal complément de don (``donation_surplus``).
  * Lignes invalides ignorées ; codes préfèrent ``payment_method_code`` puis ``payment_method``.
  */
 export function splitSalePaymentsByNature(raw: unknown): SalePaymentSplitV1 {
@@ -810,7 +810,7 @@ export type SaleCorrectionRequestBody =
       payment_method?: string | null;
       /** Remplace les lignes ``sale_payment`` (multi-moyens). */
       payments?: Array<{ payment_method: string; amount: number }>;
-      /** Remplace les lignes ``donation_surplus``. */
+      /** Remplace les lignes journal complément de don (API ``donation_surplus``). */
       donation_surplus?: Array<{ payment_method: string; amount: number }>;
       note?: string | null;
       /** Mise à jour ciblée des lignes ``sale_items`` (poids, catégorie, etc.). */

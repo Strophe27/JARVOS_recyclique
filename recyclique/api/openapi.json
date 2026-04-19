@@ -13936,7 +13936,7 @@
           "donation_surplus_total": {
             "type": "number",
             "title": "Donation Surplus Total",
-            "description": "Total dons en surplus (nature donation_surplus, flux entrants).",
+            "description": "Total compléments de don volontaires (nature donation_surplus, flux entrants).",
             "default": 0.0
           },
           "refunds_current_fiscal_total": {
@@ -17103,7 +17103,7 @@
           "sale_payment_inflow_sum": {
             "type": "number",
             "title": "Sale Payment Inflow Sum",
-            "description": "Somme des montants des lignes SALE_PAYMENT en INFLOW (hors don surplus)."
+            "description": "Somme des montants des lignes SALE_PAYMENT en INFLOW (hors lignes complément de don donation_surplus)."
           },
           "settlement_inflow_sum": {
             "type": "number",
@@ -17380,7 +17380,7 @@
           "sum_sales_donation_field": {
             "type": "number",
             "title": "Sum Sales Donation Field",
-            "description": "Somme des `sales.donation` (champ historique, non équivalent au journal don surplus)."
+            "description": "Somme des `sales.donation` (champ historique, non équivalent au journal complément de don donation_surplus)."
           },
           "sale_row_count": {
             "type": "integer",

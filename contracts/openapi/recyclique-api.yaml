@@ -10595,7 +10595,8 @@ components:
             $ref: "#/components/schemas/PaymentCreateV1"
           nullable: true
           description: |
-            Story 22.4 — surplus laissé en don, distinct des lignes de règlement (journal `donation_surplus`).
+            Story 22.4 — complément de don volontaire (trop-perçu encaissé au-delà du ticket), distinct des lignes de règlement ;
+            journal technique ``donation_surplus``.
             Obligatoire si l'encaissement dépasse le total sans quoi la finalisation est refusée.
         note:
           type: string
@@ -10648,7 +10649,7 @@ components:
             $ref: "#/components/schemas/PaymentCreateV1"
           nullable: true
           description: |
-            Story 22.4 — don en surplus explicite (nature `donation_surplus`), séparé du règlement de vente.
+            Story 22.4 — lignes explicites de complément de don (nature technique ``donation_surplus``), séparées du règlement de vente.
             Requis dès qu'un trop-perçu sur les lignes `payments[]` serait autrement implicite.
         note:
           type: string
@@ -11358,13 +11359,14 @@ components:
             $ref: "#/components/schemas/PaymentCreateV1"
           description: |
             Remplace intégralement les lignes journal ``sale_payment``. Obligatoire pour reconcilier un total ou des moyens
-            si le ticket comporte plusieurs lignes de règlement ou des lignes ``donation_surplus`` (Story 6.8 étendue).
+            si le ticket comporte plusieurs lignes de règlement ou des lignes de complément de don (journal ``donation_surplus``, Story 6.8 étendue).
         donation_surplus:
           type: array
           nullable: true
           items:
             $ref: "#/components/schemas/PaymentCreateV1"
-          description: Remplace intégralement les lignes journal ``donation_surplus`` (Story 22.4).
+          description: |
+            Remplace intégralement les lignes journal complément de don (``donation_surplus``, Story 22.4).
         note:
           type: string
           nullable: true
