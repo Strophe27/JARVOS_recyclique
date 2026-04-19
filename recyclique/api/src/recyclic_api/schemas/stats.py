@@ -36,6 +36,18 @@ class ReceptionSummaryStats(BaseModel):
         }
 
 
+class BusinessTagMaterialStats(BaseModel):
+    """Story 24.9 — agrégat poids/articles par tag métier effectif × catégorie matière (ligne de vente)."""
+
+    business_tag_key: str = Field(
+        ...,
+        description="Clé tag métier effectif (ligne > ticket > legacy 6.5/6.6), ex. GRATIFERIA ou SOCIAL_DON_LIBRE.",
+    )
+    category_name: str = Field(..., description="Catégorie matière (résolution parent comme les autres stats caisse).")
+    total_weight: Decimal = Field(..., description="Poids total kg pour cette cellule.", ge=0)
+    total_items: int = Field(..., description="Nombre de lignes article dans la cellule.", ge=0)
+
+
 class CategoryStats(BaseModel):
     """Statistics for a single category."""
 

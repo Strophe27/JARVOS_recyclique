@@ -129,6 +129,9 @@ class Sale(Base):
     # Story 6.6 — mutuellement exclusif avec special_encaissement_kind (contrôlé serveur).
     social_action_kind = Column(String(64), nullable=True)
     adherent_reference = Column(String(200), nullable=True)
+    # Story 24.9 — tags métier (ticket) ; surcharge ligne dans ``sale_items`` ; AUTRE + ``business_tag_custom``.
+    business_tag_kind = Column(String(64), nullable=True)
+    business_tag_custom = Column(String(256), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -144,6 +147,13 @@ class Sale(Base):
         cascade="all, delete-orphan",
         foreign_keys="PaymentTransaction.sale_id",
     )
+
+    @property
+    def effective_business_tag(self) -> str | None:
+        """Tag métier effectif au niveau ticket (héritage legacy si colonnes 24.9 vides)."""
+        from recyclic_api.services.business_tag_resolution import ticket_level_effective_key
+
+        return ticket_level_effective_key(self)
 
     def __repr__(self):
         return f"<Sale(id={self.id}, total_amount={self.total_amount})>"

@@ -33,14 +33,6 @@ function salesHttpError(
   };
 }
 
-export type SaleItemCreateBody = {
-  category: string;
-  quantity: number;
-  weight: number;
-  unit_price: number;
-  total_price: number;
-};
-
 export type SpecialEncaissementKindV1 = 'DON_SANS_ARTICLE' | 'ADHESION_ASSOCIATION';
 
 /** Aligné sur OpenAPI `SocialActionKindV1` (Story 6.6). */
@@ -51,6 +43,30 @@ export type SocialActionKindV1 =
   | 'KIT_INSTALLATION_ETUDIANT'
   | 'DON_AUX_ANIMAUX'
   | 'FRIPERIE_AUTO_GEREE';
+
+/** OpenAPI `BusinessTagKindV1` — Story 24.9. */
+export type BusinessTagKindV1 =
+  | 'GRATIFERIA'
+  | 'CAMPAGNE_SOCIALE'
+  | 'SPECIAL_DON_SANS_ARTICLE'
+  | 'ADHESION_ASSOCIATION'
+  | 'SOCIAL_DON_LIBRE'
+  | 'SOCIAL_DON_MOINS_18'
+  | 'SOCIAL_MARAUDE'
+  | 'SOCIAL_KIT_INSTALLATION_ETUDIANT'
+  | 'SOCIAL_DON_AUX_ANIMAUX'
+  | 'SOCIAL_FRIPERIE_AUTO_GEREE'
+  | 'AUTRE';
+
+export type SaleItemCreateBody = {
+  category: string;
+  quantity: number;
+  weight: number;
+  unit_price: number;
+  total_price: number;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
+};
 
 export type SaleCreateBody = {
   cash_session_id: string;
@@ -65,12 +81,15 @@ export type SaleCreateBody = {
   special_encaissement_kind?: SpecialEncaissementKindV1;
   social_action_kind?: SocialActionKindV1;
   adherent_reference?: string | null;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
 };
 
 /** Aligné sur OpenAPI `SaleItemResponseV1` / `SaleItemCreateV1` (champs utiles UI). */
 export type SaleItemResponseV1 = SaleItemCreateBody & {
   id?: string;
   sale_id?: string;
+  effective_business_tag?: string | null;
 };
 
 /** Aligné sur OpenAPI `SaleResponseV1` (sous-ensemble consommé par le widget ticket). */
@@ -90,6 +109,9 @@ export type SaleResponseV1 = {
   special_encaissement_kind?: SpecialEncaissementKindV1 | null;
   social_action_kind?: SocialActionKindV1 | null;
   adherent_reference?: string | null;
+  business_tag_kind?: BusinessTagKindV1 | null;
+  business_tag_custom?: string | null;
+  effective_business_tag?: string | null;
   /** Story 24.4 — aligné GET vente / autorité remboursement (22.5). */
   fiscal_branch?: string | null;
   sale_fiscal_year?: number | null;
@@ -104,6 +126,8 @@ export type SaleHoldCreateBody = {
   total_amount: number;
   donation?: number;
   note?: string | null;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
 };
 
 export type SaleFinalizeHeldBody = {
@@ -112,6 +136,8 @@ export type SaleFinalizeHeldBody = {
   payments?: Array<{ payment_method: string; amount: number }>;
   donation_surplus?: Array<{ payment_method: string; amount: number }>;
   note?: string | null;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
 };
 
 export type GetSaleResult = { ok: true; sale: SaleResponseV1 } | SalesHttpError;

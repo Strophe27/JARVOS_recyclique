@@ -8,16 +8,16 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, cast, String, case
+from sqlalchemy import func, and_, or_, cast, String, case, literal
 
 from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.ligne_depot import LigneDepot
 from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.models.category import Category
 from recyclic_api.models.sale_item import SaleItem
-from recyclic_api.models.sale import Sale
+from recyclic_api.models.sale import Sale, SaleLifecycleStatus
 from recyclic_api.models.cash_session import CashSession
-from recyclic_api.schemas.stats import ReceptionSummaryStats, CategoryStats
+from recyclic_api.schemas.stats import BusinessTagMaterialStats, ReceptionSummaryStats, CategoryStats
 
 
 def _utc_aware(dt: datetime) -> datetime:
@@ -389,4 +389,139 @@ class StatsService:
                 total_items=row.total_items
             )
             for row in exit_results
+        ]
+
+    def get_sales_by_business_tag_and_category(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[BusinessTagMaterialStats]:
+        """
+        Story 24.9 — agrégation tag métier effectif (ligne > ticket > legacy 6.5/6.6) × catégorie matière.
+
+        Preuve reporting : requête SQL groupée (voir ``effective_tag``), filtre dates sur ``sales.created_at``,
+        ventes ``lifecycle_status = completed`` uniquement.
+
+        Convention reporting : lorsque ni ligne, ni ticket, ni discriminant legacy ne fournit de clé,
+        le groupement SQL utilise le littéral ``NON_TAGUE``. C’est le seau « non tagué » agrégé ; sur un
+        détail ``GET /sales/{id}``, ``effective_business_tag`` peut être ``null`` pour le même cas
+        (pas de double vérité métier — seule la vue agrégée nomme le bucket).
+        """
+        self._validate_date_range(start_date, end_date)
+
+        from sqlalchemy.orm import aliased
+
+        ParentCat = aliased(Category)
+        dialect_name = self.db.get_bind().dialect.name
+        if dialect_name == "sqlite":
+            cat_id_txt = func.lower(func.replace(cast(Category.id, String), "-", ""))
+            item_cat_txt = func.lower(func.replace(SaleItem.category, "-", ""))
+            category_join_cond = or_(
+                item_cat_txt == cat_id_txt,
+                SaleItem.category == Category.name,
+            )
+        else:
+            from sqlalchemy.dialects.postgresql import UUID as PGUUID
+
+            _uuid_txt_rx = (
+                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            )
+            looks_like_uuid = SaleItem.category.op("~")(_uuid_txt_rx)
+            category_join_cond = case(
+                (
+                    looks_like_uuid,
+                    cast(SaleItem.category, PGUUID) == Category.id,
+                ),
+                else_=SaleItem.category == Category.name,
+            )
+
+        category_display = func.coalesce(
+            ParentCat.name,
+            Category.name,
+            SaleItem.category,
+        )
+
+        legacy_key_expr = case(
+            (Sale.social_action_kind.isnot(None), func.concat("SOCIAL_", Sale.social_action_kind)),
+            (Sale.special_encaissement_kind == "DON_SANS_ARTICLE", literal("SPECIAL_DON_SANS_ARTICLE")),
+            (Sale.special_encaissement_kind == "ADHESION_ASSOCIATION", literal("ADHESION_ASSOCIATION")),
+            else_=None,
+        )
+
+        line_effective = case(
+            (
+                or_(
+                    SaleItem.business_tag_kind == "AUTRE",
+                    and_(SaleItem.business_tag_kind.is_(None), SaleItem.business_tag_custom.isnot(None)),
+                ),
+                func.concat("AUTRE:", func.coalesce(SaleItem.business_tag_custom, "")),
+            ),
+            (SaleItem.business_tag_kind.isnot(None), SaleItem.business_tag_kind),
+            else_=None,
+        )
+
+        ticket_effective = case(
+            (
+                or_(
+                    Sale.business_tag_kind == "AUTRE",
+                    and_(Sale.business_tag_kind.is_(None), Sale.business_tag_custom.isnot(None)),
+                ),
+                func.concat("AUTRE:", func.coalesce(Sale.business_tag_custom, "")),
+            ),
+            (Sale.business_tag_kind.isnot(None), Sale.business_tag_kind),
+            else_=None,
+        )
+
+        effective_tag = func.coalesce(
+            line_effective,
+            ticket_effective,
+            legacy_key_expr,
+            literal("NON_TAGUE"),
+        )
+
+        query = (
+            self.db.query(
+                effective_tag.label("business_tag_key"),
+                category_display.label("category_name"),
+                func.coalesce(func.sum(SaleItem.weight), 0).label("total_weight"),
+                func.count(SaleItem.id).label("total_items"),
+            )
+            .select_from(SaleItem)
+            .join(Sale, SaleItem.sale_id == Sale.id)
+            .outerjoin(Category, category_join_cond)
+            .outerjoin(ParentCat, Category.parent_id == ParentCat.id)
+            .filter(
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+                or_(
+                    Category.id.is_(None),
+                    or_(
+                        Category.parent_id.is_(None),
+                        ParentCat.parent_id.is_(None),
+                    ),
+                ),
+            )
+        )
+
+        filters = []
+        if start_date:
+            filters.append(Sale.created_at >= _utc_aware(start_date))
+        if end_date:
+            filters.append(_created_at_end_filter(Sale.created_at, end_date))
+        if filters:
+            query = query.filter(and_(*filters))
+
+        query = query.group_by(effective_tag, category_display).order_by(
+            effective_tag,
+            func.sum(SaleItem.weight).desc(),
+        )
+
+        results = query.all()
+        return [
+            BusinessTagMaterialStats(
+                business_tag_key=row.business_tag_key,
+                category_name=row.category_name,
+                total_weight=Decimal(str(row.total_weight or 0)),
+                total_items=row.total_items,
+            )
+            for row in results
         ]

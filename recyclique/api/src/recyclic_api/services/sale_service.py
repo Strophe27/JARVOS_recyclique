@@ -60,6 +60,11 @@ from recyclic_api.services.accounting_period_authority_service import (
     AccountingPeriodAuthorityService,
     RefundFiscalBranch,
 )
+from recyclic_api.services.business_tag_resolution import (
+    assert_explicit_matches_legacy,
+    legacy_expected_tag_key,
+    validate_tag_pair,
+)
 from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
 
 
@@ -77,6 +82,34 @@ MAX_HELD_SALES_PER_SESSION = 10
 
 # Story 22.4 — comparaisons montants caisse (float ticket / paiements)
 _ARBITRAGE_EPS = 1e-6
+
+
+def _business_tag_db_pair(kind, custom: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+    """Persist ``business_tag_kind`` / ``business_tag_custom`` (colonnes VARCHAR)."""
+    k = kind.value if kind is not None else None
+    c = (custom or "").strip() or None
+    return k, c
+
+
+def _validate_sale_create_business_tags(sale_data: SaleCreate, soc_kind, s_kind) -> None:
+    validate_tag_pair(sale_data.business_tag_kind, sale_data.business_tag_custom)
+    legacy_k = legacy_expected_tag_key(s_kind, soc_kind)
+    assert_explicit_matches_legacy(
+        legacy_k,
+        sale_data.business_tag_kind,
+        sale_data.business_tag_custom,
+    )
+    for it in sale_data.items:
+        validate_tag_pair(it.business_tag_kind, it.business_tag_custom)
+        assert_explicit_matches_legacy(None, it.business_tag_kind, it.business_tag_custom)
+
+
+def _validate_hold_business_tags(hold_data: SaleHoldCreate) -> None:
+    validate_tag_pair(hold_data.business_tag_kind, hold_data.business_tag_custom)
+    assert_explicit_matches_legacy(None, hold_data.business_tag_kind, hold_data.business_tag_custom)
+    for it in hold_data.items:
+        validate_tag_pair(it.business_tag_kind, it.business_tag_custom)
+        assert_explicit_matches_legacy(None, it.business_tag_kind, it.business_tag_custom)
 
 logger = logging.getLogger(__name__)
 
@@ -575,6 +608,8 @@ class SaleService:
                     "ou indiquez special_encaissement_kind ou social_action_kind pour un encaissement sans article."
                 )
 
+        _validate_sale_create_business_tags(sale_data, soc_kind, s_kind)
+
         subtotal = sum(item.total_price for item in sale_data.items if item.total_price > 0)
         if subtotal > 0 and sale_data.total_amount < subtotal:
             raise ValidationError(
@@ -612,6 +647,7 @@ class SaleService:
         else:
             adherent_ref = None
 
+        bt_k, bt_c = _business_tag_db_pair(sale_data.business_tag_kind, sale_data.business_tag_custom)
         db_sale = Sale(
             cash_session_id=sale_data.cash_session_id,
             operator_id=op_for_sale,
@@ -626,11 +662,14 @@ class SaleService:
             special_encaissement_kind=s_kind.value if s_kind else None,
             social_action_kind=soc_kind.value if soc_kind else None,
             adherent_reference=adherent_ref,
+            business_tag_kind=bt_k,
+            business_tag_custom=bt_c,
         )
         db.add(db_sale)
         db.flush()
 
         for item_data in sale_data.items:
+            itk, itc = _business_tag_db_pair(item_data.business_tag_kind, item_data.business_tag_custom)
             db_item = SaleItem(
                 sale_id=db_sale.id,
                 category=item_data.category,
@@ -640,6 +679,8 @@ class SaleService:
                 total_price=item_data.total_price,
                 preset_id=item_data.preset_id,
                 notes=item_data.notes,
+                business_tag_kind=itk,
+                business_tag_custom=itc,
             )
             db.add(db_item)
 
@@ -798,6 +839,8 @@ class SaleService:
                 f"Le total ({hold_data.total_amount}) ne peut pas être inférieur au sous-total ({subtotal})"
             )
 
+        _validate_hold_business_tags(hold_data)
+
         now = datetime.now(timezone.utc)
         session_opened_at = None
         is_deferred_session = False
@@ -812,6 +855,7 @@ class SaleService:
         sale_date = session_opened_at if is_deferred_session else now
         timestamps = session_opened_at if is_deferred_session else now
 
+        htk, htc = _business_tag_db_pair(hold_data.business_tag_kind, hold_data.business_tag_custom)
         db_sale = Sale(
             cash_session_id=hold_data.cash_session_id,
             operator_id=op_uuid,
@@ -823,11 +867,14 @@ class SaleService:
             lifecycle_status=SaleLifecycleStatus.HELD,
             created_at=timestamps,
             updated_at=timestamps,
+            business_tag_kind=htk,
+            business_tag_custom=htc,
         )
         db.add(db_sale)
         db.flush()
 
         for item_data in hold_data.items:
+            itk, itc = _business_tag_db_pair(item_data.business_tag_kind, item_data.business_tag_custom)
             db_item = SaleItem(
                 sale_id=db_sale.id,
                 category=item_data.category,
@@ -837,6 +884,8 @@ class SaleService:
                 total_price=item_data.total_price,
                 preset_id=item_data.preset_id,
                 notes=item_data.notes,
+                business_tag_kind=itk,
+                business_tag_custom=itc,
             )
             db.add(db_item)
 
@@ -1014,6 +1063,12 @@ class SaleService:
 
         if payload.note is not None:
             sale.note = payload.note
+
+        if payload.business_tag_kind is not None or (payload.business_tag_custom or "").strip():
+            validate_tag_pair(payload.business_tag_kind, payload.business_tag_custom)
+            fk, fc = _business_tag_db_pair(payload.business_tag_kind, payload.business_tag_custom)
+            sale.business_tag_kind = fk
+            sale.business_tag_custom = fc
 
         sale_pays, donation_surplus_final = self._resolve_payments_for_finalize(float(sale.total_amount), payload)
 

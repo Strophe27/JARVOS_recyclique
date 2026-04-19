@@ -5342,6 +5342,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/stats/sales/by-business-tag-and-category:
+    get:
+      operationId: recyclique_stats_salesByBusinessTagAndCategory
+      tags:
+        - stats
+      summary: Stats caisse tag métier × catégorie matière (Story 24.9)
+      description: |
+        Agrégation tag métier effectif (ligne > ticket > legacy 6.5/6.6) × catégorie matière.
+        **ADMIN** ou **SUPER_ADMIN** ; audit `log_admin_access` sur succès.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Agrégats par tag × catégorie
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BusinessTagMaterialStatsV1"
+        "400":
+          description: Plage de dates invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle non administrateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Rate limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/stats/live:
     get:
       operationId: recyclique_stats_unifiedLive
@@ -10364,6 +10421,14 @@ components:
         notes:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     SaleLifecycleStatusV1:
       type: string
@@ -10393,6 +10458,40 @@ components:
       description: |
         Story 6.6 — lot 1 figé des actions sociales / solidaires (distinct de `SpecialEncaissementKindV1`).
         Toujours `items` = [] et `total_amount` > 0 ; `note` optionnelle. Mutuellement exclusif avec `special_encaissement_kind`.
+    BusinessTagKindV1:
+      type: string
+      enum:
+        - GRATIFERIA
+        - CAMPAGNE_SOCIALE
+        - SPECIAL_DON_SANS_ARTICLE
+        - ADHESION_ASSOCIATION
+        - SOCIAL_DON_LIBRE
+        - SOCIAL_DON_MOINS_18
+        - SOCIAL_MARAUDE
+        - SOCIAL_KIT_INSTALLATION_ETUDIANT
+        - SOCIAL_DON_AUX_ANIMAUX
+        - SOCIAL_FRIPERIE_AUTO_GEREE
+        - AUTRE
+      description: |
+        Story 24.9 — tag métier PRD + réconciliation 6.5/6.6. ``AUTRE`` exige ``business_tag_custom``.
+    BusinessTagMaterialStatsV1:
+      type: object
+      required:
+        - business_tag_key
+        - category_name
+        - total_weight
+        - total_items
+      additionalProperties: false
+      properties:
+        business_tag_key:
+          type: string
+          description: Clé tag effectif (ex. GRATIFERIA, SOCIAL_DON_LIBRE, NON_TAGUE).
+        category_name:
+          type: string
+        total_weight:
+          type: number
+        total_items:
+          type: integer
     SalePaymentMethodOptionV1:
       type: object
       required:
@@ -10454,6 +10553,14 @@ components:
         note:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     SaleFinalizeHeldV1:
       type: object
@@ -10481,6 +10588,14 @@ components:
         note:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     SaleCreateV1:
       type: object
@@ -10539,6 +10654,14 @@ components:
           maxLength: 200
           nullable: true
           description: Réservé à `ADHESION_ASSOCIATION` (nom ou note courte, optionnel).
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     PaymentResponseV1:
       type: object
@@ -10609,6 +10732,10 @@ components:
               type: string
             sale_id:
               type: string
+            effective_business_tag:
+              type: string
+              nullable: true
+              description: Story 24.9 — tag métier effectif (ligne > ticket > legacy).
           additionalProperties: false
     SaleResponseV1:
       type: object
@@ -10671,6 +10798,17 @@ components:
         adherent_reference:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+        effective_business_tag:
+          type: string
+          nullable: true
+          description: Story 24.9 — tag métier effectif au niveau ticket (héritage legacy si colonnes vides).
         fiscal_branch:
           type: string
           nullable: true

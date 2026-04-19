@@ -4,6 +4,7 @@ from typing import Annotated, List, Literal, Optional, Union
 from datetime import datetime
 from recyclic_api.models.payment_transaction import PaymentTransactionDirection, PaymentTransactionNature
 from recyclic_api.models.sale import PaymentMethod, SaleLifecycleStatus, SocialActionKind, SpecialEncaissementKind
+from recyclic_api.services.business_tag_resolution import BusinessTagKind
 from recyclic_api.models.payment_method import PaymentMethodKind
 from recyclic_api.models.sale_reversal import RefundReasonCode
 
@@ -83,6 +84,9 @@ class SaleItemBase(BaseModel):
     # Story 1.1.2: Champs ajoutés pour preset et notes par item
     preset_id: Optional[UUID] = None
     notes: Optional[str] = None
+    # Story 24.9 — tag métier ligne (prime sur le tag ticket).
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
 class SaleItemCreate(SaleItemBase):
     pass
@@ -98,6 +102,10 @@ class SaleItemUpdate(BaseModel):
 class SaleItemResponse(SaleItemBase):
     id: str
     sale_id: str
+    effective_business_tag: Optional[str] = Field(
+        default=None,
+        description="Tag métier effectif (ligne > ticket > legacy 6.5/6.6).",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -147,6 +155,9 @@ class SaleCreate(BaseModel):
     # Story 6.6 : action sociale — exige permission caisse.social_encaissement ; exclusif de special_encaissement_kind.
     social_action_kind: Optional[SocialActionKind] = None
     adherent_reference: Optional[str] = Field(None, max_length=200)
+    # Story 24.9 — tags métier ticket (surcharge ligne dans items[]).
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
     @field_validator("payment_method", mode="before")
     @classmethod
@@ -172,6 +183,8 @@ class SaleHoldCreate(BaseModel):
     total_amount: float
     donation: Optional[float] = 0.0
     note: Optional[str] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
 
 class SaleFinalizeHeld(BaseModel):
@@ -182,6 +195,8 @@ class SaleFinalizeHeld(BaseModel):
     payments: Optional[List[PaymentCreate]] = None
     donation_surplus: Optional[List[PaymentCreate]] = None
     note: Optional[str] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
     @field_validator("payment_method", mode="before")
     @classmethod
@@ -228,6 +243,12 @@ class SaleResponse(SaleBase):
     special_encaissement_kind: Optional[SpecialEncaissementKind] = None
     social_action_kind: Optional[SocialActionKind] = None
     adherent_reference: Optional[str] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = None
+    effective_business_tag: Optional[str] = Field(
+        default=None,
+        description="Tag métier effectif au niveau ticket (sans lignes ou défaut avant surcharge ligne).",
+    )
     # Story 24.4 — même résolution que le reversal (resolve_refund_branch) ; lecture seule pour le terrain.
     fiscal_branch: Optional[str] = Field(
         default=None,

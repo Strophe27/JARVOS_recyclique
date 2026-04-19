@@ -1,3 +1,7 @@
+# last_updated: 2026-04-19 — story 24-9 Story Runner BMAD fin : CS→VS→DS→GATE(pytest API+story24-9 + vitest smoke + lint + build)→QA e2e cashflow-business-tag-24-9→CR1 faux négatif tests→doc NON_TAGUE→CR2 APPROVE ; 24-9 review→done ; vs=0 qa=0 cr=1 ; prochaine 24-10 ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-9 DS bmad-dev-story Task : 24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe ready-for-dev → review ; tags ticket/ligne + migration s24_9 + endpoint stats + Peintre nominal + pytest/vitest ; epic-24 inchangé in-progress ; GATE parent ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-9 VS bmad-create-story validate : PASS — checklist + alignement epics §24.9 ↔ story ; development_status 24-9 inchangé ready-for-dev ; epic-24 inchangé in-progress ; prochaine étape bmad-dev-story (DS) ; branche epic/24-operations-speciales-orchestration
+# last_updated: 2026-04-19 — story 24-9 CS bmad-create-story : 24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe backlog → ready-for-dev ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-8 Story Runner fin : CS→VS→DS→GATE(pytest API + vitest smoke + lint + build)→QA e2e hub→CR PASS ; 24-8 review→done ; vs=0 qa=0 cr=0 ; prochaine 24-9 ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-8 DS bmad-dev-story Task : 24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client ready-for-dev → review ; cash.transfer + POST internal-transfers + UI /caisse/mouvement-interne ; pytest + vitest hub ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
 # last_updated: 2026-04-19 — story 24-8 CS bmad-create-story : 24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client backlog → ready-for-dev ; PRD §10.6 + ADR D1/D2 ; epic-24 inchangé in-progress ; branche epic/24-operations-speciales-orchestration
@@ -257,7 +261,7 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
-last_updated: "2026-04-19" # story 24-6 Story Runner BMAD : run complet Tasks + gates doublon post-QA ; CR PASS ; e2e cashflow-exchange-24-6 ; 24-6 done
+last_updated: "2026-04-19" # story 24-9 Story Runner : 24-9 review→done ; CR2 APPROVE ; epic-24 inchangé in-progress ; prochaine 24-10 backlog
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -507,6 +511,6 @@ development_status:
   24-6-echange-matiere-et-difference-financiere-sous-flux-vente-remboursement: done
   24-7-decaissement-sous-types-obligatoires-sans-categorie-poubelle: done
   24-8-mouvement-interne-caisse-distinct-charge-et-remboursement-client: done
-  24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe: backlog
+  24-9-tags-metier-ticket-et-ligne-reporting-matiere-associe: done
   24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: backlog
   epic-24-retrospective: optional

@@ -18,6 +18,7 @@ import {
   setPaymentMethod,
   useCashflowDraft,
 } from './cashflow-draft-store';
+import { buildBusinessTagPayload } from './cashflow-business-tag-payload';
 import wizardClasses from './CashflowNominalWizard.module.css';
 import dockClasses from './KioskFinalizeSaleDock.module.css';
 
@@ -443,6 +444,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
     try {
       const noteOpt = saleNote.trim() ? { note: saleNote.trim() } : {};
       const baseDon = { donation: parsedDonation, ...noteOpt };
+      const ticketTagFields = buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom);
       const surplusCode =
         payments.length > 0
           ? payments[0].payment_method
@@ -453,18 +455,19 @@ export function KioskFinalizeSaleDock(): ReactNode {
       if (draft.activeHeldSaleId) {
         let finalizePayload: Parameters<typeof postFinalizeHeldSale>[1];
         if (payments.length > 0) {
-          finalizePayload = { payments: slimPaymentLines(payments), ...baseDon };
+          finalizePayload = { payments: slimPaymentLines(payments), ...baseDon, ...ticketTagFields };
         } else if (!paymentMethodNeedsAmount) {
-          finalizePayload = { payment_method: 'free', ...baseDon };
+          finalizePayload = { payment_method: 'free', ...baseDon, ...ticketTagFields };
         } else if (parsedAmountReceived !== null && parsedAmountReceived > amountDue + 1e-6) {
           const excess = parsedAmountReceived - amountDue;
           finalizePayload = {
             payments: [{ payment_method: surplusCode, amount: amountDue }],
             donation_surplus: [{ payment_method: surplusCode, amount: excess }],
             ...baseDon,
+            ...ticketTagFields,
           };
         } else {
-          finalizePayload = { payment_method: surplusCode, ...baseDon };
+          finalizePayload = { payment_method: surplusCode, ...baseDon, ...ticketTagFields };
         }
 
         const res = await postFinalizeHeldSale(draft.activeHeldSaleId, finalizePayload, auth);
@@ -486,9 +489,11 @@ export function KioskFinalizeSaleDock(): ReactNode {
           weight: l.weight,
           unit_price: l.unitPrice,
           total_price: l.totalPrice,
+          ...buildBusinessTagPayload(l.businessTagKind ?? '', l.businessTagCustom ?? ''),
         })),
         total_amount: amountDue,
         ...baseDon,
+        ...ticketTagFields,
       };
       if (payments.length > 0) {
         body.payments = slimPaymentLines(payments);

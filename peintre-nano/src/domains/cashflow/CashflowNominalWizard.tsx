@@ -40,10 +40,12 @@ import {
   setCashflowWidgetDataState,
   setCashSessionIdInput,
   setPaymentMethod,
+  setTicketBusinessTags,
   setTotalAmount,
   useCashflowDraft,
   type CashflowOperatingMode,
 } from './cashflow-draft-store';
+import { buildBusinessTagPayload } from './cashflow-business-tag-payload';
 import { useCaisseServerCurrentSession } from './use-caisse-server-current-session';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowSocialDonWizard } from './CashflowSocialDonWizard';
@@ -54,6 +56,15 @@ import classes from './CashflowNominalWizard.module.css';
 
 const CashflowSpecialDonWizard = makeCashflowSpecialEncaissementWizard('DON_SANS_ARTICLE');
 const CashflowSpecialAdhesionWizard = makeCashflowSpecialEncaissementWizard('ADHESION_ASSOCIATION');
+
+/** Story 24.9 — tags métier (ticket / lignes via API ; saisie ticket dans le nominal). */
+const CASHFLOW_BUSINESS_TAG_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: '(aucun)' },
+  { value: 'GRATIFERIA', label: 'Gratiféria' },
+  { value: 'CAMPAGNE_SOCIALE', label: 'Campagne sociale' },
+  { value: 'SPECIAL_DON_SANS_ARTICLE', label: 'Enc. spécial — don sans article' },
+  { value: 'AUTRE', label: 'Autre (libellé libre)' },
+];
 
 type SpecialEncaissementVariant = 'DON_SANS_ARTICLE' | 'ADHESION_ASSOCIATION';
 
@@ -1024,8 +1035,10 @@ function LinesStep({
             weight: l.weight,
             unit_price: l.unitPrice,
             total_price: l.totalPrice,
+            ...buildBusinessTagPayload(l.businessTagKind ?? '', l.businessTagCustom ?? ''),
           })),
           total_amount: total,
+          ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
         },
         auth,
       );
@@ -1355,7 +1368,10 @@ function PaymentStep({
       if (draft.activeHeldSaleId) {
         const res = await postFinalizeHeldSale(
           draft.activeHeldSaleId,
-          { payment_method: draft.paymentMethod },
+          {
+            payment_method: draft.paymentMethod,
+            ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
+          },
           auth,
         );
         if (!res.ok) {
@@ -1374,10 +1390,12 @@ function PaymentStep({
           weight: l.weight,
           unit_price: l.unitPrice,
           total_price: l.totalPrice,
+          ...buildBusinessTagPayload(l.businessTagKind ?? '', l.businessTagCustom ?? ''),
         })),
         total_amount: draft.totalAmount,
         donation: 0,
         payment_method: draft.paymentMethod,
+        ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
       };
       const res = await postCreateSale(body, auth);
       if (!res.ok) {
@@ -1407,6 +1425,30 @@ function PaymentStep({
             onChange={(e) => setCashSessionIdInput(e.currentTarget.value)}
             data-testid="cashflow-input-session-id"
           />
+          <Text component="label" size="sm" fw={600} mt="md" display="block">
+            Tag métier ticket (optionnel — Story 24.9)
+            <select
+              className={classes.nativeSelect}
+              data-testid="cashflow-select-business-tag-ticket"
+              value={draft.ticketBusinessTagKind}
+              onChange={(e) => setTicketBusinessTags(e.currentTarget.value, draft.ticketBusinessTagCustom)}
+            >
+              {CASHFLOW_BUSINESS_TAG_OPTIONS.map((o) => (
+                <option key={o.value || 'none'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Text>
+          {draft.ticketBusinessTagKind === 'AUTRE' ? (
+            <TextInput
+              label="Précision du tag « Autre »"
+              value={draft.ticketBusinessTagCustom}
+              onChange={(e) => setTicketBusinessTags('AUTRE', e.currentTarget.value)}
+              mt="xs"
+              data-testid="cashflow-input-business-tag-custom"
+            />
+          ) : null}
         </div>
       </div>
     );
@@ -1452,6 +1494,30 @@ function PaymentStep({
         <Text size="sm" c="red" mt="xs" data-testid="cashflow-nominal-pm-options-error">
           {pmError}
         </Text>
+      ) : null}
+      <Text component="label" size="sm" fw={600} mt="md" display="block">
+        Tag métier ticket (optionnel — Story 24.9)
+        <select
+          className={classes.nativeSelect}
+          data-testid="cashflow-select-business-tag-ticket"
+          value={draft.ticketBusinessTagKind}
+          onChange={(e) => setTicketBusinessTags(e.currentTarget.value, draft.ticketBusinessTagCustom)}
+        >
+          {CASHFLOW_BUSINESS_TAG_OPTIONS.map((o) => (
+            <option key={o.value || 'none'} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </Text>
+      {draft.ticketBusinessTagKind === 'AUTRE' ? (
+        <TextInput
+          label="Précision du tag « Autre »"
+          value={draft.ticketBusinessTagCustom}
+          onChange={(e) => setTicketBusinessTags('AUTRE', e.currentTarget.value)}
+          mt="xs"
+          data-testid="cashflow-input-business-tag-custom"
+        />
       ) : null}
       <>
         <Button
