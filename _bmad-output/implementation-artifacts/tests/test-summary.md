@@ -2,6 +2,13 @@
 
 ---
 
+## Story 25.4 — Spec socle multisite / permissions / projection Paheko (documentaire, 2026-04-20)
+
+- **Synthèse QA :** [`test-summary-story-25-4-doc-qa.md`](test-summary-story-25-4-doc-qa.md) — **PASS** ; pas de tests API/E2E (NA) ; conformité statique spec ↔ `epics.md` §25.4 ; citations §1.1 et index architecture vérifiés.
+- **Spec :** `_bmad-output/planning-artifacts/architecture/2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md`
+
+---
+
 ## Story 25.2 — ADR PIN kiosque (documentaire, 2026-04-19)
 
 - **Synthèse QA :** [`test-summary-story-25-2-doc-qa.md`](test-summary-story-25-2-doc-qa.md) — **PASS** ; pas de tests API/E2E (NA) ; conformité statique ADR ↔ `epics.md` §25.2.
