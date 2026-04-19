@@ -17,6 +17,12 @@ inputDocuments:
   - references/peintre/2026-04-01_adr-p1-p2-stack-css-et-config-admin.md
   - references/peintre/2026-04-01_instruction-cursor-p1-p2.md
   - references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md
+  - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
+  - references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md
+  - _bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md
+  - _bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md
+  - references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md
+  - _bmad-output/implementation-artifacts/sprint-status.yaml
 ---
 
 # JARVOS_recyclique - Epic Breakdown
@@ -29,9 +35,10 @@ Etat BMAD actuel :
 - etape 1 preparee : inventaire des exigences extrait et consolide ;
 - etape 2 preparee et structure d'epics approuvee en premiere passe ;
 - en cas d'ecart entre documents, la source de verite reste `prd.md`, puis l'architecture active decoupee en sous-documents et les documents de cadrage explicitement listes en frontmatter.
-- etape 3 preparee : les stories detaillees ont ete generees pour les 10 epics ;
-- etape 4 preparee : validation finale effectuee sur la couverture, les dependances, la granularite des stories et la coherence inter-epics ;
-- le workflow `bmad-create-epics-and-stories` est considere comme complet ; `epics.md` est pret pour la suite du flux BMAD.
+- etape 3 preparee : les stories detaillees historiques ont ete generees pour les epics 1 a 24 alors actifs ;
+- etape 4 preparee : validation finale historique effectuee sur la couverture, les dependances, la granularite des stories et la coherence inter-epics ;
+- correct course `2026-04-19` actif : ajout d'un **Epic 25** documentaire prioritaire pour fermer les decisions structurantes PRD vision kiosque / multisite / permissions avant tout nouveau dev BMAD hors `25-*` ;
+- `epics.md` reste la base canonique de decoupage backlog, mais le chantier `25.*` reouvre explicitement la passe documentaire sur ce perimetre tant que le gel n'est pas leve.
 
 ### Developpement parallele Piste A / Piste B (cadrage 2026-04-01)
 
@@ -248,16 +255,16 @@ FR7: Epic 3 - Frontiere claire entre metier `Recyclique` et moteur UI.
 FR8: Epic 3 - Adaptateur de canal web et rendu concret.
 FR9: Epic 3 - Grammaire `CREOS` minimale partagee.
 FR10: Epic 3, Epic 4, Epic 5, Epic 6, Epic 7, Epic 8, Epic 9 - Toute l'UI v2 passe par `Peintre_nano`, du socle aux ecrans et modules livres.
-FR11: Epic 1 et Epic 2 - Stabilisation puis mise en oeuvre des contextes minimaux et de leur modele.
-FR12: Epic 2 - Politique de recalcul, mode degrade et securite prioritaire.
+FR11: Epic 1, Epic 2 et Epic 25 - Stabilisation puis mise en oeuvre des contextes minimaux et de leur modele, avec alignement kiosque/multisite avant nouveau developpement hors gel.
+FR12: Epic 2 et Epic 25 - Politique de recalcul, mode degrade et securite prioritaire, y compris arbitrages kiosque avant implementation.
 FR13: Epic 2 - Rechargement explicite des changements de contexte sensibles.
-FR14: Epic 2 - Modele roles/groupes/libelles personnalisables.
-FR15: Epic 2 - Calcul additif des droits.
+FR14: Epic 2 et Epic 25 - Modele roles/groupes/libelles personnalisables, avec convergence documentaire vision/brownfield.
+FR15: Epic 2 et Epic 25 - Calcul additif des droits et limites du socle permissions avant extension kiosque.
 FR16: Epic 2 - Autorite des cles techniques et permissions calculees.
 FR17: Epic 4 - Definition de la chaine modulaire complete a prouver.
 FR18: Epic 4 - Fallback, blocage, journalisation et correction des contrats invalides.
 FR19: Epic 4 - Regles de fallback ou blocage sur les elements critiques.
-FR20: Epic 1 et Epic 2 - Zero fuite de contexte entre sites, caisses et operateurs, du cadrage a l'implementation.
+FR20: Epic 1, Epic 2 et Epic 25 - Zero fuite de contexte entre sites, caisses et operateurs, du cadrage a l'implementation puis a l'alignement kiosque/multisite.
 FR21: Epic 5 - Vues globales admin/super-admin sous contraintes de contexte et de tracabilite.
 FR22: Epic 1 et Epic 2 - Donnee exploitable, historisation, rejeu et tracabilite des mappings sensibles, du modele a la persistance operationnelle.
 FR23: Epic 2 - Persistance locale d'abord et sync reportable.
@@ -276,9 +283,9 @@ FR35: Epic 5 - Propagation des libelles personnalises dans l'UI recomposee.
 FR36: Epic 1 - Isolation multi-sites appliquee aussi aux roles et groupes.
 FR37: Epic 3 - Capacites minimales v2 du moteur `Peintre_nano`.
 FR38: Epic 4, Epic 6, Epic 7, Epic 8, Epic 9, Epic 10 - Modules obligatoires v2 repartis entre preuve modulaire, flows critiques, sync, modules complementaires et validation finale de readiness.
-FR39: Epic 8 - Contrat de synchronisation et reconciliation complet.
+FR39: Epic 8 et Epic 25 - Contrat de synchronisation et reconciliation complet, avec ADR prealable sur outbox durable vs file auxiliaire.
 FR40: Epic 1 - Hierarchie technique d'integration `Paheko`.
-FR41: Epic 1 - Validite de la structure multi-sites / multi-caisses / multi-postes et mappings associes.
+FR41: Epic 1 et Epic 25 - Validite de la structure multi-sites / multi-caisses / multi-postes et mappings associes, y compris cible kiosque/analytique.
 FR42: Epic 8 - Gestion des correspondances `Paheko` absentes ou invalides.
 FR43: Epic 8 - Schema de deploiement cible par ressourcerie.
 FR44: Epic 9 - Config admin simple comme capacite v2 livrable.
@@ -308,16 +315,16 @@ FR67: Epic 8 - Quarantaine et resolution tracee.
 FR68: Epic 2 - Priorite de la securite sur la fluidite.
 FR69: Epic 8 - Blocage selectif des actions critiques finales.
 FR70: Epic 8 - Statuts explicites de cloture et d'ecart critique.
-FR71: Epic 2 - Politique PIN v2 et son administration.
+FR71: Epic 2 et Epic 25 - Politique PIN v2 et son administration, avec ADR distincte pour le PIN kiosque.
 FR72: Epic 2 - Revalidation serveur de toute action sensible.
-FR73: Epic 1 et Epic 10 - Exigence scindee en deux jalons : fermeture des prerequis de gouvernance contractuelle en Epic 1, puis mise en place effective des validations CI minimales en Epic 10.
+FR73: Epic 1, Epic 10 et Epic 25 - Exigence scindee en jalons : fermeture des prerequis de gouvernance contractuelle en Epic 1, alignement kiosque/multisite/ADR en Epic 25, puis validations CI minimales en Epic 10.
 
 ### NFR Coverage Map
 
 NFR1: Epic 2 et Epic 8 - Persistance locale `Recyclique` et resilience de synchronisation.
 NFR2: Epic 2 et Epic 8 - Zone tampon, retry et reprise apres incident.
 NFR3: Epic 2, Epic 6 et Epic 7 - Terrain utilisable sans dependance externe immediate sur les flows critiques.
-NFR4: Epic 1 et Epic 2 - Zero fuite de contexte et validite du modele multi-contextes.
+NFR4: Epic 1, Epic 2 et Epic 25 - Zero fuite de contexte et validite du modele multi-contextes, y compris pour la cible kiosque/multisite.
 NFR5: Epic 3 - Manifests `CREOS` livres avec le build comme source primaire.
 NFR6: Epic 2 et Epic 8 - Journalisation des actions sensibles et resolutions manuelles.
 NFR7: Epic 4, Epic 6, Epic 7, Epic 8 - Journalisation des fallbacks, blocages et degradations.
@@ -332,7 +339,7 @@ NFR15: Epic 10 - Socle lisible et propre pour ouverture communautaire.
 NFR16: Epic 10 - Absence de dependance proprietaire au coeur du produit.
 NFR17: Epic 10 - Matrice d'environnements officiellement supportes.
 NFR18: Epic 10 - Support officiel `Debian`.
-NFR19: Epic 1 et Epic 8 - Modele de donnees articulant flux financier et flux matiere.
+NFR19: Epic 1, Epic 8 et Epic 25 - Modele de donnees articulant flux financier et flux matiere, avec impact multisite analytique explicite avant code.
 NFR20: Epic 1 et Epic 2 - Historicisation suffisante pour rejeu, analyse et correlations futures.
 NFR21: Epic 6, Epic 7, Epic 8, Epic 10 - Exploitabilite des donnees au grain des totaux et des operations detaillees.
 NFR22: Epic 1, Epic 2, Epic 9 - Historisation des mappings sensibles super-admin.
@@ -340,7 +347,7 @@ NFR23: Epic 1 et Epic 10 - Base assez propre pour usages analytiques futurs.
 NFR24: Epic 1 et Epic 3 - Versionnement `SemVer` des manifests `CREOS`.
 NFR25: Epic 1 et Epic 3 - Coordination du versionnement `OpenAPI` / `CREOS`.
 NFR26: Epic 3 - Compatibilite explicite manifest/API/`Peintre_nano`.
-NFR27: Epic 1 et Epic 10 - Politique de breaking changes et propagation de compatibilite.
+NFR27: Epic 1, Epic 10 et Epic 25 - Politique de breaking changes et propagation de compatibilite, y compris quand un ADR rebase le vocabulaire sync ou PIN.
 NFR28: Epic 3 et Epic 10 - Validation outillee qu'un manifest valide ne casse pas le rendu React.
 
 ### Additional Requirements Coverage Map
@@ -355,8 +362,8 @@ AR7: Epic 8 et Epic 10 - Stack cible complete incluant `Paheko`.
 AR8: Epic 1 et Epic 8 - Integration `Paheko` uniquement cote backend avec specification de mapping.
 AR9: Epic 1 - Matrice operation -> API/plugin/SQL/hors scope et liste des gaps API.
 AR10: Epic 9 - `HelloAsso` non bloquant pour l'installation minimale.
-AR11: Epic 2 et Epic 8 - Outbox durable `PostgreSQL`, sync `at-least-once`, handlers idempotents.
-AR12: Epic 2 et Epic 8 - `Redis` auxiliaire seulement.
+AR11: Epic 2, Epic 8 et Epic 25 - Outbox durable `PostgreSQL`, sync `at-least-once`, handlers idempotents.
+AR12: Epic 2, Epic 8 et Epic 25 - `Redis` auxiliaire seulement, sauf ADR explicite contraire.
 AR13: Epic 3, Epic 4, Epic 5, Epic 6, Epic 7 - Ordre d'implementation socle -> preuve modulaire -> recomposition transverse -> gros flows.
 AR14: Epic 5, Epic 6, Epic 7 - Migration des ecrans apres stabilisation minimale des contrats et contextes.
 AR15: Epic 3 et Epic 5 - Couche d'adaptation Mantine conforme **ADR P1** (pas racine composition).
@@ -380,7 +387,7 @@ AR32: Epic 4 et Epic 5 - Echecs de manifest/contrat visibles et non silencieux.
 AR33: Epic 5, Epic 9, Epic 10 - Integrations externes, notamment email, via backend `Recyclique`.
 AR34: Epic 3 - `PageTemplate`, `ZoneRole`, `LayoutComposition` prepares mais non prerequis du socle minimal.
 AR35: Epic 10 - Couverture unitaire, contrat, integration, e2e et enforcement des patterns d'architecture.
-AR36: Epic 1 - Dependances encore a formaliser ou verifier avant implementation large.
+AR36: Epic 1 et Epic 25 - Dependances encore a formaliser ou verifier avant implementation large.
 AR37: Epic 10 - Gates beta interne et v2 vendable traçables dans le backlog.
 AR38: Epic 3, Epic 5, Epic 10 - Hors-scope v2 a ne pas reinjecter implicitement dans le backlog de socle.
 AR39: Epic 1 et Epic 3 - Hierarchie de verite explicite entre `OpenAPI`, `ContextEnvelope`, `NavigationManifest`, `PageManifest` et `UserRuntimePrefs`.
@@ -438,6 +445,11 @@ L'equipe peut verifier, tester, observer, deployer et qualifier la v2 jusqu'aux 
 **FRs covered:** FR10, FR38, FR73 (jalon CI/readiness)
 **NFR/AR cles:** NFR14, NFR15, NFR16, NFR17, NFR18, NFR27, NFR28, AR18, AR35, AR37
 
+### Epic 25: Aligner la vision kiosque / multisite / permissions avec le brownfield et fermer les ADR structurantes
+Le pilotage peut traiter l'extension kiosque/multisite/permissions comme un socle de decision et non comme un lot de code premature. Cet epic produit les matrices d'alignement, ADR et gates documentaires qui ferment les ambiguities signalees par le correct course du 2026-04-19, afin que les prochaines stories `25-*` puis les futurs lots de dev BMAD respectent l'ordre **decision -> code** sur le PIN kiosque, l'async `Paheko`, le multisite analytique et les permissions.
+**FRs covered:** FR11, FR12, FR14, FR15, FR20, FR39, FR41, FR71, FR73
+**NFR/AR cles:** NFR4, NFR19, NFR27, AR11, AR12, AR36
+
 ## Module Obligatoire Map
 
 - `bandeau live` -> Epic 4
@@ -464,6 +476,8 @@ Ordre de construction recommande :
 8. Epic 8 branche et fiabilise la sync/reconciliation comptable reelle avec `Paheko`.
 9. Epic 9 livre les modules metier complementaires v2.
 10. Epic 10 ferme la validation, l'industrialisation et les gates de sortie.
+
+**Correct course 2026-04-19 : regle prioritaire de sequencing.** Tant que le gel d'execution hors `25-*` reste actif, **Epic 25** devient la priorite operationnelle **avant** toute relance BMAD lourde sur les autres epics, meme si la sequence historique 1 -> 10 reste utile comme carte de dependances produit. Son role est de fermer les decisions structurantes et de preparer un backlog rebase, pas de lancer du code produit. En pratique : pour la suite immediate du pilotage, lire d'abord **Epic 25**, puis seulement les epics historiques lorsqu'une decision documentee a leve le gel.
 
 Regles de dependance :
 
@@ -3587,3 +3601,86 @@ So that escalations are traceable.
 **And** les opérations sensibles conservent la distinction initiateur/validateur (ADR D6) et l'audit reste exploitable pour supervision
 
 **Epic 24 — Implementation readiness:** `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-18-operations-speciales.md`
+
+## Epic 25: Socle d'alignement PRD vision kiosque / multisite / permissions, brownfield et ADR
+
+**Goal:** Transformer le correct course du `2026-04-19` en backlog executable en fermant d'abord les decisions structurantes (vision vs canon brownfield, PIN kiosque, async `Paheko`, multisite/permissions, gate readiness), puis en preparant seulement ensuite les futurs lots de dev issus de cet epic. Dans cet epic, **25.1 a 25.5** sont des stories de decision / cadrage / readiness ; tout futur dev derive devra etre ajoute explicitement apres ce socle (par exemple en `25.6+` si la numerotation est conservee).
+
+**Sources prioritaires:** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`, `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`, `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`, `references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+**Regle directrice:** aucune story d'implementation produit sur le perimetre kiosque / multisite / permissions n'entre en dev tant que la story spike ou ADR qui porte sa decision structurante n'est pas livree et close. Les stories **25.1 a 25.5** sont donc documentaires ; elles ferment le socle de decision et preparent le rerun readiness / rebaselining avant toute story de build.
+
+**Pilotage YAML:** les cles `25-1` a `25-5` (kebab-case derive des titres ci-dessous) sont presentes en `backlog` dans `_bmad-output/implementation-artifacts/sprint-status.yaml` sous `epic-25`. Le passage en `ready-for-dev` reste discipline `bmad-create-story` / Story Runner apres fermeture des prerequis documentaires de chaque story.
+
+### Story 25.1: Cartographier les exigences importees et fermer la matrice d'alignement vision -> canonique
+
+As a product and architecture lead,
+I want a single alignment matrix between the PRD vision, the brownfield canon, the readiness report, and the correct course,
+So that every future `25-*` story knows what is already canonical, what still needs an ADR, and what remains blocked by the gel.
+
+**Acceptance Criteria:**
+
+**Given** the same requirement can appear in `prd.md`, the PRD vision, the research report, the readiness report, and the QA2 closure note
+**When** this story is delivered
+**Then** a written matrix maps each major imported subject (PIN kiosque, async `Paheko`, multisite analytique, permissions, device/token kiosque, offline queue, auto-suspend, canaux d'alerte) to one explicit status among `canonique`, `cible`, `ADR requise`, `hors gate`
+**And** each line cites at least one source path among `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`, `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`, and `references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md`
+**And** the matrix identifies which future work can become a dev story and which work must stay documentary until an ADR is closed
+**And** each imported subject is explicitly classified as `noyau Epic 25`, `future story`, or `hors perimetre assume du gel`, so that topics such as auto-suspend, canaux d'alerte, device/token kiosque, and offline queue do not silently broaden the current scope
+
+### Story 25.2: Fermer l'ADR PIN kiosque versus PIN operateur et secret de poste
+
+As a security and product owner,
+I want an approved ADR that separates the canonical operator PIN from the target kiosk PIN model,
+So that authentication, lockout, offline behavior, and step-up rules do not drift into contradictory implementations.
+
+**Acceptance Criteria:**
+
+**Given** `_bmad-output/planning-artifacts/prd.md` distinguishes `PIN operateur` from `PIN kiosque` and the research report documents the brownfield server-side PIN path
+**When** the ADR is produced
+**Then** it states the retained trust model for kiosk identity, local secret or hybrid verification, lockout thresholds, offline tolerance, and revalidation boundaries without weakening the canonical server-side `PIN operateur`
+**And** it cites at minimum `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, and `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`
+**And** it names the exact downstream stories that remain blocked until this ADR is approved, including any future kiosk auth or "passer la main" implementation story
+
+### Story 25.3: Fermer l'ADR async `Paheko` (outbox durable, Redis auxiliaire ou trajectoire hybride)
+
+As an integration architect,
+I want an approved ADR on the retained asynchronous accounting path,
+So that future stories do not encode both "file Redis" and "outbox PostgreSQL" as competing truths.
+
+**Acceptance Criteria:**
+
+**Given** the PRD canon keeps the durable outbox as the nominal path and the PRD vision names a Redis queue as target wording
+**When** this story is completed
+**Then** the ADR decides the retained canonical mechanism, the allowed role of `Redis`, the migration or wording strategy, and the consequences for observability, idempotence, retries, and operations
+**And** it cites at minimum `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`, and `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`
+**And** no future story that changes async `Paheko` transport, queueing, or accounting delivery semantics is marked ready-for-dev before this ADR is closed
+**And** the ADR explicitly reconciles the retained decision with the active canonical chain for outbox durable, idempotence, correlation, quarantine, and lot de session, and states what remains unchanged until the ADR is approved, with explicit traceability back to `AR11`, `AR12`, and the architecture or chain documents already referenced by `prd.md`
+
+### Story 25.4: Specifier le socle multisite, permissions et invariants de poste/kiosque pour la cible 2026-04-19
+
+As a platform and product team,
+I want a converged specification for multisite analytics, role/group permissions, kiosk or poste identity, and zero-leakage invariants,
+So that future implementation stories can reuse one stable context model across `Recyclique`, `Peintre_nano`, and `Paheko`.
+
+**Acceptance Criteria:**
+
+**Given** the target scope includes site hierarchy, kiosk or poste identity, analytical linkage, and additive permissions
+**When** this specification is delivered
+**Then** it defines the retained invariants for `site`, `caisse`, `session`, `poste` or `kiosque`, role, group, permission scope, and context-switch behavior, with explicit notes on what remains brownfield-canonical versus future-target
+**And** it cites at minimum `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`, and `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`
+**And** the deliverable enumerates which downstream implementation stories can start immediately after approval and which still require another ADR or readiness gate
+**And** it closes the projection rules between `Recyclique` context and `Paheko` accounting target, including mandatory mapping, visible failure state when mapping is missing, prohibition of silent fallback to a substitute axis or emplacement, and the conditions for selective blocking, supervision, or quarantine
+
+### Story 25.5: Rejouer le gate readiness cible et rebaseliner le backlog `25-*` apres fermeture des decisions
+
+As a BMAD pilot,
+I want a targeted readiness rerun and a rebased `25-*` sequence once the alignment artifacts are closed,
+So that sprint planning can schedule only executable stories instead of mixing blocked assumptions with dev-ready work.
+
+**Acceptance Criteria:**
+
+**Given** the current readiness report marks the PWA or kiosk extension as `NON PRÊTE` / `NOT READY`
+**When** the decision artifacts from Stories `25.1` to `25.4` are complete
+**Then** a targeted readiness note states which gates are now closed, which ones remain open, and whether the first implementation story can legally move to `ready-for-dev`
+**And** the rebased sequence cites `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml`, and the approved Epic 25 deliverables
+**And** the output explicitly identifies the first post-ADR story candidate for `bmad-create-story`, with enough file references and DoD focus for later use by `.cursor/agents/bmad-story-runner.md` and `references/automatisation-bmad/epic-story-runner-spec.md`
