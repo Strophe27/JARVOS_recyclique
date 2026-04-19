@@ -6,6 +6,7 @@ import { App } from '../../src/app/App';
 import {
   createDefaultDemoEnvelope,
   PERMISSION_CASHFLOW_DISBURSEMENT,
+  PERMISSION_CASHFLOW_INTERNAL_TRANSFER,
   PERMISSION_CASHFLOW_NOMINAL,
   PERMISSION_CASHFLOW_REFUND,
 } from '../../src/app/auth/default-demo-auth-adapter';
@@ -308,5 +309,126 @@ describe('E2E — hub opérations spéciales caisse (Story 24.2)', () => {
       expect(screen.getByTestId('cashflow-disbursement-wizard')).toBeTruthy();
     });
     expect(screen.getByText(/Sous-types obligatoires/i)).toBeTruthy();
+  });
+
+  it('sans cash.transfer : pas de CTA mouvement interne, message explicite (Story 24.8)', async () => {
+    const keys = createDefaultDemoEnvelope().permissions.permissionKeys.filter(
+      (k) => k !== PERMISSION_CASHFLOW_INTERNAL_TRANSFER,
+    );
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-24-8-notrf' },
+      envelope: createDefaultDemoEnvelope({ permissions: { permissionKeys: keys } }),
+    });
+    window.history.pushState({}, '', '/caisse/operations-speciales');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-special-ops-mouvement-interne-blocked')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('cashflow-special-ops-mouvement-interne-cta')).toBeNull();
+  });
+
+  it('avec cash.transfer mais sans caisse.access : pas de CTA mouvement interne (Story 24.8)', async () => {
+    const keys = createDefaultDemoEnvelope().permissions.permissionKeys.filter(
+      (k) => k !== PERMISSION_CASHFLOW_NOMINAL,
+    );
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-24-8-nom' },
+      envelope: createDefaultDemoEnvelope({ permissions: { permissionKeys: keys } }),
+    });
+    window.history.pushState({}, '', '/caisse/operations-speciales');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-special-ops-mouvement-interne-blocked')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('cashflow-special-ops-mouvement-interne-cta')).toBeNull();
+  });
+
+  it('hub → CTA mouvement interne : /caisse/mouvement-interne + wizard (Story 24.8)', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-24-8' },
+      envelope: createDefaultDemoEnvelope({
+        cashSessionId: '00000000-0000-4000-8000-00000000c0de',
+      }),
+    });
+    window.history.pushState({}, '', '/caisse/operations-speciales');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-special-ops-mouvement-interne-cta')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId('cashflow-special-ops-mouvement-interne-cta'));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/caisse/mouvement-interne');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-internal-transfer-wizard')).toBeTruthy();
+    });
+  });
+
+  it('URL profonde /caisse/mouvement-interne : wizard mouvement interne visible (Story 24.8)', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-24-8-deep' },
+      envelope: createDefaultDemoEnvelope({
+        cashSessionId: '00000000-0000-4000-8000-00000000c0de',
+      }),
+    });
+    window.history.pushState({}, '', '/caisse/mouvement-interne');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-internal-transfer-wizard')).toBeTruthy();
+    });
+  });
+
+  it('distinct du remboursement : URLs séparées — wizard remboursement vs mouvement interne (Story 24.8)', async () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-24-8-dist' },
+      envelope: createDefaultDemoEnvelope({
+        cashSessionId: '00000000-0000-4000-8000-00000000c0de',
+      }),
+    });
+
+    window.history.pushState({}, '', '/caisse/remboursement');
+    const { unmount: unmountRefund } = render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-refund-step-select')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('cashflow-internal-transfer-wizard')).toBeNull();
+    unmountRefund();
+    cleanup();
+
+    window.history.pushState({}, '', '/caisse/mouvement-interne');
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <App />
+      </RootProviders>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-internal-transfer-wizard')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('cashflow-refund-step-select')).toBeNull();
   });
 });

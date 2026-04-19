@@ -79,6 +79,7 @@ import pageCashflowSpecialOpsHub from '../../../../contracts/creos/manifests/pag
 import pageCashflowRefund from '../../../../contracts/creos/manifests/page-cashflow-refund.json';
 import pageCashflowExceptionalRefund from '../../../../contracts/creos/manifests/page-cashflow-exceptional-refund.json';
 import pageCashflowDisbursement from '../../../../contracts/creos/manifests/page-cashflow-disbursement.json';
+import pageCashflowInternalTransfer from '../../../../contracts/creos/manifests/page-cashflow-internal-transfer.json';
 import pageCashflowExchange from '../../../../contracts/creos/manifests/page-cashflow-exchange.json';
 import pageAdminCashSessionDetail from '../../../../contracts/creos/manifests/page-admin-cash-session-detail.json';
 import pageAdminReceptionTicketDetail from '../../../../contracts/creos/manifests/page-admin-reception-ticket-detail.json';
@@ -192,6 +193,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageCashflowExceptionalRefund),
     JSON.stringify(pageCashflowExchange),
     JSON.stringify(pageCashflowDisbursement),
+    JSON.stringify(pageCashflowInternalTransfer),
     JSON.stringify(pageCashflowClose),
     JSON.stringify(pageAdminCashSessionDetail),
     JSON.stringify(pageAdminReceptionTicketDetail),
@@ -238,6 +240,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-cashflow-exceptional-refund.json',
           'contracts/creos/manifests/page-cashflow-exchange.json',
           'contracts/creos/manifests/page-cashflow-disbursement.json',
+          'contracts/creos/manifests/page-cashflow-internal-transfer.json',
           'contracts/creos/manifests/page-cashflow-close.json',
           'contracts/creos/manifests/page-admin-cash-session-detail.json',
           'contracts/creos/manifests/page-admin-reception-ticket-detail.json',

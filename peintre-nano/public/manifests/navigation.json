@@ -379,6 +379,19 @@
       }
     },
     {
+      "id": "cashflow-internal-transfer",
+      "route_key": "cashflow-internal-transfer",
+      "path": "/caisse/mouvement-interne",
+      "page_key": "cashflow-internal-transfer",
+      "shortcut_id": "go-cashflow-internal-transfer",
+      "label_key": "nav.cashflow.internalTransfer",
+      "required_permission_keys": ["caisse.access", "cash.transfer"],
+      "visibility": {
+        "permission_any": ["cash.transfer"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "cashflow-close",
       "route_key": "cashflow-close",
       "path": "/caisse/cloture",

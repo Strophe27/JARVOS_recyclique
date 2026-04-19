@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import {
   PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
   PERMISSION_CASHFLOW_DISBURSEMENT,
+  PERMISSION_CASHFLOW_INTERNAL_TRANSFER,
   PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND,
   PERMISSION_CASHFLOW_EXCHANGE,
   PERMISSION_CASHFLOW_NOMINAL,
@@ -28,6 +29,8 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
     keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_EXCHANGE);
   const canDisburse =
     keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_DISBURSEMENT);
+  const canInternalTransfer =
+    keys.includes(PERMISSION_CASHFLOW_NOMINAL) && keys.includes(PERMISSION_CASHFLOW_INTERNAL_TRANSFER);
   const canAdminSessions = keys.includes(TRANSVERSE_PERMISSION_ADMIN_VIEW);
 
   return (
@@ -165,8 +168,24 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
         <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-mouvement-interne">
           <Text fw={600}>Mouvement interne de caisse</Text>
           <Text size="sm" c="dimmed" mt="xs">
-            À venir — story 24.8 (distinct charge / remboursement client). Pas de parcours factice.
+            Transferts internes et régularisations (PRD §10.6) — distinct remboursement client et décaissement charge.
+            Route <code>/caisse/mouvement-interne</code>, <code>page_key</code> <code>cashflow-internal-transfer</code>.
           </Text>
+          {canInternalTransfer ? (
+            <Button
+              mt="md"
+              variant="light"
+              data-testid="cashflow-special-ops-mouvement-interne-cta"
+              onClick={() => spaNavigateTo('/caisse/mouvement-interne')}
+            >
+              Ouvrir le mouvement interne
+            </Button>
+          ) : (
+            <Text size="sm" c="dimmed" mt="md" data-testid="cashflow-special-ops-mouvement-interne-blocked">
+              Permissions <code>caisse.access</code> et <code>{PERMISSION_CASHFLOW_INTERNAL_TRANSFER}</code> requises — aligné{' '}
+              <code>page-cashflow-internal-transfer</code>.
+            </Text>
+          )}
         </Card>
 
         <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-echanger">

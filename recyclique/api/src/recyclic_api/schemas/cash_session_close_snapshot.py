@@ -19,6 +19,16 @@ class CashSessionDisbursementLineV1(BaseModel):
     label_fr: str
 
 
+class CashSessionInternalTransferLineV1(BaseModel):
+    """Story 24.8 — mouvement interne : libellés Paheko distincts remboursement et décaissement charge."""
+
+    payment_method_code: str
+    amount: float = Field(..., description="Montant absolu (positif).")
+    transfer_type: str
+    session_flow: str
+    label_fr: str
+
+
 class CashSessionJournalTotalsV1(BaseModel):
     """Agrégats dérivés exclusivement du journal ``payment_transactions`` pour la session."""
 
@@ -61,6 +71,10 @@ class CashSessionJournalTotalsV1(BaseModel):
     cash_disbursement_lines: List[CashSessionDisbursementLineV1] = Field(
         default_factory=list,
         description="Story 24.7 — détails décaissements pour libellés d'export (distinct remboursement / 24.8).",
+    )
+    cash_internal_transfer_lines: List[CashSessionInternalTransferLineV1] = Field(
+        default_factory=list,
+        description="Story 24.8 — mouvements internes typés pour libellés Paheko (distinct décaissement charge).",
     )
 
 

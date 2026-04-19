@@ -1272,6 +1272,61 @@ paths:
           description: Session introuvable
         "409":
           description: Conflit idempotence
+  /v1/cash-sessions/{session_id}/internal-transfers:
+    post:
+      operationId: recyclique_cashSessions_createInternalTransfer
+      tags:
+        - cash-sessions
+      summary: Mouvement interne de caisse typé (Story 24.8)
+      description: |
+        Mouvement interne PRD §10.6 — distinct remboursement client (`refund_payment`) et décaissement charge (`cash.disbursement`).
+        Permissions `caisse.access` + `cash.transfer`. Step-up PIN pour types sensibles ou montants élevés (N3).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Step-Up-Pin
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Obligatoire si preuve N3 requise (types sensibles ou montant ≥ 500 €).
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashInternalTransferCreateV1"
+      responses:
+        "201":
+          description: Mouvement interne enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashInternalTransferResponseV1"
+        "400":
+          description: Erreur de validation métier
+        "403":
+          description: Permission ou step-up
+        "404":
+          description: Session introuvable
+        "409":
+          description: Conflit idempotence
   /v1/cash-sessions/{session_id}/material-exchanges:
     post:
       operationId: recyclique_cashSessions_createMaterialExchange
@@ -10829,6 +10884,126 @@ components:
         admin_coded_reason_key:
           type: string
           nullable: true
+        initiator_user_id:
+          type: string
+          format: uuid
+        approver_user_id:
+          type: string
+          format: uuid
+        approved_at:
+          type: string
+          format: date-time
+        idempotency_key:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        paheko_accounting_sync_hint:
+          type: string
+      additionalProperties: false
+    CashInternalTransferTypeV1:
+      type: string
+      enum:
+        - cash_float_topup
+        - cash_float_seed
+        - bank_deposit
+        - bank_withdrawal
+        - inter_register_transfer
+        - variance_regularization
+      description: Types fermés MVP — mouvement interne (PRD §10.6), pas décaissement charge.
+    CashSessionInternalFlowV1:
+      type: string
+      enum:
+        - inflow
+        - outflow
+      description: Sens par rapport à la caisse en session.
+    CashInternalTransferCreateV1:
+      type: object
+      required:
+        - transfer_type
+        - session_flow
+        - origin_endpoint_label
+        - destination_endpoint_label
+        - motif
+        - amount
+        - payment_method
+        - justification_reference
+      properties:
+        transfer_type:
+          $ref: "#/components/schemas/CashInternalTransferTypeV1"
+        session_flow:
+          $ref: "#/components/schemas/CashSessionInternalFlowV1"
+        origin_endpoint_label:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        destination_endpoint_label:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        motif:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        amount:
+          type: number
+          minimum: 0.01
+        payment_method:
+          type: string
+        justification_reference:
+          type: string
+          minLength: 1
+          maxLength: 256
+      additionalProperties: false
+    CashInternalTransferResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - sale_id
+        - transfer_type
+        - session_flow
+        - amount
+        - origin_endpoint_label
+        - destination_endpoint_label
+        - motif
+        - payment_method
+        - justification_reference
+        - initiator_user_id
+        - approver_user_id
+        - approved_at
+        - idempotency_key
+        - created_at
+        - paheko_accounting_sync_hint
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        sale_id:
+          type: string
+          format: uuid
+        transfer_type:
+          type: string
+        session_flow:
+          type: string
+        amount:
+          type: number
+        origin_endpoint_label:
+          type: string
+        destination_endpoint_label:
+          type: string
+        motif:
+          type: string
+        payment_method:
+          type: string
+        justification_reference:
+          type: string
         initiator_user_id:
           type: string
           format: uuid

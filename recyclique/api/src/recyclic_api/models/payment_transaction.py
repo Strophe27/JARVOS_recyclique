@@ -17,6 +17,8 @@ class PaymentTransactionNature(str, enum.Enum):
     REFUND_PAYMENT = "refund_payment"
     # Story 24.7 — sortie trésorerie hors ticket client (distinct remboursement / mouvement interne 24.8).
     DISBURSEMENT = "disbursement"
+    # Story 24.8 — mouvement interne typé (appoint, banque, transfert caisses, etc.) — pas décaissement §10.5.
+    CASH_INTERNAL_TRANSFER = "cash_internal_transfer"
 
 
 class PaymentTransactionDirection(str, enum.Enum):

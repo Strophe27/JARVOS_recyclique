@@ -28,6 +28,7 @@ CREOS_NAV_PRESENTATION_LABELS: Final[dict[str, str]] = {
     "nav.bandeauLiveSandbox": "Exploitation (live)",
     "nav.cashflow.nominal": "Caisse",
     "nav.cashflow.refund": "Remboursement",
+    "nav.cashflow.internalTransfer": "Mouvement interne caisse",
     "nav.cashflow.close": "Clôture de caisse",
     "nav.reception.nominal": "Réception",
 }

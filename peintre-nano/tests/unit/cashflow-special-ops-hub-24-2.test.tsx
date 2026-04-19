@@ -7,6 +7,7 @@ import {
   createDefaultDemoEnvelope,
   PERMISSION_CASHFLOW_DISBURSEMENT,
   PERMISSION_CASHFLOW_EXCHANGE,
+  PERMISSION_CASHFLOW_INTERNAL_TRANSFER,
   PERMISSION_CASHFLOW_NOMINAL,
   PERMISSION_CASHFLOW_REFUND,
   TRANSVERSE_PERMISSION_ADMIN_VIEW,
@@ -160,5 +161,35 @@ describe('Story 24.2 — hub opérations spéciales caisse', () => {
     );
     expect(screen.queryByTestId('cashflow-special-ops-echanger-cta')).toBeNull();
     expect(screen.getByTestId('cashflow-special-ops-echanger-blocked')).toBeTruthy();
+  });
+
+  it('sans cash.transfer : pas de CTA mouvement interne', () => {
+    const keys = createDefaultDemoEnvelope().permissions.permissionKeys.filter(
+      (k) => k !== PERMISSION_CASHFLOW_INTERNAL_TRANSFER,
+    );
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u1' },
+      envelope: createDefaultDemoEnvelope({ permissions: { permissionKeys: keys } }),
+    });
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <CashflowSpecialOpsHub widgetProps={{}} />
+      </RootProviders>,
+    );
+    expect(screen.queryByTestId('cashflow-special-ops-mouvement-interne-cta')).toBeNull();
+    expect(screen.getByTestId('cashflow-special-ops-mouvement-interne-blocked')).toBeTruthy();
+  });
+
+  it('avec caisse.access + cash.transfer : CTA vers /caisse/mouvement-interne', () => {
+    const auth = createMockAuthAdapter({
+      session: { authenticated: true, userId: 'u-24-8' },
+      envelope: createDefaultDemoEnvelope(),
+    });
+    render(
+      <RootProviders authAdapter={auth} disableUserPrefsPersistence>
+        <CashflowSpecialOpsHub widgetProps={{}} />
+      </RootProviders>,
+    );
+    expect(screen.getByTestId('cashflow-special-ops-mouvement-interne-cta')).toBeTruthy();
   });
 });

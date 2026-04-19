@@ -14,6 +14,7 @@ from recyclic_api.core.redis import get_redis
 from recyclic_api.core.step_up import (
     IDEMPOTENCY_KEY_HEADER,
     SENSITIVE_OPERATION_CASH_DISBURSEMENT_STEP_UP,
+    SENSITIVE_OPERATION_CASH_INTERNAL_TRANSFER_STEP_UP,
     SENSITIVE_OPERATION_CASH_SESSION_CLOSE,
     SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND,
     STEP_UP_PIN_HEADER,
@@ -21,11 +22,13 @@ from recyclic_api.core.step_up import (
 )
 from recyclic_api.services.idempotency_support import (
     body_fingerprint_cash_disbursement_json,
+    body_fingerprint_cash_internal_transfer_json,
     body_fingerprint_close_json,
     body_fingerprint_exceptional_refund_json,
     get_cached_idempotent_close,
     get_cached_idempotent_close as get_cached_idempotent_exceptional_refund,
     redis_key_idempotent_cash_disbursement,
+    redis_key_idempotent_cash_internal_transfer,
     redis_key_idempotent_close,
     redis_key_idempotent_exceptional_refund,
     store_idempotent_close,
@@ -53,6 +56,7 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStep
 )
 from recyclic_api.schemas.cash_disbursement import CashDisbursementCreate, CashDisbursementResponse
+from recyclic_api.schemas.cash_internal_transfer import CashInternalTransferCreate, CashInternalTransferResponse
 from recyclic_api.schemas.exceptional_refund import (
     ExceptionalRefundCreate,
     ExceptionalRefundResponse,
@@ -66,6 +70,10 @@ from recyclic_api.application.cash_session_opening import open_cash_session
 from recyclic_api.services.cash_session_response_enrichment import enrich_session_response
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
 from recyclic_api.services.cash_disbursement_service import CashDisbursementService
+from recyclic_api.services.cash_internal_transfer_service import (
+    CashInternalTransferService,
+    internal_transfer_requires_step_up,
+)
 from recyclic_api.services.exceptional_refund_service import ExceptionalRefundService
 from recyclic_api.services.material_exchange_service import MaterialExchangeService
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
@@ -762,6 +770,79 @@ async def create_disbursement(
     service = CashDisbursementService(db)
     try:
         result = service.create_disbursement(
+            cash_session_id=session_id,
+            payload=payload,
+            operator=current_user,
+            idempotency_key=idem_key,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (ConflictError, NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
+
+    store_idempotent_close(
+        redis_client,
+        rkey,
+        body_fp,
+        201,
+        jsonable_encoder(result),
+    )
+
+    return result
+
+
+@router.post(
+    "/{session_id}/internal-transfers",
+    response_model=CashInternalTransferResponse,
+    status_code=201,
+    operation_id="recyclique_cashSessions_createInternalTransfer",
+    summary="Mouvement interne de caisse typé (Story 24.8)",
+    description="""
+    Enregistre un mouvement interne (PRD §10.6) — distinct du remboursement client et du décaissement charge (24.7).
+    **Permissions :** `caisse.access` (parcours caisse) et `cash.transfer`.
+    **Step-up PIN** (`X-Step-Up-Pin`) : obligatoire pour certains types sensibles ou montants élevés (preuve N3).
+    **Idempotency-Key** : obligatoire.
+    """,
+    responses={
+        201: {"description": "Mouvement interne enregistré"},
+        400: {"description": "Validation métier (type / sens / solde)"},
+        403: {"description": "Permission absente ou step-up requis / invalide"},
+        404: {"description": "Session non trouvée"},
+        409: {"description": "Conflit idempotence"},
+    },
+    tags=["Sessions de Caisse"],
+)
+async def create_internal_transfer(
+    request: Request,
+    session_id: str,
+    payload: CashInternalTransferCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    redis_client=Depends(get_redis),
+):
+    if internal_transfer_requires_step_up(payload):
+        verify_step_up_pin_header(
+            user=current_user,
+            pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+            redis_client=redis_client,
+            operation=SENSITIVE_OPERATION_CASH_INTERNAL_TRANSFER_STEP_UP,
+        )
+
+    idem_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+    if not idem_key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key requis")
+
+    body_fp = body_fingerprint_cash_internal_transfer_json(payload.model_dump(mode="json"))
+    rkey = redis_key_idempotent_cash_internal_transfer(str(current_user.id), session_id, idem_key)
+    cached = get_cached_idempotent_close(redis_client, rkey)
+    if cached:
+        status_c, body = validate_or_raise_idempotency_conflict(cached, body_fp)
+        return JSONResponse(status_code=status_c, content=body)
+
+    service = CashInternalTransferService(db)
+    try:
+        result = service.create_internal_transfer(
             cash_session_id=session_id,
             payload=payload,
             operator=current_user,

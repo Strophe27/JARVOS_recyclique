@@ -249,6 +249,7 @@ from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.exceptional_refund import ExceptionalRefund
 from recyclic_api.models.cash_disbursement import CashDisbursement
+from recyclic_api.models.cash_internal_transfer import CashInternalTransfer
 from recyclic_api.models.material_exchange import MaterialExchange
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.cash_session import CashSession
@@ -832,6 +833,7 @@ def create_tables_if_not_exist():
                     ExceptionalRefund.__table__,
                     MaterialExchange.__table__,
                     CashDisbursement.__table__,
+                    CashInternalTransfer.__table__,
                     SaleItem.__table__,
                     PaymentTransaction.__table__,
                     Deposit.__table__,

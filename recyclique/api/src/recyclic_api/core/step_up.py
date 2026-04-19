@@ -32,6 +32,8 @@ SENSITIVE_OPERATION_CASH_SALE_CORRECT = "cash_sale.correct"
 SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND = "cash_session.exceptional_refund"
 # Story 24.7 — sous-types N3 (sortie exceptionnelle / autre codifié admin)
 SENSITIVE_OPERATION_CASH_DISBURSEMENT_STEP_UP = "cash_session.disbursement_step_up"
+# Story 24.8 — mouvement interne sensible (N3 : montants élevés ou types à double contrôle)
+SENSITIVE_OPERATION_CASH_INTERNAL_TRANSFER_STEP_UP = "cash_session.internal_transfer_step_up"
 
 # Story 16.3 — opérations base super-admin (alignement cash_session.close)
 SENSITIVE_OPERATION_DB_EXPORT = "db.export"
