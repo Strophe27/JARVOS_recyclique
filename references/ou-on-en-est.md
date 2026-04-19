@@ -1,6 +1,6 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-04-13
+Mis a jour : 2026-04-19
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
 
@@ -39,6 +39,10 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 **Architecture complétée** (2026-02-26) : `_bmad-output/planning-artifacts/architecture.md` — décisions techniques, patterns, structure projet, validation ; statut READY FOR IMPLEMENTATION. Points à trancher en v0.1 : [checklist 2026-02-26_03](artefacts/2026-02-26_03_checklist-v0.1-architecture.md).
 
 ## Derniere session
+
+2026-04-19 — **Epic 24 — Opérations spéciales caisse (branche `epic/24-operations-speciales-orchestration`)** : chantier BMAD exécuté story par story (Story Runner) ; toutes les clés `24-1` … `24-10` sont **done** dans `_bmad-output/implementation-artifacts/sprint-status.yaml` ; `epic-24` → **done**. Périmètre livré côté produit : hub opérations spéciales depuis la caisse (session ouverte), remboursement standard / expert N−1 / exceptionnel, échange matière + delta, décaissement sous-types, mouvement interne, tags métier ticket/ligne (24.9), preuves P3 (seuils, audit). Suivis correctifs **Story 6.8** hors périmètre strict Epic 24 : correction vente multi-moyens, lignes article, picker catégories, libellés **don** sans vocabulaire « surplus » côté métier, correction sensible autorisée **même si session caisse déjà clôturée** (super-admin, audit `correction_on_closed_session`) — commits récents sur la même branche (ex. `7e799bc`). **Merge dans `master`** : **pas fait** ; validations terrain / CI encore à trancher avant fusion. Sources produit : pack `references/operations-speciales-recyclique/` + PRD v1.1 ; fiche Kanban associée **archivée** le même jour (voir `references/idees-kanban/archive/2026-04-18_chantier-operations-speciales-caisse-prd-v1-1.md`).
+
+2026-04-20 — **QA paramétrage comptable SuperAdmin (merge GitHub)** : la branche `feat/qa-compta-superadmin-20260418` a été fusionnée dans `master` (PR **#1**, commit de fusion **`1809c6b`**). Bilan des livrables et distinction « spec / tableau des priorités » vs « table SQL » : artefact **[references/artefacts/2026-04-20_bilan-fin-ecarts-qa-parametrage-comptable-superadmin.md](artefacts/2026-04-20_bilan-fin-ecarts-qa-parametrage-comptable-superadmin.md)**. Fiche Kanban **[references/idees-kanban/a-faire/2026-04-18_finir-ecarts-qa-parametrage-comptable-superadmin.md](idees-kanban/a-faire/2026-04-18_finir-ecarts-qa-parametrage-comptable-superadmin.md)** allégée : lien vers ce bilan pour l’historique « déjà fait », checklist du **reliquat** (relecture grille B/M/I dans la spec).
 
 2026-04-13 — **Cloture documentaire (agent)** : correction de la section **Etat actuel** (le depot contient bien le code v2 et le brownfield ; l'ancienne phrase « aucun code source » etait obsolete). Renvoi explicite au grain fin dans `sprint-status.yaml`. Alignement des cases **Epics 1 a 8** dans `_bmad-output/planning-artifacts/guide-pilotage-v2.md` sur ce YAML ; **pas** de modification de `sprint-status.yaml` ni des fichiers story.
 

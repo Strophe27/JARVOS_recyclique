@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-19 — Intégrée (Epic 24 livré sur branche)
+
+**Statut :** le découpage BMAD et l’implémentation **Epic 24** sont réalisés sur la branche Git **`epic/24-operations-speciales-orchestration`** (stories `24-1` … `24-10` en **done** dans `sprint-status.yaml`, `epic-24` **done**). Le pack source `references/operations-speciales-recyclique/` reste la référence produit.
+
+**Suite hors Kanban :** validation utilisateur, tests / CI, décision de **merge** vers `master` (non effectué au 2026-04-19).
+
+**Fiche Kanban :** passage à **archive** — la trace d’intention initiale (2026-04-18) est conservée ci-dessous.
+
+---
+
 ## 2026-04-18 — Strophe + agent
 
 Lancer le **chantier complet** décrit par le pack produit **opérations spéciales** (parcours caisse non standard, tags métier, matière, Paheko), puis enchaîner le **chemin BMAD habituel** jusqu’à des stories implémentables et livrées.
