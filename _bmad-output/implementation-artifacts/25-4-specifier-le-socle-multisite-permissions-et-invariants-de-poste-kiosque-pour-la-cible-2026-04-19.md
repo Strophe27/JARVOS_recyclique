@@ -1,6 +1,6 @@
 # Story 25.4 : Spécifier le socle multisite, permissions et invariants de poste/kiosque pour la cible 2026-04-19
 
-Status: review
+Status: done
 
 **Story key :** `25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19`  
 **Epic :** 25 — Socle d'alignement PRD vision kiosque / multisite / permissions, brownfield et ADR  
@@ -36,7 +36,7 @@ Contrôle explicite contre `_bmad-output/planning-artifacts/epics.md` **Story 25
 - [x] **Citations minimales** : `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`, `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md` — listées dans l’**And** des AC et reprises dans **References**.
 - [x] **Stories aval** : énumération « prêt après relecture » vs « gated » (ADR, readiness 25.5, correct course) — **And** des AC + DoD + tâche § Stories aval (clés `epics.md` / `sprint-status.yaml` quand elles existent).
 - [x] **Projection Recyclique ↔ Paheko sans silence sur le mapping** : le livrable spec doit traiter **explicitement et dans le corps du texte** (pas uniquement par renvoi vague) : (1) quels enregistrements ou axes de mapping sont **obligatoires** avant toute écriture comptable ; (2) **état d’échec visible** (opérateur / supervision / corrélation) si mapping absent ou ambigu ; (3) **interdiction** de substituer silencieusement un autre site, emplacement, projet ou axe analytique ; (4) **conditions** de blocage sélectif, supervision renforcée et quarantaine / reprise — alignées `cash-accounting-paheko-canonical-chain.md` et stories Epic 8 (ex. `8-3`, `8-4`, `8-6`) ; dernier **And** des AC + DoD + tâche § Projection vers Paheko.
-- [x] **Alignement sprint** : clé `25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19` en `review` (post-DS), `epic-25` en `in-progress` — voir § Alignement sprint / YAML.
+- [x] **Alignement sprint** : clé `25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19` en `done` (Story Runner 2026-04-20), `epic-25` en `done` — voir § Alignement sprint / YAML.
 
 ## Définition of Done (Epic 25 — documentaire)
 
@@ -46,7 +46,7 @@ Contrôle explicite contre `_bmad-output/planning-artifacts/epics.md` **Story 25
 - [x] **Réconciliation** avec les ADR **25-2** et **25-3** (*proposed*) : la spec ne contredit pas les décisions déjà écrites ; les écarts éventuels sont nommés comme « à arbitrer » ou renvoient à une future ADR (trace en section dédiée).
 - [x] **Projection Recyclique ↔ Paheko** : section dédiée couvrant au minimum mapping obligatoire, état d'échec visible si mapping absent, interdiction de fallback silencieux sur un autre axe/emplacement, lien avec blocage sélectif / supervision / quarantaine (cohérent avec `_bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md` et Epic 8).
 - [x] **Stories aval** : tableau ou liste numérotée (stories **prêtes à passer en implémentation** après relecture humaine de la spec vs **encore gated** : readiness 25.5, ADR non approuvés, gel correct course).
-- [x] Fichier **story** (ce document) : section **Trace Epic 25 — ADR** et **File List** mises à jour post-DS ; `sprint-status.yaml` : entrée **25-4** alignée sur l'état réel (CS → ready-for-dev ; post-DS : review / done selon Story Runner).
+- [x] Fichier **story** (ce document) : section **Trace Epic 25 — ADR** et **File List** mises à jour post-DS ; `sprint-status.yaml` : entrée **25-4** alignée sur l'état réel (CS → ready-for-dev ; post-Story Runner : **done**, cohérent avec YAML).
 
 ## Tasks / Subtasks
 
@@ -106,7 +106,7 @@ Le document architecture livré par le DS doit contenir au minimum une sous-sect
 
 ## Alignement sprint / YAML
 
-- Entrée dans `_bmad-output/implementation-artifacts/sprint-status.yaml` : clé `25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19` → **`review`** après DS 2026-04-20 ; **epic-25** reste **`in-progress`**.
+- Entrée dans `_bmad-output/implementation-artifacts/sprint-status.yaml` : clé `25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19` → **`done`** (Story Runner 2026-04-20, après VS/DS/GATE/QA/CR) ; **`epic-25`** → **`done`** une fois toutes les stories **25-1** à **25-5** en `done` (cf. YAML ; vérité opérationnelle : fichier sprint-status).
 
 ## Dev Agent Record
 
@@ -123,11 +123,11 @@ GPT-5.2 (sous-agent Task `bmad-dev-story`, 2026-04-20).
 - Livrable principal : spec architecture Epic 25.4 avec citations minimales **dans le corps** du document §1.1 ; sections modèle de contexte, changement de contexte (renvoi ADR 25-2), projection Paheko (mapping / échec visible / pas de fallback / lien Epic 8), tableau stories aval, réconciliation ADR 25-2 / 25-3.
 - Index `architecture/index.md` : nouvelle section « Socle multisite / permissions / projection Paheko » + entrée TOC.
 - **ADR additionnelle :** **N/A** (justification dans **Trace Epic 25 — ADR**).
-- Story passée en **review** ; YAML `development_status` **25-4** → `review`.
+- Story passée en **done** ; YAML `development_status` **25-4** → `done` (aligné `_bmad-output/implementation-artifacts/sprint-status.yaml`, trace 2026-04-20).
 
 ### File List
 
 - `_bmad-output/planning-artifacts/architecture/2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md` (spec convergée — **créé** DS)
 - `_bmad-output/planning-artifacts/architecture/index.md` (entrée + TOC — **mis à jour** DS)
 - `_bmad-output/implementation-artifacts/25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19.md` (ce fichier — **mis à jour** DS : statut, DoD, tâches, trace ADR, Dev Agent Record)
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` (**mis à jour** DS : `25-4` → `review`, commentaire `last_updated`)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (référence : `25-4` → `done`, **epic-25** → `done` ; commentaires `last_updated` — ne pas diverger du YAML)

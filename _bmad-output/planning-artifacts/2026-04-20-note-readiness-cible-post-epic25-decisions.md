@@ -11,6 +11,8 @@ sources:
 
 # Note de readiness ciblée — post-décisions documentaires Epic 25
 
+> **État final aligné sur `sprint-status.yaml` (2026-04-20)** — Vérité opérationnelle : **`epic-25` : `done`** ; stories **`25-1`** à **`25-5`** : **`done`** chacune. Les sections ci-dessous qui décrivent une séquence « en cours » (ex. **25-5** en review, epic en in-progress) reflètent le **fil chronologique de rédaction** ; pour l’audit et QA2, **priorité au YAML** et à cet encadré.
+
 **Objectif :** rejouer le raisonnement du rapport de readiness du **2026-04-19** à la lumière des livrables **25.1 à 25.4** (sans refaire tout le workflow readiness global), puis **rebaseliner** la séquence **`25-*`** et le pilotage (`sprint-status`, candidat première story d'impl).
 
 **Périmètre :** documentaire uniquement ; aucune nouvelle ADR (trace **ADR N/A** — décisions structurantes portées par **ADR 25-2** et **ADR 25-3**).
@@ -39,7 +41,7 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 | **ADR PIN kiosque / opérateur / secret de poste / offline (25-2)** | **Fermé (rédaction)** / **Ouvert (gouvernance impl)** | Fichier : `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md` ; `status: proposed` — **acceptation humaine requise** avant code qui **matérialise** PIN kiosque, secret de poste, lockout métier ou offline au sens ADR. |
 | **ADR async Paheko / outbox / Redis auxiliaire (25-3)** | **Fermé (rédaction)** / **Ouvert (gouvernance impl)** | Fichier : `_bmad-output/planning-artifacts/architecture/2026-04-20-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride.md` ; `status: proposed` — idem. |
 | **Spec convergée multisite / permissions / kiosque / Paheko (25.4)** | **Fermé (doc)** | Fichier : `_bmad-output/planning-artifacts/architecture/2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md` ; index architecture mis à jour (story 25.4). |
-| **Readiness ciblée + rebaselining `25-*` (25.5)** | **Fermé (doc)** après publication de **cette note** et mise à jour story + YAML en **review**. | Ne substitue pas au **readiness global** du 19 ; **actualise** le pilotage post-Epic 25 documentaire. |
+| **Readiness ciblée + rebaselining `25-*` (25.5)** | **Fermé (doc)** après publication de **cette note** et synchronisation story **25-5** + YAML (**`done`** au sens `development_status`, cf. sprint-status). | Ne substitue pas au **readiness global** du 19 ; **actualise** le pilotage post-Epic 25 documentaire. |
 | **Readiness globale extension PWA / kiosque** | **Ouvert** | Toujours **NOT READY** au sens du rapport 19 tant que FR vision, preuves techniques PWA et arbitrages restants ne sont pas clos. |
 | **Gate qualité API (audit brownfield P0)** | **Ouvert** | Rappel rapport 19 : traiter ou tracer les P0 pour équipes Paheko/caisse — **orthogonal** à Epic 25 mais **condition de GO** sur chantiers sensibles. |
 | **Gel process correct course (hors `25-*`)** | **Ouvert** | `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` : pas de **nouveau** `bmad-dev-story` hors clés **`25-*`** tant que la levée n'est pas documentée ; le YAML conserve les statuts existants des epics **10 / 12 / 13 / 14 / 15** à titre de **preuve d'état**, pas de rétroconduction. |
@@ -61,9 +63,9 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 2. **25-2** — `25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste` → **done** (ADR **proposed**)  
 3. **25-3** — `25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride` → **done** (ADR **proposed**)  
 4. **25-4** — `25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19` → **done**  
-5. **25-5** — `25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions` → **review** après DS (présente note + synchronisation fichiers).
+5. **25-5** — `25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions` → **done** (Story Runner fin de cycle ; présente note + artefacts associés ; cf. YAML).
 
-**Epic** : `epic-25` reste **`in-progress`** jusqu'à clôture **25.5** (review → done au fil du Story Runner) et décision de fin d'epic (rétro optionnelle).
+**Epic** : `epic-25` → **`done`** (toutes les stories **25-1** à **25-5** en **`done`** dans `_bmad-output/implementation-artifacts/sprint-status.yaml` ; rétro epic **optionnelle** inchangée côté statut YAML).
 
 **Ce qui ne change pas sans instruction Story Runner / correct course :** le contenu de `epics.md` ; seul le **pilotage** et les **conditions** de la prochaine story sont explicites ici.
 
@@ -74,7 +76,7 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 Les trois sources suivantes sont rappelées **ici** (exigence AC story 25.5), avec usage :
 
 1. **`_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`** — baseline **NOT READY** PWA / kiosque, **GO conditionnel** v2, **NO-GO** programme massif ; référence § synthèse exécutive, § extension PWA offline-first, § synthèse finale (étape 6).  
-2. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — vérité opérationnelle des clés `development_status` (dont **`25-*`**, gel commenté sous epics 10/12/13/14/15, **`13-8`** en **review**).  
+2. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — vérité opérationnelle des clés `development_status` (dont **`25-1`** à **`25-5`** et **`epic-25`** en **`done`**, gel commenté sous epics 10/12/13/14/15, **`13-8`** en **review**).  
 3. **Livrables Epic 25 approuvés pour le pilotage (chemins)** :  
    - **25.1** — `references/vision-projet/2026-04-19_matrice-alignement-vision-canonical-epic25-25-1.md`  
    - **25.2** — `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`  
@@ -95,7 +97,7 @@ Les trois sources suivantes sont rappelées **ici** (exigence AC story 25.5), av
 
 **Si le produit tranche un autre ordre** (ex. **12-1** réception avant **13-8**) : justifier dans un futur brief en croisant `epics.md` et `guide-pilotage-v2.md` ; la présente note conserve **13-8** comme **candidat principal** aligné sur la trajectoire documentée spec 25.4.
 
-**Conditions avant de relancer une chaîne impl lourde sur ce périmètre :** ADR **25-2** et **25-3** **acceptés** (ou équivalent), story **25.5** menée à **done** après gates/QA/CR si applicable, **levée du gel** tracée si requise pour sortir du seul rail **`25-*`**.
+**Conditions avant de relancer une chaîne impl lourde sur ce périmètre :** ADR **25-2** et **25-3** **acceptés** (ou équivalent), story **25.5** **done** au sens YAML (gates/QA/CR Story Runner si applicable — statut final cohérent sprint-status), **levée du gel** tracée si requise pour sortir du seul rail **`25-*`**.
 
 ### DoD Story Runner (brief futur)
 
