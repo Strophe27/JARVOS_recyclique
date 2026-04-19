@@ -24,8 +24,8 @@
 - **`todo.md`** — To-do de réflexion, recherche et agrégations hors flux BMAD (hors epics/stories).
   _(Charger si : session d’idéation, de recherche ou de synthèse conceptuelle.)_
 
-- **`idees-kanban/`** — Kanban d’idées (un fichier par idée, stades a-conceptualiser, a-rechercher, a-creuser, a-faire, archive). Vue globale : **idees-kanban/index.md**. Gestion : skill **idees-kanban** (`.cursor/skills/idees-kanban/`). *Ne pas éditer l’index Kanban à la main.*
-  _(Charger si : Strophe donne une idée à noter, note / transition / archivage, ou session d’idéation / priorisation.)_
+- **`idees-kanban/`** — Kanban d’idées (un fichier par idée, stades a-conceptualiser, a-rechercher, a-creuser, a-faire, archive). Vue globale : **idees-kanban/index.md**. **Instantanés « où on en est »** (artefacts datés + tableau des versions) : **idees-kanban/point-situation.md**. Gestion : skill **idees-kanban** (`.cursor/skills/idees-kanban/`). *Ne pas éditer l’index Kanban à la main.*
+  _(Charger si : Strophe donne une idée à noter, note / transition / archivage, session d’idéation / priorisation, ou pilotage / audit du backlog idées.)_
 
 - **`guide-pilotage-v2.md`** (BMAD) — [_bmad-output/planning-artifacts/guide-pilotage-v2.md](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) : document maître d’**exécution** v2 — réconciliation des deux récits de rythme (séquence PRD / décision directrice vs Pistes A/B et convergences), **jalons à cocher** (Convergence 1–3, Epics 1–10) synchronisés aux grands jalons avec `sprint-status.yaml` pour le grain fin, **carte des emplacements** pour audits, données, rapports de tests et handoffs, frictions connues, **prompt type** agent superviseur, lien **correct course**. Ne remplace pas le PRD ni l’index `references/` pour le détail métier.
   _(Charger si : pilotage multi-chantiers, agent superviseur, reprise après branches ou écrans multiples, besoin de savoir où ranger un livrable documentaire.)_

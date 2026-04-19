@@ -114,3 +114,5 @@ Ordre : a faire en premier, puis en cours, puis fait. Pour changer le statut d'u
 ## Idees (Kanban)
 
 **Gestion** : utiliser le skill **idees-kanban** (`.cursor/skills/idees-kanban/`). Ne pas creer ni deplacer de fichiers dans `references/idees-kanban/` sans suivre ce skill — il assure le format, les stades et la mise a jour de `references/idees-kanban/index.md`.
+
+**Point de situation (instantanes agrégés)** : fichiers `references/artefacts/YYYY-MM-DD_NN_point-situation-kanban-idees-jarvos.md` ; repere lisible a cote du Kanban : **`references/idees-kanban/point-situation.md`** (pas une carte idee, pas gere par le meme flux que les fiches stade).
