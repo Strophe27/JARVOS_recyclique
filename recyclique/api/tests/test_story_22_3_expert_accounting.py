@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from recyclic_api.core.exceptions import ConflictError
 from fastapi.testclient import TestClient
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from recyclic_api.core.config import settings
@@ -19,6 +20,7 @@ from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentMethodKind
 from recyclic_api.models.payment_transaction import PaymentTransaction
 from recyclic_api.models.sale import Sale, PaymentMethod, SaleLifecycleStatus
+from recyclic_api.models.accounting_config import AccountingConfigRevision
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.services.accounting_expert_service import AccountingExpertService
@@ -526,6 +528,22 @@ class TestPublishRevisionIntegrity:
     def test_publish_retries_once_on_integrity_error(self, db_session: Session, monkeypatch: pytest.MonkeyPatch):
         from recyclic_api.models.user import User, UserRole, UserStatus
         from recyclic_api.core.security import hash_password
+
+        bind = db_session.get_bind()
+        engine = getattr(bind, "engine", bind)
+        if str(engine.url).startswith("postgresql"):
+            pytest.skip(
+                "Monkeypatch sur Session.commit + IntegrityError factice : la fixture pytest lie la Session à une "
+                "Connection déjà engagée dans une transaction racine ; le rollback ne reproduit pas le scénario "
+                "SQLite / session isolée pour lequel le test a été écrit (retry publish_revision)."
+            )
+
+        # Révisions seedées hors transaction pytest : DELETE sur le moteur (pas la Connection déjà ``begin()`` par la fixture).
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM accounting_config_revisions"))
+            assert conn.execute(text("SELECT COUNT(*) FROM accounting_config_revisions")).scalar() == 0
+        db_session.expire_all()
+        assert db_session.query(func.max(AccountingConfigRevision.revision_seq)).scalar() is None
 
         u = User(
             username=f"pub_u_{uuid.uuid4().hex[:8]}",

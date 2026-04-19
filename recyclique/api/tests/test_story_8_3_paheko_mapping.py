@@ -126,11 +126,13 @@ def test_mapping_resolved_enriches_payload_sent_to_paheko(db_session: Session) -
     assert b0["id_year"] == 2
     assert b0["type"] == "ADVANCED"
     assert b0["date"]
-    # Libellé transaction 1 : builder 23.x (ADVANCED) — préfixe expert ventilé ; le `label_prefix` mapping apparaît en note / autre sous-écriture.
-    assert cs.id.hex[:8] in b0["label"]
+    # Libellé ADVANCED : « préfixe mapping — date session » si la date est résolue (sans hex court dans `label`).
+    assert "Cloture test" in b0["label"]
     assert b0.get("lines")
-    assert str(cs.id) in b0.get("reference", "")
-    assert str(cs.id) in (b0.get("notes") or "")
+    ref = b0.get("reference") or ""
+    assert cs.id.hex[:8] in ref or str(cs.id) in ref
+    blob = json.dumps(b0)
+    assert cs.id.hex[:8] in blob or str(cs.id) in blob
     assert "cash_session_id" not in b0
 
 

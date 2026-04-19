@@ -42,6 +42,10 @@ db_url = os.getenv("DATABASE_URL", "")
 if configured_test_db_url.startswith("postgresql"):
     # Les tests explicitement demandés sur PostgreSQL doivent conserver l'URL fournie.
     test_db_url = configured_test_db_url
+elif configured_test_db_url.startswith("sqlite"):
+    # Surcharge explicite (ex. pytest dans le conteneur api : TEST_DATABASE_URL=sqlite://…
+    # sans toucher DATABASE_URL applicatif encore en postgresql://…/recyclic).
+    test_db_url = configured_test_db_url
 elif db_url and not db_url.startswith("sqlite") and "/recyclic" in db_url:
     test_db_url = db_url.rsplit("/", 1)[0] + "/recyclic_test"
 else:
@@ -732,6 +736,121 @@ def _sqlite_align_accounting_expert_story_223(bind) -> None:
             seed_sess.close()
 
 
+def _postgresql_seed_accounting_config_revision_story_223(engine) -> None:
+    """PostgreSQL (`recyclic_test`) : même seed minimal que SQLite pour Story 22.3 si la table est vide."""
+    if not str(engine.url).startswith("postgresql"):
+        return
+
+    _gid = GLOBAL_ACCOUNTING_SETTINGS_ROW_ID
+    snapshot_to_seed = None
+    with engine.connect() as conn:
+        insp = inspect(conn)
+        if not insp.has_table("accounting_config_revisions"):
+            return
+        rev_ct = conn.execute(text("SELECT COUNT(*) FROM accounting_config_revisions")).scalar() or 0
+        if rev_ct != 0:
+            return
+        if insp.has_table("global_accounting_settings"):
+            c = conn.execute(
+                text("SELECT COUNT(*) FROM global_accounting_settings WHERE id = :id"),
+                {"id": str(_gid)},
+            ).scalar()
+            if c == 0:
+                conn.execute(
+                    text(
+                        "INSERT INTO global_accounting_settings (id, default_sales_account, "
+                        "default_donation_account, prior_year_refund_account, cash_journal_code, default_entry_label_prefix) "
+                        "VALUES (:id, '707', '7541', '672', NULL, 'Z caisse')"
+                    ),
+                    {"id": str(_gid)},
+                )
+        pm_snapshot = []
+        if insp.has_table("payment_methods"):
+            rows = conn.execute(
+                text(
+                    "SELECT id, code, label, active, kind, paheko_debit_account, paheko_refund_credit_account, "
+                    "min_amount, max_amount, display_order, notes, archived_at FROM payment_methods "
+                    "ORDER BY display_order, code"
+                )
+            ).fetchall()
+            for r in rows:
+                archived = r[11].isoformat() if r[11] is not None else None
+                pm_snapshot.append(
+                    {
+                        "id": str(r[0]),
+                        "code": r[1],
+                        "label": r[2],
+                        "active": bool(r[3]),
+                        "kind": r[4],
+                        "paheko_debit_account": r[5],
+                        "paheko_refund_credit_account": r[6],
+                        "min_amount": r[7],
+                        "max_amount": r[8],
+                        "display_order": r[9],
+                        "notes": r[10],
+                        "archived_at": archived,
+                    }
+                )
+        if not insp.has_table("global_accounting_settings"):
+            conn.commit()
+            return
+        gcols = {c["name"] for c in insp.get_columns("global_accounting_settings")}
+        if {"cash_journal_code", "default_entry_label_prefix"}.issubset(gcols):
+            g = conn.execute(
+                text(
+                    "SELECT default_sales_account, default_donation_account, prior_year_refund_account, "
+                    "cash_journal_code, default_entry_label_prefix "
+                    "FROM global_accounting_settings WHERE id = :id"
+                ),
+                {"id": str(_gid)},
+            ).fetchone()
+        else:
+            g = conn.execute(
+                text(
+                    "SELECT default_sales_account, default_donation_account, prior_year_refund_account "
+                    "FROM global_accounting_settings WHERE id = :id"
+                ),
+                {"id": str(_gid)},
+            ).fetchone()
+        if g is None:
+            ga = ("707", "7541", "672", "", "Z caisse")
+        elif len(g) >= 5:
+            ga = (g[0], g[1], g[2], (g[3] or "").strip() if g[3] is not None else "", str(g[4] or "Z caisse"))
+        else:
+            ga = (g[0], g[1], g[2], "", "Z caisse")
+        snapshot_to_seed = {
+            "schema_version": 1,
+            "global_accounts": {
+                "default_sales_account": ga[0],
+                "default_donation_account": ga[1],
+                "prior_year_refund_account": ga[2],
+                "cash_journal_code": ga[3],
+                "default_entry_label_prefix": ga[4],
+            },
+            "payment_methods": pm_snapshot,
+        }
+        conn.commit()
+
+    if snapshot_to_seed is None:
+        return
+
+    from sqlalchemy.orm import sessionmaker
+
+    ORMSession = sessionmaker(bind=engine)
+    seed_sess = ORMSession()
+    try:
+        rev = AccountingConfigRevision(
+            id=uuid.uuid4(),
+            revision_seq=1,
+            snapshot_json=json.dumps(snapshot_to_seed),
+            note="PostgreSQL test seed Story 22.3 (recyclic_test)",
+        )
+        seed_sess.add(rev)
+        seed_sess.commit()
+    finally:
+        seed_sess.close()
+
+
 def _sqlite_align_payment_canonical_story_221(bind) -> None:
     """SQLite : ajoute le socle canonique `payment_methods` / `payment_transactions` si le schéma existait déjà."""
     if not str(bind.url).startswith("sqlite"):
@@ -855,6 +974,7 @@ def create_tables_if_not_exist():
             _sqlite_align_accounting_period_authority_story_225(engine)
         else:
             Base.metadata.create_all(bind=engine)
+            _postgresql_seed_accounting_config_revision_story_223(engine)
         print("[tests] Tables creees avec succes")
     except Exception as e:
         print(f"[tests] Erreur lors de la creation des tables: {e}")
