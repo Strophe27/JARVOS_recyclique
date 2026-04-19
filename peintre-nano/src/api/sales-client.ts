@@ -786,6 +786,20 @@ export async function postAbandonHeldSale(
   return { ok: true, raw: json };
 }
 
+/** PATCH /v1/sales/{id}/corrections — entrées ``items[]`` (Story 6.8 étendue). */
+export type SaleCorrectionItemPatchBody = {
+  sale_item_id: string;
+  category?: string;
+  quantity?: number;
+  weight?: number;
+  unit_price?: number;
+  total_price?: number;
+  notes?: string | null;
+  preset_id?: string | null;
+  business_tag_kind?: BusinessTagKindV1 | null;
+  business_tag_custom?: string | null;
+};
+
 export type SaleCorrectionRequestBody =
   | { kind: 'sale_date'; sale_date: string; reason: string }
   | {
@@ -799,6 +813,8 @@ export type SaleCorrectionRequestBody =
       /** Remplace les lignes ``donation_surplus``. */
       donation_surplus?: Array<{ payment_method: string; amount: number }>;
       note?: string | null;
+      /** Mise à jour ciblée des lignes ``sale_items`` (poids, catégorie, etc.). */
+      items?: SaleCorrectionItemPatchBody[];
     };
 
 export type PatchSaleSensitiveCorrectionResult = { ok: true; raw: unknown } | SalesHttpError;

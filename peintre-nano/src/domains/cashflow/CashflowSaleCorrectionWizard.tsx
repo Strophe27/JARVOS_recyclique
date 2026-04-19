@@ -15,6 +15,7 @@ import {
   getSale,
   patchSaleSensitiveCorrection,
   splitSalePaymentsByNature,
+  type SaleCorrectionItemPatchBody,
   type SaleCorrectionRequestBody,
   type SalePaymentMethodOption,
   type SaleResponseV1,
@@ -86,6 +87,93 @@ const KIND_OPTIONS = [
 ] as const;
 
 const PAY_ARBITRAGE_EPS = 1e-3;
+
+type ItemEditRow = {
+  id: string;
+  category: string;
+  quantityStr: string;
+  weightStr: string;
+  unitPriceStr: string;
+  totalPriceStr: string;
+  notes: string;
+  tagKindStr: string;
+  tagCustomStr: string;
+};
+
+function saleItemsToEditRows(items: SaleResponseV1['items']): ItemEditRow[] {
+  return items
+    .map((it) => ({
+      id: String(it.id ?? ''),
+      category: String(it.category ?? ''),
+      quantityStr: String(it.quantity ?? ''),
+      weightStr:
+        it.weight !== undefined && it.weight !== null && Number.isFinite(it.weight) ? String(it.weight) : '',
+      unitPriceStr: String(it.unit_price ?? ''),
+      totalPriceStr: String(it.total_price ?? ''),
+      notes: String(it.notes ?? ''),
+      tagKindStr: it.business_tag_kind != null ? String(it.business_tag_kind) : '',
+      tagCustomStr: String(it.business_tag_custom ?? ''),
+    }))
+    .filter((r) => r.id.length > 0);
+}
+
+function buildItemLinePatches(
+  baseline: ItemEditRow[],
+  current: ItemEditRow[],
+): { ok: true; patches: SaleCorrectionItemPatchBody[] } | { ok: false; message: string } {
+  const bMap = new Map(baseline.map((r) => [r.id, r]));
+  const patches: SaleCorrectionItemPatchBody[] = [];
+  for (const row of current) {
+    const b = bMap.get(row.id);
+    if (!b) continue;
+    const patch: SaleCorrectionItemPatchBody = { sale_item_id: row.id };
+    if (row.category.trim() !== b.category.trim()) {
+      patch.category = row.category.trim();
+    }
+    if (row.quantityStr.trim() !== b.quantityStr.trim()) {
+      const n = parseInt(row.quantityStr.trim(), 10);
+      if (Number.isNaN(n) || n <= 0) {
+        return { ok: false, message: 'Quantité invalide sur une ligne (entier > 0).' };
+      }
+      patch.quantity = n;
+    }
+    if (row.weightStr.trim() !== b.weightStr.trim()) {
+      const w = parseFloat(row.weightStr.replace(',', '.'));
+      if (Number.isNaN(w) || w <= 0) {
+        return { ok: false, message: 'Poids invalide sur une ligne (nombre > 0).' };
+      }
+      patch.weight = w;
+    }
+    if (row.unitPriceStr.trim() !== b.unitPriceStr.trim()) {
+      const up = parseFloat(row.unitPriceStr.replace(',', '.'));
+      if (Number.isNaN(up) || up < 0) {
+        return { ok: false, message: 'Prix unitaire invalide sur une ligne.' };
+      }
+      patch.unit_price = up;
+    }
+    if (row.totalPriceStr.trim() !== b.totalPriceStr.trim()) {
+      const tp = parseFloat(row.totalPriceStr.replace(',', '.'));
+      if (Number.isNaN(tp) || tp < 0) {
+        return { ok: false, message: 'Montant ligne invalide.' };
+      }
+      patch.total_price = tp;
+    }
+    if (row.notes !== b.notes) {
+      patch.notes = row.notes;
+    }
+    if (row.tagKindStr.trim() !== b.tagKindStr.trim() && row.tagKindStr.trim()) {
+      patch.business_tag_kind = row.tagKindStr.trim() as SaleCorrectionItemPatchBody['business_tag_kind'];
+    }
+    if (row.tagCustomStr.trim() !== b.tagCustomStr.trim()) {
+      patch.business_tag_custom = row.tagCustomStr.trim() ? row.tagCustomStr.trim() : undefined;
+    }
+    const keys = Object.keys(patch).filter((k) => k !== 'sale_item_id');
+    if (keys.length > 0) {
+      patches.push(patch);
+    }
+  }
+  return { ok: true, patches };
+}
 
 function newLocalId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -195,6 +283,8 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [totalStr, setTotalStr] = useState('');
   const [draftSalePayments, setDraftSalePayments] = useState<PaymentDraftRow[]>([]);
   const [draftDonationSurplus, setDraftDonationSurplus] = useState<PaymentDraftRow[]>([]);
+  const [baselineItems, setBaselineItems] = useState<ItemEditRow[]>([]);
+  const [itemRows, setItemRows] = useState<ItemEditRow[]>([]);
   const initialSaleSnapRef = useRef('');
   const initialSurplusSnapRef = useRef('');
   const initialTotalNumRef = useRef<number | null>(null);
@@ -212,6 +302,11 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const partitionDirty =
     snapshotPaymentDraftRows(draftSalePayments) !== initialSaleSnapRef.current ||
     snapshotPaymentDraftRows(draftDonationSurplus) !== initialSurplusSnapRef.current;
+
+  const itemLinesDirty = useMemo(
+    () => JSON.stringify(itemRows) !== JSON.stringify(baselineItems),
+    [itemRows, baselineItems],
+  );
 
   const applyLoadedSale = useCallback((sale: SaleResponseV1) => {
     setLoadedSaleId(sale.id);
@@ -236,6 +331,9 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     setDraftDonationSurplus(surplusRows);
     initialSaleSnapRef.current = snapshotPaymentDraftRows(saleRows);
     initialSurplusSnapRef.current = snapshotPaymentDraftRows(surplusRows);
+    const ir = saleItemsToEditRows(sale.items ?? []);
+    setBaselineItems(ir.map((r) => ({ ...r })));
+    setItemRows(ir.map((r) => ({ ...r })));
     setStep(2);
   }, []);
 
@@ -290,6 +388,8 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     initialSurplusSnapRef.current = '';
     initialTotalNumRef.current = null;
     initialSalePaymentLineCountRef.current = 0;
+    setBaselineItems([]);
+    setItemRows([]);
     setNote('');
     setInitialNote(null);
     setReason('');
@@ -341,6 +441,10 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     );
   };
 
+  const updateItemRow = (id: string, patch: Partial<ItemEditRow>) => {
+    setItemRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
   const buildBody = (): SaleCorrectionRequestBody | null => {
     const r = reason.trim();
     if (!r) {
@@ -357,6 +461,17 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     }
     const payload: SaleCorrectionRequestBody = { kind: 'finalize_fields', reason: r };
     let any = false;
+    if (itemLinesDirty) {
+      const lp = buildItemLinePatches(baselineItems, itemRows);
+      if (!lp.ok) {
+        setError({ kind: 'local', message: lp.message });
+        return null;
+      }
+      if (lp.patches.length > 0) {
+        payload.items = lp.patches;
+        any = true;
+      }
+    }
     if (donationStr.trim() !== '') {
       const n = parseFloat(donationStr.replace(',', '.'));
       if (Number.isNaN(n)) {
@@ -426,7 +541,8 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     if (!any) {
       setError({
         kind: 'local',
-        message: 'Au moins un champ de finalisation doit être renseigné (serveur).',
+        message:
+          'Au moins une modification utile est requise : lignes article, don, total, note, répartition paiements, etc.',
       });
       return null;
     }
@@ -479,6 +595,15 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     return Number.isFinite(n) ? n : Number.NaN;
   }, [totalStr]);
 
+  const linesSubtotalPreview = useMemo(() => {
+    let s = 0;
+    for (const r of itemRows) {
+      const n = parseFloat(r.totalPriceStr.replace(',', '.'));
+      if (Number.isFinite(n) && n > 0) s += n;
+    }
+    return s;
+  }, [itemRows]);
+
   return (
     <div className={classes.step} data-testid="cashflow-sale-correction-wizard">
       <CashflowOperationalSyncNotice auth={auth} />
@@ -488,8 +613,9 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
         </Alert>
       ) : null}
       <Text size="sm" c="dimmed">
-        Story 6.8 — périmètre liste fermée ; refus si session clôturée (serveur). Aucune édition des lignes
-        article ici.
+        Story 6.8 — périmètre liste fermée ; refus si session clôturée (serveur). Les lignes article sont éditables
+        ci-dessous (correction détail). Pour une annulation monétaire complète d’un ticket finalisé, utiliser le flux
+        remboursement / reversal (permission <code>caisse.refund</code>), distinct de cette correction.
       </Text>
       {done ? (
         <Alert color="green" title="Correction envoyée" data-testid="cashflow-sale-correction-success">
@@ -554,6 +680,94 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
             />
           ) : (
             <>
+              <Alert color="gray" variant="light" title="Annulation complète du ticket">
+                <Text size="sm">
+                  Ce wizard ne supprime pas la vente : pour « annuler » au sens caisse (sortie de fonds), créer un
+                  remboursement total (<code>POST /v1/sales/reversals</code>) avec le motif métier — les agrégats et KPI
+                  excluent alors la vente source là où le reporting est branché sur les reversals.
+                </Text>
+              </Alert>
+              {itemRows.length > 0 ? (
+                <Stack gap="xs" mb="sm" data-testid="cashflow-sale-correction-item-lines">
+                  <Text size="sm" fw={600}>
+                    Lignes article (détail)
+                  </Text>
+                  {itemRows.map((row, idx) => (
+                    <Stack
+                      key={row.id}
+                      gap={4}
+                      p="xs"
+                      style={{ border: '1px solid var(--mantine-color-dark-4)' }}
+                    >
+                      <Text size="xs" c="dimmed">
+                        Ligne {idx + 1} · <code>{row.id}</code>
+                      </Text>
+                      <Group grow gap="xs" wrap="wrap">
+                        <TextInput
+                          label="Catégorie"
+                          value={row.category}
+                          onChange={(e) => updateItemRow(row.id, { category: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-cat-${idx}`}
+                        />
+                        <TextInput
+                          label="Poids (kg)"
+                          value={row.weightStr}
+                          onChange={(e) => updateItemRow(row.id, { weightStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-weight-${idx}`}
+                        />
+                        <TextInput
+                          label="Qté"
+                          value={row.quantityStr}
+                          onChange={(e) => updateItemRow(row.id, { quantityStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-qty-${idx}`}
+                        />
+                      </Group>
+                      <Group grow gap="xs" wrap="wrap">
+                        <TextInput
+                          label="PU"
+                          value={row.unitPriceStr}
+                          onChange={(e) => updateItemRow(row.id, { unitPriceStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-pu-${idx}`}
+                        />
+                        <TextInput
+                          label="Montant ligne"
+                          value={row.totalPriceStr}
+                          onChange={(e) => updateItemRow(row.id, { totalPriceStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-total-${idx}`}
+                        />
+                      </Group>
+                      <TextInput
+                        label="Notes ligne"
+                        value={row.notes}
+                        onChange={(e) => updateItemRow(row.id, { notes: e.currentTarget.value })}
+                        data-testid={`cashflow-sale-correction-item-notes-${idx}`}
+                      />
+                      <Group grow gap="xs" wrap="wrap">
+                        <TextInput
+                          label="Tag métier (kind)"
+                          value={row.tagKindStr}
+                          onChange={(e) => updateItemRow(row.id, { tagKindStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-tag-kind-${idx}`}
+                        />
+                        <TextInput
+                          label="Tag métier (libellé AUTRE)"
+                          value={row.tagCustomStr}
+                          onChange={(e) => updateItemRow(row.id, { tagCustomStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-tag-custom-${idx}`}
+                        />
+                      </Group>
+                    </Stack>
+                  ))}
+                  <Text size="xs" c="dimmed">
+                    Sous-total lignes (somme montants ligne &gt; 0, prévisualisation) :{' '}
+                    {linesSubtotalPreview.toFixed(2)} — doit rester cohérent avec le total encaissé (serveur).
+                  </Text>
+                </Stack>
+              ) : (
+                <Text size="xs" c="dimmed" mb="xs">
+                  Ticket sans lignes article (encaissement sans article ou données minimales).
+                </Text>
+              )}
               <TextInput
                 label="Don (optionnel)"
                 value={donationStr}
