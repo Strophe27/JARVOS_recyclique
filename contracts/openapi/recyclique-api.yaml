@@ -1193,7 +1193,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExceptionalRefundResponseV1"
         "400":
-          description: Erreur de validation
+          description: Erreur de validation (hors règles P3)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Story 24.10 — rejet seuils / preuves P3 (référence obligatoire, combinaison montant × motif)
           content:
             application/json:
               schema:
@@ -6523,6 +6529,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: cash_sensitive_operations
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Story 24.10 — filtre rapide opérations caisse sensibles Epic 24 (remboursement exceptionnel, décaissement, transfert interne, échange matière).
       responses:
         "200":
           description: Entrées d'audit et pagination
@@ -10857,6 +10869,11 @@ components:
           type: string
           nullable: true
           maxLength: 500
+        approval_evidence_ref:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: Référence de preuve structurée (ADR D8) — obligatoire si P3 activé sur le registre (`workflow_options.features.operations_specials_p3.enabled`).
       additionalProperties: false
     ExceptionalRefundResponseV1:
       type: object
@@ -10895,6 +10912,18 @@ components:
         detail:
           type: string
           nullable: true
+        approval_evidence_ref:
+          type: string
+          nullable: true
+        approver_step_up_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Horodatage serveur de la preuve step-up (validateur / second facteur).
+        proof_level_applied:
+          type: string
+          nullable: true
+          description: N3 lorsque le registre a activé P3 (sinon absent).
         idempotency_key:
           type: string
         request_id:

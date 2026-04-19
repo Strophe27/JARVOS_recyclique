@@ -37,6 +37,9 @@ class ExceptionalRefund(Base):
     approved_at = Column(DateTime(timezone=True), nullable=False)
     idempotency_key = Column(String(128), nullable=False)
     request_id = Column(String(128), nullable=True)
+    # Story 24.10 P3 — preuve structurée D8 + horodatage step-up validateur (distinct initiateur dans l’audit)
+    approval_evidence_ref = Column(Text, nullable=True)
+    approver_step_up_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     cash_session = relationship("CashSession", foreign_keys=[cash_session_id])

@@ -41,3 +41,17 @@ def test_audit_log_admin_empty_shape(admin_client: TestClient):
     assert "filters_applied" in body
     assert body["pagination"]["page"] == 1
     assert isinstance(body["entries"], list)
+
+
+@pytest.mark.skipif(
+    os.environ.get("TEST_DATABASE_URL", "").startswith("sqlite"),
+    reason="Table audit_logs non créée sous SQLite (conftest create_all partiel).",
+)
+def test_audit_log_cash_sensitive_operations_filter_epic24(admin_client: TestClient):
+    """Story 24.10 — GET audit-log avec filtre opérations caisse sensibles (Epic 24)."""
+    r = admin_client.get(f"{_V1}/audit-log", params={"cash_sensitive_operations": "true"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["filters_applied"].get("cash_sensitive_operations") is True
+    assert isinstance(body["entries"], list)
+    assert "pagination" in body

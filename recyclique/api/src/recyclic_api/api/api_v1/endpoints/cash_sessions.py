@@ -90,6 +90,12 @@ _CASH_DOMAIN_HTTP = {
     "conflict_status": 400,
     "validation_status": 400,
 }
+# Story 24.10 — validations P3 (preuves / seuils) : alignement AC (422)
+_EXCEPTIONAL_REFUND_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 400,
+    "validation_status": 422,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -654,7 +660,8 @@ async def update_cash_session(
     """,
     responses={
         201: {"description": "Remboursement enregistré"},
-        400: {"description": "Erreur de validation"},
+        400: {"description": "Requête invalide (ex. Idempotency-Key manquant)"},
+        422: {"description": "Validation métier P3 (preuves / seuils Story 24.10)"},
         403: {"description": "Accès non autorisé / PIN requis ou invalide"},
         404: {"description": "Session non trouvée"},
         409: {"description": "Conflit idempotence"},
@@ -675,6 +682,7 @@ async def create_exceptional_refund(
         redis_client=redis_client,
         operation=SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND,
     )
+    approver_step_up_at = datetime.now(timezone.utc)
 
     idem_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
     if not idem_key:
@@ -695,11 +703,12 @@ async def create_exceptional_refund(
             operator=current_user,
             idempotency_key=idem_key,
             request_id=getattr(request.state, "request_id", None),
+            approver_step_up_at=approver_step_up_at,
         )
     except AuthorizationError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
     except (ConflictError, NotFoundError, ValidationError) as e:
-        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
+        raise_domain_exception_as_http(e, **_EXCEPTIONAL_REFUND_DOMAIN_HTTP)
 
     store_idempotent_exceptional_refund(
         redis_client,

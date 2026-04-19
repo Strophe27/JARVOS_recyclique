@@ -551,6 +551,8 @@ export type ExceptionalRefundPayload = {
   reason_code: string;
   justification: string;
   detail?: string | null;
+  /** Story 24.10 — référence de preuve D8 ; obligatoire si P3 sur le registre. */
+  approval_evidence_ref?: string | null;
 };
 
 export type ExceptionalRefundResult =

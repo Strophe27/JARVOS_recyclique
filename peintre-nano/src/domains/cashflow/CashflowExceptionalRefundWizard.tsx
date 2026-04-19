@@ -10,7 +10,11 @@ import {
   Textarea,
   Title,
 } from '@mantine/core';
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  getCashRegisterById,
+  workflowOptionsOperationsSpecialsP3Enabled,
+} from '../../api/admin-cash-registers-client';
 import { postExceptionalRefund, type ExceptionalRefundPayload } from '../../api/cash-session-client';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import {
@@ -29,6 +33,9 @@ import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-optio
 type EntryBlock =
   | { readonly blocked: false; readonly sessionId: string }
   | { readonly blocked: true; readonly title: string; readonly body: string };
+
+/** Aligné `operations_specials_p3.EXCEPTIONAL_REFUND_STRICT_AMOUNT_THRESHOLD_EUR` (Story 24.10). */
+const P3_STRICT_AMOUNT_THRESHOLD_EUR = 150;
 
 const REASON_OPTIONS = [
   { value: 'ERREUR_SAISIE', label: 'Erreur de saisie' },
@@ -93,6 +100,7 @@ function useExceptionalRefundEntryBlock(): EntryBlock {
 
 export function CashflowExceptionalRefundWizard(_props: RegisteredWidgetProps): ReactNode {
   const entry = useExceptionalRefundEntryBlock();
+  const envelope = useContextEnvelope();
   const auth = useAuthPort();
   const draft = useCashflowDraft();
   const stale = draft.widgetDataState === 'DATA_STALE';
@@ -107,11 +115,42 @@ export function CashflowExceptionalRefundWizard(_props: RegisteredWidgetProps): 
   const [reason, setReason] = useState('ERREUR_SAISIE');
   const [detail, setDetail] = useState('');
   const [justification, setJustification] = useState('');
+  /** Référence structurée D8 — obligatoire côté serveur si P3 actif sur le poste. */
+  const [approvalEvidenceRef, setApprovalEvidenceRef] = useState('');
+  /**
+   * undefined : chargement ou registre non résolu / erreur réseau (pas de garde-fou client P3).
+   * true / false : réponse `GET /v1/cash-registers/{id}` réussie — alignement chargé opérations spéciales P3.
+   */
+  const [operationsSpecialsP3OnRegister, setOperationsSpecialsP3OnRegister] = useState<boolean | undefined>(
+    undefined,
+  );
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [success, setSuccess] = useState<ExceptionalRefundPayload | null>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const rid = envelope.activeRegisterId?.trim();
+    if (!rid) {
+      setOperationsSpecialsP3OnRegister(undefined);
+      return;
+    }
+    let cancelled = false;
+    setOperationsSpecialsP3OnRegister(undefined);
+    void (async () => {
+      const r = await getCashRegisterById(auth, rid);
+      if (cancelled) return;
+      if (!r.ok) {
+        setOperationsSpecialsP3OnRegister(undefined);
+        return;
+      }
+      setOperationsSpecialsP3OnRegister(workflowOptionsOperationsSpecialsP3Enabled(r.register.workflow_options));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [auth, envelope.activeRegisterId]);
 
   const onSubmit = async (): Promise<void> => {
     if (entry.blocked) return;
@@ -136,12 +175,35 @@ export function CashflowExceptionalRefundWizard(_props: RegisteredWidgetProps): 
       return;
     }
 
+    const evidenceTrim = approvalEvidenceRef.trim();
+    if (operationsSpecialsP3OnRegister === true) {
+      if (evidenceTrim.length < 3) {
+        setError({
+          kind: 'local',
+          message:
+            'P3 actif sur ce poste : saisissez une référence de preuve structurée (ADR D8, min. 3 caractères) dans « Référence de preuve ».',
+        });
+        return;
+      }
+      if (
+        Number(amountValue) >= P3_STRICT_AMOUNT_THRESHOLD_EUR &&
+        reason === 'ERREUR_SAISIE'
+      ) {
+        setError({
+          kind: 'local',
+          message: `P3 actif : pour un remboursement d'au moins ${P3_STRICT_AMOUNT_THRESHOLD_EUR} €, le motif « Erreur de saisie » n'est pas accepté — choisissez un autre motif.`,
+        });
+        return;
+      }
+    }
+
     const payload: ExceptionalRefundPayload = {
       amount: Number(amountValue),
       refund_payment_method: refundPaymentMethod,
       reason_code: reason,
       justification: justificationTrim,
       detail: detailTrim || null,
+      approval_evidence_ref: evidenceTrim ? evidenceTrim : null,
     };
 
     setBusy(true);
@@ -234,6 +296,18 @@ export function CashflowExceptionalRefundWizard(_props: RegisteredWidgetProps): 
             value={justification}
             onChange={(event) => setJustification(event.currentTarget.value)}
             data-testid="cashflow-exceptional-refund-justification"
+          />
+          <TextInput
+            label="Référence de preuve (ADR D8)"
+            description={
+              operationsSpecialsP3OnRegister === true
+                ? 'Obligatoire — identifiant ou texte structuré (min. 3 caractères) tant que les pièces jointes natives ne sont pas disponibles.'
+                : 'Si le poste est en niveau P3, le serveur exige une référence structurée. Laisser vide uniquement lorsque P3 est inactif sur le registre.'
+            }
+            required={operationsSpecialsP3OnRegister === true}
+            value={approvalEvidenceRef}
+            onChange={(event) => setApprovalEvidenceRef(event.currentTarget.value)}
+            data-testid="cashflow-exceptional-refund-approval-evidence-ref"
           />
           <PasswordInput
             label="PIN step-up"

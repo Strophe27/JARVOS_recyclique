@@ -92,7 +92,10 @@ export function CashflowSpecialOpsHub(_props: RegisteredWidgetProps): ReactNode 
         <Card withBorder padding="md" radius="md" data-testid="cashflow-special-ops-card-remboursement-exceptionnel">
           <Text fw={600}>Remboursement exceptionnel (sans ticket)</Text>
           <Text size="sm" c="dimmed" mt="xs">
-            Remboursement sans ticket source : PIN step-up obligatoire, justification et motif codifié.
+            Remboursement sans ticket source : PIN step-up obligatoire, justification et motif codifié. Si le poste active
+            le niveau P3 (<code>workflow_options.features.operations_specials_p3.enabled</code>), le corps doit inclure une{' '}
+            <code>approval_evidence_ref</code> (référence structurée ADR D8) ; les horodatages initiateur / validateur et la
+            preuve sont visibles côté supervision via le journal d&apos;audit filtré « opérations caisse sensibles ».
           </Text>
           {canExceptionalRefund ? (
             <Button

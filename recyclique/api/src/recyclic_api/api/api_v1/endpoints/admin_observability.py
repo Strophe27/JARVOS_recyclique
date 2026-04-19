@@ -24,6 +24,7 @@ from recyclic_api.core.database import get_db
 from recyclic_api.core.user_identity import username_for_audit
 from recyclic_api.core.logging import TRANSACTION_LOG_FILE
 from recyclic_api.models.user import User
+from recyclic_api.models.audit_log import AuditActionType, AuditLog
 from recyclic_api.schemas.email_log import EmailLogListResponse
 from recyclic_api.services.email_log_service import EmailLogService
 
@@ -213,16 +214,27 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
         start_date: Optional[datetime] = Query(None, description="Date de début (ISO format)"),
         end_date: Optional[datetime] = Query(None, description="Date de fin (ISO format)"),
         search: Optional[str] = Query(None, description="Recherche dans description ou détails"),
+        cash_sensitive_operations: Optional[bool] = Query(
+            None,
+            description="Si true : uniquement les actions caisse sensibles Epic 24 (preuves step-up, opérations spéciales).",
+        ),
     ):
         """
         Récupère le journal d'audit avec filtres et pagination.
         Seuls les administrateurs peuvent accéder à cette fonctionnalité.
         """
         try:
-            from recyclic_api.models.audit_log import AuditLog
-
             query = db.query(AuditLog)
             filters = []
+
+            if cash_sensitive_operations:
+                _sens = (
+                    AuditActionType.CASH_EXCEPTIONAL_REFUND.value,
+                    AuditActionType.CASH_DISBURSEMENT.value,
+                    AuditActionType.CASH_INTERNAL_TRANSFER.value,
+                    AuditActionType.CASH_MATERIAL_EXCHANGE.value,
+                )
+                filters.append(AuditLog.action_type.in_(_sens))
 
             if action_type:
                 filters.append(AuditLog.action_type == action_type)
@@ -336,6 +348,7 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                         "start_date": start_date.isoformat() if start_date else None,
                         "end_date": end_date.isoformat() if end_date else None,
                         "search": search,
+                        "cash_sensitive_operations": cash_sensitive_operations,
                     },
                     "page": page,
                     "page_size": page_size,
@@ -361,6 +374,7 @@ def register_admin_observability_routes(router: APIRouter, limiter: Limiter) -> 
                     "start_date": start_date.isoformat() if start_date else None,
                     "end_date": end_date.isoformat() if end_date else None,
                     "search": search,
+                    "cash_sensitive_operations": cash_sensitive_operations,
                 },
             }
 

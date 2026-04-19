@@ -28,6 +28,12 @@ class ExceptionalRefundCreate(BaseModel):
     reason_code: RefundReasonCode
     justification: str = Field(min_length=1, max_length=2000)
     detail: Optional[str] = Field(default=None, max_length=500)
+    # Story 24.10 — PRD §15 approval_evidence_ref / ADR D8 (PIèce jointe future ou référence structurée)
+    approval_evidence_ref: Optional[str] = Field(
+        default=None,
+        max_length=2000,
+        description="Référence de preuve (texte, identifiant externe) — obligatoire si P3 actif sur le registre.",
+    )
 
     @field_validator("refund_payment_method")
     @classmethod
@@ -56,6 +62,11 @@ class ExceptionalRefundCreate(BaseModel):
         elif detail is not None and len(detail) > 500:
             raise ValueError("Le détail ne peut pas dépasser 500 caractères.")
         self.detail = detail
+
+        ev = (self.approval_evidence_ref or "").strip() or None
+        if ev is not None and len(ev) > 2000:
+            raise ValueError("La référence de preuve ne peut pas dépasser 2000 caractères.")
+        self.approval_evidence_ref = ev
         return self
 
 
@@ -68,6 +79,12 @@ class ExceptionalRefundResponse(BaseModel):
     reason_code: str
     justification: str
     detail: Optional[str] = None
+    approval_evidence_ref: Optional[str] = None
+    approver_step_up_at: Optional[datetime] = None
+    proof_level_applied: Optional[str] = Field(
+        default=None,
+        description="N3 lorsque le registre a activé P3 (PRD §14) ; sinon omis.",
+    )
     idempotency_key: str
     request_id: Optional[str] = None
     initiator_user_id: str

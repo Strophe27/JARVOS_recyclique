@@ -14,6 +14,7 @@ from recyclic_api.core.audit import log_audit
 from recyclic_api.core.auth import user_has_permission
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.models.audit_log import AuditActionType
+from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.exceptional_refund import ExceptionalRefund
 from recyclic_api.models.payment_transaction import (
@@ -27,6 +28,10 @@ from recyclic_api.schemas.exceptional_refund import (
     ExceptionalRefundCreate,
     ExceptionalRefundResponse,
     PAHEKO_ACCOUNTING_SYNC_HINT_EXCEPTIONAL_REFUND,
+)
+from recyclic_api.services.operations_specials_p3 import (
+    register_operations_specials_p3_enabled,
+    validate_exceptional_refund_p3_rules,
 )
 from recyclic_api.services.sale_service import SaleService
 
@@ -75,6 +80,7 @@ class ExceptionalRefundService:
         operator: User,
         idempotency_key: str,
         request_id: Optional[str] = None,
+        approver_step_up_at: Optional[datetime] = None,
     ) -> ExceptionalRefundResponse:
         cash_session, operator_user, op_uuid = self._load_session_and_operator(
             cash_session_id, operator
@@ -82,6 +88,17 @@ class ExceptionalRefundService:
 
         if not user_has_permission(operator_user, EXCEPTIONAL_REFUND_PERMISSION_KEY, self.db):
             raise AuthorizationError(f"Permission requise: {EXCEPTIONAL_REFUND_PERMISSION_KEY}")
+
+        register: Optional[CashRegister] = None
+        if cash_session.register_id:
+            register = self.db.query(CashRegister).filter(CashRegister.id == cash_session.register_id).first()
+        p3 = register_operations_specials_p3_enabled(register)
+        validate_exceptional_refund_p3_rules(
+            p3_enabled=p3,
+            amount=float(payload.amount),
+            reason_code=payload.reason_code.value,
+            approval_evidence_ref=payload.approval_evidence_ref,
+        )
 
         current = float(cash_session.current_amount or 0.0)
         outflow = float(payload.amount)
@@ -91,6 +108,7 @@ class ExceptionalRefundService:
             )
 
         now = datetime.now(timezone.utc)
+        step_up_mark = approver_step_up_at if approver_step_up_at is not None else now
         sale = Sale(
             cash_session_id=cash_session.id,
             operator_id=op_uuid,
@@ -131,9 +149,11 @@ class ExceptionalRefundService:
             reason_code=payload.reason_code.value,
             justification=payload.justification,
             detail=payload.detail,
+            approval_evidence_ref=payload.approval_evidence_ref,
             initiator_user_id=operator_user.id,
             approver_user_id=operator_user.id,
             approved_at=now,
+            approver_step_up_at=step_up_mark,
             idempotency_key=idempotency_key,
             request_id=request_id,
         )
@@ -164,10 +184,14 @@ class ExceptionalRefundService:
                 "reason_code": payload.reason_code.value,
                 "justification": payload.justification,
                 "detail": payload.detail,
+                "approval_evidence_ref": payload.approval_evidence_ref,
+                "operations_specials_p3": p3,
+                "proof_level": "N3" if p3 else None,
                 "idempotency_key": idempotency_key,
                 "request_id": request_id,
                 "initiator_user_id": str(operator_user.id),
                 "approver_user_id": str(operator_user.id),
+                "approver_step_up_at": step_up_mark.isoformat() if step_up_mark else None,
             },
             description="Remboursement exceptionnel sans ticket (Story 24.5)",
             db=self.db,
@@ -182,6 +206,9 @@ class ExceptionalRefundService:
             reason_code=refund.reason_code,
             justification=refund.justification,
             detail=refund.detail,
+            approval_evidence_ref=refund.approval_evidence_ref,
+            approver_step_up_at=refund.approver_step_up_at,
+            proof_level_applied="N3" if p3 else None,
             idempotency_key=refund.idempotency_key,
             request_id=refund.request_id,
             initiator_user_id=str(refund.initiator_user_id),
