@@ -3,6 +3,7 @@ import {
   Button,
   Group,
   Loader,
+  Modal,
   NativeSelect,
   PasswordInput,
   Stack,
@@ -23,7 +24,10 @@ import {
 import { PERMISSION_CASHFLOW_SALE_CORRECT } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { fetchCategoriesList, type CategoryListItem } from '../../api/dashboard-legacy-stats-client';
+import { CategoryHierarchyPicker } from '../../widgets/category-hierarchy-picker/CategoryHierarchyPicker';
 import { DEFAULT_FREE_PAYMENT_LABEL } from './payment-method-display';
+import { formatCategoryHierarchyLabel } from './category-hierarchy-display';
 import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowOperationalSyncNotice } from './cashflow-operational-sync-notice';
@@ -299,6 +303,37 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
+  const [categoriesList, setCategoriesList] = useState<CategoryListItem[] | null>(null);
+  const [categoriesErr, setCategoriesErr] = useState<string | null>(null);
+  const [categoryModalLineId, setCategoryModalLineId] = useState<string | null>(null);
+  const [categoryModalEpoch, setCategoryModalEpoch] = useState(0);
+
+  useEffect(() => {
+    if (!loadedSaleId || itemRows.length === 0) {
+      setCategoriesList(null);
+      setCategoriesErr(null);
+      return;
+    }
+    const ac = new AbortController();
+    let disposed = false;
+    void (async () => {
+      try {
+        const list = await fetchCategoriesList(auth, ac.signal);
+        if (disposed) return;
+        setCategoriesList(list.filter((c) => c.is_active));
+        setCategoriesErr(null);
+      } catch (e) {
+        if (disposed) return;
+        setCategoriesList(null);
+        setCategoriesErr(e instanceof Error ? e.message : 'Chargement des catégories impossible.');
+      }
+    })();
+    return () => {
+      disposed = true;
+      ac.abort();
+    };
+  }, [auth, loadedSaleId, itemRows.length]);
+
   const partitionDirty =
     snapshotPaymentDraftRows(draftSalePayments) !== initialSaleSnapRef.current ||
     snapshotPaymentDraftRows(draftDonationSurplus) !== initialSurplusSnapRef.current;
@@ -394,6 +429,9 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     setInitialNote(null);
     setReason('');
     setPin('');
+    setCategoryModalLineId(null);
+    setCategoriesList(null);
+    setCategoriesErr(null);
     setError(null);
     setDone(false);
     if (lockSaleId && initialSaleId) {
@@ -687,6 +725,11 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                   excluent alors la vente source là où le reporting est branché sur les reversals.
                 </Text>
               </Alert>
+              {categoriesErr ? (
+                <Alert color="orange" variant="light" title="Référentiel catégories" mb="xs">
+                  <Text size="sm">{categoriesErr}</Text>
+                </Alert>
+              ) : null}
               {itemRows.length > 0 ? (
                 <Stack gap="xs" mb="sm" data-testid="cashflow-sale-correction-item-lines">
                   <Text size="sm" fw={600}>
@@ -702,13 +745,53 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                       <Text size="xs" c="dimmed">
                         Ligne {idx + 1} · <code>{row.id}</code>
                       </Text>
+                      <Stack gap={6}>
+                        <Text size="sm" fw={500}>
+                          Catégorie matière
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          Grille identique à la caisse : choisir une feuille de l’arbre ; le code stocké sur le ticket
+                          reste l’identifiant technique envoyé au serveur.
+                        </Text>
+                        <div data-testid={`cashflow-sale-correction-item-category-display-${idx}`}>
+                          <Text size="sm">
+                            <strong>
+                              {formatCategoryHierarchyLabel(row.category, categoriesList ?? []).trim() ||
+                                row.category.trim() ||
+                                '—'}
+                            </strong>
+                          </Text>
+                          <Text size="xs" c="dimmed" ff="monospace">
+                            Code stocké : {row.category.trim() || '—'}
+                          </Text>
+                        </div>
+                        <Group gap="xs">
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="light"
+                            disabled={stale}
+                            onClick={() => {
+                              setCategoryModalEpoch((e) => e + 1);
+                              setCategoryModalLineId(row.id);
+                            }}
+                            data-testid={`cashflow-sale-correction-item-category-open-${idx}`}
+                          >
+                            Choisir dans l’arbre…
+                          </Button>
+                          <TextInput
+                            aria-label="Code catégorie (secours)"
+                            placeholder="Code catalogue (secours)"
+                            description="Si besoin : saisir l’UUID ou le code catalogue tel que stocké en base."
+                            size="xs"
+                            style={{ flex: 1, minWidth: 140 }}
+                            value={row.category}
+                            onChange={(e) => updateItemRow(row.id, { category: e.currentTarget.value })}
+                            data-testid={`cashflow-sale-correction-item-cat-${idx}`}
+                          />
+                        </Group>
+                      </Stack>
                       <Group grow gap="xs" wrap="wrap">
-                        <TextInput
-                          label="Catégorie"
-                          value={row.category}
-                          onChange={(e) => updateItemRow(row.id, { category: e.currentTarget.value })}
-                          data-testid={`cashflow-sale-correction-item-cat-${idx}`}
-                        />
                         <TextInput
                           label="Poids (kg)"
                           value={row.weightStr}
@@ -725,12 +808,14 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                       <Group grow gap="xs" wrap="wrap">
                         <TextInput
                           label="PU"
+                          description="Prix unitaire (€ / kg ou € / pièce selon la grille catégorie)."
                           value={row.unitPriceStr}
                           onChange={(e) => updateItemRow(row.id, { unitPriceStr: e.currentTarget.value })}
                           data-testid={`cashflow-sale-correction-item-pu-${idx}`}
                         />
                         <TextInput
                           label="Montant ligne"
+                          description="Total de la ligne (€), hors ventilation don."
                           value={row.totalPriceStr}
                           onChange={(e) => updateItemRow(row.id, { totalPriceStr: e.currentTarget.value })}
                           data-testid={`cashflow-sale-correction-item-total-${idx}`}
@@ -745,17 +830,23 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                       <Group grow gap="xs" wrap="wrap">
                         <TextInput
                           label="Tag métier (kind)"
+                          description="Story 24.9 — code fermé pour le reporting agrégé (voir liste métier)."
                           value={row.tagKindStr}
                           onChange={(e) => updateItemRow(row.id, { tagKindStr: e.currentTarget.value })}
                           data-testid={`cashflow-sale-correction-item-tag-kind-${idx}`}
                         />
                         <TextInput
                           label="Tag métier (libellé AUTRE)"
+                          description="Obligatoire si kind = AUTRE ; sinon laisser vide."
                           value={row.tagCustomStr}
                           onChange={(e) => updateItemRow(row.id, { tagCustomStr: e.currentTarget.value })}
                           data-testid={`cashflow-sale-correction-item-tag-custom-${idx}`}
                         />
                       </Group>
+                      <Text size="xs" c="dimmed">
+                        Tags métier : alignés sur <code>buildBusinessTagPayload</code> (caisse) — kind = code fermé ; si
+                        kind = AUTRE, remplir le libellé libre ; sinon champ libellé vide.
+                      </Text>
                     </Stack>
                   ))}
                   <Text size="xs" c="dimmed">
@@ -944,6 +1035,33 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
           ) : null}
         </>
       ) : null}
+      <Modal
+        opened={categoryModalLineId !== null}
+        onClose={() => setCategoryModalLineId(null)}
+        title="Choisir la catégorie matière"
+        size="xl"
+        data-testid="cashflow-sale-correction-category-modal"
+      >
+        <Stack gap="sm">
+          <Text size="xs" c="dimmed">
+            Grille alignée caisse nominale (<code>GET /v1/categories/</code>). Raccourcis clavier actifs hors champ de
+            saisie.
+          </Text>
+          <CategoryHierarchyPicker
+            presentation="kiosk_drill"
+            categorySource="legacy_categories"
+            browseResetEpoch={categoryModalEpoch}
+            onPickCategoryCode={(code) => {
+              const target = categoryModalLineId;
+              if (target) {
+                updateItemRow(target, { category: code });
+              }
+              setCategoryModalLineId(null);
+            }}
+            onContinueWithoutGrid={() => setCategoryModalLineId(null)}
+          />
+        </Stack>
+      </Modal>
     </div>
   );
 }
