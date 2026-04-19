@@ -8,14 +8,14 @@ Status: done
 
 ## Contexte produit
 
-Story **documentaire** : produire une **ADR approuvée** qui sépare explicitement le **PIN opérateur** (canon brownfield, serveur, JWT, step-up) du **modèle cible PIN kiosque / secret de poste** (PRD vision PWA offline-first), afin que auth, lockout, comportement offline et règles de revalidation ne divergent pas entre équipes. Le gel BMAD hors `25-*` reste actif jusqu'à levée documentée ; cette story ne code pas le kiosque, elle **ferme la décision d'architecture**.
+Story **documentaire** : produire une **ADR rédigée et prête à revue humaine** (frontmatter BMAD **`proposed`** ; passage **`accepted`** après revue / approbation explicite tracée) qui sépare explicitement le **PIN opérateur** (canon brownfield, serveur, JWT, step-up) du **modèle cible PIN kiosque / secret de poste** (PRD vision PWA offline-first), afin que auth, lockout, comportement offline et règles de revalidation ne divergent pas entre équipes. Le gel BMAD hors `25-*` reste actif jusqu'à levée documentée ; cette story ne code pas le kiosque, elle **ferme la décision d'architecture** sous forme d'ADR (**statut story `done` = livrable ADR publié et indexé, prêt à revue ; pas = passage ADR `accepted`**, réservé à la revue humaine tracée).
 
 **Prérequis :** matrice d'alignement Story 25.1 (`references/vision-projet/2026-04-19_matrice-alignement-vision-canonical-epic25-25-1.md`) — ligne PIN kiosque en **ADR requise**.
 
 ## Story (BDD)
 
 As a **security and product owner**,  
-I want **an approved ADR that separates the canonical operator PIN from the target kiosk PIN model**,  
+I want **a drafted ADR (normative text ready for human review) that separates the canonical operator PIN from the target kiosk PIN model**,  
 So that **authentication, lockout, offline behavior, and step-up rules do not drift into contradictory implementations**.
 
 ## Acceptance criteria
@@ -26,14 +26,14 @@ Voir `_bmad-output/planning-artifacts/epics.md` — **Story 25.2**. Rappel norma
 **When** l'ADR est produite  
 **Then** elle fixe le **modèle de confiance** retenu pour l'identité kiosque, la vérification locale / hybride / autre, les **seuils de lockout**, la **tolérance offline** et les **frontières de revalidation** sans affaiblir le **PIN opérateur** canonique côté serveur  
 **And** elle cite au minimum `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, et `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`  
-**And** elle nomme les **stories aval** qui restent bloquées tant que cette ADR n'est pas approuvée, y compris toute future story d'auth kiosque ou de « passer la main »
+**And** elle nomme les **stories aval** qui restent bloquées tant que cette ADR n'est pas **`accepted`** (frontmatter) et/ou sans spec complémentaire le cas échéant, y compris toute future story d'auth kiosque ou de « passer la main »
 
 ## Définition of Done
 
 - [x] Fichier ADR publié sous un chemin stable du dépôt (convention alignée sur les ADR BMAD existantes, p. ex. `_bmad-output/planning-artifacts/architecture/` avec préfixe date — nom exact laissé à la rédaction VS/ADR).
 - [x] Contenu : modèle de confiance kiosque, secret de poste ou variante, lockout, offline, revalidation ; **non-régression** explicite sur `PIN opérateur` / §11.2 `prd.md`.
 - [x] Citations minimales : les trois chemins obligatoires ci-dessus + liste nommée des stories / epics aval bloqués.
-- [x] Revue humaine / approbation tracée (produit + archi ou process défini dans l'ADR ou note d'approbation).
+- [x] **Suivi BMAD** : process de passage **`proposed` → `accepted`** documenté dans l’ADR ; **l’acceptation humaine** (produit + archi) et le statut YAML **`accepted`** sont **postérieurs** à la clôture documentaire de la story (**`done`** = ADR publié, indexé, prêt à revue).
 - [x] Section **Trace Epic 25 — ADR** du présent fichier story mise à jour après rédaction (remplacer le stub ci-dessous).
 
 ## Livrables
@@ -59,7 +59,7 @@ Voir `_bmad-output/planning-artifacts/epics.md` — **Story 25.2**. Rappel norma
 
 ### Project Structure Notes
 
-- Ne pas implémenter de code kiosque dans cette story ; toute story `bmad-dev-story` sur PWA / PIN local reste **après** approbation ADR et levée de gel selon pilotage.
+- Ne pas implémenter de code kiosque dans cette story ; toute story `bmad-dev-story` sur PWA / PIN local reste **après** passage ADR **`accepted`** (revue humaine tracée) et levée de gel selon pilotage.
 
 ### References
 
@@ -74,7 +74,7 @@ Voir `_bmad-output/planning-artifacts/epics.md` — **Story 25.2**. Rappel norma
 | Élément | Valeur |
 |---------|--------|
 | ADR requis par la story ? | **Oui** — livrable principal = ADR PIN kiosque vs PIN opérateur / secret de poste. |
-| Fichier ADR | `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md` (chemin absolu : `d:\users\Strophe\Documents\1-IA\La Clique Qui Recycle\JARVOS_recyclique\_bmad-output\planning-artifacts\architecture\2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`) |
+| Fichier ADR | `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md` (chemin relatif à la racine du dépôt ; seule référence normative pour les outils et le suivi BMAD). |
 | Date | 2026-04-19 |
 | Statut | **`proposed`** — texte normatif rédigé et indexé ; **`accepted`** après revue / approbation explicite produit + archi tracée (DoD story, section Suivi BMAD de l’ADR). |
 | Citations minimales AC epics §25.2 | `_bmad-output/planning-artifacts/prd.md` ; `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md` ; `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md` (section **Références** de l’ADR). |
@@ -95,13 +95,15 @@ _(Task spawn Story Runner — CS create-story ; VS validate create-story — PAS
 ### Completion Notes List
 
 - CS 2026-04-19 : fichier story créé ; `sprint-status` clé `25-2-…` → `ready-for-dev`.
-- VS 2026-04-19 : validation checklist + alignement `epics.md` §25.2 (AC) ; YAML `25-2` inchangé `ready-for-dev` ; PASS.
-- ADR 2026-04-19 (sous-agent Task post-VS) : ADR `2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md` publiée ; `architecture/index.md` + trace **Epic 25 — ADR** (ce fichier) mises à jour ; `sprint-status.yaml` non modifié.
-- **DS 2026-04-19 (bmad-dev-story Task)** : DoD + QA Gate story complétés ; statut story **`review`** ; `sprint-status.yaml` clé `25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste` **`ready-for-dev` → `review`** ; **epic-25** inchangé **`in-progress`**. Branche dépôt au moment du DS : **`epic/25-socle-alignement-prd-architecture`** (checkout non bloquant — environnement aligné). Passage ADR YAML frontmatter **`proposed` → `accepted`** : après revue humaine explicite, tracée comme prévu dans **Suivi BMAD** de l'ADR (Story Runner / produit).
+- VS 2026-04-19 : validation checklist + alignement `epics.md` §25.2 (AC) ; `development_status` clé `25-2` inchangé **`ready-for-dev`** ; PASS.
+- ADR 2026-04-19 (Task post-VS) : ADR `2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md` publiée (frontmatter **`proposed`**) ; `architecture/index.md` + trace **Epic 25 — ADR** (ce fichier) mises à jour ; `sprint-status` inchangé à cette étape (statut story / YAML mis à jour au DS puis en fin de chaîne — voir ci-dessous).
+- **DS 2026-04-19 (bmad-dev-story, première passe)** : DoD + QA Gate story complétés ; statut story et YAML **`ready-for-dev` → `review`** (tracé dans les commentaires `# last_updated` de `sprint-status.yaml`).
+- **Story Runner 2026-04-19 (fin chaîne QA/CR)** : statut **canonique actuel** de la clé `25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste` : **`done`** dans `sprint-status.yaml`, aligné avec l’en-tête **Status** de ce fichier ; **epic-25** inchangé **`in-progress`**. Le frontmatter ADR reste **`proposed`** jusqu’à revue humaine tracée (**`accepted`**).
+- **DS 2026-04-19 (remédiation post-QA2, Task)** : harmonisation **story / ADR / sprint** (terminologie **`done`** vs **`proposed`/`accepted`**) ; lien readiness explicite dans l’ADR ; entrée TOC **Selected Starter** + ancre dans `architecture/index.md`.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste.md` (ce fichier)
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` (clé `25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste` → `review`)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (clé `25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste` → **`done`** ; historique documenté : `ready-for-dev` → `review` → `done`)
 - `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`
 - `_bmad-output/planning-artifacts/architecture/index.md`

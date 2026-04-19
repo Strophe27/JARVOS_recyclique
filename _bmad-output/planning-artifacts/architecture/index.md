@@ -35,7 +35,7 @@
     - [Primary Technology Domain](./starter-template-evaluation.md#primary-technology-domain)
     - [Starter Options Considered](./starter-template-evaluation.md#starter-options-considered)
     - [Comparative Analysis Matrix](./starter-template-evaluation.md#comparative-analysis-matrix)
-    - [Selected Starter: Brownfield baseline + targeted frontend scaffold for ](./starter-template-evaluation.md#selected-starter-brownfield-baseline-targeted-frontend-scaffold-for)
+    - [Selected Starter: Brownfield baseline + targeted frontend scaffold for Peintre_nano](./starter-template-evaluation.md#selected-starter-brownfield-baseline-targeted-frontend-scaffold-for-peintre_nano)
     - [Decision Refinement](./starter-template-evaluation.md#decision-refinement)
     - [Transition Runtime and Coexistence](./starter-template-evaluation.md#transition-runtime-and-coexistence)
     - [Note](./starter-template-evaluation.md#note)

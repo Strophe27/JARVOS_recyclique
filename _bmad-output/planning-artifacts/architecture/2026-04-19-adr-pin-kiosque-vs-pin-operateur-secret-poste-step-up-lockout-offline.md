@@ -73,7 +73,7 @@ Les **artefacts locaux** (ex. hash salé opérateur pour le poste) sont des **d�
 ### Négatives / suites obligatoires
 
 - **Specs détaillées** : format des **bundles** offline, **fusion** des compteurs lockout, **TTL** session kiosque, **matrice** action sensible × online/offline — à détailler dans **Story 25.4** et stories d’implémentation.
-- **Tests / readiness** : le gate **PWA / kiosque** (`implementation-readiness-report-2026-04-19.md`, `prd.md` §2.4) reste à lever **après** fermeture des autres ADR Epic 25 et **Story 25.5**.
+- **Tests / readiness** : le gate **PWA / kiosque** (`_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`, `prd.md` §2.4) reste à lever **après** fermeture des autres ADR Epic 25 et **Story 25.5**.
 
 ## Conformité
 
@@ -100,5 +100,6 @@ Les identifiants ci‑dessous sont ceux de **`_bmad-output/planning-artifacts/ep
 
 ## Suivi BMAD
 
+- Tant que le frontmatter reste **`proposed`**, ce document est une **proposition** normative soumise à revue ; il ne vaut pas **acceptation** organisationnelle au sens statut **`accepted`** (éviter toute formulation équivalente à « ADR approuvée » tant que le YAML n’est pas passé à **`accepted`**).
 - Passage du statut YAML de cet ADR de **`proposed`** à **`accepted`** après **revue humaine** explicite (produit + architecte ou équivalent) tracée dans la **Story 25.2** ou minute d’équipe.
 - **Story 25.3** (async Paheko), **25.4** (socle multisite / poste), **25.5** (readiness) : **orthogonal** sur le fond mais **séquentiels** pour le **gel** global Epic 25.
