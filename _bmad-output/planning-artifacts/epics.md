@@ -3439,3 +3439,151 @@ I want que le code **ne propose plus jamais** une écriture « ventes + dons » 
 So that le rapprochement bancaire et le contrôle de caisse restent possibles et la compta associative reste défendable.
 
 **Implementation artifact:** `_bmad-output/implementation-artifacts/23-4-paheko-close-builder-unique-ventilation-detaillee-supprimer-agregue.md`
+
+## Epic 24: Opérations spéciales de caisse, tags métier et extension Paheko terrain
+
+**Goal:** Livrer les parcours et étiquettes définis dans `references/operations-speciales-recyclique/2026-04-18_prd-recyclique-operations-speciales-sorties-matiere-paheko_v1-1.md` en réutilisant le rail comptable canonique (Epics 22–23) et sans dupliquer la sync `Paheko`.
+
+**ADR:** `_bmad-output/planning-artifacts/architecture/2026-04-18-adr-operations-speciales-caisse-paheko-v1.md`
+
+**Découpage prioritaire (aligné prompt ultra opérationnel P0–P3) :**
+
+- **P0** — Stories 24.1–24.5 : fondations/analyse, hub et visibilité remboursements, ventilation Paheko, N-1, sans ticket.
+- **P1** — Stories 24.6–24.8 : échange, décaissement, mouvement interne.
+- **P2** — Story 24.9 : tags métier et reporting matière associé.
+- **P3** — Story 24.10 : preuves enrichies, seuils, audit avancé.
+
+**Dépendances :** Epic 6 (parcours caisse), Epic 8 (Paheko/outbox), Epic 22–23 (snapshot, builders, ventilation). Ne pas entrer en 24.6 avant stabilisation minimale du socle P0 sauf arbitrage documenté.
+
+**Convention fichiers story (BMAD) :** à chaque `bmad-create-story` pour une clé `development_status` du sprint (ex. `24-3-remboursement-standard-visibilite-terrain-et-chaine-paheko-et-statut-sync`), ajouter dans le corps de la story la ligne **`Implementation artifact:`** pointant vers `_bmad-output/implementation-artifacts/{meme-cle-sprint}.md` (la clé YAML est la référence stable pour nommer le fichier).
+
+### Story 24.1: Audit repo-aware, matrices PRD–dépôt et plan de tests P0
+
+As a release and accounting governance team,
+I want an evidence-backed gap analysis before large UI/API changes,
+So that we align special cash operations against what already exists in `recyclique/api/` and `peintre-nano/`.
+
+**Acceptance Criteria:**
+
+**Given** the ultra-operational prompt requires tables PRD vs repo and permissions vs proof levels
+**When** this story is delivered
+**Then** the retained artifacts document exists under `_bmad-output/` or `references/` as named deliverables (matrice écarts, matrice permissions, machine d'états opérationnelle résumée, plan de tests P0)
+**And** each major PRD pathway is classified as implemented, partial, or missing with file-level pointers
+**And** the strategy **outbox / idempotence / pas de second rail Paheko** est explicitement documentée (renvoi à l'ADR D1, à `cash-accounting-paheko-canonical-chain.md` et aux Epics 8 et 22–23), sans exiger un document séparé si un livrable unique (ex. paquet 24.1) regroupe matrices + ce paragraphe
+
+### Story 24.2: Hub « opérations spéciales » caisse et navigation vers parcours
+
+As a caissière,
+I want a single discoverable entry point for non-nominal operations,
+So that annulation, remboursement and other expert flows are not hidden behind tribal knowledge.
+
+**Acceptance Criteria:**
+
+**Given** Epic 6 delivered nominal and partial refund surfaces
+**When** this story is complete
+**Then** the retained hub exposes the catalog of special operations consistent with the PRD (y compris annulation distincte du remboursement lorsque le PRD l'exige)
+**And** navigation respects permissions and CREOS/page manifests patterns already used in the `peintre-nano` package (dossier `peintre-nano/`, pas un module nommé `Peintre_nano`)
+
+### Story 24.3: Remboursement standard — visibilité terrain et chaîne Paheko + statut sync
+
+As a treasurer,
+I want refunds to show effective refund channel and Paheko sync status end-to-end,
+So that reconciliation matches exported accounting lines per payment method.
+
+**Acceptance Criteria:**
+
+**Given** canonical ventilation exists post Epic 23
+**When** a standard refund is recorded
+**Then** operators and supervisors can see refund payment method impact and sync state without guessing from legacy labels
+**And** tests cover at least one happy path and one degraded Paheko path aligned with Epic 8 observability
+
+### Story 24.4: Parcours expert remboursement exercice antérieur clos (N-1)
+
+As a responsible cash manager,
+I want prior-year closed refunds routed through explicit authority,
+So that fiscal-period mistakes are not silent.
+
+**Acceptance Criteria:**
+
+**Given** backend already distinguishes expert prior-year refunds with permission `accounting.prior_year_refund`
+**When** this story is delivered
+**Then** the terrain UX makes the expert path visible and blocking rules match PRD intent
+**And** audit records remain sufficient for supervision
+**And** le libelle de permission reste aligne sur l'implementation (`accounting.prior_year_refund` dans `recyclique/api`, ex. `sale_service.py`, migration permissions) ou est mis a jour de concert avec le backend
+
+### Story 24.5: Remboursement exceptionnel sans ticket — PIN, motifs et justification
+
+As an auditor,
+I want orphan refunds to be impossible without structured proof,
+So that only governed expert actors can move money without a source ticket.
+
+**Acceptance Criteria:**
+
+**Given** standard refunds require a source sale
+**When** this story is delivered
+**Then** a distinct expert flow exists with dedicated permission, step-up PIN, coded reasons, mandatory justification text
+**And** linkage to audit and Paheko outbound follows ADR D4 without collapsing into standard reversal schema
+
+### Story 24.6: Échange matière et différence financière (sous-flux vente/remboursement)
+
+As a caissière,
+I want exchanges with non-zero delta to reuse canonical sale/refund mechanics,
+So that inventory and cash stay coherent.
+
+**Acceptance Criteria:**
+
+**Given** ADR D2 requires mixed flows to reuse existing sub-flows
+**When** an exchange completes
+**Then** material movements are recorded and financial delta uses canonical paths without a parallel wallet model
+
+### Story 24.7: Décaissement — sous-types obligatoires sans catégorie poubelle
+
+As a finance reviewer,
+I want every payout typed with structured categories,
+So that exports and supervision stay analyzable.
+
+**Acceptance Criteria:**
+
+**Given** PRD forbids catch-all dumping for payouts
+**When** décaissement is implemented
+**Then** subtype enumeration is enforced server-side with validation errors on incomplete classification
+
+### Story 24.8: Mouvement interne caisse — distinct charge et remboursement client
+
+As an operations lead,
+I want internal movements separated from customer refunds,
+So that metrics are not polluted.
+
+**Acceptance Criteria:**
+
+**Given** PRD distinguishes internal movement from reimbursement
+**When** this flow ships
+**Then** accounting and UX semantics do not reuse refund wording for pure internal transfers
+
+### Story 24.9: Tags métier ticket et ligne — reporting matière associé
+
+As a social impact analyst,
+I want gratuit tags at ticket or line level with clear override rules,
+So that statistics match operational reality.
+
+**Acceptance Criteria:**
+
+**Given** ADR D5 mandates tags inside standard ticket flow
+**When** tagging is delivered
+**Then** configuration, persistence and reporting hooks are documented for matter statistics
+**And** pour les flux financiers concernés, initiateur/validateur et visibilité d'état de synchronisation Paheko restent alignés sur ADR D6 et D7 (réutilisation step-up et outbox)
+
+### Story 24.10: Preuves enrichies — pièces jointes, seuils, audit avancé (P3)
+
+As a compliance owner,
+I want stronger evidence on sensitive operations when the organisation is ready,
+So that escalations are traceable.
+
+**Acceptance Criteria:**
+
+**Given** ADR D8 allows phased proof models
+**When** P3 is addressed
+**Then** attachments or structured textual references satisfy PRD proof levels without breaking Paheko idempotence
+**And** les opérations sensibles conservent la distinction initiateur/validateur (ADR D6) et l'audit reste exploitable pour supervision
+
+**Epic 24 — Implementation readiness:** `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-18-operations-speciales.md`
