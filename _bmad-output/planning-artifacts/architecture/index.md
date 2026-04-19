@@ -15,6 +15,10 @@
 
 - **[2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md](./2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md)** — **ADR** : séparation **PIN opérateur** (canon serveur, §11.2, `POST /pin`) et **PIN kiosque** / **secret de poste** (PWA vision) ; modèle **hybride borné** (local offline + souveraineté serveur en ligne) ; lockout **métier** (seuils vision 3/5) vs **rate limit** route ; **step-up** et **revalidation** ; **Epic 25** story **25.2**.
 
+## Async `Paheko` (Epic 25)
+
+- **[2026-04-20-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride.md](./2026-04-20-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride.md)** — **ADR** : mécanisme canonique = **outbox transactionnelle durable PostgreSQL** (at-least-once, idempotence, corrélation, quarantaine) ; `Redis` **auxiliaire seulement** (dispatch/buffering), jamais autorité durable ; réconciliation explicite avec `cash-accounting-paheko-canonical-chain.md` ; traçabilité **AR11/AR12** ; **Epic 25** story **25.3**.
+
 ## Hypothèses post-V2 (hors backlog, non sprint)
 
 - **[post-v2-hypothesis-marketplace-modules.md](./post-v2-hypothesis-marketplace-modules.md)** — Marketplace / modules complémentaires (distribution, activation) **séparé** du cœur métier Recyclique ; alignement avec contrats v2 ; pas d’epic tant que non promu. Visible depuis [references/index.md](../../../references/index.md).
@@ -25,6 +29,7 @@
 - [Architecture Decision Document](#table-of-contents)
   - [ADR — PostgreSQL 17 (migration)](./adr-postgresql-17-migration.md)
   - [ADR — PIN kiosque vs PIN opérateur / secret de poste (Epic 25)](./2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md)
+  - [ADR — Async Paheko : outbox durable PostgreSQL, Redis auxiliaire (Epic 25)](./2026-04-20-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride.md)
   - [ADR — Opérations spéciales caisse / Paheko (Epic 24)](./2026-04-18-adr-operations-speciales-caisse-paheko-v1.md)
   - [Delta architecture — chaine comptable canonique caisse -> `Paheko`](./cash-accounting-paheko-canonical-chain.md)
   - [Project Context Analysis](./project-context-analysis.md)
