@@ -1,34 +1,45 @@
 # Finir les écarts QA — paramétrage comptable SuperAdmin
 
+**Stade :** `a-faire` — **reliquat de vérification** après merge dans `master` (pas une nouvelle vague de dev tant que la grille spec n’est pas repassée).
+
 ---
 
-## 2026-04-18 — Strophe + agent
+## Lien avec le bilan « déjà fait »
 
-Fermer le reliquat du cahier de corrections sur l’écran **Paramétrage comptable** (peintre + API + données), une partie déjà traitée en session incrémentale.
+Tout ce qui a été **mergé** (PR GitHub #1, migration `s22_8`, écran Paheko, docs, inventaire) est décrit ici :
 
-**Intention :** a-faire
+→ **[Bilan daté 2026-04-20](../../artefacts/2026-04-20_bilan-fin-ecarts-qa-parametrage-comptable-superadmin.md)**
 
-**Spec canonique (grille B/M/I complète)** : `references/migration-paheko/2026-04-18_spec-corrections-qa-parametrage-comptable-superadmin.md`  
-(anciennement `references/_depot/prompt-agent-dev-qa-compta.md`, déplacé le 2026-04-18 hors dépôt staging.)
+*(Ce fichier Kanban ne duplique pas ce bilan : il ne garde que **ce qui reste** à traiter ou à valider.)*
 
-**Décisions produit et inventaire (2026-04-18)** : encart **Décisions produit** en tête de la spec (M1 statu quo caisse ; M5 Option B). Inventaire Phase 0 : `references/artefacts/2026-04-18_03_inventaire-qa-parametrage-comptable-superadmin.md`. Migration données I1 : révision **`s22_8_fix_paheko_close_mapping_credit_7073`**.
+---
 
-**Conversation Cursor pour reprise de contexte** : [Session QA compta et correctifs dépôt](a1a7bab4-25b5-4e02-9c71-122a87997da4) — même transcript que l’Epic 23 orchestré dans la foulée ; la partie pertinente est la demande « `@references/_depot/prompt-agent-dev-qa-compta.md` go fix » suivie des rapports **qa-agent** (« Partiel », puis « passage avec réserves »).
+## À clarifier pour les sessions futures
 
-### Synthèse « ce qui reste » (extraite des bilans QA de ce fil)
+La spec ne parle **pas** d’une « table » SQL à créer pour fermer ce chantier : elle utilise un **tableau markdown** « Résumé des priorités » (IDs **B1, B2, B3, M1…**) dans :
 
-À recouper ligne par ligne avec la table « Résumé des priorités » du fichier spec.
+`references/migration-paheko/2026-04-18_spec-corrections-qa-parametrage-comptable-superadmin.md`
 
-| Zone | Signal dans le transcript |
-|------|---------------------------|
-| Ensemble | Rapport 1 : retard surtout sur **API + UI + révisions + comportements** vs doc, alors que **données / modèle / seed** déjà très avancés. |
-| **M1** | Comportement **caisse** du moyen « Don » : non listé comme paiement standard mais déclenché quand encaissement > montant vente — à valider contre le doc. |
-| **M3** | Formulation / périmètre (**ex.** champs obligatoires si Paheko actif) vs implémentation. |
-| **M5** | Validation **exercice Paheko** (API ou sélecteur dynamique) selon spec. |
-| **I6** | Flux **désactivation** d’un moyen quand une **session de caisse est ouverte** : modal / message attendu dans le doc. |
+---
 
-### Méthode de fermeture suggérée
+## Ce qui reste à faire (checklist opérationnelle)
 
-1. Relire les sections correspondantes dans la spec (IDs ci-dessus + tout point encore ouvert dans les priorités P2).  
-2. Vérifier migrations / seeds déjà joués sur les environnements qui ont migré avant les correctifs (éviter de modifier d’anciennes migrations — nouvelle migration données si besoin).  
-3. Une passe **qa-agent** ou checklist manuelle contre la spec une fois les correctifs mergés.
+1. **Repasser la grille B / M / I** de ce document spec et **cocher** ce qui est encore ouvert dans le produit déployé (Peintre + API).
+2. Traiter ou **router** chaque ligne ouverte :
+  - soit correctif / story dédiée ;
+  - soit validation « déjà OK » + mise à jour de ce fichier (ou archivage).
+3. Points souvent encore cités comme **à recouper** (voir aussi bilan lié) :
+  - **M1** — cohérence « Don » référentiel vs comportement caisse documenté ;
+  - **M3** — alignement formulations / champs obligatoires si Paheko actif ;
+  - **I6** — parcours désactivation moyen avec session ouverte (modal attendu).
+
+**M5 (Exercice Paheko)** : décision produit **Option B** (saisie manuelle) pour le chantier ; liste / validation via API Paheko = **hors périmètre** sauf nouvelle story.
+
+---
+
+## Références prolongées
+
+- Spec canonique (grille complète) : `references/migration-paheko/2026-04-18_spec-corrections-qa-parametrage-comptable-superadmin.md`
+- Inventaire Phase 0 : `references/artefacts/2026-04-18_03_inventaire-qa-parametrage-comptable-superadmin.md`
+- Conversation Cursor (autre session, reprise contexte) : transcript `a1a7bab4-25b5-4e02-9c71-122a87997da4` (mention historique dans l’ancienne version de cette fiche).
+
