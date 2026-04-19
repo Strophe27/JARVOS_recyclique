@@ -11,6 +11,12 @@ Stade Kanban : **a-faire** — découpage en stories quand tu voudras ; pas obli
 
 ---
 
+## 2026-04-18 — Passage à archive
+
+**Intégrée — code + contrats + doc** sur la branche `cursor/paheko-outbox-hardening-v2-9abb` (plan hardening v2 aligné audit `2026-04-18_01`). Détail livrable : [`references/artefacts/2026-04-18_03_livraison-paheko-outbox-hardening-v2-plan-cloud.md`](../../artefacts/2026-04-18_03_livraison-paheko-outbox-hardening-v2-plan-cloud.md).
+
+---
+
 ## Ce que « pas de TODO dans le code » voulait dire (sans jargon)
 
 Parfois les développeurs laissent dans les fichiers source des lignes du genre `# TODO à corriger`.  

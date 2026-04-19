@@ -1,6 +1,6 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-04-13
+Mis a jour : 2026-04-18
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
 
@@ -39,6 +39,8 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 **Architecture complétée** (2026-02-26) : `_bmad-output/planning-artifacts/architecture.md` — décisions techniques, patterns, structure projet, validation ; statut READY FOR IMPLEMENTATION. Points à trancher en v0.1 : [checklist 2026-02-26_03](artefacts/2026-02-26_03_checklist-v0.1-architecture.md).
 
 ## Derniere session
+
+2026-04-18 — **Paheko outbox hardening v2 (implémentation + QA)** : plan `.cursor/plans/paheko_outbox_hardening_v2_121f6d80.plan.md` exécuté sur la branche `cursor/paheko-outbox-hardening-v2-9abb` (PR vers `master`). REL/AGR/SNAP/DEL sur live-snapshot, DELETE outbox gardé, OpenAPI + Peintre + doc mode d’emploi super-admin. Trace livrable : [artefacts/2026-04-18_03_livraison-paheko-outbox-hardening-v2-plan-cloud.md](artefacts/2026-04-18_03_livraison-paheko-outbox-hardening-v2-plan-cloud.md). Idée Kanban « durcissement sync Paheko outbox » → **archive** (voir `references/idees-kanban/archive/2026-04-18_durcissement-sync-paheko-outbox-post-audit.md`).
 
 2026-04-13 — **Cloture documentaire (agent)** : correction de la section **Etat actuel** (le depot contient bien le code v2 et le brownfield ; l'ancienne phrase « aucun code source » etait obsolete). Renvoi explicite au grain fin dans `sprint-status.yaml`. Alignement des cases **Epics 1 a 8** dans `_bmad-output/planning-artifacts/guide-pilotage-v2.md` sur ce YAML ; **pas** de modification de `sprint-status.yaml` ni des fichiers story.
 
