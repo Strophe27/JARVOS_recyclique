@@ -1450,13 +1450,42 @@ class SaleService:
     def _sale_correction_snapshot(self, sale: Sale) -> dict:
         pm = sale.payment_method
         pm_val = pm.value if pm is not None and hasattr(pm, "value") else pm
+        journal: List[dict] = []
+        for pt in sorted(list(sale.payments or []), key=lambda x: str(x.id)):
+            if pt.nature not in (
+                PaymentTransactionNature.SALE_PAYMENT,
+                PaymentTransactionNature.DONATION_SURPLUS,
+            ):
+                continue
+            pm_row = pt.payment_method
+            pm_row_val = pm_row.value if pm_row is not None and hasattr(pm_row, "value") else pm_row
+            journal.append(
+                {
+                    "nature": pt.nature.value if pt.nature is not None else None,
+                    "payment_method": pm_row_val,
+                    "amount": float(pt.amount),
+                }
+            )
         return {
             "sale_date": sale.sale_date.isoformat() if sale.sale_date else None,
             "total_amount": float(sale.total_amount),
             "donation": float(sale.donation or 0),
             "payment_method": pm_val,
             "note": sale.note,
+            "payments_journal": journal,
         }
+
+    def _payment_transactions_to_create_rows(
+        self, rows: List[PaymentTransaction]
+    ) -> List[PaymentCreate]:
+        out: List[PaymentCreate] = []
+        for pt in rows:
+            code = pt.payment_method_code
+            if not code:
+                pm_row = pt.payment_method
+                code = pm_row.value if pm_row is not None and hasattr(pm_row, "value") else str(pm_row or "")
+            out.append(PaymentCreate(payment_method=code, amount=float(pt.amount)))
+        return out
 
     def apply_sensitive_sale_correction(
         self,
@@ -1544,53 +1573,158 @@ class SaleService:
                 raise ValidationError("Le total doit être supérieur ou égal à 0.")
             if new_donation < 0:
                 raise ValidationError("Le don doit être supérieur ou égal à 0.")
-            if new_donation > new_total + 1e-6:
+            if new_donation > new_total + _ARBITRAGE_EPS:
                 raise ValidationError("Incohérence : le don ne peut pas dépasser le total encaissé.")
 
             subtotal = sum(float(i.total_price or 0) for i in sale.items if (i.total_price or 0) > 0)
-            if subtotal > 0 and new_total < subtotal - 1e-6:
+            if subtotal > 0 and new_total < subtotal - _ARBITRAGE_EPS:
                 raise ValidationError(
                     f"Le total ({new_total}) ne peut pas être inférieur au sous-total des lignes ({subtotal})."
                 )
-
-            if fin.total_amount is not None:
-                # Intégrité (P0 / CR) : ne jamais persister un nouveau total sans aligner exactement
-                # une ligne PaymentTransaction sur ce montant. Sinon total encaissé et paiements divergent.
-                # → refus 400 (ValidationError) si ce n'est pas le cas (0 ou >1 lignes).
-                pays = list(sale.payments or [])
-                if len(pays) != 1:
-                    if len(pays) == 0:
-                        raise ValidationError(
-                            "Correction du total refusée : aucune ligne de paiement enregistrée — "
-                            "impossible d'aligner le montant encaissé avec le total (Story 6.8)."
-                        )
-                    raise ValidationError(
-                        "Correction du total interdite : vente avec plusieurs lignes de paiement (Story 6.8)."
-                    )
-                pays[0].amount = new_total
-                sale.total_amount = new_total
-                fields_touched.append("total_amount")
 
             if fin.donation is not None:
                 sale.donation = new_donation
                 fields_touched.append("donation")
 
-            if fin.payment_method is not None:
-                pays_pm = list(sale.payments or [])
+            if fin.payments is not None:
+                (
+                    db.query(PaymentTransaction)
+                    .filter(
+                        PaymentTransaction.sale_id == sale.id,
+                        PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                    )
+                    .delete(synchronize_session=False)
+                )
+                for payment_data in fin.payments:
+                    db.add(
+                        self._build_payment_transaction(
+                            sale_id=sale.id,
+                            payment_data=payment_data,
+                            nature=PaymentTransactionNature.SALE_PAYMENT,
+                            direction=PaymentTransactionDirection.INFLOW,
+                        )
+                    )
+                if fin.payments:
+                    leg_pm, _ = self.parse_sale_payment_method_string(fin.payments[0].payment_method)
+                    sale.payment_method = leg_pm
+                fields_touched.append("payments")
+
+            if fin.donation_surplus is not None:
+                (
+                    db.query(PaymentTransaction)
+                    .filter(
+                        PaymentTransaction.sale_id == sale.id,
+                        PaymentTransaction.nature == PaymentTransactionNature.DONATION_SURPLUS,
+                    )
+                    .delete(synchronize_session=False)
+                )
+                for payment_data in fin.donation_surplus:
+                    db.add(
+                        self._build_payment_transaction(
+                            sale_id=sale.id,
+                            payment_data=payment_data,
+                            nature=PaymentTransactionNature.DONATION_SURPLUS,
+                            direction=PaymentTransactionDirection.INFLOW,
+                        )
+                    )
+                fields_touched.append("donation_surplus")
+
+            if fin.total_amount is not None:
+                if fin.payments is None and fin.donation_surplus is None:
+                    sale_pts_pre = (
+                        db.query(PaymentTransaction)
+                        .filter(
+                            PaymentTransaction.sale_id == sale.id,
+                            PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                        )
+                        .order_by(PaymentTransaction.created_at.asc())
+                        .all()
+                    )
+                    don_pts_pre = (
+                        db.query(PaymentTransaction)
+                        .filter(
+                            PaymentTransaction.sale_id == sale.id,
+                            PaymentTransaction.nature == PaymentTransactionNature.DONATION_SURPLUS,
+                        )
+                        .all()
+                    )
+                    if len(sale_pts_pre) == 0:
+                        raise ValidationError(
+                            "Correction du total refusée : aucune ligne de règlement (sale_payment) — "
+                            "impossible d'aligner le montant encaissé avec le total (Story 6.8)."
+                        )
+                    if len(sale_pts_pre) > 1 or len(don_pts_pre) > 0:
+                        raise ValidationError(
+                            "Correction du total interdite : vente avec plusieurs lignes de paiement (Story 6.8) — "
+                            "fournissez explicitement ``payments`` et éventuellement ``donation_surplus`` dans la même requête."
+                        )
+                    sale.total_amount = new_total
+                    sale_pts_pre[0].amount = float(new_total)
+                    fields_touched.append("total_amount")
+                else:
+                    sale.total_amount = new_total
+                    fields_touched.append("total_amount")
+
+            db.flush()
+
+            if fin.payment_method is not None and fin.payments is None:
+                pays_pm = (
+                    db.query(PaymentTransaction)
+                    .filter(
+                        PaymentTransaction.sale_id == sale.id,
+                        PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                    )
+                    .all()
+                )
                 leg_pm, pm_ref = self.parse_sale_payment_method_string(fin.payment_method)
                 if len(pays_pm) == 1:
                     pays_pm[0].payment_method = leg_pm
                     pays_pm[0].payment_method_id = pm_ref.id if pm_ref else None
+                    sale.payment_method = leg_pm
+                    fields_touched.append("payment_method")
                 elif len(pays_pm) > 1:
                     raise ValidationError(
-                        "Correction du moyen de paiement interdite : vente avec plusieurs lignes de paiement (Story 6.8)."
+                        "Correction du moyen de paiement interdite : vente avec plusieurs lignes de paiement (Story 6.8). "
+                        "Utilisez le champ ``payments`` pour remplacer la répartition."
                     )
-                sale.payment_method = leg_pm
-                fields_touched.append("payment_method")
+                elif len(pays_pm) == 0:
+                    sale.payment_method = leg_pm
+                    fields_touched.append("payment_method")
 
             if fin.note is not None:
                 sale.note = fin.note
                 fields_touched.append("note")
+
+            pm_top_for_arbitrage = (
+                sale.payment_method.value
+                if sale.payment_method is not None and hasattr(sale.payment_method, "value")
+                else str(sale.payment_method or "")
+            )
+
+            sale_pts_f = (
+                db.query(PaymentTransaction)
+                .filter(
+                    PaymentTransaction.sale_id == sale.id,
+                    PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                )
+                .all()
+            )
+            don_pts_f = (
+                db.query(PaymentTransaction)
+                .filter(
+                    PaymentTransaction.sale_id == sale.id,
+                    PaymentTransaction.nature == PaymentTransactionNature.DONATION_SURPLUS,
+                )
+                .all()
+            )
+            if sale_pts_f or don_pts_f:
+                self._validate_payment_arbitrage_22_4(
+                    total_amount=float(sale.total_amount),
+                    sale_lines=self._payment_transactions_to_create_rows(sale_pts_f),
+                    donation_surplus_lines=self._payment_transactions_to_create_rows(don_pts_f),
+                    payment_method_top=pm_top_for_arbitrage,
+                    forbid_free_with_financial_lines=True,
+                )
 
         if "total_amount" in fields_touched or "donation" in fields_touched:
             SaleService.recompute_cash_session_completed_rollups(db, cash_session)

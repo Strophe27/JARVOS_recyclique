@@ -18,7 +18,7 @@ from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.schemas.sale import SaleCorrectionFinalizeFieldsPayload
+from recyclic_api.schemas.sale import PaymentCreate, SaleCorrectionFinalizeFieldsPayload
 from recyclic_api.services.sale_service import SaleService
 from tests.caisse_sale_eligibility import (
     grant_user_caisse_sale_eligibility,
@@ -410,6 +410,106 @@ def test_sale_correction_payment_method_and_total_align_payment_transaction(db_s
     assert row.amount == 10.0
     assert row.payment_method == PaymentMethod.CHECK
     assert row.payment_method_id == check_def.id
+
+
+def test_sale_correction_payments_array_replaces_multi_sale_payment_rows(db_session):
+    """Correction sensible : ``payments[]`` remplace les lignes sale_payment multi-moyens + total cohérent."""
+    super_admin, session = _seed_super_admin_open_session(db_session)
+    _seed_payment_methods(db_session)
+    cash_def = (
+        db_session.query(PaymentMethodDefinition)
+        .filter(PaymentMethodDefinition.code == "cash")
+        .first()
+    )
+    check_def = (
+        db_session.query(PaymentMethodDefinition)
+        .filter(PaymentMethodDefinition.code == "check")
+        .first()
+    )
+    card_def = (
+        db_session.query(PaymentMethodDefinition)
+        .filter(PaymentMethodDefinition.code == "card")
+        .first()
+    )
+    assert cash_def is not None and check_def is not None and card_def is not None
+
+    sale = Sale(
+        cash_session_id=session.id,
+        operator_id=super_admin.id,
+        total_amount=15.0,
+        donation=2.0,
+        payment_method=PaymentMethod.CASH,
+        sale_date=datetime.now(timezone.utc),
+        lifecycle_status=SaleLifecycleStatus.COMPLETED,
+    )
+    db_session.add(sale)
+    db_session.flush()
+    db_session.add(
+        SaleItem(
+            sale_id=sale.id,
+            category="EEE-1",
+            quantity=1,
+            weight=1.0,
+            unit_price=13.0,
+            total_price=13.0,
+        )
+    )
+    db_session.add_all(
+        [
+            PaymentTransaction(
+                sale_id=sale.id,
+                payment_method=PaymentMethod.CASH,
+                payment_method_id=cash_def.id,
+                nature=PaymentTransactionNature.SALE_PAYMENT,
+                direction=PaymentTransactionDirection.INFLOW,
+                amount=7.0,
+            ),
+            PaymentTransaction(
+                sale_id=sale.id,
+                payment_method=PaymentMethod.CHECK,
+                payment_method_id=check_def.id,
+                nature=PaymentTransactionNature.SALE_PAYMENT,
+                direction=PaymentTransactionDirection.INFLOW,
+                amount=4.0,
+            ),
+            PaymentTransaction(
+                sale_id=sale.id,
+                payment_method=PaymentMethod.CARD,
+                payment_method_id=card_def.id,
+                nature=PaymentTransactionNature.SALE_PAYMENT,
+                direction=PaymentTransactionDirection.INFLOW,
+                amount=4.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    payload = SaleCorrectionFinalizeFieldsPayload(
+        kind="finalize_fields",
+        total_amount=15.0,
+        donation=2.0,
+        payments=[
+            PaymentCreate(payment_method="cash", amount=8.0),
+            PaymentCreate(payment_method="check", amount=4.0),
+            PaymentCreate(payment_method="card", amount=3.0),
+        ],
+        reason="Répartition caisse corrigée",
+    )
+    SaleService(db_session).apply_sensitive_sale_correction(str(sale.id), payload, super_admin)
+    db_session.expire_all()
+
+    rows = (
+        db_session.query(PaymentTransaction)
+        .filter(
+            PaymentTransaction.sale_id == sale.id,
+            PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+        )
+        .order_by(PaymentTransaction.created_at.asc())
+        .all()
+    )
+    assert len(rows) == 3
+    assert [float(r.amount) for r in rows] == [8.0, 4.0, 3.0]
+    assert rows[0].payment_method == PaymentMethod.CASH
 
 
 def test_sale_correction_payment_method_rejects_multiple_payment_rows(db_session):

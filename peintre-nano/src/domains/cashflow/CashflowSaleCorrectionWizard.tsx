@@ -1,10 +1,22 @@
-import { Alert, Button, Loader, NativeSelect, PasswordInput, Text, TextInput } from '@mantine/core';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  Alert,
+  Button,
+  Group,
+  Loader,
+  NativeSelect,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import {
   getSale,
   patchSaleSensitiveCorrection,
+  splitSalePaymentsByNature,
   type SaleCorrectionRequestBody,
+  type SalePaymentMethodOption,
   type SaleResponseV1,
 } from '../../api/sales-client';
 import { PERMISSION_CASHFLOW_SALE_CORRECT } from '../../app/auth/default-demo-auth-adapter';
@@ -21,6 +33,12 @@ import classes from './CashflowSaleCorrectionWizard.module.css';
 type EntryBlock =
   | { readonly blocked: false }
   | { readonly blocked: true; readonly title: string; readonly body: string };
+
+type PaymentDraftRow = {
+  readonly localId: string;
+  payment_method: string;
+  amountStr: string;
+};
 
 function useSaleCorrectionEntryBlock(): EntryBlock {
   const envelope = useContextEnvelope();
@@ -67,6 +85,86 @@ const KIND_OPTIONS = [
   { value: 'finalize_fields', label: 'Champs de finalisation (liste fermée)' },
 ] as const;
 
+const PAY_ARBITRAGE_EPS = 1e-3;
+
+function newLocalId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `pay-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function snapshotPaymentDraftRows(rows: readonly PaymentDraftRow[]): string {
+  return JSON.stringify(
+    rows.map((r) => ({ pm: r.payment_method.trim(), a: r.amountStr.trim() })),
+  );
+}
+
+function parseDraftPaymentLines(
+  rows: readonly PaymentDraftRow[],
+  pmOpts: readonly SalePaymentMethodOption[],
+): { ok: true; lines: Array<{ payment_method: string; amount: number }> } | { ok: false; message: string } {
+  const validCodes = new Set(pmOpts.map((o) => o.code));
+  const lines: Array<{ payment_method: string; amount: number }> = [];
+  for (const r of rows) {
+    const pm = r.payment_method.trim();
+    const n = parseFloat(r.amountStr.replace(',', '.'));
+    if (!pm) {
+      return {
+        ok: false,
+        message: 'Chaque ligne doit avoir un moyen de paiement (référentiel actif).',
+      };
+    }
+    if (pm === 'free') {
+      return {
+        ok: false,
+        message:
+          'Le mode gratuit ne peut pas figurer dans une ligne de paiement explicite — utilisez le ticket sans lignes financières.',
+      };
+    }
+    if (!validCodes.has(pm)) {
+      return { ok: false, message: 'Moyen de paiement invalide sur une ligne par rapport au référentiel actif.' };
+    }
+    if (Number.isNaN(n) || n <= 0) {
+      return { ok: false, message: 'Montant invalide sur une ligne (nombre > 0 attendu).' };
+    }
+    lines.push({ payment_method: pm, amount: n });
+  }
+  return { ok: true, lines };
+}
+
+function validatePartitionVsTotal22_4(
+  totalNum: number,
+  saleLines: ReadonlyArray<{ amount: number }>,
+  surplusLines: ReadonlyArray<{ amount: number }>,
+): string | null {
+  const sumSale = saleLines.reduce((s, x) => s + x.amount, 0);
+  const sumSurplus = surplusLines.reduce((s, x) => s + x.amount, 0);
+  if (totalNum <= PAY_ARBITRAGE_EPS) {
+    if (sumSale > PAY_ARBITRAGE_EPS || sumSurplus > PAY_ARBITRAGE_EPS) {
+      return 'Pour un total nul, aucune ligne financière ne doit rester.';
+    }
+    return null;
+  }
+  if (sumSale > totalNum + PAY_ARBITRAGE_EPS) {
+    return 'La somme des lignes de règlement dépasse le total encaissé — utilisez aussi des lignes « don (surplus) » si besoin.';
+  }
+  if (sumSale + sumSurplus < totalNum - PAY_ARBITRAGE_EPS) {
+    return 'Encaissement insuffisant : les lignes de règlement + don (surplus) doivent couvrir le total.';
+  }
+  return null;
+}
+
+function rowsFromSplit(
+  rows: ReadonlyArray<{ payment_method: string; amount: number }>,
+): PaymentDraftRow[] {
+  return rows.map((r) => ({
+    localId: newLocalId(),
+    payment_method: r.payment_method,
+    amountStr: String(r.amount),
+  }));
+}
+
 /**
  * Story 6.8 — correction bornée : chargement ticket, saisie whitelist + motif + PIN step-up.
  * Permissions : enveloppe uniquement (`caisse.sale_correct`) ; pas de seconde vérité métier locale.
@@ -78,12 +176,8 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const auth = useAuthPort();
   const { options: pmOpts, loading: pmLoading, error: pmError } = useCaissePaymentMethodOptions(auth);
   const paymentMethodsReady = !pmLoading && pmError === null && pmOpts.length > 0;
-  const paymentCorrectionSelectData = useMemo(
-    () => [
-      { value: '', label: '(inchangé)' },
-      ...pmOpts.map((o) => ({ value: o.code, label: o.label })),
-      { value: 'free', label: DEFAULT_FREE_PAYMENT_LABEL },
-    ],
+  const paymentRowSelectData = useMemo(
+    () => pmOpts.map((o) => ({ value: o.code, label: o.label })),
     [pmOpts],
   );
   const draft = useCashflowDraft();
@@ -99,7 +193,14 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [saleDateLocal, setSaleDateLocal] = useState('');
   const [donationStr, setDonationStr] = useState('');
   const [totalStr, setTotalStr] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [draftSalePayments, setDraftSalePayments] = useState<PaymentDraftRow[]>([]);
+  const [draftDonationSurplus, setDraftDonationSurplus] = useState<PaymentDraftRow[]>([]);
+  const initialSaleSnapRef = useRef('');
+  const initialSurplusSnapRef = useRef('');
+  const initialTotalNumRef = useRef<number | null>(null);
+  const initialSalePaymentLineCountRef = useRef(0);
+  const [legacyPaymentMethodDisplay, setLegacyPaymentMethodDisplay] = useState('');
+
   const [note, setNote] = useState('');
   const [initialNote, setInitialNote] = useState<string | null>(null);
   const [reason, setReason] = useState('');
@@ -108,27 +209,34 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
-  const validPaymentCorrectionValues = useMemo(() => {
-    const s = new Set(['', 'free']);
-    for (const o of pmOpts) s.add(o.code);
-    return s;
-  }, [pmOpts]);
-
-  useEffect(() => {
-    if (kind !== 'finalize_fields') return;
-    setPaymentMethod((prev) => (validPaymentCorrectionValues.has(prev) ? prev : ''));
-  }, [kind, validPaymentCorrectionValues]);
+  const partitionDirty =
+    snapshotPaymentDraftRows(draftSalePayments) !== initialSaleSnapRef.current ||
+    snapshotPaymentDraftRows(draftDonationSurplus) !== initialSurplusSnapRef.current;
 
   const applyLoadedSale = useCallback((sale: SaleResponseV1) => {
-      setLoadedSaleId(sale.id);
-      setTotalStr(String(sale.total_amount ?? ''));
-      setDonationStr(
-        sale.donation !== undefined && sale.donation !== null ? String(sale.donation) : '',
-      );
-      const n0 = sale.note ?? '';
-      setInitialNote(n0);
-      setNote(n0);
-      setStep(2);
+    setLoadedSaleId(sale.id);
+    setTotalStr(String(sale.total_amount ?? ''));
+    initialTotalNumRef.current =
+      typeof sale.total_amount === 'number' && Number.isFinite(sale.total_amount)
+        ? sale.total_amount
+        : null;
+    setDonationStr(
+      sale.donation !== undefined && sale.donation !== null ? String(sale.donation) : '',
+    );
+    const n0 = sale.note ?? '';
+    setInitialNote(n0);
+    setNote(n0);
+    const split = splitSalePaymentsByNature(sale.payments);
+    initialSalePaymentLineCountRef.current = split.sale_payment.length;
+    const pmAgg = typeof sale.payment_method === 'string' ? sale.payment_method.trim() : '';
+    setLegacyPaymentMethodDisplay(pmAgg || '—');
+    const saleRows = rowsFromSplit(split.sale_payment);
+    const surplusRows = rowsFromSplit(split.donation_surplus);
+    setDraftSalePayments(saleRows);
+    setDraftDonationSurplus(surplusRows);
+    initialSaleSnapRef.current = snapshotPaymentDraftRows(saleRows);
+    initialSurplusSnapRef.current = snapshotPaymentDraftRows(surplusRows);
+    setStep(2);
   }, []);
 
   const loadSaleById = useCallback(
@@ -176,7 +284,12 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     setSaleDateLocal('');
     setDonationStr('');
     setTotalStr('');
-    setPaymentMethod('');
+    setDraftSalePayments([]);
+    setDraftDonationSurplus([]);
+    initialSaleSnapRef.current = '';
+    initialSurplusSnapRef.current = '';
+    initialTotalNumRef.current = null;
+    initialSalePaymentLineCountRef.current = 0;
     setNote('');
     setInitialNote(null);
     setReason('');
@@ -198,6 +311,34 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
 
   const onLoadSale = async () => {
     await loadSaleById(saleIdInput);
+  };
+
+  const addSalePaymentRow = () => {
+    setDraftSalePayments((prev) => [...prev, { localId: newLocalId(), payment_method: '', amountStr: '' }]);
+  };
+
+  const addSurplusRow = () => {
+    setDraftDonationSurplus((prev) => [...prev, { localId: newLocalId(), payment_method: '', amountStr: '' }]);
+  };
+
+  const removeSalePaymentRow = (localId: string) => {
+    setDraftSalePayments((prev) => prev.filter((r) => r.localId !== localId));
+  };
+
+  const removeSurplusRow = (localId: string) => {
+    setDraftDonationSurplus((prev) => prev.filter((r) => r.localId !== localId));
+  };
+
+  const updateSalePaymentRow = (localId: string, patch: Partial<PaymentDraftRow>) => {
+    setDraftSalePayments((prev) =>
+      prev.map((r) => (r.localId === localId ? { ...r, ...patch } : r)),
+    );
+  };
+
+  const updateSurplusRow = (localId: string, patch: Partial<PaymentDraftRow>) => {
+    setDraftDonationSurplus((prev) =>
+      prev.map((r) => (r.localId === localId ? { ...r, ...patch } : r)),
+    );
   };
 
   const buildBody = (): SaleCorrectionRequestBody | null => {
@@ -234,21 +375,50 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
       payload.total_amount = n;
       any = true;
     }
-    if (paymentMethod.trim() !== '') {
-      if (paymentMethod !== 'free' && !paymentMethodsReady) {
+
+    if (partitionDirty) {
+      if (!paymentMethodsReady) {
         setError({
           kind: 'local',
-          message: 'Moyens de paiement indisponibles — impossible de modifier le mode de paiement pour l’instant.',
+          message: 'Moyens de paiement indisponibles — impossible de soumettre une répartition pour l’instant.',
         });
         return null;
       }
-      if (paymentMethod !== 'free' && paymentMethod !== '' && !pmOpts.some((o) => o.code === paymentMethod)) {
-        setError({ kind: 'local', message: 'Mode de paiement invalide par rapport au référentiel actif.' });
+      const saleParsed = parseDraftPaymentLines(draftSalePayments, pmOpts);
+      if (!saleParsed.ok) {
+        setError({ kind: 'local', message: saleParsed.message });
         return null;
       }
-      payload.payment_method = paymentMethod;
+      const surplusParsed = parseDraftPaymentLines(draftDonationSurplus, pmOpts);
+      if (!surplusParsed.ok) {
+        setError({ kind: 'local', message: surplusParsed.message });
+        return null;
+      }
+      payload.payments = saleParsed.lines;
+      payload.donation_surplus = surplusParsed.lines;
+      const totalNum = parseFloat(totalStr.replace(',', '.'));
+      if (!Number.isNaN(totalNum)) {
+        const arb = validatePartitionVsTotal22_4(totalNum, saleParsed.lines, surplusParsed.lines);
+        if (arb) {
+          setError({ kind: 'local', message: arb });
+          return null;
+        }
+      }
       any = true;
+    } else if (totalStr.trim() !== '' && initialSalePaymentLineCountRef.current > 1) {
+      const totalNum = parseFloat(totalStr.replace(',', '.'));
+      if (!Number.isNaN(totalNum) && initialTotalNumRef.current !== null) {
+        if (Math.abs(totalNum - initialTotalNumRef.current) > PAY_ARBITRAGE_EPS) {
+          setError({
+            kind: 'local',
+            message:
+              'Ce ticket a plusieurs lignes de règlement : modifiez les montants dans la grille ou envoyez une répartition explicite.',
+          });
+          return null;
+        }
+      }
     }
+
     if (initialNote !== null && note !== initialNote) {
       payload.note = note;
       any = true;
@@ -285,6 +455,29 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
       setBusy(false);
     }
   };
+
+  const saleLinesSumPreview = useMemo(() => {
+    let s = 0;
+    for (const r of draftSalePayments) {
+      const n = parseFloat(r.amountStr.replace(',', '.'));
+      if (Number.isFinite(n)) s += n;
+    }
+    return s;
+  }, [draftSalePayments]);
+
+  const surplusLinesSumPreview = useMemo(() => {
+    let s = 0;
+    for (const r of draftDonationSurplus) {
+      const n = parseFloat(r.amountStr.replace(',', '.'));
+      if (Number.isFinite(n)) s += n;
+    }
+    return s;
+  }, [draftDonationSurplus]);
+
+  const totalPreviewNum = useMemo(() => {
+    const n = parseFloat(totalStr.replace(',', '.'));
+    return Number.isFinite(n) ? n : Number.NaN;
+  }, [totalStr]);
 
   return (
     <div className={classes.step} data-testid="cashflow-sale-correction-wizard">
@@ -373,14 +566,116 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                 onChange={(e) => setTotalStr(e.currentTarget.value)}
                 data-testid="cashflow-sale-correction-total"
               />
-              <NativeSelect
-                label="Mode de paiement"
-                data={paymentCorrectionSelectData}
-                value={validPaymentCorrectionValues.has(paymentMethod) ? paymentMethod : ''}
-                onChange={(e) => setPaymentMethod(e.currentTarget.value)}
-                disabled={pmLoading || stale}
-                data-testid="cashflow-sale-correction-payment"
-              />
+              <Stack gap="xs" data-testid="cashflow-sale-correction-payment-grids">
+                <Text size="sm" fw={600}>
+                  Règlement (lignes encaissement)
+                </Text>
+                {draftSalePayments.length === 0 ? (
+                  <Alert color="gray" variant="light">
+                    <Text size="sm">
+                      Aucune ligne de règlement enregistrée sur ce ticket — la correction du total encaissé reste
+                      impossible côté serveur tant qu’aucune ligne journal n’existe (comportement Story 6.8). Vous
+                      pouvez ajouter des lignes ci-dessous pour envoyer une répartition explicite.
+                    </Text>
+                  </Alert>
+                ) : null}
+                {draftSalePayments.map((row, idx) => (
+                  <Group key={row.localId} gap="xs" wrap="wrap" align="flex-end">
+                    <NativeSelect
+                      label={idx === 0 ? 'Moyen' : undefined}
+                      data={paymentRowSelectData}
+                      value={row.payment_method}
+                      onChange={(e) =>
+                        updateSalePaymentRow(row.localId, { payment_method: e.currentTarget.value })
+                      }
+                      disabled={pmLoading || stale}
+                      data-testid={`cashflow-sale-correction-payment-row-${idx}`}
+                    />
+                    <TextInput
+                      label={idx === 0 ? 'Montant' : undefined}
+                      value={row.amountStr}
+                      onChange={(e) => updateSalePaymentRow(row.localId, { amountStr: e.currentTarget.value })}
+                      data-testid={`cashflow-sale-correction-payment-amount-${idx}`}
+                    />
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      color="red"
+                      onClick={() => removeSalePaymentRow(row.localId)}
+                      data-testid={`cashflow-sale-correction-payment-remove-${idx}`}
+                    >
+                      Retirer
+                    </Button>
+                  </Group>
+                ))}
+                <Group>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={() => addSalePaymentRow()}
+                    disabled={stale || !paymentMethodsReady}
+                    data-testid="cashflow-sale-correction-payment-add"
+                  >
+                    Ajouter une ligne de règlement
+                  </Button>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  Somme règlement saisie : {Number.isFinite(saleLinesSumPreview) ? saleLinesSumPreview.toFixed(2) : '—'}
+                </Text>
+
+                <Text size="sm" fw={600} mt="md">
+                  Don en surplus (hors règlement), le cas échéant
+                </Text>
+                {draftDonationSurplus.map((row, idx) => (
+                  <Group key={row.localId} gap="xs" wrap="wrap" align="flex-end">
+                    <NativeSelect
+                      label={idx === 0 ? 'Moyen' : undefined}
+                      data={paymentRowSelectData}
+                      value={row.payment_method}
+                      onChange={(e) =>
+                        updateSurplusRow(row.localId, { payment_method: e.currentTarget.value })
+                      }
+                      disabled={pmLoading || stale}
+                      data-testid={`cashflow-sale-correction-surplus-row-${idx}`}
+                    />
+                    <TextInput
+                      label={idx === 0 ? 'Montant' : undefined}
+                      value={row.amountStr}
+                      onChange={(e) => updateSurplusRow(row.localId, { amountStr: e.currentTarget.value })}
+                      data-testid={`cashflow-sale-correction-surplus-amount-${idx}`}
+                    />
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      color="red"
+                      onClick={() => removeSurplusRow(row.localId)}
+                      data-testid={`cashflow-sale-correction-surplus-remove-${idx}`}
+                    >
+                      Retirer
+                    </Button>
+                  </Group>
+                ))}
+                <Group>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={() => addSurplusRow()}
+                    disabled={stale || !paymentMethodsReady}
+                    data-testid="cashflow-sale-correction-surplus-add"
+                  >
+                    Ajouter une ligne de don (surplus)
+                  </Button>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  Somme don surplus :{' '}
+                  {Number.isFinite(surplusLinesSumPreview) ? surplusLinesSumPreview.toFixed(2) : '—'} — couverture vs
+                  total :{' '}
+                  {!Number.isNaN(totalPreviewNum)
+                    ? (saleLinesSumPreview + surplusLinesSumPreview).toFixed(2)
+                    : '—'}{' '}
+                  / {Number.isNaN(totalPreviewNum) ? '—' : totalPreviewNum.toFixed(2)}
+                </Text>
+              </Stack>
               {pmLoading ? (
                 <Text size="sm" c="dimmed" data-testid="cashflow-sale-correction-pm-loading">
                   Chargement des moyens de paiement…
@@ -391,6 +686,12 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                   {pmError}
                 </Text>
               ) : null}
+              <Text size="xs" c="dimmed">
+                Champ legacy « payment_method » sur le ticket :{' '}
+                <code style={{ whiteSpace: 'nowrap' }}>{legacyPaymentMethodDisplay}</code> — les lignes ci-dessus
+                matérialisent le journal réel ; le mode {DEFAULT_FREE_PAYMENT_LABEL} ne doit pas apparaître dans des
+                lignes explicites.
+              </Text>
               <TextInput
                 label="Note ticket (modifier pour envoyer une correction ; laisser inchangé sinon)"
                 value={note}

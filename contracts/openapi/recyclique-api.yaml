@@ -11298,6 +11298,20 @@ components:
           type: string
           nullable: true
           description: Enum alignée sur le modèle Sale (ex. cash, card, check, free).
+        payments:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/PaymentCreateV1"
+          description: |
+            Remplace intégralement les lignes journal ``sale_payment``. Obligatoire pour reconcilier un total ou des moyens
+            si le ticket comporte plusieurs lignes de règlement ou des lignes ``donation_surplus`` (Story 6.8 étendue).
+        donation_surplus:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/PaymentCreateV1"
+          description: Remplace intégralement les lignes journal ``donation_surplus`` (Story 22.4).
         note:
           type: string
           nullable: true
@@ -11307,7 +11321,8 @@ components:
           maxLength: 2000
           description: Motif obligatoire (audit).
       description: |
-        Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note`` doit être présent (validation serveur).
+        Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note``, ``payments``, ``donation_surplus``
+        doit être présent (validation serveur).
       additionalProperties: false
     SaleCorrectionCreateV1:
       oneOf:

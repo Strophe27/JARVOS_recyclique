@@ -93,6 +93,48 @@ export type SaleItemResponseV1 = SaleItemCreateBody & {
 };
 
 /** Aligné sur OpenAPI `SaleResponseV1` (sous-ensemble consommé par le widget ticket). */
+/** Ligne journal GET /v1/sales/{id} — sous-ensemble stable pour UI correction (Story 6.8). */
+export type SalePaymentJournalRowV1 = {
+  readonly id?: string;
+  readonly payment_method?: string | null;
+  readonly payment_method_code?: string | null;
+  readonly amount?: number;
+  readonly nature?: string | null;
+};
+
+export type SalePaymentSplitV1 = {
+  readonly sale_payment: ReadonlyArray<{ readonly payment_method: string; readonly amount: number }>;
+  readonly donation_surplus: ReadonlyArray<{ readonly payment_method: string; readonly amount: number }>;
+};
+
+/**
+ * Scinde ``payments[]`` du ticket selon ``nature`` (sale_payment vs donation_surplus).
+ * Lignes invalides ignorées ; codes préfèrent ``payment_method_code`` puis ``payment_method``.
+ */
+export function splitSalePaymentsByNature(raw: unknown): SalePaymentSplitV1 {
+  const sale_payment: { payment_method: string; amount: number }[] = [];
+  const donation_surplus: { payment_method: string; amount: number }[] = [];
+  if (!Array.isArray(raw)) {
+    return { sale_payment, donation_surplus };
+  }
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue;
+    const o = row as Record<string, unknown>;
+    const nature = typeof o.nature === 'string' ? o.nature.trim() : '';
+    const pmRaw =
+      (typeof o.payment_method_code === 'string' && o.payment_method_code.trim()) ||
+      (typeof o.payment_method === 'string' && o.payment_method.trim()) ||
+      '';
+    const amt = o.amount;
+    const amount = typeof amt === 'number' && Number.isFinite(amt) ? amt : Number.NaN;
+    if (!pmRaw || !Number.isFinite(amount)) continue;
+    const line = { payment_method: pmRaw.trim(), amount };
+    if (nature === 'donation_surplus') donation_surplus.push(line);
+    else sale_payment.push(line);
+  }
+  return { sale_payment, donation_surplus };
+}
+
 export type SaleResponseV1 = {
   id: string;
   cash_session_id: string;
@@ -105,7 +147,7 @@ export type SaleResponseV1 = {
   note?: string | null;
   sale_date?: string | null;
   items: SaleItemResponseV1[];
-  payments?: unknown[];
+  payments?: SalePaymentJournalRowV1[] | unknown[];
   special_encaissement_kind?: SpecialEncaissementKindV1 | null;
   social_action_kind?: SocialActionKindV1 | null;
   adherent_reference?: string | null;
@@ -752,6 +794,10 @@ export type SaleCorrectionRequestBody =
       donation?: number | null;
       total_amount?: number | null;
       payment_method?: string | null;
+      /** Remplace les lignes ``sale_payment`` (multi-moyens). */
+      payments?: Array<{ payment_method: string; amount: number }>;
+      /** Remplace les lignes ``donation_surplus``. */
+      donation_surplus?: Array<{ payment_method: string; amount: number }>;
       note?: string | null;
     };
 

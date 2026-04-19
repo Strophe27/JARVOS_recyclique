@@ -20293,6 +20293,34 @@
             ],
             "title": "Payment Method"
           },
+          "payments": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PaymentCreate"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payments"
+          },
+          "donation_surplus": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PaymentCreate"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Donation Surplus"
+          },
           "note": {
             "anyOf": [
               {

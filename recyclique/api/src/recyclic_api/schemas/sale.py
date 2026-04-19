@@ -387,6 +387,9 @@ class SaleCorrectionFinalizeFieldsPayload(BaseModel):
     payment_method: Optional[str] = None
     note: Optional[str] = Field(None, max_length=10000)
     reason: str = Field(min_length=1, max_length=2000)
+    # Remplacement explicite des lignes journal (multi-moyens / Story 22.4) — même granularité que finalize-held.
+    payments: Optional[List[PaymentCreate]] = None
+    donation_surplus: Optional[List[PaymentCreate]] = None
 
     @field_validator("payment_method", mode="before")
     @classmethod
@@ -402,9 +405,11 @@ class SaleCorrectionFinalizeFieldsPayload(BaseModel):
             and self.total_amount is None
             and self.payment_method is None
             and self.note is None
+            and self.payments is None
+            and self.donation_surplus is None
         ):
             raise ValueError(
-                "Au moins un champ parmi donation, total_amount, payment_method, note est requis."
+                "Au moins un champ parmi donation, total_amount, payment_method, note, payments, donation_surplus est requis."
             )
         return self
 
