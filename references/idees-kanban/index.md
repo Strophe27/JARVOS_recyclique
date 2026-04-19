@@ -2,6 +2,8 @@
 
 Une ligne par idée. Mise à jour par le skill `idees-kanban` à chaque création, note, transition ou archivage.
 
+**Chantier prioritaire (backend — ne pas noyer)** : refactor et garde-fous `recyclique/api` d’après l’audit brownfield — fiche [**a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md**](a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md) ; artefact source [`references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](../artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md).
+
 **Point de situation (photographies par stade, inventaire)** : voir [point-situation.md](point-situation.md) — liens vers les artefacts datés dans `references/artefacts/`.
 
 | Fichier | Titre | Stade | Créé | Dernière MAJ |
@@ -28,3 +30,4 @@ Une ligne par idée. Mise à jour par le skill `idees-kanban` à chaque créatio
 | 2026-04-18_durcissement-sync-paheko-outbox-post-audit.md | Durcissement sync Paheko outbox (post-audit Red Team, seeds BMAD, gaps tests) | a-faire | 2026-04-18 | 2026-04-18 |
 | 2026-03-01_workflow-evenements-caisse-recyclique-paheko.md | Workflow evenements caisse RecyClique vers Paheko | a-faire | 2026-03-01 | 2026-03-01 |
 | 2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md | Aligner brownfield vs PRD architecture permissions multisite — recherche / correct course BMAD | a-faire | 2026-04-19 | 2026-04-19 |
+| 2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md | **PRIORITAIRE** — Refactor API Recyclique (audit brownfield F1–F8, backlog P0–P2, checklist PR) | a-faire | 2026-04-19 | 2026-04-19 |

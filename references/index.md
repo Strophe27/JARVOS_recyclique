@@ -67,6 +67,9 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`consolidation-1.4.5/`** — Référentiel pour l’audit brownfield et l’assainissement de la base active `recyclique-1.4.4/`. Croiser avec **migration-paheko/** pour l’interop Paheko. Détail : **consolidation-1.4.5/index.md**.
   _(Charger : audit qualité/cohérence, priorisation technique, assainissement brownfield, DB/migrations locales.)_
 
+- **`config-modules-site-id/`** — Pack normatif **configuration modules** : JSON serveur scoping **`site_id`**, registre **`module_key`**, CREOS comme adressage, livrable QA2, **ADR-001**, OpenAPI brouillon `GET`/`PATCH` `/v1/sites/{site_id}/module-config/{module_key}`, schémas JSON (pilote bandeau KPI). Détail : **config-modules-site-id/index.md**.
+  _(Charger : persistance transverse SuperAdmin / Peintre, sécu multi-tenant, story contrat API ou fusion OpenAPI.)_
+
 - **`ecosysteme/`** — Références JARVOS_ecosysteme et JARVOS_fondations. Confidentiel. Gitignore. Détail : **ecosysteme/index.md**. Les documents écosystème sont **références** (liens, index), jamais **copies** ailleurs.
   _(Charger : sur demande explicite uniquement.)_
 

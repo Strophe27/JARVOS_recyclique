@@ -21,15 +21,16 @@ Ce document du 2026-04-19 sert à **réaligner le comptage**, documenter le **de
 
 | Élément | Détail |
 |---------|--------|
-| **Nouvelle carte** | `references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md` — aligner brownfield vs **PRD** multisite / permissions / kiosques ([`references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`](../vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md)) ; chemin BMAD (recherche technique, `correct course`, epics). |
-| **Stade concerné** | **a-faire** (5 cartes dans ce stade au lieu de 4). |
-| **Inventaire** | **22** fiches `.md` hors `index.md` (voir tableau ci-dessous). |
+| **Nouvelle carte (1)** | `references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md` — aligner brownfield vs **PRD** multisite / permissions / kiosques ([`references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`](../vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md)) ; chemin BMAD (recherche technique, `correct course`, epics). |
+| **Nouvelle carte (2)** | `references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` — refactor **`recyclique/api`** selon [`2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md) ; repère prioritaire dans [`references/idees-kanban/index.md`](../idees-kanban/index.md). |
+| **Stade concerné** | **a-faire** : **6** cartes (ajout alignement PRD + chantier API par rapport au stock 2026-04-18). |
+| **Inventaire** | **23** fiches idée `.md` (hors `index.md` et `point-situation.md` — voir tableau ci-dessous). |
 
 Les autres stades (à conceptualiser, à rechercher, à creuser) sont **supposés inchangés** dans leur analyse qualitative depuis le 2026-04-18 ; rouvrir une session orchestrée si une fiche a été substantiellement modifiée depuis.
 
 ---
 
-## Contrôle d’exhaustivité (22 cartes — 2026-04-19)
+## Contrôle d’exhaustivité (23 cartes — 2026-04-19)
 
 | # | Fichier | Stade (dossier) |
 |---|---------|-----------------|
@@ -55,16 +56,18 @@ Les autres stades (à conceptualiser, à rechercher, à creuser) sont **supposé
 | 20 | `2026-03-01_workflow-evenements-caisse-recyclique-paheko.md` | a-faire |
 | 21 | `2026-04-18_chantier-operations-speciales-caisse-prd-v1-1.md` | a-faire |
 | 22 | `2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md` | a-faire |
+| 23 | `2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` | a-faire |
 
-**Couverture annoncée : 22/22** — chaque carte listée dans [`references/idees-kanban/index.md`](../idees-kanban/index.md) correspond à un fichier présent sur disque dans un des quatre stades actifs (`archive/` toujours hors périmètre court du point de situation).
+**Couverture annoncée : 23/23** — chaque carte listée dans [`references/idees-kanban/index.md`](../idees-kanban/index.md) correspond à un fichier présent sur disque dans un des quatre stades actifs (`archive/` toujours hors périmètre court du point de situation).
 
 ---
 
-## Stade — À faire (complément pour la carte n°22)
+## Stade — À faire (complément pour les cartes n°22 et n°23)
 
 | Fichier | Objectif court | Notes |
 |---------|----------------|-------|
 | `2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md` | Convergence brownfield ↔ PRD v2 (multisites, kiosques PWA, PIN, Paheko) | Livrable typique : artefact `references/artefacts/` type tableau PRD § → état repo → gap ; en amont : **`bmad-technical-research`**, **`bmad-correct-course`** si divergence epic ; voir fiche. |
+| `2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` | Refactor / garde-fous `recyclique/api` (findings F1–F8, backlog P0–P2) | Source : artefact **`2026-04-19_01_…`** ; distinct de l’alignement **PRD produit** (carte n°22). |
 
 *(Les lignes « à faire » 18–21 restent décrites dans [`2026-04-18_02_…`](2026-04-18_02_point-situation-kanban-idees-jarvos.md) § Stade — À faire.)*
 

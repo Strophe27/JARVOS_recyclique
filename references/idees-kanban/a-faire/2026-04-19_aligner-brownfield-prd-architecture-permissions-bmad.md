@@ -26,3 +26,7 @@ Produire une base décisionnelle avant gros découpage epic/story : où le brown
 ### Critère de sortie suggéré
 
 Document court ou artefact daté dans `references/artefacts/` : tableau **PRD § → état repo → gap → priorité**, avec recommandation « poursuivre tel epic » ou « ouvrir correct course sur X ».
+
+### Chantier associé (api, non confondre)
+
+L’**alignement produit** s’appuie sur les **artefacts** en général ; l’**exécution** des refactors sur le code `recyclique/api` (F1–F8, P0–P2) est suivi **séparément** : fiche [**2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md**](2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md).
