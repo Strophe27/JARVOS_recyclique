@@ -43,3 +43,26 @@ La spec ne parle **pas** d’une « table » SQL à créer pour fermer ce chanti
 - Inventaire Phase 0 : `references/artefacts/2026-04-18_03_inventaire-qa-parametrage-comptable-superadmin.md`
 - Conversation Cursor (autre session, reprise contexte) : transcript `a1a7bab4-25b5-4e02-9c71-122a87997da4` (mention historique dans l’ancienne version de cette fiche).
 
+---
+
+## 2026-04-19 — Agent (clôture relevé grille + stash)
+
+**Relevé « Résumé des priorités » (spec)** croisé **Peintre (`peintre-nano/`)** et **API (`recyclique/api/`)** — audit délégué lecture seule + contrôles ciblés :
+
+| ID | Décision |
+|----|----------|
+| B1–B3, M1–M4 | Couverts en implémentation (migrations s22_x, services Paheko/clôture, widgets admin). |
+| **M5** | **Option B** livrée (saisie manuelle exercice + textes) ; liste / validation HTTP exercices Paheko = **hors périmètre chantier**, story ultérieure (spec + `PahekoAccountingClient`). |
+| I1–I5 | Couverts (dont migration `7073→707`, UX ordre/suppression/avertissements/tooltips). |
+| **I6** | API `used_in_open_session` + modal branche `warn` dans `AdminAccountingPaymentMethodsWidget.tsx` ; wording peut différer légèrement de la spec mais intention métier alignée. |
+
+**Git stash :** `stash@{0}` (*WIP aide Exercice Paheko + conftest/tests 22.3 & 8.3*) — **non mergé** dans `master` ; optionnel pour raccourcir l’aide terrain ou renforcer les tests. Ne bloque pas la conclusion « grille spec satisfaite sur le dépôt actuel ». Les autres stash (`@{1}`, `@{2}`) sont hors sujet compta.
+
+**Intégrée —** merge historique PR #1 (`1809c6b`) + suivis docs ; dette cognitive « fini ou pas » levée par ce relevé ; suite éventuelle = pop/commit du stash ou nouvelle story M5 API uniquement si produit le demande.
+
+---
+
+## 2026-04-19 — suite (stash appliqué)
+
+Contenu de l’ancien `stash@{0}` **appliqué puis commit** `f0e4368` sur `master` : aide Peintre « Exercice Paheko », surcharges `conftest` (sqlite explicite + seed PostgreSQL Story 22.3), ajustements `test_story_8_3` / `test_story_22_3`. Le stash correspondant a été **droppé** après commit.
+
