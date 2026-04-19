@@ -1,3 +1,4 @@
+# last_updated: 2026-04-20 — story 25-4 CS bmad-create-story (create) : 25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19 backlog → ready-for-dev ; fichier story créé ; epic-25 inchangé in-progress
 # last_updated: 2026-04-20 — story 25-3 Story Runner : 25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride review → done ; politique Epic 25 documentaire : ADR livrée avec `status: proposed` + phrase « ADR proposée — acceptation humaine requise pour implémentation code » (story + trace) ; YAML `last_updated` tracé ; gates git + commit docs
 # last_updated: 2026-04-20 — story 25-3 DS bmad-dev-story : 25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride ready-for-dev → review ; trace ADR complétée ; cases cochées ; ADR 2026-04-20 statut « Proposé » (approbation requise)
 # last_updated: 2026-04-20 — story 25-3 CS bmad-create-story (create) : 25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride backlog → ready-for-dev ; fichier story créé ; epic-25 inchangé in-progress
@@ -275,7 +276,7 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
-last_updated: "2026-04-20" # 25-3 review→done (ADR async Paheko livrée, status proposed + acceptation humaine avant code ; Story Runner) ; 25-2 done ; 25-1 done ; 25-4…25-5 backlog ; gel hors 25-* ; cf. sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
+last_updated: "2026-04-20" # 25-4 ready-for-dev (CS spec multisite/kiosque) ; 25-3 review→done ; 25-2/25-1 done ; 25-5 backlog ; gel hors 25-* ; cf. sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -540,7 +541,7 @@ development_status:
   25-1-cartographier-les-exigences-importees-et-fermer-la-matrice-dalignement-vision-canonique: done
   25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste: done
   25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride: done
-  25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19: backlog
+  25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19: ready-for-dev
   # 25.5 : titre epics.md contient « backlog `25-*` » ; le slug ne peut pas porter le wildcard — le fichier story devra répéter le titre complet.
   25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions: backlog
   epic-25-retrospective: optional
