@@ -143,6 +143,14 @@ describe('E2E — caisse défensive / sync / erreurs (Story 6.9)', () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]),
+        });
+      }
       if (url.includes('/v1/sales/') && method === 'POST') {
         return Promise.resolve({
           ok: false,

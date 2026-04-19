@@ -173,6 +173,14 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]),
+        } as Response);
+      }
       if (url.includes('/v1/cash-sessions/current')) {
         return Promise.resolve({ ok: true, status: 200, text: async () => 'null' } as Response);
       }
@@ -286,6 +294,14 @@ describe('E2E — encaissements spéciaux Story 6.5', () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]),
+        } as Response);
+      }
       if (url.includes('/v1/cash-sessions/current')) {
         return Promise.resolve({ ok: true, status: 200, text: async () => 'null' } as Response);
       }

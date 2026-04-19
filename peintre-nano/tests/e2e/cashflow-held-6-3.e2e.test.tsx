@@ -106,6 +106,15 @@ describe('E2E — ticket en attente (Story 6.3)', () => {
       const url = requestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
 
+      if (method === 'GET' && url.includes('/v1/sales/payment-method-options')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () =>
+            JSON.stringify([{ code: 'cash', label: 'Espèces', kind: 'cash' }]),
+        });
+      }
+
       if (method === 'POST' && url.includes('/v1/sales/hold')) {
         heldList = [heldSaleBody()];
         return Promise.resolve({

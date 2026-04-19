@@ -14,22 +14,19 @@ describe('admin-accounting-expert-client global-accounts', () => {
   });
 
   it('GET global-accounts', async () => {
+    const globalAccountsJson = {
+      default_sales_account: '707',
+      default_donation_account: '756',
+      prior_year_refund_account: '512',
+      cash_journal_code: 'CAISSE',
+      default_entry_label_prefix: 'RCY',
+      updated_at: '2026-04-16T10:00:00.000Z',
+    };
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      text: async () =>
-        JSON.stringify({
-          default_sales_account: '707',
-          default_donation_account: '756',
-          prior_year_refund_account: '512',
-          updated_at: '2026-04-16T10:00:00.000Z',
-        }),
-      json: async () => ({
-        default_sales_account: '707',
-        default_donation_account: '756',
-        prior_year_refund_account: '512',
-        updated_at: '2026-04-16T10:00:00.000Z',
-      }),
+      text: async () => JSON.stringify(globalAccountsJson),
+      json: async () => globalAccountsJson,
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -42,22 +39,19 @@ describe('admin-accounting-expert-client global-accounts', () => {
   });
 
   it('PATCH global-accounts envoie X-Step-Up-Pin', async () => {
+    const globalAccountsJson = {
+      default_sales_account: '707',
+      default_donation_account: '756',
+      prior_year_refund_account: '512',
+      cash_journal_code: 'CAISSE',
+      default_entry_label_prefix: 'RCY',
+      updated_at: '2026-04-16T10:00:00.000Z',
+    };
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      text: async () =>
-        JSON.stringify({
-          default_sales_account: '707',
-          default_donation_account: '756',
-          prior_year_refund_account: '512',
-          updated_at: '2026-04-16T10:00:00.000Z',
-        }),
-      json: async () => ({
-        default_sales_account: '707',
-        default_donation_account: '756',
-        prior_year_refund_account: '512',
-        updated_at: '2026-04-16T10:00:00.000Z',
-      }),
+      text: async () => JSON.stringify(globalAccountsJson),
+      json: async () => globalAccountsJson,
     });
     vi.stubGlobal('fetch', fetchMock);
 
