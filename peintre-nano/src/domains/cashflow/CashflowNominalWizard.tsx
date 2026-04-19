@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Group, NumberInput, Text, TextInput } from '@mantine/core';
+import { Alert, Badge, Button, Group, NumberInput, Text, TextInput, Tooltip } from '@mantine/core';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { type RecycliqueClientFailure, recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import { type CategoryListItem } from '../../api/dashboard-legacy-stats-client';
@@ -1658,6 +1658,34 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
     setActiveIndex((i) => Math.max(i - 1, 0));
   }, []);
 
+  /** Epic 24 — entrée hub opérations spéciales depuis la caisse : session résolue + ticket vide uniquement. */
+  const sessionIdResolvedForSpecialOps = useMemo(() => {
+    const a = draft.cashSessionIdInput.trim();
+    const b = envelope.cashSessionId?.trim() ?? '';
+    const c = serverSession?.id?.trim() ?? '';
+    return a || b || c;
+  }, [draft.cashSessionIdInput, envelope.cashSessionId, serverSession?.id]);
+
+  const canUseSpecialOpsHubNav = useMemo(
+    () =>
+      envelope.permissions.permissionKeys.some((k) =>
+        [
+          PERMISSION_CASHFLOW_NOMINAL,
+          PERMISSION_CASHFLOW_VIRTUAL,
+          PERMISSION_CASHFLOW_DEFERRED,
+        ].includes(k),
+      ),
+    [envelope.permissions.permissionKeys],
+  );
+
+  const ticketViergePourOpsSpeciales =
+    draft.lines.length === 0 && !draft.activeHeldSaleId && draft.totalAmount <= 0;
+
+  const specialOpsNavDepuisCaisseActif =
+    Boolean(sessionIdResolvedForSpecialOps) &&
+    ticketViergePourOpsSpeciales &&
+    draft.widgetDataState !== 'DATA_STALE';
+
   if (entry.blocked) {
     return (
       <div
@@ -1679,16 +1707,46 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
       data-testid="cashflow-nominal-wizard"
     >
       {!kioskSaleSurface ? <CashflowOperationalSyncNotice auth={auth} /> : null}
-      {!kioskSaleSurface && envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+      {!kioskSaleSurface &&
+      (canUseSpecialOpsHubNav ||
+        envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND)) ? (
         <Group justify="flex-end" mb="sm" wrap="wrap">
-          <Button
-            variant="light"
-            size="sm"
-            data-testid="caisse-open-refund"
-            onClick={() => spaNavigateTo('/caisse/remboursement')}
-          >
-            Remboursement
-          </Button>
+          {canUseSpecialOpsHubNav ? (
+            <Tooltip
+              label={
+                !sessionIdResolvedForSpecialOps
+                  ? 'Ouvrez ou résolvez une session caisse pour accéder aux opérations spéciales.'
+                  : draft.widgetDataState === 'DATA_STALE'
+                    ? 'Actualisez les données du ticket (DATA_STALE) avant de poursuivre.'
+                    : !ticketViergePourOpsSpeciales
+                      ? 'Disponible uniquement avec un ticket vide : aucune ligne, pas de reprise « en attente ».'
+                      : ''
+              }
+              disabled={specialOpsNavDepuisCaisseActif}
+            >
+              <span>
+                <Button
+                  variant="light"
+                  size="sm"
+                  data-testid="cashflow-nominal-open-special-ops-hub"
+                  disabled={!specialOpsNavDepuisCaisseActif}
+                  onClick={() => spaNavigateTo('/caisse/operations-speciales')}
+                >
+                  Opérations spéciales
+                </Button>
+              </span>
+            </Tooltip>
+          ) : null}
+          {envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+            <Button
+              variant="light"
+              size="sm"
+              data-testid="caisse-open-refund"
+              onClick={() => spaNavigateTo('/caisse/remboursement')}
+            >
+              Remboursement
+            </Button>
+          ) : null}
         </Group>
       ) : null}
       {draft.operatingMode === 'virtual' && !kioskSaleSurface ? (
@@ -1740,6 +1798,34 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
             serverSession={serverSession}
             sessionKpiLoading={serverSessionLoading}
           />
+          {canUseSpecialOpsHubNav ? (
+            <Group justify="flex-end" mt="xs" wrap="wrap">
+              <Tooltip
+                label={
+                  !sessionIdResolvedForSpecialOps
+                    ? 'Ouvrez ou résolvez une session caisse pour accéder aux opérations spéciales.'
+                    : draft.widgetDataState === 'DATA_STALE'
+                      ? 'Actualisez les données du ticket (DATA_STALE) avant de poursuivre.'
+                      : !ticketViergePourOpsSpeciales
+                        ? 'Disponible uniquement avec un ticket vide : aucune ligne, pas de reprise « en attente ».'
+                        : ''
+                }
+                disabled={specialOpsNavDepuisCaisseActif}
+              >
+                <span>
+                  <Button
+                    variant="light"
+                    size="sm"
+                    data-testid="cashflow-kiosk-open-special-ops-hub"
+                    disabled={!specialOpsNavDepuisCaisseActif}
+                    onClick={() => spaNavigateTo('/caisse/operations-speciales')}
+                  >
+                    Opérations spéciales
+                  </Button>
+                </span>
+              </Tooltip>
+            </Group>
+          ) : null}
         </div>
       ) : null}
       {kioskSaleSurface ? (
