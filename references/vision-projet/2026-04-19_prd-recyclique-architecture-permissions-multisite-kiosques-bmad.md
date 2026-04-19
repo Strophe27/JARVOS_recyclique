@@ -13,6 +13,8 @@ Ces règles sont immuables et priment sur toute feature métier :
 4. **RGPD Offline :** La base adhérents n'est **jamais** synchronisée en clair hors-ligne. L'identification offline se fait uniquement par scan de carte membre (code-barre/QR).
 5. **Asynchronisme Paheko :** Toute écriture vers Paheko (création projet, écriture comptable) passe par une file d'attente résiliente (Redis).
 
+**Alignement brownfield (canon PRD BMAD) :** le dépôt actuel implémente déjà une **outbox transactionnelle en base** pour les écritures Paheko. La formulation **Redis** ci-dessus reste la **cible produit / vision** (worker, retries, observabilité) ; la convergence **Redis (transport)** ↔ **outbox SQL (vérité)** est tracée dans `_bmad-output/planning-artifacts/prd.md` (gouvernance file / outbox) et doit faire l’objet d’**ADR** avant chantier lourd.
+
 ---
 
 ## 3. Modèle de Données & Hiérarchie
@@ -25,6 +27,8 @@ Ces règles sont immuables et priment sur toute feature métier :
 ---
 
 ## 4. Epics, Stories & Acceptance Criteria (AC)
+
+**Numérotation :** les **EPIC 1 à 4** ci-dessous sont la **numérotation vision** de ce document. Elles ne correspondent **pas** aux identifiants `epic-NN` du fichier `_bmad-output/planning-artifacts/epics.md` (ex. Epic 25 Kiosque PWA) ; le pont est assuré par le PRD canon et les artefacts de pilotage (readiness, sprint-change).
 
 ### EPIC 1 : Infrastructure Kiosque & PWA (Offline-First)
 **Objectif :** Déployer les postes de travail de manière sécurisée et résiliente.

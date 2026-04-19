@@ -1,4 +1,4 @@
-# Chantier refactor API Recyclique — audit brownfield 2026-04-19 (F1–F8, P0–P2)
+# Chantier refactor API Recyclique — audit brownfield 2026-04-19 (F1–F11, P0–P2)
 
 ---
 
@@ -14,7 +14,7 @@
 
 - Couvre **toute** la surface backend (`endpoints/`, `services/`, schémas, tests).
 - Des **P0** sont déjà nommés (pytest maître unique, sort de `AdminService`).
-- La **checklist §8** et les **findings F1–F8 §7** servent chaque PR qui touche l’API.
+- La **checklist §8** et les **findings F1–F11 §7** (F9–F11 : contrats d’erreur, Docker/`[dev]`, `collect_ignore` pytest — voir artefact) servent chaque PR qui touche l’API.
 
 ### Ce que ce chantier n’est pas
 

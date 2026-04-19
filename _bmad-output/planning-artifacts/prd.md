@@ -28,13 +28,38 @@ inputDocuments:
   - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-15-caisse-compta-paheko-rebaseline.md
   - references/operations-speciales-recyclique/2026-04-18_prd-recyclique-operations-speciales-sorties-matiere-paheko_v1-1.md
   - references/operations-speciales-recyclique/2026-04-18_prompt-ultra-operationnel-operations-speciales-recyclique_v1-1.md
+  - references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md
+  - _bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md
+  - references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md
+  - references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
+  - references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md
+  - _bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md
+  - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
+  - _bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md
+  - references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md
 source_of_truth: references/vision-projet/2026-03-31_decision-directrice-v2.md
 validationReportUsed: _bmad-output/planning-artifacts/prd-validation-report-2026-04-15-post-edit.md
+validationReportChainNote: >-
+  validationReportUsed reste la preuve BMAD formelle au 2026-04-15. Les revues documentaires
+  ulterieures (gel execution 2026-04-19, readiness NOT READY PWA, passes QA2) sont chainees
+  via editHistory, sprint-change-proposal, implementation-readiness-report et l'artefact
+  references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md — sans invalider
+  la validation deja archivee.
 priorValidationReport: _bmad-output/planning-artifacts/prd-validation-report-2026-04-01.md
 document_date: '2026-03-31'
 # document_date = date de redaction initiale ; revisions ulterieures : lastEdited ci-dessous et editHistory.
-lastEdited: '2026-04-18'
+lastEdited: '2026-04-19'
 editHistory:
+  - date: '2026-04-19'
+    changes: 'Post-QA doc — §2.4 et §17 : aligner libelles readiness PWA (NON PRÊTE tableau vs NOT READY synthese, meme gate).'
+  - date: '2026-04-19'
+    changes: 'Post-QA2 cloture documentaire — inputDocuments readiness + artefact synthese findings ; validationReportChainNote ; encart pilotage gel corps ; §2.4 extension PWA/readiness ; §12.1 rappel gel ; §17 lien NOT READY PWA ; checklist sprint-status commentaires epic-10/13-15 (gel process).'
+  - date: '2026-04-19'
+    changes: 'Correct-course BMAD (delegation utilisateur) — reference sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md : gel execution hors Epic 25, priorite socle PRD vision / brownfield / ADR ; sprint-status epic-25 backlog ; trace inputDocuments.'
+  - date: '2026-04-19'
+    changes: 'Edit-prd post-QA2 orchestrateur — formule unique de precedence ; tableau gouvernance exigences importees ; fiches PIN operateur vs kiosque + lien §11.2 ; statut non canonique file Redis vision ; chemin complet cash-accounting-paheko-canonical-chain ; chantier API + audit en inputDocuments ; clarification references pilotage vs normatif.'
+  - date: '2026-04-19'
+    changes: 'Edit-prd post-recherche technique (alignement brownfield / PRD vision kiosque multisite) — liens canoniques vers PRD vision 2026-04-19, rapport research planning_artifacts, fiche Kanban alignement ; hierarchie documents ; clarification PIN operateur vs cible kiosque ; note sync Paheko outbox vs file Redis ; gate readiness ; chantier refactor API en parallele.'
   - date: '2026-04-18'
     changes: 'Post re-QA2 fermeture — scenarios arbitrage PRD doubles, revue habilitations §6.3, concurrence §9.1, correlation §11.3, perf profil §11.4, gate beta Epic 24 §13.1, harmonisation §16 cloture livrables vs §17, Annexe A perimetre/triggers.'
   - date: '2026-04-18'
@@ -55,10 +80,14 @@ editHistory:
 
 **Auteur :** Strophe  
 **Date de redaction initiale :** 2026-03-31  
-**Derniere revision documentaire :** 2026-04-18 (rattachement operations speciales caisse / Epic 24) ; precedemment 2026-04-15 (delta canonique caisse/compta/Paheko + durcissement post-validation BMAD)  
+**Derniere revision documentaire :** 2026-04-19 (harmonisation libelles readiness PWA §2.4 §17 ; post-QA2 cloture : readiness + artefact synthese findings, gel corps §12.1, validationReportChainNote) ; meme jour (gouvernance importee, PIN dual, ADR sync Redis) ; precedemment 2026-04-18 (operations speciales / Epic 24) ; precedemment 2026-04-15 (delta caisse/compta/Paheko + validation BMAD)  
 **Source de verite de cadrage :** `references/vision-projet/2026-03-31_decision-directrice-v2.md`  
 **Statut :** Actif — base pour architecture et epics  
 **Documentation de travail Peintre (pipeline, extraits, index) :** `references/peintre/index.md` — alignee PRD ; en cas d'ecart, ce PRD et l'architecture BMAD font foi.
+
+**Pilotage BMAD (gel execution, 2026-04-19) :** tant que le **correct course** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` n'est pas leve par decision tracee, l'execution **`bmad-dev-story`** hors stories **25-*** est **gelée** ; le **YAML** `sprint-status.yaml` peut afficher des epics encore `in-progress` pour des raisons de **preuve historique** — le gel est une **regle de process**, pas un retcon des statuts affichés. Voir aussi l'en-tête commenté du YAML et l'artefact `references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md`.
+
+**Precedence documentaire unique (meme ordre partout dans ce depot) :** (1) `references/vision-projet/2026-03-31_decision-directrice-v2.md` = **source amont** de cadrage ; (2) le present `_bmad-output/planning-artifacts/prd.md` = **canonique produit v2** ; (3) PRD **specialises** et dossier **architecture BMAD** = detail de sous-domaine ; (4) `epics.md` / stories = decoupage execution. Le **PRD vision 2026-04-19** (kiosque / multisite / permissions) = **cible complementaire non canonique** tant que les **ADR** du tableau « gouvernance des exigences importees » ne l'absorbent pas — il **informe** backlog et spikes mais **ne prime pas** sur (1) ou (2) sans decision explicite.
 
 **Sous-domaine specialise caisse/compta/Paheko :**
 - **PRD detaille :** `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md`
@@ -69,14 +98,36 @@ editHistory:
 - **Prompt execution (audit P0-P3, livrables, ordre) :** `references/operations-speciales-recyclique/2026-04-18_prompt-ultra-operationnel-operations-speciales-recyclique_v1-1.md`
 - **Pilotage BMAD :** Epic 24 dans `_bmad-output/planning-artifacts/epics.md` ; decisions d'architecture : `_bmad-output/planning-artifacts/architecture/2026-04-18-adr-operations-speciales-caisse-paheko-v1.md`
 
-**Regle de lecture :** le present `prd.md` reste la **source canonique haut niveau** pour le produit v2 ; le PRD specialise caisse/compta/Paheko porte le **detail operatoire** du sous-domaine (regles comptables, exemples d'ecritures, tables et phasage fin) tant qu'il reste aligne sur ce PRD canonique et sur l'architecture active. Le PRD **operations speciales** detaille les parcours terrain et tags ; il **complete** le PRD migration-paheko sans le remplacer. En cas de tension, la hierarchie est : vision directrice > ce prd.md > PRD specialises > epics/stories actifs.
+**Regle de lecture :** le present `prd.md` reste la **source canonique haut niveau** pour le produit v2 ; le PRD specialise caisse/compta/Paheko porte le **detail operatoire** du sous-domaine (regles comptables, exemples d'ecritures, tables et phasage fin) tant qu'il reste aligne sur ce PRD canonique et sur l'architecture active. Le PRD **operations speciales** detaille les parcours terrain et tags ; il **complete** le PRD migration-paheko sans le remplacer. En cas de tension, appliquer la **formule de precedence** en tete de document (decision directrice > ce prd.md > PRD specialises / architecture > epics/stories).
 
-**Coexistence des deux PRD specialises caisse :** le PRD **migration-paheko / caisse-compta** fixe le **cadre comptable**, les mappings et la chaine de synchronisation ; le PRD **operations speciales** fixe les **parcours terrain**, tags et regles metier des sorties matiere. En cas de conflit sur une **regle comptable** ou un **export Paheko**, le PRD migration-paheko et `cash-accounting-paheko-canonical-chain.md` **priment**. En cas de conflit sur un **parcours operateur**, une **regle de tag** ou une **preuve terrain**, le PRD operations speciales et l'ADR `2026-04-18-adr-operations-speciales-caisse-paheko-v1.md` **priment**, dans la limite du cadre comptable precedent.
+**Coexistence des deux PRD specialises caisse :** le PRD **migration-paheko / caisse-compta** fixe le **cadre comptable**, les mappings et la chaine de synchronisation ; le PRD **operations speciales** fixe les **parcours terrain**, tags et regles metier des sorties matiere. En cas de conflit sur une **regle comptable** ou un **export Paheko**, le PRD migration-paheko et `_bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md` **priment**. En cas de conflit sur un **parcours operateur**, une **regle de tag** ou une **preuve terrain**, le PRD operations speciales et l'ADR `2026-04-18-adr-operations-speciales-caisse-paheko-v1.md` **priment**, dans la limite du cadre comptable precedent.
 
 **Scenarios type (non exhaustifs) pour trancher sans ambiguite :**
 
 1. **Tag ou libelle metier « social »** demande sur un ticket alors qu'une ligne d'export Paheko cible un compte incompatible : ajuster le **mapping** ou le **compte** dans le referentiel expert / PRD migration (autorite comptable) ; le libelle terrain suit des que le cadre comptable le permet.
 2. **Preuve terrain obligatoire** (justification, trace) impose un delai ou un statut visible incompatible avec une **ecriture immediate** : la **preuve et la coherence terrain** priment sur la formulation UI, mais la **structure des ecritures** reste celle du snapshot et du builder — en cas de blocage Paheko, etats quarantaine / reprise Epic 8, pas de contournement export parallele.
+
+**PRD vision cible — kiosques PWA, multisite analytique, permissions (BMAD-ready) :**
+
+- **PRD vision (detail epics 1–4, NFR) :** `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`
+- **Recherche technique — ecarts brownfield vs ce PRD (priorites, ADR, QA) :** `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`
+- **Fiche chantier (Kanban) :** `references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md`
+
+**Tableau — gouvernance des exigences importees ou divergentes** (cloture QA2 documentaire 2026-04-19) :
+
+| Sujet | Document source | Statut dans le cycle courant | Source canonique provisoire | Impact epics |
+|-------|-----------------|------------------------------|-----------------------------|--------------|
+| PIN operateur caisse (serveur, JWT, validations sensibles) | API brownfield + ce `prd.md` §4.1 / §11.2 | **Adopte / canonique** | `prd.md` ; stories caisse existantes | Pas de regression sans ADR |
+| PIN kiosque PWA, secret de poste, lockout metier, offline | PRD vision 2026-04-19 | **Cible — ADR requise** | `prd.md` + **ADR PIN kiosque** a produire | Nouvelles epics kiosque uniquement apres ADR |
+| Async ecritures Paheko (outbox SQL, idempotence, reprise) | Code + architecture BMAD | **Adopte / canonique** | Architecture + `prd.md` §5 | Epics 8.x, 22.x |
+| Formulation « file Redis » pour Paheko | PRD vision 2026-04-19 | **Non canonique** jusqu'a **ADR sync** | Chemin nominal = **outbox durable** (PostgreSQL) ; Redis = option ou reformulation apres ADR | Interdit d'imposer Redis en story sans ADR |
+| Permissions / analytique multi-sites (vision) | PRD vision 2026-04-19 | **Cible — alignement** | `prd.md` + decision directrice | Rebasing epics apres `bmad-check-implementation-readiness` |
+
+**Hierarchie (rappel) :** reprendre la **formule de precedence** en tete de ce document ; ce tableau **materialise** les statuts pour eviter la double verite entre lecteurs.
+
+**Gate :** avant d'epaissir massivement les stories sur le perimetre kiosque, executer le workflow **`bmad-check-implementation-readiness`** (PRD + architecture + epics alignes).
+
+**Chantier qualite API en parallele (pilotage, pas normatif produit au titre d'un PRD)** : `references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` et `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md` — les **P0** audit sont un **garde-fou** pour les PR qui touchent Paheko/caisse. Ces deux chemins sont aussi listes en **`inputDocuments`** pour **tracabilite YAML** ; ils **ne remplacent pas** la hierarchie (1)–(4) ci-dessus.
 
 ### Stack Peintre_nano (figée)
 
@@ -155,6 +206,10 @@ La reussite ne se mesure pas a la richesse fonctionnelle immediate ni a la sophi
 - Les flows terrain prioritaires (`cashflow`, `reception flow`) conservent les memes bases metier.
 - Les ameliorations UX sont autorisees si elles reduisent le nombre d'actions, d'erreurs ou d'hesitations sur un parcours critique, sans augmenter le risque metier ou comptable.
 - Pas de refonte from scratch comme hypothese de depart. Refonte ciblee autorisee au cas par cas si un ecran est veritablement catastrophique ou bloquant.
+
+### 2.4 Extension cible — kiosques PWA et readiness implementation
+
+Le **PRD vision 2026-04-19** (kiosques PWA offline-first, PIN poste, multisite analytique) est une **cible complementaire** : elle **informe** backlog et ADR mais ne **remplace pas** la sequence §12 ni les verrous §16 tant que `bmad-check-implementation-readiness` n'a pas absorbe les ecarts. Le rapport **`_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`** classe l'extension PWA / kiosque comme **NON PRÊTE** (tableau synthetique) et **NOT READY** (synthese des briques en fin de document) : **meme gate**, deux libelles dans le meme livrable — toute story ou epic qui presupposerait une **PWA de production** sans lever ce gate est **hors perimetre d'implementation** jusqu'a decision. Le lien narratif avec le **§17** (questions produit canoniques closes au sens redactionnel) est que le **canonique** ne pretend pas que la PWA soit livree ; l'ecart est **assume** comme readiness / ADR, pas comme « trou » du corps du PRD.
 
 ---
 
@@ -245,6 +300,13 @@ Le contexte est plus fondamental que l'ecran. Le minimum a stabiliser tot :
 | `groupe` | Groupe(s) d'appartenance pour l'affectation de permissions |
 | `permissions` | Droits calcules par Recyclique a partir des roles et groupes |
 | `PIN` | Validations sensibles selon le cas |
+
+**Deux familles PIN — ne pas les fusionner dans une meme story sans ADR** (voir aussi tableau « gouvernance des exigences importees » en tete de document) :
+
+| Famille | Portee | Verification / transport | Statut |
+|---------|--------|---------------------------|--------|
+| **PIN operateur (caisse)** | Changement d'operateur sur poste connecte ; actions sensibles v2 | **Serveur** (hash stocke), JWT de session ; aligne **§11.2** | **Canonique** (brownfield) |
+| **PIN kiosque (PRD vision)** | Poste PWA offline-first, « passer la main », lockout par identite ou poste | **A trancher** (local, hybride, ou autre) — **ADR PIN kiosque** obligatoire avant code | **Cible non canonique** |
 
 **Comportement en cas d'ambiguite ou de contexte incomplet :**
 
@@ -339,6 +401,8 @@ La donnee v2 doit etre concue des le depart pour :
 - **blocage selectif** : seules certaines actions critiques finales peuvent etre bloquees si la sync n'est pas a jour ;
 - un probleme de sync **ne bloque pas** le terrain par defaut ;
 - resilience par **zone tampon Recyclique** avec reprise ulterieure.
+
+**Implementation asynchrone vers Paheko (brownfield vs formulation PRD vision) :** le chemin nominal actuel documente dans le depot est une **outbox transactionnelle** en base (atomicite avec le metier), avec traitement asynchrone — aligne sur le pattern « transactional outbox ». Le PRD vision 2026-04-19 evoque explicitement une **file Redis** pour les ecritures Paheko : les deux approches peuvent satisfaire le besoin **asynchrone resilient** ; le libelle exact du NFR et la trajectoire (conserver l'outbox SQL, ajouter une couche Redis, ou renommer l'exigence) sont **ADR sync + edit architecture**, pas une simple story isolee. Tant que l'**ADR sync** n'est pas approuvee, la formulation **file Redis** du PRD vision reste **non canonique** ; le chemin nominal reste l'**outbox durable** (PostgreSQL) decrite en architecture.
 
 **Decision canonique pour la caisse/compta :**
 
@@ -843,6 +907,8 @@ Le blocage selectif s'applique uniquement quand la securite metier/comptable n'e
 - Zero fuite de contexte entre sites/caisses/operateurs.
 - Manifests CREOS livres avec le build comme source primaire (securite > flexibilite au demarrage).
 
+**Champ d'application du PIN en §11.2 :** la **politique minimale** ci-dessous s'applique au **PIN operateur** (authentification serveur, validations sensibles sur actions critiques), coherent avec §4.1 et le brownfield actuel. Un **PIN kiosque PWA** distinct, s'il est retenu apres **ADR**, devra faire l'objet d'une **extension** explicite (seuils, lockout, offline) pour ne pas contredire ni court-circuiter cette politique par inadvertance.
+
 **Politique minimale PIN v2 :**
 
 - le PIN est distinct des autres secrets d'authentification utilises par l'utilisateur ;
@@ -932,6 +998,8 @@ L'ordre suivant minimise le risque systemique et doit etre respecte comme prefer
 **Guide operationnel d'execution** : pour suivre en parallele les **deux rythmes** possibles (sequence structurante ci-dessus vs Pistes A/B dans les epics), les **jalons** a cocher et la **cartographie** des livrables documentaires (audits, donnees, tests), voir [`guide-pilotage-v2.md`](guide-pilotage-v2.md) — sans dupliquer les tableaux de cette section.
 
 **Delta structurant 2026-04-15 :** pour le sous-domaine caisse/compta/Paheko, la sequence doit aussi expliciter la chaine `referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable de session -> lot de synchronisation Paheko`, ainsi que son articulation avec les epics `6`, `8`, `10`, `13`, `14`, `16` et `18` via le correct course approuve. Le **rail correctif comptable** et la **ventilation Paheko** sont portes par les epics **`22`**, **`23`** ; le chantier **parcours operations speciales / tags** est porte par l'**Epic `24`** (voir `epics.md` et PRD `references/operations-speciales-recyclique/`).
+
+**Rappel gel BMAD 2026-04-19 :** le **correct course** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` impose une **pause d'execution** hors **Epic 25** au profit du socle PRD vision / brownfield / ADR. Cette pause **ne reecrit pas** retroactivement les lignes du tableau ci-dessus : elle **priorise** les prochains travaux documentaires et de code BMAD. Voir **§2.4** et l'en-tête `sprint-status.yaml`.
 
 ### 12.2 Sequence de validation produit
 
@@ -1118,6 +1186,8 @@ Les points encore a **produire** pour passer a l'implementation relevent :
 - de l'architecture et des specs techniques derivees ;
 - des **verrous § 16** (contrat sync, multi-contextes, gouvernance contractuelle incluant breaking changes, schemas CREOS, mecanisme de sync) ;
 - et du choix de mise en oeuvre concret des settings, du stockage de configuration et des mecanismes de synchronisation.
+
+**Readiness PWA / kiosque (hors « cloture redactionnelle ») :** le rapport **`_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`** classe la brique **PWA kiosque** en **NON PRÊTE** (tableau) et **NOT READY** (synthese) — **meme verdict**, libelles distincts selon la section. Cela **n'infirme pas** l'absence de lacunes redactionnelles ci-dessus : c'est un **gate d'implementation** et un **signal de risque** pour toute story qui presupposerait une PWA de production sans lever les prealables listes dans ce readiness (et les ADR associes). Pont avec **§2.4** et le tableau de gouvernance en tete de document.
 
 ---
 
