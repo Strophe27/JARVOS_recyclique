@@ -11278,6 +11278,52 @@ components:
           maxLength: 2000
           description: Motif obligatoire (audit).
       additionalProperties: false
+    SaleCorrectionItemPatchV1:
+      type: object
+      required:
+        - sale_item_id
+      properties:
+        sale_item_id:
+          type: string
+          format: uuid
+        category:
+          type: string
+          nullable: true
+          maxLength: 50
+        quantity:
+          type: integer
+          nullable: true
+          minimum: 1
+        weight:
+          type: number
+          nullable: true
+          exclusiveMinimum: 0
+        unit_price:
+          type: number
+          nullable: true
+          minimum: 0
+        total_price:
+          type: number
+          nullable: true
+          minimum: 0
+        notes:
+          type: string
+          nullable: true
+        preset_id:
+          type: string
+          format: uuid
+          nullable: true
+        business_tag_kind:
+          type: string
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
+      description: |
+        Au moins un attribut de ligne (hors ``sale_item_id``) requis par le serveur par entrée.
+        Cohérence des paires tag (AUTRE + libellé) : règles alignées sur la caisse.
+      additionalProperties: false
     SaleCorrectionFinalizeFieldsV1:
       type: object
       required:
@@ -11298,6 +11344,13 @@ components:
           type: string
           nullable: true
           description: Enum alignée sur le modèle Sale (ex. cash, card, check, free).
+        items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/SaleCorrectionItemPatchV1"
+          description: |
+            Mise à jour ciblée des lignes ``sale_items`` (catégorie, poids, montants ligne, tags métier).
         payments:
           type: array
           nullable: true
@@ -11321,7 +11374,7 @@ components:
           maxLength: 2000
           description: Motif obligatoire (audit).
       description: |
-        Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note``, ``payments``, ``donation_surplus``
+        Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note``, ``payments``, ``donation_surplus``, ``items``
         doit être présent (validation serveur).
       additionalProperties: false
     SaleCorrectionCreateV1:

@@ -45,6 +45,7 @@ from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import (
     PaymentCreate,
     SaleCorrectionFinalizeFieldsPayload,
+    SaleCorrectionItemPatch,
     SaleCorrectionSaleDatePayload,
     SaleCreate,
     SaleFinalizeHeld,
@@ -61,6 +62,7 @@ from recyclic_api.services.accounting_period_authority_service import (
     RefundFiscalBranch,
 )
 from recyclic_api.services.business_tag_resolution import (
+    BusinessTagKind,
     assert_explicit_matches_legacy,
     legacy_expected_tag_key,
     validate_tag_pair,
@@ -1447,6 +1449,65 @@ class SaleService:
         self.get_sale_readable_by_user(str(rev.source_sale_id), user_id)
         return self.build_sale_reversal_response(rev)
 
+    def _apply_sensitive_sale_item_corrections(
+        self, sale: Sale, patches: List[SaleCorrectionItemPatch]
+    ) -> None:
+        """
+        Met à jour des lignes ``sale_items`` (correction 6.8) — cohérence sous-total vérifiée par l'appelant.
+        """
+        db = self.db
+        for p in patches:
+            item = (
+                db.query(SaleItem)
+                .filter(SaleItem.id == p.sale_item_id, SaleItem.sale_id == sale.id)
+                .first()
+            )
+            if not item:
+                raise ValidationError(
+                    f"Ligne article absente ou ne correspond pas au ticket : {p.sale_item_id}"
+                )
+            if p.category is not None:
+                item.category = p.category
+            if p.notes is not None:
+                item.notes = p.notes
+            if p.preset_id is not None:
+                preset = db.query(PresetButton).filter(PresetButton.id == p.preset_id).first()
+                if not preset:
+                    raise ValidationError("Preset not found")
+                item.preset_id = p.preset_id
+
+            if p.quantity is not None:
+                item.quantity = p.quantity
+
+            if p.unit_price is not None:
+                item.unit_price = float(p.unit_price)
+
+            if p.weight is not None:
+                item.weight = float(p.weight)
+
+            if p.business_tag_kind is not None or p.business_tag_custom is not None:
+                eff_kind = p.business_tag_kind
+                eff_custom = p.business_tag_custom
+                if eff_kind is None and item.business_tag_kind:
+                    try:
+                        eff_kind = BusinessTagKind(item.business_tag_kind)
+                    except ValueError:
+                        eff_kind = None
+                if eff_custom is None:
+                    eff_custom = item.business_tag_custom
+                validate_tag_pair(eff_kind, eff_custom)
+                k, c = _business_tag_db_pair(eff_kind, eff_custom)
+                item.business_tag_kind = k
+                item.business_tag_custom = c
+
+            eff_qty = float(item.quantity)
+            if p.total_price is not None:
+                item.total_price = float(p.total_price)
+            elif p.unit_price is not None:
+                item.total_price = float(item.unit_price) * eff_qty
+            elif p.quantity is not None:
+                item.total_price = float(item.unit_price) * eff_qty
+
     def _sale_correction_snapshot(self, sale: Sale) -> dict:
         pm = sale.payment_method
         pm_val = pm.value if pm is not None and hasattr(pm, "value") else pm
@@ -1466,6 +1527,22 @@ class SaleService:
                     "amount": float(pt.amount),
                 }
             )
+        items_snap: List[dict] = []
+        for it in sorted(list(sale.items or []), key=lambda x: str(x.id)):
+            items_snap.append(
+                {
+                    "id": str(it.id),
+                    "category": it.category,
+                    "quantity": it.quantity,
+                    "weight": float(it.weight) if it.weight is not None else None,
+                    "unit_price": float(it.unit_price),
+                    "total_price": float(it.total_price),
+                    "notes": it.notes,
+                    "preset_id": str(it.preset_id) if it.preset_id else None,
+                    "business_tag_kind": it.business_tag_kind,
+                    "business_tag_custom": it.business_tag_custom,
+                }
+            )
         return {
             "sale_date": sale.sale_date.isoformat() if sale.sale_date else None,
             "total_amount": float(sale.total_amount),
@@ -1473,6 +1550,7 @@ class SaleService:
             "payment_method": pm_val,
             "note": sale.note,
             "payments_journal": journal,
+            "items": items_snap,
         }
 
     def _payment_transactions_to_create_rows(
@@ -1565,6 +1643,10 @@ class SaleService:
             fields_touched.append("sale_date")
         else:
             fin = payload
+            if fin.items:
+                self._apply_sensitive_sale_item_corrections(sale, fin.items)
+                fields_touched.append("sale_items")
+                db.flush()
             prev_total = float(sale.total_amount)
             prev_donation = float(sale.donation or 0)
             new_total = prev_total if fin.total_amount is None else float(fin.total_amount)

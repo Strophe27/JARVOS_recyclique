@@ -20253,6 +20253,127 @@
         "title": "ResetPasswordResponse",
         "description": "Réponse pour la réinitialisation du mot de passe."
       },
+      "SaleCorrectionItemPatch": {
+        "properties": {
+          "sale_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sale Item Id"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "total_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Price"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "preset_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset Id"
+          },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Kind"
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sale_item_id"
+        ],
+        "title": "SaleCorrectionItemPatch",
+        "description": "Story 6.8 — mise à jour d'une ligne article lors d'une correction sensible."
+      },
       "SaleCorrectionFinalizeFieldsPayload": {
         "properties": {
           "kind": {
@@ -20321,6 +20442,20 @@
             ],
             "title": "Donation Surplus"
           },
+          "items": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SaleCorrectionItemPatch"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
+          },
           "note": {
             "anyOf": [
               {
@@ -20347,7 +20482,7 @@
           "reason"
         ],
         "title": "SaleCorrectionFinalizeFieldsPayload",
-        "description": "Story 6.8 — Lot 1 : champs de finalisation whitelistés uniquement."
+        "description": "Story 6.8 — champs de finalisation whitelistés (dont lignes article ``items``)."
       },
       "SaleCorrectionSaleDatePayload": {
         "properties": {

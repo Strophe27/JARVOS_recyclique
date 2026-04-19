@@ -273,7 +273,8 @@ async def correct_sale_sensitive(
     """
     Story 6.8 — correction post-hoc bornée (super-admin, session ouverte).
 
-    Liste fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note).
+    Liste fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note,
+    ``items[]`` lignes article, remplacement ``payments`` / ``donation_surplus``).
     Step-up ``X-Step-Up-Pin`` obligatoire ; ``Idempotency-Key`` optionnel (rejouer la même réponse).
     """
     verify_step_up_pin_header(

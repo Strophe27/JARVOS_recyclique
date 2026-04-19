@@ -366,6 +366,44 @@ class SaleReversalResponse(BaseModel):
         return str(v) if v is not None else v
 
 
+class SaleCorrectionItemPatch(BaseModel):
+    """Story 6.8 — mise à jour ciblée d'une ligne ``sale_items`` via correction sensible."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sale_item_id: UUID
+    category: Optional[str] = Field(None, max_length=50)
+    quantity: Optional[int] = Field(None, gt=0)
+    weight: Optional[float] = Field(None, gt=0)
+    unit_price: Optional[float] = Field(None, ge=0)
+    total_price: Optional[float] = Field(None, ge=0)
+    notes: Optional[str] = None
+    preset_id: Optional[UUID] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _strip_category(cls, v: object) -> Optional[str]:
+        if v is None:
+            return None
+        s = str(v).strip()
+        return s if s else None
+
+    @field_validator("category")
+    @classmethod
+    def _category_non_empty_if_set(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError("category ne peut pas être vide.")
+        return v
+
+    @model_validator(mode="after")
+    def _at_least_one_field(self) -> "SaleCorrectionItemPatch":
+        if self.model_dump(exclude={"sale_item_id"}, exclude_none=True) == {}:
+            raise ValueError("Au moins un champ de ligne (hors sale_item_id) est requis pour chaque entrée.")
+        return self
+
+
 class SaleCorrectionSaleDatePayload(BaseModel):
     """Story 6.8 — Lot 1 : correction isolée ``sale_date`` (liste fermée)."""
 
@@ -390,6 +428,7 @@ class SaleCorrectionFinalizeFieldsPayload(BaseModel):
     # Remplacement explicite des lignes journal (multi-moyens / Story 22.4) — même granularité que finalize-held.
     payments: Optional[List[PaymentCreate]] = None
     donation_surplus: Optional[List[PaymentCreate]] = None
+    items: Optional[List[SaleCorrectionItemPatch]] = None
 
     @field_validator("payment_method", mode="before")
     @classmethod
@@ -407,9 +446,11 @@ class SaleCorrectionFinalizeFieldsPayload(BaseModel):
             and self.note is None
             and self.payments is None
             and self.donation_surplus is None
+            and not self.items
         ):
             raise ValueError(
-                "Au moins un champ parmi donation, total_amount, payment_method, note, payments, donation_surplus est requis."
+                "Au moins un champ parmi donation, total_amount, payment_method, note, payments, "
+                "donation_surplus, items est requis."
             )
         return self
 

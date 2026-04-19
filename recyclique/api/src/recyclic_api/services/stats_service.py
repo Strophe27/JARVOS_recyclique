@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, cast, String, case, literal
+from sqlalchemy import exists, func, and_, or_, cast, String, case, literal, not_
 
 from recyclic_api.core.exceptions import ValidationError
 from recyclic_api.models.ligne_depot import LigneDepot
@@ -16,6 +16,7 @@ from recyclic_api.models.ticket_depot import TicketDepot
 from recyclic_api.models.category import Category
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.sale import Sale, SaleLifecycleStatus
+from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.schemas.stats import BusinessTagMaterialStats, ReceptionSummaryStats, CategoryStats
 
@@ -307,6 +308,8 @@ class StatsService:
             ParentCat,
             Category.parent_id == ParentCat.id
         ).filter(
+            Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+            not_(exists().where(SaleReversal.source_sale_id == Sale.id)),
             # Ligne résolue vers une catégorie principale (réception dashboard) OU
             # jointure `categories` impossible : on garde quand même la ligne pour
             # aligner le détail sorties avec les KPI (somme des poids sans exiger la FK).
@@ -492,6 +495,7 @@ class StatsService:
             .outerjoin(ParentCat, Category.parent_id == ParentCat.id)
             .filter(
                 Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+                not_(exists().where(SaleReversal.source_sale_id == Sale.id)),
                 or_(
                     Category.id.is_(None),
                     or_(
