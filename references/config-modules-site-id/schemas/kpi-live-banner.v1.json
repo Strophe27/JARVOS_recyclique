@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://references.jarvos.recyclique/config-modules-site-id/schemas/kpi-live-banner.v1.json",
+  "title": "Module kpi-live-banner payload v1",
+  "description": "Charge utile pour module_key=kpi-live-banner, schema_version=1.0.0. À embarquer dans ModuleConfigDocument.payload.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["show_on_caisse", "show_on_reception", "refresh_interval_seconds"],
+  "properties": {
+    "show_on_caisse": {
+      "type": "boolean",
+      "description": "Afficher le bandeau sur le flux caisse kiosque."
+    },
+    "show_on_reception": {
+      "type": "boolean",
+      "description": "Afficher le bandeau sur le flux réception."
+    },
+    "refresh_interval_seconds": {
+      "type": "integer",
+      "minimum": 15,
+      "maximum": 3600,
+      "description": "Période minimale entre deux rafraîchissements des indicateurs (bornes indicatives ; ajuster selon produit)."
+    }
+  }
+}

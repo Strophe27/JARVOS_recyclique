@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: Recyclique — Configuration par module et par site (brouillon)
+  description: >
+    Spécification **provisoire** pour un endpoint générique GET/PATCH de configuration par `site_id` et `module_key`.
+    À fusionner dans le contrat canonique `contracts/openapi/recyclique-api.yaml` après validation (authz, alignement Epic 1.4, `operationId`, sécurité).
+    Règles normatives : `livrable-normatif-architecture.md` — notamment reject-early, liste blanche `module_key`,
+    adhésion au site vérifiée côté serveur, cache non partagé entre tenants, ETag pour conflits.
+  version: 0.1.0-draft
+
+servers:
+  - url: /
+    description: Relatif à la base API Recyclique (ex. `/v1`)
+
+tags:
+  - name: ModuleConfig
+    description: Configuration JSON générique par site et par module (liste blanche serveur).
+
+paths:
+  /v1/sites/{site_id}/module-config/{module_key}:
+    get:
+      tags: [ModuleConfig]
+      summary: Lire la configuration d’un module pour un site
+      description: >
+        Réponse **spécifique au tenant et au sujet authentifié** ; en-têtes cache appropriés (`private` ou `no-store` selon politique).
+        Le serveur ne doit faire confiance au seul `site_id` d’URL : vérifier **membership** et **droits sur `module_key`**.
+      operationId: getSiteModuleConfig
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+        - $ref: '#/components/parameters/ModuleKey'
+      responses:
+        '200':
+          description: Document de configuration courant
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Version opaque pour optimistic locking (RFC 7232 / usage projet).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleConfigDocument'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Site inconnu, module inconnu (liste blanche), ou droits insuffisants masqués en 404 si politique anti-fuite.
+        '413':
+          description: Réponse trop volumineuse si limite serveur (exceptionnel en GET).
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    patch:
+      tags: [ModuleConfig]
+      summary: Mettre à jour la configuration d’un module pour un site
+      description: >
+        Corps validé contre le JSON Schema du **module** et de sa **schema_version**.
+        **If-Match** : pour une détection stricte des conflits, envoyer la valeur **ETag** du dernier GET ;
+        si elle ne correspond pas à la version persistée → **409**. Si **If-Match** est **absent**, le comportement
+        doit être défini explicitement à l’implémentation (ex. dernière écriture gagnante tolérée, ou refus **428**
+        / erreur métier si politique stricte — à figer avant fusion dans le contrat canonique).
+        Rejet taille corps / profondeur **avant** travail coûteux (reject-early). Limites globales du document
+        JSON sont imposées **côté serveur** (middleware / parse borné) : voir livrable §3.1.
+      operationId: patchSiteModuleConfig
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+        - $ref: '#/components/parameters/ModuleKey'
+        - name: If-Match
+          in: header
+          required: false
+          schema:
+            type: string
+          description: ETag attendu pour optimistic locking (aligné sur le GET).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModuleConfigDocument'
+      responses:
+        '200':
+          description: Configuration mise à jour
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleConfigDocument'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Idem GET
+        '409':
+          description: Conflit de version (document modifié entre-temps ou politique de concurrence)
+        '413':
+          description: Payload trop volumineux
+        '422':
+          description: JSON invalide ou hors schéma pour ce `module_key` / `schema_version`
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+components:
+  parameters:
+    SiteId:
+      name: site_id
+      in: path
+      required: true
+      description: Identifiant du site (UUID ou selon contrat API existant). Non suffisant seul pour autoriser : membership serveur obligatoire.
+      schema:
+        type: string
+
+    ModuleKey:
+      name: module_key
+      in: path
+      required: true
+      description: Clé **liste blanche** alignée registre serveur / CREOS (ex. `kpi-live-banner`).
+      schema:
+        type: string
+        pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+        maxLength: 128
+
+  schemas:
+    ModuleConfigDocument:
+      type: object
+      description: >
+        Enveloppe commune. Les plafonds de **taille totale** et **profondeur** du JSON sont imposés par la
+        configuration serveur (reject-early) et ne sont pas entièrement exprimables ici ; voir livrable §3.1 et §3.4.
+      additionalProperties: false
+      required:
+        - schema_version
+        - payload
+      properties:
+        schema_version:
+          type: string
+          description: Version du schéma **du module** (SemVer recommandé).
+          pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+          example: "1.0.0"
+        payload:
+          type: object
+          description: Charge utile validée par le schéma JSON du module pour `schema_version`. Voir `schemas/` pour des exemples.
+        version:
+          type: integer
+          minimum: 0
+          description: Optionnel — contrepartie entière de l’ETag si le produit préfère un corps explicite (redondant avec ETag si les deux sont utilisés).
+
+  responses:
+    Unauthorized:
+      description: Jeton ou session absent ou invalide.
+    Forbidden:
+      description: Authentifié mais interdit pour ce site ou ce module.
+    TooManyRequests:
+      description: Limite de débit dépassée (rate limiting). Détail éventuel selon politique API globale.

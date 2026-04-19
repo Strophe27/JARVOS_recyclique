@@ -27,6 +27,7 @@
 
 ## Liens utiles (hors dossier)
 
+- **Configuration modules / `site_id` / bandeau KPI (normatif QA + ADR + OpenAPI brouillon)** : `references/config-modules-site-id/index.md`.
 - Architecture active : `_bmad-output/planning-artifacts/architecture/` (dont `navigation-structure-contract.md`, `core-architectural-decisions.md`).
 - Recherches externes consolidées : `references/recherche/` — dont `2026-03-31_peintre-nano-p1-stack-css-styling_perplexity_reponse.md` (base de la décision **P1** dans l’ADR) et les autres `2026-03-31_*peintre*_perplexity_reponse.md`.
 - Vision projet / concept : `references/vision-projet/` (ex. `2026-03-31_peintre-nano-concept-architectural.md` si présent).
