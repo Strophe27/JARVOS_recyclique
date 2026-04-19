@@ -6,7 +6,7 @@
 
 **Chantier transverse** : exécuter le **backlog refactor** et ancrer les **garde-fous** issus de l’audit de style / architecture sur `recyclique/api/` — avant que la dette ne se cumule avec les gros chantiers caisse, Paheko, multisite.
 
-**Source unique (vérité)** : [`references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](../../artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md)
+**Source unique (vérité)** : `[references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md](../../artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md)`
 
 **Intention :** a-faire
 
@@ -18,15 +18,17 @@
 
 ### Ce que ce chantier n’est pas
 
-- Ce n’est **pas** l’alignement **PRD produit** multisite / permissions — voir la fiche [**2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md**](2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md) ; les deux chantiers sont **complémentaires**.
+- Ce n’est **pas** l’alignement **PRD produit** multisite / permissions — voir la fiche **[2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md](2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md)** ; les deux chantiers sont **complémentaires**.
 
 ### Backlog rappel (détail dans l’artefact §9)
 
-| Priorité | Exemples |
-|----------|-----------|
-| **P0** | Une config pytest maîtresse ; décision **AdminService** |
-| **P1** | Routes admin groups → service ; normaliser async vs ORM sync ; `Optional` → `T \| None` progressif |
-| **P2** | Stratégie repository ; ruff ; liens doc tests |
+
+| Priorité | Exemples                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------- |
+| **P0**   | Une config pytest maîtresse ; décision **AdminService**                                           |
+| **P1**   | Routes admin groups → service ; normaliser async vs ORM sync ; `Optional` → `T | None` progressif |
+| **P2**   | Stratégie repository ; ruff ; liens doc tests                                                     |
+
 
 ### Pistes d’exécution
 
@@ -36,3 +38,4 @@
 ### Critère de sortie (suggéré)
 
 - **P0** traités ou remplacés par issues/stories traçables ; **P1** au moins planifiés ou amorcés ; checklist PR référencée dans la **contribution** interne (ou équivalent) pour ne pas retomber dans l’oubli.
+
