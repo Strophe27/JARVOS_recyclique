@@ -107,6 +107,7 @@ describe('AdminLegacyDashboardHomeWidget', () => {
     fireEvent.click(screen.getByTestId('admin-legacy-nav-system-health'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-advanced-settings'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-sites-and-registers'));
+    fireEvent.click(screen.getByTestId('admin-legacy-nav-modules'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-accounting'));
     fireEvent.click(screen.getByTestId('admin-legacy-nav-accounting-expert'));
 
@@ -114,6 +115,7 @@ describe('AdminLegacyDashboardHomeWidget', () => {
       ['/admin/health'],
       ['/admin/settings'],
       ['/admin/sites-and-registers'],
+      ['/admin/modules'],
       ['/admin/compta'],
       ['/admin/compta/parametrage'],
     ]);

@@ -427,6 +427,11 @@ export function RuntimeDemoApp() {
         setSearchSnapshot(window.location.search);
         return;
       }
+      if (pathForMatch === '/admin/modules') {
+        setSelectedEntryId('transverse-admin-modules');
+        setSearchSnapshot(window.location.search);
+        return;
+      }
       if (pathForMatch === '/admin/compta/parametrage') {
         setSelectedEntryId('transverse-admin-accounting-expert');
         setSearchSnapshot(window.location.search);
@@ -574,6 +579,9 @@ export function RuntimeDemoApp() {
     }
     if (adminPath === '/admin/settings') {
       return 'transverse-admin-settings';
+    }
+    if (adminPath === '/admin/modules') {
+      return 'transverse-admin-modules';
     }
     if (adminPath === '/admin/compta/parametrage') {
       return 'transverse-admin-accounting-expert';

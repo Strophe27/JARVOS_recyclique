@@ -82,6 +82,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).toContain('transverse-admin-session-manager');
     expect(ids).toContain('transverse-admin-sites-and-registers');
     expect(ids).toContain('transverse-admin-settings');
+    expect(ids).toContain('transverse-admin-modules');
     expect(ids).toContain('transverse-admin-health');
     expect(ids).toContain('transverse-admin-reception-stats');
     expect(ids).toContain('transverse-admin-reception-sessions');
@@ -468,6 +469,12 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         mainWidget: 'admin.advanced.settings.demo',
       },
       {
+        pageKey: 'transverse-admin-modules',
+        path: '/admin/modules',
+        navId: 'transverse-admin-modules',
+        mainWidget: 'admin.kpi.live.banner.settings',
+      },
+      {
         pageKey: 'transverse-admin-health',
         path: '/admin/health',
         navId: 'transverse-admin-health',
@@ -497,6 +504,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       if (!page) continue;
       const superKeys = new Set([
         'transverse-admin-settings',
+        'transverse-admin-modules',
         'transverse-admin-health',
         'transverse-admin-sites-and-registers',
         'transverse-admin-accounting-expert',
@@ -530,6 +538,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         spec.pageKey === 'transverse-admin-sites-and-registers' ||
         spec.pageKey === 'transverse-admin-session-manager' ||
         spec.pageKey === 'transverse-admin-settings' ||
+        spec.pageKey === 'transverse-admin-modules' ||
         spec.pageKey === 'transverse-admin-health' ||
         spec.pageKey === 'transverse-admin-reception-sessions'
       ) {
@@ -563,6 +572,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).toContain('transverse-admin-sites');
     expect(ids).not.toContain('transverse-admin-sites-and-registers');
     expect(ids).not.toContain('transverse-admin-settings');
+    expect(ids).not.toContain('transverse-admin-modules');
     expect(ids).not.toContain('transverse-admin-health');
     expect(ids).not.toContain('transverse-admin-accounting-expert');
   });
@@ -597,6 +607,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
     expect(ids).not.toContain('transverse-admin-session-manager');
     expect(ids).not.toContain('transverse-admin-sites-and-registers');
     expect(ids).not.toContain('transverse-admin-settings');
+    expect(ids).not.toContain('transverse-admin-modules');
     expect(ids).not.toContain('transverse-admin-health');
     expect(ids).not.toContain('transverse-admin-reception-stats');
     expect(ids).not.toContain('transverse-admin-reception-sessions');
@@ -873,6 +884,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
         'transverse-admin-sites-and-registers',
         'transverse-admin-session-manager',
         'transverse-admin-settings',
+        'transverse-admin-modules',
         'transverse-admin-health',
         'transverse-admin-reception-stats',
         'transverse-admin-reception-sessions',
@@ -916,6 +928,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(pageKeys.has('transverse-admin-reception-stats')).toBe(true);
       expect(pageKeys.has('transverse-admin-reception-sessions')).toBe(true);
       expect(pageKeys.has('transverse-admin-settings')).toBe(true);
+      expect(pageKeys.has('transverse-admin-modules')).toBe(true);
       expect(pageKeys.has('transverse-admin-health')).toBe(true);
       expect(pageKeys.has('transverse-admin-sites-and-registers')).toBe(true);
       expect(pageKeys.has('admin-cash-session-detail')).toBe(true);
@@ -928,6 +941,7 @@ describe('contract — navigation transverse servie (story 5.1)', () => {
       expect(flat.some((e) => e.path === '/admin/reception-stats')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/reception-sessions')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/settings')).toBe(true);
+      expect(flat.some((e) => e.path === '/admin/modules')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/compta')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/health')).toBe(true);
       expect(flat.some((e) => e.path === '/admin/sites-and-registers')).toBe(true);

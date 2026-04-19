@@ -65,6 +65,7 @@ import pageTransverseAdminReceptionSessions from '../../../../contracts/creos/ma
 import pageTransverseAdminReceptionStats from '../../../../contracts/creos/manifests/page-transverse-admin-reception-stats.json';
 import pageTransverseAdminSessionManager from '../../../../contracts/creos/manifests/page-transverse-admin-session-manager.json';
 import pageTransverseAdminSettings from '../../../../contracts/creos/manifests/page-transverse-admin-settings.json';
+import pageTransverseAdminModules from '../../../../contracts/creos/manifests/page-transverse-admin-modules.json';
 import pageTransverseConsultationArticle from '../../../../contracts/creos/manifests/page-transverse-consultation-article.json';
 import pageTransverseConsultationDon from '../../../../contracts/creos/manifests/page-transverse-consultation-don.json';
 import pageTransverseDashboard from '../../../../contracts/creos/manifests/page-transverse-dashboard.json';
@@ -171,6 +172,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseAdminSitesAndRegisters),
     JSON.stringify(pageTransverseAdminSessionManager),
     JSON.stringify(pageTransverseAdminSettings),
+    JSON.stringify(pageTransverseAdminModules),
     JSON.stringify(pageTransverseAdminHealth),
     JSON.stringify(pageTransverseAdminReceptionStats),
     JSON.stringify(pageTransverseAdminReceptionSessions),
@@ -213,6 +215,7 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-admin-sites-and-registers.json',
           'contracts/creos/manifests/page-transverse-admin-session-manager.json',
           'contracts/creos/manifests/page-transverse-admin-settings.json',
+          'contracts/creos/manifests/page-transverse-admin-modules.json',
           'contracts/creos/manifests/page-transverse-admin-health.json',
           'contracts/creos/manifests/page-transverse-admin-reception-stats.json',
           'contracts/creos/manifests/page-transverse-admin-reception-sessions.json',
