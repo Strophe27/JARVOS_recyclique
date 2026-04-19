@@ -1,3 +1,7 @@
+# last_updated: 2026-04-19 — story 25-2 Story Runner BMAD fin : CS→VS→ADR→DS→GATE×2 (brief PS 2>$null)→QA→CR1 CHANGES (test-summary QA manquant)→DS fix→GATE→QA→CR2 APPROVE ; 25-2 review→done ; vs=0 qa=0 cr=1 (plafond 3) ; branche epic/25-socle-alignement-prd-architecture
+# last_updated: 2026-04-19 — story 25-2 DS bmad-dev-story Task : 25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste ready-for-dev → review ; ADR + index architecture + DoD story ; epic-25 inchangé in-progress ; branche epic/25-socle-alignement-prd-architecture
+# last_updated: 2026-04-19 — story 25-2 VS bmad-create-story validate : PASS — checklist + alignement epics §25.2 ↔ story ; development_status 25-2 inchangé ready-for-dev ; epic-25 inchangé in-progress ; prochaine étape bmad-dev-story (DS) rédaction / approbation ADR
+# last_updated: 2026-04-19 — story 25-2 CS bmad-create-story (create, Task spawn) : 25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste backlog → ready-for-dev ; fichier story PRD §4.1/§11.2 + vision + research ; epic-25 inchangé in-progress ; trace CS
 # last_updated: 2026-04-19 — story 25-1 : matrice alignement vision→canon livrée ; 25-1 backlog→done ; epic-25 backlog→in-progress ; branche epic/25-socle-alignement-prd-architecture
 # last_updated: 2026-04-19 — sprint-planning : clés 25-1 à 25-5 backlog alignées epics.md §25 (stories documentaires / ADR avant dev)
 # last_updated: 2026-04-19 — bmad-correct-course : gel d'exécution BMAD (bmad-dev-story / DS) hors clés `25-*` — même règle que sous epic-10 / 13–15 ; priorité socle PRD vision / brownfield / ADR ; voir _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md ; epic-25 backlog ajouté ; stories 13.x–15.x inchangées (preuve)
@@ -268,7 +272,7 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
-last_updated: "2026-04-19" # clés 25-1…25-5 backlog (epics §25) + gel hors 25-* ; cf. sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
+last_updated: "2026-04-19" # 25-2 done ; 25-1 done ; 25-3…25-5 backlog ; gel hors 25-* ; cf. sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -531,7 +535,7 @@ development_status:
   # Trier les clés 25-x par ordre NUMERIQUE (25-1 … 25-5) — un tri alphabétique met 25-10 avant 25-2 si la série s'allonge.
   epic-25: in-progress
   25-1-cartographier-les-exigences-importees-et-fermer-la-matrice-dalignement-vision-canonique: done
-  25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste: backlog
+  25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste: done
   25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride: backlog
   25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19: backlog
   # 25.5 : titre epics.md contient « backlog `25-*` » ; le slug ne peut pas porter le wildcard — le fichier story devra répéter le titre complet.

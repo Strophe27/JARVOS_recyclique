@@ -1,5 +1,14 @@
 # Synthèse tests automatisés (bmad-qa-generate-e2e-tests)
 
+---
+
+## Story 25.2 — ADR PIN kiosque (documentaire, 2026-04-19)
+
+- **Synthèse QA :** [`test-summary-story-25-2-doc-qa.md`](test-summary-story-25-2-doc-qa.md) — **PASS** ; pas de tests API/E2E (NA) ; conformité statique ADR ↔ `epics.md` §25.2.
+- **ADR :** `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`
+
+---
+
 ## Tests générés / étendus
 
 ### E2E (Vitest + Testing Library)

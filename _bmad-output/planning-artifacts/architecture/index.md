@@ -11,6 +11,10 @@
 - **[adr-postgresql-17-migration.md](./adr-postgresql-17-migration.md)** — **ADR** : cible **PostgreSQL 17**, stratégies de migration (`pg_dump`/`pg_restore` vs `pg_upgrade`), alignement **compose racine + CI** uniquement ; **`recyclique-1.4.4/` exclu** (legacy). Backend canonique **`recyclique/api/`**. Recherche technique : [technical-migration-postgresql-15-vers-17-recyclique-research-2026-04-11.md](../research/technical-migration-postgresql-15-vers-17-recyclique-research-2026-04-11.md). Indépendant des epics métier (8, 11, etc.) — chantier plateforme.
 - **[operations/runbook-spike-postgresql-15-vers-17.md](../operations/runbook-spike-postgresql-15-vers-17.md)** — **Runbook spike** Epic 10.6c : backup, dump/restore, `pg_upgrade --check`, vérifs, rollback, risques, volumes ; preuve d’exécution ; aligné ADR + recherche. Les changements d’image `postgres:*` et workflows relèvent de **10.6d** ; tests applicatifs PG 17 de **10.6e**.
 
+## Sécurité / identité kiosque (Epic 25)
+
+- **[2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md](./2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md)** — **ADR** : séparation **PIN opérateur** (canon serveur, §11.2, `POST /pin`) et **PIN kiosque** / **secret de poste** (PWA vision) ; modèle **hybride borné** (local offline + souveraineté serveur en ligne) ; lockout **métier** (seuils vision 3/5) vs **rate limit** route ; **step-up** et **revalidation** ; **Epic 25** story **25.2**.
+
 ## Hypothèses post-V2 (hors backlog, non sprint)
 
 - **[post-v2-hypothesis-marketplace-modules.md](./post-v2-hypothesis-marketplace-modules.md)** — Marketplace / modules complémentaires (distribution, activation) **séparé** du cœur métier Recyclique ; alignement avec contrats v2 ; pas d’epic tant que non promu. Visible depuis [references/index.md](../../../references/index.md).
@@ -20,6 +24,7 @@
 
 - [Architecture Decision Document](#table-of-contents)
   - [ADR — PostgreSQL 17 (migration)](./adr-postgresql-17-migration.md)
+  - [ADR — PIN kiosque vs PIN opérateur / secret de poste (Epic 25)](./2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md)
   - [ADR — Opérations spéciales caisse / Paheko (Epic 24)](./2026-04-18-adr-operations-speciales-caisse-paheko-v1.md)
   - [Delta architecture — chaine comptable canonique caisse -> `Paheko`](./cash-accounting-paheko-canonical-chain.md)
   - [Project Context Analysis](./project-context-analysis.md)
