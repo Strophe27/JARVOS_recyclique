@@ -17,6 +17,7 @@ from recyclic_api.models.user import User, UserRole
 from recyclic_api.services.stats_service import StatsService
 from recyclic_api.services.reception_stats_service import ReceptionLiveStatsService
 from recyclic_api.schemas.stats import (
+    BusinessTagMaterialStats,
     ReceptionSummaryStats,
     CategoryStats,
     UnifiedLiveStatsResponse,
@@ -140,6 +141,47 @@ def get_reception_by_category(
         str(current_user.id),
         current_user.username or "Unknown",
         "/stats/reception/by-category",
+        success=True,
+        db=db,
+    )
+    return out
+
+
+@router.get(
+    "/sales/by-business-tag-and-category",
+    response_model=List[BusinessTagMaterialStats],
+    summary="Stats caisse : tag métier × catégorie matière",
+    description="""
+    Story 24.9 — agrégation ``tag métier effectif`` (ligne > ticket > legacy 6.5/6.6) × catégorie matière,
+    poids et nombre de lignes article. Filtre dates sur ``sales.created_at``. **ADMIN** / **SUPER_ADMIN** uniquement ;
+    ``log_admin_access`` sur succès (alignement 16.4).
+    """,
+)
+@limiter.limit("60/minute")
+def get_sales_by_business_tag_and_category(
+    request: Request,
+    start_date: Optional[datetime] = Query(
+        None,
+        description="Start date (inclusive) in ISO 8601 format",
+    ),
+    end_date: Optional[datetime] = Query(
+        None,
+        description="End date (inclusive) in ISO 8601 format",
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+) -> List[BusinessTagMaterialStats]:
+    stats_service = StatsService(db)
+    out = _run_stats_service(
+        lambda: stats_service.get_sales_by_business_tag_and_category(
+            start_date=start_date,
+            end_date=end_date,
+        )
+    )
+    log_admin_access(
+        str(current_user.id),
+        current_user.username or "Unknown",
+        "/stats/sales/by-business-tag-and-category",
         success=True,
         db=db,
     )

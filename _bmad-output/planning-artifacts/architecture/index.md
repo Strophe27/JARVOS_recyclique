@@ -7,6 +7,7 @@
 ## Infrastructure / données (décisions récentes)
 
 - **[cash-accounting-paheko-canonical-chain.md](./cash-accounting-paheko-canonical-chain.md)** — Delta architecture du correct course `2026-04-15` pour la chaine **caisse -> compta -> `Paheko`** : referentiel des moyens de paiement, journal detaille des transactions de paiement, snapshot comptable fige de session, builder d'ecritures `Paheko`, **1 batch outbox idempotent par session** avec **N sous-ecritures deterministes**, separation calcul local / transport / integration, et autorite explicite pour les remboursements sur exercice anterieur clos.
+- **[2026-04-18-adr-operations-speciales-caisse-paheko-v1.md](./2026-04-18-adr-operations-speciales-caisse-paheko-v1.md)** — **ADR** : opérations spéciales de caisse (annulation, remboursements types, échange, décaissement, mouvement interne), tags métier, distinction matière/finance/mixte, remboursement sans ticket expert, une seule chaîne Paheko ; **Epic 24**. Prérequis Epics 22–23.
 - **[adr-postgresql-17-migration.md](./adr-postgresql-17-migration.md)** — **ADR** : cible **PostgreSQL 17**, stratégies de migration (`pg_dump`/`pg_restore` vs `pg_upgrade`), alignement **compose racine + CI** uniquement ; **`recyclique-1.4.4/` exclu** (legacy). Backend canonique **`recyclique/api/`**. Recherche technique : [technical-migration-postgresql-15-vers-17-recyclique-research-2026-04-11.md](../research/technical-migration-postgresql-15-vers-17-recyclique-research-2026-04-11.md). Indépendant des epics métier (8, 11, etc.) — chantier plateforme.
 - **[operations/runbook-spike-postgresql-15-vers-17.md](../operations/runbook-spike-postgresql-15-vers-17.md)** — **Runbook spike** Epic 10.6c : backup, dump/restore, `pg_upgrade --check`, vérifs, rollback, risques, volumes ; preuve d’exécution ; aligné ADR + recherche. Les changements d’image `postgres:*` et workflows relèvent de **10.6d** ; tests applicatifs PG 17 de **10.6e**.
 
@@ -19,6 +20,7 @@
 
 - [Architecture Decision Document](#table-of-contents)
   - [ADR — PostgreSQL 17 (migration)](./adr-postgresql-17-migration.md)
+  - [ADR — Opérations spéciales caisse / Paheko (Epic 24)](./2026-04-18-adr-operations-speciales-caisse-paheko-v1.md)
   - [Delta architecture — chaine comptable canonique caisse -> `Paheko`](./cash-accounting-paheko-canonical-chain.md)
   - [Project Context Analysis](./project-context-analysis.md)
     - [Requirements Overview](./project-context-analysis.md#requirements-overview)

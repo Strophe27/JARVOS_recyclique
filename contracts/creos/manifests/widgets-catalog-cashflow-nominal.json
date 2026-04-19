@@ -49,6 +49,21 @@
       }
     },
     {
+      "type": "cashflow-exceptional-refund-wizard",
+      "component": "cashflow-exceptional-refund-wizard",
+      "meta_props": {
+        "slice": "cashflow-exceptional-refund",
+        "story": "24.5"
+      },
+      "data_contract": {
+        "source": "cash-sessions",
+        "operation_id": "recyclique_cashSessions_createExceptionalRefund",
+        "endpoint_hint": "POST /v1/cash-sessions/{session_id}/exceptional-refunds",
+        "refresh": "manual",
+        "critical": true
+      }
+    },
+    {
       "type": "cashflow-special-don-wizard",
       "component": "cashflow-special-don-wizard",
       "meta_props": {

@@ -72,6 +72,6 @@ describe('Story 6.4 — garde remboursement (enveloppe + caisse.refund)', () => 
       </RootProviders>,
     );
     expect(screen.getByTestId('cashflow-refund-step-select')).toBeTruthy();
-    expect(screen.getByText(/Remboursement — sélection du ticket source/)).toBeTruthy();
+    expect(screen.getByText(/Quel ticket rembourser \?/)).toBeTruthy();
   });
 });

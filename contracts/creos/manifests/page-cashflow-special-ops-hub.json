@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "cashflow-special-ops-hub",
+  "required_permission_any_keys": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-special-ops-hub",
+      "widget_props": {}
+    }
+  ]
+}

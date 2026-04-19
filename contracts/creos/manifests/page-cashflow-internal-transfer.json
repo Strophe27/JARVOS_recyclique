@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "page_key": "cashflow-internal-transfer",
+  "required_permission_keys": ["caisse.access", "cash.transfer"],
+  "requires_site": true,
+  "slots": [
+    {
+      "slot_id": "main",
+      "widget_type": "cashflow-internal-transfer-wizard",
+      "widget_props": {}
+    }
+  ]
+}

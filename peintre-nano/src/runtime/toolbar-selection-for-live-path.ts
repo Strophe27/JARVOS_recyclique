@@ -31,7 +31,13 @@ export function toolbarSelectedEntryIdFromResolved(
   ) {
     return 'transverse-admin';
   }
-  if (resolvedEntryId === 'cashflow-close' || resolvedEntryId === 'cashflow-refund') {
+  if (
+    resolvedEntryId === 'cashflow-close' ||
+    resolvedEntryId === 'cashflow-refund' ||
+    resolvedEntryId === 'cashflow-special-ops-hub' ||
+    resolvedEntryId === 'cashflow-exchange' ||
+    resolvedEntryId === 'cashflow-disbursement'
+  ) {
     return 'cashflow-nominal';
   }
   if (resolvedEntryId === 'transverse-dashboard-benevole') {

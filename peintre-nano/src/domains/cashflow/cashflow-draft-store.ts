@@ -17,6 +17,9 @@ export type TicketLine = {
   readonly weight: number;
   readonly unitPrice: number;
   readonly totalPrice: number;
+  /** Story 24.9 — tag métier ligne (optionnel ; prime sur le tag ticket). */
+  readonly businessTagKind?: string;
+  readonly businessTagCustom?: string;
 };
 
 /** Désignation lisible pour ticket et accessibilité (brouillon ou ligne déjà typée). */
@@ -53,6 +56,9 @@ export type CashflowDraftState = {
   readonly localIssueMessage: string | null;
   /** Erreur saisie locale ou échec API structuré (Story 6.9 / AR21). */
   readonly submitError: CashflowSubmitSurfaceError | null;
+  /** Story 24.9 — tag métier au niveau ticket (parcours nominal). */
+  readonly ticketBusinessTagKind: string;
+  readonly ticketBusinessTagCustom: string;
 };
 
 const initialState: CashflowDraftState = {
@@ -67,6 +73,8 @@ const initialState: CashflowDraftState = {
   heldTicketsRefreshToken: 0,
   localIssueMessage: null,
   submitError: null,
+  ticketBusinessTagKind: '',
+  ticketBusinessTagCustom: '',
 };
 
 let state: CashflowDraftState = initialState;
@@ -108,6 +116,12 @@ export function setTotalAmount(n: number): void {
 
 export function setPaymentMethod(m: string): void {
   state = { ...state, paymentMethod: m };
+  emit();
+}
+
+/** Story 24.9 — tag métier ticket (AUTRE → renseigner le custom). */
+export function setTicketBusinessTags(kind: string, custom: string): void {
+  state = { ...state, ticketBusinessTagKind: kind, ticketBusinessTagCustom: custom };
   emit();
 }
 
@@ -158,6 +172,8 @@ export function setAfterSuccessfulSale(saleId: string): void {
     activeHeldSaleId: null,
     totalAmount: 0,
     paymentMethod: '',
+    ticketBusinessTagKind: '',
+    ticketBusinessTagCustom: '',
     localIssueMessage:
       'Vente enregistrée localement dans Recyclique. La synchronisation comptable avec Paheko n’est pas prétendue finalisée sur cet écran.',
     widgetDataState: 'NOMINAL',
@@ -219,6 +235,8 @@ export function setAfterSuccessfulHold(): void {
     totalAmount: 0,
     activeHeldSaleId: null,
     lastSaleId: null,
+    ticketBusinessTagKind: '',
+    ticketBusinessTagCustom: '',
     widgetDataState: 'NOMINAL',
     submitError: null,
     heldTicketsRefreshToken: state.heldTicketsRefreshToken + 1,

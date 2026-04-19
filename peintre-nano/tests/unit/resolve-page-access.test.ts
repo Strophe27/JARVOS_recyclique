@@ -59,6 +59,20 @@ describe('resolvePageAccess', () => {
     if (!r.allowed) expect(r.code).toBe('MISSING_PERMISSIONS');
   });
 
+  it('autorise le hub opérations spéciales (24.2) avec accès caisse virtuel seul', () => {
+    const hubPage: PageManifest = {
+      version: '1',
+      pageKey: 'cashflow-special-ops-hub',
+      slots: [],
+      requiredPermissionAnyKeys: ['caisse.access', 'caisse.virtual.access', 'caisse.deferred.access'],
+      requiresSite: true,
+    };
+    const r = resolvePageAccess(hubPage, env({ permissions: { permissionKeys: ['caisse.virtual.access'] } }), {
+      nowMs: 1_700_000_000_000,
+    });
+    expect(r).toEqual({ allowed: true });
+  });
+
   it('autorise si une permission alternative satisfaite requiredPermissionAnyKeys', () => {
     const altPage: PageManifest = {
       version: '1',

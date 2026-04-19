@@ -13,15 +13,26 @@ from recyclic_api.core.auth import get_current_user, require_role, require_role_
 from recyclic_api.core.redis import get_redis
 from recyclic_api.core.step_up import (
     IDEMPOTENCY_KEY_HEADER,
+    SENSITIVE_OPERATION_CASH_DISBURSEMENT_STEP_UP,
+    SENSITIVE_OPERATION_CASH_INTERNAL_TRANSFER_STEP_UP,
     SENSITIVE_OPERATION_CASH_SESSION_CLOSE,
+    SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND,
     STEP_UP_PIN_HEADER,
     verify_step_up_pin_header,
 )
 from recyclic_api.services.idempotency_support import (
+    body_fingerprint_cash_disbursement_json,
+    body_fingerprint_cash_internal_transfer_json,
     body_fingerprint_close_json,
+    body_fingerprint_exceptional_refund_json,
     get_cached_idempotent_close,
+    get_cached_idempotent_close as get_cached_idempotent_exceptional_refund,
+    redis_key_idempotent_cash_disbursement,
+    redis_key_idempotent_cash_internal_transfer,
     redis_key_idempotent_close,
+    redis_key_idempotent_exceptional_refund,
     store_idempotent_close,
+    store_idempotent_close as store_idempotent_exceptional_refund,
     validate_or_raise_idempotency_conflict,
 )
 from recyclic_api.core.audit import (
@@ -44,6 +55,13 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStepResponse,
     CashSessionStep
 )
+from recyclic_api.schemas.cash_disbursement import CashDisbursementCreate, CashDisbursementResponse
+from recyclic_api.schemas.cash_internal_transfer import CashInternalTransferCreate, CashInternalTransferResponse
+from recyclic_api.schemas.exceptional_refund import (
+    ExceptionalRefundCreate,
+    ExceptionalRefundResponse,
+)
+from recyclic_api.schemas.material_exchange import MaterialExchangeCreate, MaterialExchangeResponse
 from recyclic_api.application.cash_session_close_presentation import (
     present_close_cash_session_outcome,
 )
@@ -51,9 +69,18 @@ from recyclic_api.application.cash_session_closing import run_close_cash_session
 from recyclic_api.application.cash_session_opening import open_cash_session
 from recyclic_api.services.cash_session_response_enrichment import enrich_session_response
 from recyclic_api.services.cash_session_service import CashSessionService, CLOSE_VARIANCE_TOLERANCE
-from recyclic_api.core.exceptions import ConflictError, NotFoundError, ValidationError
+from recyclic_api.services.cash_disbursement_service import CashDisbursementService
+from recyclic_api.services.cash_internal_transfer_service import (
+    CashInternalTransferService,
+    internal_transfer_requires_step_up,
+)
+from recyclic_api.services.exceptional_refund_service import ExceptionalRefundService
+from recyclic_api.services.material_exchange_service import MaterialExchangeService
+from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from uuid import UUID
+
+from recyclic_api.models.cash_disbursement import CashDisbursementSubtype
 
 router = APIRouter()
 
@@ -62,6 +89,12 @@ _CASH_DOMAIN_HTTP = {
     "not_found_status": 404,
     "conflict_status": 400,
     "validation_status": 400,
+}
+# Story 24.10 — validations P3 (preuves / seuils) : alignement AC (422)
+_EXCEPTIONAL_REFUND_DOMAIN_HTTP = {
+    "not_found_status": 404,
+    "conflict_status": 400,
+    "validation_status": 422,
 }
 
 logger = logging.getLogger(__name__)
@@ -610,6 +643,280 @@ async def update_cash_session(
     
     # Story B49-P1: Enrichir avec les options du register
     return enrich_session_response(updated_session, service)
+
+
+@router.post(
+    "/{session_id}/exceptional-refunds",
+    response_model=ExceptionalRefundResponse,
+    status_code=201,
+    operation_id="recyclique_cashSessions_createExceptionalRefund",
+    summary="Enregistrer un remboursement exceptionnel sans ticket",
+    description="""
+    Enregistre un remboursement exceptionnel sans ticket sur une session ouverte.
+
+    **Permissions requises :** `refund.exceptional`
+    **Step-up PIN :** `X-Step-Up-Pin` obligatoire
+    **Idempotency-Key :** obligatoire (prévention des doubles saisies)
+    """,
+    responses={
+        201: {"description": "Remboursement enregistré"},
+        400: {"description": "Requête invalide (ex. Idempotency-Key manquant)"},
+        422: {"description": "Validation métier P3 (preuves / seuils Story 24.10)"},
+        403: {"description": "Accès non autorisé / PIN requis ou invalide"},
+        404: {"description": "Session non trouvée"},
+        409: {"description": "Conflit idempotence"},
+    },
+    tags=["Sessions de Caisse"],
+)
+async def create_exceptional_refund(
+    request: Request,
+    session_id: str,
+    payload: ExceptionalRefundCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    redis_client=Depends(get_redis),
+):
+    verify_step_up_pin_header(
+        user=current_user,
+        pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+        redis_client=redis_client,
+        operation=SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND,
+    )
+    approver_step_up_at = datetime.now(timezone.utc)
+
+    idem_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+    if not idem_key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key requis")
+
+    body_fp = body_fingerprint_exceptional_refund_json(payload.model_dump())
+    rkey = redis_key_idempotent_exceptional_refund(str(current_user.id), session_id, idem_key)
+    cached = get_cached_idempotent_exceptional_refund(redis_client, rkey)
+    if cached:
+        status_c, body = validate_or_raise_idempotency_conflict(cached, body_fp)
+        return JSONResponse(status_code=status_c, content=body)
+
+    service = ExceptionalRefundService(db)
+    try:
+        result = service.create_exceptional_refund(
+            cash_session_id=session_id,
+            payload=payload,
+            operator=current_user,
+            idempotency_key=idem_key,
+            request_id=getattr(request.state, "request_id", None),
+            approver_step_up_at=approver_step_up_at,
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (ConflictError, NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_EXCEPTIONAL_REFUND_DOMAIN_HTTP)
+
+    store_idempotent_exceptional_refund(
+        redis_client,
+        rkey,
+        body_fp,
+        201,
+        jsonable_encoder(result),
+    )
+
+    return result
+
+
+@router.post(
+    "/{session_id}/disbursements",
+    response_model=CashDisbursementResponse,
+    status_code=201,
+    operation_id="recyclique_cashSessions_createDisbursement",
+    summary="Enregistrer un décaissement typé (Story 24.7)",
+    description="""
+    Décaissement hors ticket client avec sous-type fermé (PRD §10.5).
+    **Permission :** `cash.disbursement`.
+    **Step-up PIN** (`X-Step-Up-Pin`) : obligatoire pour les sous-types
+    `validated_exceptional_outflow` et `other_admin_coded` (niveau de preuve N3).
+    **Idempotency-Key** : obligatoire.
+
+    **Nota — story 24.8 :** le mouvement interne de caisse (`cash.transfer`) reste distinct ; ne pas confondre avec ce flux.
+    """,
+    responses={
+        201: {"description": "Décaissement enregistré"},
+        400: {"description": "Validation métier"},
+        403: {"description": "Permission absente ou step-up requis / invalide"},
+        404: {"description": "Session non trouvée"},
+        409: {"description": "Conflit idempotence"},
+    },
+    tags=["Sessions de Caisse"],
+)
+async def create_disbursement(
+    request: Request,
+    session_id: str,
+    payload: CashDisbursementCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    redis_client=Depends(get_redis),
+):
+    needs_step_up = payload.subtype in (
+        CashDisbursementSubtype.VALIDATED_EXCEPTIONAL_OUTFLOW,
+        CashDisbursementSubtype.OTHER_ADMIN_CODED,
+    )
+    if needs_step_up:
+        verify_step_up_pin_header(
+            user=current_user,
+            pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+            redis_client=redis_client,
+            operation=SENSITIVE_OPERATION_CASH_DISBURSEMENT_STEP_UP,
+        )
+
+    idem_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+    if not idem_key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key requis")
+
+    body_fp = body_fingerprint_cash_disbursement_json(payload.model_dump(mode="json"))
+    rkey = redis_key_idempotent_cash_disbursement(str(current_user.id), session_id, idem_key)
+    cached = get_cached_idempotent_close(redis_client, rkey)
+    if cached:
+        status_c, body = validate_or_raise_idempotency_conflict(cached, body_fp)
+        return JSONResponse(status_code=status_c, content=body)
+
+    service = CashDisbursementService(db)
+    try:
+        result = service.create_disbursement(
+            cash_session_id=session_id,
+            payload=payload,
+            operator=current_user,
+            idempotency_key=idem_key,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (ConflictError, NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
+
+    store_idempotent_close(
+        redis_client,
+        rkey,
+        body_fp,
+        201,
+        jsonable_encoder(result),
+    )
+
+    return result
+
+
+@router.post(
+    "/{session_id}/internal-transfers",
+    response_model=CashInternalTransferResponse,
+    status_code=201,
+    operation_id="recyclique_cashSessions_createInternalTransfer",
+    summary="Mouvement interne de caisse typé (Story 24.8)",
+    description="""
+    Enregistre un mouvement interne (PRD §10.6) — distinct du remboursement client et du décaissement charge (24.7).
+    **Permissions :** `caisse.access` (parcours caisse) et `cash.transfer`.
+    **Step-up PIN** (`X-Step-Up-Pin`) : obligatoire pour certains types sensibles ou montants élevés (preuve N3).
+    **Idempotency-Key** : obligatoire.
+    """,
+    responses={
+        201: {"description": "Mouvement interne enregistré"},
+        400: {"description": "Validation métier (type / sens / solde)"},
+        403: {"description": "Permission absente ou step-up requis / invalide"},
+        404: {"description": "Session non trouvée"},
+        409: {"description": "Conflit idempotence"},
+    },
+    tags=["Sessions de Caisse"],
+)
+async def create_internal_transfer(
+    request: Request,
+    session_id: str,
+    payload: CashInternalTransferCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    redis_client=Depends(get_redis),
+):
+    if internal_transfer_requires_step_up(payload):
+        verify_step_up_pin_header(
+            user=current_user,
+            pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
+            redis_client=redis_client,
+            operation=SENSITIVE_OPERATION_CASH_INTERNAL_TRANSFER_STEP_UP,
+        )
+
+    idem_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+    if not idem_key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key requis")
+
+    body_fp = body_fingerprint_cash_internal_transfer_json(payload.model_dump(mode="json"))
+    rkey = redis_key_idempotent_cash_internal_transfer(str(current_user.id), session_id, idem_key)
+    cached = get_cached_idempotent_close(redis_client, rkey)
+    if cached:
+        status_c, body = validate_or_raise_idempotency_conflict(cached, body_fp)
+        return JSONResponse(status_code=status_c, content=body)
+
+    service = CashInternalTransferService(db)
+    try:
+        result = service.create_internal_transfer(
+            cash_session_id=session_id,
+            payload=payload,
+            operator=current_user,
+            idempotency_key=idem_key,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (ConflictError, NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
+
+    store_idempotent_close(
+        redis_client,
+        rkey,
+        body_fp,
+        201,
+        jsonable_encoder(result),
+    )
+
+    return result
+
+
+@router.post(
+    "/{session_id}/material-exchanges",
+    response_model=MaterialExchangeResponse,
+    status_code=201,
+    operation_id="recyclique_cashSessions_createMaterialExchange",
+    summary="Échange matière (Story 24.6) — conteneur et sous-flux vente ou reversal",
+    description="""
+    Orchestre un échange matière avec différence financière nulle (trace seule), positive (complément = vente canonique)
+    ou négative (reversal total sur vente source).
+
+    **Permissions :** `caisse.exchange` ; pour le reversal, également `caisse.refund`.
+    """,
+    responses={
+        201: {"description": "Échange enregistré"},
+        400: {"description": "Erreur de validation"},
+        403: {"description": "Permission manquante"},
+    },
+    tags=["Sessions de Caisse"],
+)
+async def create_material_exchange(
+    session_id: str,
+    payload: MaterialExchangeCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+):
+    try:
+        sid = UUID(str(session_id))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Session ID invalide") from e
+
+    service = MaterialExchangeService(db)
+    try:
+        return service.create_material_exchange(
+            cash_session_id=sid,
+            payload=payload,
+            operator_user=current_user,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except AuthorizationError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except (ConflictError, NotFoundError, ValidationError) as e:
+        raise_domain_exception_as_http(e, **_CASH_DOMAIN_HTTP)
 
 
 @router.post(

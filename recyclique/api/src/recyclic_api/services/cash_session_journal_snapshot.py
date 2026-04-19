@@ -12,9 +12,13 @@ from sqlalchemy.orm import Session
 from recyclic_api.models.payment_method import PaymentMethodDefinition, PaymentMethodKind
 from recyclic_api.models.payment_transaction import PaymentTransaction, PaymentTransactionNature
 from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus, _normalize_payment_method_token
+from recyclic_api.models.cash_disbursement import CashDisbursement
+from recyclic_api.models.cash_internal_transfer import CashInternalTransfer
 from recyclic_api.schemas.cash_session_close_snapshot import (
     CashSessionAccountingCloseSnapshotV1,
     CashSessionCloseSnapshotClosingV1,
+    CashSessionDisbursementLineV1,
+    CashSessionInternalTransferLineV1,
     CashSessionJournalTotalsV1,
 )
 
@@ -25,6 +29,63 @@ def _signed_amount_raw(amount: float, direction: Optional[str]) -> float:
     if d == "outflow":
         return -amt
     return amt
+
+
+_PM_DEC_FR: dict[str, str] = {
+    "cash": "Décaissement espèces",
+    "check": "Décaissement chèque",
+    "cheque": "Décaissement chèque",
+    "card": "Décaissement carte",
+    "transfer": "Décaissement virement",
+    "bank": "Décaissement virement",
+}
+_PM_ENC_FR: dict[str, str] = {
+    "cash": "Encaissement espèces",
+    "check": "Encaissement chèque",
+    "cheque": "Encaissement chèque",
+    "card": "Encaissement carte",
+    "transfer": "Encaissement virement",
+    "bank": "Encaissement virement",
+}
+
+
+def _pm_decaissement_label_fr(code: str) -> str:
+    c = (code or "").strip().lower()
+    return _PM_DEC_FR.get(c, f"Décaissement {c}")
+
+
+def _pm_encaissement_label_fr(code: str) -> str:
+    c = (code or "").strip().lower()
+    return _PM_ENC_FR.get(c, f"Encaissement {c}")
+
+
+def _disbursement_subtype_caption_fr(subtype: str) -> str:
+    return {
+        "volunteer_expense_reimbursement": "remboursement frais bénévole",
+        "small_operating_expense": "petite dépense de fonctionnement",
+        "validated_exceptional_outflow": "sortie exceptionnelle validée",
+        "other_admin_coded": "autre (codifié administrativement)",
+    }.get(subtype, subtype)
+
+
+def _internal_transfer_type_caption_fr(tt: str) -> str:
+    return {
+        "cash_float_topup": "appoint de caisse",
+        "cash_float_seed": "apport fond de caisse",
+        "bank_deposit": "dépôt banque",
+        "bank_withdrawal": "retrait banque",
+        "inter_register_transfer": "transfert entre caisses",
+        "variance_regularization": "régularisation d'écart",
+    }.get(tt, tt)
+
+
+def _internal_transfer_flow_caption_fr(flow: str) -> str:
+    f = (flow or "").strip().lower()
+    if f == "inflow":
+        return "entrée caisse"
+    if f == "outflow":
+        return "sortie caisse"
+    return f or "flux"
 
 
 def _legacy_journal_agg_key(raw: Optional[str]) -> str:
@@ -139,6 +200,51 @@ def compute_payment_journal_aggregates(
     refunds_current = round(sum(rc_by_pm.values()), 2)
     refunds_prior = round(sum(rp_by_pm.values()), 2)
 
+    disbursement_rows = (
+        db.query(CashDisbursement)
+        .filter(CashDisbursement.cash_session_id == sid)
+        .order_by(CashDisbursement.created_at.asc())
+        .all()
+    )
+    cash_disbursement_lines: list[CashSessionDisbursementLineV1] = []
+    for dr in disbursement_rows:
+        pm_key = (dr.payment_method or "").strip().lower() or "unknown"
+        cap = _disbursement_subtype_caption_fr((dr.subtype or "").strip())
+        cash_disbursement_lines.append(
+            CashSessionDisbursementLineV1(
+                payment_method_code=pm_key,
+                amount=round(float(dr.amount), 2),
+                subtype=str(dr.subtype),
+                label_fr=f"{_pm_decaissement_label_fr(pm_key)} — {cap}",
+            )
+        )
+
+    transfer_rows = (
+        db.query(CashInternalTransfer)
+        .filter(CashInternalTransfer.cash_session_id == sid)
+        .order_by(CashInternalTransfer.created_at.asc())
+        .all()
+    )
+    cash_internal_transfer_lines: list[CashSessionInternalTransferLineV1] = []
+    for tr in transfer_rows:
+        pm_key = (tr.payment_method or "").strip().lower() or "unknown"
+        tcap = _internal_transfer_type_caption_fr((tr.transfer_type or "").strip())
+        fcap = _internal_transfer_flow_caption_fr(str(tr.session_flow))
+        pm_verb = (
+            _pm_decaissement_label_fr(pm_key)
+            if str(tr.session_flow).strip().lower() == "outflow"
+            else _pm_encaissement_label_fr(pm_key)
+        )
+        cash_internal_transfer_lines.append(
+            CashSessionInternalTransferLineV1(
+                payment_method_code=pm_key,
+                amount=round(float(tr.amount), 2),
+                transfer_type=str(tr.transfer_type),
+                session_flow=str(tr.session_flow),
+                label_fr=f"Mouvement interne caisse — {tcap} ({fcap}) — {pm_verb}",
+            )
+        )
+
     return CashSessionJournalTotalsV1(
         by_payment_method_signed=dict(by_pm),
         refunds_current_fiscal_by_payment_method=rc_by_pm,
@@ -149,6 +255,8 @@ def compute_payment_journal_aggregates(
         cash_signed_net_from_journal=float(cash_net),
         payment_transaction_line_count=line_count,
         preview_fallback_legacy_totals=fallback,
+        cash_disbursement_lines=cash_disbursement_lines,
+        cash_internal_transfer_lines=cash_internal_transfer_lines,
     )
 
 

@@ -33,14 +33,6 @@ function salesHttpError(
   };
 }
 
-export type SaleItemCreateBody = {
-  category: string;
-  quantity: number;
-  weight: number;
-  unit_price: number;
-  total_price: number;
-};
-
 export type SpecialEncaissementKindV1 = 'DON_SANS_ARTICLE' | 'ADHESION_ASSOCIATION';
 
 /** Aligné sur OpenAPI `SocialActionKindV1` (Story 6.6). */
@@ -52,6 +44,30 @@ export type SocialActionKindV1 =
   | 'DON_AUX_ANIMAUX'
   | 'FRIPERIE_AUTO_GEREE';
 
+/** OpenAPI `BusinessTagKindV1` — Story 24.9. */
+export type BusinessTagKindV1 =
+  | 'GRATIFERIA'
+  | 'CAMPAGNE_SOCIALE'
+  | 'SPECIAL_DON_SANS_ARTICLE'
+  | 'ADHESION_ASSOCIATION'
+  | 'SOCIAL_DON_LIBRE'
+  | 'SOCIAL_DON_MOINS_18'
+  | 'SOCIAL_MARAUDE'
+  | 'SOCIAL_KIT_INSTALLATION_ETUDIANT'
+  | 'SOCIAL_DON_AUX_ANIMAUX'
+  | 'SOCIAL_FRIPERIE_AUTO_GEREE'
+  | 'AUTRE';
+
+export type SaleItemCreateBody = {
+  category: string;
+  quantity: number;
+  weight: number;
+  unit_price: number;
+  total_price: number;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
+};
+
 export type SaleCreateBody = {
   cash_session_id: string;
   items: SaleItemCreateBody[];
@@ -59,21 +75,66 @@ export type SaleCreateBody = {
   donation?: number;
   payment_method?: string;
   payments?: Array<{ payment_method: string; amount: number }>;
-  /** Story 22.4 — journal serveur `donation_surplus`, distinct du règlement */
+  /** Story 22.4 — journal serveur `donation_surplus` (complément de don volontaire / trop-perçu), distinct du règlement */
   donation_surplus?: Array<{ payment_method: string; amount: number }>;
   note?: string | null;
   special_encaissement_kind?: SpecialEncaissementKindV1;
   social_action_kind?: SocialActionKindV1;
   adherent_reference?: string | null;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
 };
 
 /** Aligné sur OpenAPI `SaleItemResponseV1` / `SaleItemCreateV1` (champs utiles UI). */
 export type SaleItemResponseV1 = SaleItemCreateBody & {
   id?: string;
   sale_id?: string;
+  effective_business_tag?: string | null;
 };
 
 /** Aligné sur OpenAPI `SaleResponseV1` (sous-ensemble consommé par le widget ticket). */
+/** Ligne journal GET /v1/sales/{id} — sous-ensemble stable pour UI correction (Story 6.8). */
+export type SalePaymentJournalRowV1 = {
+  readonly id?: string;
+  readonly payment_method?: string | null;
+  readonly payment_method_code?: string | null;
+  readonly amount?: number;
+  readonly nature?: string | null;
+};
+
+export type SalePaymentSplitV1 = {
+  readonly sale_payment: ReadonlyArray<{ readonly payment_method: string; readonly amount: number }>;
+  readonly donation_surplus: ReadonlyArray<{ readonly payment_method: string; readonly amount: number }>;
+};
+
+/**
+ * Scinde ``payments[]`` du ticket selon ``nature`` : ``sale_payment`` vs journal complément de don (``donation_surplus``).
+ * Lignes invalides ignorées ; codes préfèrent ``payment_method_code`` puis ``payment_method``.
+ */
+export function splitSalePaymentsByNature(raw: unknown): SalePaymentSplitV1 {
+  const sale_payment: { payment_method: string; amount: number }[] = [];
+  const donation_surplus: { payment_method: string; amount: number }[] = [];
+  if (!Array.isArray(raw)) {
+    return { sale_payment, donation_surplus };
+  }
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue;
+    const o = row as Record<string, unknown>;
+    const nature = typeof o.nature === 'string' ? o.nature.trim() : '';
+    const pmRaw =
+      (typeof o.payment_method_code === 'string' && o.payment_method_code.trim()) ||
+      (typeof o.payment_method === 'string' && o.payment_method.trim()) ||
+      '';
+    const amt = o.amount;
+    const amount = typeof amt === 'number' && Number.isFinite(amt) ? amt : Number.NaN;
+    if (!pmRaw || !Number.isFinite(amount)) continue;
+    const line = { payment_method: pmRaw.trim(), amount };
+    if (nature === 'donation_surplus') donation_surplus.push(line);
+    else sale_payment.push(line);
+  }
+  return { sale_payment, donation_surplus };
+}
+
 export type SaleResponseV1 = {
   id: string;
   cash_session_id: string;
@@ -86,10 +147,17 @@ export type SaleResponseV1 = {
   note?: string | null;
   sale_date?: string | null;
   items: SaleItemResponseV1[];
-  payments?: unknown[];
+  payments?: SalePaymentJournalRowV1[] | unknown[];
   special_encaissement_kind?: SpecialEncaissementKindV1 | null;
   social_action_kind?: SocialActionKindV1 | null;
   adherent_reference?: string | null;
+  business_tag_kind?: BusinessTagKindV1 | null;
+  business_tag_custom?: string | null;
+  effective_business_tag?: string | null;
+  /** Story 24.4 — aligné GET vente / autorité remboursement (22.5). */
+  fiscal_branch?: string | null;
+  sale_fiscal_year?: number | null;
+  current_open_fiscal_year?: number | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -100,6 +168,8 @@ export type SaleHoldCreateBody = {
   total_amount: number;
   donation?: number;
   note?: string | null;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
 };
 
 export type SaleFinalizeHeldBody = {
@@ -108,6 +178,8 @@ export type SaleFinalizeHeldBody = {
   payments?: Array<{ payment_method: string; amount: number }>;
   donation_surplus?: Array<{ payment_method: string; amount: number }>;
   note?: string | null;
+  business_tag_kind?: BusinessTagKindV1;
+  business_tag_custom?: string;
 };
 
 export type GetSaleResult = { ok: true; sale: SaleResponseV1 } | SalesHttpError;
@@ -530,6 +602,76 @@ export type SaleReversalCreateBody = {
 
 export type SaleReversalCreateResult = { ok: true; reversalId: string; raw: unknown } | SalesHttpError;
 
+/** Aligné sur OpenAPI `SaleReversalResponseV1` (Story 24.3 — champs optionnels si parse partiel). */
+export type SaleReversalResponseV1 = {
+  readonly id: string;
+  readonly source_sale_id?: string;
+  readonly cash_session_id?: string;
+  readonly operator_id?: string;
+  readonly amount_signed?: number;
+  readonly reason_code?: string;
+  readonly detail?: string | null;
+  readonly idempotency_key?: string | null;
+  readonly created_at?: string;
+  readonly refund_payment_method?: string;
+  readonly source_sale_payment_method?: string | null;
+  readonly fiscal_branch?: string | null;
+  readonly sale_fiscal_year?: number | null;
+  readonly current_open_fiscal_year?: number | null;
+  readonly paheko_accounting_sync_hint?: string;
+};
+
+/**
+ * Parse la réponse GET/POST reversal (garde-fous : refuse les payloads sans `id` UUID plausible).
+ */
+export function parseSaleReversalResponseJson(json: unknown): SaleReversalResponseV1 | null {
+  if (!json || typeof json !== 'object') return null;
+  const o = json as Record<string, unknown>;
+  const id = typeof o.id === 'string' ? o.id.trim() : '';
+  if (!id) return null;
+
+  const num = (k: string): number | undefined => {
+    const v = o[k];
+    return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+  };
+
+  const strOrNull = (k: string): string | null | undefined => {
+    const v = o[k];
+    if (v === null) return null;
+    if (typeof v === 'string') return v;
+    return undefined;
+  };
+
+  const intOrNull = (k: string): number | null | undefined => {
+    const v = o[k];
+    if (v === null) return null;
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    return undefined;
+  };
+
+  return {
+    id,
+    source_sale_id: typeof o.source_sale_id === 'string' ? o.source_sale_id : undefined,
+    cash_session_id: typeof o.cash_session_id === 'string' ? o.cash_session_id : undefined,
+    operator_id: typeof o.operator_id === 'string' ? o.operator_id : undefined,
+    amount_signed: num('amount_signed'),
+    reason_code: typeof o.reason_code === 'string' ? o.reason_code : undefined,
+    detail: strOrNull('detail'),
+    idempotency_key:
+      typeof o.idempotency_key === 'string' || o.idempotency_key === null
+        ? (o.idempotency_key as string | null)
+        : undefined,
+    created_at: typeof o.created_at === 'string' ? o.created_at : undefined,
+    refund_payment_method: typeof o.refund_payment_method === 'string' ? o.refund_payment_method : undefined,
+    source_sale_payment_method: strOrNull('source_sale_payment_method'),
+    fiscal_branch: strOrNull('fiscal_branch'),
+    sale_fiscal_year: intOrNull('sale_fiscal_year'),
+    current_open_fiscal_year: intOrNull('current_open_fiscal_year'),
+    paheko_accounting_sync_hint:
+      typeof o.paheko_accounting_sync_hint === 'string' ? o.paheko_accounting_sync_hint : undefined,
+  };
+}
+
 /**
  * POST /v1/sales/reversals — `operationId` `recyclique_sales_createSaleReversal` (Story 6.4).
  */
@@ -644,6 +786,20 @@ export async function postAbandonHeldSale(
   return { ok: true, raw: json };
 }
 
+/** PATCH /v1/sales/{id}/corrections — entrées ``items[]`` (Story 6.8 étendue). */
+export type SaleCorrectionItemPatchBody = {
+  sale_item_id: string;
+  category?: string;
+  quantity?: number;
+  weight?: number;
+  unit_price?: number;
+  total_price?: number;
+  notes?: string | null;
+  preset_id?: string | null;
+  business_tag_kind?: BusinessTagKindV1 | null;
+  business_tag_custom?: string | null;
+};
+
 export type SaleCorrectionRequestBody =
   | { kind: 'sale_date'; sale_date: string; reason: string }
   | {
@@ -652,7 +808,13 @@ export type SaleCorrectionRequestBody =
       donation?: number | null;
       total_amount?: number | null;
       payment_method?: string | null;
+      /** Remplace les lignes ``sale_payment`` (multi-moyens). */
+      payments?: Array<{ payment_method: string; amount: number }>;
+      /** Remplace les lignes journal complément de don (API ``donation_surplus``). */
+      donation_surplus?: Array<{ payment_method: string; amount: number }>;
       note?: string | null;
+      /** Mise à jour ciblée des lignes ``sale_items`` (poids, catégorie, etc.). */
+      items?: SaleCorrectionItemPatchBody[];
     };
 
 export type PatchSaleSensitiveCorrectionResult = { ok: true; raw: unknown } | SalesHttpError;

@@ -28,6 +28,12 @@ REQUEST_ID_HEADER = "X-Request-Id"
 SENSITIVE_OPERATION_CASH_SESSION_CLOSE = "cash_session.close"
 # Story 6.8 — corrections sensibles vente (PIN step-up aligné clôture)
 SENSITIVE_OPERATION_CASH_SALE_CORRECT = "cash_sale.correct"
+# Story 24.5 — remboursement exceptionnel sans ticket
+SENSITIVE_OPERATION_CASH_EXCEPTIONAL_REFUND = "cash_session.exceptional_refund"
+# Story 24.7 — sous-types N3 (sortie exceptionnelle / autre codifié admin)
+SENSITIVE_OPERATION_CASH_DISBURSEMENT_STEP_UP = "cash_session.disbursement_step_up"
+# Story 24.8 — mouvement interne sensible (N3 : montants élevés ou types à double contrôle)
+SENSITIVE_OPERATION_CASH_INTERNAL_TRANSFER_STEP_UP = "cash_session.internal_transfer_step_up"
 
 # Story 16.3 — opérations base super-admin (alignement cash_session.close)
 SENSITIVE_OPERATION_DB_EXPORT = "db.export"

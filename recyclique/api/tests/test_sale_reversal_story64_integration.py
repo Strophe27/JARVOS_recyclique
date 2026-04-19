@@ -271,3 +271,35 @@ def test_get_reversal(client: TestClient, story64_fixtures):
     g = client.get(f"/v1/sales/reversals/{rid}", headers=h)
     assert g.status_code == 200
     assert g.json()["id"] == rid
+
+
+def test_story_24_3_reversal_response_enriches_effective_payment_and_paheko_hint(
+    client: TestClient, story64_fixtures,
+):
+    """Story 24.3 — moyen effectif vs vente source, hint Paheko (chaîne clôture) et lecture GET cohérente."""
+    h = story64_fixtures["headers"]
+    sid = story64_fixtures["session_id"]
+    sale_id = _create_completed_sale(client, h, sid, 40.0)
+    r = client.post(
+        "/v1/sales/reversals",
+        json={
+            "source_sale_id": sale_id,
+            "reason_code": "RETOUR_ARTICLE",
+            "refund_payment_method": "card",
+        },
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["refund_payment_method"] == "card"
+    assert body["source_sale_payment_method"] == "cash"
+    assert "paheko_accounting_sync_hint" in body
+    assert "outbox" in body["paheko_accounting_sync_hint"].lower()
+    assert body.get("fiscal_branch") in (None, "current", "prior_closed")
+    rid = body["id"]
+    g = client.get(f"/v1/sales/reversals/{rid}", headers=h)
+    assert g.status_code == 200
+    gb = g.json()
+    assert gb["refund_payment_method"] == "card"
+    assert gb["source_sale_payment_method"] == "cash"
+    assert gb["id"] == rid

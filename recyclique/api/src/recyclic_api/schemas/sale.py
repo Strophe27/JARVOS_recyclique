@@ -4,6 +4,7 @@ from typing import Annotated, List, Literal, Optional, Union
 from datetime import datetime
 from recyclic_api.models.payment_transaction import PaymentTransactionDirection, PaymentTransactionNature
 from recyclic_api.models.sale import PaymentMethod, SaleLifecycleStatus, SocialActionKind, SpecialEncaissementKind
+from recyclic_api.services.business_tag_resolution import BusinessTagKind
 from recyclic_api.models.payment_method import PaymentMethodKind
 from recyclic_api.models.sale_reversal import RefundReasonCode
 
@@ -83,6 +84,9 @@ class SaleItemBase(BaseModel):
     # Story 1.1.2: Champs ajoutés pour preset et notes par item
     preset_id: Optional[UUID] = None
     notes: Optional[str] = None
+    # Story 24.9 — tag métier ligne (prime sur le tag ticket).
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
 class SaleItemCreate(SaleItemBase):
     pass
@@ -98,6 +102,10 @@ class SaleItemUpdate(BaseModel):
 class SaleItemResponse(SaleItemBase):
     id: str
     sale_id: str
+    effective_business_tag: Optional[str] = Field(
+        default=None,
+        description="Tag métier effectif (ligne > ticket > legacy 6.5/6.6).",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -147,6 +155,9 @@ class SaleCreate(BaseModel):
     # Story 6.6 : action sociale — exige permission caisse.social_encaissement ; exclusif de special_encaissement_kind.
     social_action_kind: Optional[SocialActionKind] = None
     adherent_reference: Optional[str] = Field(None, max_length=200)
+    # Story 24.9 — tags métier ticket (surcharge ligne dans items[]).
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
     @field_validator("payment_method", mode="before")
     @classmethod
@@ -172,6 +183,8 @@ class SaleHoldCreate(BaseModel):
     total_amount: float
     donation: Optional[float] = 0.0
     note: Optional[str] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
 
 class SaleFinalizeHeld(BaseModel):
@@ -182,6 +195,8 @@ class SaleFinalizeHeld(BaseModel):
     payments: Optional[List[PaymentCreate]] = None
     donation_surplus: Optional[List[PaymentCreate]] = None
     note: Optional[str] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
 
     @field_validator("payment_method", mode="before")
     @classmethod
@@ -228,6 +243,25 @@ class SaleResponse(SaleBase):
     special_encaissement_kind: Optional[SpecialEncaissementKind] = None
     social_action_kind: Optional[SocialActionKind] = None
     adherent_reference: Optional[str] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = None
+    effective_business_tag: Optional[str] = Field(
+        default=None,
+        description="Tag métier effectif au niveau ticket (sans lignes ou défaut avant surcharge ligne).",
+    )
+    # Story 24.4 — même résolution que le reversal (resolve_refund_branch) ; lecture seule pour le terrain.
+    fiscal_branch: Optional[str] = Field(
+        default=None,
+        description="Branche fiscale si ce remboursement était tenté : current | prior_closed (serveur, GET vente).",
+    )
+    sale_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Année fiscale de rattachement de la vente source (cadrage N vs N-1).",
+    )
+    current_open_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Exercice ouvert connu au moment de la résolution (snapshot autorité).",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -277,8 +311,16 @@ class SaleReversalCreate(BaseModel):
         return self
 
 
+# Story 24.3 — message métier chaîne canonique (clôture → snapshot → outbox), sans promesse d’écriture instantanée Paheko.
+PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND = (
+    "Le remboursement est enregistré en caisse ; l’écriture comptable Paheko correspondante est intégrée au snapshot "
+    "de clôture de session, puis exportée via l’outbox — pas d’écriture Paheko immédiate au moment de "
+    "l’enregistrement terrain."
+)
+
+
 class SaleReversalResponse(BaseModel):
-    """Réponse création / lecture reversal (Story 6.4)."""
+    """Réponse création / lecture reversal (Story 6.4 + enrichissement visibilité 24.3)."""
 
     id: str
     source_sale_id: str
@@ -289,13 +331,77 @@ class SaleReversalResponse(BaseModel):
     detail: Optional[str] = None
     idempotency_key: Optional[str] = None
     created_at: datetime
+    # Story 24.3 — alignement journal REFUND_PAYMENT / ventilation Epic 23 vs libellé vente source.
+    refund_payment_method: str = Field(
+        ...,
+        description="Moyen effectif de remboursement (journal REFUND_PAYMENT), distinct du legacy vente source si besoin.",
+    )
+    source_sale_payment_method: Optional[str] = Field(
+        default=None,
+        description="Moyen de paiement porté par la vente source (peut différer du canal de sortie réel).",
+    )
+    fiscal_branch: Optional[str] = Field(
+        default=None,
+        description="Branche fiscale courante : current | prior_closed (autorité exercices ; null si indisponible).",
+    )
+    sale_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Année fiscale de rattachement de la vente source (autorité comptable).",
+    )
+    current_open_fiscal_year: Optional[int] = Field(
+        default=None,
+        description="Exercice ouvert connu (cadrage N vs N-1).",
+    )
+    paheko_accounting_sync_hint: str = Field(
+        default=PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND,
+        description="Rappel chaîne canonique Paheko (pas de second rail ; pas d’instantanéité hors batch clôture).",
+    )
 
-    model_config = ConfigDict(from_attributes=True)
+    # Construction explicite via ``SaleService.build_sale_reversal_response`` (journal + vente source) — pas d’ORM direct.
+    model_config = ConfigDict(from_attributes=False)
 
     @field_validator("id", "source_sale_id", "cash_session_id", "operator_id", mode="before")
     @classmethod
     def _uuid_reversal(cls, v):
         return str(v) if v is not None else v
+
+
+class SaleCorrectionItemPatch(BaseModel):
+    """Story 6.8 — mise à jour ciblée d'une ligne ``sale_items`` via correction sensible."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sale_item_id: UUID
+    category: Optional[str] = Field(None, max_length=50)
+    quantity: Optional[int] = Field(None, gt=0)
+    weight: Optional[float] = Field(None, gt=0)
+    unit_price: Optional[float] = Field(None, ge=0)
+    total_price: Optional[float] = Field(None, ge=0)
+    notes: Optional[str] = None
+    preset_id: Optional[UUID] = None
+    business_tag_kind: Optional[BusinessTagKind] = None
+    business_tag_custom: Optional[str] = Field(None, max_length=256)
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _strip_category(cls, v: object) -> Optional[str]:
+        if v is None:
+            return None
+        s = str(v).strip()
+        return s if s else None
+
+    @field_validator("category")
+    @classmethod
+    def _category_non_empty_if_set(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError("category ne peut pas être vide.")
+        return v
+
+    @model_validator(mode="after")
+    def _at_least_one_field(self) -> "SaleCorrectionItemPatch":
+        if self.model_dump(exclude={"sale_item_id"}, exclude_none=True) == {}:
+            raise ValueError("Au moins un champ de ligne (hors sale_item_id) est requis pour chaque entrée.")
+        return self
 
 
 class SaleCorrectionSaleDatePayload(BaseModel):
@@ -319,6 +425,10 @@ class SaleCorrectionFinalizeFieldsPayload(BaseModel):
     payment_method: Optional[str] = None
     note: Optional[str] = Field(None, max_length=10000)
     reason: str = Field(min_length=1, max_length=2000)
+    # Remplacement explicite des lignes journal (multi-moyens / Story 22.4) — même granularité que finalize-held.
+    payments: Optional[List[PaymentCreate]] = None
+    donation_surplus: Optional[List[PaymentCreate]] = None
+    items: Optional[List[SaleCorrectionItemPatch]] = None
 
     @field_validator("payment_method", mode="before")
     @classmethod
@@ -334,9 +444,13 @@ class SaleCorrectionFinalizeFieldsPayload(BaseModel):
             and self.total_amount is None
             and self.payment_method is None
             and self.note is None
+            and self.payments is None
+            and self.donation_surplus is None
+            and not self.items
         ):
             raise ValueError(
-                "Au moins un champ parmi donation, total_amount, payment_method, note est requis."
+                "Au moins un champ parmi donation, total_amount, payment_method, note, payments, "
+                "donation_surplus, items est requis."
             )
         return self
 

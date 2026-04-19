@@ -42,6 +42,8 @@ export type AdminAuditLogListQuery = {
   readonly start_date?: string;
   readonly end_date?: string;
   readonly search?: string;
+  /** Story 24.10 — filtre opérations caisse sensibles (Epic 24). */
+  readonly cash_sensitive_operations?: boolean;
 };
 
 type AdminAuditLogHttpError = {
@@ -169,6 +171,8 @@ export async function getAdminAuditLogList(
   if (query.start_date) sp.set('start_date', query.start_date);
   if (query.end_date) sp.set('end_date', query.end_date);
   if (query.search) sp.set('search', query.search);
+  if (query.cash_sensitive_operations === true) sp.set('cash_sensitive_operations', 'true');
+  if (query.cash_sensitive_operations === false) sp.set('cash_sensitive_operations', 'false');
   const q = sp.toString();
   const url = `${base}/v1/admin/audit-log${q ? `?${q}` : ''}`;
   let res: Response;

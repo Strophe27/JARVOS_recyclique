@@ -38,6 +38,18 @@
       }
     },
     {
+      "id": "cashflow-special-ops-hub",
+      "route_key": "cashflow-special-ops-hub",
+      "path": "/caisse/operations-speciales",
+      "page_key": "cashflow-special-ops-hub",
+      "shortcut_id": "go-cashflow-special-ops-hub",
+      "label_key": "nav.cashflow.specialOpsHub",
+      "visibility": {
+        "permission_any": ["caisse.access", "caisse.virtual.access", "caisse.deferred.access"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
       "id": "reception-nominal",
       "route_key": "reception-nominal",
       "path": "/reception",
@@ -337,6 +349,58 @@
       "required_permission_keys": ["caisse.access", "caisse.refund"],
       "visibility": {
         "permission_any": ["caisse.refund"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-exceptional-refund",
+      "route_key": "cashflow-exceptional-refund",
+      "path": "/caisse/remboursement-exceptionnel",
+      "page_key": "cashflow-exceptional-refund",
+      "shortcut_id": "go-cashflow-exceptional-refund",
+      "label_key": "nav.cashflow.exceptionalRefund",
+      "required_permission_keys": ["caisse.access", "refund.exceptional"],
+      "visibility": {
+        "permission_any": ["refund.exceptional"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-exchange",
+      "route_key": "cashflow-exchange",
+      "path": "/caisse/echange",
+      "page_key": "cashflow-exchange",
+      "shortcut_id": "go-cashflow-exchange",
+      "label_key": "nav.cashflow.exchange",
+      "required_permission_keys": ["caisse.access", "caisse.exchange"],
+      "visibility": {
+        "permission_any": ["caisse.exchange"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-disbursement",
+      "route_key": "cashflow-disbursement",
+      "path": "/caisse/decaissement",
+      "page_key": "cashflow-disbursement",
+      "shortcut_id": "go-cashflow-disbursement",
+      "label_key": "nav.cashflow.disbursement",
+      "required_permission_keys": ["caisse.access", "cash.disbursement"],
+      "visibility": {
+        "permission_any": ["cash.disbursement"],
+        "contexts_any": ["site"]
+      }
+    },
+    {
+      "id": "cashflow-internal-transfer",
+      "route_key": "cashflow-internal-transfer",
+      "path": "/caisse/mouvement-interne",
+      "page_key": "cashflow-internal-transfer",
+      "shortcut_id": "go-cashflow-internal-transfer",
+      "label_key": "nav.cashflow.internalTransfer",
+      "required_permission_keys": ["caisse.access", "cash.transfer"],
+      "visibility": {
+        "permission_any": ["cash.transfer"],
         "contexts_any": ["site"]
       }
     },

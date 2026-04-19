@@ -271,9 +271,11 @@ async def correct_sale_sensitive(
     redis_client=Depends(get_redis),
 ):
     """
-    Story 6.8 — correction post-hoc bornée (super-admin, session ouverte).
+    Story 6.8 — correction post-hoc bornée (super-admin).
 
-    Liste fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note).
+    Liste fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note,
+    ``items[]`` lignes article, remplacement ``payments`` / ``donation_surplus``).
+    Une session de caisse **clôturée** n'est plus bloquante (données historiques) ; l'audit porte le statut de session.
     Step-up ``X-Step-Up-Pin`` obligatoire ; ``Idempotency-Key`` optionnel (rejouer la même réponse).
     """
     verify_step_up_pin_header(
@@ -357,7 +359,8 @@ async def get_sale(
         raise HTTPException(status_code=401, detail="User not found")
 
     try:
-        return SaleService(db).get_sale_readable_by_user(sale_id, user_id)
+        sale = SaleService(db).get_sale_readable_by_user(sale_id, user_id)
+        return SaleService(db).build_sale_response(sale)
     except AuthorizationError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
     except NotFoundError as e:

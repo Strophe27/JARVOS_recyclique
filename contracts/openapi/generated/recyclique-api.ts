@@ -394,6 +394,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cash-sessions/{session_id}/exceptional-refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remboursement exceptionnel sans ticket (step-up PIN + idempotence)
+         * @description Story 24.5 — remboursement sans ticket source, journalisé via vente technique et `payment_transactions`.
+         *     **Permission requise :** `refund.exceptional` (sinon **403**).
+         *     **Preuve step-up** obligatoire via en-tête `X-Step-Up-Pin`. **Idempotence obligatoire** via
+         *     `Idempotency-Key` (même corps → réponse rejouée ; corps différent → **409** ; clé unique par session).
+         */
+        post: operations["recyclique_cashSessions_createExceptionalRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-sessions/{session_id}/disbursements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Décaissement typé hors ticket (Story 24.7)
+         * @description Enregistre un décaissement avec sous-type fermé (PRD §10.5). Permission `cash.disbursement`.
+         *     Step-up PIN (`X-Step-Up-Pin`) requis pour `validated_exceptional_outflow` et `other_admin_coded`.
+         *     **Nota 24.8** : le mouvement interne (`cash.transfer`) est un flux distinct — ne pas confondre.
+         */
+        post: operations["recyclique_cashSessions_createDisbursement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-sessions/{session_id}/material-exchanges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Échange matière (Story 24.6)
+         * @description Conteneur métier « échange » : trace matière et delta financier. Delta nul = pas de vente ni reversal
+         *     pour la différence ; delta positif = complément via ``SaleCreateV1`` ; delta négatif = reversal total
+         *     sur la vente source (``SaleReversalCreateV1``). Permissions ``caisse.exchange`` et, si reversal, ``caisse.refund``.
+         */
+        post: operations["recyclique_cashSessions_createMaterialExchange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cash-sessions/{session_id}/close": {
         parameters: {
             query?: never;
@@ -4095,12 +4162,132 @@ export interface components {
             special_encaissement_kind?: components["schemas"]["SpecialEncaissementKindV1"] | null;
             social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
             adherent_reference?: string | null;
+            /** @description Story 24.4 — prévisualisation autorité remboursement (GET vente), alignée sur POST /sales/reversals : ``current`` (exercice ouvert) ou ``prior_closed`` (exercice antérieur clos ; parcours expert requis). */
+            fiscal_branch?: string | null;
+            /** @description Année fiscale de rattachement de la vente source (cadrage N vs N-1). */
+            sale_fiscal_year?: number | null;
+            /** @description Exercice ouvert issu du snapshot autorité au moment de la résolution. */
+            current_open_fiscal_year?: number | null;
         };
         /**
          * @description Motif de remboursement (Story 6.4).
          * @enum {string}
          */
         RefundReasonCodeV1: "ERREUR_SAISIE" | "RETOUR_ARTICLE" | "ANNULATION_CLIENT" | "AUTRE";
+        ExceptionalRefundCreateV1: {
+            /** @description Montant remboursé (positif, en euros). */
+            amount: number;
+            /** @description Moyen effectif utilisé pour rembourser le client (ex. cash, card, check). */
+            refund_payment_method: string;
+            reason_code: components["schemas"]["RefundReasonCodeV1"];
+            justification: string;
+            detail?: string | null;
+        };
+        ExceptionalRefundResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            /** Format: uuid */
+            sale_id: string;
+            amount: number;
+            refund_payment_method: string;
+            reason_code: string;
+            justification: string;
+            detail?: string | null;
+            idempotency_key: string;
+            request_id?: string | null;
+            /** Format: uuid */
+            initiator_user_id: string;
+            /** Format: uuid */
+            approver_user_id: string;
+            /** Format: date-time */
+            approved_at: string;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Rappel chaîne canonique Paheko (synchro via clôture). */
+            paheko_accounting_sync_hint: string;
+        };
+        /**
+         * @description Sous-types fermés PRD §10.5 (distinct mouvement interne 24.8).
+         * @enum {string}
+         */
+        CashDisbursementSubtypeV1: "volunteer_expense_reimbursement" | "small_operating_expense" | "validated_exceptional_outflow" | "other_admin_coded";
+        /** @enum {string} */
+        CashDisbursementMotifCodeV1: "office_supplies" | "postage" | "volunteer_travel" | "short_external_fee" | "board_approved_other";
+        CashDisbursementCreateV1: {
+            subtype: components["schemas"]["CashDisbursementSubtypeV1"];
+            motif_code: components["schemas"]["CashDisbursementMotifCodeV1"];
+            counterparty_label: string;
+            amount: number;
+            payment_method: string;
+            free_comment?: string | null;
+            justification_reference: string;
+            /** Format: date-time */
+            actual_settlement_at: string;
+            /** @description Obligatoire si subtype = other_admin_coded (clé d'administration fermée). */
+            admin_coded_reason_key?: string | null;
+        };
+        CashDisbursementResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            /** Format: uuid */
+            sale_id: string;
+            amount: number;
+            subtype: string;
+            motif_code: string;
+            counterparty_label: string;
+            payment_method: string;
+            free_comment?: string | null;
+            justification_reference: string;
+            /** Format: date-time */
+            actual_settlement_at: string;
+            admin_coded_reason_key?: string | null;
+            /** Format: uuid */
+            initiator_user_id: string;
+            /** Format: uuid */
+            approver_user_id: string;
+            /** Format: date-time */
+            approved_at: string;
+            idempotency_key: string;
+            request_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            paheko_accounting_sync_hint: string;
+        };
+        MaterialExchangeCreateV1: {
+            /** @description Positif = complément (création vente) ; négatif = remboursement (reversal total sur vente source) ; zéro = matière seule (aucun PaymentTransaction pour la différence). */
+            delta_amount_cents: number;
+            /** @description Retour(s) et sortie(s) matière (références ou saisie minimale). */
+            material_trace: {
+                [key: string]: unknown;
+            };
+            /** @description Requis si delta > 0 (vente nominale complément). */
+            complement_sale?: components["schemas"]["SaleCreateV1"] | null;
+            /** @description Requis si delta < 0 (reversal canonique sur la vente source). */
+            reversal?: components["schemas"]["SaleReversalCreateV1"] | null;
+            idempotency_key?: string | null;
+        };
+        MaterialExchangeResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            delta_amount_cents: number;
+            material_trace: {
+                [key: string]: unknown;
+            };
+            /** Format: uuid */
+            complement_sale_id?: string | null;
+            /** Format: uuid */
+            sale_reversal_id?: string | null;
+            /** @description Alignement chaîne Paheko (clôture / snapshot / outbox). */
+            paheko_accounting_sync_hint?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
         SaleCorrectionSaleDateV1: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -4172,6 +4359,18 @@ export interface components {
             idempotency_key?: string | null;
             /** Format: date-time */
             created_at: string;
+            /** @description Story 24.3 — moyen effectif de remboursement (journal ``REFUND_PAYMENT``), distinct du legacy vente source si besoin. */
+            refund_payment_method: string;
+            /** @description Moyen de paiement porté par la vente source (peut différer du canal de sortie réel). */
+            source_sale_payment_method?: string | null;
+            /** @description Branche fiscale courante (``current`` | ``prior_closed``) ; null si autorité indisponible. */
+            fiscal_branch?: string | null;
+            /** @description Année fiscale de rattachement de la vente source. */
+            sale_fiscal_year?: number | null;
+            /** @description Exercice ouvert connu (cadrage N vs N-1). */
+            current_open_fiscal_year?: number | null;
+            /** @description Story 24.3 — rappel chaîne canonique Paheko (clôture → snapshot de session → outbox) ; pas d’écriture Paheko instantanée au remboursement. */
+            paheko_accounting_sync_hint?: string;
         };
         /**
          * @description Destination ligne dépôt (aligné modèle `Destination` backend).
@@ -5522,6 +5721,178 @@ export interface operations {
             };
             /** @description Session introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_createExceptionalRefund: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description PIN opérateur (preuve step-up ; ne pas logger). */
+                "X-Step-Up-Pin": string;
+                /** @description Clé client pour éviter doubles effets (Redis, TTL 24h). */
+                "Idempotency-Key": string;
+                /** @description Identifiant de corrélation ; renvoyé tel quel ou complété par le serveur. */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExceptionalRefundCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Remboursement exceptionnel enregistré */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExceptionalRefundResponseV1"];
+                };
+            };
+            /** @description Erreur de validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission `refund.exceptional` absente, PIN step-up manquant/invalide, ou verrouillage step-up */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit idempotence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_createDisbursement: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                /** @description Obligatoire pour les sous-types à preuve N3. */
+                "X-Step-Up-Pin"?: string;
+                "X-Request-Id"?: string;
+            };
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashDisbursementCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Décaissement enregistré */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashDisbursementResponseV1"];
+                };
+            };
+            /** @description Erreur de validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Permission ou step-up */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflit idempotence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    recyclique_cashSessions_createMaterialExchange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialExchangeCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Échange enregistré */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialExchangeResponseV1"];
+                };
+            };
+            /** @description Erreur de validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission manquante */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

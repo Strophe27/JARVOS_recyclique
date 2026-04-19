@@ -44,6 +44,13 @@ class AuditActionType(str, enum.Enum):
     CASH_SALE_REVERSAL = "cash_sale_reversal"
     # Story 6.8 — correction post-hoc bornée (audit reviewable)
     CASH_SALE_CORRECTED = "cash_sale_corrected"
+    # Story 24.5 — remboursement exceptionnel sans ticket
+    CASH_EXCEPTIONAL_REFUND = "cash_exceptional_refund"
+    # Story 24.6 — échange matière (conteneur ; sous-flux vente / reversal liés)
+    CASH_MATERIAL_EXCHANGE = "cash_material_exchange"
+    CASH_DISBURSEMENT = "cash_disbursement"
+    # Story 24.8 — mouvement interne caisse (distinct remboursement / décaissement charge)
+    CASH_INTERNAL_TRANSFER = "cash_internal_transfer"
 
     # Actions système
     SYSTEM_CONFIG_CHANGED = "system_config_changed"

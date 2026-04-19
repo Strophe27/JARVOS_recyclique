@@ -32,6 +32,9 @@
  * Story 19.2 : `transverse-admin-reception-sessions` (`/admin/reception-sessions`) + `admin-reception-ticket-detail`
  * (`/admin/reception-tickets/:id`) — lectures `recyclique_reception_listTickets` / `recyclique_reception_getTicketDetail`.
  *
+ * Story 24.2 : hub « opérations spéciales » (`page-cashflow-special-ops-hub.json`, `/caisse/operations-speciales`) —
+ * catalogue PRD + navigation CREOS alignée `navigation-transverse-served.json` / `public/manifests/navigation.json`.
+ *
  * Story 19.3 : paquet de preuve pilotage réception (matrice + tests + doc § 19.3) ; exports **B** et
  * `/admin/reception-reports` hors critère succès **19.x** mais nommés ; MCP navigateur **NEEDS_HITL** si indisponible au DS
  * (`references/artefacts/2026-04-12_08_preuve-parite-pilotage-reception-19-3-needs-hitl.md`).
@@ -73,7 +76,12 @@ import pageTransverseDashboardBenevole from '../../../../contracts/creos/manifes
 import pageTransverseListingArticles from '../../../../contracts/creos/manifests/page-transverse-listing-articles.json';
 import pageTransverseListingDons from '../../../../contracts/creos/manifests/page-transverse-listing-dons.json';
 import pageCashflowNominal from '../../../../contracts/creos/manifests/page-cashflow-nominal.json';
+import pageCashflowSpecialOpsHub from '../../../../contracts/creos/manifests/page-cashflow-special-ops-hub.json';
 import pageCashflowRefund from '../../../../contracts/creos/manifests/page-cashflow-refund.json';
+import pageCashflowExceptionalRefund from '../../../../contracts/creos/manifests/page-cashflow-exceptional-refund.json';
+import pageCashflowDisbursement from '../../../../contracts/creos/manifests/page-cashflow-disbursement.json';
+import pageCashflowInternalTransfer from '../../../../contracts/creos/manifests/page-cashflow-internal-transfer.json';
+import pageCashflowExchange from '../../../../contracts/creos/manifests/page-cashflow-exchange.json';
 import pageAdminCashSessionDetail from '../../../../contracts/creos/manifests/page-admin-cash-session-detail.json';
 import pageAdminReceptionTicketDetail from '../../../../contracts/creos/manifests/page-admin-reception-ticket-detail.json';
 import pageCashflowClose from '../../../../contracts/creos/manifests/page-cashflow-close.json';
@@ -182,7 +190,12 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
     JSON.stringify(pageTransverseConsultationArticle),
     JSON.stringify(pageTransverseConsultationDon),
     JSON.stringify(pageCashflowNominal),
+    JSON.stringify(pageCashflowSpecialOpsHub),
     JSON.stringify(pageCashflowRefund),
+    JSON.stringify(pageCashflowExceptionalRefund),
+    JSON.stringify(pageCashflowExchange),
+    JSON.stringify(pageCashflowDisbursement),
+    JSON.stringify(pageCashflowInternalTransfer),
     JSON.stringify(pageCashflowClose),
     JSON.stringify(pageAdminCashSessionDetail),
     JSON.stringify(pageAdminReceptionTicketDetail),
@@ -225,7 +238,12 @@ export const runtimeServedManifestLoadResult: LoadManifestBundleResult = loadMan
           'contracts/creos/manifests/page-transverse-consultation-article.json',
           'contracts/creos/manifests/page-transverse-consultation-don.json',
           'contracts/creos/manifests/page-cashflow-nominal.json',
+          'contracts/creos/manifests/page-cashflow-special-ops-hub.json',
           'contracts/creos/manifests/page-cashflow-refund.json',
+          'contracts/creos/manifests/page-cashflow-exceptional-refund.json',
+          'contracts/creos/manifests/page-cashflow-exchange.json',
+          'contracts/creos/manifests/page-cashflow-disbursement.json',
+          'contracts/creos/manifests/page-cashflow-internal-transfer.json',
           'contracts/creos/manifests/page-cashflow-close.json',
           'contracts/creos/manifests/page-admin-cash-session-detail.json',
           'contracts/creos/manifests/page-admin-reception-ticket-detail.json',

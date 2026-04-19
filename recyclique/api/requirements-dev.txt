@@ -7,3 +7,5 @@ pytest-asyncio==0.21.1
 httpx==0.25.2
 pytest-cov
 pytest-mock
+# Même version que requirements.txt / pyproject — tests qui importent PyPDF2 (ex. test_category_export).
+PyPDF2==3.0.1

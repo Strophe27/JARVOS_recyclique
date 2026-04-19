@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from recyclic_api.services.paheko_transaction_payload_builder import (
     build_close_transaction_advanced_payload,
@@ -402,6 +402,42 @@ def _build_sales_donations_planned_row_per_pm(
     if not ref_doc:
         return None, "invalid_outbox_payload", "cash_session_id absent pour références Paheko."
 
+    # Story 24.7 — libellés crédit par sous-type décaissement (évite un seul « divers » masquant le métier).
+    disb_raw = totals.get("cash_disbursement_lines")
+    disb_by_pm: dict[str, list[tuple[float, str]]] = {}
+    if isinstance(disb_raw, list):
+        for row in disb_raw:
+            if not isinstance(row, dict):
+                continue
+            pm_c = str(row.get("payment_method_code") or "").strip().lower()
+            a = _r2(float(row.get("amount") or 0.0))
+            lab = str(row.get("label_fr") or "").strip()
+            if not pm_c or a <= 0.005:
+                continue
+            if not lab:
+                lab = _paheko_pm_decaissement_label_fr(pm_c)
+            disb_by_pm.setdefault(pm_c, []).append((a, lab))
+
+    # Story 24.8 — mouvements internes typés (distinct « Décaissement charge » et « Remboursement »).
+    int_raw = totals.get("cash_internal_transfer_lines")
+    int_by_pm: dict[str, list[tuple[float, str]]] = {}
+    if isinstance(int_raw, list):
+        for row in int_raw:
+            if not isinstance(row, dict):
+                continue
+            pm_c = str(row.get("payment_method_code") or "").strip().lower()
+            flow = str(row.get("session_flow") or "").strip().lower()
+            a = _r2(float(row.get("amount") or 0.0))
+            lab = str(row.get("label_fr") or "").strip()
+            if not pm_c or a <= 0.005:
+                continue
+            # Ventilation : uniquement les sorties de caisse (crédit compte de caisse au clos).
+            if flow != "outflow":
+                continue
+            if not lab:
+                lab = f"Mouvement interne caisse ({pm_c})"
+            int_by_pm.setdefault(pm_c, []).append((a, lab))
+
     for code, amt in entries:
         acc = accounts_by_code.get(code)
         if not acc:
@@ -415,25 +451,91 @@ def _build_sales_donations_planned_row_per_pm(
                     "reference": f"{ref_doc}:{code}:in",
                 }
             )
-        else:
-            cred = _r2(-amt)
+            obs_lines.append(
+                {
+                    "line_index": len(obs_lines),
+                    "payment_method_code": code,
+                    "amount": amt,
+                    "account": acc,
+                    "direction": "debit",
+                }
+            )
+            continue
+
+        cred = _r2(-amt)
+        remaining = cred
+        dq = list(disb_by_pm.get(code, []))
+        for idx, (d_amt, d_lab) in enumerate(dq):
+            if remaining <= 0.005:
+                break
+            d_amt = _r2(d_amt)
+            take = _r2(min(remaining, d_amt))
+            if take <= 0.005:
+                continue
             lines.append(
                 {
                     "account": acc,
-                    "credit": cred,
+                    "credit": take,
+                    "label": d_lab,
+                    "reference": f"{ref_doc}:{code}:out:disb:{idx}",
+                }
+            )
+            obs_lines.append(
+                {
+                    "line_index": len(obs_lines),
+                    "payment_method_code": code,
+                    "amount": -take,
+                    "account": acc,
+                    "direction": "credit",
+                    "role": "disbursement_typed",
+                }
+            )
+            remaining = _r2(remaining - take)
+        iq = list(int_by_pm.get(code, []))
+        for idx, (d_amt, d_lab) in enumerate(iq):
+            if remaining <= 0.005:
+                break
+            d_amt = _r2(d_amt)
+            take = _r2(min(remaining, d_amt))
+            if take <= 0.005:
+                continue
+            lines.append(
+                {
+                    "account": acc,
+                    "credit": take,
+                    "label": d_lab,
+                    "reference": f"{ref_doc}:{code}:out:int:{idx}",
+                }
+            )
+            obs_lines.append(
+                {
+                    "line_index": len(obs_lines),
+                    "payment_method_code": code,
+                    "amount": -take,
+                    "account": acc,
+                    "direction": "credit",
+                    "role": "internal_cash_transfer",
+                }
+            )
+            remaining = _r2(remaining - take)
+        if remaining > 0.005:
+            lines.append(
+                {
+                    "account": acc,
+                    "credit": remaining,
                     "label": _paheko_pm_decaissement_label_fr(code),
                     "reference": f"{ref_doc}:{code}:out",
                 }
             )
-        obs_lines.append(
-            {
-                "line_index": len(obs_lines),
-                "payment_method_code": code,
-                "amount": amt,
-                "account": acc,
-                "direction": "debit" if amt > 0 else "credit",
-            }
-        )
+            obs_lines.append(
+                {
+                    "line_index": len(obs_lines),
+                    "payment_method_code": code,
+                    "amount": -remaining,
+                    "account": acc,
+                    "direction": "credit",
+                }
+            )
 
     sales_credit = _r2(t_net - donation)
     if sales_credit < -0.01:

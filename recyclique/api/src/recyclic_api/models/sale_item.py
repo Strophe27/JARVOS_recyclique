@@ -21,10 +21,20 @@ class SaleItem(Base):
     # Story 1.1.2: Chaque item de vente peut avoir son propre preset et notes
     preset_id = Column(UUID(as_uuid=True), ForeignKey("preset_buttons.id"), nullable=True, comment="Référence au bouton prédéfini utilisé pour cet item")
     notes = Column(String, nullable=True, comment="Notes spécifiques à cet item de vente")
+    # Story 24.9 — tag métier ligne (prime sur le tag ticket de la vente).
+    business_tag_kind = Column(String(64), nullable=True)
+    business_tag_custom = Column(String(256), nullable=True)
 
     # Relationships
     sale = relationship("Sale", back_populates="items")
     preset_button = relationship("PresetButton", backref="sale_items")  # Relation vers le bouton prédéfini
+
+    @property
+    def effective_business_tag(self) -> str | None:
+        """Tag métier effectif pour la ligne (ligne > ticket > legacy). Nécessite ``sale`` chargée."""
+        from recyclic_api.services.business_tag_resolution import line_effective_key
+
+        return line_effective_key(self.sale, self)
 
     def __repr__(self):
         return f"<SaleItem(id={self.id}, category={self.category}, weight={self.weight})>"

@@ -545,6 +545,304 @@ export async function postCloseCashSession(
   return sessionHttpError(res.status, json, 'Réponse clôture invalide');
 }
 
+export type ExceptionalRefundPayload = {
+  amount: number;
+  refund_payment_method: string;
+  reason_code: string;
+  justification: string;
+  detail?: string | null;
+  /** Story 24.10 — référence de preuve D8 ; obligatoire si P3 sur le registre. */
+  approval_evidence_ref?: string | null;
+};
+
+export type ExceptionalRefundResult =
+  | { ok: true; refund: Record<string, unknown> }
+  | CashSessionHttpError;
+
+export type ExceptionalRefundOptions = {
+  stepUpPin: string;
+  idempotencyKey?: string;
+  requestId?: string;
+};
+
+/**
+ * POST /v1/cash-sessions/{session_id}/exceptional-refunds — remboursement exceptionnel.
+ * En-têtes : `X-Step-Up-Pin`, `Idempotency-Key`, `X-Request-Id`.
+ */
+export async function postExceptionalRefund(
+  sessionId: string,
+  body: ExceptionalRefundPayload,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  opts: ExceptionalRefundOptions,
+): Promise<ExceptionalRefundResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/exceptional-refunds`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'X-Step-Up-Pin': opts.stepUpPin,
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const idem = opts.idempotencyKey?.trim() || crypto.randomUUID();
+  headers['Idempotency-Key'] = idem;
+  headers['X-Request-Id'] = opts.requestId?.trim() || crypto.randomUUID();
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json === 'object' && json !== null && 'id' in json) {
+    return { ok: true, refund: json as Record<string, unknown> };
+  }
+
+  return sessionHttpError(res.status, json, 'Réponse remboursement exceptionnel invalide');
+}
+
+export type MaterialExchangePayload = Record<string, unknown>;
+
+export type MaterialExchangeResult =
+  | { ok: true; exchange: Record<string, unknown> }
+  | CashSessionHttpError;
+
+/**
+ * POST /v1/cash-sessions/{session_id}/material-exchanges — échange matière (Story 24.6).
+ */
+export async function postMaterialExchange(
+  sessionId: string,
+  body: MaterialExchangePayload,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+): Promise<MaterialExchangeResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/material-exchanges`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json === 'object' && json !== null && 'id' in json) {
+    return { ok: true, exchange: json as Record<string, unknown> };
+  }
+
+  return sessionHttpError(res.status, json, 'Réponse échange matière invalide');
+}
+
+export type CashDisbursementPayload = {
+  subtype: string;
+  motif_code: string;
+  counterparty_label: string;
+  amount: number;
+  payment_method: string;
+  justification_reference: string;
+  free_comment?: string | null;
+  actual_settlement_at: string;
+  admin_coded_reason_key?: string | null;
+};
+
+export type CashDisbursementResult =
+  | { ok: true; disbursement: Record<string, unknown> }
+  | CashSessionHttpError;
+
+export type CashDisbursementOptions = {
+  idempotencyKey?: string;
+  requestId?: string;
+  /** Obligatoire pour les sous-types à preuve N3 (step-up). */
+  stepUpPin?: string;
+};
+
+/**
+ * POST /v1/cash-sessions/{session_id}/disbursements — décaissement typé (Story 24.7).
+ */
+export async function postCashDisbursement(
+  sessionId: string,
+  body: CashDisbursementPayload,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  opts?: CashDisbursementOptions,
+): Promise<CashDisbursementResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/disbursements`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const idem = opts?.idempotencyKey?.trim() || crypto.randomUUID();
+  headers['Idempotency-Key'] = idem;
+  headers['X-Request-Id'] = opts?.requestId?.trim() || crypto.randomUUID();
+  const pin = opts?.stepUpPin?.trim();
+  if (pin) {
+    headers['X-Step-Up-Pin'] = pin;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json === 'object' && json !== null && 'id' in json) {
+    return { ok: true, disbursement: json as Record<string, unknown> };
+  }
+
+  return sessionHttpError(res.status, json, 'Réponse décaissement invalide');
+}
+
+export type CashInternalTransferPayload = {
+  transfer_type: string;
+  session_flow: string;
+  origin_endpoint_label: string;
+  destination_endpoint_label: string;
+  motif: string;
+  amount: number;
+  payment_method: string;
+  justification_reference: string;
+};
+
+export type CashInternalTransferResult =
+  | { ok: true; transfer: Record<string, unknown> }
+  | CashSessionHttpError;
+
+export type CashInternalTransferOptions = {
+  idempotencyKey?: string;
+  requestId?: string;
+  stepUpPin?: string;
+};
+
+/** Aligné backend `internal_transfer_requires_step_up` (N3). */
+export function internalTransferNeedsStepUpPin(input: {
+  transfer_type: string;
+  amount: number;
+}): boolean {
+  const t = input.transfer_type;
+  if (t === 'inter_register_transfer' || t === 'variance_regularization') return true;
+  return Number(input.amount) >= 500;
+}
+
+/**
+ * POST /v1/cash-sessions/{session_id}/internal-transfers — mouvement interne (Story 24.8).
+ */
+export async function postCashInternalTransfer(
+  sessionId: string,
+  body: CashInternalTransferPayload,
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  opts?: CashInternalTransferOptions,
+): Promise<CashInternalTransferResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/internal-transfers`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const token = auth.getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const idem = opts?.idempotencyKey?.trim() || crypto.randomUUID();
+  headers['Idempotency-Key'] = idem;
+  headers['X-Request-Id'] = opts?.requestId?.trim() || crypto.randomUUID();
+  const pin = opts?.stepUpPin?.trim();
+  if (pin) {
+    headers['X-Step-Up-Pin'] = pin;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return sessionHttpError(0, null, msg, true);
+  }
+
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return sessionHttpError(res.status, json, text || res.statusText);
+  }
+
+  if (typeof json === 'object' && json !== null && 'id' in json) {
+    return { ok: true, transfer: json as Record<string, unknown> };
+  }
+
+  return sessionHttpError(res.status, json, 'Réponse mouvement interne invalide');
+}
+
 /** Détail session + ventes (GET admin) — aligné OpenAPI `CashSessionDetailResponseV1` / Story 6.8. */
 export type CashSessionDetailV1 = CashSessionCurrentV1 & {
   readonly sales?: ReadonlyArray<Record<string, unknown>>;

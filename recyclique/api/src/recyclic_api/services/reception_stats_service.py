@@ -9,12 +9,13 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, desc
+from sqlalchemy import exists, func, and_, or_, desc, not_
 from prometheus_client import Counter, Histogram
 
 from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
 from recyclic_api.models.ligne_depot import LigneDepot
-from recyclic_api.models.sale import Sale
+from recyclic_api.models.sale import Sale, SaleLifecycleStatus
+from recyclic_api.models.sale_reversal import SaleReversal
 from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.poste_reception import PosteReception
 from recyclic_api.models.cash_session import CashSession
@@ -198,7 +199,9 @@ class ReceptionLiveStatsService:
             and_(
                 Sale.created_at >= threshold,
                 # Exclude deferred sessions: only include sales from sessions opened today
-                CashSession.opened_at >= start_of_today
+                CashSession.opened_at >= start_of_today,
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+                not_(exists().where(SaleReversal.source_sale_id == Sale.id)),
             )
         )
         if site_uuid is not None:
@@ -216,7 +219,9 @@ class ReceptionLiveStatsService:
                 Sale.created_at >= threshold,
                 Sale.donation.isnot(None),
                 # Exclude deferred sessions: only include donations from sessions opened today
-                CashSession.opened_at >= start_of_today
+                CashSession.opened_at >= start_of_today,
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+                not_(exists().where(SaleReversal.source_sale_id == Sale.id)),
             )
         )
         if site_uuid is not None:
@@ -291,7 +296,9 @@ class ReceptionLiveStatsService:
             and_(
                 Sale.created_at >= threshold,
                 # Exclude deferred sessions: only include sales from sessions opened today
-                CashSession.opened_at >= start_of_today
+                CashSession.opened_at >= start_of_today,
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+                not_(exists().where(SaleReversal.source_sale_id == Sale.id)),
             )
         )
         if site_uuid is not None:
@@ -437,7 +444,9 @@ class ReceptionLiveStatsService:
             and_(
                 Sale.created_at >= threshold,
                 # Exclude deferred sessions: only include sales from sessions opened today (or in period for 24h)
-                CashSession.opened_at >= start_of_today
+                CashSession.opened_at >= start_of_today,
+                Sale.lifecycle_status == SaleLifecycleStatus.COMPLETED,
+                not_(exists().where(SaleReversal.source_sale_id == Sale.id)),
             )
         )
         if site_uuid is not None:

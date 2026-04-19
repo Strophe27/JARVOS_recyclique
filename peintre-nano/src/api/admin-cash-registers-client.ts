@@ -83,6 +83,16 @@ function parseRegisterRow(row: unknown): CashRegisterAdminRowDto | null {
   return row as CashRegisterAdminRowDto;
 }
 
+/** Aligné `operations_specials_p3.py` / `workflow_options.features.operations_specials_p3.enabled`. */
+export function workflowOptionsOperationsSpecialsP3Enabled(workflowOptions: unknown): boolean {
+  if (typeof workflowOptions !== 'object' || workflowOptions === null) return false;
+  const features = (workflowOptions as { features?: unknown }).features;
+  if (typeof features !== 'object' || features === null) return false;
+  const block = (features as Record<string, unknown>).operations_specials_p3;
+  if (typeof block !== 'object' || block === null) return false;
+  return Boolean((block as { enabled?: unknown }).enabled);
+}
+
 export type CashRegistersListResult =
   | { ok: true; data: readonly CashRegisterAdminRowDto[] }
   | CashRegistersHttpError;
@@ -123,6 +133,31 @@ export async function listCashRegistersForAdmin(
     if (item) data.push(item);
   }
   return { ok: true, data };
+}
+
+/** GET /v1/cash-registers/{register_id} — lecture opérateur (même schéma que liste admin). */
+export async function getCashRegisterById(
+  auth: Pick<AuthContextPort, 'getAccessToken'>,
+  registerId: string,
+  signal?: AbortSignal,
+): Promise<CashRegisterMutationResult> {
+  const base = getLiveSnapshotBasePrefix();
+  const url = `${base}/v1/cash-registers/${encodeURIComponent(registerId.trim())}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'GET', credentials: 'include', headers: authHeaders(auth), signal });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur réseau';
+    return crHttpError(0, null, msg, true);
+  }
+  const text = await res.text();
+  const json = parseJsonText(text);
+  if (!res.ok) {
+    return crHttpError(res.status, json, text || res.statusText);
+  }
+  const register = parseRegisterRow(json);
+  if (!register) return crHttpError(res.status, json, 'Réponse poste caisse invalide');
+  return { ok: true, register };
 }
 
 export type CashRegisterMutationResult = { ok: true; register: CashRegisterAdminRowDto } | CashRegistersHttpError;

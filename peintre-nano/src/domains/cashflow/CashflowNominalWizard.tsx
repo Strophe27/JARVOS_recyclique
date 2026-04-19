@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Group, NumberInput, Text, TextInput } from '@mantine/core';
+import { Alert, Badge, Button, Group, NumberInput, Text, TextInput, Tooltip } from '@mantine/core';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { type RecycliqueClientFailure, recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import { type CategoryListItem } from '../../api/dashboard-legacy-stats-client';
@@ -40,10 +40,12 @@ import {
   setCashflowWidgetDataState,
   setCashSessionIdInput,
   setPaymentMethod,
+  setTicketBusinessTags,
   setTotalAmount,
   useCashflowDraft,
   type CashflowOperatingMode,
 } from './cashflow-draft-store';
+import { buildBusinessTagPayload } from './cashflow-business-tag-payload';
 import { useCaisseServerCurrentSession } from './use-caisse-server-current-session';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowSocialDonWizard } from './CashflowSocialDonWizard';
@@ -57,6 +59,15 @@ import classes from './CashflowNominalWizard.module.css';
 
 const CashflowSpecialDonWizard = makeCashflowSpecialEncaissementWizard('DON_SANS_ARTICLE');
 const CashflowSpecialAdhesionWizard = makeCashflowSpecialEncaissementWizard('ADHESION_ASSOCIATION');
+
+/** Story 24.9 — tags métier (ticket / lignes via API ; saisie ticket dans le nominal). */
+const CASHFLOW_BUSINESS_TAG_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: '(aucun)' },
+  { value: 'GRATIFERIA', label: 'Gratiféria' },
+  { value: 'CAMPAGNE_SOCIALE', label: 'Campagne sociale' },
+  { value: 'SPECIAL_DON_SANS_ARTICLE', label: 'Enc. spécial — don sans article' },
+  { value: 'AUTRE', label: 'Autre (libellé libre)' },
+];
 
 type SpecialEncaissementVariant = 'DON_SANS_ARTICLE' | 'ADHESION_ASSOCIATION';
 
@@ -1062,8 +1073,10 @@ function LinesStep({
             weight: l.weight,
             unit_price: l.unitPrice,
             total_price: l.totalPrice,
+            ...buildBusinessTagPayload(l.businessTagKind ?? '', l.businessTagCustom ?? ''),
           })),
           total_amount: total,
+          ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
         },
         auth,
       );
@@ -1393,7 +1406,10 @@ function PaymentStep({
       if (draft.activeHeldSaleId) {
         const res = await postFinalizeHeldSale(
           draft.activeHeldSaleId,
-          { payment_method: draft.paymentMethod },
+          {
+            payment_method: draft.paymentMethod,
+            ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
+          },
           auth,
         );
         if (!res.ok) {
@@ -1412,10 +1428,12 @@ function PaymentStep({
           weight: l.weight,
           unit_price: l.unitPrice,
           total_price: l.totalPrice,
+          ...buildBusinessTagPayload(l.businessTagKind ?? '', l.businessTagCustom ?? ''),
         })),
         total_amount: draft.totalAmount,
         donation: 0,
         payment_method: draft.paymentMethod,
+        ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
       };
       const res = await postCreateSale(body, auth);
       if (!res.ok) {
@@ -1445,6 +1463,30 @@ function PaymentStep({
             onChange={(e) => setCashSessionIdInput(e.currentTarget.value)}
             data-testid="cashflow-input-session-id"
           />
+          <Text component="label" size="sm" fw={600} mt="md" display="block">
+            Tag métier ticket (optionnel — Story 24.9)
+            <select
+              className={classes.nativeSelect}
+              data-testid="cashflow-select-business-tag-ticket"
+              value={draft.ticketBusinessTagKind}
+              onChange={(e) => setTicketBusinessTags(e.currentTarget.value, draft.ticketBusinessTagCustom)}
+            >
+              {CASHFLOW_BUSINESS_TAG_OPTIONS.map((o) => (
+                <option key={o.value || 'none'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Text>
+          {draft.ticketBusinessTagKind === 'AUTRE' ? (
+            <TextInput
+              label="Précision du tag « Autre »"
+              value={draft.ticketBusinessTagCustom}
+              onChange={(e) => setTicketBusinessTags('AUTRE', e.currentTarget.value)}
+              mt="xs"
+              data-testid="cashflow-input-business-tag-custom"
+            />
+          ) : null}
         </div>
       </div>
     );
@@ -1490,6 +1532,30 @@ function PaymentStep({
         <Text size="sm" c="red" mt="xs" data-testid="cashflow-nominal-pm-options-error">
           {pmError}
         </Text>
+      ) : null}
+      <Text component="label" size="sm" fw={600} mt="md" display="block">
+        Tag métier ticket (optionnel — Story 24.9)
+        <select
+          className={classes.nativeSelect}
+          data-testid="cashflow-select-business-tag-ticket"
+          value={draft.ticketBusinessTagKind}
+          onChange={(e) => setTicketBusinessTags(e.currentTarget.value, draft.ticketBusinessTagCustom)}
+        >
+          {CASHFLOW_BUSINESS_TAG_OPTIONS.map((o) => (
+            <option key={o.value || 'none'} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </Text>
+      {draft.ticketBusinessTagKind === 'AUTRE' ? (
+        <TextInput
+          label="Précision du tag « Autre »"
+          value={draft.ticketBusinessTagCustom}
+          onChange={(e) => setTicketBusinessTags('AUTRE', e.currentTarget.value)}
+          mt="xs"
+          data-testid="cashflow-input-business-tag-custom"
+        />
       ) : null}
       <>
         <Button
@@ -1630,6 +1696,34 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
     setActiveIndex((i) => Math.max(i - 1, 0));
   }, []);
 
+  /** Epic 24 — entrée hub opérations spéciales depuis la caisse : session résolue + ticket vide uniquement. */
+  const sessionIdResolvedForSpecialOps = useMemo(() => {
+    const a = draft.cashSessionIdInput.trim();
+    const b = envelope.cashSessionId?.trim() ?? '';
+    const c = serverSession?.id?.trim() ?? '';
+    return a || b || c;
+  }, [draft.cashSessionIdInput, envelope.cashSessionId, serverSession?.id]);
+
+  const canUseSpecialOpsHubNav = useMemo(
+    () =>
+      envelope.permissions.permissionKeys.some((k) =>
+        [
+          PERMISSION_CASHFLOW_NOMINAL,
+          PERMISSION_CASHFLOW_VIRTUAL,
+          PERMISSION_CASHFLOW_DEFERRED,
+        ].includes(k),
+      ),
+    [envelope.permissions.permissionKeys],
+  );
+
+  const ticketViergePourOpsSpeciales =
+    draft.lines.length === 0 && !draft.activeHeldSaleId && draft.totalAmount <= 0;
+
+  const specialOpsNavDepuisCaisseActif =
+    Boolean(sessionIdResolvedForSpecialOps) &&
+    ticketViergePourOpsSpeciales &&
+    draft.widgetDataState !== 'DATA_STALE';
+
   if (entry.blocked) {
     return (
       <div
@@ -1651,16 +1745,46 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
       data-testid="cashflow-nominal-wizard"
     >
       {!kioskSaleSurface ? <CashflowOperationalSyncNotice auth={auth} /> : null}
-      {!kioskSaleSurface && envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+      {!kioskSaleSurface &&
+      (canUseSpecialOpsHubNav ||
+        envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND)) ? (
         <Group justify="flex-end" mb="sm" wrap="wrap">
-          <Button
-            variant="light"
-            size="sm"
-            data-testid="caisse-open-refund"
-            onClick={() => spaNavigateTo('/caisse/remboursement')}
-          >
-            Remboursement
-          </Button>
+          {canUseSpecialOpsHubNav ? (
+            <Tooltip
+              label={
+                !sessionIdResolvedForSpecialOps
+                  ? 'Ouvrez ou résolvez une session caisse pour accéder aux opérations spéciales.'
+                  : draft.widgetDataState === 'DATA_STALE'
+                    ? 'Actualisez les données du ticket (DATA_STALE) avant de poursuivre.'
+                    : !ticketViergePourOpsSpeciales
+                      ? 'Disponible uniquement avec un ticket vide : aucune ligne, pas de reprise « en attente ».'
+                      : ''
+              }
+              disabled={specialOpsNavDepuisCaisseActif}
+            >
+              <span>
+                <Button
+                  variant="light"
+                  size="sm"
+                  data-testid="cashflow-nominal-open-special-ops-hub"
+                  disabled={!specialOpsNavDepuisCaisseActif}
+                  onClick={() => spaNavigateTo('/caisse/operations-speciales')}
+                >
+                  Opérations spéciales
+                </Button>
+              </span>
+            </Tooltip>
+          ) : null}
+          {envelope.permissions.permissionKeys.includes(PERMISSION_CASHFLOW_REFUND) ? (
+            <Button
+              variant="light"
+              size="sm"
+              data-testid="caisse-open-refund"
+              onClick={() => spaNavigateTo('/caisse/remboursement')}
+            >
+              Remboursement
+            </Button>
+          ) : null}
         </Group>
       ) : null}
       {draft.operatingMode === 'virtual' && !kioskSaleSurface ? (
@@ -1716,6 +1840,34 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
             serverSession={serverSession}
             sessionKpiLoading={serverSessionLoading}
           />
+          {canUseSpecialOpsHubNav ? (
+            <Group justify="flex-end" mt="xs" wrap="wrap">
+              <Tooltip
+                label={
+                  !sessionIdResolvedForSpecialOps
+                    ? 'Ouvrez ou résolvez une session caisse pour accéder aux opérations spéciales.'
+                    : draft.widgetDataState === 'DATA_STALE'
+                      ? 'Actualisez les données du ticket (DATA_STALE) avant de poursuivre.'
+                      : !ticketViergePourOpsSpeciales
+                        ? 'Disponible uniquement avec un ticket vide : aucune ligne, pas de reprise « en attente ».'
+                        : ''
+                }
+                disabled={specialOpsNavDepuisCaisseActif}
+              >
+                <span>
+                  <Button
+                    variant="light"
+                    size="sm"
+                    data-testid="cashflow-kiosk-open-special-ops-hub"
+                    disabled={!specialOpsNavDepuisCaisseActif}
+                    onClick={() => spaNavigateTo('/caisse/operations-speciales')}
+                  >
+                    Opérations spéciales
+                  </Button>
+                </span>
+              </Tooltip>
+            </Group>
+          ) : null}
         </div>
       ) : null}
       {kioskSaleSurface ? (

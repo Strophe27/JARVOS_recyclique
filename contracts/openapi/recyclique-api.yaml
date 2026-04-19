@@ -1141,6 +1141,242 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}/exceptional-refunds:
+    post:
+      operationId: recyclique_cashSessions_createExceptionalRefund
+      tags:
+        - cash-sessions
+      summary: Remboursement exceptionnel sans ticket (step-up PIN + idempotence)
+      description: |
+        Story 24.5 — remboursement sans ticket source, journalisé via vente technique et `payment_transactions`.
+        **Permission requise :** `refund.exceptional` (sinon **403**).
+        **Preuve step-up** obligatoire via en-tête `X-Step-Up-Pin`. **Idempotence obligatoire** via
+        `Idempotency-Key` (même corps → réponse rejouée ; corps différent → **409** ; clé unique par session).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Step-Up-Pin
+          in: header
+          required: true
+          schema:
+            type: string
+          description: PIN opérateur (preuve step-up ; ne pas logger).
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Clé client pour éviter doubles effets (Redis, TTL 24h).
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Identifiant de corrélation ; renvoyé tel quel ou complété par le serveur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExceptionalRefundCreateV1"
+      responses:
+        "201":
+          description: Remboursement exceptionnel enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExceptionalRefundResponseV1"
+        "400":
+          description: Erreur de validation (hors règles P3)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: Story 24.10 — rejet seuils / preuves P3 (référence obligatoire, combinaison montant × motif)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission `refund.exceptional` absente, PIN step-up manquant/invalide, ou verrouillage step-up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit idempotence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}/disbursements:
+    post:
+      operationId: recyclique_cashSessions_createDisbursement
+      tags:
+        - cash-sessions
+      summary: Décaissement typé hors ticket (Story 24.7)
+      description: |
+        Enregistre un décaissement avec sous-type fermé (PRD §10.5). Permission `cash.disbursement`.
+        Step-up PIN (`X-Step-Up-Pin`) requis pour `validated_exceptional_outflow` et `other_admin_coded`.
+        **Nota 24.8** : le mouvement interne (`cash.transfer`) est un flux distinct — ne pas confondre.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Step-Up-Pin
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Obligatoire pour les sous-types à preuve N3.
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashDisbursementCreateV1"
+      responses:
+        "201":
+          description: Décaissement enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashDisbursementResponseV1"
+        "400":
+          description: Erreur de validation
+        "403":
+          description: Permission ou step-up
+        "404":
+          description: Session introuvable
+        "409":
+          description: Conflit idempotence
+  /v1/cash-sessions/{session_id}/internal-transfers:
+    post:
+      operationId: recyclique_cashSessions_createInternalTransfer
+      tags:
+        - cash-sessions
+      summary: Mouvement interne de caisse typé (Story 24.8)
+      description: |
+        Mouvement interne PRD §10.6 — distinct remboursement client (`refund_payment`) et décaissement charge (`cash.disbursement`).
+        Permissions `caisse.access` + `cash.transfer`. Step-up PIN pour types sensibles ou montants élevés (N3).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Step-Up-Pin
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Obligatoire si preuve N3 requise (types sensibles ou montant ≥ 500 €).
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashInternalTransferCreateV1"
+      responses:
+        "201":
+          description: Mouvement interne enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashInternalTransferResponseV1"
+        "400":
+          description: Erreur de validation métier
+        "403":
+          description: Permission ou step-up
+        "404":
+          description: Session introuvable
+        "409":
+          description: Conflit idempotence
+  /v1/cash-sessions/{session_id}/material-exchanges:
+    post:
+      operationId: recyclique_cashSessions_createMaterialExchange
+      tags:
+        - cash-sessions
+      summary: Échange matière (Story 24.6)
+      description: |
+        Conteneur métier « échange » : trace matière et delta financier. Delta nul = pas de vente ni reversal
+        pour la différence ; delta positif = complément via ``SaleCreateV1`` ; delta négatif = reversal total
+        sur la vente source (``SaleReversalCreateV1``). Permissions ``caisse.exchange`` et, si reversal, ``caisse.refund``.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialExchangeCreateV1"
+      responses:
+        "201":
+          description: Échange enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialExchangeResponseV1"
+        "400":
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission manquante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/cash-sessions/{session_id}/close:
     post:
       operationId: recyclique_cashSessions_closeSession
@@ -5112,6 +5348,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/stats/sales/by-business-tag-and-category:
+    get:
+      operationId: recyclique_stats_salesByBusinessTagAndCategory
+      tags:
+        - stats
+      summary: Stats caisse tag métier × catégorie matière (Story 24.9)
+      description: |
+        Agrégation tag métier effectif (ligne > ticket > legacy 6.5/6.6) × catégorie matière.
+        **ADMIN** ou **SUPER_ADMIN** ; audit `log_admin_access` sur succès.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Agrégats par tag × catégorie
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BusinessTagMaterialStatsV1"
+        "400":
+          description: Plage de dates invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle non administrateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Rate limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/stats/live:
     get:
       operationId: recyclique_stats_unifiedLive
@@ -6236,6 +6529,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: cash_sensitive_operations
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Story 24.10 — filtre rapide opérations caisse sensibles Epic 24 (remboursement exceptionnel, décaissement, transfert interne, échange matière).
       responses:
         "200":
           description: Entrées d'audit et pagination
@@ -10134,6 +10433,14 @@ components:
         notes:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     SaleLifecycleStatusV1:
       type: string
@@ -10163,6 +10470,40 @@ components:
       description: |
         Story 6.6 — lot 1 figé des actions sociales / solidaires (distinct de `SpecialEncaissementKindV1`).
         Toujours `items` = [] et `total_amount` > 0 ; `note` optionnelle. Mutuellement exclusif avec `special_encaissement_kind`.
+    BusinessTagKindV1:
+      type: string
+      enum:
+        - GRATIFERIA
+        - CAMPAGNE_SOCIALE
+        - SPECIAL_DON_SANS_ARTICLE
+        - ADHESION_ASSOCIATION
+        - SOCIAL_DON_LIBRE
+        - SOCIAL_DON_MOINS_18
+        - SOCIAL_MARAUDE
+        - SOCIAL_KIT_INSTALLATION_ETUDIANT
+        - SOCIAL_DON_AUX_ANIMAUX
+        - SOCIAL_FRIPERIE_AUTO_GEREE
+        - AUTRE
+      description: |
+        Story 24.9 — tag métier PRD + réconciliation 6.5/6.6. ``AUTRE`` exige ``business_tag_custom``.
+    BusinessTagMaterialStatsV1:
+      type: object
+      required:
+        - business_tag_key
+        - category_name
+        - total_weight
+        - total_items
+      additionalProperties: false
+      properties:
+        business_tag_key:
+          type: string
+          description: Clé tag effectif (ex. GRATIFERIA, SOCIAL_DON_LIBRE, NON_TAGUE).
+        category_name:
+          type: string
+        total_weight:
+          type: number
+        total_items:
+          type: integer
     SalePaymentMethodOptionV1:
       type: object
       required:
@@ -10224,6 +10565,14 @@ components:
         note:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     SaleFinalizeHeldV1:
       type: object
@@ -10246,11 +10595,20 @@ components:
             $ref: "#/components/schemas/PaymentCreateV1"
           nullable: true
           description: |
-            Story 22.4 — surplus laissé en don, distinct des lignes de règlement (journal `donation_surplus`).
+            Story 22.4 — complément de don volontaire (trop-perçu encaissé au-delà du ticket), distinct des lignes de règlement ;
+            journal technique ``donation_surplus``.
             Obligatoire si l'encaissement dépasse le total sans quoi la finalisation est refusée.
         note:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     SaleCreateV1:
       type: object
@@ -10291,7 +10649,7 @@ components:
             $ref: "#/components/schemas/PaymentCreateV1"
           nullable: true
           description: |
-            Story 22.4 — don en surplus explicite (nature `donation_surplus`), séparé du règlement de vente.
+            Story 22.4 — lignes explicites de complément de don (nature technique ``donation_surplus``), séparées du règlement de vente.
             Requis dès qu'un trop-perçu sur les lignes `payments[]` serait autrement implicite.
         note:
           type: string
@@ -10309,6 +10667,14 @@ components:
           maxLength: 200
           nullable: true
           description: Réservé à `ADHESION_ASSOCIATION` (nom ou note courte, optionnel).
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
       additionalProperties: false
     PaymentResponseV1:
       type: object
@@ -10379,6 +10745,10 @@ components:
               type: string
             sale_id:
               type: string
+            effective_business_tag:
+              type: string
+              nullable: true
+              description: Story 24.9 — tag métier effectif (ligne > ticket > legacy).
           additionalProperties: false
     SaleResponseV1:
       type: object
@@ -10441,6 +10811,31 @@ components:
         adherent_reference:
           type: string
           nullable: true
+        business_tag_kind:
+          allOf:
+            - $ref: "#/components/schemas/BusinessTagKindV1"
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+        effective_business_tag:
+          type: string
+          nullable: true
+          description: Story 24.9 — tag métier effectif au niveau ticket (héritage legacy si colonnes vides).
+        fiscal_branch:
+          type: string
+          nullable: true
+          description: >
+            Story 24.4 — prévisualisation autorité remboursement (GET vente), alignée sur POST /sales/reversals :
+            ``current`` (exercice ouvert) ou ``prior_closed`` (exercice antérieur clos ; parcours expert requis).
+        sale_fiscal_year:
+          type: integer
+          nullable: true
+          description: Année fiscale de rattachement de la vente source (cadrage N vs N-1).
+        current_open_fiscal_year:
+          type: integer
+          nullable: true
+          description: Exercice ouvert issu du snapshot autorité au moment de la résolution.
       additionalProperties: false
     RefundReasonCodeV1:
       type: string
@@ -10450,6 +10845,419 @@ components:
         - ANNULATION_CLIENT
         - AUTRE
       description: Motif de remboursement (Story 6.4).
+    ExceptionalRefundCreateV1:
+      type: object
+      required:
+        - amount
+        - refund_payment_method
+        - reason_code
+        - justification
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+          description: Montant remboursé (positif, en euros).
+        refund_payment_method:
+          type: string
+          description: Moyen effectif utilisé pour rembourser le client (ex. cash, card, check).
+        reason_code:
+          $ref: "#/components/schemas/RefundReasonCodeV1"
+        justification:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        detail:
+          type: string
+          nullable: true
+          maxLength: 500
+        approval_evidence_ref:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: Référence de preuve structurée (ADR D8) — obligatoire si P3 activé sur le registre (`workflow_options.features.operations_specials_p3.enabled`).
+      additionalProperties: false
+    ExceptionalRefundResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - sale_id
+        - amount
+        - refund_payment_method
+        - reason_code
+        - justification
+        - idempotency_key
+        - initiator_user_id
+        - approver_user_id
+        - approved_at
+        - created_at
+        - paheko_accounting_sync_hint
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        sale_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        refund_payment_method:
+          type: string
+        reason_code:
+          type: string
+        justification:
+          type: string
+        detail:
+          type: string
+          nullable: true
+        approval_evidence_ref:
+          type: string
+          nullable: true
+        approver_step_up_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Horodatage serveur de la preuve step-up (validateur / second facteur).
+        proof_level_applied:
+          type: string
+          nullable: true
+          description: N3 lorsque le registre a activé P3 (sinon absent).
+        idempotency_key:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        initiator_user_id:
+          type: string
+          format: uuid
+        approver_user_id:
+          type: string
+          format: uuid
+        approved_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        paheko_accounting_sync_hint:
+          type: string
+          description: Rappel chaîne canonique Paheko (synchro via clôture).
+      additionalProperties: false
+    CashDisbursementSubtypeV1:
+      type: string
+      enum:
+        - volunteer_expense_reimbursement
+        - small_operating_expense
+        - validated_exceptional_outflow
+        - other_admin_coded
+      description: Sous-types fermés PRD §10.5 (distinct mouvement interne 24.8).
+    CashDisbursementMotifCodeV1:
+      type: string
+      enum:
+        - office_supplies
+        - postage
+        - volunteer_travel
+        - short_external_fee
+        - board_approved_other
+    CashDisbursementCreateV1:
+      type: object
+      required:
+        - subtype
+        - motif_code
+        - counterparty_label
+        - amount
+        - payment_method
+        - justification_reference
+        - actual_settlement_at
+      properties:
+        subtype:
+          $ref: "#/components/schemas/CashDisbursementSubtypeV1"
+        motif_code:
+          $ref: "#/components/schemas/CashDisbursementMotifCodeV1"
+        counterparty_label:
+          type: string
+          minLength: 1
+          maxLength: 500
+        amount:
+          type: number
+          minimum: 0.01
+        payment_method:
+          type: string
+        free_comment:
+          type: string
+          nullable: true
+          maxLength: 2000
+        justification_reference:
+          type: string
+          minLength: 1
+          maxLength: 256
+        actual_settlement_at:
+          type: string
+          format: date-time
+        admin_coded_reason_key:
+          type: string
+          nullable: true
+          description: Obligatoire si subtype = other_admin_coded (clé d'administration fermée).
+      additionalProperties: false
+    CashDisbursementResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - sale_id
+        - amount
+        - subtype
+        - motif_code
+        - counterparty_label
+        - payment_method
+        - justification_reference
+        - actual_settlement_at
+        - initiator_user_id
+        - approver_user_id
+        - approved_at
+        - idempotency_key
+        - created_at
+        - paheko_accounting_sync_hint
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        sale_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        subtype:
+          type: string
+        motif_code:
+          type: string
+        counterparty_label:
+          type: string
+        payment_method:
+          type: string
+        free_comment:
+          type: string
+          nullable: true
+        justification_reference:
+          type: string
+        actual_settlement_at:
+          type: string
+          format: date-time
+        admin_coded_reason_key:
+          type: string
+          nullable: true
+        initiator_user_id:
+          type: string
+          format: uuid
+        approver_user_id:
+          type: string
+          format: uuid
+        approved_at:
+          type: string
+          format: date-time
+        idempotency_key:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        paheko_accounting_sync_hint:
+          type: string
+      additionalProperties: false
+    CashInternalTransferTypeV1:
+      type: string
+      enum:
+        - cash_float_topup
+        - cash_float_seed
+        - bank_deposit
+        - bank_withdrawal
+        - inter_register_transfer
+        - variance_regularization
+      description: Types fermés MVP — mouvement interne (PRD §10.6), pas décaissement charge.
+    CashSessionInternalFlowV1:
+      type: string
+      enum:
+        - inflow
+        - outflow
+      description: Sens par rapport à la caisse en session.
+    CashInternalTransferCreateV1:
+      type: object
+      required:
+        - transfer_type
+        - session_flow
+        - origin_endpoint_label
+        - destination_endpoint_label
+        - motif
+        - amount
+        - payment_method
+        - justification_reference
+      properties:
+        transfer_type:
+          $ref: "#/components/schemas/CashInternalTransferTypeV1"
+        session_flow:
+          $ref: "#/components/schemas/CashSessionInternalFlowV1"
+        origin_endpoint_label:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        destination_endpoint_label:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        motif:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        amount:
+          type: number
+          minimum: 0.01
+        payment_method:
+          type: string
+        justification_reference:
+          type: string
+          minLength: 1
+          maxLength: 256
+      additionalProperties: false
+    CashInternalTransferResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - sale_id
+        - transfer_type
+        - session_flow
+        - amount
+        - origin_endpoint_label
+        - destination_endpoint_label
+        - motif
+        - payment_method
+        - justification_reference
+        - initiator_user_id
+        - approver_user_id
+        - approved_at
+        - idempotency_key
+        - created_at
+        - paheko_accounting_sync_hint
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        sale_id:
+          type: string
+          format: uuid
+        transfer_type:
+          type: string
+        session_flow:
+          type: string
+        amount:
+          type: number
+        origin_endpoint_label:
+          type: string
+        destination_endpoint_label:
+          type: string
+        motif:
+          type: string
+        payment_method:
+          type: string
+        justification_reference:
+          type: string
+        initiator_user_id:
+          type: string
+          format: uuid
+        approver_user_id:
+          type: string
+          format: uuid
+        approved_at:
+          type: string
+          format: date-time
+        idempotency_key:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        paheko_accounting_sync_hint:
+          type: string
+      additionalProperties: false
+    MaterialExchangeCreateV1:
+      type: object
+      required:
+        - delta_amount_cents
+        - material_trace
+      properties:
+        delta_amount_cents:
+          type: integer
+          description: >
+            Positif = complément (création vente) ; négatif = remboursement (reversal total sur vente source) ;
+            zéro = matière seule (aucun PaymentTransaction pour la différence).
+        material_trace:
+          type: object
+          description: Retour(s) et sortie(s) matière (références ou saisie minimale).
+          additionalProperties: true
+        complement_sale:
+          allOf:
+            - $ref: "#/components/schemas/SaleCreateV1"
+          nullable: true
+          description: Requis si delta > 0 (vente nominale complément).
+        reversal:
+          allOf:
+            - $ref: "#/components/schemas/SaleReversalCreateV1"
+          nullable: true
+          description: Requis si delta < 0 (reversal canonique sur la vente source).
+        idempotency_key:
+          type: string
+          nullable: true
+          maxLength: 128
+      additionalProperties: false
+    MaterialExchangeResponseV1:
+      type: object
+      required:
+        - id
+        - cash_session_id
+        - delta_amount_cents
+        - material_trace
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        cash_session_id:
+          type: string
+          format: uuid
+        delta_amount_cents:
+          type: integer
+        material_trace:
+          type: object
+          additionalProperties: true
+        complement_sale_id:
+          type: string
+          format: uuid
+          nullable: true
+        sale_reversal_id:
+          type: string
+          format: uuid
+          nullable: true
+        paheko_accounting_sync_hint:
+          type: string
+          nullable: true
+          description: Alignement chaîne Paheko (clôture / snapshot / outbox).
+        created_at:
+          type: string
+          format: date-time
+      additionalProperties: false
     SaleCorrectionSaleDateV1:
       type: object
       required:
@@ -10471,6 +11279,52 @@ components:
           maxLength: 2000
           description: Motif obligatoire (audit).
       additionalProperties: false
+    SaleCorrectionItemPatchV1:
+      type: object
+      required:
+        - sale_item_id
+      properties:
+        sale_item_id:
+          type: string
+          format: uuid
+        category:
+          type: string
+          nullable: true
+          maxLength: 50
+        quantity:
+          type: integer
+          nullable: true
+          minimum: 1
+        weight:
+          type: number
+          nullable: true
+          exclusiveMinimum: 0
+        unit_price:
+          type: number
+          nullable: true
+          minimum: 0
+        total_price:
+          type: number
+          nullable: true
+          minimum: 0
+        notes:
+          type: string
+          nullable: true
+        preset_id:
+          type: string
+          format: uuid
+          nullable: true
+        business_tag_kind:
+          type: string
+          nullable: true
+        business_tag_custom:
+          type: string
+          nullable: true
+          maxLength: 256
+      description: |
+        Au moins un attribut de ligne (hors ``sale_item_id``) requis par le serveur par entrée.
+        Cohérence des paires tag (AUTRE + libellé) : règles alignées sur la caisse.
+      additionalProperties: false
     SaleCorrectionFinalizeFieldsV1:
       type: object
       required:
@@ -10491,6 +11345,28 @@ components:
           type: string
           nullable: true
           description: Enum alignée sur le modèle Sale (ex. cash, card, check, free).
+        items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/SaleCorrectionItemPatchV1"
+          description: |
+            Mise à jour ciblée des lignes ``sale_items`` (catégorie, poids, montants ligne, tags métier).
+        payments:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/PaymentCreateV1"
+          description: |
+            Remplace intégralement les lignes journal ``sale_payment``. Obligatoire pour reconcilier un total ou des moyens
+            si le ticket comporte plusieurs lignes de règlement ou des lignes de complément de don (journal ``donation_surplus``, Story 6.8 étendue).
+        donation_surplus:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/PaymentCreateV1"
+          description: |
+            Remplace intégralement les lignes journal complément de don (``donation_surplus``, Story 22.4).
         note:
           type: string
           nullable: true
@@ -10500,7 +11376,8 @@ components:
           maxLength: 2000
           description: Motif obligatoire (audit).
       description: |
-        Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note`` doit être présent (validation serveur).
+        Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note``, ``payments``, ``donation_surplus``, ``items``
+        doit être présent (validation serveur).
       additionalProperties: false
     SaleCorrectionCreateV1:
       oneOf:
@@ -10559,6 +11436,7 @@ components:
         - amount_signed
         - reason_code
         - created_at
+        - refund_payment_method
       properties:
         id:
           type: string
@@ -10586,6 +11464,30 @@ components:
         created_at:
           type: string
           format: date-time
+        refund_payment_method:
+          type: string
+          description: |
+            Story 24.3 — moyen effectif de remboursement (journal ``REFUND_PAYMENT``), distinct du legacy vente source si besoin.
+        source_sale_payment_method:
+          type: string
+          nullable: true
+          description: Moyen de paiement porté par la vente source (peut différer du canal de sortie réel).
+        fiscal_branch:
+          type: string
+          nullable: true
+          description: Branche fiscale courante (``current`` | ``prior_closed``) ; null si autorité indisponible.
+        sale_fiscal_year:
+          type: integer
+          nullable: true
+          description: Année fiscale de rattachement de la vente source.
+        current_open_fiscal_year:
+          type: integer
+          nullable: true
+          description: Exercice ouvert connu (cadrage N vs N-1).
+        paheko_accounting_sync_hint:
+          type: string
+          description: |
+            Story 24.3 — rappel chaîne canonique Paheko (clôture → snapshot de session → outbox) ; pas d’écriture Paheko instantanée au remboursement.
       additionalProperties: false
     ReceptionDestinationV1:
       type: string

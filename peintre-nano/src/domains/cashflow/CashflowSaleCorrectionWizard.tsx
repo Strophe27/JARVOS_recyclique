@@ -1,16 +1,34 @@
-import { Alert, Button, Loader, NativeSelect, PasswordInput, Text, TextInput } from '@mantine/core';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  Alert,
+  Button,
+  Group,
+  Loader,
+  Modal,
+  NativeSelect,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
+import { getCashSessionDetail } from '../../api/cash-session-client';
 import {
   getSale,
   patchSaleSensitiveCorrection,
+  splitSalePaymentsByNature,
+  type SaleCorrectionItemPatchBody,
   type SaleCorrectionRequestBody,
+  type SalePaymentMethodOption,
   type SaleResponseV1,
 } from '../../api/sales-client';
 import { PERMISSION_CASHFLOW_SALE_CORRECT } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import { fetchCategoriesList, type CategoryListItem } from '../../api/dashboard-legacy-stats-client';
+import { CategoryHierarchyPicker } from '../../widgets/category-hierarchy-picker/CategoryHierarchyPicker';
 import { DEFAULT_FREE_PAYMENT_LABEL } from './payment-method-display';
+import { formatCategoryHierarchyLabel } from './category-hierarchy-display';
 import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { CashflowOperationalSyncNotice } from './cashflow-operational-sync-notice';
@@ -21,6 +39,12 @@ import classes from './CashflowSaleCorrectionWizard.module.css';
 type EntryBlock =
   | { readonly blocked: false }
   | { readonly blocked: true; readonly title: string; readonly body: string };
+
+type PaymentDraftRow = {
+  readonly localId: string;
+  payment_method: string;
+  amountStr: string;
+};
 
 function useSaleCorrectionEntryBlock(): EntryBlock {
   const envelope = useContextEnvelope();
@@ -67,6 +91,173 @@ const KIND_OPTIONS = [
   { value: 'finalize_fields', label: 'Champs de finalisation (liste fermée)' },
 ] as const;
 
+const PAY_ARBITRAGE_EPS = 1e-3;
+
+type ItemEditRow = {
+  id: string;
+  category: string;
+  quantityStr: string;
+  weightStr: string;
+  unitPriceStr: string;
+  totalPriceStr: string;
+  notes: string;
+  tagKindStr: string;
+  tagCustomStr: string;
+};
+
+function saleItemsToEditRows(items: SaleResponseV1['items']): ItemEditRow[] {
+  return items
+    .map((it) => ({
+      id: String(it.id ?? ''),
+      category: String(it.category ?? ''),
+      quantityStr: String(it.quantity ?? ''),
+      weightStr:
+        it.weight !== undefined && it.weight !== null && Number.isFinite(it.weight) ? String(it.weight) : '',
+      unitPriceStr: String(it.unit_price ?? ''),
+      totalPriceStr: String(it.total_price ?? ''),
+      notes: String(it.notes ?? ''),
+      tagKindStr: it.business_tag_kind != null ? String(it.business_tag_kind) : '',
+      tagCustomStr: String(it.business_tag_custom ?? ''),
+    }))
+    .filter((r) => r.id.length > 0);
+}
+
+function buildItemLinePatches(
+  baseline: ItemEditRow[],
+  current: ItemEditRow[],
+): { ok: true; patches: SaleCorrectionItemPatchBody[] } | { ok: false; message: string } {
+  const bMap = new Map(baseline.map((r) => [r.id, r]));
+  const patches: SaleCorrectionItemPatchBody[] = [];
+  for (const row of current) {
+    const b = bMap.get(row.id);
+    if (!b) continue;
+    const patch: SaleCorrectionItemPatchBody = { sale_item_id: row.id };
+    if (row.category.trim() !== b.category.trim()) {
+      patch.category = row.category.trim();
+    }
+    if (row.quantityStr.trim() !== b.quantityStr.trim()) {
+      const n = parseInt(row.quantityStr.trim(), 10);
+      if (Number.isNaN(n) || n <= 0) {
+        return { ok: false, message: 'Quantité invalide sur une ligne (entier > 0).' };
+      }
+      patch.quantity = n;
+    }
+    if (row.weightStr.trim() !== b.weightStr.trim()) {
+      const w = parseFloat(row.weightStr.replace(',', '.'));
+      if (Number.isNaN(w) || w <= 0) {
+        return { ok: false, message: 'Poids invalide sur une ligne (nombre > 0).' };
+      }
+      patch.weight = w;
+    }
+    if (row.unitPriceStr.trim() !== b.unitPriceStr.trim()) {
+      const up = parseFloat(row.unitPriceStr.replace(',', '.'));
+      if (Number.isNaN(up) || up < 0) {
+        return { ok: false, message: 'Prix unitaire invalide sur une ligne.' };
+      }
+      patch.unit_price = up;
+    }
+    if (row.totalPriceStr.trim() !== b.totalPriceStr.trim()) {
+      const tp = parseFloat(row.totalPriceStr.replace(',', '.'));
+      if (Number.isNaN(tp) || tp < 0) {
+        return { ok: false, message: 'Montant ligne invalide.' };
+      }
+      patch.total_price = tp;
+    }
+    if (row.notes !== b.notes) {
+      patch.notes = row.notes;
+    }
+    if (row.tagKindStr.trim() !== b.tagKindStr.trim() && row.tagKindStr.trim()) {
+      patch.business_tag_kind = row.tagKindStr.trim() as SaleCorrectionItemPatchBody['business_tag_kind'];
+    }
+    if (row.tagCustomStr.trim() !== b.tagCustomStr.trim()) {
+      patch.business_tag_custom = row.tagCustomStr.trim() ? row.tagCustomStr.trim() : undefined;
+    }
+    const keys = Object.keys(patch).filter((k) => k !== 'sale_item_id');
+    if (keys.length > 0) {
+      patches.push(patch);
+    }
+  }
+  return { ok: true, patches };
+}
+
+function newLocalId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `pay-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function snapshotPaymentDraftRows(rows: readonly PaymentDraftRow[]): string {
+  return JSON.stringify(
+    rows.map((r) => ({ pm: r.payment_method.trim(), a: r.amountStr.trim() })),
+  );
+}
+
+function parseDraftPaymentLines(
+  rows: readonly PaymentDraftRow[],
+  pmOpts: readonly SalePaymentMethodOption[],
+): { ok: true; lines: Array<{ payment_method: string; amount: number }> } | { ok: false; message: string } {
+  const validCodes = new Set(pmOpts.map((o) => o.code));
+  const lines: Array<{ payment_method: string; amount: number }> = [];
+  for (const r of rows) {
+    const pm = r.payment_method.trim();
+    const n = parseFloat(r.amountStr.replace(',', '.'));
+    if (!pm) {
+      return {
+        ok: false,
+        message: 'Chaque ligne doit avoir un moyen de paiement (référentiel actif).',
+      };
+    }
+    if (pm === 'free') {
+      return {
+        ok: false,
+        message:
+          'Le mode gratuit ne peut pas figurer dans une ligne de paiement explicite — utilisez le ticket sans lignes financières.',
+      };
+    }
+    if (!validCodes.has(pm)) {
+      return { ok: false, message: 'Moyen de paiement invalide sur une ligne par rapport au référentiel actif.' };
+    }
+    if (Number.isNaN(n) || n <= 0) {
+      return { ok: false, message: 'Montant invalide sur une ligne (nombre > 0 attendu).' };
+    }
+    lines.push({ payment_method: pm, amount: n });
+  }
+  return { ok: true, lines };
+}
+
+function validatePartitionVsTotal22_4(
+  totalNum: number,
+  saleLines: ReadonlyArray<{ amount: number }>,
+  surplusLines: ReadonlyArray<{ amount: number }>,
+): string | null {
+  const sumSale = saleLines.reduce((s, x) => s + x.amount, 0);
+  const sumSurplus = surplusLines.reduce((s, x) => s + x.amount, 0);
+  if (totalNum <= PAY_ARBITRAGE_EPS) {
+    if (sumSale > PAY_ARBITRAGE_EPS || sumSurplus > PAY_ARBITRAGE_EPS) {
+      return 'Pour un total nul, aucune ligne financière ne doit rester.';
+    }
+    return null;
+  }
+  if (sumSale > totalNum + PAY_ARBITRAGE_EPS) {
+    return 'La somme des lignes de règlement dépasse le total encaissé — ajoutez des lignes de complément de don si besoin.';
+  }
+  if (sumSale + sumSurplus < totalNum - PAY_ARBITRAGE_EPS) {
+    return 'Encaissement insuffisant : règlement + compléments de don doivent couvrir le total encaissé.';
+  }
+  return null;
+}
+
+function rowsFromSplit(
+  rows: ReadonlyArray<{ payment_method: string; amount: number }>,
+): PaymentDraftRow[] {
+  return rows.map((r) => ({
+    localId: newLocalId(),
+    payment_method: r.payment_method,
+    amountStr: String(r.amount),
+  }));
+}
+
 /**
  * Story 6.8 — correction bornée : chargement ticket, saisie whitelist + motif + PIN step-up.
  * Permissions : enveloppe uniquement (`caisse.sale_correct`) ; pas de seconde vérité métier locale.
@@ -78,12 +269,8 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const auth = useAuthPort();
   const { options: pmOpts, loading: pmLoading, error: pmError } = useCaissePaymentMethodOptions(auth);
   const paymentMethodsReady = !pmLoading && pmError === null && pmOpts.length > 0;
-  const paymentCorrectionSelectData = useMemo(
-    () => [
-      { value: '', label: '(inchangé)' },
-      ...pmOpts.map((o) => ({ value: o.code, label: o.label })),
-      { value: 'free', label: DEFAULT_FREE_PAYMENT_LABEL },
-    ],
+  const paymentRowSelectData = useMemo(
+    () => pmOpts.map((o) => ({ value: o.code, label: o.label })),
     [pmOpts],
   );
   const draft = useCashflowDraft();
@@ -99,7 +286,19 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [saleDateLocal, setSaleDateLocal] = useState('');
   const [donationStr, setDonationStr] = useState('');
   const [totalStr, setTotalStr] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [draftSalePayments, setDraftSalePayments] = useState<PaymentDraftRow[]>([]);
+  const [draftDonationSurplus, setDraftDonationSurplus] = useState<PaymentDraftRow[]>([]);
+  const [baselineItems, setBaselineItems] = useState<ItemEditRow[]>([]);
+  const [itemRows, setItemRows] = useState<ItemEditRow[]>([]);
+  const [linkedCashSessionId, setLinkedCashSessionId] = useState<string | null>(null);
+  const [linkedSessionStatus, setLinkedSessionStatus] = useState<'open' | 'closed' | null>(null);
+  const [linkedSessionFetchErr, setLinkedSessionFetchErr] = useState<string | null>(null);
+  const initialSaleSnapRef = useRef('');
+  const initialSurplusSnapRef = useRef('');
+  const initialTotalNumRef = useRef<number | null>(null);
+  const initialSalePaymentLineCountRef = useRef(0);
+  const [legacyPaymentMethodDisplay, setLegacyPaymentMethodDisplay] = useState('');
+
   const [note, setNote] = useState('');
   const [initialNote, setInitialNote] = useState<string | null>(null);
   const [reason, setReason] = useState('');
@@ -108,27 +307,98 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
-  const validPaymentCorrectionValues = useMemo(() => {
-    const s = new Set(['', 'free']);
-    for (const o of pmOpts) s.add(o.code);
-    return s;
-  }, [pmOpts]);
+  const [categoriesList, setCategoriesList] = useState<CategoryListItem[] | null>(null);
+  const [categoriesErr, setCategoriesErr] = useState<string | null>(null);
+  const [categoryModalLineId, setCategoryModalLineId] = useState<string | null>(null);
+  const [categoryModalEpoch, setCategoryModalEpoch] = useState(0);
 
   useEffect(() => {
-    if (kind !== 'finalize_fields') return;
-    setPaymentMethod((prev) => (validPaymentCorrectionValues.has(prev) ? prev : ''));
-  }, [kind, validPaymentCorrectionValues]);
+    if (!loadedSaleId || itemRows.length === 0) {
+      setCategoriesList(null);
+      setCategoriesErr(null);
+      return;
+    }
+    const ac = new AbortController();
+    let disposed = false;
+    void (async () => {
+      try {
+        const list = await fetchCategoriesList(auth, ac.signal);
+        if (disposed) return;
+        setCategoriesList(list.filter((c) => c.is_active));
+        setCategoriesErr(null);
+      } catch (e) {
+        if (disposed) return;
+        setCategoriesList(null);
+        setCategoriesErr(e instanceof Error ? e.message : 'Chargement des catégories impossible.');
+      }
+    })();
+    return () => {
+      disposed = true;
+      ac.abort();
+    };
+  }, [auth, loadedSaleId, itemRows.length]);
+
+  useEffect(() => {
+    const sid = linkedCashSessionId?.trim();
+    if (!sid) {
+      setLinkedSessionStatus(null);
+      setLinkedSessionFetchErr(null);
+      return;
+    }
+    let disposed = false;
+    void (async () => {
+      const res = await getCashSessionDetail(sid, auth);
+      if (disposed) return;
+      if (!res.ok) {
+        setLinkedSessionFetchErr(res.detail || 'Session liée introuvable.');
+        setLinkedSessionStatus(null);
+        return;
+      }
+      setLinkedSessionFetchErr(null);
+      setLinkedSessionStatus(res.session.status === 'closed' ? 'closed' : 'open');
+    })();
+    return () => {
+      disposed = true;
+    };
+  }, [auth, linkedCashSessionId]);
+
+  const partitionDirty =
+    snapshotPaymentDraftRows(draftSalePayments) !== initialSaleSnapRef.current ||
+    snapshotPaymentDraftRows(draftDonationSurplus) !== initialSurplusSnapRef.current;
+
+  const itemLinesDirty = useMemo(
+    () => JSON.stringify(itemRows) !== JSON.stringify(baselineItems),
+    [itemRows, baselineItems],
+  );
 
   const applyLoadedSale = useCallback((sale: SaleResponseV1) => {
-      setLoadedSaleId(sale.id);
-      setTotalStr(String(sale.total_amount ?? ''));
-      setDonationStr(
-        sale.donation !== undefined && sale.donation !== null ? String(sale.donation) : '',
-      );
-      const n0 = sale.note ?? '';
-      setInitialNote(n0);
-      setNote(n0);
-      setStep(2);
+    setLoadedSaleId(sale.id);
+    setTotalStr(String(sale.total_amount ?? ''));
+    initialTotalNumRef.current =
+      typeof sale.total_amount === 'number' && Number.isFinite(sale.total_amount)
+        ? sale.total_amount
+        : null;
+    setDonationStr(
+      sale.donation !== undefined && sale.donation !== null ? String(sale.donation) : '',
+    );
+    const n0 = sale.note ?? '';
+    setInitialNote(n0);
+    setNote(n0);
+    const split = splitSalePaymentsByNature(sale.payments);
+    initialSalePaymentLineCountRef.current = split.sale_payment.length;
+    const pmAgg = typeof sale.payment_method === 'string' ? sale.payment_method.trim() : '';
+    setLegacyPaymentMethodDisplay(pmAgg || '—');
+    const saleRows = rowsFromSplit(split.sale_payment);
+    const surplusRows = rowsFromSplit(split.donation_surplus);
+    setDraftSalePayments(saleRows);
+    setDraftDonationSurplus(surplusRows);
+    initialSaleSnapRef.current = snapshotPaymentDraftRows(saleRows);
+    initialSurplusSnapRef.current = snapshotPaymentDraftRows(surplusRows);
+    const ir = saleItemsToEditRows(sale.items ?? []);
+    setBaselineItems(ir.map((r) => ({ ...r })));
+    setItemRows(ir.map((r) => ({ ...r })));
+    setLinkedCashSessionId(typeof sale.cash_session_id === 'string' ? sale.cash_session_id.trim() || null : null);
+    setStep(2);
   }, []);
 
   const loadSaleById = useCallback(
@@ -176,11 +446,24 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     setSaleDateLocal('');
     setDonationStr('');
     setTotalStr('');
-    setPaymentMethod('');
+    setDraftSalePayments([]);
+    setDraftDonationSurplus([]);
+    initialSaleSnapRef.current = '';
+    initialSurplusSnapRef.current = '';
+    initialTotalNumRef.current = null;
+    initialSalePaymentLineCountRef.current = 0;
+    setBaselineItems([]);
+    setItemRows([]);
+    setLinkedCashSessionId(null);
+    setLinkedSessionStatus(null);
+    setLinkedSessionFetchErr(null);
     setNote('');
     setInitialNote(null);
     setReason('');
     setPin('');
+    setCategoryModalLineId(null);
+    setCategoriesList(null);
+    setCategoriesErr(null);
     setError(null);
     setDone(false);
     if (lockSaleId && initialSaleId) {
@@ -200,6 +483,38 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     await loadSaleById(saleIdInput);
   };
 
+  const addSalePaymentRow = () => {
+    setDraftSalePayments((prev) => [...prev, { localId: newLocalId(), payment_method: '', amountStr: '' }]);
+  };
+
+  const addSurplusRow = () => {
+    setDraftDonationSurplus((prev) => [...prev, { localId: newLocalId(), payment_method: '', amountStr: '' }]);
+  };
+
+  const removeSalePaymentRow = (localId: string) => {
+    setDraftSalePayments((prev) => prev.filter((r) => r.localId !== localId));
+  };
+
+  const removeSurplusRow = (localId: string) => {
+    setDraftDonationSurplus((prev) => prev.filter((r) => r.localId !== localId));
+  };
+
+  const updateSalePaymentRow = (localId: string, patch: Partial<PaymentDraftRow>) => {
+    setDraftSalePayments((prev) =>
+      prev.map((r) => (r.localId === localId ? { ...r, ...patch } : r)),
+    );
+  };
+
+  const updateSurplusRow = (localId: string, patch: Partial<PaymentDraftRow>) => {
+    setDraftDonationSurplus((prev) =>
+      prev.map((r) => (r.localId === localId ? { ...r, ...patch } : r)),
+    );
+  };
+
+  const updateItemRow = (id: string, patch: Partial<ItemEditRow>) => {
+    setItemRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
   const buildBody = (): SaleCorrectionRequestBody | null => {
     const r = reason.trim();
     if (!r) {
@@ -216,6 +531,17 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     }
     const payload: SaleCorrectionRequestBody = { kind: 'finalize_fields', reason: r };
     let any = false;
+    if (itemLinesDirty) {
+      const lp = buildItemLinePatches(baselineItems, itemRows);
+      if (!lp.ok) {
+        setError({ kind: 'local', message: lp.message });
+        return null;
+      }
+      if (lp.patches.length > 0) {
+        payload.items = lp.patches;
+        any = true;
+      }
+    }
     if (donationStr.trim() !== '') {
       const n = parseFloat(donationStr.replace(',', '.'));
       if (Number.isNaN(n)) {
@@ -234,21 +560,50 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
       payload.total_amount = n;
       any = true;
     }
-    if (paymentMethod.trim() !== '') {
-      if (paymentMethod !== 'free' && !paymentMethodsReady) {
+
+    if (partitionDirty) {
+      if (!paymentMethodsReady) {
         setError({
           kind: 'local',
-          message: 'Moyens de paiement indisponibles — impossible de modifier le mode de paiement pour l’instant.',
+          message: 'Moyens de paiement indisponibles — impossible de soumettre une répartition pour l’instant.',
         });
         return null;
       }
-      if (paymentMethod !== 'free' && paymentMethod !== '' && !pmOpts.some((o) => o.code === paymentMethod)) {
-        setError({ kind: 'local', message: 'Mode de paiement invalide par rapport au référentiel actif.' });
+      const saleParsed = parseDraftPaymentLines(draftSalePayments, pmOpts);
+      if (!saleParsed.ok) {
+        setError({ kind: 'local', message: saleParsed.message });
         return null;
       }
-      payload.payment_method = paymentMethod;
+      const surplusParsed = parseDraftPaymentLines(draftDonationSurplus, pmOpts);
+      if (!surplusParsed.ok) {
+        setError({ kind: 'local', message: surplusParsed.message });
+        return null;
+      }
+      payload.payments = saleParsed.lines;
+      payload.donation_surplus = surplusParsed.lines;
+      const totalNum = parseFloat(totalStr.replace(',', '.'));
+      if (!Number.isNaN(totalNum)) {
+        const arb = validatePartitionVsTotal22_4(totalNum, saleParsed.lines, surplusParsed.lines);
+        if (arb) {
+          setError({ kind: 'local', message: arb });
+          return null;
+        }
+      }
       any = true;
+    } else if (totalStr.trim() !== '' && initialSalePaymentLineCountRef.current > 1) {
+      const totalNum = parseFloat(totalStr.replace(',', '.'));
+      if (!Number.isNaN(totalNum) && initialTotalNumRef.current !== null) {
+        if (Math.abs(totalNum - initialTotalNumRef.current) > PAY_ARBITRAGE_EPS) {
+          setError({
+            kind: 'local',
+            message:
+              'Ce ticket a plusieurs lignes de règlement : modifiez les montants dans la grille ou envoyez une répartition explicite.',
+          });
+          return null;
+        }
+      }
     }
+
     if (initialNote !== null && note !== initialNote) {
       payload.note = note;
       any = true;
@@ -256,7 +611,8 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     if (!any) {
       setError({
         kind: 'local',
-        message: 'Au moins un champ de finalisation doit être renseigné (serveur).',
+        message:
+          'Au moins une modification utile est requise : lignes article, don, total, note, répartition paiements, etc.',
       });
       return null;
     }
@@ -286,6 +642,38 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
     }
   };
 
+  const saleLinesSumPreview = useMemo(() => {
+    let s = 0;
+    for (const r of draftSalePayments) {
+      const n = parseFloat(r.amountStr.replace(',', '.'));
+      if (Number.isFinite(n)) s += n;
+    }
+    return s;
+  }, [draftSalePayments]);
+
+  const surplusLinesSumPreview = useMemo(() => {
+    let s = 0;
+    for (const r of draftDonationSurplus) {
+      const n = parseFloat(r.amountStr.replace(',', '.'));
+      if (Number.isFinite(n)) s += n;
+    }
+    return s;
+  }, [draftDonationSurplus]);
+
+  const totalPreviewNum = useMemo(() => {
+    const n = parseFloat(totalStr.replace(',', '.'));
+    return Number.isFinite(n) ? n : Number.NaN;
+  }, [totalStr]);
+
+  const linesSubtotalPreview = useMemo(() => {
+    let s = 0;
+    for (const r of itemRows) {
+      const n = parseFloat(r.totalPriceStr.replace(',', '.'));
+      if (Number.isFinite(n) && n > 0) s += n;
+    }
+    return s;
+  }, [itemRows]);
+
   return (
     <div className={classes.step} data-testid="cashflow-sale-correction-wizard">
       <CashflowOperationalSyncNotice auth={auth} />
@@ -295,8 +683,9 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
         </Alert>
       ) : null}
       <Text size="sm" c="dimmed">
-        Story 6.8 — périmètre liste fermée ; refus si session clôturée (serveur). Aucune édition des lignes
-        article ici.
+        Story 6.8 — périmètre liste fermée ; refus si session clôturée (serveur). Les lignes article sont éditables
+        ci-dessous (correction détail). Pour une annulation monétaire complète d’un ticket finalisé, utiliser le flux
+        remboursement / reversal (permission <code>caisse.refund</code>), distinct de cette correction.
       </Text>
       {done ? (
         <Alert color="green" title="Correction envoyée" data-testid="cashflow-sale-correction-success">
@@ -344,6 +733,25 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
       {!done && step === 2 && loadedSaleId ? (
         <>
           <Text size="sm">Ticket : {loadedSaleId}</Text>
+          {linkedSessionFetchErr ? (
+            <Alert color="orange" variant="light" title="Session liée au ticket">
+              <Text size="sm">{linkedSessionFetchErr}</Text>
+            </Alert>
+          ) : null}
+          {linkedSessionStatus === 'closed' && linkedCashSessionId ? (
+            <Alert
+              color="blue"
+              variant="light"
+              title="Session de caisse clôturée"
+              data-testid="cashflow-sale-correction-session-closed-info"
+            >
+              <Text size="sm">
+                Ce ticket est rattaché à la session <code>{linkedCashSessionId}</code> (statut : clôturée). Les
+                corrections sensibles restent possibles pour super-admin ; les montants de session peuvent être
+                recalculés si vous modifiez total, don ou journal de paiement.
+              </Text>
+            </Alert>
+          ) : null}
           <NativeSelect
             label="Type de correction"
             data={[...KIND_OPTIONS]}
@@ -361,6 +769,147 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
             />
           ) : (
             <>
+              <Alert color="gray" variant="light" title="Annulation complète du ticket">
+                <Text size="sm">
+                  Ce wizard ne supprime pas la vente : pour « annuler » au sens caisse (sortie de fonds), créer un
+                  remboursement total (<code>POST /v1/sales/reversals</code>) avec le motif métier — les agrégats et KPI
+                  excluent alors la vente source là où le reporting est branché sur les reversals.
+                </Text>
+              </Alert>
+              {categoriesErr ? (
+                <Alert color="orange" variant="light" title="Référentiel catégories" mb="xs">
+                  <Text size="sm">{categoriesErr}</Text>
+                </Alert>
+              ) : null}
+              {itemRows.length > 0 ? (
+                <Stack gap="xs" mb="sm" data-testid="cashflow-sale-correction-item-lines">
+                  <Text size="sm" fw={600}>
+                    Lignes article (détail)
+                  </Text>
+                  {itemRows.map((row, idx) => (
+                    <Stack
+                      key={row.id}
+                      gap={4}
+                      p="xs"
+                      style={{ border: '1px solid var(--mantine-color-dark-4)' }}
+                    >
+                      <Text size="xs" c="dimmed">
+                        Ligne {idx + 1} · <code>{row.id}</code>
+                      </Text>
+                      <Stack gap={6}>
+                        <Text size="sm" fw={500}>
+                          Catégorie matière
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          Grille identique à la caisse : choisir une feuille de l’arbre ; le code stocké sur le ticket
+                          reste l’identifiant technique envoyé au serveur.
+                        </Text>
+                        <div data-testid={`cashflow-sale-correction-item-category-display-${idx}`}>
+                          <Text size="sm">
+                            <strong>
+                              {formatCategoryHierarchyLabel(row.category, categoriesList ?? []).trim() ||
+                                row.category.trim() ||
+                                '—'}
+                            </strong>
+                          </Text>
+                          <Text size="xs" c="dimmed" ff="monospace">
+                            Code stocké : {row.category.trim() || '—'}
+                          </Text>
+                        </div>
+                        <Group gap="xs">
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="light"
+                            disabled={stale}
+                            onClick={() => {
+                              setCategoryModalEpoch((e) => e + 1);
+                              setCategoryModalLineId(row.id);
+                            }}
+                            data-testid={`cashflow-sale-correction-item-category-open-${idx}`}
+                          >
+                            Choisir dans l’arbre…
+                          </Button>
+                          <TextInput
+                            aria-label="Code catégorie (secours)"
+                            placeholder="Code catalogue (secours)"
+                            description="Si besoin : saisir l’UUID ou le code catalogue tel que stocké en base."
+                            size="xs"
+                            style={{ flex: 1, minWidth: 140 }}
+                            value={row.category}
+                            onChange={(e) => updateItemRow(row.id, { category: e.currentTarget.value })}
+                            data-testid={`cashflow-sale-correction-item-cat-${idx}`}
+                          />
+                        </Group>
+                      </Stack>
+                      <Group grow gap="xs" wrap="wrap">
+                        <TextInput
+                          label="Poids (kg)"
+                          value={row.weightStr}
+                          onChange={(e) => updateItemRow(row.id, { weightStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-weight-${idx}`}
+                        />
+                        <TextInput
+                          label="Qté"
+                          value={row.quantityStr}
+                          onChange={(e) => updateItemRow(row.id, { quantityStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-qty-${idx}`}
+                        />
+                      </Group>
+                      <Group grow gap="xs" wrap="wrap">
+                        <TextInput
+                          label="PU"
+                          description="Prix unitaire (€ / kg ou € / pièce selon la grille catégorie)."
+                          value={row.unitPriceStr}
+                          onChange={(e) => updateItemRow(row.id, { unitPriceStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-pu-${idx}`}
+                        />
+                        <TextInput
+                          label="Montant ligne"
+                          description="Total de la ligne (€), hors ventilation don."
+                          value={row.totalPriceStr}
+                          onChange={(e) => updateItemRow(row.id, { totalPriceStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-total-${idx}`}
+                        />
+                      </Group>
+                      <TextInput
+                        label="Notes ligne"
+                        value={row.notes}
+                        onChange={(e) => updateItemRow(row.id, { notes: e.currentTarget.value })}
+                        data-testid={`cashflow-sale-correction-item-notes-${idx}`}
+                      />
+                      <Group grow gap="xs" wrap="wrap">
+                        <TextInput
+                          label="Tag métier (kind)"
+                          description="Story 24.9 — code fermé pour le reporting agrégé (voir liste métier)."
+                          value={row.tagKindStr}
+                          onChange={(e) => updateItemRow(row.id, { tagKindStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-tag-kind-${idx}`}
+                        />
+                        <TextInput
+                          label="Tag métier (libellé AUTRE)"
+                          description="Obligatoire si kind = AUTRE ; sinon laisser vide."
+                          value={row.tagCustomStr}
+                          onChange={(e) => updateItemRow(row.id, { tagCustomStr: e.currentTarget.value })}
+                          data-testid={`cashflow-sale-correction-item-tag-custom-${idx}`}
+                        />
+                      </Group>
+                      <Text size="xs" c="dimmed">
+                        Tags métier : alignés sur <code>buildBusinessTagPayload</code> (caisse) — kind = code fermé ; si
+                        kind = AUTRE, remplir le libellé libre ; sinon champ libellé vide.
+                      </Text>
+                    </Stack>
+                  ))}
+                  <Text size="xs" c="dimmed">
+                    Sous-total lignes (somme montants ligne &gt; 0, prévisualisation) :{' '}
+                    {linesSubtotalPreview.toFixed(2)} — doit rester cohérent avec le total encaissé (serveur).
+                  </Text>
+                </Stack>
+              ) : (
+                <Text size="xs" c="dimmed" mb="xs">
+                  Ticket sans lignes article (encaissement sans article ou données minimales).
+                </Text>
+              )}
               <TextInput
                 label="Don (optionnel)"
                 value={donationStr}
@@ -373,14 +922,116 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                 onChange={(e) => setTotalStr(e.currentTarget.value)}
                 data-testid="cashflow-sale-correction-total"
               />
-              <NativeSelect
-                label="Mode de paiement"
-                data={paymentCorrectionSelectData}
-                value={validPaymentCorrectionValues.has(paymentMethod) ? paymentMethod : ''}
-                onChange={(e) => setPaymentMethod(e.currentTarget.value)}
-                disabled={pmLoading || stale}
-                data-testid="cashflow-sale-correction-payment"
-              />
+              <Stack gap="xs" data-testid="cashflow-sale-correction-payment-grids">
+                <Text size="sm" fw={600}>
+                  Règlement (lignes encaissement)
+                </Text>
+                {draftSalePayments.length === 0 ? (
+                  <Alert color="gray" variant="light">
+                    <Text size="sm">
+                      Aucune ligne de règlement enregistrée sur ce ticket — la correction du total encaissé reste
+                      impossible côté serveur tant qu’aucune ligne journal n’existe (comportement Story 6.8). Vous
+                      pouvez ajouter des lignes ci-dessous pour envoyer une répartition explicite.
+                    </Text>
+                  </Alert>
+                ) : null}
+                {draftSalePayments.map((row, idx) => (
+                  <Group key={row.localId} gap="xs" wrap="wrap" align="flex-end">
+                    <NativeSelect
+                      label={idx === 0 ? 'Moyen' : undefined}
+                      data={paymentRowSelectData}
+                      value={row.payment_method}
+                      onChange={(e) =>
+                        updateSalePaymentRow(row.localId, { payment_method: e.currentTarget.value })
+                      }
+                      disabled={pmLoading || stale}
+                      data-testid={`cashflow-sale-correction-payment-row-${idx}`}
+                    />
+                    <TextInput
+                      label={idx === 0 ? 'Montant' : undefined}
+                      value={row.amountStr}
+                      onChange={(e) => updateSalePaymentRow(row.localId, { amountStr: e.currentTarget.value })}
+                      data-testid={`cashflow-sale-correction-payment-amount-${idx}`}
+                    />
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      color="red"
+                      onClick={() => removeSalePaymentRow(row.localId)}
+                      data-testid={`cashflow-sale-correction-payment-remove-${idx}`}
+                    >
+                      Retirer
+                    </Button>
+                  </Group>
+                ))}
+                <Group>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={() => addSalePaymentRow()}
+                    disabled={stale || !paymentMethodsReady}
+                    data-testid="cashflow-sale-correction-payment-add"
+                  >
+                    Ajouter une ligne de règlement
+                  </Button>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  Somme règlement saisie : {Number.isFinite(saleLinesSumPreview) ? saleLinesSumPreview.toFixed(2) : '—'}
+                </Text>
+
+                <Text size="sm" fw={600} mt="md">
+                  Complément de don (hors montant du règlement), si besoin
+                </Text>
+                {draftDonationSurplus.map((row, idx) => (
+                  <Group key={row.localId} gap="xs" wrap="wrap" align="flex-end">
+                    <NativeSelect
+                      label={idx === 0 ? 'Moyen' : undefined}
+                      data={paymentRowSelectData}
+                      value={row.payment_method}
+                      onChange={(e) =>
+                        updateSurplusRow(row.localId, { payment_method: e.currentTarget.value })
+                      }
+                      disabled={pmLoading || stale}
+                      data-testid={`cashflow-sale-correction-surplus-row-${idx}`}
+                    />
+                    <TextInput
+                      label={idx === 0 ? 'Montant' : undefined}
+                      value={row.amountStr}
+                      onChange={(e) => updateSurplusRow(row.localId, { amountStr: e.currentTarget.value })}
+                      data-testid={`cashflow-sale-correction-surplus-amount-${idx}`}
+                    />
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      color="red"
+                      onClick={() => removeSurplusRow(row.localId)}
+                      data-testid={`cashflow-sale-correction-surplus-remove-${idx}`}
+                    >
+                      Retirer
+                    </Button>
+                  </Group>
+                ))}
+                <Group>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={() => addSurplusRow()}
+                    disabled={stale || !paymentMethodsReady}
+                    data-testid="cashflow-sale-correction-surplus-add"
+                  >
+                    Ajouter une ligne de complément de don
+                  </Button>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  Somme compléments de don :{' '}
+                  {Number.isFinite(surplusLinesSumPreview) ? surplusLinesSumPreview.toFixed(2) : '—'} — couverture vs
+                  total :{' '}
+                  {!Number.isNaN(totalPreviewNum)
+                    ? (saleLinesSumPreview + surplusLinesSumPreview).toFixed(2)
+                    : '—'}{' '}
+                  / {Number.isNaN(totalPreviewNum) ? '—' : totalPreviewNum.toFixed(2)}
+                </Text>
+              </Stack>
               {pmLoading ? (
                 <Text size="sm" c="dimmed" data-testid="cashflow-sale-correction-pm-loading">
                   Chargement des moyens de paiement…
@@ -391,6 +1042,12 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
                   {pmError}
                 </Text>
               ) : null}
+              <Text size="xs" c="dimmed">
+                Champ legacy « payment_method » sur le ticket :{' '}
+                <code style={{ whiteSpace: 'nowrap' }}>{legacyPaymentMethodDisplay}</code> — les lignes ci-dessus
+                matérialisent le journal réel ; le mode {DEFAULT_FREE_PAYMENT_LABEL} ne doit pas apparaître dans des
+                lignes explicites.
+              </Text>
               <TextInput
                 label="Note ticket (modifier pour envoyer une correction ; laisser inchangé sinon)"
                 value={note}
@@ -429,6 +1086,33 @@ export function CashflowSaleCorrectionWizard({ widgetProps }: RegisteredWidgetPr
           ) : null}
         </>
       ) : null}
+      <Modal
+        opened={categoryModalLineId !== null}
+        onClose={() => setCategoryModalLineId(null)}
+        title="Choisir la catégorie matière"
+        size="xl"
+        data-testid="cashflow-sale-correction-category-modal"
+      >
+        <Stack gap="sm">
+          <Text size="xs" c="dimmed">
+            Grille alignée caisse nominale (<code>GET /v1/categories/</code>). Raccourcis clavier actifs hors champ de
+            saisie.
+          </Text>
+          <CategoryHierarchyPicker
+            presentation="kiosk_drill"
+            categorySource="legacy_categories"
+            browseResetEpoch={categoryModalEpoch}
+            onPickCategoryCode={(code) => {
+              const target = categoryModalLineId;
+              if (target) {
+                updateItemRow(target, { category: code });
+              }
+              setCategoryModalLineId(null);
+            }}
+            onContinueWithoutGrid={() => setCategoryModalLineId(null)}
+          />
+        </Stack>
+      </Modal>
     </div>
   );
 }

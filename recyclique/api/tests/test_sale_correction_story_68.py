@@ -1,4 +1,4 @@
-"""Story 6.8 — correction vente sensible (whitelist, super-admin, step-up PIN, audit, session ouverte)."""
+"""Story 6.8 — correction vente sensible (whitelist, super-admin, step-up PIN, audit ; session peut être clôturée)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from recyclic_api.core.config import settings
 from recyclic_api.core.security import hash_password
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus
+from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.services.context_envelope_service import build_context_envelope
@@ -122,6 +123,45 @@ def test_correct_sale_date_super_admin_ok(client, db_session, super_admin_pin, o
     assert row.sale_date is not None
 
 
+def test_correct_finalize_items_line_super_admin_ok(client, db_session, super_admin_pin, open_session_sale):
+    """Correction du détail d'une ligne article (poids / catégorie) — Story 6.8 étendue."""
+    _, sale = open_session_sale
+    item = SaleItem(
+        sale_id=sale.id,
+        category="EEE-1",
+        quantity=1,
+        weight=5.0,
+        unit_price=10.0,
+        total_price=10.0,
+    )
+    db_session.add(item)
+    db_session.commit()
+    db_session.refresh(item)
+
+    token = create_access_token(data={"sub": str(super_admin_pin.id)})
+    r = client.patch(
+        f"{V1}/sales/{sale.id}/corrections",
+        json={
+            "kind": "finalize_fields",
+            "reason": "Poids réel mesuré au détail",
+            "items": [
+                {
+                    "sale_item_id": str(item.id),
+                    "weight": 7.25,
+                    "category": "EEE-2",
+                }
+            ],
+        },
+        headers={"Authorization": f"Bearer {token}", "X-Step-Up-Pin": _PIN},
+    )
+    assert r.status_code == 200, r.text
+    db_session.expire_all()
+    row_item = db_session.query(SaleItem).filter(SaleItem.id == item.id).first()
+    assert row_item is not None
+    assert abs(float(row_item.weight or 0) - 7.25) < 1e-6
+    assert row_item.category == "EEE-2"
+
+
 def test_correct_finalize_super_admin_ok(client, db_session, super_admin_pin, open_session_sale):
     _, sale = open_session_sale
     token = create_access_token(data={"sub": str(super_admin_pin.id)})
@@ -200,7 +240,7 @@ def test_context_envelope_excludes_caisse_sale_correct_for_admin(db_session, adm
     assert "transverse.admin.view" in env.permission_keys
 
 
-def test_closed_session_conflict(client, db_session, site_sc, super_admin_pin):
+def test_correct_finalize_when_session_closed_super_admin_ok(client, db_session, site_sc, super_admin_pin):
     opened = datetime.now(timezone.utc) - timedelta(days=1)
     sess = CashSession(
         operator_id=super_admin_pin.id,
@@ -230,7 +270,11 @@ def test_closed_session_conflict(client, db_session, site_sc, super_admin_pin):
     token = create_access_token(data={"sub": str(super_admin_pin.id)})
     r = client.patch(
         f"{V1}/sales/{sale.id}/corrections",
-        json={"kind": "finalize_fields", "note": "x", "reason": "test"},
+        json={"kind": "finalize_fields", "note": "correction post-clôture", "reason": "test"},
         headers={"Authorization": f"Bearer {token}", "X-Step-Up-Pin": _PIN},
     )
-    assert r.status_code == 409
+    assert r.status_code == 200, r.text
+    db_session.expire_all()
+    row = db_session.query(Sale).filter(Sale.id == sale.id).first()
+    assert row is not None
+    assert row.note == "correction post-clôture"

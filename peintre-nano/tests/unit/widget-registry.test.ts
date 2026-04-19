@@ -25,6 +25,9 @@ describe('widget-registry', () => {
     expect(types).toContain('caisse-current-ticket');
     expect(types).toContain('cashflow-nominal-wizard');
     expect(types).toContain('cashflow-refund-wizard');
+    expect(types).toContain('cashflow-exchange-wizard');
+    expect(types).toContain('cashflow-disbursement-wizard');
+    expect(types).toContain('cashflow-special-ops-hub');
     expect(types).toContain('cashflow-close-wizard');
     expect(types).toContain('cashflow-sale-correction-wizard');
     expect(types).toContain('admin-cash-session-detail');

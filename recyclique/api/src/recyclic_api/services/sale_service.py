@@ -45,17 +45,27 @@ from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import (
     PaymentCreate,
     SaleCorrectionFinalizeFieldsPayload,
+    SaleCorrectionItemPatch,
     SaleCorrectionSaleDatePayload,
     SaleCreate,
     SaleFinalizeHeld,
     SaleHoldCreate,
     SaleItemUpdate,
     SalePaymentMethodOption,
+    PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND,
+    SaleResponse,
     SaleReversalCreate,
+    SaleReversalResponse,
 )
 from recyclic_api.services.accounting_period_authority_service import (
     AccountingPeriodAuthorityService,
     RefundFiscalBranch,
+)
+from recyclic_api.services.business_tag_resolution import (
+    BusinessTagKind,
+    assert_explicit_matches_legacy,
+    legacy_expected_tag_key,
+    validate_tag_pair,
 )
 from recyclic_api.services.statistics_recalculation_service import StatisticsRecalculationService
 
@@ -74,6 +84,34 @@ MAX_HELD_SALES_PER_SESSION = 10
 
 # Story 22.4 — comparaisons montants caisse (float ticket / paiements)
 _ARBITRAGE_EPS = 1e-6
+
+
+def _business_tag_db_pair(kind, custom: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+    """Persist ``business_tag_kind`` / ``business_tag_custom`` (colonnes VARCHAR)."""
+    k = kind.value if kind is not None else None
+    c = (custom or "").strip() or None
+    return k, c
+
+
+def _validate_sale_create_business_tags(sale_data: SaleCreate, soc_kind, s_kind) -> None:
+    validate_tag_pair(sale_data.business_tag_kind, sale_data.business_tag_custom)
+    legacy_k = legacy_expected_tag_key(s_kind, soc_kind)
+    assert_explicit_matches_legacy(
+        legacy_k,
+        sale_data.business_tag_kind,
+        sale_data.business_tag_custom,
+    )
+    for it in sale_data.items:
+        validate_tag_pair(it.business_tag_kind, it.business_tag_custom)
+        assert_explicit_matches_legacy(None, it.business_tag_kind, it.business_tag_custom)
+
+
+def _validate_hold_business_tags(hold_data: SaleHoldCreate) -> None:
+    validate_tag_pair(hold_data.business_tag_kind, hold_data.business_tag_custom)
+    assert_explicit_matches_legacy(None, hold_data.business_tag_kind, hold_data.business_tag_custom)
+    for it in hold_data.items:
+        validate_tag_pair(it.business_tag_kind, it.business_tag_custom)
+        assert_explicit_matches_legacy(None, it.business_tag_kind, it.business_tag_custom)
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +303,22 @@ class SaleService:
             raise AuthorizationError("Vente hors de votre périmètre opérateur.")
 
         return sale
+
+    def build_sale_response(self, sale: Sale) -> SaleResponse:
+        """Story 24.4 — ticket enrichi avec la prévisualisation autorité remboursement (cohérent POST reversals / 22.5)."""
+        base = SaleResponse.model_validate(sale)
+        try:
+            authority = AccountingPeriodAuthorityService(self.db)
+            auth_view = authority.resolve_refund_branch(sale_date=sale.sale_date, created_at=sale.created_at)
+            return base.model_copy(
+                update={
+                    "fiscal_branch": auth_view.branch.value,
+                    "sale_fiscal_year": auth_view.sale_fiscal_year,
+                    "current_open_fiscal_year": auth_view.current_open_fiscal_year,
+                }
+            )
+        except (ConflictError, ValidationError):
+            return base
 
     def update_sale_item(
         self,
@@ -556,6 +610,8 @@ class SaleService:
                     "ou indiquez special_encaissement_kind ou social_action_kind pour un encaissement sans article."
                 )
 
+        _validate_sale_create_business_tags(sale_data, soc_kind, s_kind)
+
         subtotal = sum(item.total_price for item in sale_data.items if item.total_price > 0)
         if subtotal > 0 and sale_data.total_amount < subtotal:
             raise ValidationError(
@@ -593,6 +649,7 @@ class SaleService:
         else:
             adherent_ref = None
 
+        bt_k, bt_c = _business_tag_db_pair(sale_data.business_tag_kind, sale_data.business_tag_custom)
         db_sale = Sale(
             cash_session_id=sale_data.cash_session_id,
             operator_id=op_for_sale,
@@ -607,11 +664,14 @@ class SaleService:
             special_encaissement_kind=s_kind.value if s_kind else None,
             social_action_kind=soc_kind.value if soc_kind else None,
             adherent_reference=adherent_ref,
+            business_tag_kind=bt_k,
+            business_tag_custom=bt_c,
         )
         db.add(db_sale)
         db.flush()
 
         for item_data in sale_data.items:
+            itk, itc = _business_tag_db_pair(item_data.business_tag_kind, item_data.business_tag_custom)
             db_item = SaleItem(
                 sale_id=db_sale.id,
                 category=item_data.category,
@@ -621,6 +681,8 @@ class SaleService:
                 total_price=item_data.total_price,
                 preset_id=item_data.preset_id,
                 notes=item_data.notes,
+                business_tag_kind=itk,
+                business_tag_custom=itc,
             )
             db.add(db_item)
 
@@ -779,6 +841,8 @@ class SaleService:
                 f"Le total ({hold_data.total_amount}) ne peut pas être inférieur au sous-total ({subtotal})"
             )
 
+        _validate_hold_business_tags(hold_data)
+
         now = datetime.now(timezone.utc)
         session_opened_at = None
         is_deferred_session = False
@@ -793,6 +857,7 @@ class SaleService:
         sale_date = session_opened_at if is_deferred_session else now
         timestamps = session_opened_at if is_deferred_session else now
 
+        htk, htc = _business_tag_db_pair(hold_data.business_tag_kind, hold_data.business_tag_custom)
         db_sale = Sale(
             cash_session_id=hold_data.cash_session_id,
             operator_id=op_uuid,
@@ -804,11 +869,14 @@ class SaleService:
             lifecycle_status=SaleLifecycleStatus.HELD,
             created_at=timestamps,
             updated_at=timestamps,
+            business_tag_kind=htk,
+            business_tag_custom=htc,
         )
         db.add(db_sale)
         db.flush()
 
         for item_data in hold_data.items:
+            itk, itc = _business_tag_db_pair(item_data.business_tag_kind, item_data.business_tag_custom)
             db_item = SaleItem(
                 sale_id=db_sale.id,
                 category=item_data.category,
@@ -818,6 +886,8 @@ class SaleService:
                 total_price=item_data.total_price,
                 preset_id=item_data.preset_id,
                 notes=item_data.notes,
+                business_tag_kind=itk,
+                business_tag_custom=itc,
             )
             db.add(db_item)
 
@@ -996,6 +1066,12 @@ class SaleService:
         if payload.note is not None:
             sale.note = payload.note
 
+        if payload.business_tag_kind is not None or (payload.business_tag_custom or "").strip():
+            validate_tag_pair(payload.business_tag_kind, payload.business_tag_custom)
+            fk, fc = _business_tag_db_pair(payload.business_tag_kind, payload.business_tag_custom)
+            sale.business_tag_kind = fk
+            sale.business_tag_custom = fc
+
         sale_pays, donation_surplus_final = self._resolve_payments_for_finalize(float(sale.total_amount), payload)
 
         if sale_pays:
@@ -1142,12 +1218,73 @@ class SaleService:
         db.refresh(sale)
         return sale
 
+    def build_sale_reversal_response(self, reversal: SaleReversal) -> SaleReversalResponse:
+        """Story 24.3 — agrège journal REFUND_PAYMENT, vente source et autorité fiscale pour le contrat HTTP."""
+        db = self.db
+        sale = (
+            db.query(Sale)
+            .options(selectinload(Sale.payments))
+            .filter(Sale.id == reversal.source_sale_id)
+            .first()
+        )
+        if not sale:
+            raise NotFoundError("Sale not found")
+
+        pt = (
+            db.query(PaymentTransaction)
+            .filter(
+                PaymentTransaction.sale_id == reversal.source_sale_id,
+                PaymentTransaction.nature == PaymentTransactionNature.REFUND_PAYMENT,
+            )
+            .order_by(PaymentTransaction.created_at.desc())
+            .first()
+        )
+        refund_pm = "cash"
+        if pt is not None and pt.payment_method is not None:
+            pm = pt.payment_method
+            refund_pm = pm.value if hasattr(pm, "value") else str(pm)
+
+        src_pm = sale.payment_method
+        source_sale_pm = None
+        if src_pm is not None:
+            source_sale_pm = src_pm.value if hasattr(src_pm, "value") else str(src_pm)
+
+        fiscal_branch = None
+        sale_fy = None
+        open_fy = None
+        try:
+            authority = AccountingPeriodAuthorityService(db)
+            auth_view = authority.resolve_refund_branch(sale_date=sale.sale_date, created_at=sale.created_at)
+            fiscal_branch = auth_view.branch.value
+            sale_fy = auth_view.sale_fiscal_year
+            open_fy = auth_view.current_open_fiscal_year
+        except (ConflictError, ValidationError):
+            pass
+
+        return SaleReversalResponse(
+            id=str(reversal.id),
+            source_sale_id=str(reversal.source_sale_id),
+            cash_session_id=str(reversal.cash_session_id),
+            operator_id=str(reversal.operator_id),
+            amount_signed=float(reversal.amount_signed),
+            reason_code=str(reversal.reason_code),
+            detail=reversal.detail,
+            idempotency_key=reversal.idempotency_key,
+            created_at=reversal.created_at,
+            refund_payment_method=refund_pm,
+            source_sale_payment_method=source_sale_pm,
+            fiscal_branch=fiscal_branch,
+            sale_fiscal_year=sale_fy,
+            current_open_fiscal_year=open_fy,
+            paheko_accounting_sync_hint=PAHEKO_ACCOUNTING_SYNC_HINT_STANDARD_REFUND,
+        )
+
     def create_sale_reversal(
         self,
         payload: SaleReversalCreate,
         operator_id: str,
         request_id: Optional[str] = None,
-    ) -> SaleReversal:
+    ) -> SaleReversalResponse:
         """
         Story 6.4 — remboursement total lié à une vente ``completed``, même session ouverte.
 
@@ -1170,7 +1307,7 @@ class SaleService:
                     raise ConflictError(
                         "Clé d'idempotence déjà utilisée pour une autre intention de remboursement."
                     )
-                return existing
+                return self.build_sale_reversal_response(existing)
 
         try:
             source_uuid = UUID(str(payload.source_sale_id))
@@ -1295,9 +1432,9 @@ class SaleService:
         )
 
         db.refresh(reversal)
-        return reversal
+        return self.build_sale_reversal_response(reversal)
 
-    def get_sale_reversal_readable(self, reversal_id: str, user_id: str) -> SaleReversal:
+    def get_sale_reversal_readable(self, reversal_id: str, user_id: str) -> SaleReversalResponse:
         """Story 6.4 — lecture reversal si l'utilisateur peut lire la vente source (mêmes règles que GET sale)."""
         db = self.db
         try:
@@ -1310,18 +1447,123 @@ class SaleService:
             raise NotFoundError("Reversal not found")
 
         self.get_sale_readable_by_user(str(rev.source_sale_id), user_id)
-        return rev
+        return self.build_sale_reversal_response(rev)
+
+    def _apply_sensitive_sale_item_corrections(
+        self, sale: Sale, patches: List[SaleCorrectionItemPatch]
+    ) -> None:
+        """
+        Met à jour des lignes ``sale_items`` (correction 6.8) — cohérence sous-total vérifiée par l'appelant.
+        """
+        db = self.db
+        for p in patches:
+            item = (
+                db.query(SaleItem)
+                .filter(SaleItem.id == p.sale_item_id, SaleItem.sale_id == sale.id)
+                .first()
+            )
+            if not item:
+                raise ValidationError(
+                    f"Ligne article absente ou ne correspond pas au ticket : {p.sale_item_id}"
+                )
+            if p.category is not None:
+                item.category = p.category
+            if p.notes is not None:
+                item.notes = p.notes
+            if p.preset_id is not None:
+                preset = db.query(PresetButton).filter(PresetButton.id == p.preset_id).first()
+                if not preset:
+                    raise ValidationError("Preset not found")
+                item.preset_id = p.preset_id
+
+            if p.quantity is not None:
+                item.quantity = p.quantity
+
+            if p.unit_price is not None:
+                item.unit_price = float(p.unit_price)
+
+            if p.weight is not None:
+                item.weight = float(p.weight)
+
+            if p.business_tag_kind is not None or p.business_tag_custom is not None:
+                eff_kind = p.business_tag_kind
+                eff_custom = p.business_tag_custom
+                if eff_kind is None and item.business_tag_kind:
+                    try:
+                        eff_kind = BusinessTagKind(item.business_tag_kind)
+                    except ValueError:
+                        eff_kind = None
+                if eff_custom is None:
+                    eff_custom = item.business_tag_custom
+                validate_tag_pair(eff_kind, eff_custom)
+                k, c = _business_tag_db_pair(eff_kind, eff_custom)
+                item.business_tag_kind = k
+                item.business_tag_custom = c
+
+            eff_qty = float(item.quantity)
+            if p.total_price is not None:
+                item.total_price = float(p.total_price)
+            elif p.unit_price is not None:
+                item.total_price = float(item.unit_price) * eff_qty
+            elif p.quantity is not None:
+                item.total_price = float(item.unit_price) * eff_qty
 
     def _sale_correction_snapshot(self, sale: Sale) -> dict:
         pm = sale.payment_method
         pm_val = pm.value if pm is not None and hasattr(pm, "value") else pm
+        journal: List[dict] = []
+        for pt in sorted(list(sale.payments or []), key=lambda x: str(x.id)):
+            if pt.nature not in (
+                PaymentTransactionNature.SALE_PAYMENT,
+                PaymentTransactionNature.DONATION_SURPLUS,
+            ):
+                continue
+            pm_row = pt.payment_method
+            pm_row_val = pm_row.value if pm_row is not None and hasattr(pm_row, "value") else pm_row
+            journal.append(
+                {
+                    "nature": pt.nature.value if pt.nature is not None else None,
+                    "payment_method": pm_row_val,
+                    "amount": float(pt.amount),
+                }
+            )
+        items_snap: List[dict] = []
+        for it in sorted(list(sale.items or []), key=lambda x: str(x.id)):
+            items_snap.append(
+                {
+                    "id": str(it.id),
+                    "category": it.category,
+                    "quantity": it.quantity,
+                    "weight": float(it.weight) if it.weight is not None else None,
+                    "unit_price": float(it.unit_price),
+                    "total_price": float(it.total_price),
+                    "notes": it.notes,
+                    "preset_id": str(it.preset_id) if it.preset_id else None,
+                    "business_tag_kind": it.business_tag_kind,
+                    "business_tag_custom": it.business_tag_custom,
+                }
+            )
         return {
             "sale_date": sale.sale_date.isoformat() if sale.sale_date else None,
             "total_amount": float(sale.total_amount),
             "donation": float(sale.donation or 0),
             "payment_method": pm_val,
             "note": sale.note,
+            "payments_journal": journal,
+            "items": items_snap,
         }
+
+    def _payment_transactions_to_create_rows(
+        self, rows: List[PaymentTransaction]
+    ) -> List[PaymentCreate]:
+        out: List[PaymentCreate] = []
+        for pt in rows:
+            code = pt.payment_method_code
+            if not code:
+                pm_row = pt.payment_method
+                code = pm_row.value if pm_row is not None and hasattr(pm_row, "value") else str(pm_row or "")
+            out.append(PaymentCreate(payment_method=code, amount=float(pt.amount)))
+        return out
 
     def apply_sensitive_sale_correction(
         self,
@@ -1379,8 +1621,10 @@ class SaleService:
             cash_session = db.query(CashSession).filter(CashSession.id == sale.cash_session_id).first()
         if cash_session is None:
             raise NotFoundError("Sale not found")
-        if cash_session.status != CashSessionStatus.OPEN:
-            raise ConflictError("Correction refusée : la session de caisse est déjà clôturée.")
+        correction_on_closed_session = cash_session.status != CashSessionStatus.OPEN
+        # Story 6.8 historique : session ouverte uniquement. Désormais : l'endpoint est réservé au
+        # super-admin — correction après clôture autorisée pour rectifier l'historique ; l'audit
+        # trace l'état de session. Les agrégats `cash_sessions` peuvent être recalculés si montants touchés.
 
         before = self._sale_correction_snapshot(sale)
         fields_touched: List[str] = []
@@ -1401,6 +1645,10 @@ class SaleService:
             fields_touched.append("sale_date")
         else:
             fin = payload
+            if fin.items:
+                self._apply_sensitive_sale_item_corrections(sale, fin.items)
+                fields_touched.append("sale_items")
+                db.flush()
             prev_total = float(sale.total_amount)
             prev_donation = float(sale.donation or 0)
             new_total = prev_total if fin.total_amount is None else float(fin.total_amount)
@@ -1409,53 +1657,159 @@ class SaleService:
                 raise ValidationError("Le total doit être supérieur ou égal à 0.")
             if new_donation < 0:
                 raise ValidationError("Le don doit être supérieur ou égal à 0.")
-            if new_donation > new_total + 1e-6:
+            if new_donation > new_total + _ARBITRAGE_EPS:
                 raise ValidationError("Incohérence : le don ne peut pas dépasser le total encaissé.")
 
             subtotal = sum(float(i.total_price or 0) for i in sale.items if (i.total_price or 0) > 0)
-            if subtotal > 0 and new_total < subtotal - 1e-6:
+            if subtotal > 0 and new_total < subtotal - _ARBITRAGE_EPS:
                 raise ValidationError(
                     f"Le total ({new_total}) ne peut pas être inférieur au sous-total des lignes ({subtotal})."
                 )
-
-            if fin.total_amount is not None:
-                # Intégrité (P0 / CR) : ne jamais persister un nouveau total sans aligner exactement
-                # une ligne PaymentTransaction sur ce montant. Sinon total encaissé et paiements divergent.
-                # → refus 400 (ValidationError) si ce n'est pas le cas (0 ou >1 lignes).
-                pays = list(sale.payments or [])
-                if len(pays) != 1:
-                    if len(pays) == 0:
-                        raise ValidationError(
-                            "Correction du total refusée : aucune ligne de paiement enregistrée — "
-                            "impossible d'aligner le montant encaissé avec le total (Story 6.8)."
-                        )
-                    raise ValidationError(
-                        "Correction du total interdite : vente avec plusieurs lignes de paiement (Story 6.8)."
-                    )
-                pays[0].amount = new_total
-                sale.total_amount = new_total
-                fields_touched.append("total_amount")
 
             if fin.donation is not None:
                 sale.donation = new_donation
                 fields_touched.append("donation")
 
-            if fin.payment_method is not None:
-                pays_pm = list(sale.payments or [])
+            if fin.payments is not None:
+                (
+                    db.query(PaymentTransaction)
+                    .filter(
+                        PaymentTransaction.sale_id == sale.id,
+                        PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                    )
+                    .delete(synchronize_session=False)
+                )
+                for payment_data in fin.payments:
+                    db.add(
+                        self._build_payment_transaction(
+                            sale_id=sale.id,
+                            payment_data=payment_data,
+                            nature=PaymentTransactionNature.SALE_PAYMENT,
+                            direction=PaymentTransactionDirection.INFLOW,
+                        )
+                    )
+                if fin.payments:
+                    leg_pm, _ = self.parse_sale_payment_method_string(fin.payments[0].payment_method)
+                    sale.payment_method = leg_pm
+                fields_touched.append("payments")
+
+            if fin.donation_surplus is not None:
+                (
+                    db.query(PaymentTransaction)
+                    .filter(
+                        PaymentTransaction.sale_id == sale.id,
+                        PaymentTransaction.nature == PaymentTransactionNature.DONATION_SURPLUS,
+                    )
+                    .delete(synchronize_session=False)
+                )
+                for payment_data in fin.donation_surplus:
+                    db.add(
+                        self._build_payment_transaction(
+                            sale_id=sale.id,
+                            payment_data=payment_data,
+                            nature=PaymentTransactionNature.DONATION_SURPLUS,
+                            direction=PaymentTransactionDirection.INFLOW,
+                        )
+                    )
+                fields_touched.append("donation_surplus")
+
+            if fin.total_amount is not None:
+                if fin.payments is None and fin.donation_surplus is None:
+                    sale_pts_pre = (
+                        db.query(PaymentTransaction)
+                        .filter(
+                            PaymentTransaction.sale_id == sale.id,
+                            PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                        )
+                        .order_by(PaymentTransaction.created_at.asc())
+                        .all()
+                    )
+                    don_pts_pre = (
+                        db.query(PaymentTransaction)
+                        .filter(
+                            PaymentTransaction.sale_id == sale.id,
+                            PaymentTransaction.nature == PaymentTransactionNature.DONATION_SURPLUS,
+                        )
+                        .all()
+                    )
+                    if len(sale_pts_pre) == 0:
+                        raise ValidationError(
+                            "Correction du total refusée : aucune ligne de règlement (sale_payment) — "
+                            "impossible d'aligner le montant encaissé avec le total (Story 6.8)."
+                        )
+                    if len(sale_pts_pre) > 1 or len(don_pts_pre) > 0:
+                        raise ValidationError(
+                            "Correction du total interdite : vente avec plusieurs lignes de paiement (Story 6.8) — "
+                            "fournissez explicitement ``payments`` et éventuellement les lignes complément de don "
+                            "(``donation_surplus``) dans la même requête."
+                        )
+                    sale.total_amount = new_total
+                    sale_pts_pre[0].amount = float(new_total)
+                    fields_touched.append("total_amount")
+                else:
+                    sale.total_amount = new_total
+                    fields_touched.append("total_amount")
+
+            db.flush()
+
+            if fin.payment_method is not None and fin.payments is None:
+                pays_pm = (
+                    db.query(PaymentTransaction)
+                    .filter(
+                        PaymentTransaction.sale_id == sale.id,
+                        PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                    )
+                    .all()
+                )
                 leg_pm, pm_ref = self.parse_sale_payment_method_string(fin.payment_method)
                 if len(pays_pm) == 1:
                     pays_pm[0].payment_method = leg_pm
                     pays_pm[0].payment_method_id = pm_ref.id if pm_ref else None
+                    sale.payment_method = leg_pm
+                    fields_touched.append("payment_method")
                 elif len(pays_pm) > 1:
                     raise ValidationError(
-                        "Correction du moyen de paiement interdite : vente avec plusieurs lignes de paiement (Story 6.8)."
+                        "Correction du moyen de paiement interdite : vente avec plusieurs lignes de paiement (Story 6.8). "
+                        "Utilisez le champ ``payments`` pour remplacer la répartition."
                     )
-                sale.payment_method = leg_pm
-                fields_touched.append("payment_method")
+                elif len(pays_pm) == 0:
+                    sale.payment_method = leg_pm
+                    fields_touched.append("payment_method")
 
             if fin.note is not None:
                 sale.note = fin.note
                 fields_touched.append("note")
+
+            pm_top_for_arbitrage = (
+                sale.payment_method.value
+                if sale.payment_method is not None and hasattr(sale.payment_method, "value")
+                else str(sale.payment_method or "")
+            )
+
+            sale_pts_f = (
+                db.query(PaymentTransaction)
+                .filter(
+                    PaymentTransaction.sale_id == sale.id,
+                    PaymentTransaction.nature == PaymentTransactionNature.SALE_PAYMENT,
+                )
+                .all()
+            )
+            don_pts_f = (
+                db.query(PaymentTransaction)
+                .filter(
+                    PaymentTransaction.sale_id == sale.id,
+                    PaymentTransaction.nature == PaymentTransactionNature.DONATION_SURPLUS,
+                )
+                .all()
+            )
+            if sale_pts_f or don_pts_f:
+                self._validate_payment_arbitrage_22_4(
+                    total_amount=float(sale.total_amount),
+                    sale_lines=self._payment_transactions_to_create_rows(sale_pts_f),
+                    donation_surplus_lines=self._payment_transactions_to_create_rows(don_pts_f),
+                    payment_method_top=pm_top_for_arbitrage,
+                    forbid_free_with_financial_lines=True,
+                )
 
         if "total_amount" in fields_touched or "donation" in fields_touched:
             SaleService.recompute_cash_session_completed_rollups(db, cash_session)
@@ -1480,6 +1834,8 @@ class SaleService:
                 "operation": "cash_sale.correct",
                 "sale_id": str(sale.id),
                 "cash_session_id": str(sale.cash_session_id),
+                "cash_session_status": getattr(cash_session.status, "value", str(cash_session.status)),
+                "correction_on_closed_session": correction_on_closed_session,
                 "fields_touched": fields_touched,
                 "before": before,
                 "after": after,

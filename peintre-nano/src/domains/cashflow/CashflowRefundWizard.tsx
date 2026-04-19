@@ -5,8 +5,10 @@ import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-e
 import {
   getSale,
   isPlausibleCashSessionUuid,
+  parseSaleReversalResponseJson,
   postCreateSaleReversal,
   type SaleReversalRefundPaymentMethod,
+  type SaleReversalResponseV1,
 } from '../../api/sales-client';
 import {
   PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND,
@@ -40,6 +42,10 @@ type LoadedSaleSummary = {
   readonly note?: string | null;
   readonly adherent_reference?: string | null;
   readonly payment_method?: string | null;
+  /** Story 24.4 — prévisualisation serveur (GET vente), alignée POST reversals / 22.5. */
+  readonly fiscal_branch?: string | null;
+  readonly sale_fiscal_year?: number | null;
+  readonly current_open_fiscal_year?: number | null;
 };
 
 type EntryBlock =
@@ -126,9 +132,14 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
   const [refundPaymentMethod, setRefundPaymentMethod] = useState<SaleReversalRefundPaymentMethod>('cash');
   const [priorYearExpertGateOpen, setPriorYearExpertGateOpen] = useState(false);
   const [expertPriorYearRefundConfirmed, setExpertPriorYearRefundConfirmed] = useState(false);
+
+  const priorClosedExpertPathRequired = useMemo(
+    () => loadedSale?.fiscal_branch === 'prior_closed' || priorYearExpertGateOpen,
+    [loadedSale?.fiscal_branch, priorYearExpertGateOpen],
+  );
   const [error, setError] = useState<CashflowSubmitSurfaceError | null>(null);
   const [busy, setBusy] = useState(false);
-  const [successId, setSuccessId] = useState<string | null>(null);
+  const [successReversal, setSuccessReversal] = useState<SaleReversalResponseV1 | null>(null);
 
   const [sessionBrowseId, setSessionBrowseId] = useState('');
   const sessionBrowseSeededRef = useRef(false);
@@ -181,7 +192,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
     setPriorYearExpertGateOpen(false);
     setExpertPriorYearRefundConfirmed(false);
     setError(null);
-    setSuccessId(null);
+    setSuccessReversal(null);
     setSessionCandidates([]);
     setSessionFilterInput('');
     setDebouncedSessionFilter('');
@@ -235,6 +246,9 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         note: res.sale.note ?? null,
         adherent_reference: res.sale.adherent_reference ?? null,
         payment_method: res.sale.payment_method ?? null,
+        fiscal_branch: res.sale.fiscal_branch ?? null,
+        sale_fiscal_year: res.sale.sale_fiscal_year ?? null,
+        current_open_fiscal_year: res.sale.current_open_fiscal_year ?? null,
       });
       saleReversalIdempotencyKeyRef.current = crypto.randomUUID();
       setStep(2);
@@ -285,6 +299,23 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
       setError({ kind: 'local', message: 'Précisez le motif (obligatoire pour « Autre »).' });
       return;
     }
+    if (priorClosedExpertPathRequired) {
+      if (!hasPriorYearRefundPermission) {
+        setError({
+          kind: 'local',
+          message: `Permission « ${PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND} » requise pour rembourser ce ticket (exercice antérieur clos).`,
+        });
+        return;
+      }
+      if (!expertPriorYearRefundConfirmed) {
+        setError({
+          kind: 'local',
+          message:
+            'Cochez la confirmation du parcours expert — remboursement sur exercice antérieur clos (N-1).',
+        });
+        return;
+      }
+    }
     setError(null);
     setBusy(true);
     try {
@@ -296,7 +327,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         detail: detail.trim() || undefined,
         refund_payment_method: refundPaymentMethod,
         idempotency_key: idem,
-        ...(priorYearExpertGateOpen && expertPriorYearRefundConfirmed
+        ...(priorClosedExpertPathRequired && expertPriorYearRefundConfirmed
           ? { expert_prior_year_refund: true as const }
           : {}),
       };
@@ -309,27 +340,95 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         setError({ kind: 'api', failure });
         return;
       }
-      setSuccessId(res.reversalId);
+      const parsed = parseSaleReversalResponseJson(res.raw);
+      setSuccessReversal(
+        parsed ?? {
+          id: res.reversalId,
+          refund_payment_method: refundPaymentMethod,
+        },
+      );
     } finally {
       setBusy(false);
     }
   };
 
-  if (successId) {
+  if (successReversal) {
+    const effectiveCode = (successReversal.refund_payment_method ?? refundPaymentMethod).trim();
+    const effectiveRow = refundMethodSelectData.find((o) => o.value === effectiveCode);
+    const effectiveLabel = effectiveRow?.label ?? effectiveCode;
+    const srcPmRaw = successReversal.source_sale_payment_method ?? null;
+    const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
+    const showDistinctSourcePm =
+      !!srcPmRaw && !!effectiveCode && norm(srcPmRaw) !== norm(effectiveCode);
+    const amountAbs =
+      successReversal.amount_signed !== undefined
+        ? Math.abs(successReversal.amount_signed)
+        : loadedSale
+          ? Math.abs(loadedSale.total_amount)
+          : null;
+    const fiscalBranch = successReversal.fiscal_branch ?? null;
+    const fiscalLine =
+      fiscalBranch === 'current'
+        ? `Branche fiscale : exercice courant${
+            successReversal.sale_fiscal_year != null && successReversal.current_open_fiscal_year != null
+              ? ` (vente ${successReversal.sale_fiscal_year} / ouvert ${successReversal.current_open_fiscal_year})`
+              : ''
+          }`
+        : fiscalBranch === 'prior_closed'
+          ? `Branche fiscale : exercice antérieur clos (N-1)${
+              successReversal.sale_fiscal_year != null && successReversal.current_open_fiscal_year != null
+                ? ` — vente ${successReversal.sale_fiscal_year}, ouvert ${successReversal.current_open_fiscal_year}`
+                : ''
+            }`
+          : null;
+
+    const pahekoHintFallback =
+      'Le remboursement est enregistré en caisse ; l’écriture comptable Paheko correspondante est intégrée au snapshot de clôture de session, puis exportée via l’outbox — pas d’écriture Paheko immédiate au moment de l’enregistrement terrain.';
+    const pahekoHintText = (successReversal.paheko_accounting_sync_hint ?? '').trim() || pahekoHintFallback;
+
     return (
       <div className={classes.step} data-testid="cashflow-refund-success">
+        <CashflowOperationalSyncNotice auth={auth} />
         <Text fw={700} c="teal" data-testid="cashflow-refund-success-title">
           Remboursement enregistré
         </Text>
+        {fiscalBranch === 'prior_closed' ? (
+          <Text size="sm" fw={600} data-testid="cashflow-refund-success-expert-n1-label">
+            Parcours expert — remboursement sur exercice antérieur clos (traçabilité supervision / audit).
+          </Text>
+        ) : null}
         <Text size="sm">
           L’avoir (reversal) a été accepté par le serveur Recyclique. Conservez la référence ci-dessous pour le suivi
           caisse ou comptable.
         </Text>
-        <Text size="sm" c="dimmed">
-          La comptabilité peut être mise à jour dans les minutes qui suivent selon les traitements serveur.
+        {amountAbs !== null ? (
+          <Text size="sm" data-testid="cashflow-refund-success-amount">
+            <strong>Montant remboursé</strong> : {amountAbs.toFixed(2)} €
+          </Text>
+        ) : null}
+        <Text size="sm" data-testid="cashflow-refund-success-effective-pm">
+          <strong>Moyen effectif de remboursement</strong> (journal) : {effectiveLabel}
         </Text>
+        {showDistinctSourcePm ? (
+          <Text size="sm" c="dimmed">
+            Moyen de paiement d’origine sur le ticket (information vente source) : <code>{srcPmRaw}</code>
+          </Text>
+        ) : null}
+        {fiscalLine ? (
+          <Text size="sm" data-testid="cashflow-refund-success-fiscal">
+            {fiscalLine}
+          </Text>
+        ) : null}
+        {successReversal.cash_session_id ? (
+          <Text size="xs" c="dimmed">
+            Session caisse (rapprochement) : <code>{successReversal.cash_session_id}</code>
+          </Text>
+        ) : null}
+        <Alert color="gray" title="Comptabilité Paheko" mb="sm" data-testid="cashflow-refund-success-paheko-hint">
+          <Text size="sm">{pahekoHintText}</Text>
+        </Alert>
         <Text size="sm">
-          Référence reversal : <code>{successId}</code>
+          Référence reversal : <code>{successReversal.id}</code>
         </Text>
         <Button variant="light" onClick={resetFlow} data-testid="cashflow-refund-reset">
           Nouveau remboursement
@@ -451,12 +550,22 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
     );
   }
 
-  return (
-    <div className={classes.step} data-testid="cashflow-refund-step-confirm">
+    return (
+      <div className={classes.step} data-testid="cashflow-refund-step-confirm">
       <CashflowOperationalSyncNotice auth={auth} />
       {stale ? (
         <Alert color="orange" title="Données périmées" mb="sm" data-testid="cashflow-refund-stale">
           <Text size="sm">Données périmées : rechargez le ticket avant de confirmer le remboursement.</Text>
+        </Alert>
+      ) : null}
+      {loadedSale?.fiscal_branch === 'prior_closed' ? (
+        <Alert color="grape" title="Parcours expert N-1 (visible avant validation)" mb="sm" data-testid="cashflow-refund-prior-closed-banner">
+          <Text size="sm">
+            Ce ticket est rattaché à un <strong>exercice comptable déjà clos</strong> : ce n&apos;est pas un
+            remboursement « standard » du même exercice ouvert. La validation finale exige la permission{' '}
+            <code>{PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND}</code> et la case de confirmation ci-dessous — pas seulement
+            après une erreur serveur.
+          </Text>
         </Alert>
       ) : null}
       <Text fw={700}>Confirmer le remboursement</Text>
@@ -503,6 +612,18 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
               </>
             ) : null}
           </Text>
+          {loadedSale?.fiscal_branch ? (
+            <Text size="sm" c={loadedSale.fiscal_branch === 'prior_closed' ? 'orange' : 'dimmed'}>
+              <strong>Branche fiscale (autorité remboursement)</strong> :{' '}
+              {loadedSale.fiscal_branch === 'prior_closed'
+                ? `exercice antérieur clos (N-1)${
+                    loadedSale.sale_fiscal_year != null && loadedSale.current_open_fiscal_year != null
+                      ? ` — vente ${loadedSale.sale_fiscal_year}, ouvert ${loadedSale.current_open_fiscal_year}`
+                      : ''
+                  }`
+                : 'exercice courant'}
+            </Text>
+          ) : null}
         </Stack>
       </Alert>
       <NativeSelect
@@ -526,7 +647,7 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         onChange={(e) => setDetail(e.currentTarget.value)}
         data-testid="cashflow-refund-detail"
       />
-      {priorYearExpertGateOpen ? (
+      {priorClosedExpertPathRequired ? (
         <Alert
           color="yellow"
           title="Remboursement sur exercice antérieur clos"
@@ -534,8 +655,10 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
           data-testid="cashflow-refund-prior-year-panel"
         >
           <Text size="sm" mb="xs">
-            Ce ticket concerne un exercice antérieur déjà clos : un habillage « expert » est requis côté serveur.
-            Cochez la case ci-dessous si vous avez l’habilitation comptable, puis confirmez à nouveau.
+            Double contrôle expert (Story 22.5) : le serveur exige <code>expert_prior_year_refund=true</code> et la
+            permission <code>{PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND}</code>. Cochez la case après vérification — que
+            le ticket ait été signalé ici au chargement ou après une erreur{' '}
+            <code>[PRIOR_YEAR_REFUND_REQUIRES_EXPERT_PATH]</code>.
           </Text>
           {!hasPriorYearRefundPermission ? (
             <Text size="sm" c="orange" mb="xs">
@@ -569,7 +692,11 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
         loading={busy}
         onClick={() => void onConfirmReversal()}
         data-testid="cashflow-refund-confirm-submit"
-        disabled={stale}
+        disabled={
+          stale ||
+          (priorClosedExpertPathRequired &&
+            (!hasPriorYearRefundPermission || !expertPriorYearRefundConfirmed))
+        }
       >
         Valider le remboursement
       </Button>

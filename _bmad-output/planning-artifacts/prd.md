@@ -3,6 +3,7 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
+  - step-e-04-complete
 workflowType: prd
 workflow: edit
 classification:
@@ -25,12 +26,21 @@ inputDocuments:
   - _bmad-output/brainstorming/brainstorming-session-2026-03-31-195824.md
   - references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md
   - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-15-caisse-compta-paheko-rebaseline.md
+  - references/operations-speciales-recyclique/2026-04-18_prd-recyclique-operations-speciales-sorties-matiere-paheko_v1-1.md
+  - references/operations-speciales-recyclique/2026-04-18_prompt-ultra-operationnel-operations-speciales-recyclique_v1-1.md
 source_of_truth: references/vision-projet/2026-03-31_decision-directrice-v2.md
 validationReportUsed: _bmad-output/planning-artifacts/prd-validation-report-2026-04-15-post-edit.md
 priorValidationReport: _bmad-output/planning-artifacts/prd-validation-report-2026-04-01.md
 document_date: '2026-03-31'
-lastEdited: '2026-04-15'
+# document_date = date de redaction initiale ; revisions ulterieures : lastEdited ci-dessous et editHistory.
+lastEdited: '2026-04-18'
 editHistory:
+  - date: '2026-04-18'
+    changes: 'Post re-QA2 fermeture — scenarios arbitrage PRD doubles, revue habilitations §6.3, concurrence §9.1, correlation §11.3, perf profil §11.4, gate beta Epic 24 §13.1, harmonisation §16 cloture livrables vs §17, Annexe A perimetre/triggers.'
+  - date: '2026-04-18'
+    changes: 'Post-QA2 — coexistence explicite des deux PRD caisse (migration vs operations speciales), annexes C/beta §13/§17/§12.1, mitigation risque PRD specialises (table §15), note document_date YAML, tracabilite Epic 24.'
+  - date: '2026-04-18'
+    changes: 'Edit-prd BMAD — rattachement du chantier operations speciales de caisse (PRD v1.1 + prompt ultra operationnel dans references/operations-speciales-recyclique/), renvoi vers Epic 24 et ADR architecture ; complement au sous-domaine caisse/compta sans remplacer le PRD specialise migration-paheko.'
   - date: '2026-04-15'
     changes: 'Post-validation BMAD — ajout d un resume executif et du diagnostic brownfield, durcissement des exigences web_app (navigateurs, accessibilite, SEO), criteres plus testables sur parcours/gates/NFR, reduction des fuites d implementation residuelles et fermeture de plusieurs gaps de tracabilite.'
   - date: '2026-04-15'
@@ -45,7 +55,7 @@ editHistory:
 
 **Auteur :** Strophe  
 **Date de redaction initiale :** 2026-03-31  
-**Derniere revision documentaire :** 2026-04-15 (delta canonique caisse/compta/Paheko + durcissement post-validation BMAD)  
+**Derniere revision documentaire :** 2026-04-18 (rattachement operations speciales caisse / Epic 24) ; precedemment 2026-04-15 (delta canonique caisse/compta/Paheko + durcissement post-validation BMAD)  
 **Source de verite de cadrage :** `references/vision-projet/2026-03-31_decision-directrice-v2.md`  
 **Statut :** Actif — base pour architecture et epics  
 **Documentation de travail Peintre (pipeline, extraits, index) :** `references/peintre/index.md` — alignee PRD ; en cas d'ecart, ce PRD et l'architecture BMAD font foi.
@@ -54,7 +64,19 @@ editHistory:
 - **PRD detaille :** `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md`
 - **Correct course approuve :** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-15-caisse-compta-paheko-rebaseline.md`
 
-**Regle de lecture :** le present `prd.md` reste la **source canonique haut niveau** pour le produit v2 ; le PRD specialise caisse/compta/Paheko porte le **detail operatoire** du sous-domaine (regles comptables, exemples d'ecritures, tables et phasage fin) tant qu'il reste aligne sur ce PRD canonique et sur l'architecture active.
+**Chantier operations speciales de caisse (parcours annulation, remboursements, tags metier, Paheko) :**
+- **PRD specialise v1.1 :** `references/operations-speciales-recyclique/2026-04-18_prd-recyclique-operations-speciales-sorties-matiere-paheko_v1-1.md`
+- **Prompt execution (audit P0-P3, livrables, ordre) :** `references/operations-speciales-recyclique/2026-04-18_prompt-ultra-operationnel-operations-speciales-recyclique_v1-1.md`
+- **Pilotage BMAD :** Epic 24 dans `_bmad-output/planning-artifacts/epics.md` ; decisions d'architecture : `_bmad-output/planning-artifacts/architecture/2026-04-18-adr-operations-speciales-caisse-paheko-v1.md`
+
+**Regle de lecture :** le present `prd.md` reste la **source canonique haut niveau** pour le produit v2 ; le PRD specialise caisse/compta/Paheko porte le **detail operatoire** du sous-domaine (regles comptables, exemples d'ecritures, tables et phasage fin) tant qu'il reste aligne sur ce PRD canonique et sur l'architecture active. Le PRD **operations speciales** detaille les parcours terrain et tags ; il **complete** le PRD migration-paheko sans le remplacer. En cas de tension, la hierarchie est : vision directrice > ce prd.md > PRD specialises > epics/stories actifs.
+
+**Coexistence des deux PRD specialises caisse :** le PRD **migration-paheko / caisse-compta** fixe le **cadre comptable**, les mappings et la chaine de synchronisation ; le PRD **operations speciales** fixe les **parcours terrain**, tags et regles metier des sorties matiere. En cas de conflit sur une **regle comptable** ou un **export Paheko**, le PRD migration-paheko et `cash-accounting-paheko-canonical-chain.md` **priment**. En cas de conflit sur un **parcours operateur**, une **regle de tag** ou une **preuve terrain**, le PRD operations speciales et l'ADR `2026-04-18-adr-operations-speciales-caisse-paheko-v1.md` **priment**, dans la limite du cadre comptable precedent.
+
+**Scenarios type (non exhaustifs) pour trancher sans ambiguite :**
+
+1. **Tag ou libelle metier « social »** demande sur un ticket alors qu'une ligne d'export Paheko cible un compte incompatible : ajuster le **mapping** ou le **compte** dans le referentiel expert / PRD migration (autorite comptable) ; le libelle terrain suit des que le cadre comptable le permet.
+2. **Preuve terrain obligatoire** (justification, trace) impose un delai ou un statut visible incompatible avec une **ecriture immediate** : la **preuve et la coherence terrain** priment sur la formulation UI, mais la **structure des ecritures** reste celle du snapshot et du builder — en cas de blocage Paheko, etats quarantaine / reprise Epic 8, pas de contournement export parallele.
 
 ### Stack Peintre_nano (figée)
 
@@ -385,6 +407,7 @@ Chaque ressourcerie doit pouvoir adapter la terminologie et la structure de role
 - chaque role et chaque groupe doivent avoir une **cle technique stable** distincte du libelle affiche ;
 - le systeme de permissions de Recyclique doit etre capable de calculer les droits a partir de roles definis par la ressourcerie, pas uniquement a partir d'un jeu predefini ;
 - en v2, les permissions sont **additives** entre roles et groupes ; les mecanismes de refus explicite, heritage complexe ou exceptions avancees sont hors socle initial ;
+- **revue des habilitations :** la gouvernance minimale doit permettre une **verification periodique** (qui detient quelles permissions sensibles, sur quel site) et une **reduction de surface** lors des audits internes ; les exports ou listings d'habilitations effectifs sont **souhaitables** des qu'un livrable admin couvre les roles groupes (sinon trace au minimum dans les journaux d'audit des actions sensibles) ;
 - les labels personnalises doivent etre propages dans l'UI via les contextes de rendu Peintre_nano (un widget qui affiche « operateur » doit afficher le label reel de la ressourcerie) ;
 - l'isolation multi-sites s'applique aussi aux roles et groupes : un role ou un label defini sur un site ne doit pas fuiter vers un autre.
 
@@ -653,6 +676,8 @@ Le parcours caisse v2 doit aussi couvrir, sans demander une culture comptable a 
 - le **remboursement** standard ;
 - le **remboursement sur exercice anterieur clos** avec aide explicative et garde-fous renforces.
 
+**Concurrence et integrite de session :** deux operateurs ou deux navigateurs sur une meme session caisse ne doivent pas corrompre silencieusement un ticket ; les **invariants de concurrence**, l'**idempotence** des operations sensibles et le **verrouillage logique** de session sont portes par la **spec multi-contextes** (§16.2) et les contrats backend — pas improvises dans l'UI seule. En cas de perte reseau ou timeout, **reprise explicite** sans double encaissement ni perte tracee.
+
 ### 9.2 Reception flow (reception de marchandise)
 
 **Criticite :** maximale — preuve terrain critique v2.
@@ -838,6 +863,8 @@ Le blocage selectif s'applique uniquement quand la securite metier/comptable n'e
 - Sur la compta et les flux sensibles : capacite de rejouer/comprendre apres coup.
 - Sur la caisse/compta : historisation des changements de parametrage comptable sensible, des remboursements speciaux et des traitements de lots de session.
 
+**Correlation et chemins critiques :** toute **ecriture** ou **lot** synchronise vers `Paheko` doit porter une **correlation** et des identifiants exploitables conformement au **contrat de synchronisation** (§16.1) ; aucune conception ne doit permettre un succes affiche **sans** lien traçable entre l'operation terrain et la livraison comptable.
+
 **Schema minimal attendu pour les journaux critiques :**
 
 - `correlation_id` commun au flux quand pertinent ;
@@ -852,7 +879,7 @@ Le blocage selectif s'applique uniquement quand la securite metier/comptable n'e
 - Sur poste de reference et donnees nominales, le shell web authentifie doit rendre un ecran critique exploitable en **moins de 2 secondes p95** apres navigation ou rechargement autorise.
 - La strategie de chargement front n'est pas un prerequis produit en soi ; elle est acceptable tant qu'elle respecte les criteres de performance ci-dessus et n'introduit pas de blocage visible sur les flows critiques.
 
-**Cadre de mesure :** les seuils ci-dessus sont verifies sur l'environnement officiellement supporte, avec jeux de donnees nominaux et plan de tests performance versionne. L'architecture et l'observabilite peuvent completer ces mesures, sans les contredire ni les affaiblir.
+**Cadre de mesure :** les seuils ci-dessus sont verifies sur l'environnement officiellement supporte (**Debian**, §11.5), avec jeux de donnees nominaux et plan de tests performance versionne. Le **profil materiel minimal** utilise pour les mesures (CPU, RAM, stockage disque, latence reseau de reference ou simulation Paheko) doit etre **nomme dans l'architecture active** ou dans un **guide performance** relicie au projet afin d'eviter les disputes en recette. L'architecture et l'observabilite peuvent completer ces mesures, sans les contredire ni les affaiblir.
 
 ### 11.5 Installabilite et open source
 
@@ -904,7 +931,7 @@ L'ordre suivant minimise le risque systemique et doit etre respecte comme prefer
 
 **Guide operationnel d'execution** : pour suivre en parallele les **deux rythmes** possibles (sequence structurante ci-dessus vs Pistes A/B dans les epics), les **jalons** a cocher et la **cartographie** des livrables documentaires (audits, donnees, tests), voir [`guide-pilotage-v2.md`](guide-pilotage-v2.md) — sans dupliquer les tableaux de cette section.
 
-**Delta structurant 2026-04-15 :** pour le sous-domaine caisse/compta/Paheko, la sequence doit aussi expliciter la chaine `referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable de session -> lot de synchronisation Paheko`, ainsi que son articulation avec les epics `6`, `8`, `10`, `13`, `14`, `16` et `18` via le correct course approuve.
+**Delta structurant 2026-04-15 :** pour le sous-domaine caisse/compta/Paheko, la sequence doit aussi expliciter la chaine `referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable de session -> lot de synchronisation Paheko`, ainsi que son articulation avec les epics `6`, `8`, `10`, `13`, `14`, `16` et `18` via le correct course approuve. Le **rail correctif comptable** et la **ventilation Paheko** sont portes par les epics **`22`**, **`23`** ; le chantier **parcours operations speciales / tags** est porte par l'**Epic `24`** (voir `epics.md` et PRD `references/operations-speciales-recyclique/`).
 
 ### 12.2 Sequence de validation produit
 
@@ -964,6 +991,8 @@ Regle de preemption : en cas de conflit entre un choix UI/contrat et un invarian
 - verification explicite des comportements de fallback, blocage et quarantaine sur les parcours prioritaires ;
 - constats terrain remontes sur au moins un contexte reel de ressourcerie test.
 - pour la caisse/compta : preuve explicite sur paiements mixtes, don en surplus, gratuite, remboursement standard, remboursement sur exercice anterieur clos, snapshot de session et lot de synchronisation associe.
+- lorsque le chantier **operations speciales** (Epic 24) est dans le perimetre de la release consideree : preuves documentees alignees sur `epics.md` Epic 24 et le PRD `references/operations-speciales-recyclique/2026-04-18_prd-recyclique-operations-speciales-sorties-matiere-paheko_v1-1.md` (parcours, tags, Paheko).
+- **decision produit documentee** : inclusion ou exclusion explicite d'Epic 24 dans le **scope beta** de la release ; si Epic 24 est **hors** scope, la beta reste valide sous reserve d'une **mention ecrite** « beta sans parcours operations speciales completes » dans les notes de gate ;
 - pour le `bandeau live` : preuve documentee qu'un `ModuleManifest`, ses contributions de slot et son rendu nominal peuvent etre valides sans convention locale non versionnee.
 
 ### 13.2 V2 vendable / commercialisable
@@ -995,6 +1024,8 @@ Regle de preemption : en cas de conflit entre un choix UI/contrat et un invarian
 ### 14.1 Source de verite des schemas
 
 Emplacement canonique des artefacts reviewables : repertoire `contracts/` a la racine du depot — `contracts/openapi/recyclique-api.yaml`, `contracts/creos/schemas/` (voir architecture BMAD et `contracts/README.md`). Les chemins historiques sous `_bmad-output` ne remplacent pas cette source pour le code et la CI cible.
+
+**Note (PRD canonique)** : les chemins listes dans le frontmatter YAML `inputDocuments` servent la **tracabilite** des sources ayant nourri ce PRD ; une verification periodique que les fichiers existent encore (rename, deplacement) est **recommandee** lors des revues majeures, eventuellement en CI documentation legere si le projet l'adopte.
 
 ### 14.2 Versionnement
 
@@ -1033,7 +1064,7 @@ Avant implementation large des modules v2, les points suivants doivent etre cons
 | Sous-estimer les invariants multi-contextes | Fuites de contexte, erreurs comptables | Stabiliser tot site/caisse/session/poste/role/PIN, spec dediee |
 | Mal formaliser l'articulation terrain/compta/zone tampon | Ecarts de sync non recuperables | Contrat de sync explicite avec idempotence, retry, quarantaine |
 | Laisser le champ legacy de paiement porte par la vente survivre comme referentiel reel | Clotures incoherentes et doubles verites | Basculer les calculs comptables sur le journal detaille des transactions de paiement avec transition encadree |
-| Dupliquer la verite du sous-domaine entre PRD canonique et PRD specialise | Divergence documentaire et backlog ambigu | Garder ici un delta canonique mince et renvoyer le detail operatoire au PRD specialise |
+| Dupliquer la verite du sous-domaine entre PRD canonique et PRD specialises (migration Paheko **et** operations speciales) | Divergence documentaire et backlog ambigu | Garder ici un delta canonique mince ; detail comptable et sync vers `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md` ; parcours terrain, tags et preuves vers `references/operations-speciales-recyclique/` ; trancher les chevauchements selon la **coexistence des deux PRD** (bloc lecture ci-dessus) |
 | Ouvrir trop tot les sujets riches | Dilution du socle, dette strategique | Hors perimetre initial strictement delimite |
 | Cout d'onboarding OSS de la separation Peintre/Recyclique | Barriere a la contribution communautaire | Documentation claire des contrats, exemples de manifests publics |
 | Donnees existantes incompatibles avec la cible multi-sites | Rework massif du modele | Audit backend/API/donnees en amont de l'implementation |
@@ -1042,7 +1073,7 @@ Avant implementation large des modules v2, les points suivants doivent etre cons
 
 ## 16. Points encore a verrouiller avant architecture finale
 
-Les points suivants sont des **verrous reels** — pas des questions ouvertes residuelles, mais des **prealables explicites** a l'architecture active :
+Les points suivants sont des **verrous reels** — pas des questions ouvertes residuelles, mais des **prealables explicites** a l'architecture active. Chaque verrou est considere **clos** lorsque le **livrable nomme** (spec, contrat, schemas, mecanisme) est **approuve** en architecture / pilotage et reference dans les documents de suivi — ce statut est **distinct** de l'absence de lacune **redactionnelle** au niveau du present PRD canonique (§17) :
 
 ### 16.1 Contrat de synchronisation Recyclique / Paheko
 
@@ -1076,7 +1107,11 @@ Le **mecanisme concret** ne change pas la decision produit de haut niveau : la c
 
 ## 17. Statut des questions produit
 
-Il ne reste plus de **lacune redactionnelle** ni de **question produit bloquante non cadrée** dans les sections de ce document, **y compris** sur le sous-domaine caisse/compta/Paheko au niveau **canonique** : les sujets encore ouverts (ex. **niveau exact HelloAsso**, **sync** concrete, **politique breaking changes**, detail du lot de sync Paheko) sont **deja renvoyes** aux paragraphes de perimetre (SS 7, SS 14–16), au **PRD specialise** du `2026-04-15`, et aux **livrables d'architecture**.
+Au sens **strictement redactionnel** de ce document canonique, il ne reste plus de **lacune** ni de **question produit bloquante non cadrée par renvoi** : les sujets encore **ouverts au niveau livrable** (contrat sync, spec multi-contextes, schemas CREOS formels, mecanisme de file, etc.) sont listes au **§16** et ferment par **livraison et approbation** des artefacts correspondants — ce que le §16 traite comme **verrous d'architecture**, pas comme « trous de redaction » du present PRD.
+
+Les sujets **fonctionnels** encore evolutifs sur le canonique (ex. **niveau exact HelloAsso**, detail **sync** Paheko, **politique breaking changes**) restent **renvoyes** aux paragraphes de perimetre (SS 7, SS 14–16), au **PRD specialise** du `2026-04-15`, et aux **livrables d'architecture**.
+
+Le **detail terrain** des operations speciales de caisse (annulation, remboursements types, tags, extension Paheko terrain) **n'est pas** « deja ferme » dans ce canonique : il est **porte** par le PRD `references/operations-speciales-recyclique/`, l'**Epic 24** et l'ADR operations speciales — sans contredire la distinction ci-dessus entre **cadrage narratif** (ce PRD) et **preuves livrees** (§16, stories).
 
 Les points encore a **produire** pour passer a l'implementation relevent :
 
@@ -1088,7 +1123,11 @@ Les points encore a **produire** pour passer a l'implementation relevent :
 
 ## Annexe A — Contradictions detectees dans les sources
 
-Aucune contradiction bloquante n'a ete detectee entre les sources actives sur les arbitrages centraux. Le point de vigilance principal concerne l'existence historique d'anciens recits dans le depot (strategie `Paheko = backend principal`, `caisse native Paheko`, etc.) qui restent en dehors du perimetre canonique actuel. Le document pivot `2026-03-31_decision-directrice-v2.md` fait foi.
+**Périmètre de la revue :** alignment des documents **actifs** cites dans le frontmatter `inputDocuments` et des sources de verite nommees dans le corps (vision directrice, PRD specialises, architecture BMAD, `epics.md`) ; **non** exhaustive sur l'integralite du depot ni sur les archives.
+
+Aucune contradiction bloquante n'a ete detectee entre ces sources sur les arbitrages centraux. Le point de vigilance principal concerne l'existence historique d'anciens recits dans le depot (strategie `Paheko = backend principal`, `caisse native Paheko`, etc.) qui restent en dehors du perimetre canonique actuel. Le document pivot `2026-03-31_decision-directrice-v2.md` fait foi.
+
+**Relire ou mettre à jour cette annexe** lors d'un changement majeur de la vision directrice, d'un PRD specialise caisse, d'un correct course Paheko, ou de la promotion d'un **Epic** structurant (ex. cloture Epic 22–24) — pas a chaque story mineure.
 
 ---
 
@@ -1140,3 +1179,5 @@ Les **identifiants stables** des exigences fonctionnelles **FR1 a FR73** et non 
 | SS 11 Exigences non fonctionnelles (synthese) | NFR1 a NFR28 |
 
 **Usage pour les stories :** chaque story peut pointer vers une **plage de sections PRD** (ex. SS 9.1 + SS 10.x) et vers les **FR/NFR** correspondants dans `epics.md`, comme recommande par le rapport de validation du PRD. Les parcours `§9.7` et `§9.8` se lisent conjointement avec `§11.5` et `§13.2` pour justifier respectivement la preuve de `config admin simple` et celle d'`installation open source`. Pour le sous-domaine caisse/compta/Paheko, le present PRD fournit le **cadre canonique** ; le detail operatoire renvoie au PRD specialise `references/migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md`.
+
+**Epic 24 — operations speciales :** le decoupage BMAD et les stories sont dans `_bmad-output/planning-artifacts/epics.md` (Epic 24). La trace produit detaillee est dans `references/operations-speciales-recyclique/2026-04-18_prd-recyclique-operations-speciales-sorties-matiere-paheko_v1-1.md` ; les decisions d'architecture dans `_bmad-output/planning-artifacts/architecture/2026-04-18-adr-operations-speciales-caisse-paheko-v1.md`.

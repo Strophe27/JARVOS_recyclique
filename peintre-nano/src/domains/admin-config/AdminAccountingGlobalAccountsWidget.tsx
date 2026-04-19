@@ -143,7 +143,7 @@ export function AdminAccountingGlobalAccountsWidget(_props: RegisteredWidgetProp
             />
             <TextInput
               label={FIELD_LABELS.default_donation_account}
-              description="Dons manuels reçus en caisse (ex. surplus volontaire du client). Compte recommandé : 7541. Clé API : default_donation_account"
+              description="Dons manuels reçus en caisse (ex. don volontaire ou complément de don). Compte recommandé : 7541. Clé API : default_donation_account"
               placeholder="7541"
               value={defaultDonation}
               onChange={(e) => setDefaultDonation(e.currentTarget.value)}

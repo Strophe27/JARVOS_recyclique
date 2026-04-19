@@ -26,6 +26,18 @@ export const PERMISSION_CASHFLOW_DEFERRED = 'caisse.deferred.access';
 /** Story 6.4 — remboursement : permission dédiée (ne pas inférer depuis le seul accès caisse). */
 export const PERMISSION_CASHFLOW_REFUND = 'caisse.refund';
 
+/** Story 24.6 — échange matière / différence financière (sous-flux vente ou reversal). */
+export const PERMISSION_CASHFLOW_EXCHANGE = 'caisse.exchange';
+
+/** Story 24.7 — décaissement hors ticket (sous-types obligatoires). */
+export const PERMISSION_CASHFLOW_DISBURSEMENT = 'cash.disbursement';
+
+/** Story 24.8 — mouvement interne de caisse (distinct remboursement / décaissement charge). */
+export const PERMISSION_CASHFLOW_INTERNAL_TRANSFER = 'cash.transfer';
+
+/** Story 24.5 — remboursement exceptionnel sans ticket. */
+export const PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND = 'refund.exceptional';
+
 /** Story 22.5 — remboursement sur exercice antérieur clos (parcours expert, POST `expert_prior_year_refund`). */
 export const PERMISSION_ACCOUNTING_PRIOR_YEAR_REFUND = 'accounting.prior_year_refund';
 
@@ -65,6 +77,10 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
         PERMISSION_CASHFLOW_VIRTUAL,
         PERMISSION_CASHFLOW_DEFERRED,
         PERMISSION_CASHFLOW_REFUND,
+        PERMISSION_CASHFLOW_EXCHANGE,
+        PERMISSION_CASHFLOW_DISBURSEMENT,
+        PERMISSION_CASHFLOW_INTERNAL_TRANSFER,
+        PERMISSION_CASHFLOW_EXCEPTIONAL_REFUND,
         PERMISSION_CASHFLOW_SPECIAL_ENCAISSEMENT,
         PERMISSION_CASHFLOW_SOCIAL_ENCAISSEMENT,
         /** Story 6.8 — présent en démo locale pour preuve UI servie (super-admin simulé ; backend reste autoritaire en prod). */
@@ -78,10 +94,15 @@ export function createDefaultDemoEnvelope(overrides?: Partial<ContextEnvelopeStu
       'nav.reception.nominal': 'Réception',
       'nav.cashflow.nominal': 'Caisse',
       'nav.cashflow.refund': 'Remboursement',
+      'nav.cashflow.exceptionalRefund': 'Remboursement exceptionnel',
       'nav.cashflow.specialDon': 'Don (sans article)',
       'nav.cashflow.specialAdhesion': 'Adhésion / cotisation',
       'nav.cashflow.socialDon': 'Don',
       'nav.cashflow.close': 'Clôture de caisse',
+      'nav.cashflow.specialOpsHub': 'Opérations spéciales',
+      'nav.cashflow.exchange': 'Échange matière',
+      'nav.cashflow.disbursement': 'Décaissement',
+      'nav.cashflow.internalTransfer': 'Mouvement interne caisse',
       'nav.cashflow.saleCorrection': 'Correction ticket (super-admin)',
     },
   };
