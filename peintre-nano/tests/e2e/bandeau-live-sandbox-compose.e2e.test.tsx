@@ -2,6 +2,26 @@
 import '@mantine/core/styles.css';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+
+const e2eMockFetchUnifiedLiveStats = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    tickets_count: 0,
+    last_ticket_amount: 0,
+    ca: 0,
+    donations: 0,
+    weight_out: 0,
+    weight_in: 0,
+    period_end: '2026-04-07T10:00:00.000Z',
+  }),
+);
+
+vi.mock('../../src/api/dashboard-legacy-stats-client', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../src/api/dashboard-legacy-stats-client')>();
+  return {
+    ...mod,
+    fetchUnifiedLiveStats: e2eMockFetchUnifiedLiveStats,
+  };
+});
 import { buildPageManifestRegions } from '../../src/app/PageRenderer';
 import { ManifestErrorBanner } from '../../src/app/ManifestErrorBanner';
 import { RootShell } from '../../src/app/layouts/RootShell';

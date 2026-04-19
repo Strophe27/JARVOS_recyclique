@@ -18,7 +18,7 @@ import {
   type ReceptionLigneResponse,
   type ReceptionTicketDetail,
 } from '../../api/reception-client';
-import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
+import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import { useReceptionEntryBlock } from './reception-entry-gate';
 import {
   setReceptionCriticalDataState,
@@ -35,6 +35,9 @@ import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CategoryHierarchyPicker } from '../../widgets/category-hierarchy-picker/CategoryHierarchyPicker';
 import type { CashflowSubmitSurfaceError } from '../cashflow/cashflow-submit-error';
 import { formatReceptionCompactId } from '../admin-config/reception-admin-display';
+import { KpiLiveStrip } from '../bandeau-live/KpiLiveStrip';
+import { useKpiLiveBannerSettings } from '../bandeau-live/kpi-live-banner-settings-provider';
+import { useUnifiedLiveKpiPoll } from '../bandeau-live/use-unified-live-kpi-poll';
 
 /** Refus serveur sur le flux nominal : ne pas laisser un état local « avancé » incohérent (Story 7.2). */
 function isReceptionAuthoritativeFailure(httpStatus: number): boolean {
@@ -51,6 +54,40 @@ const DESTINATIONS_EXIT: { value: ReceptionDestinationV1; label: string }[] = [
   { value: 'RECYCLAGE', label: 'Recyclage' },
   { value: 'DECHETERIE', label: 'Déchetterie' },
 ];
+
+/**
+ * Bandeau agrégats jour (`GET /v1/stats/live`) — même hook que la caisse kiosque.
+ * Legacy 1.4.4 `ReceptionKPIBanner` ne filtrait pas ces KPI par rôle (tout opérateur avec accès page) ; pas de gate supplémentaire côté Peintre si l’enveloppe autorise déjà la réception.
+ */
+function ReceptionUnifiedLiveKpiStrip(): ReactNode {
+  const envelope = useContextEnvelope();
+  const { settings } = useKpiLiveBannerSettings();
+  const kpi = useUnifiedLiveKpiPoll({
+    siteId: envelope.siteId,
+    enabled: settings.showOnReception,
+    intervalMs: settings.refreshIntervalMs,
+  });
+  if (!settings.showOnReception) {
+    return null;
+  }
+  return (
+    <div className={styles.chromeUnifiedKpiHost}>
+      <KpiLiveStrip
+        stats={kpi.data}
+        isLoading={kpi.isLoading}
+        isRefreshing={kpi.isRefreshing}
+        error={kpi.error}
+        isOnline={kpi.isOnline}
+        lastUpdate={kpi.lastUpdate}
+        lastTicketAmountOverride={0}
+        variant="compact"
+        showTitle={false}
+        virtualMode={false}
+        data-testid="reception-unified-live-kpi"
+      />
+    </div>
+  );
+}
 
 /**
  * Story 7.1 — parcours nominal réception (poste → ticket → ligne kg → fermetures), vérité serveur uniquement.
@@ -809,6 +846,7 @@ export function ReceptionNominalWizard(_props: RegisteredWidgetProps): ReactNode
             ) : null}
           </div>
         </div>
+        <ReceptionUnifiedLiveKpiStrip />
       </Paper>
 
       <Paper withBorder p="md" data-testid="reception-step-ligne" className={styles.workspaceShell}>

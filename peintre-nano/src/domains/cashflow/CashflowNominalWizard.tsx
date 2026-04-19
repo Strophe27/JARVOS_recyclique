@@ -50,6 +50,9 @@ import { CashflowSocialDonWizard } from './CashflowSocialDonWizard';
 import { makeCashflowSpecialEncaissementWizard } from './CashflowSpecialEncaissementWizard';
 import { CashflowOperationalSyncNotice } from './cashflow-operational-sync-notice';
 import { useCaissePaymentMethodOptions } from './use-caisse-payment-method-options';
+import { KpiLiveStrip } from '../bandeau-live/KpiLiveStrip';
+import { useKpiLiveBannerSettings } from '../bandeau-live/kpi-live-banner-settings-provider';
+import { useUnifiedLiveKpiPoll } from '../bandeau-live/use-unified-live-kpi-poll';
 import classes from './CashflowNominalWizard.module.css';
 
 const CashflowSpecialDonWizard = makeCashflowSpecialEncaissementWizard('DON_SANS_ARTICLE');
@@ -577,6 +580,41 @@ function SaleKioskKpiBanner({
         </div>
       </div>
     </div>
+  );
+}
+
+/** Bandeau KPI jour — `GET /v1/stats/live` (même sémantique que le bandeau legacy caisse) ; réutilisable plus tard en réception. */
+function SaleKioskUnifiedLiveKpiStrip({
+  operatingMode,
+  lastTicketAmountOverride,
+}: {
+  readonly operatingMode: CashflowOperatingMode;
+  readonly lastTicketAmountOverride: number;
+}): ReactNode {
+  const envelope = useContextEnvelope();
+  const { settings } = useKpiLiveBannerSettings();
+  const kpi = useUnifiedLiveKpiPoll({
+    siteId: envelope.siteId,
+    enabled: operatingMode !== 'virtual' && settings.showOnCaisse,
+    intervalMs: settings.refreshIntervalMs,
+  });
+  if (!settings.showOnCaisse) {
+    return null;
+  }
+  return (
+    <KpiLiveStrip
+      stats={kpi.data}
+      isLoading={kpi.isLoading}
+      isRefreshing={kpi.isRefreshing}
+      error={kpi.error}
+      isOnline={kpi.isOnline}
+      lastUpdate={kpi.lastUpdate}
+      lastTicketAmountOverride={lastTicketAmountOverride}
+      variant="compact"
+      showTitle={false}
+      virtualMode={operatingMode === 'virtual'}
+      data-testid="cashflow-kiosk-unified-live-kpi"
+    />
   );
 }
 
@@ -1664,6 +1702,10 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
                 ? () => spaNavigateTo('/caisse/remboursement')
                 : undefined
             }
+          />
+          <SaleKioskUnifiedLiveKpiStrip
+            operatingMode={draft.operatingMode ?? 'real'}
+            lastTicketAmountOverride={draft.totalAmount > 0 ? draft.totalAmount : 0}
           />
           <SaleKioskKpiBanner
             lineCount={draft.lines.length}
