@@ -188,7 +188,7 @@ Utiliser `@pytest.mark.no_db` sur un test qui ne doit pas activer les fixtures D
 
 - Config pytest : `api/pyproject.toml` (`[tool.pytest.ini_options]`)
 
-- Guide stabilisation : `api/TESTS_STABILIZATION_GUIDE.md` (contexte plus large que le sous-ensemble minimal)
+- Guide stabilisation : le fichier historique `api/TESTS_STABILIZATION_GUIDE.md` **n’est pas présent** dans ce dépôt (constat 2026-04-19). En attendant restitution ou réécriture du guide : stratégie pytest et dettes associées dans [`references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](../../../references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md) §6 ; détail fixtures dans ce dossier via `conftest.py`.
 
 
 
