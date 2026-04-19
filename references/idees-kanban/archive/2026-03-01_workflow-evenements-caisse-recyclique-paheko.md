@@ -2,6 +2,14 @@
 
 ---
 
+## 2026-04-21 — Strophe
+
+**Passage à `archive`.** L’intention initiale (événements / ventilation vers Paheko) est **couverte** par le chantier déjà réalisé : clôture de caisse avec ventilation des montants et moyens de paiement, panneaux SuperAdmin Paheko (numéros comptables), cockpit Paheko côté admin. **Mise de côté** du sujet tant qu’aucun nouveau besoin métier (granularité hors clôture) n’est formulé.
+
+**Intention :** archive
+
+---
+
 ## 2026-03-01 — Strophe
 
 Idee tres probablement validee : garder la gestion des tickets dans RecyClique comme avant, puis enregistrer les evenements de caisse dans Paheko via un mecanisme de liaison dedie.

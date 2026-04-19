@@ -76,3 +76,15 @@ Les autres stades (à conceptualiser, à rechercher, à creuser) sont **supposé
 ## Limites (identiques à l’instantané 2026-04-18)
 
 Pas de re-scan repo pour cette MAJ : lecture **inventaire fichiers + nouvelle fiche** uniquement. Pour une nouvelle photo complète avec agents `explore`, reproduire la méthode décrite dans `2026-04-18_02_…` § Méthode de production.
+
+---
+
+## Note 2026-04-21 — Aplanissement Kanban (post-merge Epic 24)
+
+| Élément | Détail |
+|---------|--------|
+| **Epic 24 → `master`** | Merge de **`epic/24-operations-speciales-orchestration`** effectué ; journal : [`references/ou-on-en-est.md`](../ou-on-en-est.md) § Dernière session 2026-04-21. |
+| **Fiches désormais en `archive/`** | `2026-04-18_chantier-operations-speciales-caisse-prd-v1-1.md`, `2026-04-18_durcissement-sync-paheko-outbox-post-audit.md`, **`2026-03-01_workflow-evenements-caisse-recyclique-paheko.md`** (intention couverte par clôture Paheko + admin — mis de côté). |
+| **« À faire » actif** | **3** fiches idée : **QA compta SuperAdmin** (reliquat spec), **alignement PRD multisite**, **refactor API** (bandeau prioritaire dans [`idees-kanban/index.md`](../idees-kanban/index.md)). |
+
+Le tableau d’exhaustivité ci-dessus reste une **photo au 2026-04-19** ; les **stades** ont évolué — se fier au [`idees-kanban/index.md`](../idees-kanban/index.md) pour l’état courant.

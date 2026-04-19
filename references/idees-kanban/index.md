@@ -28,6 +28,6 @@ Une ligne par idée. Mise à jour par le skill `idees-kanban` à chaque créatio
 | 2026-04-18_chantier-operations-speciales-caisse-prd-v1-1.md | Chantier operations speciales caisse — PRD v1.1 + BMAD (pack operations-speciales-recyclique) | archive | 2026-04-18 | 2026-04-19 |
 | 2026-04-18_finir-ecarts-qa-parametrage-comptable-superadmin.md | Finir écarts QA — paramétrage comptable SuperAdmin (reliquat grille spec ; bilan merge → artefact 2026-04-20) | a-faire | 2026-04-18 | 2026-04-20 |
 | 2026-04-18_durcissement-sync-paheko-outbox-post-audit.md | Durcissement sync Paheko outbox (post-audit Red Team, seeds BMAD, gaps tests) | archive | 2026-04-18 | 2026-04-18 |
-| 2026-03-01_workflow-evenements-caisse-recyclique-paheko.md | Workflow evenements caisse RecyClique vers Paheko | a-faire | 2026-03-01 | 2026-03-01 |
+| 2026-03-01_workflow-evenements-caisse-recyclique-paheko.md | Workflow evenements caisse RecyClique vers Paheko (couvert par clôture Paheko + admin — mis de côté) | archive | 2026-03-01 | 2026-04-21 |
 | 2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md | Aligner brownfield vs PRD architecture permissions multisite — recherche / correct course BMAD | a-faire | 2026-04-19 | 2026-04-19 |
 | 2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md | **PRIORITAIRE** — Refactor API Recyclique (audit brownfield F1–F8, backlog P0–P2, checklist PR) | a-faire | 2026-04-19 | 2026-04-19 |
