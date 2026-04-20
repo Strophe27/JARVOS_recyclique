@@ -1,4 +1,4 @@
-"""Story 2.5 — corrélation HTTP (X-Request-Id).
+"""Epic 25 / Story 2.5 — corrélation HTTP (X-Request-Id).
 
 La suite SQLite de test n'inclut pas ``audit_logs`` (voir ``conftest._sqlite_skip_audit_log_commit``) :
 le masquage et l'échec de persistance audit restent couverts par ``test_audit_story_25.py``.

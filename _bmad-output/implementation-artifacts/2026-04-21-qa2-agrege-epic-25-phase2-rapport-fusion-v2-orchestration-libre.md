@@ -79,4 +79,14 @@ Le pilotage **YAML / epics.md** et le **DAG / récap** sont globalement alignés
 
 ---
 
-*Artefact figé après run orchestrateur QA2 « orchestration libre » (2026-04-21).*
+## Résolu post-QA2 (correctifs 2026-04-21)
+
+Alignement story **25.7** (**done**, DoD / validation VS, alignement sprint), **25.14** File List + statuts YAML, **25.10** libellé Epic, récap §3 **Push** (local vs distant), commentaires **`sprint-status.yaml`** (phase 2 **25-13…25-15** **done**).
+
+**Code / OpenAPI :** `main.py` — schéma OpenAPI enrichi (**`RecycliqueWebSessionCookie`** + description auth) ; `sales.py` — réponses d'erreur documentées (**400–404, 409**, modèle **RecycliqueApiError**) ; `sale_service` — **`merge_critical_audit_fields`** sur **CASH_SALE_CORRECTED** ; `audit.py` — types **ADMIN_ENDPOINT_ACCESS_*** / **USER_ROLE_CHANGE_FAILED**, docstring politique **audit_persist_failed** ; `step_up` / scheduler / **derive_root_cause** — docstrings risques fail-open, batch 20, règle 4.
+
+**Tests / contrôle :** docstrings **Epic 25 / 2.5** ; **25.13 / 25.14** précisions SQLite / périmètre pytest ; **`test_cash_session_detail`** — **`CASH_SESSION_ACCESSED`** (aligné `log_cash_session_access`). Régénérer **`recyclique/api/openapi.json`** après déploiement (`generate_openapi.py`).
+
+---
+
+*Artefact figé après run orchestrateur QA2 « orchestration libre » (2026-04-21). Suite : correctifs DS ci-dessus intégrés au dépôt.*

@@ -1,4 +1,8 @@
-"""Story 25.13 — spec 25.4 §2.4 / ADR 25-2 : opérateur vs ancrage poste/caisse sur vente (PAYMENT_VALIDATED + audit)."""
+"""Story 25.13 — spec 25.4 §2.4 / ADR 25-2 : opérateur vs ancrage poste/caisse sur vente (PAYMENT_VALIDATED + audit).
+
+Sous SQLite CI, ``log_audit`` peut être neutralisé (table ``audit_logs`` absente) : la preuve minimale
+reste ``PAYMENT_VALIDATED`` dans ``transactions.log`` ; PostgreSQL valide en plus ``AuditLog``.
+"""
 
 from __future__ import annotations
 

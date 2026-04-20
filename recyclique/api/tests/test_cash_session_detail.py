@@ -322,7 +322,7 @@ def test_get_cash_session_detail_audit_logging(
         .filter(
             AuditLog.target_type == "cash_session",
             AuditLog.target_id == session.id,
-            AuditLog.action_type == AuditActionType.SYSTEM_CONFIG_CHANGED.value,
+            AuditLog.action_type == AuditActionType.CASH_SESSION_ACCESSED.value,
         )
         .order_by(AuditLog.timestamp.desc())
         .first()

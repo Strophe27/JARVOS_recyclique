@@ -16,6 +16,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
+from fastapi.openapi.utils import get_openapi
 
 from recyclic_api.core.config import settings, get_cors_allow_origins
 from recyclic_api.api.api_v1.api import api_router
@@ -227,6 +228,41 @@ async def add_process_time_header(request, call_next):
 app.include_router(api_router, prefix=settings.API_V1_STR)
 # Story 2.7 : surface v2 (bandeau live) — ne pas casser /v1/*
 app.include_router(api_v2_router, prefix="/v2")
+
+
+def custom_openapi():
+    """Enrichit le schéma OpenAPI : cookie de session web v2 en complément du Bearer."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version="3.0.2",
+        description=(
+            (app.description or "")
+            + "\n\nAuth : JWT via en-tête `Authorization: Bearer`, et pour les clients web same-origin,"
+            + " cookie httpOnly `"
+            + settings.WEB_SESSION_ACCESS_COOKIE_NAME
+            + "` (session v2)."
+        ),
+        routes=app.routes,
+    )
+    comps = openapi_schema.setdefault("components", {}).setdefault("securitySchemes", {})
+    comps.setdefault(
+        "HTTPBearer",
+        {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+    )
+    comps["RecycliqueWebSessionCookie"] = {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": settings.WEB_SESSION_ACCESS_COOKIE_NAME,
+        "description": "Session web v2 — alternative ou complément au Bearer pour les clients navigateur.",
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 
 @app.get("/")

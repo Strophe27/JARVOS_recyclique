@@ -18,7 +18,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from recyclic_api.core.audit import log_audit, log_cash_sale
+from recyclic_api.core.audit import log_audit, log_cash_sale, merge_critical_audit_fields
 from recyclic_api.core.auth import user_has_permission
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.core.user_identity import username_for_audit
@@ -1845,13 +1845,8 @@ class SaleService:
         assert sale is not None
         after = self._sale_correction_snapshot(sale)
 
-        log_audit(
-            action_type=AuditActionType.CASH_SALE_CORRECTED,
-            actor=actor,
-            target_id=sale.id,
-            target_type="sale",
-            details={
-                "operation": "cash_sale.correct",
+        critical = merge_critical_audit_fields(
+            {
                 "sale_id": str(sale.id),
                 "cash_session_id": str(sale.cash_session_id),
                 "cash_session_status": getattr(cash_session.status, "value", str(cash_session.status)),
@@ -1860,8 +1855,24 @@ class SaleService:
                 "before": before,
                 "after": after,
                 "reason": payload.reason,
-                "request_id": request_id,
             },
+            request_id=request_id,
+            operation="cash_sale.correct",
+            outcome="success",
+            site_id=str(cash_session.site_id) if getattr(cash_session, "site_id", None) else None,
+            cash_register_id=str(cash_session.register_id)
+            if getattr(cash_session, "register_id", None)
+            else None,
+            session_id=str(cash_session.id),
+            operator_user_id=str(actor.id),
+            user_id=str(actor.id),
+        )
+        log_audit(
+            action_type=AuditActionType.CASH_SALE_CORRECTED,
+            actor=actor,
+            target_id=sale.id,
+            target_type="sale",
+            details=critical,
             description="Correction sensible vente caisse (Story 6.8)",
             db=db,
         )

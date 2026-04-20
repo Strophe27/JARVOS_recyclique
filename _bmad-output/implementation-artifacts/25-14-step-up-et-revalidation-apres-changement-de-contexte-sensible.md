@@ -150,10 +150,10 @@ Spec **25.4** §3.2 : `_bmad-output/planning-artifacts/architecture/2026-04-20-s
 
 ### File List
 
-- `_bmad-output/implementation-artifacts/25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible.md` (story — statut **review**, DoD / tasks)
+- `_bmad-output/implementation-artifacts/25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible.md` (story — statut **done**, DoD / tasks cochés)
 - `_bmad-output/implementation-artifacts/2026-04-20-matrice-step-up-revalidation-contexte-sensible-25-14.md` (matrice Story 25.14)
 - `_bmad-output/implementation-artifacts/tests/test-summary-story-25-14-step-up-revalidation-contexte-sensible.md` (synthèse QA)
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` (trace + `25-14` → **review**)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (trace + `25-14` → **done**)
 - `recyclique/api/src/recyclic_api/core/step_up.py` (extension 25.14)
 - `recyclique/api/tests/test_story_25_14_step_up_revalidation_apres_changement_contexte_sensible.py` (gate pytest)
 

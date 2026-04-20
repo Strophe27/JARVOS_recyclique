@@ -137,7 +137,13 @@ class SchedulerService:
         return {"status": "completed", "timestamp": datetime.now(timezone.utc)}
 
     async def run_paheko_outbox_task(self):
-        """Traite les lignes outbox Paheko éligibles."""
+        """Traite les lignes outbox Paheko éligibles.
+
+        **Plafond** : au plus **20** lignes traitées par invocation (boucle ``while``). Si la file
+        grossit plus vite que la cadence du scheduler, la **latence** jusqu'à livraison Paheko peut
+        augmenter — surveiller backlog / métriques exploitation (Story 8 / AR12), sans changer le
+        comportement par défaut ici.
+        """
         logger.info("Exécution du traitement outbox Paheko")
         processed = 0
         delivered = 0

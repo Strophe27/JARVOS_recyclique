@@ -1,8 +1,8 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.2",
   "info": {
     "title": "Recyclic API",
-    "description": "API pour la plateforme Recyclic - Gestion de recyclage intelligente",
+    "description": "API pour la plateforme Recyclic - Gestion de recyclage intelligente\n\nAuth : JWT via en-tête `Authorization: Bearer`, et pour les clients web same-origin, cookie httpOnly `recyclique_access` (session v2).",
     "version": "1.4.4"
   },
   "paths": {
@@ -1080,6 +1080,56 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1138,6 +1188,56 @@
               }
             }
           },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1176,6 +1276,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -1223,6 +1373,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleReversalResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -1305,6 +1505,56 @@
               }
             }
           },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1353,6 +1603,56 @@
               }
             }
           },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1397,6 +1697,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -1453,6 +1803,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -1524,6 +1924,56 @@
               }
             }
           },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1562,6 +2012,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -1629,6 +2129,56 @@
               }
             }
           },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1673,6 +2223,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -1740,6 +2340,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleItemResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête ou règle métier refusée (validation, cohérence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission refusée ou rôle insuffisant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource introuvable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -24896,6 +25546,12 @@
       "HTTPBearer": {
         "type": "http",
         "scheme": "bearer"
+      },
+      "RecycliqueWebSessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "recyclique_access",
+        "description": "Session web v2 — alternative ou complément au Bearer pour les clients navigateur."
       }
     }
   }

@@ -304,8 +304,10 @@ def derive_root_cause_for_outbox_item(
     - Règles **1 à 3** : on inspecte l’**ensemble des noms** de transition dans cet extrait (et le payload / champs item),
       pas seulement la ligne la plus récente — ex. `auto_quarantine_mapping_resolution` compte même si une levée
       manuelle plus récente existe.
-    - Règle **4** (résiduel) : le code retourné est le nom de la **dernière** transition (premier élément de la liste),
-      ou la chaîne ``unknown`` si l’extrait est vide — l’ensemble ne s’applique pas à cette branche.
+    - Règle **4** (résiduel / **builder**) : aucun signal mapping/builder/outbox_http fort (règles 1–3) ;
+      domaine fixé à ``builder`` avec code = nom de la **dernière** transition connue ou ``unknown``.
+      Cas limite : item sans transitions ni trace — étiquette **support** peut rester générique ; analyser
+      ``recent_sync_transitions`` / payload plutôt que ``root_cause_*`` seuls.
     """
     pl = dict(getattr(row, "payload", None) or {})
     trace = pl.get("preparation_trace_v1")

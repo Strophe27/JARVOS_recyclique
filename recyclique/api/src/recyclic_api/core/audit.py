@@ -123,7 +123,13 @@ def log_audit(
         db: Session de base de données (optionnel, sera créée si non fournie)
     
     Returns:
-        AuditLog: L'entrée d'audit créée, ou None en cas d'erreur
+        AuditLog: L'entrée d'audit créée, ou ``None`` si aucune session DB ou si la **persistance**
+        a échoué.
+
+    Politique observabilité (inchangée côté HTTP) : en échec DB on journalise ``audit_persist_failed``
+        (sans donnees sensibles), on tente ``rollback``, et **on ne propage pas** l'erreur au client :
+        la requête métier peut tout de même être traitée (« fail-open » côté audit) — exploitation via
+        logs et métrique ``audit_persist_failed``.
     """
     if db is None:
         # Si pas de session fournie, on ne peut pas créer l'entrée
@@ -277,7 +283,11 @@ def log_admin_access(
     Returns:
         AuditLog: L'entrée d'audit créée
     """
-    action_type = AuditActionType.SYSTEM_CONFIG_CHANGED if success else AuditActionType.SYSTEM_CONFIG_CHANGED
+    action_type = (
+        AuditActionType.ADMIN_ENDPOINT_ACCESS_GRANTED
+        if success
+        else AuditActionType.ADMIN_ENDPOINT_ACCESS_DENIED
+    )
     description = f"Accès admin à {endpoint}" if success else f"Échec accès admin à {endpoint}"
     
     details = {
@@ -325,7 +335,11 @@ def log_role_change(
     Returns:
         AuditLog: L'entrée d'audit créée
     """
-    action_type = AuditActionType.USER_ROLE_CHANGED if success else AuditActionType.USER_ROLE_CHANGED
+    action_type = (
+        AuditActionType.USER_ROLE_CHANGED
+        if success
+        else AuditActionType.USER_ROLE_CHANGE_FAILED
+    )
     description = f"Changement de rôle: {old_role} → {new_role}" if success else f"Échec changement de rôle"
     
     details = {

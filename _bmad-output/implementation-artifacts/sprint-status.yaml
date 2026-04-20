@@ -320,8 +320,8 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
-# last_updated: 2026-04-20 — epics.md §25 / YAML phase 2 : **`25-6`…`25-12` done** (cle **`25-12`** ci-dessous) ; **`25-13`…`25-15`** en général **backlog** ; `epic-25` **in-progress** (phase impl) ; tranche **25-1..25-5** inchangée **done** ; gel hors `25-*` : levée process documentée (**25-6** + addendum) — aligné cle racine `last_updated` ci-dessous
-# Clarification (instantané historique §25) : la levée **process** (nouveaux DS hors clés `25-*`) est documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + commentaires epic-10/13/14/15 une fois la traçabilité YAML alignée ; phase 2 : **`25-11` done** ; **`25-12` done** (audit AR12 / ADR 25-3 + pytest ; cf. cle YAML) ; suite **`25-13`…`25-15`** souvent backlog — sans contredire `epic-25: in-progress` ni rouvrir le fond des ADR.
+# last_updated: 2026-04-21 — post QA2 doc : **`25-6`…`25-15`** **done** dans `development_status` (voir clés YAML) ; `epic-25` **in-progress** jusqu'à rétro ; ne pas déduire un « backlog » pour 25-13…25-15 depuis d'anciens commentaires.
+# Clarification (instantané historique §25) : la levée **process** (nouveaux DS hors clés `25-*`) reste documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` ; phase 2 impl : stories **25-13…25-15** livrées **done** au YAML au 2026-04-20/21 — `epic-25: in-progress` tant que l'epic n'est pas clôturé narrativement.
 # last_updated: 2026-04-20 (suite doc §25) — slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
 # Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
 last_updated: "2026-04-21"
@@ -585,7 +585,7 @@ development_status:
   24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: done
   epic-24-retrospective: optional
 
-  # Epic 25 — socle alignement + phase 2 : en `development_status`, **`25-6`…`25-12` done** ; stories **`25-13`…`25-15`** en général **backlog** tant qu'aucune autre valeur n'est écrite — **chaque clé listée ci-dessous prime** (ex. une clé peut être `review` ou `in-progress` sans contredire la plage « backlog » pour les suivantes). Gel process hors 25-* levé 2026-04-20 (story 25-6 + addendum) ; epic-25 reste in-progress jusqu'à clôture phase 2
+  # Epic 25 — socle alignement + phase 2 : en `development_status`, **`25-6`…`25-15`** **done** (lignes ci-dessous) ; **`epic-25`** **in-progress** jusqu'à décision de clôture epic / rétro — **chaque ligne de clé prime** sur tout résumé générique.
   # Trier les cles 25-x par ordre NUMERIQUE (25-1 … 25-9 puis 25-10 … 25-15) — un tri alphabetique met 25-10 avant 25-2.
   epic-25: in-progress
   25-1-cartographier-les-exigences-importees-et-fermer-la-matrice-dalignement-vision-canonique: done
@@ -595,7 +595,7 @@ development_status:
   # 25.5 : titre epics.md contient « backlog `25-*` » ; le slug ne peut pas porter le wildcard — le fichier story devra répéter le titre complet.
   25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions: done
   # --- Phase 2 (implementation) — slugs = identifiants pilotage (fait foi vs titres longs dans epics.md) ---
-  # Lecture `development_status` : **`25-6`…`25-12` = done** (ci-dessous). Pour **`25-13`…`25-15`**, seule la **valeur YAML sur la ligne de la clé** fait foi ; ne pas déduire le statut d'une clé à partir d'un commentaire de « plage backlog » pour la suite — une clé peut être `review` / `in-progress` / `done` pendant que les suivantes restent `backlog`.
+  # Lecture `development_status` : **`25-6`…`25-15` = done** sur les lignes explicites ci-dessous ; ignorer les anciens commentaires « backlog » pour cette plage si contradiction.
   # DAG : fichier machine `_bmad-output/planning-artifacts/architecture/epic-25-phase2-dag-2026-04-21.yaml` (depends_on + ordre). Raccourci humain :
   #   25-6 → (25-7, parallele possible 25-12) → 25-8 → 25-9 → 25-10 ; 25-7 → 25-11 ; 25-11 → 25-13 / 25-15 ; 25-8 + 25-13 → 25-14 ; 25-15 dernier.
   25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable: done

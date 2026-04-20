@@ -84,7 +84,7 @@
 | **Stories 25.13–25.15** | **Done** (YAML) | Implémentations principalement tracées **2026-04-20** ; orchestration **2026-04-21** = reprises Story Runner + contrôles pytest locaux (**25-14** : **5** tests ; **25-15** : **14** tests). |
 | **Suite epic-25** | **Hors stories 25.x phase 2** | **`epic-25` : in-progress** dans le YAML tant qu’aucune **rétro / décision** n’a clôturé l’epic ; ne pas confondre avec la seule tranche **25.1–25.5** déjà close historiquement. |
 | **QA2 agrégé** (paquet **25.6–25.15**) | **Exécuté** | Rapports : `_bmad-output/implementation-artifacts/2026-04-21-qa2-agrege-epic-25-phase2-rapport-fusion.md` (run 1) et `…-rapport-fusion-v2-orchestration-libre.md` (run 2, orchestration libre, sans Codex). |
-| **Push `origin`** | À ta charge (Cursor) | Branche **`epic/25-socle-alignement-prd-architecture`** avec plusieurs commits **ahead** — pas poussés par l’orchestrateur. |
+| **Push `origin`** | À ta charge (Cursor) | Branche **`epic/25-socle-alignement-prd-architecture`** : les commits peuvent être **locaux** (ahead) ou **déjà poussés** selon machine — vérifier avec `git status` / `git log @{u}..HEAD` ; l’orchestrateur ne remplace pas un push manuel. |
 | **Clôture `epic-25`** | **À arbitrer** | Les clés **25.6–25.15** sont **done** ; la clôture **`epic-25: done`** reste une **décision produit / rétro** (phase 2 impl bouclée côté stories). |
 | **Verdict programme PWA** | Inchangé | Brief : **NOT READY** ; **25.15** = spike **sans** levée de verdict programme seule. |
 | **Gate API P0** | Rappel permanent | Stories touchant **Paheko / caisse / contrats** sensibles — vigilance **promo / merge** (rappel initial **25.9–25.11** et au-delà si touché). |

@@ -73,6 +73,14 @@ def _redis_key_lockout(user_id: str) -> str:
 
 
 def _is_locked_out(redis_client: redis.Redis, user_id: str) -> bool:
+    """
+    Retourne True si une clé lockout existe pour ``user_id``.
+
+    **Fail-open** : en cas d'exception Redis (client indisponible, timeout, etc.), retourne **False**
+    — le lockout **n'est pas appliqué** tant que Redis ne répond pas ; les autres garde-fous (PIN,
+    permissions route) restent en vigueur. Voir aussi ``_register_failed_attempt`` (compteur d'échecs,
+    même philosophie en erreur Redis).
+    """
     try:
         return bool(redis_client.exists(_redis_key_lockout(user_id)))
     except Exception:

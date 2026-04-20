@@ -1,4 +1,4 @@
-"""Story 2.5 — audit : masquage details, types caisse, échec persistance audit."""
+"""Epic 25 / Story 2.5 — audit : masquage details, types caisse, échec persistance audit."""
 
 from __future__ import annotations
 

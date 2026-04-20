@@ -1,6 +1,6 @@
 # Story 25.7 : Traduire la spec 25.4 (sections 2 et 3) en checklist developpement executable
 
-Status: ready-for-dev
+Status: done
 
 **Story key :** `25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable`  
 **Epic :** 25 — Socle d'alignement PRD vision kiosque / multisite / permissions, brownfield et ADR  
@@ -30,57 +30,57 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 25.7**
 
 Contrôle explicite contre `_bmad-output/planning-artifacts/epics.md` **Story 25.7** (pas de PASS sur liste vide).
 
-- [ ] **Checklist in-repo** : un fichier versionne est cree dans le depot (chemin fixe ci-dessous).  
-- [ ] **Ancres spec** : chaque item pointe vers une ancre de section **2.x** ou **3.x** de la spec 25.4.  
-- [ ] **Tags** : chaque item a un tag `normative-spec` ou `vision-later`.  
-- [ ] **Verification nommee** : chaque item `normative-spec` reference un nom de test ou un script de verification manuel.  
-- [ ] **Vision-only hors scope** : auto-suspend, canaux d'alerte, taxonomy FIXE/NOMADE/EXTERNE sont **absents** ou tagges `vision-later` avec mention explicite.
+- [x] **Checklist in-repo** : un fichier versionne est cree dans le depot (chemin fixe ci-dessous).  
+- [x] **Ancres spec** : chaque item pointe vers une ancre de section **2.x** ou **3.x** de la spec 25.4.  
+- [x] **Tags** : chaque item a un tag `normative-spec` ou `vision-later`.  
+- [x] **Verification nommee** : chaque item `normative-spec` reference un nom de test ou un script de verification manuel.  
+- [x] **Vision-only hors scope** : auto-suspend, canaux d'alerte, taxonomy FIXE/NOMADE/EXTERNE sont **absents** ou tagges `vision-later` avec mention explicite.
 
 ## Definition of Done
 
-- [ ] Checklist publiee sous `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md`.
-- [ ] Table des items couvrant **toutes** les sections 2.x et 3.x (pas d'item hors scope).
-- [ ] Tags `normative-spec` / `vision-later` renseignes + champ **verification** pour chaque item `normative-spec`.
-- [ ] Liens d'ancrage vers la spec **25.4** (sections 2 et 3) et rappel des ADR **25-2** / **25-3** si cites.
-- [ ] Mention explicite des sujets **vision-only** exclus (auto-suspend, alert channels, taxonomy FIXE/NOMADE) sans les redecider.
+- [x] Checklist publiee sous `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md`.
+- [x] Table des items couvrant **toutes** les sections 2.x et 3.x (pas d'item hors scope).
+- [x] Tags `normative-spec` / `vision-later` renseignes + champ **verification** pour chaque item `normative-spec`.
+- [x] Liens d'ancrage vers la spec **25.4** (sections 2 et 3) et rappel des ADR **25-2** / **25-3** si cites.
+- [x] Mention explicite des sujets **vision-only** exclus (auto-suspend, alert channels, taxonomy FIXE/NOMADE) sans les redecider.
 
 ## Tasks / Subtasks
 
-- [ ] **Creer la checklist versionnee**  
-  - [ ] Fichier : `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md` (creer le dossier si absent).  
-  - [ ] En-tete : version/date, source spec, legenda tags.
+- [x] **Creer la checklist versionnee**  
+  - [x] Fichier : `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md` (creer le dossier si absent).  
+  - [x] En-tete : version/date, source spec, legenda tags.
 
-- [ ] **Renseigner les items Section 2 — Modele de contexte (invariants)**  
-  - [ ] **2.1 Site**  
-    - [ ] `normative-spec` : site explicite requis pour actions sensibles (refus si contexte incomplet).  
-    - [ ] `normative-spec` : zero fuite de permissions / ecritures vers un site non selectionne.  
-    - [ ] `vision-later` : taxonomy FIXE/NOMADE/EXTERNE + immuabilite analytique apres premiere vente (cible vision).  
-  - [ ] **2.2 Caisse**  
-    - [ ] `normative-spec` : rattachement caisse → site coherent (session + mapping).  
-    - [ ] `normative-spec` : chaine canonique journal/snapshot/builder/outbox prime sur l'ecran de vente.  
-  - [ ] **2.3 Session**  
-    - [ ] `normative-spec` : session porte site+caisse+operateur + trace d'audit.  
-    - [ ] `normative-spec` : cloture produit un snapshot fige; pas de recalcul silencieux.  
-  - [ ] **2.4 Poste / kiosque**  
-    - [ ] `normative-spec` : autorite serveur pour PIN operateur et permissions (poste canon).  
-    - [ ] `normative-spec` : invariants kiosque et offline renvoient a l'ADR **25-2** (pas de redecision).  
-    - [ ] `normative-spec` : ne jamais confondre identite operateur vs identite poste/kiosque dans logs/payloads.  
-  - [ ] **2.5 Roles / groupes / permissions**  
-    - [ ] `normative-spec` : calcul additif roles+groupes; labels UI ne font pas foi.  
-    - [ ] `normative-spec` : permissions sensibles evaluees avec scope site/caisse actif.
+- [x] **Renseigner les items Section 2 — Modele de contexte (invariants)**  
+  - [x] **2.1 Site**  
+    - [x] `normative-spec` : site explicite requis pour actions sensibles (refus si contexte incomplet).  
+    - [x] `normative-spec` : zero fuite de permissions / ecritures vers un site non selectionne.  
+    - [x] `vision-later` : taxonomy FIXE/NOMADE/EXTERNE + immuabilite analytique apres premiere vente (cible vision).  
+  - [x] **2.2 Caisse**  
+    - [x] `normative-spec` : rattachement caisse → site coherent (session + mapping).  
+    - [x] `normative-spec` : chaine canonique journal/snapshot/builder/outbox prime sur l'ecran de vente.  
+  - [x] **2.3 Session**  
+    - [x] `normative-spec` : session porte site+caisse+operateur + trace d'audit.  
+    - [x] `normative-spec` : cloture produit un snapshot fige; pas de recalcul silencieux.  
+  - [x] **2.4 Poste / kiosque**  
+    - [x] `normative-spec` : autorite serveur pour PIN operateur et permissions (poste canon).  
+    - [x] `normative-spec` : invariants kiosque et offline renvoient a l'ADR **25-2** (pas de redecision).  
+    - [x] `normative-spec` : ne jamais confondre identite operateur vs identite poste/kiosque dans logs/payloads.  
+  - [x] **2.5 Roles / groupes / permissions**  
+    - [x] `normative-spec` : calcul additif roles+groupes; labels UI ne font pas foi.  
+    - [x] `normative-spec` : permissions sensibles evaluees avec scope site/caisse actif.
 
-- [ ] **Renseigner les items Section 3 — Comportement de changement de contexte**  
-  - [ ] **3.1 Bascule site/caisse**  
-    - [ ] `normative-spec` : invalidation/recalcul serveur avant action metier; refus par defaut sinon.  
-    - [ ] `normative-spec` : client ne conserve pas d'etat metier stale; erreur explicite.  
-  - [ ] **3.2 PIN / step-up / kiosque**  
-    - [ ] `normative-spec` : PIN operateur serveur reste canon (ref `prd.md` §11.2).  
-    - [ ] `normative-spec` : PIN kiosque / secret poste / lockout / offline = ADR **25-2** (pas de best-effort).  
-    - [ ] `normative-spec` : revalidation requise apres bascule sensible = **refus par defaut** jusqu'a preuve conforme.
+- [x] **Renseigner les items Section 3 — Comportement de changement de contexte**  
+  - [x] **3.1 Bascule site/caisse**  
+    - [x] `normative-spec` : invalidation/recalcul serveur avant action metier; refus par defaut sinon.  
+    - [x] `normative-spec` : client ne conserve pas d'etat metier stale; erreur explicite.  
+  - [x] **3.2 PIN / step-up / kiosque**  
+    - [x] `normative-spec` : PIN operateur serveur reste canon (ref `prd.md` §11.2).  
+    - [x] `normative-spec` : PIN kiosque / secret poste / lockout / offline = ADR **25-2** (pas de best-effort).  
+    - [x] `normative-spec` : revalidation requise apres bascule sensible = **refus par defaut** jusqu'a preuve conforme.
 
-- [ ] **Nommer les verifications**  
-  - [ ] Pour chaque item `normative-spec`, renseigner un identifiant de test ou script, ex. `CTX-INV-2-1-SITE-EXPLICIT`, `CTX-SWITCH-3-1-REFUS`.  
-  - [ ] Si aucune automation existe encore, utiliser un script manuel nomme (etape, entree, sortie attendue).
+- [x] **Nommer les verifications**  
+  - [x] Pour chaque item `normative-spec`, renseigner un identifiant de test ou script, ex. `CTX-INV-2-1-SITE-EXPLICIT`, `CTX-SWITCH-3-1-REFUS`.  
+  - [x] Si aucune automation existe encore, utiliser un script manuel nomme (etape, entree, sortie attendue).
 
 ## Dev Notes
 
@@ -112,8 +112,8 @@ Contrôle explicite contre `_bmad-output/planning-artifacts/epics.md` **Story 25
 
 ## Alignement sprint / YAML
 
-- **Post-CS :** `sprint-status.yaml` met la cle `25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable` en **`ready-for-dev`**.  
-- **Epic 25** reste **`in-progress`** (phase 2 25.6–25.15).
+- **Verite pilotage :** `development_status` / `sprint-status.yaml` — cle `25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable` en **`done`** (cohérent avec cette story et la checklist versionnée).
+- **Epic 25** reste **`in-progress`** jusqu'à rétro / décision de clôture epic (stories phase 2 peuvent être **done** avant).
 
 ## Dev Agent Record
 
@@ -127,4 +127,7 @@ Contrôle explicite contre `_bmad-output/planning-artifacts/epics.md` **Story 25
 
 
 ### File List
+
+- `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md`
+- `_bmad-output/implementation-artifacts/25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable.md` (présent fichier)
 

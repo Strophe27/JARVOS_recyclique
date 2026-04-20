@@ -3,7 +3,7 @@
 Status: done
 
 **Story key :** `25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox`  
-**Epic :** 25 — Supervision / taxonomie causes racines Paheko (phase 2)  
+**Epic :** 25 — phase 2 (impl) — supervision / taxonomie causes racines Paheko  
 **Implementation artifact :** `_bmad-output/implementation-artifacts/25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox.md`
 
 ## Dépendances (prérequis)

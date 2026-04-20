@@ -1,4 +1,8 @@
-"""Story 25.14 — step-up / revalidation après changement de contexte sensible (ADR 25-2, 25.8, 25.13)."""
+"""Story 25.14 — step-up / revalidation après changement de contexte sensible (ADR 25-2, 25.8, 25.13).
+
+Les scénarios pytest privilégient les flux **remboursement exceptionnel** / cashflow alignés matrice ;
+les autres routes step-up restent couvertes par la matrice documentée et les tests hors ce fichier.
+"""
 
 from __future__ import annotations
 

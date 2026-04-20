@@ -11,6 +11,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from recyclic_api.core.security import verify_token
 from recyclic_api.models.user import User, UserRole
+from recyclic_api.schemas.recyclique_api_error import RecycliqueApiError
 from recyclic_api.schemas.sale import (
     SaleCorrectionCreate,
     SaleResponse,
@@ -168,6 +169,30 @@ _SALE_CORRECTION_DOMAIN_HTTP = {
     "validation_status": 400,
 }
 
+# OpenAPI : aligner les codes d'erreur courants avec le runtime (AR21 / Story 25).
+_SALES_OPENAPI_ERROR_RESPONSES = {
+    400: {
+        "description": "Requête ou règle métier refusée (validation, cohérence).",
+        "model": RecycliqueApiError,
+    },
+    401: {
+        "description": "Non authentifié : Bearer et/ou cookie d'accès web v2.",
+        "model": RecycliqueApiError,
+    },
+    403: {
+        "description": "Permission refusée ou rôle insuffisant.",
+        "model": RecycliqueApiError,
+    },
+    404: {
+        "description": "Ressource introuvable.",
+        "model": RecycliqueApiError,
+    },
+    409: {
+        "description": "Conflit : contexte obsolète, idempotence, ou règle métier vente.",
+        "model": RecycliqueApiError,
+    },
+}
+
 # Story 6.3 — chemins statiques avant /{sale_id} pour éviter « held » capturé comme UUID.
 @conditional_rate_limit("120/minute")
 @router.get(
@@ -175,6 +200,7 @@ _SALE_CORRECTION_DOMAIN_HTTP = {
     response_model=list[SalePaymentMethodOption],
     summary="Moyens de paiement caisse (référentiel expert actif)",
     operation_id="recyclique_sales_listPaymentMethodOptions",
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
 )
 async def list_sale_payment_method_options(
     request: Request,
@@ -193,7 +219,7 @@ async def list_sale_payment_method_options(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/held", response_model=List[SaleResponse])
+@router.get("/held", response_model=List[SaleResponse], responses=_SALES_OPENAPI_ERROR_RESPONSES)
 async def list_held_sales_for_session(
     request: Request,
     cash_session_id: str,
@@ -220,7 +246,7 @@ async def list_held_sales_for_session(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.post("/hold", response_model=SaleResponse)
+@router.post("/hold", response_model=SaleResponse, responses=_SALES_OPENAPI_ERROR_RESPONSES)
 async def create_held_sale(
     request: Request,
     hold_data: SaleHoldCreate,
@@ -239,7 +265,7 @@ async def create_held_sale(
         raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
 
 
-@router.post("/reversals", response_model=SaleReversalResponse)
+@router.post("/reversals", response_model=SaleReversalResponse, responses=_SALES_OPENAPI_ERROR_RESPONSES)
 async def create_sale_reversal(
     request: Request,
     body: SaleReversalCreate,
@@ -270,7 +296,11 @@ async def create_sale_reversal(
         raise_domain_exception_as_http(e, **_SALE_REVERSAL_DOMAIN_HTTP)
 
 
-@router.patch("/{sale_id}/corrections", response_model=SaleResponse)
+@router.patch(
+    "/{sale_id}/corrections",
+    response_model=SaleResponse,
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
+)
 async def correct_sale_sensitive(
     request: Request,
     sale_id: str,
@@ -321,7 +351,11 @@ async def correct_sale_sensitive(
     return result
 
 
-@router.get("/reversals/{reversal_id}", response_model=SaleReversalResponse)
+@router.get(
+    "/reversals/{reversal_id}",
+    response_model=SaleReversalResponse,
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
+)
 async def get_sale_reversal(
     request: Request,
     reversal_id: str,
@@ -346,7 +380,7 @@ async def get_sale_reversal(
         raise_domain_exception_as_http(e, **_SALE_REVERSAL_DOMAIN_HTTP)
 
 
-@router.get("/{sale_id}", response_model=SaleResponse)
+@router.get("/{sale_id}", response_model=SaleResponse, responses=_SALES_OPENAPI_ERROR_RESPONSES)
 async def get_sale(
     request: Request,
     sale_id: str,
@@ -386,6 +420,7 @@ async def get_sale(
     "/{sale_id}",
     response_model=SaleResponse,
     operation_id="recyclique_sales_updateAdminNote",
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
 )
 async def update_sale_note(
     request: Request,
@@ -415,6 +450,7 @@ async def update_sale_note(
     "/{sale_id}/items/{item_id}/weight",
     response_model=SaleItemResponse,
     operation_id="recyclique_sales_updateSaleItemWeight",
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
 )
 async def update_sale_item_weight(
     request: Request,
@@ -441,7 +477,7 @@ async def update_sale_item_weight(
         raise_domain_exception_as_http(e, **_SALE_ITEM_WEIGHT_DOMAIN_HTTP)
 
 
-@router.post("/", response_model=SaleResponse)
+@router.post("/", response_model=SaleResponse, responses=_SALES_OPENAPI_ERROR_RESPONSES)
 async def create_sale(
     request: Request,
     sale_data: SaleCreate,
@@ -484,7 +520,11 @@ async def create_sale(
     return result
 
 
-@router.post("/{sale_id}/finalize-held", response_model=SaleResponse)
+@router.post(
+    "/{sale_id}/finalize-held",
+    response_model=SaleResponse,
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
+)
 async def finalize_held_sale(
     request: Request,
     sale_id: str,
@@ -521,7 +561,11 @@ async def finalize_held_sale(
     return result
 
 
-@router.post("/{sale_id}/abandon-held", response_model=SaleResponse)
+@router.post(
+    "/{sale_id}/abandon-held",
+    response_model=SaleResponse,
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
+)
 async def abandon_held_sale(
     request: Request,
     sale_id: str,
@@ -540,7 +584,11 @@ async def abandon_held_sale(
         raise_domain_exception_as_http(e, **_SALE_CREATE_DOMAIN_HTTP)
 
 
-@router.patch("/{sale_id}/items/{item_id}", response_model=SaleItemResponse)
+@router.patch(
+    "/{sale_id}/items/{item_id}",
+    response_model=SaleItemResponse,
+    responses=_SALES_OPENAPI_ERROR_RESPONSES,
+)
 async def update_sale_item(
     request: Request,
     sale_id: str,

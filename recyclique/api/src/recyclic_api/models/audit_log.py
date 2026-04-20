@@ -24,6 +24,7 @@ class AuditActionType(str, enum.Enum):
     USER_DELETED = "user_deleted"
     USER_STATUS_CHANGED = "user_status_changed"
     USER_ROLE_CHANGED = "user_role_changed"
+    USER_ROLE_CHANGE_FAILED = "user_role_change_failed"
     
     # Actions de sécurité
     PASSWORD_FORCED = "password_forced"
@@ -52,7 +53,9 @@ class AuditActionType(str, enum.Enum):
     # Story 24.8 — mouvement interne caisse (distinct remboursement / décaissement charge)
     CASH_INTERNAL_TRANSFER = "cash_internal_transfer"
 
-    # Actions système
+    # Actions système / accès admin (succès vs refus discriminés pour filtrage audit)
+    ADMIN_ENDPOINT_ACCESS_GRANTED = "admin_endpoint_access_granted"
+    ADMIN_ENDPOINT_ACCESS_DENIED = "admin_endpoint_access_denied"
     SYSTEM_CONFIG_CHANGED = "system_config_changed"
     SETTING_UPDATED = "setting_updated"
     DATA_EXPORTED = "data_exported"
