@@ -1251,7 +1251,7 @@
           "sales"
         ],
         "summary": "Correct Sale Sensitive",
-        "description": "Story 6.8 — correction post-hoc bornée (super-admin, session ouverte).\n\nListe fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note).\nStep-up ``X-Step-Up-Pin`` obligatoire ; ``Idempotency-Key`` optionnel (rejouer la même réponse).",
+        "description": "Story 6.8 — correction post-hoc bornée (super-admin).\n\nListe fermée : ``kind: sale_date`` ou ``finalize_fields`` (donation, total_amount, payment_method, note,\n``items[]`` lignes article, remplacement ``payments`` / ``donation_surplus``).\nUne session de caisse **clôturée** n'est plus bloquante (données historiques) ; l'audit porte le statut de session.\nStep-up ``X-Step-Up-Pin`` obligatoire ; ``Idempotency-Key`` optionnel (rejouer la même réponse).",
         "operationId": "correct_sale_sensitive_v1_sales__sale_id__corrections_patch",
         "security": [
           {
@@ -1372,7 +1372,7 @@
           "sales"
         ],
         "summary": "Get Sale",
-        "description": "Détail vente / ticket (Story 6.2).\n\nAuthentification obligatoire ; revalidation permission caisse, site et opérateur\n(sauf admin / super-admin : lecture élargie).",
+        "description": "Détail vente / ticket (Story 6.2).\n\nAuthentification obligatoire ; revalidation permission caisse, site et opérateur\n(sauf admin / super-admin : lecture élargie).\n\n**Story 25.8** — le contrôle de contexte « périmé » (``CONTEXT_STALE`` / en-têtes\n``X-Recyclique-Context-*``) s'applique aux **mutations** ; pas de **409** sur cette\nlecture GET (rafraîchir l'enveloppe avant les écritures si le client envoie des en-têtes).",
         "operationId": "get_sale_v1_sales__sale_id__get",
         "security": [
           {
@@ -1419,7 +1419,7 @@
         ],
         "summary": "Update Sale Note",
         "description": "Update sale note (admin only).\n\nSTORY-B40-P4: Edition des notes côté Admin\n- Restricted to Admin/SuperAdmin roles\n- Updates only the note field",
-        "operationId": "update_sale_note_v1_sales__sale_id__put",
+        "operationId": "recyclique_sales_updateAdminNote",
         "security": [
           {
             "HTTPBearer": []
@@ -1477,7 +1477,7 @@
         ],
         "summary": "Update Sale Item Weight",
         "description": "Modifier le poids d'un item de vente (admin uniquement).\n\nStory B52-P2: Permet de corriger les erreurs de saisie de poids après validation.\n- Seuls les administrateurs peuvent modifier\n- Recalcule automatiquement les statistiques affectées\n- Log d'audit complet",
-        "operationId": "update_sale_item_weight_v1_sales__sale_id__items__item_id__weight_patch",
+        "operationId": "recyclique_sales_updateSaleItemWeight",
         "security": [
           {
             "HTTPBearer": []
@@ -2525,6 +2525,284 @@
         }
       }
     },
+    "/v1/cash-sessions/{session_id}/exceptional-refunds": {
+      "post": {
+        "tags": [
+          "cash-sessions",
+          "Sessions de Caisse"
+        ],
+        "summary": "Enregistrer un remboursement exceptionnel sans ticket",
+        "description": "Enregistre un remboursement exceptionnel sans ticket sur une session ouverte.\n\n    **Permissions requises :** `refund.exceptional`\n    **Step-up PIN :** `X-Step-Up-Pin` obligatoire\n    **Idempotency-Key :** obligatoire (prévention des doubles saisies)",
+        "operationId": "recyclique_cashSessions_createExceptionalRefund",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExceptionalRefundCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Remboursement enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionalRefundResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requête invalide (ex. Idempotency-Key manquant)"
+          },
+          "422": {
+            "description": "Validation métier P3 (preuves / seuils Story 24.10)"
+          },
+          "403": {
+            "description": "Accès non autorisé / PIN requis ou invalide"
+          },
+          "404": {
+            "description": "Session non trouvée"
+          },
+          "409": {
+            "description": "Conflit idempotence (``IDEMPOTENCY_KEY_CONFLICT``) ou **Story 25.8** — contexte périmé (``CONTEXT_STALE`` : en-têtes ``X-Recyclique-Context-*`` désalignés sur l'enveloppe serveur).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cash-sessions/{session_id}/disbursements": {
+      "post": {
+        "tags": [
+          "cash-sessions",
+          "Sessions de Caisse"
+        ],
+        "summary": "Enregistrer un décaissement typé (Story 24.7)",
+        "description": "Décaissement hors ticket client avec sous-type fermé (PRD §10.5).\n    **Permission :** `cash.disbursement`.\n    **Step-up PIN** (`X-Step-Up-Pin`) : obligatoire pour les sous-types\n    `validated_exceptional_outflow` et `other_admin_coded` (niveau de preuve N3).\n    **Idempotency-Key** : obligatoire.\n\n    **Nota — story 24.8 :** le mouvement interne de caisse (`cash.transfer`) reste distinct ; ne pas confondre avec ce flux.",
+        "operationId": "recyclique_cashSessions_createDisbursement",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashDisbursementCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Décaissement enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashDisbursementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation métier"
+          },
+          "403": {
+            "description": "Permission absente ou step-up requis / invalide"
+          },
+          "404": {
+            "description": "Session non trouvée"
+          },
+          "409": {
+            "description": "Conflit idempotence"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cash-sessions/{session_id}/internal-transfers": {
+      "post": {
+        "tags": [
+          "cash-sessions",
+          "Sessions de Caisse"
+        ],
+        "summary": "Mouvement interne de caisse typé (Story 24.8)",
+        "description": "Enregistre un mouvement interne (PRD §10.6) — distinct du remboursement client et du décaissement charge (24.7).\n    **Permissions :** `caisse.access` (parcours caisse) et `cash.transfer`.\n    **Step-up PIN** (`X-Step-Up-Pin`) : obligatoire pour certains types sensibles ou montants élevés (preuve N3).\n    **Idempotency-Key** : obligatoire.",
+        "operationId": "recyclique_cashSessions_createInternalTransfer",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashInternalTransferCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mouvement interne enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashInternalTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation métier (type / sens / solde)"
+          },
+          "403": {
+            "description": "Permission absente ou step-up requis / invalide"
+          },
+          "404": {
+            "description": "Session non trouvée"
+          },
+          "409": {
+            "description": "Conflit idempotence"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cash-sessions/{session_id}/material-exchanges": {
+      "post": {
+        "tags": [
+          "cash-sessions",
+          "Sessions de Caisse"
+        ],
+        "summary": "Échange matière (Story 24.6) — conteneur et sous-flux vente ou reversal",
+        "description": "Orchestre un échange matière avec différence financière nulle (trace seule), positive (complément = vente canonique)\n    ou négative (reversal total sur vente source).\n\n    **Permissions :** `caisse.exchange` ; pour le reversal, également `caisse.refund`.",
+        "operationId": "recyclique_cashSessions_createMaterialExchange",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialExchangeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Échange enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialExchangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erreur de validation"
+          },
+          "403": {
+            "description": "Permission manquante"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/cash-sessions/{session_id}/close": {
       "post": {
         "tags": [
@@ -2871,6 +3149,16 @@
               "application/json": {
                 "example": {
                   "detail": "Accès non autorisé à cette session"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "**Story 25.8** — **409** avec ``code`` **``CONTEXT_STALE``** si les en-têtes ``X-Recyclique-Context-*`` sont présents et désalignés sur l'enveloppe serveur (résolu avant « session introuvable », **404**).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecycliqueApiError"
                 }
               }
             }
@@ -3655,6 +3943,24 @@
               "title": "Search"
             },
             "description": "Recherche dans description ou détails"
+          },
+          {
+            "name": "cash_sensitive_operations",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Si true : uniquement les actions caisse sensibles Epic 24 (preuves step-up, opérations spéciales).",
+              "title": "Cash Sensitive Operations"
+            },
+            "description": "Si true : uniquement les actions caisse sensibles Epic 24 (preuves step-up, opérations spéciales)."
           }
         ],
         "responses": {
@@ -7749,6 +8055,88 @@
                     "$ref": "#/components/schemas/CategoryStats"
                   },
                   "title": "Response Get Reception By Category V1 Stats Reception By Category Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/stats/sales/by-business-tag-and-category": {
+      "get": {
+        "tags": [
+          "stats",
+          "stats"
+        ],
+        "summary": "Stats caisse : tag métier × catégorie matière",
+        "description": "Story 24.9 — agrégation ``tag métier effectif`` (ligne > ticket > legacy 6.5/6.6) × catégorie matière,\n    poids et nombre de lignes article. Filtre dates sur ``sales.created_at``. **ADMIN** / **SUPER_ADMIN** uniquement ;\n    ``log_admin_access`` sur succès (alignement 16.4).",
+        "operationId": "get_sales_by_business_tag_and_category_v1_stats_sales_by_business_tag_and_category_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (inclusive) in ISO 8601 format",
+              "title": "Start Date"
+            },
+            "description": "Start date (inclusive) in ISO 8601 format"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (inclusive) in ISO 8601 format",
+              "title": "End Date"
+            },
+            "description": "End date (inclusive) in ISO 8601 format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BusinessTagMaterialStats"
+                  },
+                  "title": "Response Get Sales By Business Tag And Category V1 Stats Sales By Business Tag And Category Get"
                 }
               }
             }
@@ -13240,6 +13628,58 @@
         "title": "BulkReceptionExportRequest",
         "description": "Requête pour export bulk de tickets de réception."
       },
+      "BusinessTagKind": {
+        "type": "string",
+        "enum": [
+          "GRATIFERIA",
+          "CAMPAGNE_SOCIALE",
+          "SPECIAL_DON_SANS_ARTICLE",
+          "ADHESION_ASSOCIATION",
+          "SOCIAL_DON_LIBRE",
+          "SOCIAL_DON_MOINS_18",
+          "SOCIAL_MARAUDE",
+          "SOCIAL_KIT_INSTALLATION_ETUDIANT",
+          "SOCIAL_DON_AUX_ANIMAUX",
+          "SOCIAL_FRIPERIE_AUTO_GEREE",
+          "AUTRE"
+        ],
+        "title": "BusinessTagKind",
+        "description": "Tags métier canoniques (PRD + réconciliation Stories 6.5 / 6.6)."
+      },
+      "BusinessTagMaterialStats": {
+        "properties": {
+          "business_tag_key": {
+            "type": "string",
+            "title": "Business Tag Key",
+            "description": "Clé tag métier effectif (ligne > ticket > legacy 6.5/6.6), ex. GRATIFERIA ou SOCIAL_DON_LIBRE."
+          },
+          "category_name": {
+            "type": "string",
+            "title": "Category Name",
+            "description": "Catégorie matière (résolution parent comme les autres stats caisse)."
+          },
+          "total_weight": {
+            "type": "string",
+            "title": "Total Weight",
+            "description": "Poids total kg pour cette cellule."
+          },
+          "total_items": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Items",
+            "description": "Nombre de lignes article dans la cellule."
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_tag_key",
+          "category_name",
+          "total_weight",
+          "total_items"
+        ],
+        "title": "BusinessTagMaterialStats",
+        "description": "Story 24.9 — agrégat poids/articles par tag métier effectif × catégorie matière (ligne de vente)."
+      },
       "ButtonType": {
         "type": "string",
         "enum": [
@@ -13260,6 +13700,401 @@
         ],
         "title": "CanonicalJournalStrict",
         "description": "Agrégats canoniques sans repli preview (journal seul ; flag fallback explicite)."
+      },
+      "CashDisbursementCreate": {
+        "properties": {
+          "subtype": {
+            "$ref": "#/components/schemas/CashDisbursementSubtype"
+          },
+          "motif_code": {
+            "$ref": "#/components/schemas/CashDisbursementMotifCode"
+          },
+          "counterparty_label": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Counterparty Label"
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount",
+            "description": "Montant décaissé (positif, en euros)."
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "default": "cash"
+          },
+          "free_comment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Comment"
+          },
+          "justification_reference": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Justification Reference"
+          },
+          "actual_settlement_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Actual Settlement At"
+          },
+          "admin_coded_reason_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Coded Reason Key",
+            "description": "Obligatoire si subtype = other_admin_coded — clé d’administration fermée."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subtype",
+          "motif_code",
+          "counterparty_label",
+          "amount",
+          "justification_reference",
+          "actual_settlement_at"
+        ],
+        "title": "CashDisbursementCreate",
+        "description": "Création d’un décaissement — sous-type et motif codifiés obligatoires (PRD §10.5)."
+      },
+      "CashDisbursementMotifCode": {
+        "type": "string",
+        "enum": [
+          "office_supplies",
+          "postage",
+          "volunteer_travel",
+          "short_external_fee",
+          "board_approved_other"
+        ],
+        "title": "CashDisbursementMotifCode",
+        "description": "Motifs codifiés (distinct du sous-type — PRD champs minimaux)."
+      },
+      "CashDisbursementResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "cash_session_id": {
+            "type": "string",
+            "title": "Cash Session Id"
+          },
+          "sale_id": {
+            "type": "string",
+            "title": "Sale Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "subtype": {
+            "type": "string",
+            "title": "Subtype"
+          },
+          "motif_code": {
+            "type": "string",
+            "title": "Motif Code"
+          },
+          "counterparty_label": {
+            "type": "string",
+            "title": "Counterparty Label"
+          },
+          "payment_method": {
+            "type": "string",
+            "title": "Payment Method"
+          },
+          "free_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Comment"
+          },
+          "justification_reference": {
+            "type": "string",
+            "title": "Justification Reference"
+          },
+          "actual_settlement_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Actual Settlement At"
+          },
+          "admin_coded_reason_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Coded Reason Key"
+          },
+          "initiator_user_id": {
+            "type": "string",
+            "title": "Initiator User Id"
+          },
+          "approver_user_id": {
+            "type": "string",
+            "title": "Approver User Id"
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Approved At"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "paheko_accounting_sync_hint": {
+            "type": "string",
+            "title": "Paheko Accounting Sync Hint",
+            "default": "Le décaissement est enregistré en caisse ; l’écriture Paheko correspondante suit le snapshot de clôture via l’outbox (ADR D1) — pas de second rail d’export direct."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "cash_session_id",
+          "sale_id",
+          "amount",
+          "subtype",
+          "motif_code",
+          "counterparty_label",
+          "payment_method",
+          "justification_reference",
+          "actual_settlement_at",
+          "initiator_user_id",
+          "approver_user_id",
+          "approved_at",
+          "idempotency_key",
+          "created_at"
+        ],
+        "title": "CashDisbursementResponse"
+      },
+      "CashDisbursementSubtype": {
+        "type": "string",
+        "enum": [
+          "volunteer_expense_reimbursement",
+          "small_operating_expense",
+          "validated_exceptional_outflow",
+          "other_admin_coded"
+        ],
+        "title": "CashDisbursementSubtype",
+        "description": "Sous-types fermés PRD §10.5 (MVP)."
+      },
+      "CashInternalTransferCreate": {
+        "properties": {
+          "transfer_type": {
+            "$ref": "#/components/schemas/CashInternalTransferType"
+          },
+          "session_flow": {
+            "$ref": "#/components/schemas/CashSessionInternalFlow"
+          },
+          "origin_endpoint_label": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Origin Endpoint Label"
+          },
+          "destination_endpoint_label": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Destination Endpoint Label"
+          },
+          "motif": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Motif"
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount",
+            "description": "Montant absolu du mouvement (euros)."
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "default": "cash"
+          },
+          "justification_reference": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Justification Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transfer_type",
+          "session_flow",
+          "origin_endpoint_label",
+          "destination_endpoint_label",
+          "motif",
+          "amount",
+          "justification_reference"
+        ],
+        "title": "CashInternalTransferCreate",
+        "description": "Mouvement interne typé — référentiel fermé serveur (PRD §10.6)."
+      },
+      "CashInternalTransferResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "cash_session_id": {
+            "type": "string",
+            "title": "Cash Session Id"
+          },
+          "sale_id": {
+            "type": "string",
+            "title": "Sale Id"
+          },
+          "transfer_type": {
+            "type": "string",
+            "title": "Transfer Type"
+          },
+          "session_flow": {
+            "type": "string",
+            "title": "Session Flow"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "origin_endpoint_label": {
+            "type": "string",
+            "title": "Origin Endpoint Label"
+          },
+          "destination_endpoint_label": {
+            "type": "string",
+            "title": "Destination Endpoint Label"
+          },
+          "motif": {
+            "type": "string",
+            "title": "Motif"
+          },
+          "payment_method": {
+            "type": "string",
+            "title": "Payment Method"
+          },
+          "justification_reference": {
+            "type": "string",
+            "title": "Justification Reference"
+          },
+          "initiator_user_id": {
+            "type": "string",
+            "title": "Initiator User Id"
+          },
+          "approver_user_id": {
+            "type": "string",
+            "title": "Approver User Id"
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Approved At"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "paheko_accounting_sync_hint": {
+            "type": "string",
+            "title": "Paheko Accounting Sync Hint",
+            "default": "Mouvement interne enregistré en caisse ; export Paheko via snapshot de clôture et outbox (ADR D1) — pas de second rail ; libellés distincts remboursement client et décaissement charge."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "cash_session_id",
+          "sale_id",
+          "transfer_type",
+          "session_flow",
+          "amount",
+          "origin_endpoint_label",
+          "destination_endpoint_label",
+          "motif",
+          "payment_method",
+          "justification_reference",
+          "initiator_user_id",
+          "approver_user_id",
+          "approved_at",
+          "idempotency_key",
+          "created_at"
+        ],
+        "title": "CashInternalTransferResponse"
+      },
+      "CashInternalTransferType": {
+        "type": "string",
+        "enum": [
+          "cash_float_topup",
+          "cash_float_seed",
+          "bank_deposit",
+          "bank_withdrawal",
+          "inter_register_transfer",
+          "variance_regularization"
+        ],
+        "title": "CashInternalTransferType",
+        "description": "Types fermés MVP PRD §10.6 (mouvement interne — pas charge structurelle)."
       },
       "CashRegisterCreate": {
         "properties": {
@@ -13896,6 +14731,36 @@
         "title": "CashSessionDetailResponse",
         "description": "Schéma de réponse détaillée pour une session de caisse avec ses ventes."
       },
+      "CashSessionDisbursementLineV1": {
+        "properties": {
+          "payment_method_code": {
+            "type": "string",
+            "title": "Payment Method Code"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Montant décaissé (positif)."
+          },
+          "subtype": {
+            "type": "string",
+            "title": "Subtype"
+          },
+          "label_fr": {
+            "type": "string",
+            "title": "Label Fr"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payment_method_code",
+          "amount",
+          "subtype",
+          "label_fr"
+        ],
+        "title": "CashSessionDisbursementLineV1",
+        "description": "Story 24.7 — ligne de décaissement pour libellés Paheko traçables (hors remboursement client)."
+      },
       "CashSessionEffectiveness": {
         "type": "string",
         "enum": [
@@ -13906,6 +14771,50 @@
         ],
         "title": "CashSessionEffectiveness",
         "description": "F6 / UX-DR15 — jamais inféré depuis la seule UI."
+      },
+      "CashSessionInternalFlow": {
+        "type": "string",
+        "enum": [
+          "inflow",
+          "outflow"
+        ],
+        "title": "CashSessionInternalFlow",
+        "description": "Sens par rapport à la caisse en session (aligné PaymentTransactionDirection)."
+      },
+      "CashSessionInternalTransferLineV1": {
+        "properties": {
+          "payment_method_code": {
+            "type": "string",
+            "title": "Payment Method Code"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Montant absolu (positif)."
+          },
+          "transfer_type": {
+            "type": "string",
+            "title": "Transfer Type"
+          },
+          "session_flow": {
+            "type": "string",
+            "title": "Session Flow"
+          },
+          "label_fr": {
+            "type": "string",
+            "title": "Label Fr"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payment_method_code",
+          "amount",
+          "transfer_type",
+          "session_flow",
+          "label_fr"
+        ],
+        "title": "CashSessionInternalTransferLineV1",
+        "description": "Story 24.8 — mouvement interne : libellés Paheko distincts remboursement et décaissement charge."
       },
       "CashSessionJournalTotalsV1": {
         "properties": {
@@ -13936,7 +14845,7 @@
           "donation_surplus_total": {
             "type": "number",
             "title": "Donation Surplus Total",
-            "description": "Total compléments de don volontaires (nature donation_surplus, flux entrants).",
+            "description": "Total dons en surplus (nature donation_surplus, flux entrants).",
             "default": 0.0
           },
           "refunds_current_fiscal_total": {
@@ -13966,6 +14875,22 @@
             "title": "Preview Fallback Legacy Totals",
             "description": "True si aucune ligne journal pour la session : le préavis clôture a utilisé totaux legacy.",
             "default": false
+          },
+          "cash_disbursement_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CashSessionDisbursementLineV1"
+            },
+            "type": "array",
+            "title": "Cash Disbursement Lines",
+            "description": "Story 24.7 — détails décaissements pour libellés d'export (distinct remboursement / 24.8)."
+          },
+          "cash_internal_transfer_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CashSessionInternalTransferLineV1"
+            },
+            "type": "array",
+            "title": "Cash Internal Transfer Lines",
+            "description": "Story 24.8 — mouvements internes typés pour libellés Paheko (distinct décaissement charge)."
           }
         },
         "type": "object",
@@ -16411,6 +17336,196 @@
         ],
         "title": "EmailType"
       },
+      "ExceptionalRefundCreate": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount",
+            "description": "Montant remboursé (positif, en euros)."
+          },
+          "refund_payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "description": "Moyen effectif utilisé pour rembourser le client.",
+            "default": "cash"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/RefundReasonCode"
+          },
+          "justification": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Justification"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "approval_evidence_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Evidence Ref",
+            "description": "Référence de preuve (texte, identifiant externe) — obligatoire si P3 actif sur le registre."
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "reason_code",
+          "justification"
+        ],
+        "title": "ExceptionalRefundCreate",
+        "description": "Story 24.5 — remboursement exceptionnel sans ticket (flux expert séparé)."
+      },
+      "ExceptionalRefundResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "cash_session_id": {
+            "type": "string",
+            "title": "Cash Session Id"
+          },
+          "sale_id": {
+            "type": "string",
+            "title": "Sale Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "refund_payment_method": {
+            "type": "string",
+            "title": "Refund Payment Method"
+          },
+          "reason_code": {
+            "type": "string",
+            "title": "Reason Code"
+          },
+          "justification": {
+            "type": "string",
+            "title": "Justification"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "approval_evidence_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Evidence Ref"
+          },
+          "approver_step_up_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approver Step Up At"
+          },
+          "proof_level_applied": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proof Level Applied",
+            "description": "N3 lorsque le registre a activé P3 (PRD §14) ; sinon omis."
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "initiator_user_id": {
+            "type": "string",
+            "title": "Initiator User Id"
+          },
+          "approver_user_id": {
+            "type": "string",
+            "title": "Approver User Id"
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Approved At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "paheko_accounting_sync_hint": {
+            "type": "string",
+            "title": "Paheko Accounting Sync Hint",
+            "description": "Rappel chaîne canonique Paheko (pas de second rail).",
+            "default": "Le remboursement exceptionnel est enregistré en caisse ; l’écriture comptable Paheko correspondante est intégrée au snapshot de clôture de session, puis exportée via l’outbox — pas d’écriture Paheko immédiate au moment de l’enregistrement terrain."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "cash_session_id",
+          "sale_id",
+          "amount",
+          "refund_payment_method",
+          "reason_code",
+          "justification",
+          "idempotency_key",
+          "initiator_user_id",
+          "approver_user_id",
+          "approved_at",
+          "created_at"
+        ],
+        "title": "ExceptionalRefundResponse"
+      },
       "ExploitationContextIdsOut": {
         "properties": {
           "site_id": {
@@ -17103,7 +18218,7 @@
           "sale_payment_inflow_sum": {
             "type": "number",
             "title": "Sale Payment Inflow Sum",
-            "description": "Somme des montants des lignes SALE_PAYMENT en INFLOW (hors lignes complément de don donation_surplus)."
+            "description": "Somme des montants des lignes SALE_PAYMENT en INFLOW (hors don surplus)."
           },
           "settlement_inflow_sum": {
             "type": "number",
@@ -17380,7 +18495,7 @@
           "sum_sales_donation_field": {
             "type": "number",
             "title": "Sum Sales Donation Field",
-            "description": "Somme des `sales.donation` (champ historique, non équivalent au journal complément de don donation_surplus)."
+            "description": "Somme des `sales.donation` (champ historique, non équivalent au journal don surplus)."
           },
           "sale_row_count": {
             "type": "integer",
@@ -18066,6 +19181,126 @@
         "title": "LogoutResponse",
         "description": "Réponse pour la déconnexion."
       },
+      "MaterialExchangeCreate": {
+        "properties": {
+          "delta_amount_cents": {
+            "type": "integer",
+            "title": "Delta Amount Cents",
+            "description": "Positif = complément à encaisser ; négatif = remboursement (total vente source) ; 0 = matière seule."
+          },
+          "material_trace": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Material Trace"
+          },
+          "complement_sale": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SaleCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reversal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SaleReversalCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delta_amount_cents"
+        ],
+        "title": "MaterialExchangeCreate",
+        "description": "Corps POST : delta en centimes ; branche monétaire selon le signe."
+      },
+      "MaterialExchangeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "cash_session_id": {
+            "type": "string",
+            "title": "Cash Session Id"
+          },
+          "delta_amount_cents": {
+            "type": "integer",
+            "title": "Delta Amount Cents"
+          },
+          "material_trace": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Material Trace"
+          },
+          "complement_sale_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complement Sale Id"
+          },
+          "sale_reversal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Reversal Id"
+          },
+          "paheko_accounting_sync_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paheko Accounting Sync Hint"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "cash_session_id",
+          "delta_amount_cents",
+          "material_trace",
+          "created_at"
+        ],
+        "title": "MaterialExchangeResponse"
+      },
       "OpenPosteRequest": {
         "properties": {
           "opened_at": {
@@ -18574,6 +19809,34 @@
             "title": "Mapping Resolution Error",
             "description": "Story 8.3 — échec **avant** tout POST Paheko : résolution mapping (ex. mapping_missing, mapping_disabled, session_not_found). Distinct des erreurs HTTP Paheko (`last_remote_http_status`)."
           },
+          "root_cause_domain": {
+            "type": "string",
+            "enum": [
+              "mapping",
+              "builder",
+              "outbox_http"
+            ],
+            "title": "Root Cause Domain",
+            "description": "Story 25.10 — taxonomie canonique **déterministe** (spec 25.4 §4 ; Epic 8 supervision 8.3–8.6). Valeurs possibles : `mapping` (préconditions / résolution mapping 8.3), `builder` (construction payload/batch depuis snapshot), `outbox_http` (transport HTTP Paheko, retries/terminal). Règles : mapping > builder > outbox_http, sans heuristique floue (pas de parsing `last_error`)."
+          },
+          "root_cause_code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Root Cause Code",
+            "description": "Story 25.10 — code stable de la cause racine, dérivé sans heuristique. Exemples : `mapping_missing`, `batch_build_failed`, `http_403`."
+          },
+          "root_cause_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Cause Message",
+            "description": "Story 25.10 — message de contexte **stable** quand disponible (ex. `payload.preparation_trace_v1.message`). Null si non applicable (ex. échecs purement HTTP)."
+          },
           "correlation_id": {
             "type": "string",
             "title": "Correlation Id"
@@ -18643,6 +19906,8 @@
           "idempotency_key",
           "outbox_status",
           "sync_state_core",
+          "root_cause_domain",
+          "root_cause_code",
           "correlation_id",
           "created_at",
           "updated_at"
@@ -18764,6 +20029,34 @@
             "title": "Mapping Resolution Error",
             "description": "Story 8.3 — échec **avant** tout POST Paheko : résolution mapping (ex. mapping_missing, mapping_disabled, session_not_found). Distinct des erreurs HTTP Paheko (`last_remote_http_status`)."
           },
+          "root_cause_domain": {
+            "type": "string",
+            "enum": [
+              "mapping",
+              "builder",
+              "outbox_http"
+            ],
+            "title": "Root Cause Domain",
+            "description": "Story 25.10 — taxonomie canonique **déterministe** (spec 25.4 §4 ; Epic 8 supervision 8.3–8.6). Valeurs possibles : `mapping` (préconditions / résolution mapping 8.3), `builder` (construction payload/batch depuis snapshot), `outbox_http` (transport HTTP Paheko, retries/terminal). Règles : mapping > builder > outbox_http, sans heuristique floue (pas de parsing `last_error`)."
+          },
+          "root_cause_code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Root Cause Code",
+            "description": "Story 25.10 — code stable de la cause racine, dérivé sans heuristique. Exemples : `mapping_missing`, `batch_build_failed`, `http_403`."
+          },
+          "root_cause_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Cause Message",
+            "description": "Story 25.10 — message de contexte **stable** quand disponible (ex. `payload.preparation_trace_v1.message`). Null si non applicable (ex. échecs purement HTTP)."
+          },
           "correlation_id": {
             "type": "string",
             "title": "Correlation Id"
@@ -18809,6 +20102,8 @@
           "idempotency_key",
           "outbox_status",
           "sync_state_core",
+          "root_cause_domain",
+          "root_cause_code",
           "correlation_id",
           "created_at",
           "updated_at"
@@ -18948,7 +20243,8 @@
           "context_json": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Context Json"
+            "title": "Context Json",
+            "description": "Story 8.4 — instantané minimal au moment de la transition (opération, erreurs mapping/HTTP). La taxonomie `root_cause_*` sur les items (Story 25.10) ne se déduit **pas** de ce champ : elle utilise `payload`, `mapping_resolution_error`, `last_remote_http_status` et `recent_sync_transitions` (voir règles dans `derive_root_cause_for_outbox_item`)."
           }
         },
         "additionalProperties": false,
@@ -19590,7 +20886,9 @@
         "enum": [
           "sale_payment",
           "donation_surplus",
-          "refund_payment"
+          "refund_payment",
+          "disbursement",
+          "cash_internal_transfer"
         ],
         "title": "PaymentTransactionNature"
       },
@@ -20096,6 +21394,137 @@
           "unique_categories": 15
         }
       },
+      "RecycliqueApiError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Code machine stable"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {},
+                "type": "array"
+              }
+            ],
+            "title": "Detail",
+            "description": "Message principal (string) ou liste d'erreurs Pydantic (422)"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable",
+            "description": "Indique si un nouvel essai peut réussir"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State",
+            "description": "État opérationnel optionnel"
+          },
+          "correlation_id": {
+            "type": "string",
+            "title": "Correlation Id",
+            "description": "Aligné sur X-Request-Id"
+          },
+          "policy_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Reason Code",
+            "description": "Story 8.6 — sous-code stable si refus politique sync (A1)"
+          },
+          "policy_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Version",
+            "description": "Version documentée de la politique 8.6"
+          },
+          "cash_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cash Session Id",
+            "description": "Session caisse concernée (A1)"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id",
+            "description": "Site concerné (A1)"
+          },
+          "blocking_outbox_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocking Outbox Item Id",
+            "description": "Ligne outbox bloquante si quarantaine (A1)"
+          },
+          "mapping_resolution_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapping Resolution Code",
+            "description": "Code résolution mapping 8.3 si refus pour mapping (A1)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "detail",
+          "retryable",
+          "correlation_id"
+        ],
+        "title": "RecycliqueApiError",
+        "description": "Corps JSON pour HTTPException, validation et erreurs métier (snake_case, AR21).",
+        "example": {
+          "code": "UNAUTHORIZED",
+          "correlation_id": "550e8400-e29b-41d4-a716-446655440000",
+          "detail": "Not authenticated",
+          "retryable": false
+        }
+      },
       "RefreshTokenRequest": {
         "properties": {
           "refresh_token": {
@@ -20253,127 +21682,6 @@
         "title": "ResetPasswordResponse",
         "description": "Réponse pour la réinitialisation du mot de passe."
       },
-      "SaleCorrectionItemPatch": {
-        "properties": {
-          "sale_item_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Sale Item Id"
-          },
-          "category": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 50
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category"
-          },
-          "quantity": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quantity"
-          },
-          "weight": {
-            "anyOf": [
-              {
-                "type": "number",
-                "exclusiveMinimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Weight"
-          },
-          "unit_price": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Unit Price"
-          },
-          "total_price": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Price"
-          },
-          "notes": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Notes"
-          },
-          "preset_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preset Id"
-          },
-          "business_tag_kind": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Business Tag Kind"
-          },
-          "business_tag_custom": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Business Tag Custom"
-          }
-        },
-        "type": "object",
-        "required": [
-          "sale_item_id"
-        ],
-        "title": "SaleCorrectionItemPatch",
-        "description": "Story 6.8 — mise à jour d'une ligne article lors d'une correction sensible."
-      },
       "SaleCorrectionFinalizeFieldsPayload": {
         "properties": {
           "kind": {
@@ -20414,48 +21722,6 @@
             ],
             "title": "Payment Method"
           },
-          "payments": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/PaymentCreate"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Payments"
-          },
-          "donation_surplus": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/PaymentCreate"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Donation Surplus"
-          },
-          "items": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/SaleCorrectionItemPatch"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Items"
-          },
           "note": {
             "anyOf": [
               {
@@ -20473,6 +21739,48 @@
             "maxLength": 2000,
             "minLength": 1,
             "title": "Reason"
+          },
+          "payments": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PaymentCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payments"
+          },
+          "donation_surplus": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PaymentCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Donation Surplus"
+          },
+          "items": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SaleCorrectionItemPatch"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
           }
         },
         "additionalProperties": false,
@@ -20482,7 +21790,128 @@
           "reason"
         ],
         "title": "SaleCorrectionFinalizeFieldsPayload",
-        "description": "Story 6.8 — champs de finalisation whitelistés (dont lignes article ``items``)."
+        "description": "Story 6.8 — Lot 1 : champs de finalisation whitelistés uniquement."
+      },
+      "SaleCorrectionItemPatch": {
+        "properties": {
+          "sale_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sale Item Id"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "total_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Price"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "preset_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset Id"
+          },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessTagKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sale_item_id"
+        ],
+        "title": "SaleCorrectionItemPatch",
+        "description": "Story 6.8 — mise à jour ciblée d'une ligne ``sale_items`` via correction sensible."
       },
       "SaleCorrectionSaleDatePayload": {
         "properties": {
@@ -20626,6 +22055,28 @@
               }
             ],
             "title": "Adherent Reference"
+          },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessTagKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
           }
         },
         "type": "object",
@@ -20752,13 +22203,19 @@
             ],
             "title": "Total Weight",
             "description": "B52-P6: Poids total du panier (somme des poids des items)"
+          },
+          "lifecycle_status": {
+            "type": "string",
+            "title": "Lifecycle Status",
+            "description": "completed | held | abandoned — Story 6.8 : l'UI admin affiche « Corriger » seulement si ``completed``."
           }
         },
         "type": "object",
         "required": [
           "id",
           "total_amount",
-          "created_at"
+          "created_at",
+          "lifecycle_status"
         ],
         "title": "SaleDetail",
         "description": "Schéma pour les détails d'une vente dans une session."
@@ -20827,6 +22284,28 @@
               }
             ],
             "title": "Note"
+          },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessTagKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
           }
         },
         "type": "object",
@@ -20873,6 +22352,28 @@
               }
             ],
             "title": "Note"
+          },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessTagKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
           }
         },
         "type": "object",
@@ -20928,6 +22429,28 @@
               }
             ],
             "title": "Notes"
+          },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessTagKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
           }
         },
         "type": "object",
@@ -20985,6 +22508,28 @@
             ],
             "title": "Notes"
           },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessTagKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -20992,6 +22537,18 @@
           "sale_id": {
             "type": "string",
             "title": "Sale Id"
+          },
+          "effective_business_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Business Tag",
+            "description": "Tag métier effectif (ligne > ticket > legacy 6.5/6.6)."
           }
         },
         "type": "object",
@@ -21253,6 +22810,75 @@
               }
             ],
             "title": "Adherent Reference"
+          },
+          "business_tag_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessTagKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_tag_custom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Tag Custom"
+          },
+          "effective_business_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Business Tag",
+            "description": "Tag métier effectif au niveau ticket (sans lignes ou défaut avant surcharge ligne)."
+          },
+          "fiscal_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscal Branch",
+            "description": "Branche fiscale si ce remboursement était tenté : current | prior_closed (serveur, GET vente)."
+          },
+          "sale_fiscal_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Fiscal Year",
+            "description": "Année fiscale de rattachement de la vente source (cadrage N vs N-1)."
+          },
+          "current_open_fiscal_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Open Fiscal Year",
+            "description": "Exercice ouvert connu au moment de la résolution (snapshot autorité)."
           }
         },
         "type": "object",
