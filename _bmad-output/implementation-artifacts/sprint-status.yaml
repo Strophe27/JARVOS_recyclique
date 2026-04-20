@@ -294,7 +294,7 @@ generated: "2026-04-01"
 # Clarification (instantané historique §25 au 2026-04-21) : la levée **process** (nouveaux DS hors clés `25-*`) est documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + commentaires epic-10/13/14/15 une fois la traçabilité YAML alignée ; story **25-6** : **`done`** dans `development_status` (suite phase 2 : **`25-7`…`25-15`** backlog) — sans contredire `epic-25: in-progress` ni rouvrir le fond des ADR.
 # last_updated: 2026-04-21 (suite) — QA post-pass : slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
 # Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
-last_updated: "2026-04-21"
+last_updated: "2026-04-20"
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -567,7 +567,7 @@ development_status:
   # DAG : fichier machine `_bmad-output/planning-artifacts/architecture/epic-25-phase2-dag-2026-04-21.yaml` (depends_on + ordre). Raccourci humain :
   #   25-6 → (25-7, parallele possible 25-12) → 25-8 → 25-9 → 25-10 ; 25-7 → 25-11 ; 25-11 → 25-13 / 25-15 ; 25-8 + 25-13 → 25-14 ; 25-15 dernier.
   25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable: done
-  25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable: backlog
+  25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable: ready-for-dev
   25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse: backlog
   25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8: backlog
   25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox: backlog
