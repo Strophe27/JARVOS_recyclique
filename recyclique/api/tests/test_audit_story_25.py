@@ -59,6 +59,7 @@ def test_merge_critical_audit_fields_orders_context():
     assert d["cash_register_id"] == "r"
     assert d["session_id"] == "sess"
     assert d["user_id"] == "u"
+    assert d["operator_user_id"] == "u"
     assert d["foo"] == 1
 
 

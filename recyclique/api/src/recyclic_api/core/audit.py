@@ -67,11 +67,14 @@ def merge_critical_audit_fields(
     cash_register_id: Optional[str] = None,
     session_id: Optional[str] = None,
     user_id: Optional[str] = None,
+    operator_user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Schéma minimal Story 2.5 pour details_json (événements critiques caisse / terrain).
 
     Champs recommandés : request_id, operation, outcome, ids de contexte.
+    Story 25.13 / spec 25.4 §2.4 : ``operator_user_id`` distingue l'opérateur humain ;
+    ``cash_register_id`` / ``site_id`` ancrent le poste de caisse (pas interchangeables).
     """
     base = copy.deepcopy(details) if details else {}
     if request_id is not None:
@@ -86,6 +89,9 @@ def merge_critical_audit_fields(
         base["cash_register_id"] = cash_register_id
     if session_id is not None:
         base["session_id"] = session_id
+    resolved_operator = operator_user_id if operator_user_id is not None else user_id
+    if resolved_operator is not None:
+        base["operator_user_id"] = resolved_operator
     if user_id is not None:
         base["user_id"] = user_id
     return base

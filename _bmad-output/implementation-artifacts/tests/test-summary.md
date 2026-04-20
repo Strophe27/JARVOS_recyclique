@@ -2,6 +2,26 @@
 
 ---
 
+## Story 25.15 — Spike faisabilité IndexedDB / cache local sans PWA (documentaire, 2026-04-20)
+
+- **Synthèse QA :** [`test-summary-story-25-15-spike-indexeddb-cache-local-sans-pwa.md`](test-summary-story-25-15-spike-indexeddb-cache-local-sans-pwa.md) — **PASS** ; gate pytest `test_story_25_15_spike_faisabilite_indexeddb_cache_local_sans_pwa.py` (`14 passed`) ; rapport `_bmad-output/implementation-artifacts/2026-04-20-spike-25-15-indexeddb-cache-local-faisabilite.md`. E2E navigateur / IndexedDB en CI : **SKIP** (spike doc uniquement ; pas d’UI livrée ; contrainte « pas d’IDB navigateur obligatoire en CI »).
+
+---
+
+## Story 25.14 — Step-up / revalidation après contexte sensible (API pytest, 2026-04-20)
+
+- **Synthèse QA :** [`test-summary-story-25-14-step-up-revalidation-contexte-sensible.md`](test-summary-story-25-14-step-up-revalidation-contexte-sensible.md) — **PASS** ; `5 passed` sur `test_story_25_14_step_up_revalidation_apres_changement_contexte_sensible.py` ; complément **session caisse** stale + PIN ; E2E navigateur **NA** (matrice). **qa_loop** inchangé.
+- **Alignement :** matrice `_bmad-output/implementation-artifacts/2026-04-20-matrice-step-up-revalidation-contexte-sensible-25-14.md` ; ADR 25-2 / ordre 25.8 → step-up.
+
+---
+
+## Story 25.13 — Journalisation identité opérateur vs poste / kiosque (API / logs, 2026-04-20)
+
+- **Synthèse QA :** [`test-summary-story-25-13-journalisation-identite-operateur-poste-kiosque.md`](test-summary-story-25-13-journalisation-identite-operateur-poste-kiosque.md) — **PASS** ; pytest `test_sale_path_distinguishes_operator_from_register_in_logs_and_audit` ; E2E navigateur **NA** (logs structurés + audit). **Revalidé** `bmad-qa-generate-e2e-tests` (Task), 2026-04-20.
+- **Alignement :** spec 25.4 §2.4 / ADR 25-2 (distinction champs opérateur vs caisse).
+
+---
+
 ## Story 25.4 — Spec socle multisite / permissions / projection Paheko (documentaire, 2026-04-20)
 
 - **Synthèse QA :** [`test-summary-story-25-4-doc-qa.md`](test-summary-story-25-4-doc-qa.md) — **PASS** ; pas de tests API/E2E (NA) ; conformité statique spec ↔ `epics.md` §25.4 ; citations §1.1 et index architecture vérifiés.

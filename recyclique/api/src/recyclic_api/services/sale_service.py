@@ -736,8 +736,11 @@ class SaleService:
         payment_amounts_log = [float(p.amount) for p in payments_for_log]
 
         tx_payload: dict = {
+            "operator_user_id": str(operator_id),
             "user_id": str(operator_id),
             "session_id": str(sale_data.cash_session_id),
+            "site_id": str(cash_session.site_id) if cash_session.site_id else None,
+            "cash_register_id": str(cash_session.register_id) if cash_session.register_id else None,
             "transaction_id": str(db_sale.id),
             "cart_state_before": cart_state_before,
             "cart_state_after": cart_state_after,
@@ -1136,8 +1139,11 @@ class SaleService:
         log_transaction_event(
             "PAYMENT_VALIDATED",
             {
+                "operator_user_id": str(operator_id),
                 "user_id": str(operator_id),
                 "session_id": str(sale.cash_session_id),
+                "site_id": str(cash_session.site_id) if cash_session.site_id else None,
+                "cash_register_id": str(cash_session.register_id) if cash_session.register_id else None,
                 "transaction_id": str(sale.id),
                 "cart_state_before": cart_state_before,
                 "cart_state_after": cart_state_after,

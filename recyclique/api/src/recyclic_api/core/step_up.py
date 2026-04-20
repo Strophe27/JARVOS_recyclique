@@ -4,6 +4,13 @@ Step-up security (Story 2.4) — preuve serveur (PIN) pour mutations sensibles.
 Les valeurs secrètes ne sont jamais journalisées ; les clés de permission restent
 alignées avec ``effective_permissions`` / ``require_permission`` quand une route
 combine les deux garde-fous.
+
+Story **25.14** / ADR **25-2** : sur les routes sensibles en ligne, appliquer **d’abord**
+la garde contexte **25.8** (``enforce_optional_client_context_binding*``), **puis**
+``verify_step_up_pin_header`` — refus **409** ``CONTEXT_STALE`` avant toute exigence
+de PIN ; après enveloppe alignée, le **PIN opérateur serveur** (``X-Step-Up-Pin``)
+reste obligatoire pour la revalidation (pas de continuation silencieuse). Voir la
+matrice ``_bmad-output/implementation-artifacts/2026-04-20-matrice-step-up-revalidation-contexte-sensible-25-14.md``.
 """
 
 from __future__ import annotations
@@ -46,6 +53,10 @@ SENSITIVE_OPERATION_REPORTS_RECEPTION_TICKETS_EXPORT_BULK = "reports.reception_t
 
 # Story 22.3 — paramétrage comptable expert (moyens + comptes globaux + publication de révision)
 SENSITIVE_OPERATION_ACCOUNTING_EXPERT = "accounting.expert.mutation"
+
+# Story 25.14 / ADR 25-2 — libellé de preuve pour la corrélation journalisation (spec 25.4 §3.2, PRD §11.2).
+# En ligne : PIN opérateur **serveur** (pas substitution PIN kiosque local / secret poste seul pour §11.2).
+STEP_UP_PROOF_SERVER_OPERATOR_PIN = "server_operator_pin"
 
 # Alignement approximatif avec le rate limit ``POST /auth/pin`` (5/min) : fenêtre Redis.
 _STEP_UP_FAIL_WINDOW_SEC = 60
@@ -118,9 +129,11 @@ def verify_step_up_pin_header(
 
     if not pin_header_value or not pin_header_value.strip():
         logger.warning(
-            "step_up_pin_missing operation=%s user_id=%s",
+            "step_up_pin_missing operation=%s user_id=%s operator_user_id=%s proof_expected=%s",
             operation,
             uid,
+            uid,
+            STEP_UP_PROOF_SERVER_OPERATOR_PIN,
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -161,8 +174,11 @@ def verify_step_up_pin_header(
         )
 
     _clear_fail_window(redis_client, uid)
+    # Story 25.13 / 25.14 : ``operator_user_id`` explicite (politique champs distincts opérateur / poste).
     logger.info(
-        "step_up_pin_ok operation=%s user_id=%s",
+        "step_up_pin_ok operation=%s user_id=%s operator_user_id=%s proof=%s",
         operation,
         uid,
+        uid,
+        STEP_UP_PROOF_SERVER_OPERATOR_PIN,
     )
