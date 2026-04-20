@@ -1,3 +1,7 @@
+# last_updated: 2026-04-20 — story 25-12 Story Runner BMAD fin : CS→VS→ADR N/A→DS→GATE(pytest 25-12)→QA→CR1 CHANGES→DS retry (`scheduler_service.py` + sprint)→GATE→QA→CR2 APPROVE ; `25-12-audit-code-ar12-redis-auxiliaire-async-paheko` **review**→**done** ; `epic-25` inchangé **in-progress** ; vs=0 qa=0 cr=1 ; audit `2026-04-20-audit-ar12-redis-auxiliaire-chemin-async-paheko-story-25-12.md` ; test-summary `tests/test-summary-story-25-12-doc-qa.md`
+# last_updated: 2026-04-20 — story 25-12 DS retry post-CR1 (`cr_loop=1`) : garde-fou pytest — `_REL_PATHS` inclut `services/scheduler_service.py` (`run_paheko_outbox_task`) ; commentaires sprint §25 / bloc Epic 25 alignés cle **`25-12` → `review`** ; audit + test-summary + story (trace post-CR1) ; `development_status` inchangé ; `epic-25` inchangé **in-progress** ; prochaine étape **GATE**
+# last_updated: 2026-04-20 — story 25-12 DS bmad-dev-story Task : `25-12-audit-code-ar12-redis-auxiliaire-async-paheko` **`ready-for-dev`** → **`review`** ; rapport `_bmad-output/implementation-artifacts/2026-04-20-audit-ar12-redis-auxiliaire-chemin-async-paheko-story-25-12.md` ; pytest `recyclique/api/tests/test_story_25_12_ar12_paheko_async_path_no_redis.py` ; `epic-25` inchangé **in-progress** ; trace DS ; prochaine étape **GATE**
+# last_updated: 2026-04-20 — story 25-12 CS bmad-create-story (create) : `25-12-audit-code-ar12-redis-auxiliaire-async-paheko` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/25-12-audit-code-ar12-redis-auxiliaire-async-paheko.md` ; `epic-25` inchangé **in-progress** ; trace CS ; gates futurs parent : pytest ciblé si code touché, git status ; prochaine étape **VS**
 # last_updated: 2026-04-20 — story 25-11 Story Runner BMAD fin : reprise **GATE** (pytest API exit 0 + `npm run lint` peintre-nano exit 0) → **QA doc** (`tests/test-summary-story-25-11-context-envelope-contracts.md`) → **CR APPROVE** ; `25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa` **review** → **done** ; `epic-25` inchangé **in-progress** ; vs=0 qa=0 cr=0 ; alignement `epics.md` §25 pilotage / Story 25.11
 # last_updated: 2026-04-20 — story 25-11 DS bmad-dev-story Task : `25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa` **ready-for-dev** → **review** ; spike `_bmad-output/implementation-artifacts/2026-04-20-spike-25-11-contrats-enveloppe-contexte.md` + fragment `contracts/openapi/fragments/context-envelope-examples-25-11.yaml` + JSDoc `peintre-nano/src/types/context-envelope.ts` ; `epic-25` inchangé **in-progress** ; trace DS ; prochaine étape **GATE**
 # last_updated: 2026-04-20 — story 25-11 CS bmad-create-story (create) : `25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa.md` ; `epic-25` inchangé **in-progress** ; trace CS ; prérequis **25-7**/**25-10** **done** ; prochaine étape **VS**
@@ -305,8 +309,8 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
-# last_updated: 2026-04-20 — epics.md §25 / YAML phase 2 : **`25-6`…`25-11` done** ; backlog **`25-12`…`25-15`** ; `epic-25` **in-progress** (phase impl) ; tranche **25-1..25-5** inchangée **done** ; gel hors `25-*` : levée process documentée (**25-6** + addendum) — aligné cle racine `last_updated` ci-dessous
-# Clarification (instantané historique §25) : la levée **process** (nouveaux DS hors clés `25-*`) est documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + commentaires epic-10/13/14/15 une fois la traçabilité YAML alignée ; stories **25-6** à **25-10** : **`done`** dans `development_status` (suite phase 2 : **`25-11`…`25-15`** backlog) — sans contredire `epic-25: in-progress` ni rouvrir le fond des ADR.
+# last_updated: 2026-04-20 — epics.md §25 / YAML phase 2 : **`25-6`…`25-12` done** (cle **`25-12`** ci-dessous) ; **`25-13`…`25-15`** en général **backlog** ; `epic-25` **in-progress** (phase impl) ; tranche **25-1..25-5** inchangée **done** ; gel hors `25-*` : levée process documentée (**25-6** + addendum) — aligné cle racine `last_updated` ci-dessous
+# Clarification (instantané historique §25) : la levée **process** (nouveaux DS hors clés `25-*`) est documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + commentaires epic-10/13/14/15 une fois la traçabilité YAML alignée ; phase 2 : **`25-11` done** ; **`25-12` done** (audit AR12 / ADR 25-3 + pytest ; cf. cle YAML) ; suite **`25-13`…`25-15`** souvent backlog — sans contredire `epic-25: in-progress` ni rouvrir le fond des ADR.
 # last_updated: 2026-04-20 (suite doc §25) — slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
 # Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
 last_updated: "2026-04-20"
@@ -570,7 +574,7 @@ development_status:
   24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: done
   epic-24-retrospective: optional
 
-  # Epic 25 — socle alignement + phase 2 : en `development_status`, **`25-6`…`25-10` done** ; les stories **`25-11`…`25-15`** sont en général **backlog** tant qu'aucune autre valeur n'est écrite — **chaque clé listée ci-dessous prime** (ex. une clé peut être `review` ou `in-progress` sans contredire la plage « backlog » pour les suivantes). Gel process hors 25-* levé 2026-04-20 (story 25-6 + addendum) ; epic-25 reste in-progress jusqu'à clôture phase 2
+  # Epic 25 — socle alignement + phase 2 : en `development_status`, **`25-6`…`25-12` done** ; stories **`25-13`…`25-15`** en général **backlog** tant qu'aucune autre valeur n'est écrite — **chaque clé listée ci-dessous prime** (ex. une clé peut être `review` ou `in-progress` sans contredire la plage « backlog » pour les suivantes). Gel process hors 25-* levé 2026-04-20 (story 25-6 + addendum) ; epic-25 reste in-progress jusqu'à clôture phase 2
   # Trier les cles 25-x par ordre NUMERIQUE (25-1 … 25-9 puis 25-10 … 25-15) — un tri alphabetique met 25-10 avant 25-2.
   epic-25: in-progress
   25-1-cartographier-les-exigences-importees-et-fermer-la-matrice-dalignement-vision-canonique: done
@@ -580,7 +584,7 @@ development_status:
   # 25.5 : titre epics.md contient « backlog `25-*` » ; le slug ne peut pas porter le wildcard — le fichier story devra répéter le titre complet.
   25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions: done
   # --- Phase 2 (implementation) — slugs = identifiants pilotage (fait foi vs titres longs dans epics.md) ---
-  # Lecture `development_status` : **`25-6`…`25-11` = done** (ci-dessous). Pour **`25-12`…`25-15`**, seule la **valeur YAML sur la ligne de la clé** fait foi ; ne pas déduire le statut d'une clé à partir d'un commentaire de « plage backlog » pour la suite — une clé peut être `review` / `in-progress` / `done` pendant que les suivantes restent `backlog`.
+  # Lecture `development_status` : **`25-6`…`25-12` = done** (ci-dessous). Pour **`25-13`…`25-15`**, seule la **valeur YAML sur la ligne de la clé** fait foi ; ne pas déduire le statut d'une clé à partir d'un commentaire de « plage backlog » pour la suite — une clé peut être `review` / `in-progress` / `done` pendant que les suivantes restent `backlog`.
   # DAG : fichier machine `_bmad-output/planning-artifacts/architecture/epic-25-phase2-dag-2026-04-21.yaml` (depends_on + ordre). Raccourci humain :
   #   25-6 → (25-7, parallele possible 25-12) → 25-8 → 25-9 → 25-10 ; 25-7 → 25-11 ; 25-11 → 25-13 / 25-15 ; 25-8 + 25-13 → 25-14 ; 25-15 dernier.
   25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable: done
@@ -589,7 +593,7 @@ development_status:
   25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8: done
   25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox: done
   25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa: done
-  25-12-audit-code-ar12-redis-auxiliaire-async-paheko: backlog
+  25-12-audit-code-ar12-redis-auxiliaire-async-paheko: done
   25-13-journalisation-identite-operateur-versus-poste-ou-kiosque-tranche-minimale: backlog
   25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible: backlog
   25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa: backlog
