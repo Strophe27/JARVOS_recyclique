@@ -386,6 +386,8 @@ def test_detail_includes_recent_sync_transitions(super_admin_client: Any, db_ses
     g = super_admin_client.get(f"{_V1}/admin/paheko-outbox/items/{item.id}")
     assert g.status_code == 200
     body = g.json()
+    assert body.get("root_cause_domain") == "outbox_http"
+    assert body.get("root_cause_code") == "http_403"
     assert "recent_sync_transitions" in body
     assert len(body["recent_sync_transitions"]) >= 1
 

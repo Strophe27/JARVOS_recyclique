@@ -21,6 +21,17 @@ from pathlib import Path
 # /app/tests/conftest.py -> /app
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# --- Compat pytest-asyncio / pytest 8 ---
+# pytest-asyncio<0.23 accède à FixtureDef.unittest (retiré côté pytest 8).
+# On restaure un attribut par défaut pour éviter un crash au setup des fixtures async.
+try:
+    from _pytest.fixtures import FixtureDef  # type: ignore
+
+    if not hasattr(FixtureDef, "unittest"):
+        FixtureDef.unittest = False  # type: ignore[attr-defined]
+except Exception:
+    pass
+
 # --- Avant tout import recyclic_api : Settings, engine applicatif, client Redis ---
 # Sinon DATABASE_URL / TESTING ne sont pas appliqués par config.py au chargement des modules.
 os.environ["TESTING"] = "true"
@@ -79,7 +90,8 @@ if "reportlab" not in sys.modules:
         def __init__(self, *args, **kwargs):
             pass
 
-    styles.getSampleStyleSheet = lambda: {}
+    # Minimal stylesheet : certains services accèdent à des clés standard (ex. "Heading1").
+    styles.getSampleStyleSheet = lambda: {"Heading1": _Dummy(), "Normal": _Dummy()}
     styles.ParagraphStyle = _Dummy
     units = types.ModuleType("reportlab.lib.units")
     units.cm = 1

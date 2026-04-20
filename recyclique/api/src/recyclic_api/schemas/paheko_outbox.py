@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -11,6 +11,14 @@ from recyclic_api.schemas.exploitation_live_snapshot import SyncStateCore
 
 # Aligné sur ``paheko_close_batch_builder.PAHEKO_CLOSE_BATCH_STATE_KEY`` (Story 22.7).
 _PAHEKO_CLOSE_BATCH_STATE_KEY = "paheko_close_batch_state_v1"
+
+RootCauseDomain = Literal["mapping", "builder", "outbox_http"]
+
+_ROOT_CAUSE_DOMAINS_DOC = (
+    "Story 25.10 — taxonomie canonique **déterministe** (spec 25.4 §4 ; Epic 8 supervision 8.3–8.6). "
+    "Valeurs possibles : `mapping` (préconditions / résolution mapping 8.3), "
+    "`builder` (construction payload/batch depuis snapshot), `outbox_http` (transport HTTP Paheko, retries/terminal)."
+)
 
 
 class PahekoCloseBatchSubWritePublic(BaseModel):
@@ -104,6 +112,26 @@ class PahekoOutboxItemPublic(BaseModel):
         description=(
             "Story 8.3 — échec **avant** tout POST Paheko : résolution mapping (ex. mapping_missing, "
             "mapping_disabled, session_not_found). Distinct des erreurs HTTP Paheko (`last_remote_http_status`)."
+        ),
+    )
+    root_cause_domain: RootCauseDomain = Field(
+        description=(
+            f"{_ROOT_CAUSE_DOMAINS_DOC} "
+            "Règles : mapping > builder > outbox_http, sans heuristique floue (pas de parsing `last_error`)."
+        )
+    )
+    root_cause_code: str = Field(
+        min_length=1,
+        description=(
+            "Story 25.10 — code stable de la cause racine, dérivé sans heuristique. "
+            "Exemples : `mapping_missing`, `batch_build_failed`, `http_403`."
+        ),
+    )
+    root_cause_message: Optional[str] = Field(
+        default=None,
+        description=(
+            "Story 25.10 — message de contexte **stable** quand disponible (ex. `payload.preparation_trace_v1.message`). "
+            "Null si non applicable (ex. échecs purement HTTP)."
         ),
     )
 
@@ -213,6 +241,113 @@ def close_batch_state_from_payload(payload: Dict[str, Any]) -> Optional[PahekoCl
     )
 
 
+def _transition_name_from_rows(rows: Optional[List[Any]]) -> Optional[str]:
+    """
+    Retourne le nom de transition le plus récent dans une liste déjà triée par `occurred_at desc`
+    (cf. `recent_sync_transitions` dans les endpoints admin outbox).
+    """
+    if not rows:
+        return None
+    name = getattr(rows[0], "transition_name", None)
+    return str(name) if isinstance(name, str) and name.strip() else None
+
+
+def _recent_transition_names(rows: Optional[List[Any]]) -> set[str]:
+    """
+    Retourne l'ensemble des noms de transition présents dans un extrait d'audit récent.
+
+    La story 25.10 parle de transition « présente » (pas uniquement la plus récente).
+    """
+    out: set[str] = set()
+    for r in rows or []:
+        name = getattr(r, "transition_name", None)
+        if isinstance(name, str):
+            s = name.strip()
+            if s:
+                out.add(s)
+    return out
+
+
+def _first_recent_transition_name(rows: Optional[List[Any]], allowed: set[str]) -> Optional[str]:
+    """Retourne la première transition (dans l'ordre reçu) qui appartient à `allowed`."""
+    for r in rows or []:
+        name = getattr(r, "transition_name", None)
+        if isinstance(name, str):
+            s = name.strip()
+            if s and s in allowed:
+                return s
+    return None
+
+
+def derive_root_cause_for_outbox_item(
+    row: Any,
+    *,
+    recent_sync_transitions: Optional[List[Any]] = None,
+) -> Tuple[RootCauseDomain, str, Optional[str]]:
+    """
+    Story 25.10 — dérivation canonique des causes racines (mapping vs builder vs outbox_http).
+
+    Normatif : spec 25.4 §4 (mapping obligatoire, échec visible), Epic 8 (supervision), règles story 25.10.
+    Important : aucune heuristique basée sur du texte libre (`last_error`) — seulement des signaux stables.
+    """
+    pl = dict(getattr(row, "payload", None) or {})
+    trace = pl.get("preparation_trace_v1")
+    trace_domain = None
+    trace_code = None
+    trace_message = None
+    if isinstance(trace, dict):
+        trace_domain = trace.get("failure_domain")
+        trace_code = trace.get("code")
+        trace_message = trace.get("message")
+
+    mapping_resolution_error = getattr(row, "mapping_resolution_error", None)
+    if isinstance(mapping_resolution_error, str) and not mapping_resolution_error.strip():
+        mapping_resolution_error = None
+
+    last_http_status = getattr(row, "last_http_status", None)
+    try:
+        http_status_value = int(last_http_status) if last_http_status is not None else None
+    except (TypeError, ValueError):
+        http_status_value = None
+
+    transition_name = _transition_name_from_rows(recent_sync_transitions)
+    transition_names = _recent_transition_names(recent_sync_transitions)
+    has_mapping_transition = "auto_quarantine_mapping_resolution" in transition_names
+    has_builder_transition = "auto_quarantine_builder_preparation" in transition_names
+    http_transition_names = {
+        "auto_quarantine_http_non_retryable",
+        "auto_quarantine_max_attempts_exceeded",
+    }
+    has_http_transition = bool(transition_names.intersection(http_transition_names))
+
+    # Règle (1) — mapping (prioritaire)
+    if trace_domain == "mapping" or has_mapping_transition or mapping_resolution_error:
+        code = (
+            (mapping_resolution_error or "").strip()
+            or (str(trace_code).strip() if isinstance(trace_code, str) and trace_code.strip() else "")
+            or "unknown"
+        )
+        msg = str(trace_message) if isinstance(trace_message, str) and trace_message.strip() else None
+        return "mapping", code, msg
+
+    # Règle (2) — builder
+    if trace_domain == "builder" or has_builder_transition:
+        code = str(trace_code).strip() if isinstance(trace_code, str) and trace_code.strip() else "unknown"
+        msg = str(trace_message) if isinstance(trace_message, str) and trace_message.strip() else None
+        return "builder", code, msg
+
+    # Règle (3) — outbox_http
+    if http_status_value is not None or has_http_transition:
+        if http_status_value is not None:
+            return "outbox_http", f"http_{http_status_value}", None
+        # Si le statut est inconnu (ex. incidents hors client HTTP) : retourner une transition outbox_http stable.
+        best = _first_recent_transition_name(recent_sync_transitions, http_transition_names) or transition_name
+        return "outbox_http", best or "unknown", None
+
+    # Règle (4) — résiduel : builder
+    return "builder", transition_name or "unknown", None
+
+
 class PahekoOutboxRejectBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -231,10 +366,15 @@ def outbox_item_to_public(
     row: Any,
     *,
     transaction_preview: Optional[PahekoResolvedTransactionPreview] = None,
+    recent_sync_transitions: Optional[List[Any]] = None,
 ) -> PahekoOutboxItemPublic:
     local_ok = row.cash_session_id is not None
     pl = dict(row.payload or {}) if getattr(row, "payload", None) is not None else {}
     cb = close_batch_state_from_payload(pl)
+    root_domain, root_code, root_msg = derive_root_cause_for_outbox_item(
+        row,
+        recent_sync_transitions=recent_sync_transitions,
+    )
     return PahekoOutboxItemPublic(
         id=str(row.id),
         operation_type=row.operation_type,
@@ -250,6 +390,9 @@ def outbox_item_to_public(
         next_retry_at=row.next_retry_at,
         rejection_reason=row.rejection_reason,
         mapping_resolution_error=getattr(row, "mapping_resolution_error", None),
+        root_cause_domain=root_domain,
+        root_cause_code=root_code,
+        root_cause_message=root_msg,
         correlation_id=row.correlation_id,
         created_at=row.created_at,
         updated_at=row.updated_at,
@@ -280,7 +423,11 @@ def outbox_item_to_detail(
     recent_sync_transitions: Optional[List[Any]] = None,
     transaction_preview: Optional[PahekoResolvedTransactionPreview] = None,
 ) -> PahekoOutboxItemDetail:
-    base = outbox_item_to_public(row, transaction_preview=transaction_preview).model_dump()
+    base = outbox_item_to_public(
+        row,
+        transaction_preview=transaction_preview,
+        recent_sync_transitions=recent_sync_transitions,
+    ).model_dump()
     base["payload"] = dict(row.payload or {})
     base["last_response_snippet"] = row.last_response_snippet
     base["recent_sync_transitions"] = [

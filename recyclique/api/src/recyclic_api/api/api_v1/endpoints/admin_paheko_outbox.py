@@ -155,8 +155,19 @@ async def paheko_outbox_list_items(
         outbox_status=outbox_status,
         correlation_id=correlation_id,
     )
+    # Story 25.10 — même entrée d'audit que le détail (10 dernières transitions / item) pour une taxonomie cohérente.
+    data: list = []
+    for r in rows:
+        recent, _ = list_transitions_for_item(db, r.id, skip=0, limit=10, order="desc")
+        data.append(
+            outbox_item_to_public(
+                r,
+                transaction_preview=_build_transaction_preview(db, r),
+                recent_sync_transitions=recent,
+            )
+        )
     return PahekoOutboxListResponse(
-        data=[outbox_item_to_public(r, transaction_preview=_build_transaction_preview(db, r)) for r in rows],
+        data=data,
         total=total,
         skip=skip,
         limit=limit,
@@ -193,9 +204,19 @@ async def paheko_outbox_get_correlation_timeline(
         limit=transitions_limit,
         order="asc",
     )
+    timeline_items: list = []
+    for r in items:
+        recent, _ = list_transitions_for_item(db, r.id, skip=0, limit=10, order="desc")
+        timeline_items.append(
+            outbox_item_to_public(
+                r,
+                transaction_preview=_build_transaction_preview(db, r),
+                recent_sync_transitions=recent,
+            )
+        )
     return PahekoOutboxCorrelationTimelineResponse(
         correlation_id=cid,
-        items=[outbox_item_to_public(r, transaction_preview=_build_transaction_preview(db, r)) for r in items],
+        items=timeline_items,
         sync_transitions=[sync_transition_to_public(t) for t in trans_rows],
         sync_transitions_total=trans_total,
         sync_transitions_skip=transitions_skip,

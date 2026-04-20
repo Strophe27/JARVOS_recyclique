@@ -20,6 +20,7 @@ from recyclic_api.models.payment_transaction import (
 from recyclic_api.models.site import Site
 from recyclic_api.models.sale import PaymentMethod, Sale, SaleLifecycleStatus
 from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.schemas.paheko_outbox import outbox_item_to_public
 from recyclic_api.services.cash_session_service import CashSessionService
 from recyclic_api.services.paheko_accounting_client import PahekoAccountingClient
 from recyclic_api.services.paheko_close_batch_builder import PAHEKO_CLOSE_BATCH_STATE_KEY
@@ -121,6 +122,9 @@ def test_mapping_must_be_resolved_before_delivered_mapping_removed_after_enqueue
     trace = (item.payload or {}).get("preparation_trace_v1") or {}
     assert trace.get("failure_domain") == "mapping"
     assert item.mapping_resolution_error == "mapping_missing"
+    pub = outbox_item_to_public(item)
+    assert pub.root_cause_domain == "mapping"
+    assert pub.root_cause_code == "mapping_missing"
 
 
 def test_mapping_resolved_then_close_batch_can_reach_delivered(db_session: Session) -> None:

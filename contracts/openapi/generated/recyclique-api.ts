@@ -3926,9 +3926,20 @@ export interface components {
             sub_writes: components["schemas"]["PahekoCloseBatchSubWritePublic"][];
         };
         /**
+         * @description Story 25.10 — taxonomie canonique **déterministe** (spec 25.4 §4 ; Epic 8 supervision 8.3–8.6).
+         *     Domaine racine unique entre :
+         *     - `mapping` : résolution mapping / préconditions avant tout HTTP Paheko (8.3)
+         *     - `builder` : construction payload/batch depuis snapshot (25.9 + builder close)
+         *     - `outbox_http` : transport HTTP Paheko (non-retryable ou retries épuisés) (8.2 / 8.4)
+         * @enum {string}
+         */
+        RootCauseDomain: "mapping" | "builder" | "outbox_http";
+        /**
          * @description Vue liste outbox Paheko (Stories 8.1–8.3). `outbox_status` = cycle technique ; `sync_state_core` = état métier FR24.
          *     `next_retry_at` : backoff ; `rejection_reason` : si `rejete`. **8.3** : `mapping_resolution_error` si échec **avant**
          *     tout POST Paheko (distinct des erreurs HTTP `last_remote_http_status`).
+         *     **Story 25.10** : `root_cause_domain` / `root_cause_code` exposent une taxonomie canonique (mapping vs builder vs outbox_http),
+         *     dérivée **sans heuristique floue** (pas de parsing `last_error`) à partir de signaux stables (trace préparation, transitions d'audit, HTTP).
          *     **Idempotence sortante Paheko** : en clôture simple (sans snapshot batch), chaque POST utilise `Idempotency-Key` = `idempotency_key`.
          *     **Story 22.7** : si `close_batch_state` est présent (snapshot `accounting_close_snapshot_frozen`), chaque sous-écriture envoie sa propre clé stable
          *     (`idempotency_sub_key` dans `close_batch_state.sub_writes`, dérivée de `idempotency_key` + index + nature de ligne).
@@ -3960,6 +3971,17 @@ export interface components {
              *     session_not_found, site_missing, invalid_destination_params). Null si une tentative réseau Paheko a eu lieu ou N/A.
              */
             mapping_resolution_error?: string | null;
+            root_cause_domain: components["schemas"]["RootCauseDomain"];
+            /**
+             * @description Story 25.10 — code stable de cause racine, dérivé sans heuristique (priorité mapping > builder > outbox_http).
+             *     Exemples : `mapping_missing`, `batch_build_failed`, `http_403`.
+             */
+            root_cause_code: string;
+            /**
+             * @description Story 25.10 — message de contexte **stable** quand disponible (ex. `payload.preparation_trace_v1.message`).
+             *     Null si non applicable (ex. échecs purement HTTP).
+             */
+            root_cause_message?: string | null;
             correlation_id: string;
             /** Format: date-time */
             created_at: string;
