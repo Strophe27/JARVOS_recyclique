@@ -10603,6 +10603,10 @@ components:
         context_json:
           type: object
           additionalProperties: true
+          description: >
+            Instantané minimal au moment de la transition (Story 8.4). La taxonomie root_cause_* sur les items
+            (Story 25.10) se déduit du payload item, des champs HTTP/mapping et de recent_sync_transitions — pas
+            de dérivation depuis context_json seul.
     PahekoOutboxSyncTransitionListResponse:
       type: object
       additionalProperties: false

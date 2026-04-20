@@ -72,17 +72,17 @@ Le système doit exposer **un domaine racine unique** (valeur stable) parmi :
 
 ### Règles de dérivation (déterministes, sans heuristique floue)
 
-Pour une ligne outbox :
+Pour une ligne outbox, l’entrée d’audit utilisée est la même que côté API admin : **au plus les 10 dernières transitions** par item (`recent_sync_transitions`), tri **récent d’abord** (la transition la plus récente est en tête de liste).
 
-1. **Si** `payload.preparation_trace_v1.failure_domain == "mapping"` **OU** transition `auto_quarantine_mapping_resolution` présente dans l’audit récent **OU** `mapping_resolution_error` non nul  
+1. **Si** `payload.preparation_trace_v1.failure_domain == "mapping"` **OU** le nom `auto_quarantine_mapping_resolution` figure **quelque part** dans cet extrait d’audit **OU** `mapping_resolution_error` non nul  
    **Alors** `root_cause_domain = "mapping"` et `root_cause_code = mapping_resolution_error || preparation_trace_v1.code`.
-2. **Sinon si** `payload.preparation_trace_v1.failure_domain == "builder"` **OU** transition `auto_quarantine_builder_preparation` présente  
+2. **Sinon si** `payload.preparation_trace_v1.failure_domain == "builder"` **OU** le nom `auto_quarantine_builder_preparation` figure dans l’extrait  
    **Alors** `root_cause_domain = "builder"` et `root_cause_code = preparation_trace_v1.code`.
-3. **Sinon si** `last_remote_http_status` non nul **OU** transition `auto_quarantine_http_non_retryable` **OU** `auto_quarantine_max_attempts_exceeded` présente  
-   **Alors** `root_cause_domain = "outbox_http"` et `root_cause_code = "http_<status>"` si status connu, sinon `transition_name`.
-4. **Sinon** (cas résiduels : unsupported op, etc.)  
-   **Alors** `root_cause_domain = "builder"` et `root_cause_code = transition_name || "unknown"`.  
-   (Objectif : forcer l’on-call à distinguer « pré-HTTP » vs « HTTP », et éviter de classer du non-HTTP en `outbox_http`.)
+3. **Sinon si** `last_remote_http_status` non nul **OU** l’extrait contient `auto_quarantine_http_non_retryable` ou `auto_quarantine_max_attempts_exceeded`  
+   **Alors** `root_cause_domain = "outbox_http"` et `root_cause_code = "http_<status>"` si status connu, sinon le nom de transition HTTP pertinent (priorité à une transition listée dans la règle 3 si plusieurs).
+4. **Sinon** (cas résiduels : unsupported op, levée manuelle seule, etc.)  
+   **Alors** `root_cause_domain = "builder"` et `root_cause_code` = nom de la **dernière** transition seulement (premier élément de l’extrait), ou `unknown` si l’extrait est vide.  
+   (Les règles 1–3 utilisent l’**ensemble** des noms dans l’extrait ; la règle 4 utilise **uniquement** la dernière transition pour le code résiduel — objectif : forcer l’on-call à distinguer « pré-HTTP » vs « HTTP », et éviter de classer du non-HTTP en `outbox_http`.)
 
 ### Texte de référence (written down)
 

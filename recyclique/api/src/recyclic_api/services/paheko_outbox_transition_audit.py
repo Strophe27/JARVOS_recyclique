@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Sequence, Tuple
+from typing import Any, Dict, Sequence, Tuple
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from recyclic_api.models.paheko_outbox import PahekoOutboxItem
@@ -88,6 +89,60 @@ def list_transitions_for_item(
     order_clause = col.asc() if order == "asc" else col.desc()
     rows = q.order_by(order_clause).offset(skip).limit(min(limit, 200)).all()
     return rows, total
+
+
+def list_recent_transitions_for_items(
+    db: Session,
+    item_ids: Sequence[uuid.UUID],
+    *,
+    per_item_limit: int = 10,
+) -> Dict[uuid.UUID, Tuple[Sequence[PahekoOutboxSyncTransition], int]]:
+    """
+    Charge en une fois les ``per_item_limit`` transitions les plus récentes par item
+    (équivalent à ``list_transitions_for_item(..., skip=0, limit=per_item_limit, order='desc')``).
+
+    Utilisé par les listes admin pour éviter un appel N+1 à ``list_transitions_for_item`` par ligne.
+    Retourne une entrée pour chaque identifiant demandé (total 0 et liste vide si aucune transition).
+    """
+    item_ids_list = list(item_ids)
+    if not item_ids_list:
+        return {}
+
+    T = PahekoOutboxSyncTransition
+    count_rows = (
+        db.query(T.outbox_item_id, func.count())
+        .filter(T.outbox_item_id.in_(item_ids_list))
+        .group_by(T.outbox_item_id)
+        .all()
+    )
+    totals: dict[uuid.UUID, int] = {row[0]: row[1] for row in count_rows}
+
+    rn = (
+        func.row_number()
+        .over(partition_by=T.outbox_item_id, order_by=T.occurred_at.desc())
+        .label("rn")
+    )
+    ranked = (
+        select(T.id, rn)
+        .where(T.outbox_item_id.in_(item_ids_list))
+        .subquery("ranked_transitions")
+    )
+    stmt = select(T).where(
+        T.id.in_(select(ranked.c.id).where(ranked.c.rn <= per_item_limit))
+    )
+    rows = list(db.scalars(stmt).all())
+
+    by_item: dict[uuid.UUID, list[PahekoOutboxSyncTransition]] = {}
+    for tr in rows:
+        by_item.setdefault(tr.outbox_item_id, []).append(tr)
+    for lst in by_item.values():
+        lst.sort(key=lambda r: r.occurred_at, reverse=True)
+
+    out: Dict[uuid.UUID, Tuple[Sequence[PahekoOutboxSyncTransition], int]] = {}
+    for iid in item_ids_list:
+        seq = tuple(by_item.get(iid, ()))
+        out[iid] = (seq, totals.get(iid, 0))
+    return out
 
 
 def list_transitions_for_correlation(

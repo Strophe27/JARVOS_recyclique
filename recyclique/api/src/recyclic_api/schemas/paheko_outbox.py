@@ -165,7 +165,15 @@ class PahekoOutboxSyncTransitionPublic(BaseModel):
     occurred_at: datetime
     reason: str
     correlation_id: str
-    context_json: Dict[str, Any] = Field(default_factory=dict)
+    context_json: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Story 8.4 — instantané minimal au moment de la transition (opération, erreurs mapping/HTTP). "
+            "La taxonomie `root_cause_*` sur les items (Story 25.10) ne se déduit **pas** de ce champ : "
+            "elle utilise `payload`, `mapping_resolution_error`, `last_remote_http_status` et "
+            "`recent_sync_transitions` (voir règles dans `derive_root_cause_for_outbox_item`)."
+        ),
+    )
 
 
 class PahekoOutboxSyncTransitionListResponse(BaseModel):
@@ -289,6 +297,15 @@ def derive_root_cause_for_outbox_item(
 
     Normatif : spec 25.4 §4 (mapping obligatoire, échec visible), Epic 8 (supervision), règles story 25.10.
     Important : aucune heuristique basée sur du texte libre (`last_error`) — seulement des signaux stables.
+
+    ``recent_sync_transitions`` est le même extrait que l’admin (ordre **récent d’abord** : index 0 = dernière transition) :
+    au plus les 10 dernières lignes d’audit par item.
+
+    - Règles **1 à 3** : on inspecte l’**ensemble des noms** de transition dans cet extrait (et le payload / champs item),
+      pas seulement la ligne la plus récente — ex. `auto_quarantine_mapping_resolution` compte même si une levée
+      manuelle plus récente existe.
+    - Règle **4** (résiduel) : le code retourné est le nom de la **dernière** transition (premier élément de la liste),
+      ou la chaîne ``unknown`` si l’extrait est vide — l’ensemble ne s’applique pas à cette branche.
     """
     pl = dict(getattr(row, "payload", None) or {})
     trace = pl.get("preparation_trace_v1")

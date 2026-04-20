@@ -35,6 +35,7 @@ from recyclic_api.services.paheko_outbox_service import (
 )
 from recyclic_api.services.paheko_transaction_payload_builder import build_cash_session_close_transaction_payload
 from recyclic_api.services.paheko_outbox_transition_audit import (
+    list_recent_transitions_for_items,
     list_transitions_for_correlation,
     list_transitions_for_item,
 )
@@ -156,9 +157,10 @@ async def paheko_outbox_list_items(
         correlation_id=correlation_id,
     )
     # Story 25.10 — même entrée d'audit que le détail (10 dernières transitions / item) pour une taxonomie cohérente.
+    batch_recent = list_recent_transitions_for_items(db, [r.id for r in rows], per_item_limit=10)
     data: list = []
     for r in rows:
-        recent, _ = list_transitions_for_item(db, r.id, skip=0, limit=10, order="desc")
+        recent, _ = batch_recent[r.id]
         data.append(
             outbox_item_to_public(
                 r,
@@ -204,9 +206,10 @@ async def paheko_outbox_get_correlation_timeline(
         limit=transitions_limit,
         order="asc",
     )
+    batch_recent = list_recent_transitions_for_items(db, [r.id for r in items], per_item_limit=10)
     timeline_items: list = []
     for r in items:
-        recent, _ = list_transitions_for_item(db, r.id, skip=0, limit=10, order="desc")
+        recent, _ = batch_recent[r.id]
         timeline_items.append(
             outbox_item_to_public(
                 r,

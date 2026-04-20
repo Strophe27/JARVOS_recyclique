@@ -15,6 +15,11 @@ def _transition(name: str):
     return SimpleNamespace(transition_name=name)
 
 
+def _recent_ordered(*names_recent_first: str):
+    """Même convention que l’admin : index 0 = transition la plus récente."""
+    return [_transition(n) for n in names_recent_first]
+
+
 def test_root_cause_mapping_has_priority_over_http_status() -> None:
     row = _row(
         payload={},
@@ -84,16 +89,47 @@ def test_root_cause_outbox_http_from_max_attempts_transition_only() -> None:
     assert msg is None
 
 
+def test_root_cause_outbox_http_from_http_non_retryable_transition_only() -> None:
+    row = _row(payload={}, mapping_resolution_error=None, last_http_status=None)
+    recent = [_transition("auto_quarantine_http_non_retryable")]
+    domain, code, msg = derive_root_cause_for_outbox_item(row, recent_sync_transitions=recent)
+    assert domain == "outbox_http"
+    assert code == "auto_quarantine_http_non_retryable"
+    assert msg is None
+
+
+def test_root_cause_rule4_residual_uses_only_latest_transition_name() -> None:
+    """Règle 4 : code = dernière transition, pas un autre nom pourtant présent dans l’extrait."""
+    row = _row(payload={}, mapping_resolution_error=None, last_http_status=None)
+    recent = _recent_ordered(
+        "manual_lift_quarantine_to_retry",
+        "auto_quarantine_unsupported_operation_type",
+    )
+    domain, code, msg = derive_root_cause_for_outbox_item(row, recent_sync_transitions=recent)
+    assert domain == "builder"
+    assert code == "manual_lift_quarantine_to_retry"
+    assert msg is None
+
+
+def test_root_cause_rule4_residual_from_unsupported_op_alone() -> None:
+    row = _row(payload={}, mapping_resolution_error=None, last_http_status=None)
+    recent = [_transition("auto_quarantine_unsupported_operation_type")]
+    domain, code, msg = derive_root_cause_for_outbox_item(row, recent_sync_transitions=recent)
+    assert domain == "builder"
+    assert code == "auto_quarantine_unsupported_operation_type"
+    assert msg is None
+
+
 def test_root_cause_mapping_detected_when_transition_present_but_not_latest() -> None:
     """
     La spec de story 25.10 parle de transition « présente dans l'audit récent »,
     pas uniquement la transition la plus récente.
     """
     row = _row(payload={}, mapping_resolution_error=None, last_http_status=None)
-    recent = [
-        _transition("manual_lift_quarantine_to_retry"),
-        _transition("auto_quarantine_mapping_resolution"),
-    ]
+    recent = _recent_ordered(
+        "manual_lift_quarantine_to_retry",
+        "auto_quarantine_mapping_resolution",
+    )
     domain, code, msg = derive_root_cause_for_outbox_item(row, recent_sync_transitions=recent)
     assert domain == "mapping"
     assert code == "unknown"
