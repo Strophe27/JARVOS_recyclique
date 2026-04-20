@@ -13,7 +13,7 @@ Vérifier que le processeur outbox **ne** marque **pas** de succès terminal (**
 
 ## Liste des tests (fichier dédié 25.9)
 
-- `test_mapping_must_be_resolved_before_delivered_mapping_removed_after_enqueue` — après clôture avec mapping, suppression des lignes `paheko_cash_session_close_mappings` pour le site : le traitement outbox **échoue en quarantaine** (`failure_domain` **mapping**), **sans** appel HTTP Paheko réussi (mock jamais « victorieux » côté métier).
+- `test_mapping_must_be_resolved_before_delivered_mapping_removed_after_enqueue` — après clôture avec mapping, suppression des lignes `paheko_cash_session_close_mappings` pour le site : le traitement outbox laisse l’item en **`failed`**, **`sync_state_core` `en_quarantaine`**, trace **`preparation_trace_v1.failure_domain` = `mapping`**, **`mapping_resolution_error` = `mapping_missing`** — **pas** de **`delivered`** (le mock HTTP renvoie **200** si le client est invoqué ; le test n’assert pas l’absence d’appel réseau, seulement l’**absence de succès outbox terminal** alignée **25.4 §4**).
 - `test_mapping_resolved_then_close_batch_can_reach_delivered` — mapping présent : traitement → **delivered** et état batch `all_delivered` (alignement chemin nominal **25.9**).
 
 ## Commandes (machine locale, Windows PowerShell)

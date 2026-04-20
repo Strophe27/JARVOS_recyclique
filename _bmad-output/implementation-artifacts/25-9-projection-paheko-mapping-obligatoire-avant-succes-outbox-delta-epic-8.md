@@ -127,7 +127,7 @@ Source normative (texte aligné sur epics) : `_bmad-output/planning-artifacts/ep
 
 ## Alignement sprint / YAML
 
-- Post–`bmad-create-story` (CS) : clé `25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8` → **`ready-for-dev`** ; **`epic-25`** inchangé **`in-progress`**.
+- Clé `25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8` : **`done`** dans `_bmad-output/implementation-artifacts/sprint-status.yaml` ; **`epic-25`** inchangé **`in-progress`**.
 
 ## Dev Agent Record
 
@@ -152,3 +152,4 @@ Composer (bmad-dev-story Task / sprint Epic 25)
 ### Change Log
 
 - 2026-04-20 — DS story 25.9 : trace préparation + domaines mapping / builder / transport ; tests pytest + test-summary ; sprint `25-9` → **review**.
+- 2026-04-20 — QA2 P2 : prose sprint alignée **done** ; pas de mention **ready-for-dev** résiduelle dans l’alignement YAML.
