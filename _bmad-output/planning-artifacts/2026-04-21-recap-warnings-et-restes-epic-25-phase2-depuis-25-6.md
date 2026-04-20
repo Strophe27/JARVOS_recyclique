@@ -196,6 +196,7 @@
 | 2026-04-21 | Post **25.13** : §2 sous-section 25.13 ; §3–§6.6 alignés **done** ; prochain focus **25.14** (Story Runner session utilisateur). |
 | 2026-04-21 | Post **25.14** : §2 sous-section 25.14 ; §3 **25-14 done** ; enchaînement **25.15** (Story Runner). |
 | 2026-04-21 | Post **25.15** : §2 sous-section 25.15 ; §3 synthèse **25.13–25.15 done** + note clôture epic ; reprise Task **CR/GATE** pour passer **review → done**. |
+| 2026-04-21 | Alignement **`epics.md`** §25 (25.12–25.15 **done**, **`epic-25` in-progress** explicite) ; note spike **25.15** ; trace sprint + **`last_updated` racine** **2026-04-21** ; commit **`0ea658b`** poussé (`feat(epic-25): phase 2 stories 25.13-25.15, alignement epics et sprint`). |
 
 ---
 
