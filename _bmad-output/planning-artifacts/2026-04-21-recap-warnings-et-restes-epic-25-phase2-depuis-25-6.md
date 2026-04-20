@@ -83,7 +83,7 @@
 |------|--------|--------|
 | **Stories 25.13–25.15** | **Done** (YAML) | Implémentations principalement tracées **2026-04-20** ; orchestration **2026-04-21** = reprises Story Runner + contrôles pytest locaux (**25-14** : **5** tests ; **25-15** : **14** tests). |
 | **Suite epic-25** | **Hors stories 25.x phase 2** | **`epic-25` : in-progress** dans le YAML tant qu’aucune **rétro / décision** n’a clôturé l’epic ; ne pas confondre avec la seule tranche **25.1–25.5** déjà close historiquement. |
-| **QA2 agrégé** optionnel (paquet **25.6–25.15**) | Non exécuté | Mentionné dans le brief orchestrateur initial. |
+| **QA2 agrégé** (paquet **25.6–25.15**) | **Exécuté** | Rapports : `_bmad-output/implementation-artifacts/2026-04-21-qa2-agrege-epic-25-phase2-rapport-fusion.md` (run 1) et `…-rapport-fusion-v2-orchestration-libre.md` (run 2, orchestration libre, sans Codex). |
 | **Push `origin`** | À ta charge (Cursor) | Branche **`epic/25-socle-alignement-prd-architecture`** avec plusieurs commits **ahead** — pas poussés par l’orchestrateur. |
 | **Clôture `epic-25`** | **À arbitrer** | Les clés **25.6–25.15** sont **done** ; la clôture **`epic-25: done`** reste une **décision produit / rétro** (phase 2 impl bouclée côté stories). |
 | **Verdict programme PWA** | Inchangé | Brief : **NOT READY** ; **25.15** = spike **sans** levée de verdict programme seule. |
@@ -197,6 +197,7 @@
 | 2026-04-21 | Post **25.14** : §2 sous-section 25.14 ; §3 **25-14 done** ; enchaînement **25.15** (Story Runner). |
 | 2026-04-21 | Post **25.15** : §2 sous-section 25.15 ; §3 synthèse **25.13–25.15 done** + note clôture epic ; reprise Task **CR/GATE** pour passer **review → done**. |
 | 2026-04-21 | Alignement **`epics.md`** §25 (25.12–25.15 **done**, **`epic-25` in-progress** explicite) ; note spike **25.15** ; trace sprint + **`last_updated` racine** **2026-04-21** ; commit **`0ea658b`** poussé (`feat(epic-25): phase 2 stories 25.13-25.15, alignement epics et sprint`). |
+| 2026-04-21 | QA2 **v2** orchestration libre (sans Codex) : artefact `…-rapport-fusion-v2-orchestration-libre.md` ; §3 récap mis à jour (QA2 non plus « non exécuté »). |
 
 ---
 
