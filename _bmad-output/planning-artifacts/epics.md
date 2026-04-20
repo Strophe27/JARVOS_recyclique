@@ -446,7 +446,7 @@ L'equipe peut verifier, tester, observer, deployer et qualifier la v2 jusqu'aux 
 **NFR/AR cles:** NFR14, NFR15, NFR16, NFR17, NFR18, NFR27, NFR28, AR18, AR35, AR37
 
 ### Epic 25: Aligner la vision kiosque / multisite / permissions avec le brownfield et fermer les ADR structurantes
-Le pilotage peut traiter l'extension kiosque/multisite/permissions comme un socle de decision et non comme un lot de code premature. Cet epic produit les matrices d'alignement, ADR et gates documentaires qui ferment les ambiguities signalees par le correct course du 2026-04-19, afin que les prochaines stories `25-*` puis les futurs lots de dev BMAD respectent l'ordre **decision -> code** sur le PIN kiosque, l'async `Paheko`, le multisite analytique et les permissions.
+Le pilotage peut traiter l'extension kiosque/multisite/permissions comme un socle de decision et non comme un lot de code premature. Cet epic produit les matrices d'alignement, ADR et gates documentaires qui ferment les ambiguities signalees par le correct course du 2026-04-19, afin que les prochaines stories `25-*` puis les futurs lots de dev BMAD respectent l'ordre **decision -> code** sur le PIN kiosque, l'async `Paheko`, le multisite analytique et les permissions. **Phase 2 (2026-04-21)** : stories **25.6 a 25.15** (implementation) — detail et AC dans le corps **Epic 25** plus bas (`epics.md` section dediee) ; pilotage dans `sprint-status.yaml`.
 **FRs covered:** FR11, FR12, FR14, FR15, FR20, FR39, FR41, FR71, FR73
 **NFR/AR cles:** NFR4, NFR19, NFR27, AR11, AR12, AR36
 
@@ -3604,13 +3604,13 @@ So that escalations are traceable.
 
 ## Epic 25: Socle d'alignement PRD vision kiosque / multisite / permissions, brownfield et ADR
 
-**Goal:** Transformer le correct course du `2026-04-19` en backlog executable en fermant d'abord les decisions structurantes (vision vs canon brownfield, PIN kiosque, async `Paheko`, multisite/permissions, gate readiness), puis en preparant seulement ensuite les futurs lots de dev issus de cet epic. Dans cet epic, **25.1 a 25.5** sont des stories de decision / cadrage / readiness ; tout futur dev derive devra etre ajoute explicitement apres ce socle (par exemple en `25.6+` si la numerotation est conservee).
+**Goal:** Transformer le correct course du `2026-04-19` en backlog executable en fermant d'abord les decisions structurantes (vision vs canon brownfield, PIN kiosque, async `Paheko`, multisite/permissions, gate readiness), puis en preparant seulement ensuite les futurs lots de dev issus de cet epic. Dans cet epic, **25.1 a 25.5** sont des stories de decision / cadrage / readiness (**done** au pilotage). **25.6 a 25.15** sont la **phase 2 implementation** : pilotage, contrats, Paheko, supervision, audit Redis, identite, step-up, spikes — alignees spec `_bmad-output/planning-artifacts/architecture/2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md`, ADR **25-2** / **25-3**, matrice vision, note readiness **2026-04-20** ; **hors** programme PWA massif sauf **25.15** (spike borne, sans lever seul le NOT READY readiness).
 
 **Sources prioritaires:** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`, `_bmad-output/planning-artifacts/prd.md`, `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`, `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`, `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`, `references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
-**Regle directrice:** aucune story d'implementation produit sur le perimetre kiosque / multisite / permissions n'entre en dev tant que la story spike ou ADR qui porte sa decision structurante n'est pas livree et close. Les stories **25.1 a 25.5** sont donc documentaires ; elles ferment le socle de decision et preparent le rerun readiness / rebaselining avant toute story de build.
+**Regle directrice:** les stories **25.6 a 25.15** restent soumises au **gel process** (`sprint-change-proposal-2026-04-19-...`) tant que **25.6** n'est pas livree ; au verdict **NOT READY** programme PWA / readiness et au **gate API P0** quand ils s'appliquent (voir note **2026-04-20**). Les ADR **25-2** et **25-3** sont **acceptes** : le code doit les **respecter** ; toute evolution substantielle repasse par **correct course** ou nouvelle ADR.
 
-**Pilotage YAML:** les cles `25-1` a `25-5` (kebab-case derive des titres ci-dessous) sont presentes en `backlog` dans `_bmad-output/implementation-artifacts/sprint-status.yaml` sous `epic-25`. Le passage en `ready-for-dev` reste discipline `bmad-create-story` / Story Runner apres fermeture des prerequis documentaires de chaque story.
+**Pilotage YAML:** les cles `25-1` a `25-5` sont en **`done`**. Les cles **`25-6` a `25-15`** sont dans `_bmad-output/implementation-artifacts/sprint-status.yaml` sous **`epic-25`** en **`backlog`** jusqu'a promotion (`bmad-create-story` / pilotage) ; **les slugs YAML font foi** (identifiants stables). Alignement titre **Story 25.10** : cle **`25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox`**. Alignement titre **Story 25.13** : cle **`25-13-journalisation-identite-operateur-versus-poste-ou-kiosque-tranche-minimale`**. Un **DAG recommande** est commente dans le meme fichier YAML (prerequis ; aretes non encodees en machine). **`epic-25`** est en **`in-progress`** pour la phase implementation (la tranche **25.1-25.5** reste historiquement **done**). **Trier les cles `25-x` par ordre numerique** (eviter un tri alphabetique qui place `25-10` avant `25-2`). Le passage en `ready-for-dev` reste la discipline `bmad-create-story` / Story Runner.
 
 ### Story 25.1: Cartographier les exigences importees et fermer la matrice d'alignement vision -> canonique
 
@@ -3684,3 +3684,143 @@ So that sprint planning can schedule only executable stories instead of mixing b
 **Then** a targeted readiness note states which gates are now closed, which ones remain open, and whether the first implementation story can legally move to `ready-for-dev`
 **And** the rebased sequence cites `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml`, and the approved Epic 25 deliverables
 **And** the output explicitly identifies the first post-ADR story candidate for `bmad-create-story`, with enough file references and DoD focus for later use by `.cursor/agents/bmad-story-runner.md` and `references/automatisation-bmad/epic-story-runner-spec.md`
+
+### Story 25.6: Lever le gel process (correct course) — documenter la levee et le pilotage observable
+
+As a BMAD pilot,
+I want the execution freeze from the 2026-04-19 correct course explicitly lifted or scoped in writing with observable tracking artefacts,
+So that `bmad-dev-story` and related DS work outside `25-*` keys is only allowed under clear rules and nobody confuses a narrative note with an actual YAML unlock.
+
+**Acceptance Criteria:**
+
+**Given** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` still defines the freeze unless lifted
+**When** this story is delivered
+**Then** a dated addendum or linked document states what is lifted, what remains frozen, and lists concrete touched artefacts (file paths and/or `sprint-status.yaml` keys) a reviewer can verify in minutes
+**And** the same truth is reflected where automation reads status (no paper-only unlock)
+**And** this story does not implement kiosk PWA delivery or close story **13.8** by itself
+
+### Story 25.7: Traduire la spec 25.4 (sections 2 et 3) en checklist developpement executable
+
+As a tech lead,
+I want a versioned executable checklist derived from spec 25.4 sections 2 and 3 (context invariants, site / caisse / session / poste, context switch),
+So that every invariant has a named verification path before we change runtime code at scale.
+
+**Acceptance Criteria:**
+
+**Given** `_bmad-output/planning-artifacts/architecture/2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md` is the norm for multisite and permissions invariants
+**When** this story is delivered
+**Then** a checklist file lives in-repo with explicit links to spec section anchors
+**And** each item is tagged `normative-spec` (must have a test or scripted manual check name) or `vision-later` (explicitly out of this train)
+**And** advanced vision-only topics (auto-suspend, alert channels, full FIXE/NOMADE site taxonomy) stay out unless a product decision expands scope
+
+### Story 25.8: Refus par defaut et erreurs explicites apres bascule site ou caisse
+
+As a caisse reliability owner,
+I want backend and client contracts to refuse business actions on stale context after site or register switch, with explicit correlated errors,
+So that operators never silently continue on the wrong site or register.
+
+**Acceptance Criteria:**
+
+**Given** checklist **25.7** exists for invariants in spec sections 2 and 3
+**When** this story is delivered
+**Then** at least one automated integration or e2e path proves a refuse outcome after context switch with a stable error code or message id (not a generic server error)
+**And** no sensitive business action proceeds on stale server context without revalidation
+**And** full kiosk PIN PWA model and offline queue implementation stay explicitly out of scope
+
+### Story 25.9: Projection Paheko — mapping obligatoire avant succes outbox (delta Epic 8)
+
+As a Paheko integration owner,
+I want no outbox success marking for a closed session batch unless mandatory Recyclique-to-Paheko mapping is resolved,
+So that we never silently substitute site, emplacement, or analytical axis per spec 25.4 section 4.
+
+**Acceptance Criteria:**
+
+**Given** Epic **8** stories **8-3** through **8-6** already delivered the baseline mapping and supervision chain
+**When** this story is delivered
+**Then** the change is framed as a **delta** on top of Epic **8** (references to existing behaviour and tests), not a duplicate ownership epic
+**And** missing or ambiguous mapping yields quarantine or visible failed preparation state — never silent success for Paheko sub-writes
+**And** supervision can correlate failures with mapping vs builder vs outbox at least at log or status field level required for **25.10**
+
+### Story 25.10: Supervision — causes racines mapping versus builder versus outbox
+
+As a supervision operator,
+I want deterministic root-cause labels between mapping, builder, and outbox for Paheko sync failures,
+So that on-call time-to-diagnose drops and mis-attribution (for example Redis latency treated as mapping) is reduced.
+
+**Acceptance Criteria:**
+
+**Given** **25.9** behaviour exists or lands in the same release train with an agreed flag strategy
+**When** this story is delivered
+**Then** at least one operator or supervision path shows a documented taxonomy of causes with links to spec **25.4** section 4 and Epic **8** supervision stories
+**And** the taxonomy is written down so new dashboards do not invent ad hoc labels
+**And** full UI redesign of supervision consoles stays out of scope
+
+### Story 25.11: Spike — contrats API et types pour enveloppe de contexte (sans PWA)
+
+As a platform engineer,
+I want a short spike producing an OpenAPI fragment or shared types for the context envelope and sensitive payloads,
+So that Peintre and backend agree on shapes before broad refactors.
+
+**Acceptance Criteria:**
+
+**Given** checklist **25.7** anchors which fields are normative
+**When** this story is delivered
+**Then** the spike cites ADR **25-2**, ADR **25-3**, and spec **25.4** and ships one happy-path example plus at least one negative example
+**And** the deliverable explicitly states it does **not** close the brownfield **API quality P0** audit gate by itself (link or issue list for remaining P0s)
+**And** no Service Worker, IndexedDB production persistence, or offline-first product delivery is part of this spike
+
+### Story 25.12: Audit code — Redis auxiliaire seulement pour async Paheko (AR12, ADR 25-3)
+
+As a backend steward,
+I want a documented audit proving Redis stays auxiliary for the Paheko async path per **AR12** and accepted ADR **25-3**,
+So that grep-only theatre does not pass as compliance.
+
+**Acceptance Criteria:**
+
+**Given** ADR **25-3** is `accepted` and **AR12** forbids durable competing truth in Redis for Paheko accounting
+**When** this story is delivered
+**Then** a report lists Redis touchpoints with allowed versus forbidden patterns and opens tracked issues for any deviation found
+**And** the DoD includes at least one runtime-oriented recommendation (test, canary checklist, or staging probe) beyond plain repository grep
+**And** a hybrid « big bang » rewrite of the async chain stays out of scope unless a new ADR says otherwise
+
+### Story 25.13: Journalisation — identite operateur versus poste ou kiosque (tranche minimale)
+
+As a security and audit stakeholder,
+I want operator identity distinguished from poste or kiosk identity in logs for at least one critical cashflow path,
+So that audits stay explainable per spec **2.4** and ADR **25-2**.
+
+**Acceptance Criteria:**
+
+**Given** ADR **25-2** is `accepted`
+**When** this story is delivered
+**Then** field names and logging policy are documented and at least one automated test covers the chosen path end-to-end at log or structured event level
+**And** full kiosk step-up UI, SuperAdmin lockout tuning, and offline PIN tolerance stay out of scope except where this story only consumes existing server behaviour
+**And** if payloads change, coordination note references **25.11** artefacts
+
+### Story 25.14: Step-up et revalidation apres changement de contexte sensible
+
+As a caisse security owner,
+I want step-up or revalidation after sensitive context changes per ADR **25-2** and spec **3.2**,
+So that default deny holds until identity proof matches the ADR model.
+
+**Acceptance Criteria:**
+
+**Given** **25.8** is delivered and **25.13** is available for log proof where needed
+**When** this story is delivered
+**Then** a documented matrix maps context-change scenarios to required proof (PIN operateur, post secret, forbidden combinations) and tests cover representative rows
+**And** offline kiosk PIN tolerance and device token flows stay explicitly out of scope here
+**And** multi-client divergence risks (two tabs, in-flight requests) are either tested or explicitly documented as follow-up with owner
+
+### Story 25.15: Spike — faisabilite IndexedDB ou cache local minimal sans livraison PWA
+
+As an architect,
+I want a bounded feasibility spike on IndexedDB or minimal local cache without shipping a PWA product,
+So that future PWA work has an honest go/no-go without pretending the global **NOT READY** verdict disappeared.
+
+**Acceptance Criteria:**
+
+**Given** `_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md` still marks the large PWA programme as **NOT READY** at product readiness level
+**When** this story is delivered
+**Then** a report cites that report’s PWA sections and `_bmad-output/planning-artifacts/2026-04-20-note-readiness-cible-post-epic25-decisions.md` and lists hard **stop criteria** (no production persistent client store, no silent bypass of gel or readiness)
+**And** the spike ends with **go / no-go / later** with estimated cost bands for a future epic, not a disguised production feature flag
+**And** this spike must not be interpreted alone as lifting the **NOT READY** programme verdict

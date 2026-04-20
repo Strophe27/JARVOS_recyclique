@@ -2,7 +2,7 @@
 
 **Date :** 2026-04-20  
 **Epic :** 25 — alignement PRD vision kiosque / multisite / permissions (brownfield + ADR)  
-**Stories amont :** 25.1 (matrice vision → canonique), 25.2 (ADR PIN kiosque / opérateur / secret de poste — *proposed*), 25.3 (ADR async Paheko / outbox / Redis auxiliaire — *proposed*)  
+**Stories amont :** 25.1 (matrice vision → canonique), 25.2 (ADR PIN kiosque / opérateur / secret de poste — *accepted*), 25.3 (ADR async Paheko / outbox / Redis auxiliaire — *accepted*)  
 **Statut :** spécification d’exécution pour stories futures ; ne remplace pas le PRD canonique ni le PRD vision tant que ceux-ci ne sont pas absorbés par décision explicite.
 
 ---
@@ -54,7 +54,7 @@ Tant que le correct course documenté dans `_bmad-output/planning-artifacts/spri
 ### 2.4 `poste` / `kiosque`
 
 - **Poste (canon) :** terminal où l’opérateur agit ; l’autorité serveur prime en ligne pour le PIN opérateur et les permissions.
-- **Kiosque (cible vision + ADR 25-2) :** peut combiner **token / secret de poste** et **PIN kiosque** selon le modèle hybride *proposed* ; les invariants de lockout, step-up et offline sont **définis dans l’ADR 25-2**, pas redécidés ici.
+- **Kiosque (cible vision + ADR 25-2) :** peut combiner **token / secret de poste** et **PIN kiosque** selon le modèle hybride **accepté** dans l’ADR 25-2 ; les invariants de lockout, step-up et offline sont **définis dans l’ADR 25-2**, pas redécidés ici.
 - **Invariant :** ne jamais confondre **identité opérateur** (droits métier, audit) et **identité de poste** (ancrage matériel / PWA) dans les journaux ou les payloads sortants.
 
 ### 2.5 Rôle, groupe, permission effective
@@ -75,14 +75,14 @@ Tant que le correct course documenté dans `_bmad-output/planning-artifacts/spri
 ### 3.2 PIN, step-up et kiosque
 
 - Le **PIN opérateur** (vérification serveur, actions sensibles) reste **canon** (`prd.md` §11.2).
-- Le **PIN kiosque**, **secret de poste**, lockout métier vs rate limit HTTP, step-up et politique offline sont régis par **`2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`** (*proposed*).
+- Le **PIN kiosque**, **secret de poste**, lockout métier vs rate limit HTTP, step-up et politique offline sont régis par **`2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`** (*accepted*).
 - Lors d’un changement de contexte nécessitant une **revalidation** (site/caisse sensible, escalation), le comportement attendu est : **refus par défaut** jusqu’à preuve d’identité conforme à l’ADR — pas de « meilleur effort ».
 
 ---
 
 ## 4. Projection Recyclique → Paheko (fermeture sans silence)
 
-Référence de chaîne : **`cash-accounting-paheko-canonical-chain.md`** — le builder consomme le **snapshot figé**, l’**outbox** porte les sous-écritures ; transport et idempotence : **`2026-04-20-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride.md`** (*proposed*).
+Référence de chaîne : **`cash-accounting-paheko-canonical-chain.md`** — le builder consomme le **snapshot figé**, l’**outbox** porte les sous-écritures ; transport et idempotence : **`2026-04-20-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride.md`** (*accepted*).
 
 ### 4.1 Enregistrements et axes de mapping obligatoires
 
@@ -125,17 +125,17 @@ Alignement avec les fondations **Epic 8** :
 | Catégorie | Identifiants / périmètre | Commentaire |
 |-----------|---------------------------|-------------|
 | **Débloqués par la spec seule** (documentation / cadrage pour futurs devs) | Stories **techniques** ou **refactors** qui **ne présupposent pas** PWA production ni nouveau modèle de menace kiosque hors ADR | Ex. : poursuite **chantier audit API** (orthogonal mais gate qualité pour Paheko — cf. readiness) une fois gel levé ; doc / contrats qui citent explicitement cette spec comme source. |
-| **Gated — ADR 25-2 / 25-3 non « accepted »** | Implémentations **code** PIN kiosque, secret de poste, offline ; tout changement qui **contredit** outbox PostgreSQL comme vérité ou Redis comme seul durable | Tant que statut *proposed*, les stories kiosque restent **conceptionnelles** ou **spikes** sous contrôle Epic 25. |
-| **Gated — readiness 25.5** | **`25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions`** | Rejeu du rapport **`implementation-readiness-report-2026-04-19.md`** ; première story impl **kiosque / PWA** ne peut pas être promue **ready-for-dev** sans cette fermeture. |
+| **Gated — conformité aux ADR 25-2 / 25-3 acceptés** | Implémentations **code** PIN kiosque, secret de poste, offline ; tout changement qui **contredit** outbox PostgreSQL comme vérité durable ou qui fait de Redis une **seconde** vérité durable pour Paheko | Les ADR sont **acceptés** ; le code doit **respecter** ces ADR ; toute évolution substantielle repasse par **correct course** ou nouvelle ADR. |
+| **Gated — readiness / note post-25.5** | Note **`2026-04-20-note-readiness-cible-post-epic25-decisions.md`**, rapport **`implementation-readiness-report-2026-04-19.md`** | Story **25.5** **done** au pilotage ; l’extension PWA **massive** reste **NOT READY** au sens readiness ; les promotions **ready-for-dev** lourdes kiosque/PWA restent soumises aux **autres** gates (gel, FR/epics vision, gate API P0). |
 | **Gated — correct course / gel** | Stories hors **`25-*`** en **pause** explicite (`sprint-change-proposal-2026-04-19-…`) | Le YAML conserve des epics `in-progress` pour l’historique ; le gel est **process**, pas rétroactivité des statuts. |
-| **Gated — extension PWA / kiosque delivery** | Epics / stories type **13.8** (impl kiosque Peintre), **12.x** réception PWA, nouvelles stories auth kiosque nommées dans l’ADR 25-2 | **NOT READY** readiness tant que 25.5 et levée de gel non tracées. |
+| **Gated — extension PWA / kiosque delivery** | Epics / stories type **13.8** (impl kiosque Peintre), **12.x** réception PWA, nouvelles stories auth kiosque nommées dans l’ADR 25-2 | **NOT READY** readiness pour un **programme massif** ; levée de **gel** (`sprint-change-proposal-2026-04-19-…`) toujours **process** tant qu’elle n’est pas documentée — indépendamment du statut **done** des stories **25.1–25.5**. |
 | **Fondations déjà livrées (référence)** | **8-3**, **8-4**, **8-5**, **8-6** ; chaîne **22.x** / **23.x** | Déjà **done** ; cette spec **ne les remplace pas** mais **ferme les règles de projection** pour éviter les divergences futures. |
 
 ---
 
 ## 6. Réconciliation avec les ADR 25-2 et 25-3
 
-- **Aucune contradiction** introduite : cette spec **consomme** les ADR *proposed* sans rouvrir le choix outbox / Redis ni le modèle PIN.
+- **Aucune contradiction** introduite : cette spec **consomme** les ADR **acceptés** (25-2, 25-3) sans rouvrir le choix outbox / Redis ni le modèle PIN.
 - **Écarts résiduels** entre PRD vision (formulation Redis, PIN local pur) et brownfield sont **nommés** dans la research et le readiness ; ils sont **fermés côté architecture** par les ADR 25-2 et 25-3 — pas par cette spec.
 - Si une **nouvelle** incohérence structurante apparaissait en implémentation, elle devrait donner lieu à un **ADR additionnel** (hors 25-2 / 25-3) ; aucun besoin identifié **au stade 25.4**.
 

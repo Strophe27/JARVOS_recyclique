@@ -1,8 +1,9 @@
 ---
 adr_id: ADR-ASYNC-PAHEKO-2026-04-20
-status: proposed
+status: accepted
 date: 2026-04-20
-deciders: "(à approuver — pilotage / architecture — Epic 25)"
+accepted_date: 2026-04-20
+deciders: Strophe (produit / pilotage), alignement architecture BMAD Epic 25
 consulted: >-
   prd.md canonique, PRD vision kiosques 2026-04-19, recherche alignement brownfield 2026-04-19,
   sprint-change-proposal gel Epic 25, cash-accounting-paheko-canonical-chain.md, epics.md AR11/AR12
@@ -10,7 +11,7 @@ consulted: >-
 
 # ADR 2026-04-20 — Async Paheko : outbox durable PostgreSQL, Redis auxiliaire (ou trajectoire hybride)
  
-**Statut :** Proposé (à approuver) — *métadonnée YAML : `status: proposed`*  
+**Statut :** Accepté — *métadonnée YAML : `status: accepted`* (2026-04-20)  
 **Date :** 2026-04-20  
 **Story :** 25.3 — « Fermer l’ADR async `Paheko` (outbox durable, Redis auxiliaire ou trajectoire hybride) » (source : `_bmad-output/planning-artifacts/epics.md`)  
 **Décisions d’architecture traceables :** **AR11**, **AR12** (source : `_bmad-output/planning-artifacts/epics.md`)  
@@ -216,9 +217,9 @@ Points de réconciliation imposés :
  
 ---
  
-## Stories bloquées tant que cette ADR n’est pas approuvée
+## Stories et changements sensibles (ADR **acceptée** — référence post-approbation)
  
-Tant que cette ADR est **Proposée** (non approuvée), les stories suivantes doivent être considérées **NEEDS_HITL / non ready-for-dev** si elles imposent ou changent le mécanisme async Paheko :
+Cette ADR est **acceptée** (voir frontmatter). Les **changements suivants** restent **NEEDS_HITL / non ready-for-dev** s’ils imposent ou changent le **mécanisme** async Paheko **en contradiction** avec cette norme (et non plus « parce que l’ADR n’est pas approuvée ») :
  
 - Toute story qui introduit `Redis` comme **file durable** ou « source de vérité » pour les écritures `Paheko` (contradiction AR12).
 - Toute story qui change la sémantique de livraison (ex. passage de at-least-once à exactly-once « supposé », ou suppression de la quarantaine durable).

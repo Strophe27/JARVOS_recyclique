@@ -1,3 +1,4 @@
+# last_updated: 2026-04-21 — post phase doc Epic 25 : `epic-25` **re-ouvert** **in-progress** (phase impl 25.6–25.15) apres avoir ete **done** pour la seule tranche 25.1–25.5 ; clés `25-6`…`25-15` backlog + DAG en commentaire bloc Epic 25 ; cf. aussi # last_updated ligne ~286.
 # last_updated: 2026-04-20 — story 25-5 Story Runner BMAD fin : CS→VS→DS→GATE(git status -sb)→QA(doc)→CR APPROVE ; 25-5 review→done ; epic-25 in-progress→done ; vs=0 qa=0 cr=0 ; branche epic/25-socle-alignement-prd-architecture
 # last_updated: 2026-04-20 — story 25-5 DS bmad-dev-story Task : 25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions ready-for-dev → review ; note `_bmad-output/planning-artifacts/2026-04-20-note-readiness-cible-post-epic25-decisions.md` ; gates + rebaselining ; epic-25 inchangé in-progress
 # last_updated: 2026-04-20 — story 25-5 CS bmad-create-story (create) : 25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions backlog → ready-for-dev ; fichier story créé ; epic-25 inchangé in-progress ; trace readiness + rebaselining + candidat 13-8 + ADR N/A
@@ -282,7 +283,9 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-2 CS bmad-create-story : 24-2 backlog→ready-for-dev ; story hub opérations spéciales CREOS
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
-last_updated: "2026-04-20" # 25-5 done (Story Runner) ; epic-25 done ; 25-1..25-4 done ; gel hors 25-* inchangé jusqu'à levée documentée ; cf. sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md + note 2026-04-20-note-readiness-cible-post-epic25-decisions.md
+# last_updated: 2026-04-21 — epics.md §25 : stories **25.6–25.15** rédigées + clés YAML `25-6`…`25-15` backlog ; `epic-25` **in-progress** (phase impl) ; tranche **25-1..25-5** inchangée **done** ; gel hors `25-*` inchangé jusqu'à **25-6** livrée
+# last_updated: 2026-04-21 (suite) — QA post-pass : slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
+last_updated: "2026-04-21"
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
 # last_updated: "2026-04-16" # story 22.5 VS bmad-create-story validate PASS : 22-5 backlog → ready-for-dev (story enrichie)
@@ -541,13 +544,26 @@ development_status:
   24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: done
   epic-24-retrospective: optional
 
-  # Epic 25 — socle alignement (PRD vision kiosque / multisite / brownfield / ADR) ; cf. epics.md §25 ; gel hors 25 actif jusqu'à levée documentée
-  # Trier les clés 25-x par ordre NUMERIQUE (25-1 … 25-5) — un tri alphabétique met 25-10 avant 25-2 si la série s'allonge.
-  epic-25: done
+  # Epic 25 — socle alignement + phase 2 impl (stories 25.6–25.15) ; cf. epics.md §25 ; gel hors 25-* actif jusqu'à livraison **25-6** (document levee)
+  # Trier les cles 25-x par ordre NUMERIQUE (25-1 … 25-9 puis 25-10 … 25-15) — un tri alphabetique met 25-10 avant 25-2.
+  epic-25: in-progress
   25-1-cartographier-les-exigences-importees-et-fermer-la-matrice-dalignement-vision-canonique: done
   25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste: done
   25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride: done
   25-4-specifier-le-socle-multisite-permissions-et-invariants-de-poste-kiosque-pour-la-cible-2026-04-19: done
   # 25.5 : titre epics.md contient « backlog `25-*` » ; le slug ne peut pas porter le wildcard — le fichier story devra répéter le titre complet.
   25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions: done
+  # --- Phase 2 (implementation) — slugs = identifiants pilotage (fait foi vs titres longs dans epics.md) ---
+  # DAG recommande (prerequis logiques ; le YAML ne encode pas les aretes — respecter avant dev auto) :
+  #   25-6 → (25-7, parallele possible 25-12 si ressource dediee) → 25-8 → 25-9 → 25-10 ; 25-7 → 25-11 ; 25-11 → 25-13 / 25-15 ; 25-8 + 25-13 → 25-14 ; 25-15 dernier (spike PWA borne).
+  25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable: backlog
+  25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable: backlog
+  25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse: backlog
+  25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8: backlog
+  25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox: backlog
+  25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa: backlog
+  25-12-audit-code-ar12-redis-auxiliaire-async-paheko: backlog
+  25-13-journalisation-identite-operateur-versus-poste-ou-kiosque-tranche-minimale: backlog
+  25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible: backlog
+  25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa: backlog
   epic-25-retrospective: optional

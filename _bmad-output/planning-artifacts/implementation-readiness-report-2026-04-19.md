@@ -16,6 +16,8 @@ scope_note: >-
   sur l’ensemble du workflow.
 ---
 
+> **Lecture après 2026-04-20 — ne pas sur-interpréter comme état ADR actuel** : les ADR PIN kiosque et async Paheko cités comme « ouverts » dans la synthèse et le verdict § ci-dessous sont **acceptés** au sens des fichiers ADR et de la note `_bmad-output/planning-artifacts/2026-04-20-note-readiness-cible-post-epic25-decisions.md`. Ce rapport **2026-04-19** reste la **baseline** utile pour **NOT READY** programme PWA, **GO conditionnel** cœur v2 et **gate API P0** ; pour **`epic-25`**, clés **`25-*`** et gel, la **priorité** est au **`_bmad-output/implementation-artifacts/sprint-status.yaml`** le plus récent et à **`epics.md`** §25.
+
 # Rapport — implémentation prête (readiness globale v2 + extension kiosque)
 
 **Date :** 2026-04-19  
@@ -30,14 +32,14 @@ scope_note: >-
 | Artefact | État | Commentaire |
 |----------|------|-------------|
 | PRD canonique (`_bmad-output/planning-artifacts/prd.md`) | **OK** | Révisions 2026-04-19 : bloc PRD vision kiosque / multisite, gate readiness, PIN opérateur vs cible kiosque, outbox Paheko vs « file Redis », chantier audit API. Annexe C trace FR/NFR vers `epics.md`. |
-| PRD vision kiosque (`references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`) | **Extension non décomposée** | Référencé depuis `prd.md` ; **pas** intégré comme nouveaux FR1–FN dans `epics.md` — attendu tant que les ADR (PIN kiosque, async Paheko) ne sont pas tranchés. |
+| PRD vision kiosque (`references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`) | **Extension non décomposée** | Référencé depuis `prd.md` ; **pas** intégré comme nouveaux FR1–FN dans `epics.md` pour la cible PWA. **Mise à jour 2026-04-21** : les ADR PIN et async Paheko sont **tranchés** (**accepted**) ; l’écart porte surtout sur l’**absorption FR/epics** de l’extension vision et le **NOT READY** programme PWA. |
 | Recherche technique | **OK** | `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md` — tableau priorités / risques. |
 | Architecture (dossier `architecture/`) | **OK** | Index à jour ; ADR caisse/Paheko, PG17, chaîne canonique ; **AR11–AR12** dans `epics.md` cadrant outbox PostgreSQL et rôle auxiliaire de Redis — cohérent avec l’edit PRD récent. |
 | Epics (`epics.md`) | **OK (cœur v2)** | Inventaire **FR1–FR73**, **NFR1–NFR28**, exigences additionnelles **AR*** ; cartographie FR → epics présente après l’inventaire. |
 | UX dédiée (`*ux*.md` sous `planning_artifacts`) | **Absent** | UI fortement impliquée ; acceptable brownfield si parcours + AC dans stories (cf. rapport 2026-04-18 opérations spéciales). |
 | Extension **PWA offline-first** (PRD vision) | **NON PRÊTE** | Pas d’epic dédié aligné sur les epics 1–4 du PRD vision ; recherche : pas de SW/IndexedDB identifiés dans le périmètre scanné. |
 
-**Verdict global :** **GO conditionnel** pour poursuivre l’implémentation selon la **décision directrice v2** et les epics déjà séquencés (y compris chantiers caisse / Epic 24, etc.). **NO-GO** pour un **programme d’implémentation massif** centré sur le **PRD vision kiosque PWA** tant que : (1) les ADR ouverts (PIN kiosque, file vs outbox) ne sont pas clos, (2) les FR/epics ne reflètent pas explicitement cette extension, (3) le gate qualité API P0 (audit brownfield) n’est pas arbitré pour les équipes qui touchent Paheko/caisse.
+**Verdict global :** **GO conditionnel** pour poursuivre l’implémentation selon la **décision directrice v2** et les epics déjà séquencés (y compris chantiers caisse / Epic 24, etc.). **NO-GO** pour un **programme d’implémentation massif** centré sur le **PRD vision kiosque PWA** tant que : **(1)** *(ADR PIN et async Paheko : **clos acceptés** au 2026-04-20 — ne plus utiliser ce point comme blocage ; les freins restants sont gel / readiness / stories explicites.)* **(2)** les FR/epics ne reflètent pas explicitement cette extension PWA, **(3)** le gate qualité API P0 (audit brownfield) n’est pas arbitré pour les équipes qui touchent Paheko/caisse.
 
 ---
 
