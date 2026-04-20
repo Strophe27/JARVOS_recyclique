@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ContextEnvelopeStub } from '../../src/types/context-envelope';
-import { MAX_CONTEXT_AGE_MS, isEnvelopeStale } from '../../src/runtime/context-envelope-freshness';
+import {
+  CONTEXT_STALE_API_CODE,
+  MAX_CONTEXT_AGE_MS,
+  isEnvelopeStale,
+} from '../../src/runtime/context-envelope-freshness';
 
 function stub(issuedAt: number, maxAgeMs?: number): ContextEnvelopeStub {
   return {
@@ -13,6 +17,12 @@ function stub(issuedAt: number, maxAgeMs?: number): ContextEnvelopeStub {
     ...(maxAgeMs !== undefined ? { maxAgeMs } : {}),
   };
 }
+
+describe('CONTEXT_STALE_API_CODE', () => {
+  it('reste stable pour corrélation OpenAPI / AR21', () => {
+    expect(CONTEXT_STALE_API_CODE).toBe('CONTEXT_STALE');
+  });
+});
 
 describe('isEnvelopeStale', () => {
   it('retourne false dans la fenêtre de fraîcheur', () => {

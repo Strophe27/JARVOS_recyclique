@@ -76,6 +76,7 @@ from recyclic_api.services.cash_internal_transfer_service import (
 )
 from recyclic_api.services.exceptional_refund_service import ExceptionalRefundService
 from recyclic_api.services.material_exchange_service import MaterialExchangeService
+from recyclic_api.core.context_binding_guard import enforce_optional_client_context_binding
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from uuid import UUID
@@ -98,6 +99,21 @@ _EXCEPTIONAL_REFUND_DOMAIN_HTTP = {
 }
 
 logger = logging.getLogger(__name__)
+
+
+def _user_uuid_or_none(user_id: str) -> UUID | None:
+    try:
+        return UUID(str(user_id))
+    except ValueError:
+        return None
+
+
+def _enforce_cash_context_binding(request: Request, db: Session, user_id: str) -> None:
+    """Story 25.8 — refus 409 ``CONTEXT_STALE`` si les en-têtes de contexte ne matchent pas l'enveloppe."""
+    uid = _user_uuid_or_none(user_id)
+    if uid is None:
+        return
+    enforce_optional_client_context_binding(request, db, uid)
 
 
 @router.post(
@@ -185,6 +201,7 @@ async def create_cash_session(
 ):
     """ARCH-04 : orchestration déléguée à ``application.cash_session_opening``."""
     rid = getattr(request.state, "request_id", None)
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     return open_cash_session(
         db=db, current_user=current_user, session_data=session_data, request_id=rid
     )
@@ -619,6 +636,7 @@ async def get_cash_session_detail(
 
 @router.put("/{session_id}", response_model=CashSessionResponse)
 async def update_cash_session(
+    request: Request,
     session_id: str,
     session_update: CashSessionUpdate,
     db: Session = Depends(get_db),
@@ -627,6 +645,7 @@ async def update_cash_session(
     """
     Met à jour une session de caisse.
     """
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     service = CashSessionService(db)
     
     session = service.get_session_by_id(session_id)
@@ -676,6 +695,7 @@ async def create_exceptional_refund(
     current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     redis_client=Depends(get_redis),
 ):
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     verify_step_up_pin_header(
         user=current_user,
         pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
@@ -753,6 +773,7 @@ async def create_disbursement(
     current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     redis_client=Depends(get_redis),
 ):
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     needs_step_up = payload.subtype in (
         CashDisbursementSubtype.VALIDATED_EXCEPTIONAL_OUTFLOW,
         CashDisbursementSubtype.OTHER_ADMIN_CODED,
@@ -830,6 +851,7 @@ async def create_internal_transfer(
     current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     redis_client=Depends(get_redis),
 ):
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     if internal_transfer_requires_step_up(payload):
         verify_step_up_pin_header(
             user=current_user,
@@ -900,6 +922,7 @@ async def create_material_exchange(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     try:
         sid = UUID(str(session_id))
     except ValueError as e:
@@ -1009,6 +1032,7 @@ async def close_cash_session(
 
     Story 2.4 : step-up PIN serveur (``X-Step-Up-Pin``), idempotence optionnelle (``Idempotency-Key``).
     """
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     verify_step_up_pin_header(
         user=current_user,
         pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
@@ -1229,12 +1253,14 @@ async def get_session_step_metrics(
     tags=["Sessions de Caisse - Métriques d'Étape"]
 )
 async def update_session_step(
+    request: Request,
     session_id: str,
     step_update: CashSessionStepUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """Met à jour l'étape actuelle d'une session et retourne les nouvelles métriques."""
+    _enforce_cash_context_binding(request, db, str(current_user.id))
     service = CashSessionService(db)
 
     try:

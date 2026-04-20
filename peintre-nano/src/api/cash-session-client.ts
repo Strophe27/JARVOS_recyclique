@@ -1,5 +1,9 @@
 import type { AuthContextPort } from '../app/auth/auth-context-port';
 import { DEMO_AUTH_STUB_USER_ID } from '../app/auth/default-demo-auth-adapter';
+import {
+  applyRecycliqueContextBindingHeaders,
+  type RecycliqueContextBinding,
+} from './context-binding-headers';
 import { getLiveSnapshotBasePrefix } from './live-snapshot-client';
 import { parseRecycliqueApiErrorBody, toRecycliqueClientFailure } from './recyclique-api-error';
 
@@ -626,6 +630,10 @@ export type MaterialExchangeResult =
   | { ok: true; exchange: Record<string, unknown> }
   | CashSessionHttpError;
 
+export type MaterialExchangeOptions = {
+  readonly contextBinding?: RecycliqueContextBinding;
+};
+
 /**
  * POST /v1/cash-sessions/{session_id}/material-exchanges — échange matière (Story 24.6).
  */
@@ -633,6 +641,7 @@ export async function postMaterialExchange(
   sessionId: string,
   body: MaterialExchangePayload,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  opts?: MaterialExchangeOptions,
 ): Promise<MaterialExchangeResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/cash-sessions/${encodeURIComponent(sessionId)}/material-exchanges`;
@@ -642,6 +651,7 @@ export async function postMaterialExchange(
   };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  applyRecycliqueContextBindingHeaders(headers, opts?.contextBinding);
 
   let res: Response;
   try {
@@ -696,6 +706,7 @@ export type CashDisbursementOptions = {
   requestId?: string;
   /** Obligatoire pour les sous-types à preuve N3 (step-up). */
   stepUpPin?: string;
+  readonly contextBinding?: RecycliqueContextBinding;
 };
 
 /**
@@ -722,6 +733,7 @@ export async function postCashDisbursement(
   if (pin) {
     headers['X-Step-Up-Pin'] = pin;
   }
+  applyRecycliqueContextBindingHeaders(headers, opts?.contextBinding);
 
   let res: Response;
   try {
@@ -774,6 +786,7 @@ export type CashInternalTransferOptions = {
   idempotencyKey?: string;
   requestId?: string;
   stepUpPin?: string;
+  readonly contextBinding?: RecycliqueContextBinding;
 };
 
 /** Aligné backend `internal_transfer_requires_step_up` (N3). */
@@ -810,6 +823,7 @@ export async function postCashInternalTransfer(
   if (pin) {
     headers['X-Step-Up-Pin'] = pin;
   }
+  applyRecycliqueContextBindingHeaders(headers, opts?.contextBinding);
 
   let res: Response;
   try {

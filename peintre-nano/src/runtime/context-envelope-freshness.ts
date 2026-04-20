@@ -1,5 +1,8 @@
 import type { ContextEnvelopeStub } from '../types/context-envelope';
 
+/** Code API stable — refus après bascule site/session (Story 25.8). */
+export const CONTEXT_STALE_API_CODE = 'CONTEXT_STALE' as const;
+
 /**
  * Convention Piste A : au-delà de ce délai, l'enveloppe est traitée comme périmée côté UI
  * (pas de supposition silencieuse d'un contexte métier valide). Configurable dans les tests via `envelope.maxAgeMs`.

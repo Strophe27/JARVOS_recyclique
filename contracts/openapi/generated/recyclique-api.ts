@@ -394,6 +394,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cash-sessions/{session_id}/step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mettre à jour l'étape du workflow de caisse (mutation Peintre)
+         * @description Transition ``ENTRY`` / ``SALE`` / ``EXIT`` pour la session. Garde opérateur alignée backend
+         *     (seul l'opérateur de la session, sauf rôles élevés selon route).
+         *
+         *     **Story 25.8** — en-têtes optionnels ``X-Recyclique-Context-*`` (cf. paramètres) : s'ils sont
+         *     envoyés, refus **409** avec ``code`` **``CONTEXT_STALE``** s'ils ne correspondent pas à
+         *     ``GET /v1/users/me/context`` (rafraîchissement requis après bascule site / session).
+         */
+        put: operations["recyclique_cashSessions_updateSessionStep"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cash-sessions/{session_id}/exceptional-refunds": {
         parameters: {
             query?: never;
@@ -433,6 +458,27 @@ export interface paths {
          *     **Nota 24.8** : le mouvement interne (`cash.transfer`) est un flux distinct — ne pas confondre.
          */
         post: operations["recyclique_cashSessions_createDisbursement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-sessions/{session_id}/internal-transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mouvement interne de caisse typé (Story 24.8)
+         * @description Mouvement interne PRD §10.6 — distinct remboursement client (`refund_payment`) et décaissement charge (`cash.disbursement`).
+         *     Permissions `caisse.access` + `cash.transfer`. Step-up PIN pour types sensibles ou montants élevés (N3).
+         */
+        post: operations["recyclique_cashSessions_createInternalTransfer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1072,6 +1118,8 @@ export interface paths {
          * Mettre un panier en attente (ticket suspendu)
          * @description **Story 6.3** — Persiste lignes + total sans paiement ; pas d'agrégat `total_sales` de session
          *     tant que le ticket n'est pas finalisé (`POST .../finalize-held`). Plafond serveur de brouillons par session.
+         *     **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-*` : si fournis, refus **409** `CONTEXT_STALE`
+         *     si le client n'a pas rafraîchi l'enveloppe après bascule site / session.
          */
         post: operations["recyclique_sales_createHeldSale"];
         delete?: never;
@@ -1102,6 +1150,7 @@ export interface paths {
          *     parcours explicite → **409** ``[PRIOR_YEAR_REFUND_REQUIRES_EXPERT_PATH]`` ; parcours expert requiert
          *     ``expert_prior_year_refund=true`` et permission **``accounting.prior_year_refund``**.
          *     Conflits (double remboursement, ticket ``held``, etc.) → **409**.
+         *     **Story 25.8** — **409** `CONTEXT_STALE` si en-têtes `X-Recyclique-Context-*` présents et désalignés.
          */
         post: operations["recyclique_sales_createSaleReversal"];
         delete?: never;
@@ -1175,6 +1224,7 @@ export interface paths {
          *     `special_encaissement_kind` doit être absent (exclusivité mutuelle), et la permission effective `caisse.social_encaissement` est exigée.
          *     Aligné sur l'implémentation `POST /api/v1/sales/`.
          *     **Idempotence** : en-tête optionnel `Idempotency-Key` ; rejeu même clé + même corps → même **200** ; corps différent → **409** `IDEMPOTENCY_KEY_CONFLICT` (Redis indisponible : pas de rejeu, comportement aligné fermeture session).
+         *     **Story 25.8** — **409** `CONTEXT_STALE` si en-têtes `X-Recyclique-Context-*` présents et désalignés sur l'enveloppe serveur.
          */
         post: operations["recyclique_sales_createSale"];
         delete?: never;
@@ -1218,6 +1268,8 @@ export interface paths {
          * Finaliser un ticket en attente (encaissement)
          * @description **Story 6.3** — Attache les paiements, passe la vente en `completed`, met à jour les agrégats de session.
          *     Refus si la vente n'est pas `held` ou si les garde-fous caisse échouent.
+         *     **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-*` : si fournis, refus **409** `CONTEXT_STALE`
+         *     si le client n'a pas rafraîchi l'enveloppe après bascule site / session (aligné sur `POST /v1/sales/hold`).
          *     **Idempotence** : `Idempotency-Key` optionnelle (même logique que `POST /v1/sales/`).
          */
         post: operations["recyclique_sales_finalizeHeldSale"];
@@ -1239,6 +1291,7 @@ export interface paths {
         /**
          * Abandonner un ticket en attente
          * @description **Story 6.3** — Passe la vente en `abandoned` ; pas d'impact sur les agrégats de session.
+         *     **Story 25.8** — en-têtes `X-Recyclique-Context-*` optionnels (refus **409** `CONTEXT_STALE` si désalignés).
          */
         post: operations["recyclique_sales_abandonHeldSale"];
         delete?: never;
@@ -1947,6 +2000,27 @@ export interface paths {
          * @description **Story 16.4** : **ADMIN** ou **SUPER_ADMIN** ; agrégats cross-site ; audit `log_admin_access`.
          */
         get: operations["recyclique_stats_receptionByCategory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stats/sales/by-business-tag-and-category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stats caisse tag métier × catégorie matière (Story 24.9)
+         * @description Agrégation tag métier effectif (ligne > ticket > legacy 6.5/6.6) × catégorie matière.
+         *     **ADMIN** ou **SUPER_ADMIN** ; audit `log_admin_access` sur succès.
+         */
+        get: operations["recyclique_stats_salesByBusinessTagAndCategory"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4039,6 +4113,8 @@ export interface components {
             /** Format: uuid */
             preset_id?: string | null;
             notes?: string | null;
+            business_tag_kind?: components["schemas"]["BusinessTagKindV1"] | null;
+            business_tag_custom?: string | null;
         };
         /**
          * @description Cycle de vie vente caisse (Story 6.3).
@@ -4058,6 +4134,18 @@ export interface components {
          * @enum {string}
          */
         SocialActionKindV1: "DON_LIBRE" | "DON_MOINS_18" | "MARAUDE" | "KIT_INSTALLATION_ETUDIANT" | "DON_AUX_ANIMAUX" | "FRIPERIE_AUTO_GEREE";
+        /**
+         * @description Story 24.9 — tag métier PRD + réconciliation 6.5/6.6. ``AUTRE`` exige ``business_tag_custom``.
+         * @enum {string}
+         */
+        BusinessTagKindV1: "GRATIFERIA" | "CAMPAGNE_SOCIALE" | "SPECIAL_DON_SANS_ARTICLE" | "ADHESION_ASSOCIATION" | "SOCIAL_DON_LIBRE" | "SOCIAL_DON_MOINS_18" | "SOCIAL_MARAUDE" | "SOCIAL_KIT_INSTALLATION_ETUDIANT" | "SOCIAL_DON_AUX_ANIMAUX" | "SOCIAL_FRIPERIE_AUTO_GEREE" | "AUTRE";
+        BusinessTagMaterialStatsV1: {
+            /** @description Clé tag effectif (ex. GRATIFERIA, SOCIAL_DON_LIBRE, NON_TAGUE). */
+            business_tag_key: string;
+            category_name: string;
+            total_weight: number;
+            total_items: number;
+        };
         SalePaymentMethodOptionV1: {
             code: string;
             label: string;
@@ -4079,17 +4167,22 @@ export interface components {
             total_amount: number;
             donation?: number | null;
             note?: string | null;
+            business_tag_kind?: components["schemas"]["BusinessTagKindV1"] | null;
+            business_tag_custom?: string | null;
         };
         SaleFinalizeHeldV1: {
             donation?: number | null;
             payment_method?: string | null;
             payments?: components["schemas"]["PaymentCreateV1"][] | null;
             /**
-             * @description Story 22.4 — surplus laissé en don, distinct des lignes de règlement (journal `donation_surplus`).
+             * @description Story 22.4 — complément de don volontaire (trop-perçu encaissé au-delà du ticket), distinct des lignes de règlement ;
+             *     journal technique ``donation_surplus``.
              *     Obligatoire si l'encaissement dépasse le total sans quoi la finalisation est refusée.
              */
             donation_surplus?: components["schemas"]["PaymentCreateV1"][] | null;
             note?: string | null;
+            business_tag_kind?: components["schemas"]["BusinessTagKindV1"] | null;
+            business_tag_custom?: string | null;
         };
         /**
          * @description Vente nominale : au moins une ligne dans `items`. Encaissement spécial (Story 6.5) : `special_encaissement_kind` renseigné et `items` = [].
@@ -4106,7 +4199,7 @@ export interface components {
             payment_method?: string | null;
             payments?: components["schemas"]["PaymentCreateV1"][] | null;
             /**
-             * @description Story 22.4 — don en surplus explicite (nature `donation_surplus`), séparé du règlement de vente.
+             * @description Story 22.4 — lignes explicites de complément de don (nature technique ``donation_surplus``), séparées du règlement de vente.
              *     Requis dès qu'un trop-perçu sur les lignes `payments[]` serait autrement implicite.
              */
             donation_surplus?: components["schemas"]["PaymentCreateV1"][] | null;
@@ -4115,6 +4208,8 @@ export interface components {
             social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
             /** @description Réservé à `ADHESION_ASSOCIATION` (nom ou note courte, optionnel). */
             adherent_reference?: string | null;
+            business_tag_kind?: components["schemas"]["BusinessTagKindV1"] | null;
+            business_tag_custom?: string | null;
         };
         PaymentResponseV1: {
             id: string;
@@ -4141,6 +4236,8 @@ export interface components {
         SaleItemResponseV1: components["schemas"]["SaleItemCreateV1"] & {
             id: string;
             sale_id: string;
+            /** @description Story 24.9 — tag métier effectif (ligne > ticket > legacy). */
+            effective_business_tag?: string | null;
         };
         SaleResponseV1: {
             id: string;
@@ -4162,6 +4259,10 @@ export interface components {
             special_encaissement_kind?: components["schemas"]["SpecialEncaissementKindV1"] | null;
             social_action_kind?: components["schemas"]["SocialActionKindV1"] | null;
             adherent_reference?: string | null;
+            business_tag_kind?: components["schemas"]["BusinessTagKindV1"] | null;
+            business_tag_custom?: string | null;
+            /** @description Story 24.9 — tag métier effectif au niveau ticket (héritage legacy si colonnes vides). */
+            effective_business_tag?: string | null;
             /** @description Story 24.4 — prévisualisation autorité remboursement (GET vente), alignée sur POST /sales/reversals : ``current`` (exercice ouvert) ou ``prior_closed`` (exercice antérieur clos ; parcours expert requis). */
             fiscal_branch?: string | null;
             /** @description Année fiscale de rattachement de la vente source (cadrage N vs N-1). */
@@ -4182,6 +4283,8 @@ export interface components {
             reason_code: components["schemas"]["RefundReasonCodeV1"];
             justification: string;
             detail?: string | null;
+            /** @description Référence de preuve structurée (ADR D8) — obligatoire si P3 activé sur le registre (`workflow_options.features.operations_specials_p3.enabled`). */
+            approval_evidence_ref?: string | null;
         };
         ExceptionalRefundResponseV1: {
             /** Format: uuid */
@@ -4195,6 +4298,14 @@ export interface components {
             reason_code: string;
             justification: string;
             detail?: string | null;
+            approval_evidence_ref?: string | null;
+            /**
+             * Format: date-time
+             * @description Horodatage serveur de la preuve step-up (validateur / second facteur).
+             */
+            approver_step_up_at?: string | null;
+            /** @description N3 lorsque le registre a activé P3 (sinon absent). */
+            proof_level_applied?: string | null;
             idempotency_key: string;
             request_id?: string | null;
             /** Format: uuid */
@@ -4257,6 +4368,53 @@ export interface components {
             created_at: string;
             paheko_accounting_sync_hint: string;
         };
+        /**
+         * @description Types fermés MVP — mouvement interne (PRD §10.6), pas décaissement charge.
+         * @enum {string}
+         */
+        CashInternalTransferTypeV1: "cash_float_topup" | "cash_float_seed" | "bank_deposit" | "bank_withdrawal" | "inter_register_transfer" | "variance_regularization";
+        /**
+         * @description Sens par rapport à la caisse en session.
+         * @enum {string}
+         */
+        CashSessionInternalFlowV1: "inflow" | "outflow";
+        CashInternalTransferCreateV1: {
+            transfer_type: components["schemas"]["CashInternalTransferTypeV1"];
+            session_flow: components["schemas"]["CashSessionInternalFlowV1"];
+            origin_endpoint_label: string;
+            destination_endpoint_label: string;
+            motif: string;
+            amount: number;
+            payment_method: string;
+            justification_reference: string;
+        };
+        CashInternalTransferResponseV1: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cash_session_id: string;
+            /** Format: uuid */
+            sale_id: string;
+            transfer_type: string;
+            session_flow: string;
+            amount: number;
+            origin_endpoint_label: string;
+            destination_endpoint_label: string;
+            motif: string;
+            payment_method: string;
+            justification_reference: string;
+            /** Format: uuid */
+            initiator_user_id: string;
+            /** Format: uuid */
+            approver_user_id: string;
+            /** Format: date-time */
+            approved_at: string;
+            idempotency_key: string;
+            request_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            paheko_accounting_sync_hint: string;
+        };
         MaterialExchangeCreateV1: {
             /** @description Positif = complément (création vente) ; négatif = remboursement (reversal total sur vente source) ; zéro = matière seule (aucun PaymentTransaction pour la différence). */
             delta_amount_cents: number;
@@ -4302,7 +4460,28 @@ export interface components {
             /** @description Motif obligatoire (audit). */
             reason: string;
         };
-        /** @description Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note`` doit être présent (validation serveur). */
+        /**
+         * @description Au moins un attribut de ligne (hors ``sale_item_id``) requis par le serveur par entrée.
+         *     Cohérence des paires tag (AUTRE + libellé) : règles alignées sur la caisse.
+         */
+        SaleCorrectionItemPatchV1: {
+            /** Format: uuid */
+            sale_item_id: string;
+            category?: string | null;
+            quantity?: number | null;
+            weight?: number | null;
+            unit_price?: number | null;
+            total_price?: number | null;
+            notes?: string | null;
+            /** Format: uuid */
+            preset_id?: string | null;
+            business_tag_kind?: string | null;
+            business_tag_custom?: string | null;
+        };
+        /**
+         * @description Au moins un parmi ``donation``, ``total_amount``, ``payment_method``, ``note``, ``payments``, ``donation_surplus``, ``items``
+         *     doit être présent (validation serveur).
+         */
         SaleCorrectionFinalizeFieldsV1: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -4313,6 +4492,15 @@ export interface components {
             total_amount?: number | null;
             /** @description Enum alignée sur le modèle Sale (ex. cash, card, check, free). */
             payment_method?: string | null;
+            /** @description Mise à jour ciblée des lignes ``sale_items`` (catégorie, poids, montants ligne, tags métier). */
+            items?: components["schemas"]["SaleCorrectionItemPatchV1"][] | null;
+            /**
+             * @description Remplace intégralement les lignes journal ``sale_payment``. Obligatoire pour reconcilier un total ou des moyens
+             *     si le ticket comporte plusieurs lignes de règlement ou des lignes de complément de don (journal ``donation_surplus``, Story 6.8 étendue).
+             */
+            payments?: components["schemas"]["PaymentCreateV1"][] | null;
+            /** @description Remplace intégralement les lignes journal complément de don (``donation_surplus``, Story 22.4). */
+            donation_surplus?: components["schemas"]["PaymentCreateV1"][] | null;
             note?: string | null;
             /** @description Motif obligatoire (audit). */
             reason: string;
@@ -4584,7 +4772,19 @@ export interface components {
         };
     };
     responses: never;
-    parameters: never;
+    parameters: {
+        /**
+         * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+         *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+         *     (corps `RecycliqueApiError`).
+         */
+        RecycliqueContextSiteIdHeader: string;
+        /**
+         * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+         *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+         */
+        RecycliqueContextCashSessionIdHeader: string;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -5730,10 +5930,115 @@ export interface operations {
             };
         };
     };
+    recyclique_cashSessions_updateSessionStep: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    step: "ENTRY" | "SALE" | "EXIT";
+                    /**
+                     * Format: date-time
+                     * @description Optionnel — défaut serveur si absent
+                     */
+                    timestamp?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Métriques d'étape mises à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Étape ou transition invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Accès refusé à cette session */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /**
+             * @description **Story 25.8** — **409** avec ``code`` **``CONTEXT_STALE``** si en-têtes
+             *     ``X-Recyclique-Context-*`` présents et désalignés sur l'enveloppe serveur.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_cashSessions_createExceptionalRefund: {
         parameters: {
             query?: never;
             header: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
                 /** @description PIN opérateur (preuve step-up ; ne pas logger). */
                 "X-Step-Up-Pin": string;
                 /** @description Clé client pour éviter doubles effets (Redis, TTL 24h). */
@@ -5761,7 +6066,7 @@ export interface operations {
                     "application/json": components["schemas"]["ExceptionalRefundResponseV1"];
                 };
             };
-            /** @description Erreur de validation */
+            /** @description Erreur de validation (hors règles P3) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -5788,8 +6093,20 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Conflit idempotence */
+            /**
+             * @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) ou **Story 25.8** contexte périmé (`CONTEXT_STALE`
+             *     — en-têtes `X-Recyclique-Context-*` désalignés sur l'enveloppe serveur).
+             */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 24.10 — rejet seuils / preuves P3 (référence obligatoire, combinaison montant × motif) */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5803,6 +6120,17 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
                 "Idempotency-Key": string;
                 /** @description Obligatoire pour les sous-types à preuve N3. */
                 "X-Step-Up-Pin"?: string;
@@ -5849,19 +6177,105 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Conflit idempotence */
+            /** @description Conflit idempotence ou **Story 25.8** `CONTEXT_STALE` (en-têtes contexte). */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_cashSessions_createInternalTransfer: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+                "Idempotency-Key": string;
+                /** @description Obligatoire si preuve N3 requise (types sensibles ou montant ≥ 500 €). */
+                "X-Step-Up-Pin"?: string;
+                "X-Request-Id"?: string;
+            };
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashInternalTransferCreateV1"];
+            };
+        };
+        responses: {
+            /** @description Mouvement interne enregistré */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashInternalTransferResponseV1"];
+                };
+            };
+            /** @description Erreur de validation métier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content?: never;
+            };
+            /** @description Permission ou step-up */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflit idempotence ou **Story 25.8** `CONTEXT_STALE` (en-têtes contexte). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
             };
         };
     };
     recyclique_cashSessions_createMaterialExchange: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
             path: {
                 session_id: string;
             };
@@ -5900,12 +6314,32 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
+            /** @description **Story 25.8** — `CONTEXT_STALE` si en-têtes `X-Recyclique-Context-*` présents et désalignés. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
         };
     };
     recyclique_cashSessions_closeSession: {
         parameters: {
             query?: never;
             header: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
                 /** @description PIN opérateur (4 chiffres) — preuve step-up ; ne pas logger. */
                 "X-Step-Up-Pin": string;
                 /** @description Clé client pour éviter doubles effets (Redis, TTL 24h). */
@@ -5972,7 +6406,8 @@ export interface operations {
             };
             /**
              * @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) **ou** refus politique sync Story **8.6**
-             *     (`PAHEKO_SYNC_FINAL_ACTION_REFUSED` + `policy_reason_code` — quarantaine outbox session ou mapping clôture).
+             *     (`PAHEKO_SYNC_FINAL_ACTION_REFUSED` + `policy_reason_code` — quarantaine outbox session ou mapping clôture)
+             *     **ou** **Story 25.8** `CONTEXT_STALE` (en-têtes `X-Recyclique-Context-*` désalignés).
              */
             409: {
                 headers: {
@@ -7543,7 +7978,19 @@ export interface operations {
     recyclique_sales_createHeldSale: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -7598,6 +8045,18 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
+            /**
+             * @description **Story 25.8** — Contexte client périmé (`CONTEXT_STALE`) si les en-têtes `X-Recyclique-Context-*`
+             *     ne correspondent plus à `GET /v1/users/me/context`.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
             /** @description Session fermée ou trop de tickets en attente */
             422: {
                 headers: {
@@ -7612,7 +8071,19 @@ export interface operations {
     recyclique_sales_createSaleReversal: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -7838,6 +8309,17 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
                 /** @description Optionnel. Rejoue la réponse JSON d'une création réussie si le corps canonique est identique ; conflit si la clé a déjà été utilisée avec un autre corps. */
                 "Idempotency-Key"?: string;
             };
@@ -7895,7 +8377,10 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) — `Idempotency-Key` déjà utilisée avec un autre corps */
+            /**
+             * @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) ou **Story 25.8** contexte périmé (`CONTEXT_STALE`)
+             *     si en-têtes `X-Recyclique-Context-*` incohérents.
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -7977,6 +8462,17 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
                 /** @description Optionnel — rejeu même clé + même corps de finalisation. */
                 "Idempotency-Key"?: string;
             };
@@ -8036,7 +8532,7 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) */
+            /** @description Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) ou **Story 25.8** `CONTEXT_STALE` (en-têtes contexte). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8059,7 +8555,19 @@ export interface operations {
     recyclique_sales_abandonHeldSale: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
             path: {
                 sale_id: string;
             };
@@ -8096,6 +8604,15 @@ export interface operations {
             };
             /** @description Vente introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Story 25.8 — CONTEXT_STALE (en-têtes contexte désalignés). */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10166,6 +10683,65 @@ export interface operations {
             };
         };
     };
+    recyclique_stats_salesByBusinessTagAndCategory: {
+        parameters: {
+            query?: {
+                start_date?: string;
+                end_date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agrégats par tag × catégorie */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessTagMaterialStatsV1"][];
+                };
+            };
+            /** @description Plage de dates invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle non administrateur */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rate limit */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
     recyclique_stats_unifiedLive: {
         parameters: {
             query?: {
@@ -11292,6 +11868,8 @@ export interface operations {
                 start_date?: string;
                 end_date?: string;
                 search?: string;
+                /** @description Story 24.10 — filtre rapide opérations caisse sensibles Epic 24 (remboursement exceptionnel, décaissement, transfert interne, échange matière). */
+                cash_sensitive_operations?: boolean;
             };
             header?: never;
             path?: never;

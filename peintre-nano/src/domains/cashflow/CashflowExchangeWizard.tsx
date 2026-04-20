@@ -8,6 +8,7 @@ import {
   PERMISSION_CASHFLOW_REFUND,
 } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { buildRefundWizardPaymentMethodSelectData } from './cashflow-refund-payment-method-options';
@@ -83,7 +84,13 @@ export function CashflowExchangeWizard(_props: RegisteredWidgetProps): ReactNode
   const auth = useAuthPort();
   const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
-  const stale = draft.widgetDataState === 'DATA_STALE';
+  const dataStale = draft.widgetDataState === 'DATA_STALE';
+  const envelopeStale = isEnvelopeStale(envelope);
+  const submitBlocked = dataStale || envelopeStale;
+  const contextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
   const { options: paymentMethodOptions } = useCaissePaymentMethodOptions(auth);
   const pmSelect = useMemo(
     () => buildRefundWizardPaymentMethodSelectData(paymentMethodOptions),
@@ -125,6 +132,20 @@ export function CashflowExchangeWizard(_props: RegisteredWidgetProps): ReactNode
   async function onSubmit(): Promise<void> {
     setSubmitError(null);
     setSuccess(null);
+    if (dataStale) {
+      setSubmitError({
+        kind: 'local',
+        message: 'Données ticket périmées (DATA_STALE) — actualiser avant d’enregistrer l’échange.',
+      });
+      return;
+    }
+    if (isEnvelopeStale(envelope)) {
+      setSubmitError({
+        kind: 'local',
+        message: 'Enveloppe de contexte périmée — rafraîchir le contexte avant l’échange.',
+      });
+      return;
+    }
     let trace: Record<string, unknown> = {};
     try {
       const parsed = JSON.parse(traceJson) as unknown;
@@ -193,7 +214,7 @@ export function CashflowExchangeWizard(_props: RegisteredWidgetProps): ReactNode
     }
 
     setBusy(true);
-    const res = await postMaterialExchange(sessionId, body, auth);
+    const res = await postMaterialExchange(sessionId, body, auth, { contextBinding });
     setBusy(false);
     if (!res.ok) {
       setSubmitError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
@@ -211,9 +232,14 @@ export function CashflowExchangeWizard(_props: RegisteredWidgetProps): ReactNode
           total sur le ticket source (même mécanisme que le remboursement standard).
         </Text>
       </div>
-      {stale ? (
-        <Alert color="orange" title="Données de contexte obsolètes">
-          Rechargez ou rouvrez la caisse avant d’enregistrer un échange.
+      {dataStale ? (
+        <Alert color="orange" title="Données périmées" data-testid="cashflow-exchange-stale-data">
+          <Text size="sm">Données ticket (DATA_STALE) — actualiser avant d’enregistrer un échange.</Text>
+        </Alert>
+      ) : null}
+      {envelopeStale ? (
+        <Alert color="orange" title="Contexte périmé" mb="sm" data-testid="cashflow-exchange-stale-envelope">
+          <Text size="sm">Enveloppe de contexte trop ancienne — rafraîchir le contexte avant l’échange.</Text>
         </Alert>
       ) : null}
       <NumberInput
@@ -284,6 +310,7 @@ export function CashflowExchangeWizard(_props: RegisteredWidgetProps): ReactNode
       <Button
         type="button"
         loading={busy}
+        disabled={submitBlocked}
         onClick={() => void onSubmit()}
         data-testid="cashflow-exchange-wizard-submit"
       >

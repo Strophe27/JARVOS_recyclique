@@ -7,6 +7,7 @@ import {
   PERMISSION_CASHFLOW_SPECIAL_ENCAISSEMENT,
 } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import type { CashflowSubmitSurfaceError } from './cashflow-submit-error';
@@ -118,6 +119,13 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
 
   const onSubmit = useCallback(async () => {
     setError(null);
+    if (isEnvelopeStale(envelope)) {
+      setError({
+        kind: 'local',
+        message: 'Enveloppe de contexte périmée — rafraîchir le contexte avant d’enregistrer.',
+      });
+      return;
+    }
     if (!paymentMethodsReady) {
       setError({
         kind: 'local',
@@ -153,7 +161,9 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
           ? { adherent_reference: adherentRef.trim() }
           : {}),
       };
-      const res = await postCreateSale(body, auth);
+      const res = await postCreateSale(body, auth, {
+        contextBinding: { siteId: envelope.siteId, cashSessionId: envelope.cashSessionId },
+      });
       if (!res.ok) {
         setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
         setSuccessId(null);
@@ -164,7 +174,7 @@ function SpecialEncaissementWizardInner(props: { readonly kind: SpecialEncaissem
     } finally {
       setBusy(false);
     }
-  }, [auth, adherentRef, kind, paymentMethod, paymentMethodsReady, sessionInput, total]);
+  }, [auth, adherentRef, envelope.cashSessionId, envelope.siteId, kind, paymentMethod, paymentMethodsReady, sessionInput, total]);
 
   if (entry.blocked) {
     return (

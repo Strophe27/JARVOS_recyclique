@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.25-draft
+  version: 0.1.26-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -1141,6 +1141,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/cash-sessions/{session_id}/step:
+    put:
+      operationId: recyclique_cashSessions_updateSessionStep
+      tags:
+        - cash-sessions
+      summary: Mettre à jour l'étape du workflow de caisse (mutation Peintre)
+      description: |
+        Transition ``ENTRY`` / ``SALE`` / ``EXIT`` pour la session. Garde opérateur alignée backend
+        (seul l'opérateur de la session, sauf rôles élevés selon route).
+
+        **Story 25.8** — en-têtes optionnels ``X-Recyclique-Context-*`` (cf. paramètres) : s'ils sont
+        envoyés, refus **409** avec ``code`` **``CONTEXT_STALE``** s'ils ne correspondent pas à
+        ``GET /v1/users/me/context`` (rafraîchissement requis après bascule site / session).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - step
+              properties:
+                step:
+                  type: string
+                  enum:
+                    - ENTRY
+                    - SALE
+                    - EXIT
+                timestamp:
+                  type: string
+                  format: date-time
+                  description: Optionnel — défaut serveur si absent
+      responses:
+        "200":
+          description: Métriques d'étape mises à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Aligné backend ``CashSessionStepResponse`` (session_id, current_step, etc.)
+        "400":
+          description: Étape ou transition invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Accès refusé à cette session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Session introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: |
+            **Story 25.8** — **409** avec ``code`` **``CONTEXT_STALE``** si en-têtes
+            ``X-Recyclique-Context-*`` présents et désalignés sur l'enveloppe serveur.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/cash-sessions/{session_id}/exceptional-refunds:
     post:
       operationId: recyclique_cashSessions_createExceptionalRefund
@@ -1155,6 +1238,8 @@ paths:
       security:
         - bearerOrCookie: []
       parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: session_id
           in: path
           required: true
@@ -1217,7 +1302,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "409":
-          description: Conflit idempotence
+          description: |
+            Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) ou **Story 25.8** contexte périmé (`CONTEXT_STALE`
+            — en-têtes `X-Recyclique-Context-*` désalignés sur l'enveloppe serveur).
           content:
             application/json:
               schema:
@@ -1235,6 +1322,8 @@ paths:
       security:
         - bearerOrCookie: []
       parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: session_id
           in: path
           required: true
@@ -1277,7 +1366,12 @@ paths:
         "404":
           description: Session introuvable
         "409":
-          description: Conflit idempotence
+          description: |
+            Conflit idempotence ou **Story 25.8** `CONTEXT_STALE` (en-têtes contexte).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/cash-sessions/{session_id}/internal-transfers:
     post:
       operationId: recyclique_cashSessions_createInternalTransfer
@@ -1290,6 +1384,8 @@ paths:
       security:
         - bearerOrCookie: []
       parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: session_id
           in: path
           required: true
@@ -1332,7 +1428,12 @@ paths:
         "404":
           description: Session introuvable
         "409":
-          description: Conflit idempotence
+          description: |
+            Conflit idempotence ou **Story 25.8** `CONTEXT_STALE` (en-têtes contexte).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
   /v1/cash-sessions/{session_id}/material-exchanges:
     post:
       operationId: recyclique_cashSessions_createMaterialExchange
@@ -1346,6 +1447,8 @@ paths:
       security:
         - bearerOrCookie: []
       parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: session_id
           in: path
           required: true
@@ -1373,6 +1476,13 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "403":
           description: Permission manquante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: |
+            **Story 25.8** — `CONTEXT_STALE` si en-têtes `X-Recyclique-Context-*` présents et désalignés.
           content:
             application/json:
               schema:
@@ -1409,6 +1519,8 @@ paths:
       security:
         - bearerOrCookie: []
       parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: session_id
           in: path
           required: true
@@ -1471,7 +1583,8 @@ paths:
         "409":
           description: |
             Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) **ou** refus politique sync Story **8.6**
-            (`PAHEKO_SYNC_FINAL_ACTION_REFUSED` + `policy_reason_code` — quarantaine outbox session ou mapping clôture).
+            (`PAHEKO_SYNC_FINAL_ACTION_REFUSED` + `policy_reason_code` — quarantaine outbox session ou mapping clôture)
+            **ou** **Story 25.8** `CONTEXT_STALE` (en-têtes `X-Recyclique-Context-*` désalignés).
           content:
             application/json:
               schema:
@@ -2945,8 +3058,13 @@ paths:
       description: |
         **Story 6.3** — Persiste lignes + total sans paiement ; pas d'agrégat `total_sales` de session
         tant que le ticket n'est pas finalisé (`POST .../finalize-held`). Plafond serveur de brouillons par session.
+        **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-*` : si fournis, refus **409** `CONTEXT_STALE`
+        si le client n'a pas rafraîchi l'enveloppe après bascule site / session.
       security:
         - bearerOrCookie: []
+      parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
       requestBody:
         required: true
         content:
@@ -2984,6 +3102,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: |
+            **Story 25.8** — Contexte client périmé (`CONTEXT_STALE`) si les en-têtes `X-Recyclique-Context-*`
+            ne correspondent plus à `GET /v1/users/me/context`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
         "422":
           description: Session fermée ou trop de tickets en attente
           content:
@@ -3008,8 +3134,12 @@ paths:
         parcours explicite → **409** ``[PRIOR_YEAR_REFUND_REQUIRES_EXPERT_PATH]`` ; parcours expert requiert
         ``expert_prior_year_refund=true`` et permission **``accounting.prior_year_refund``**.
         Conflits (double remboursement, ticket ``held``, etc.) → **409**.
+        **Story 25.8** — **409** `CONTEXT_STALE` si en-têtes `X-Recyclique-Context-*` présents et désalignés.
       security:
         - bearerOrCookie: []
+      parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
       requestBody:
         required: true
         content:
@@ -3210,9 +3340,12 @@ paths:
         `special_encaissement_kind` doit être absent (exclusivité mutuelle), et la permission effective `caisse.social_encaissement` est exigée.
         Aligné sur l'implémentation `POST /api/v1/sales/`.
         **Idempotence** : en-tête optionnel `Idempotency-Key` ; rejeu même clé + même corps → même **200** ; corps différent → **409** `IDEMPOTENCY_KEY_CONFLICT` (Redis indisponible : pas de rejeu, comportement aligné fermeture session).
+        **Story 25.8** — **409** `CONTEXT_STALE` si en-têtes `X-Recyclique-Context-*` présents et désalignés sur l'enveloppe serveur.
       security:
         - bearerOrCookie: []
       parameters:
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: Idempotency-Key
           in: header
           required: false
@@ -3262,7 +3395,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "409":
-          description: Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) — `Idempotency-Key` déjà utilisée avec un autre corps
+          description: |
+            Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) ou **Story 25.8** contexte périmé (`CONTEXT_STALE`)
+            si en-têtes `X-Recyclique-Context-*` incohérents.
           content:
             application/json:
               schema:
@@ -3332,6 +3467,8 @@ paths:
       description: |
         **Story 6.3** — Attache les paiements, passe la vente en `completed`, met à jour les agrégats de session.
         Refus si la vente n'est pas `held` ou si les garde-fous caisse échouent.
+        **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-*` : si fournis, refus **409** `CONTEXT_STALE`
+        si le client n'a pas rafraîchi l'enveloppe après bascule site / session (aligné sur `POST /v1/sales/hold`).
         **Idempotence** : `Idempotency-Key` optionnelle (même logique que `POST /v1/sales/`).
       security:
         - bearerOrCookie: []
@@ -3342,6 +3479,8 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: Idempotency-Key
           in: header
           required: false
@@ -3387,7 +3526,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "409":
-          description: Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`)
+          description: |
+            Conflit idempotence (`IDEMPOTENCY_KEY_CONFLICT`) ou **Story 25.8** `CONTEXT_STALE` (en-têtes contexte).
           content:
             application/json:
               schema:
@@ -3406,6 +3546,7 @@ paths:
       summary: Abandonner un ticket en attente
       description: |
         **Story 6.3** — Passe la vente en `abandoned` ; pas d'impact sur les agrégats de session.
+        **Story 25.8** — en-têtes `X-Recyclique-Context-*` optionnels (refus **409** `CONTEXT_STALE` si désalignés).
       security:
         - bearerOrCookie: []
       parameters:
@@ -3415,6 +3556,8 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
       responses:
         "200":
           description: Ticket abandonné
@@ -3436,6 +3579,13 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "404":
           description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: >
+            Story 25.8 — CONTEXT_STALE (en-têtes contexte désalignés).
           content:
             application/json:
               schema:
@@ -7497,6 +7647,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
 components:
+  parameters:
+    RecycliqueContextSiteIdHeader:
+      name: X-Recyclique-Context-Site-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: |
+        **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+        envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+        (corps `RecycliqueApiError`).
+    RecycliqueContextCashSessionIdHeader:
+      name: X-Recyclique-Context-Cash-Session-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: |
+        **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+        à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
   securitySchemes:
     bearerOrCookie:
       type: http

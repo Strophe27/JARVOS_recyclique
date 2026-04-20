@@ -1,6 +1,15 @@
 import type { AuthContextPort } from '../app/auth/auth-context-port';
+import {
+  applyRecycliqueContextBindingHeaders,
+  type RecycliqueContextBinding,
+} from './context-binding-headers';
 import { getLiveSnapshotBasePrefix } from './live-snapshot-client';
 import { parseRecycliqueApiErrorBody, toRecycliqueClientFailure } from './recyclique-api-error';
+
+/** Story 25.8 — liaison optionnelle avec l'enveloppe courante (en-têtes `X-Recyclique-Context-*`). */
+export type SalesMutationOptions = {
+  readonly contextBinding?: RecycliqueContextBinding;
+};
 
 /** Champs AR21 (OpenAPI RecycliqueApiError) sur les erreurs HTTP du client ventes. */
 export type SalesClientHttpErrorFields = {
@@ -295,6 +304,7 @@ export async function getSalePaymentMethodOptions(
 export async function postCreateSale(
   body: SaleCreateBody,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  options?: SalesMutationOptions,
 ): Promise<SaleCreateResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/`;
@@ -306,6 +316,7 @@ export async function postCreateSale(
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {
@@ -346,6 +357,7 @@ export async function postCreateSale(
 export async function getSale(
   saleId: string,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  options?: SalesMutationOptions,
 ): Promise<GetSaleResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/${encodeURIComponent(saleId)}`;
@@ -356,6 +368,7 @@ export async function getSale(
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {
@@ -397,6 +410,7 @@ export async function putSaleNote(
   saleId: string,
   note: string,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  options?: SalesMutationOptions,
 ): Promise<PutSaleNoteResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/${encodeURIComponent(saleId)}`;
@@ -408,6 +422,7 @@ export async function putSaleNote(
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {
@@ -459,6 +474,7 @@ export async function getHeldSalesForSession(
   cashSessionId: string,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
   limit = 50,
+  options?: SalesMutationOptions,
 ): Promise<HeldSalesListResult> {
   const base = getLiveSnapshotBasePrefix();
   const q = new URLSearchParams({ cash_session_id: cashSessionId, limit: String(limit) });
@@ -466,6 +482,7 @@ export async function getHeldSalesForSession(
   const headers: Record<string, string> = { Accept: 'application/json' };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {
@@ -499,6 +516,7 @@ export type SaleHoldResult = { ok: true; saleId: string; raw: unknown } | SalesH
 export async function postHoldSale(
   body: SaleHoldCreateBody,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  options?: SalesMutationOptions,
 ): Promise<SaleHoldResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/hold`;
@@ -508,6 +526,7 @@ export async function postHoldSale(
   };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {
@@ -546,6 +565,7 @@ export async function postFinalizeHeldSale(
   saleId: string,
   body: SaleFinalizeHeldBody,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  options?: SalesMutationOptions,
 ): Promise<FinalizeHeldResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/${encodeURIComponent(saleId)}/finalize-held`;
@@ -555,6 +575,7 @@ export async function postFinalizeHeldSale(
   };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {
@@ -678,6 +699,7 @@ export function parseSaleReversalResponseJson(json: unknown): SaleReversalRespon
 export async function postCreateSaleReversal(
   body: SaleReversalCreateBody,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  options?: SalesMutationOptions,
 ): Promise<SaleReversalCreateResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/reversals`;
@@ -687,6 +709,7 @@ export async function postCreateSaleReversal(
   };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
   const ik = (body.idempotency_key ?? '').trim();
   if (ik) headers['Idempotency-Key'] = ik;
 
@@ -759,12 +782,14 @@ export async function getSaleReversal(
 export async function postAbandonHeldSale(
   saleId: string,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
+  options?: SalesMutationOptions,
 ): Promise<AbandonHeldResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/${encodeURIComponent(saleId)}/abandon-held`;
   const headers: Record<string, string> = { Accept: 'application/json' };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {
@@ -826,7 +851,7 @@ export async function patchSaleSensitiveCorrection(
   saleId: string,
   body: SaleCorrectionRequestBody,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
-  opts?: { stepUpPin?: string; idempotencyKey?: string },
+  opts?: SalesMutationOptions & { stepUpPin?: string; idempotencyKey?: string },
 ): Promise<PatchSaleSensitiveCorrectionResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/${encodeURIComponent(saleId)}/corrections`;
@@ -836,6 +861,7 @@ export async function patchSaleSensitiveCorrection(
   };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
+  applyRecycliqueContextBindingHeaders(headers, opts?.contextBinding);
   const pin = opts?.stepUpPin?.trim();
   if (pin) headers['X-Step-Up-Pin'] = pin;
   const ik = opts?.idempotencyKey?.trim();

@@ -1,5 +1,6 @@
 import { Button, Modal, Text, Textarea, TextInput } from '@mantine/core';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import { postCreateSale, postFinalizeHeldSale, type SaleCreateBody, type SalePaymentMethodOption } from '../../api/sales-client';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
@@ -15,6 +16,7 @@ import {
   setAfterSuccessfulSale,
   setCashSessionIdInput,
   setCashflowDraftApiSubmitError,
+  setCashflowDraftLocalSubmitError,
   setPaymentMethod,
   useCashflowDraft,
 } from './cashflow-draft-store';
@@ -142,6 +144,10 @@ export function KioskFinalizeSaleDock(): ReactNode {
     !paymentMethodsLoading && paymentMethodsError === null && methodOptions.length > 0;
   const pmLabelMap = useMemo(() => paymentMethodLabelMapFromOptions(methodOptions), [methodOptions]);
   const envelope = useContextEnvelope();
+  const saleContextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
   const stale = draft.widgetDataState === 'DATA_STALE';
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -440,6 +446,12 @@ export function KioskFinalizeSaleDock(): ReactNode {
 
   const onSubmit = async () => {
     clearCashflowDraftSubmitError();
+    if (isEnvelopeStale(envelope)) {
+      setCashflowDraftLocalSubmitError(
+        'Enveloppe de contexte périmée — rafraîchir le contexte avant d’enregistrer la vente.',
+      );
+      return;
+    }
     setBusy(true);
     try {
       const noteOpt = saleNote.trim() ? { note: saleNote.trim() } : {};
@@ -471,7 +483,9 @@ export function KioskFinalizeSaleDock(): ReactNode {
           finalizePayload = { payment_method: journalPaymentMethodCode, ...baseDon, ...ticketTagFields };
         }
 
-        const res = await postFinalizeHeldSale(draft.activeHeldSaleId, finalizePayload, auth);
+        const res = await postFinalizeHeldSale(draft.activeHeldSaleId, finalizePayload, auth, {
+          contextBinding: saleContextBinding,
+        });
         if (!res.ok) {
           setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(res));
           return;
@@ -508,7 +522,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
         body.payment_method = journalPaymentMethodCode;
       }
 
-      const res = await postCreateSale(body, auth);
+      const res = await postCreateSale(body, auth, { contextBinding: saleContextBinding });
       if (!res.ok) {
         setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(res));
         return;

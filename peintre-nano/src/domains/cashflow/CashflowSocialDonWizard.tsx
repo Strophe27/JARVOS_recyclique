@@ -7,6 +7,7 @@ import {
   PERMISSION_CASHFLOW_SOCIAL_ENCAISSEMENT,
 } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import {
   SOCIAL_ACTION_KIND_LOT1,
@@ -126,6 +127,13 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
 
   const onSubmit = useCallback(async () => {
     setError(null);
+    if (isEnvelopeStale(envelope)) {
+      setError({
+        kind: 'local',
+        message: 'Enveloppe de contexte périmée — rafraîchir le contexte avant d’enregistrer.',
+      });
+      return;
+    }
     if (!paymentMethodsReady) {
       setError({
         kind: 'local',
@@ -155,7 +163,9 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
         payment_method: paymentMethod,
         ...(note.trim() ? { note: note.trim() } : {}),
       };
-      const res = await postCreateSale(body, auth);
+      const res = await postCreateSale(body, auth, {
+        contextBinding: { siteId: envelope.siteId, cashSessionId: envelope.cashSessionId },
+      });
       if (!res.ok) {
         setError({ kind: 'api', failure: recycliqueClientFailureFromSalesHttp(res) });
         setSuccessId(null);
@@ -165,7 +175,7 @@ export function CashflowSocialDonWizard(_props: RegisteredWidgetProps): ReactNod
     } finally {
       setBusy(false);
     }
-  }, [auth, note, paymentMethod, paymentMethodsReady, sessionInput, socialKind, total]);
+  }, [auth, envelope.cashSessionId, envelope.siteId, note, paymentMethod, paymentMethodsReady, sessionInput, socialKind, total]);
 
   if (entry.blocked) {
     return (

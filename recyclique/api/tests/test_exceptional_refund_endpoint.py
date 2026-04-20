@@ -206,7 +206,8 @@ def test_exceptional_refund_rejects_amount_over_cash_balance(
         json=payload,
         headers=_auth_headers(operator_user, pin=_PIN, idempotency_key="idem-over"),
     )
-    assert r.status_code == 400
+    # ``_EXCEPTIONAL_REFUND_DOMAIN_HTTP`` : ValidationError → 422 (Story 24.10 / schéma P3).
+    assert r.status_code == 422
 
 
 def test_exceptional_refund_requires_idempotency_key(

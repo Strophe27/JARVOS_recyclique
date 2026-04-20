@@ -22,6 +22,7 @@ import {
   PERMISSION_CASHFLOW_NOMINAL,
 } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { buildRefundWizardPaymentMethodSelectData } from './cashflow-refund-payment-method-options';
@@ -109,8 +110,15 @@ function useInternalTransferEntryBlock(): EntryBlock {
 export function CashflowInternalTransferWizard(_props: RegisteredWidgetProps): ReactNode {
   const entry = useInternalTransferEntryBlock();
   const auth = useAuthPort();
+  const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
-  const stale = draft.widgetDataState === 'DATA_STALE';
+  const dataStale = draft.widgetDataState === 'DATA_STALE';
+  const envelopeStale = isEnvelopeStale(envelope);
+  const submitBlocked = dataStale || envelopeStale;
+  const contextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
   const { options: paymentMethodOptions } = useCaissePaymentMethodOptions(auth);
   const pmSelect = useMemo(
     () => buildRefundWizardPaymentMethodSelectData(paymentMethodOptions),
@@ -152,6 +160,20 @@ export function CashflowInternalTransferWizard(_props: RegisteredWidgetProps): R
   const needsFlowSelect = deriveSessionFlow(transferType) === null;
 
   const onSubmit = async (): Promise<void> => {
+    if (dataStale) {
+      setError({
+        kind: 'local',
+        message: 'Données ticket périmées (DATA_STALE) — actualiser avant le mouvement interne.',
+      });
+      return;
+    }
+    if (isEnvelopeStale(envelope)) {
+      setError({
+        kind: 'local',
+        message: 'Enveloppe de contexte périmée — rafraîchir le contexte avant le mouvement interne.',
+      });
+      return;
+    }
     const amountValue = typeof amount === 'number' ? amount : Number(amount);
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
       setError({ kind: 'local', message: 'Saisissez un montant positif.' });
@@ -200,6 +222,7 @@ export function CashflowInternalTransferWizard(_props: RegisteredWidgetProps): R
         internalTransferNeedsStepUpPin({ transfer_type: transferType, amount: Number(amountValue) })
           ? pin.trim()
           : undefined,
+      contextBinding,
     });
     setBusy(false);
     if (!res.ok) {
@@ -218,9 +241,14 @@ export function CashflowInternalTransferWizard(_props: RegisteredWidgetProps): R
           charge (PRD §10.6). Chaîne comptable Paheko via clôture (ADR D1).
         </Text>
       </div>
-      {stale ? (
-        <Alert color="yellow" title="Brouillon potentiellement périmé">
-          Rafraîchir le contexte caisse si vous avez changé de session.
+      {dataStale ? (
+        <Alert color="orange" title="Données périmées" data-testid="cashflow-internal-transfer-stale-data">
+          <Text size="sm">Données ticket (DATA_STALE) — actualiser avant le mouvement interne.</Text>
+        </Alert>
+      ) : null}
+      {envelopeStale ? (
+        <Alert color="orange" title="Contexte périmé" data-testid="cashflow-internal-transfer-stale-envelope">
+          <Text size="sm">Enveloppe de contexte trop ancienne — rafraîchir avant le mouvement interne.</Text>
         </Alert>
       ) : null}
       <NativeSelect
@@ -273,7 +301,7 @@ export function CashflowInternalTransferWizard(_props: RegisteredWidgetProps): R
           onChange={(e) => setPin(e.currentTarget.value)}
         />
       ) : null}
-      <Button loading={busy} onClick={() => void onSubmit()}>
+      <Button loading={busy} disabled={submitBlocked} onClick={() => void onSubmit()}>
         Enregistrer le mouvement interne
       </Button>
       <CashflowOperationalSyncNotice auth={auth} />

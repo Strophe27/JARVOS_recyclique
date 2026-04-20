@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 from uuid import UUID
+
+from recyclic_api.core.context_binding_guard import enforce_optional_client_context_binding
 from recyclic_api.core.database import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
@@ -95,6 +97,21 @@ def _user_for_sale_item_patch(db: Session, user_id: str) -> User:
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
+
+
+def _user_uuid_or_none(user_id: str) -> UUID | None:
+    try:
+        return UUID(str(user_id))
+    except ValueError:
+        return None
+
+
+def _enforce_sales_context_binding(request: Request, db: Session, user_id: str) -> None:
+    """Story 25.8 — refus 409 ``CONTEXT_STALE`` si les en-têtes de contexte ne matchent pas l'enveloppe."""
+    uid = _user_uuid_or_none(user_id)
+    if uid is None:
+        return
+    enforce_optional_client_context_binding(request, db, uid)
 
 
 def _require_admin_for_sale_note(db: Session, user_id: str) -> None:
@@ -222,6 +239,7 @@ async def create_held_sale(
 ):
     """Met un panier en attente (persisté serveur, sans paiement ni agrégat session)."""
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    _enforce_sales_context_binding(request, db, user_id)
     rid = getattr(request.state, "request_id", None)
     try:
         return SaleService(db).create_held_sale(hold_data, user_id, request_id=rid)
@@ -252,6 +270,7 @@ async def create_sale_reversal(
     if not row:
         raise HTTPException(status_code=401, detail="User not found")
 
+    _enforce_sales_context_binding(request, db, user_id)
     rid = getattr(request.state, "request_id", None)
     try:
         return SaleService(db).create_sale_reversal(body, user_id, request_id=rid)
@@ -433,6 +452,7 @@ async def create_sale(
     - Example: Item with weight=2.5kg and total_price=15.0 contributes 15.0 to total (NOT 37.5)
     """
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    _enforce_sales_context_binding(request, db, user_id)
     rid = getattr(request.state, "request_id", None)
 
     idem_key = (request.headers.get(IDEMPOTENCY_KEY_HEADER) or "").strip() or None
@@ -469,6 +489,7 @@ async def finalize_held_sale(
 ):
     """Finalise un ticket précédemment mis en attente (paiement + agrégats session)."""
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    _enforce_sales_context_binding(request, db, user_id)
     rid = getattr(request.state, "request_id", None)
 
     idem_key = (request.headers.get(IDEMPOTENCY_KEY_HEADER) or "").strip() or None
@@ -503,6 +524,7 @@ async def abandon_held_sale(
 ):
     """Abandon explicite d'un ticket en attente."""
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    _enforce_sales_context_binding(request, db, user_id)
     rid = getattr(request.state, "request_id", None)
     try:
         return SaleService(db).abandon_held_sale(sale_id, user_id, request_id=rid)
@@ -531,6 +553,7 @@ async def update_sale_item(
     - Price modifications are logged in audit log
     """
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
+    _enforce_sales_context_binding(request, db, user_id)
     user = _user_for_sale_item_patch(db, user_id)
 
     try:

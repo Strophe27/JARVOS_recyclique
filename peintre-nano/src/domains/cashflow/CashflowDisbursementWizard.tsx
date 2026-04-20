@@ -18,6 +18,7 @@ import {
   PERMISSION_CASHFLOW_NOMINAL,
 } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { buildRefundWizardPaymentMethodSelectData } from './cashflow-refund-payment-method-options';
@@ -110,8 +111,15 @@ function useDisbursementEntryBlock(): EntryBlock {
 export function CashflowDisbursementWizard(_props: RegisteredWidgetProps): ReactNode {
   const entry = useDisbursementEntryBlock();
   const auth = useAuthPort();
+  const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
-  const stale = draft.widgetDataState === 'DATA_STALE';
+  const dataStale = draft.widgetDataState === 'DATA_STALE';
+  const envelopeStale = isEnvelopeStale(envelope);
+  const submitBlocked = dataStale || envelopeStale;
+  const contextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
   const { options: paymentMethodOptions } = useCaissePaymentMethodOptions(auth);
   const pmSelect = useMemo(
     () => buildRefundWizardPaymentMethodSelectData(paymentMethodOptions),
@@ -147,6 +155,20 @@ export function CashflowDisbursementWizard(_props: RegisteredWidgetProps): React
   const sessionId = entry.sessionId;
 
   const onSubmit = async (): Promise<void> => {
+    if (dataStale) {
+      setError({
+        kind: 'local',
+        message: 'Données ticket périmées (DATA_STALE) — actualiser avant le décaissement.',
+      });
+      return;
+    }
+    if (isEnvelopeStale(envelope)) {
+      setError({
+        kind: 'local',
+        message: 'Enveloppe de contexte périmée — rafraîchir le contexte avant le décaissement.',
+      });
+      return;
+    }
     const amountValue = typeof amount === 'number' ? amount : Number(amount);
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
       setError({ kind: 'local', message: 'Saisissez un montant positif.' });
@@ -200,6 +222,7 @@ export function CashflowDisbursementWizard(_props: RegisteredWidgetProps): React
     const res = await postCashDisbursement(sessionId, payload, auth, {
       idempotencyKey: idem,
       stepUpPin: needsStepUpPin(subtype) ? pin.trim() : undefined,
+      contextBinding,
     });
     setBusy(false);
     if (!res.ok) {
@@ -217,9 +240,14 @@ export function CashflowDisbursementWizard(_props: RegisteredWidgetProps): React
           Sous-types obligatoires — distinct du remboursement client et du mouvement interne de caisse (24.8).
         </Text>
       </div>
-      {stale ? (
-        <Alert color="yellow" title="Brouillon potentiellement périmé">
-          Rafraîchir le contexte caisse si vous avez changé de session.
+      {dataStale ? (
+        <Alert color="orange" title="Données périmées" data-testid="cashflow-disbursement-stale-data">
+          <Text size="sm">Données ticket (DATA_STALE) — actualiser avant le décaissement.</Text>
+        </Alert>
+      ) : null}
+      {envelopeStale ? (
+        <Alert color="orange" title="Contexte périmé" data-testid="cashflow-disbursement-stale-envelope">
+          <Text size="sm">Enveloppe de contexte trop ancienne — rafraîchir avant le décaissement.</Text>
         </Alert>
       ) : null}
       <NativeSelect
@@ -289,7 +317,7 @@ export function CashflowDisbursementWizard(_props: RegisteredWidgetProps): React
           onChange={(e) => setPin(e.currentTarget.value)}
         />
       ) : null}
-      <Button loading={busy} onClick={() => void onSubmit()}>
+      <Button loading={busy} disabled={submitBlocked} onClick={() => void onSubmit()}>
         Enregistrer le décaissement
       </Button>
       <CashflowOperationalSyncNotice auth={auth} />

@@ -1,3 +1,7 @@
+# last_updated: 2026-04-20 — story 25-8 Story Runner BMAD fin : CS→VS→ADR N/A→DS→GATE(git status -sb + diff --stat)→QA→CR APPROVE ; 25-8 **review**→**done** ; epic-25 inchangé in-progress ; vs=0 qa=0 cr=0 ; test-summary `tests/test-summary-story-25-8-context-stale.md`
+# last_updated: 2026-04-20 — story 25-8 DS bmad-dev-story Task : 25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse ready-for-dev → **review** ; garde `CONTEXT_STALE` + en-têtes + OpenAPI + Peintre ; pytest `test_context_stale_story25_8.py` ; test-summary `_bmad-output/implementation-artifacts/tests/test-summary-story-25-8-context-stale.md` ; epic-25 inchangé in-progress ; trace DS ; qa_loop=0 cr_loop=0
+# last_updated: 2026-04-20 — story 25-8 VS bmad-create-story validate : PASS — AC BDD alignés epics §25.8 mot à mot ; checklist dev (chemins pytest/e2e + refus/erreurs) ; mapping checklist 25.7 §3.2 complet (`CTX-SWITCH-3-2-OPERATOR-PIN-CANON-PRD-11-2`, `CTX-SWITCH-3-2-KIOSQUE-POSTE-STEPUP-ADR-25-2`) ; tasks reliées aux AC ; `development_status` **25-8** inchangé **`ready-for-dev`** ; `epic-25` inchangé **in-progress** ; vs_loop=0 ; ADR N/A
+# last_updated: 2026-04-20 — story 25-8 CS bmad-create-story (create) : `25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse.md` ; `epic-25` inchangé **in-progress** ; trace CS
 # last_updated: 2026-04-20 — story 25-7 correctif QA2 post-livraison (DS) : alignement prose epics §25 Pilotage YAML / Regle directrice ↔ YAML ; `25-6`/`25-7` **done** ; `25-8`…`25-15` **backlog** ; `epic-25` **in-progress** ; commentaires bloc Epic 25 harmonises ; `development_status` **25-7** : `ready-for-dev` → **`done`** (rattrapage coherence livraison)
 # last_updated: 2026-04-20 — story 25-6 DS micro-lot : clarification commentaires phase 2 (`25-6` **done** documenté dans `development_status` ; phase 2 suite **`25-8`…`25-15`** backlog ; rattrapage ulterieur **25-7** → **done** — correctif QA2 post-livraison)
 # last_updated: 2026-04-21 — story 25-6 DS satellites post-QA2 : note readiness §2/4/7 + rapport readiness phase2 + spec §1.3/§5 + encadrés ADR 25-2/25-3 + test-summary 1:1 addendum §5 + note PowerShell addendum ; pas de changement `development_status`
@@ -571,7 +575,7 @@ development_status:
   #   25-6 → (25-7, parallele possible 25-12) → 25-8 → 25-9 → 25-10 ; 25-7 → 25-11 ; 25-11 → 25-13 / 25-15 ; 25-8 + 25-13 → 25-14 ; 25-15 dernier.
   25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable: done
   25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable: done
-  25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse: backlog
+  25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse: done
   25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8: backlog
   25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox: backlog
   25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa: backlog

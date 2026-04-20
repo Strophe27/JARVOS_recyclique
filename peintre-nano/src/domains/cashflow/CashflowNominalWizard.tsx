@@ -25,6 +25,7 @@ import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CategoryHierarchyPicker } from '../../widgets/category-hierarchy-picker/CategoryHierarchyPicker';
 import { CONTEXT_ACTIVE_SITE_DISPLAY_NAME_KEY } from '../../runtime/context-presentation-keys';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import { FlowRenderer } from '../../flows/FlowRenderer';
 import {
   addTicketLine,
@@ -693,7 +694,9 @@ function HeldTicketsPanel({ kioskSurface }: { readonly kioskSurface: boolean }):
     setBusyId(id);
     clearCashflowDraftSubmitError();
     try {
-      const r = await postAbandonHeldSale(id, auth);
+      const r = await postAbandonHeldSale(id, auth, {
+        contextBinding: { siteId: envelope.siteId, cashSessionId: envelope.cashSessionId },
+      });
       if (!r.ok) {
         setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(r));
         return;
@@ -957,6 +960,11 @@ function LinesStep({
 }): ReactNode {
   const draft = useCashflowDraft();
   const auth = useAuthPort();
+  const envelope = useContextEnvelope();
+  const saleContextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
   const [category, setCategory] = useState('EEE-1');
   /** Libellé métier issu de la grille (GET /v1/categories/) — évite d’afficher l’identifiant technique comme libellé principal. */
   const [categoryArticleLabel, setCategoryArticleLabel] = useState('');
@@ -1060,6 +1068,12 @@ function LinesStep({
     const sid = draft.cashSessionIdInput.trim();
     if (!sid || draft.lines.length === 0) return;
     clearCashflowDraftSubmitError();
+    if (isEnvelopeStale(envelope)) {
+      setCashflowDraftLocalSubmitError(
+        'Enveloppe de contexte périmée — rafraîchir le contexte avant de mettre en attente.',
+      );
+      return;
+    }
     setHoldBusy(true);
     try {
       const sub = linesSubtotal(draft.lines);
@@ -1079,6 +1093,7 @@ function LinesStep({
           ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
         },
         auth,
+        { contextBinding: saleContextBinding },
       );
       if (!res.ok) {
         setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(res));
@@ -1399,8 +1414,19 @@ function PaymentStep({
     draft.totalAmount > 0;
   const canSubmitSale = canSubmit && paymentMethodsReady;
 
+  const saleContextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
+
   const onSubmit = async () => {
     clearCashflowDraftSubmitError();
+    if (isEnvelopeStale(envelope)) {
+      setCashflowDraftLocalSubmitError(
+        'Enveloppe de contexte périmée — rafraîchir le contexte avant d’enregistrer la vente.',
+      );
+      return;
+    }
     setBusy(true);
     try {
       if (draft.activeHeldSaleId) {
@@ -1411,6 +1437,7 @@ function PaymentStep({
             ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
           },
           auth,
+          { contextBinding: saleContextBinding },
         );
         if (!res.ok) {
           setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(res));
@@ -1435,7 +1462,7 @@ function PaymentStep({
         payment_method: draft.paymentMethod,
         ...buildBusinessTagPayload(draft.ticketBusinessTagKind, draft.ticketBusinessTagCustom),
       };
-      const res = await postCreateSale(body, auth);
+      const res = await postCreateSale(body, auth, { contextBinding: saleContextBinding });
       if (!res.ok) {
         setCashflowDraftApiSubmitError(recycliqueClientFailureFromSalesHttp(res));
         return;

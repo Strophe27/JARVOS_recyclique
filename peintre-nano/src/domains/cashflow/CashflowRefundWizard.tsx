@@ -16,6 +16,7 @@ import {
   PERMISSION_CASHFLOW_REFUND,
 } from '../../app/auth/default-demo-auth-adapter';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
 import { CashflowClientErrorAlert } from './CashflowClientErrorAlert';
 import { buildRefundWizardPaymentMethodSelectData } from './cashflow-refund-payment-method-options';
@@ -317,6 +318,13 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
       }
     }
     setError(null);
+    if (isEnvelopeStale(envelope)) {
+      setError({
+        kind: 'local',
+        message: 'Enveloppe de contexte périmée — rafraîchir le contexte avant un remboursement.',
+      });
+      return;
+    }
     setBusy(true);
     try {
       const idem = saleReversalIdempotencyKeyRef.current?.trim() || crypto.randomUUID();
@@ -331,7 +339,9 @@ export function CashflowRefundWizard(_props: RegisteredWidgetProps): ReactNode {
           ? { expert_prior_year_refund: true as const }
           : {}),
       };
-      const res = await postCreateSaleReversal(body, auth);
+      const res = await postCreateSaleReversal(body, auth, {
+        contextBinding: { siteId: envelope.siteId, cashSessionId: envelope.cashSessionId },
+      });
       if (!res.ok) {
         const failure = recycliqueClientFailureFromSalesHttp(res);
         if (failure.message.includes(PRIOR_YEAR_REFUND_REQUIRES_EXPERT)) {
