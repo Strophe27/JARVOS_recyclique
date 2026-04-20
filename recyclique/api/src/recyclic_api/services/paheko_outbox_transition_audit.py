@@ -13,6 +13,8 @@ from recyclic_api.models.paheko_outbox_sync_transition import PahekoOutboxSyncTr
 
 # Noms de transition stables (observabilité / support)
 TRANSITION_AUTO_QUARANTINE_MAPPING = "auto_quarantine_mapping_resolution"
+# Story 25.9 — échec snapshot / builder / corps Paheko (distinct du mapping site/caisse).
+TRANSITION_AUTO_QUARANTINE_BUILDER = "auto_quarantine_builder_preparation"
 TRANSITION_AUTO_QUARANTINE_UNSUPPORTED = "auto_quarantine_unsupported_operation_type"
 TRANSITION_AUTO_QUARANTINE_MAX_ATTEMPTS = "auto_quarantine_max_attempts_exceeded"
 TRANSITION_AUTO_QUARANTINE_HTTP = "auto_quarantine_http_non_retryable"

@@ -23,6 +23,7 @@ from recyclic_api.services.paheko_mapping_service import resolve_enriched_payloa
 from recyclic_api.services.paheko_transaction_payload_builder import build_cash_session_close_transaction_payload
 from recyclic_api.services.paheko_outbox_transition_audit import (
     TRANSITION_AUTO_DELIVERED_RESOLU,
+    TRANSITION_AUTO_QUARANTINE_BUILDER,
     TRANSITION_AUTO_QUARANTINE_HTTP,
     TRANSITION_AUTO_QUARANTINE_MAPPING,
     TRANSITION_AUTO_QUARANTINE_MAX_ATTEMPTS,
@@ -31,6 +32,25 @@ from recyclic_api.services.paheko_outbox_transition_audit import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Story 25.9 (spec 25.4 §4) — corrélation supervision 25.10 : domaine d'échec *avant* transport HTTP.
+_FAILURE_DOMAIN_MAPPING = "mapping"
+_FAILURE_DOMAIN_BUILDER = "builder"
+
+
+def _infer_preparation_failure_domain(code: str) -> str:
+    """Codes issus de ``resolve_enriched_payload_for_item`` / 8.3 vs builder batch / mono-ligne."""
+    mapping_codes = {
+        "session_not_found",
+        "site_missing",
+        "mapping_missing",
+        "mapping_disabled",
+        "invalid_destination_params",
+    }
+    c = (code or "").strip()
+    if c in mapping_codes:
+        return _FAILURE_DOMAIN_MAPPING
+    return _FAILURE_DOMAIN_BUILDER
 
 
 def _classify_failure(http_status: int | None, error_message: str | None) -> str:
@@ -90,6 +110,10 @@ def process_next_paheko_outbox_item(
     """
     Sélectionne la plus ancienne ligne ``pending`` éligible (respect ``next_retry_at``),
     passage ``processing``, appel HTTP avec ``Idempotency-Key``, mise à jour.
+
+    Spec **25.4 §4** (story 25.9) : aucun état **delivered** / succès terminal tant que le mapping
+    Paheko obligatoire ou la construction builder (snapshot → sous-écritures) n'est pas résolu ;
+    échecs → quarantaine / trace ``preparation_trace_v1``, jamais succès silencieux sur transport HTTP seul.
     """
     if client is None and client_factory is None and not (settings.PAHEKO_API_BASE_URL or "").strip():
         return None
@@ -144,6 +168,7 @@ def process_next_paheko_outbox_item(
             now=now,
             code=map_code or "mapping_missing",
             message=map_msg or "Résolution mapping Paheko impossible.",
+            failure_domain=_FAILURE_DOMAIN_MAPPING,
         )
         db.commit()
         return item
@@ -167,6 +192,7 @@ def process_next_paheko_outbox_item(
             now=now,
             code=body_code or "invalid_outbox_payload",
             message=body_msg or "Construction du body officiel Paheko impossible.",
+            failure_domain=_FAILURE_DOMAIN_BUILDER,
         )
         db.commit()
         return item
@@ -202,6 +228,10 @@ def _process_cash_session_close_batch(
     Story 22.7 — N POST idempotents avec sous-clés ; reprise des seuls échecs (resume_failed_sub_writes_v1).
 
     Transport Epic 8 inchangé (un seul enregistrement outbox par session ; états dans ``payload`` JSON).
+
+    Spec **25.4 §4** (story 25.9) : ne pas marquer **delivered** au niveau ligne ou agrégat tant que le
+    batch planifié (builder depuis snapshot figé + mapping résolu) est invalide ; pas de sous-écriture
+    ``delivered`` sans réponse HTTP Paheko valide pour cette sous-clé.
     """
     planned_rows, bcode, bmsg = build_cash_session_close_batch_from_enriched_payload(
         post_payload,
@@ -215,6 +245,7 @@ def _process_cash_session_close_batch(
             now=now,
             code=bcode or "batch_build_failed",
             message=bmsg or "Construction batch Paheko (snapshot figé) impossible.",
+            failure_domain=_FAILURE_DOMAIN_BUILDER,
         )
         return
 
@@ -274,6 +305,8 @@ def _process_cash_session_close_batch(
         if 200 <= status < 300 or status == 409:
             rid = parse_remote_transaction_id(result.response_text or "")
             sw["status"] = "delivered"
+            # Story 25.9 — distingue transport HTTP réussi vs échecs mapping (transition) / builder (batch).
+            sw["delivery_domain"] = "outbox_http"
             sw["last_error"] = None
             last_success_line_http = status
             if rid:
@@ -385,9 +418,21 @@ def _apply_mapping_resolution_failure(
     now: datetime,
     code: str,
     message: str,
+    failure_domain: str | None = None,
 ) -> None:
-    """Échec **sans** POST Paheko — pas d'incrément retry HTTP (Story 8.3)."""
+    """
+    Échec **sans** POST Paheko — pas d'incrément retry HTTP (Story 8.3).
+
+    Story **25.9** : inclut les échecs **builder** (snapshot / ventilation / corps) — nom historique
+    conservé ; le champ ``failure_domain`` + transition distinguent mapping **8.3** vs préparation batch.
+    """
     fs, fo = item.sync_state_core, item.outbox_status
+    domain = (failure_domain or _infer_preparation_failure_domain(code)).strip()
+    if domain not in (_FAILURE_DOMAIN_MAPPING, _FAILURE_DOMAIN_BUILDER):
+        domain = _FAILURE_DOMAIN_BUILDER
+    transition = (
+        TRANSITION_AUTO_QUARANTINE_MAPPING if domain == _FAILURE_DOMAIN_MAPPING else TRANSITION_AUTO_QUARANTINE_BUILDER
+    )
     item.outbox_status = PahekoOutboxStatus.failed.value
     item.sync_state_core = "en_quarantaine"
     item.mapping_resolution_error = code[:64]
@@ -396,22 +441,33 @@ def _apply_mapping_resolution_failure(
     item.last_response_snippet = None
     item.next_retry_at = None
     item.updated_at = now
+    pl = dict(item.payload or {})
+    pl["preparation_trace_v1"] = {
+        "failure_domain": domain,
+        "code": code[:128],
+        "message": (message or "")[:2000],
+    }
+    item.payload = pl
     append_paheko_outbox_transition(
         db,
         item=item,
-        transition_name=TRANSITION_AUTO_QUARANTINE_MAPPING,
+        transition_name=transition,
         from_sync_state=fs,
         to_sync_state=item.sync_state_core,
         from_outbox_status=fo,
         to_outbox_status=item.outbox_status,
         reason=message or code,
         actor_user_id=None,
-        context_extra={"mapping_resolution_code": code},
+        context_extra={
+            "mapping_resolution_code": code,
+            "failure_domain": domain,
+        },
     )
     logger.info(
-        "paheko_outbox_process outcome=mapping_failed correlation_id=%s id=%s code=%s",
+        "paheko_outbox_process outcome=preparation_failed correlation_id=%s id=%s failure_domain=%s code=%s",
         item.correlation_id,
         item.id,
+        domain,
         code,
     )
 
@@ -498,6 +554,9 @@ def _apply_http_result(db: Session, item: PahekoOutboxItem, result: PahekoHttpRe
         item.sync_state_core = "resolu"
         item.last_error = None
         item.mapping_resolution_error = None
+        pl_ok = dict(item.payload or {})
+        pl_ok.pop("preparation_trace_v1", None)
+        item.payload = pl_ok
         item.next_retry_at = None
         item.updated_at = now
         append_paheko_outbox_transition(
