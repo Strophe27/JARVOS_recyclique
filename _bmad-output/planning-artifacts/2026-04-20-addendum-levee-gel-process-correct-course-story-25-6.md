@@ -81,13 +81,15 @@ Le présent addendum constitue cette **levée explicite et traçable** au sens d
 | 8 | `_bmad-output/implementation-artifacts/25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable.md` | **Status** : **`done`** post–Story Runner (après **`review`**) |
 | 9 | `development_status["13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano"]` | **Non modifié** par **25.6** (ex. reste **`review`** selon YAML courant) — pas de clôture substitut |
 
-**Commandes rapides (grep) :**
+**Commandes rapides (grep) :** syntaxe ci-dessous type **bash** ; sous **PowerShell** (Windows), préfixer par `rg` si l’outil est dans le `PATH`, ou utiliser **`Select-String`** sur les mêmes motifs.
 
 ```text
 rg "25-6-lever-le-gel" _bmad-output/implementation-artifacts/sprint-status.yaml
 rg "addendum-levee-gel-process" _bmad-output/implementation-artifacts/sprint-status.yaml
-rg "Levée gel process \\(2026-04-20" _bmad-output/implementation-artifacts/sprint-status.yaml
+rg "Levée gel process \(2026-04-20" _bmad-output/implementation-artifacts/sprint-status.yaml
 ```
+
+*(La troisième ligne : échapper les parenthèses pour `rg` comme en bash ; sous PowerShell pur, préférer `Select-String -Pattern "Levée gel process"` sur le fichier.)*
 
 ---
 

@@ -25,22 +25,29 @@
 
 ---
 
-## Checks addendum §5 ↔ YAML (mini tableau PASS)
+## Checks addendum §5 ↔ YAML (traçabilité 1:1 avec le tableau §5)
 
-Référence : section 5 de l’addendum (liste vérifiable).
+Référence unique : `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` — section **5** (colonne **#** et **Vérification**).
 
-| # | Vérification addendum | Résultat |
-|---|------------------------|----------|
-| 1 | Fichier addendum présent | **PASS** |
-| 2 | Source normative gel (Sprint Change Proposal 2026-04-19) citée / traçable | **PASS** |
-| 3 | Note readiness 2026-04-20 croisée (gates / NOT READY / 13-8) | **PASS** |
-| 4 | `sprint-status.yaml` : traces `# last_updated` (historique) + cle racine `last_updated` **2026-04-21** — DS 25-6 `ready-for-dev` → `review` → `done` | **PASS** |
-| 5 | `development_status["25-6-…"]` = `done` (post chaîne Story Runner 2026-04-20) | **PASS** |
-| 6 | `development_status["epic-25"]` = `in-progress` (pas `done` dans le cadre de 25.6) | **PASS** |
-| 7 | Commentaires sous `epic-10`, `epic-13`, `epic-14`, `epic-15` : levée 2026-04-20 + addendum + conditions | **PASS** |
-| 8 | Clarification post-CR : ligne historique §25 (gel jusqu’à 25-6) ≠ contradiction avec levée process documentée (addendum + bloc ~l.289) | **PASS** |
-| 9 | `epics.md` §25 : **Règle directrice** + **Pilotage YAML** = `25-6` **done**, `25-7`…`25-15` **backlog**, état post-25.6 (conditions programme) | **PASS** (lot DS **2026-04-21**) |
-| 10 | `sprint-status.yaml` : cle racine `last_updated` cohérente (non contradictoire avec historique `# last_updated`) | **PASS** |
+| # | Vérification (libellé aligné addendum §5) | Résultat |
+|---|-------------------------------------------|----------|
+| 1 | `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` (présent addendum) | **PASS** |
+| 2 | `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` (source normative du gel) | **PASS** |
+| 3 | `_bmad-output/planning-artifacts/2026-04-20-note-readiness-cible-post-epic25-decisions.md` (gates / NOT READY / 13-8) | **PASS** |
+| 4 | `_bmad-output/implementation-artifacts/sprint-status.yaml` (traces `# last_updated` + cle racine `last_updated` ; chaîne statut **25-6**) | **PASS** |
+| 5 | `development_status["25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable"]` = **`done`** | **PASS** |
+| 6 | `development_status["epic-25"]` = **`in-progress`** | **PASS** |
+| 7 | Commentaires sous **`epic-10`**, **`epic-13`**, **`epic-14`**, **`epic-15`** (levée + addendum + conditions) | **PASS** |
+| 8 | `_bmad-output/implementation-artifacts/25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable.md` — **Status** **`done`** | **PASS** |
+| 9 | `development_status["13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano"]` — **non modifié** par **25.6** (substitut) | **PASS** |
+
+### Contrôles QA complémentaires (hors lignes 1–9 addendum)
+
+| Sujet | Résultat |
+|--------|----------|
+| `epics.md` §25 (**Règle directrice** / **Pilotage YAML**) cohérent post–25.6 | **PASS** |
+| Cle racine `last_updated` dans `sprint-status.yaml` non contradictoire avec l’historique `# last_updated` | **PASS** |
+| Note readiness + rapport **`implementation-readiness-report-2026-04-20-epic25-phase2.md`** : pas de contresens avec levée **process** | **PASS** |
 
 ---
 

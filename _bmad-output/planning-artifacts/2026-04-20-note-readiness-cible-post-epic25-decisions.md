@@ -11,9 +11,9 @@ sources:
 
 # Note de readiness ciblée — post-décisions documentaires Epic 25
 
-> **ARCHIVÉ — photo du 2026-04-20 seulement (ce n’est pas l’état courant après le 2026-04-21).** À cette date, après clôture documentaire des stories **25-1** à **25-5** : dans `sprint-status.yaml`, **`epic-25` : `done`** et **`25-1`** … **`25-5`** : **`done`** chacune. Les phrases plus bas dans ce fichier qui racontent une séquence « en cours » (ex. **25-5** en review) sont le **fil de rédaction** au moment de la rédaction. **Après le 2026-04-21** : pour **`epic-25`**, **`25-6`** … **`25-15`**, et le **gel**, se fier à **`_bmad-output/implementation-artifacts/sprint-status.yaml`** + **`_bmad-output/planning-artifacts/epics.md`** §25 — **ne pas** conclure depuis ce seul encadré.
+> **ARCHIVÉ — photo du 2026-04-20 seulement (ce n’est pas l’état courant après le 2026-04-21).** À cette date, après clôture documentaire des stories **25-1** à **25-5** : dans `sprint-status.yaml`, **`epic-25` : `done`** et **`25-1`** … **`25-5`** : **`done`** chacune. Les phrases plus bas dans ce fichier qui racontent une séquence « en cours » (ex. **25-5** en review) sont le **fil de rédaction** au moment de la rédaction. **État courant (ancre)** : **`_bmad-output/implementation-artifacts/sprint-status.yaml`** (clé racine `last_updated` + `development_status`) — **ne pas** conclure depuis ce seul encadré.
 
-**Addendum (2026-04-21)** — La tranche **documentaire 25.1–25.5** reste décrite par l’instantané archivé ci-dessus. Les stories **25.6 à 25.15** (phase **impl**) sont dans **`epics.md`** §25 et en **`backlog`** dans **`sprint-status.yaml`** ; **`epic-25`** est **`in-progress`** pour cette phase. Voir **§3.a** / **§3.b** et le fichier machine **`_bmad-output/planning-artifacts/architecture/epic-25-phase2-dag-2026-04-21.yaml`** (ordre des dépendances).
+**Addendum (2026-04-21)** — La tranche **documentaire 25.1–25.5** reste décrite par l’instantané archivé ci-dessus. **Post–story 25.6 livrée** : la **levée process** du gel hors `25-*` est documentée dans **`_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md`** (`GEL_DOC`) ; les stories **25-7 à 25-15** (phase **impl**) sont dans **`epics.md`** §25 et en **`backlog`** dans **`sprint-status.yaml`** sauf **`25-6`** → **`done`** ; **`epic-25`** est **`in-progress`** pour cette phase. Voir **§3.a** / **§3.b**, le rapport **`implementation-readiness-report-2026-04-20-epic25-phase2.md`**, et le fichier machine **`_bmad-output/planning-artifacts/architecture/epic-25-phase2-dag-2026-04-21.yaml`** (ordre des dépendances).
 
 **Objectif :** rejouer le raisonnement du rapport de readiness du **2026-04-19** à la lumière des livrables **25.1 à 25.4** (sans refaire tout le workflow readiness global), puis **rebaseliner** la séquence **`25-*`** et le pilotage (`sprint-status`, candidat première story d'impl).
 
@@ -46,13 +46,13 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 | **Readiness ciblée + rebaselining `25-*` (25.5)** | **Fermé (doc)** après publication de **cette note** et synchronisation story **25-5** + YAML (**`done`** au sens `development_status`, cf. sprint-status). | Ne substitue pas au **readiness global** du 19 ; **actualise** le pilotage post-Epic 25 documentaire. |
 | **Readiness globale extension PWA / kiosque** | **Ouvert** | Toujours **NOT READY** au sens du rapport 19 tant que FR vision, preuves techniques PWA et arbitrages restants ne sont pas clos. |
 | **Gate qualité API (audit brownfield P0)** | **Ouvert** | **Orthogonal** au périmètre *décisionnel* Epic 25 (matrices, ADR, spec) : ne bloque pas la **rédaction documentaire** des stories **25.6+**. En revanche il reste une **condition de GO** pour les **promotions** `ready-for-dev` / merges **qui touchent Paheko ou caisse** tant que les P0 du chantier audit ne sont pas traités ou explicitement reportés avec propriétaire (cf. story **25.11** AC). |
-| **Gel process correct course (hors `25-*`)** | **Ouvert** | `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` : pas de **nouveau** `bmad-dev-story` hors clés **`25-*`** tant que la levée n'est pas documentée ; le YAML conserve les statuts existants des epics **10 / 12 / 13 / 14 / 15** à titre de **preuve d'état**, pas de rétroconduction. |
+| **Gel process correct course (hors `25-*`)** | **Fermé (doc)** — **post–25.6** | Source du gel : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`. **Levée traçable** : addendum **`2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md`** + commentaires / clés dans **`sprint-status.yaml`** — nouvelles exécutions **`bmad-dev-story`** hors **`25-*`** **réautorisées** sous les **conditions** du `GEL_DOC` (NOT READY PWA massif, gate API P0 si applicable, ADR **25-2** / **25-3** non rouvertes). Le YAML conserve les statuts des epics **10 / 12 / 13 / 14 / 15** comme **preuve d'état** (pas de rétroconduction). |
 | **UX dédiée sous planning-artifacts** | **Ouvert (mineur)** | Absence notée dans le rapport 19 ; acceptable brownfield si AC dans les stories — **avertissement fort** si programme PWA massif. |
 
 **Première story d'implémentation pertinente — peut-elle passer en `ready-for-dev` « légalement » (gel + ADR + readiness) ?**
 
-- **Pour une nouvelle promotion** ou un **élargissement** du périmètre **kiosque / PWA delivery** : les ADR **25-2** et **25-3** sont **acceptés** ; restent **(1)** la **levée du gel** process (correct course documenté), **(2)** l'extension PWA **NOT READY** au sens du rapport du 19 tant que FR/preuves techniques ne sont pas clos.
-- **Pour le cœur v2** et travaux **non contraires** au gel (hors périmètre gelé) : le **GO conditionnel** du 19 continue de s'appliquer ; le gel **interdit** surtout d'**ouvrir** de nouvelles exécutions **DS** hors **`25-*`** sans levée.
+- **Pour une nouvelle promotion** ou un **élargissement** du périmètre **kiosque / PWA delivery** : les ADR **25-2** et **25-3** sont **acceptés** ; la **levée process** du gel hors `25-*` est **documentée** (**`GEL_DOC`** / **25.6**) ; reste l'extension PWA **NOT READY** au sens du rapport du 19 tant que FR/preuves techniques ne sont pas clos.
+- **Pour le cœur v2** : le **GO conditionnel** du 19 continue de s'appliquer ; les **nouveaux** DS hors **`25-*`** sont **autorisés** sous les **conditions** du **`GEL_DOC`** (distinct du verdict **NOT READY** PWA massif).
 - **Cas `13-8`** : la clé `13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano` est déjà en **`review`** dans `_bmad-output/implementation-artifacts/sprint-status.yaml` (travaux amorcés avant gel / cycle existant). La note **ne** promeut **pas** une nouvelle vague kiosque **sans** les prérequis ci-dessus ; le **candidat** pour une future passe **`bmad-create-story`** (rafraîchissement de contexte, suites) reste **13-8**, aligné spec **25.4** §5 (« Gated — extension PWA / kiosque delivery ») et `epics.md` Epic 13.
 
 ---
@@ -75,9 +75,9 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 
 **Source de vérité opérationnelle** : `_bmad-output/implementation-artifacts/sprint-status.yaml` (champ `last_updated` et clés sous `epic-25`).
 
-À partir du **2026-04-21** : stories **25-6** à **25-15** rédigées dans `_bmad-output/planning-artifacts/epics.md` §25 ; clés correspondantes en **`backlog`** ; **`epic-25`** → **`in-progress`** (phase implementation). Les paragraphes **3.a** ci-dessus restent un **historique** ; toute décision pilotée se lit d’abord dans le **YAML** puis dans **epics.md**.
+À partir du **2026-04-21** : stories **25-6** à **25-15** rédigées dans `_bmad-output/planning-artifacts/epics.md` §25 ; **`25-6`** → **`done`** au pilotage (levée **process** tracée) ; **`25-7`** … **`25-15`** en **`backlog`** sauf promotion ultérieure ; **`epic-25`** → **`in-progress`** (phase implementation). Les paragraphes **3.a** ci-dessus restent un **historique** ; toute décision pilotée se lit d’abord dans le **YAML** puis dans **epics.md**.
 
-**Ce qui ne change pas sans instruction Story Runner / correct course :** les règles de **gel** et de **gates** (readiness PWA, gate API P0) ; seules les **promotions de statut** et les **levées** documentées mettent à jour le pilotage.
+**Ce qui ne change pas sans instruction Story Runner / correct course :** les **gates** readiness PWA massif et gate API P0 (distincts de la levée **process** documentée dans **`GEL_DOC`**) ; seules les **promotions de statut** et les **levées** documentées mettent à jour le pilotage.
 
 ---
 
@@ -86,7 +86,7 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 Les trois sources suivantes sont rappelées **ici** (exigence AC story 25.5), avec usage :
 
 1. **`_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`** — baseline **NOT READY** PWA / kiosque, **GO conditionnel** v2, **NO-GO** programme massif ; référence § synthèse exécutive, § extension PWA offline-first, § synthèse finale (étape 6).  
-2. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — vérité opérationnelle des clés `development_status` (après **2026-04-21** : **`25-1`** à **`25-5`** en **`done`**, **`25-6`** à **`25-15`** en **`backlog`**, **`epic-25`** en **`in-progress`** pour la phase impl ; gel commenté sous epics 10/12/13/14/15 ; **`13-8`** en **review** — reprendre le fichier pour l’instantané exact).  
+2. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — vérité opérationnelle des clés `development_status` (instantané **post–25.6 livrée** : **`25-1`** … **`25-6`** en **`done`**, **`25-7`** … **`25-15`** en **`backlog`**, **`epic-25`** en **`in-progress`** ; commentaires de levée sous epics **10 / 13–15** ; **`13-8`** selon valeur courante dans le YAML — **toujours** rouvrir le fichier pour l’instantané exact).  
 3. **Livrables Epic 25 approuvés pour le pilotage (chemins)** :  
    - **25.1** — `references/vision-projet/2026-04-19_matrice-alignement-vision-canonical-epic25-25-1.md`  
    - **25.2** — `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`  
@@ -107,7 +107,7 @@ Les trois sources suivantes sont rappelées **ici** (exigence AC story 25.5), av
 
 **Si le produit tranche un autre ordre** (ex. **12-1** réception avant **13-8**) : justifier dans un futur brief en croisant `epics.md` et `guide-pilotage-v2.md` ; la présente note conserve **13-8** comme **candidat principal** aligné sur la trajectoire documentée spec 25.4.
 
-**Conditions avant de relancer une chaîne impl lourde sur ce périmètre :** ADR **25-2** et **25-3** **acceptés** (ou équivalent), story **25.5** **done** au sens YAML (gates/QA/CR Story Runner si applicable — statut final cohérent sprint-status), **levée du gel** tracée si requise pour sortir du seul rail **`25-*`**.
+**Conditions avant de relancer une chaîne impl lourde sur ce périmètre :** ADR **25-2** et **25-3** **acceptés** ; stories **25.5** et **25.6** **done** au sens YAML ; **levée du gel** tracée via **`GEL_DOC`** (addendum **25.6**) pour les **nouveaux** DS hors **`25-*`**. Le **NOT READY** programme PWA massif et le **gate API P0** restent des **garde-fous** distincts (voir rapport **2026-04-20** phase 2 Epic 25).
 
 ### DoD Story Runner (brief futur)
 
@@ -155,9 +155,11 @@ cr_loop: 0
 
 ## 7. Phrase explicite — promotion `ready-for-dev` kiosque / PWA
 
-**Gates §2 encore ouverts au 2026-04-21** (synthèse pour éviter « le cas échéant » ambigu) : **readiness** programme PWA / kiosque massif (**NOT READY** rapport 19) ; **gate qualité API P0** pour promotions qui touchent Paheko/caisse ; **gel** process hors `25-*` tant que **25.6** n’est pas livrée ; **UX** dédiée planning-artifacts (mineur). **Fermés (doc)** : matrice **25.1**, ADR **25-2** / **25-3** acceptés, spec **25.4**, story **25.5** + rebaselining associé.
+**Ancre état courant :** `sprint-status.yaml` + addendum **`GEL_DOC`** (levée **process** post–**25.6**).
 
-**Non** pour une **nouvelle** story ou un **nouveau** volume **kiosque / PWA delivery** tant que le **gel** correct course n'est pas **levé** de façon tracée et que l'extension PWA n'a pas levé le statut **NOT READY** du rapport **2026-04-19** par les mécanismes qu'il identifie (FR/epics, preuves, gate API). *(Les ADR **25-2** et **25-3** sont **acceptés** au **2026-04-20** — ce n'est plus la condition bloquante ici.)* **Oui** pour poursuivre le **socle v2** déjà couvert par le **GO conditionnel**, sous respect du **gel** sur les **nouvelles** exécutions DS hors **`25-*`**.
+**Gates §2 encore ouverts** (indépendamment de la levée **process**) : **readiness** programme PWA / kiosque massif (**NOT READY** rapport 19) ; **gate qualité API P0** pour promotions qui touchent Paheko/caisse ; **UX** dédiée planning-artifacts (mineur). **Fermés (doc)** : matrice **25.1**, ADR **25-2** / **25-3** acceptés, spec **25.4**, stories **25.5** / **25.6**, **gel process** hors `25-*` au sens **addendum 25.6** + YAML.
+
+**Non** pour un **nouveau** volume **kiosque / PWA delivery** « massif » tant que l'extension PWA n'a pas levé le statut **NOT READY** du rapport **2026-04-19** par les mécanismes qu'il identifie (FR/epics, preuves, gate API) — **sans contredire** le **GO conditionnel** sur le **cœur v2**. **Oui** pour des **nouveaux** DS **hors `25-*`** lorsque les **conditions** du **`GEL_DOC`** sont respectées (et le **GO conditionnel** le cas échéant).
 
 ---
 

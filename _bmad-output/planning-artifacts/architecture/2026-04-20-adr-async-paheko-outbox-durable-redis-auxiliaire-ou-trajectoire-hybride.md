@@ -215,6 +215,8 @@ Points de réconciliation imposés :
 - La quarantaine reste un état durable et opérable (pas un simple « message perdu »).
 - Le lot de session (batch) reste l’unité canonique de synchronisation comptable.
  
+> **Cohérence rédactionnelle post–25.6 (sans rouvrir la décision)** — La **levée** du gel **process** pour l’**exécution** BMAD **hors** clés **`25-*`** est tracée sous **`GEL_DOC`** : `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + `_bmad-output/implementation-artifacts/sprint-status.yaml`. Les **invariants** async Paheko (outbox PostgreSQL, Redis **auxiliaire** seulement) de cette ADR **ne** sont **pas** modifiés par **`GEL_DOC`**.
+ 
 ---
  
 ## Stories et changements sensibles (ADR **acceptée** — référence post-approbation)

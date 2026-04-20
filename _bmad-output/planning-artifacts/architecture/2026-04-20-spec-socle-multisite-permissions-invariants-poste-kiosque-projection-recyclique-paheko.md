@@ -27,9 +27,13 @@ Les règles ci-dessous **s’appuient explicitement** sur :
 | Identité caisse | PIN **opérateur** serveur, session JWT ; step-up pour actions sensibles | PIN **kiosque** / secret de poste, lockout métier, offline — **ADR 25-2** |
 | Paheko | Chaîne **caisse → snapshot figé → builder → outbox PostgreSQL** ; Redis **auxiliaire** — **ADR 25-3** | Formulation « file Redis » dans la vision = à lire comme **transport / observabilité**, pas comme seconde vérité durable |
 
-### 1.3 Gel d’exécution hors `25-*`
+### 1.3 Gel d’exécution hors `25-*` (process BMAD)
 
-Tant que le correct course documenté dans `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` n’est pas levé, **aucune nouvelle story d’implémentation** ne doit étendre le périmètre kiosque / PWA **en dehors** de la séquence Epic 25 et des artefacts qu’il produit. Cette spec **ne lève pas** ce gel.
+**Source du gel :** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`.
+
+**Post–story 25.6 :** la **levée** du gel **process** (nouveaux `bmad-dev-story` hors clés **`25-*`**) est **documentée** dans l’**addendum** (`GEL_DOC`) `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` et répliquée dans **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — **ne pas** confondre avec le verdict **NOT READY** PWA massif ni avec le **gate API P0** (voir **`_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-20-epic25-phase2.md`**).
+
+Cette **spec 25.4** n’a **pas** autorité pour **inventer** une levée : elle **cite** la règle applicable **après** **`GEL_DOC`**.
 
 ---
 
@@ -126,9 +130,9 @@ Alignement avec les fondations **Epic 8** :
 |-----------|---------------------------|-------------|
 | **Débloqués par la spec seule** (documentation / cadrage pour futurs devs) | Stories **techniques** ou **refactors** qui **ne présupposent pas** PWA production ni nouveau modèle de menace kiosque hors ADR | Ex. : poursuite **chantier audit API** (orthogonal mais gate qualité pour Paheko — cf. readiness) une fois gel levé ; doc / contrats qui citent explicitement cette spec comme source. |
 | **Gated — conformité aux ADR 25-2 / 25-3 acceptés** | Implémentations **code** PIN kiosque, secret de poste, offline ; tout changement qui **contredit** outbox PostgreSQL comme vérité durable ou qui fait de Redis une **seconde** vérité durable pour Paheko | Les ADR sont **acceptés** ; le code doit **respecter** ces ADR ; toute évolution substantielle repasse par **correct course** ou nouvelle ADR. |
-| **Gated — readiness / note post-25.5** | Note **`2026-04-20-note-readiness-cible-post-epic25-decisions.md`**, rapport **`implementation-readiness-report-2026-04-19.md`** | Story **25.5** **done** au pilotage ; l’extension PWA **massive** reste **NOT READY** au sens readiness ; les promotions **ready-for-dev** lourdes kiosque/PWA restent soumises aux **autres** gates (gel, FR/epics vision, gate API P0). |
-| **Gated — correct course / gel** | Stories hors **`25-*`** en **pause** explicite (`sprint-change-proposal-2026-04-19-…`) | Le YAML conserve des epics `in-progress` pour l’historique ; le gel est **process**, pas rétroactivité des statuts. |
-| **Gated — extension PWA / kiosque delivery** | Epics / stories type **13.8** (impl kiosque Peintre), **12.x** réception PWA, nouvelles stories auth kiosque nommées dans l’ADR 25-2 | **NOT READY** readiness pour un **programme massif** ; levée de **gel** (`sprint-change-proposal-2026-04-19-…`) toujours **process** tant qu’elle n’est pas documentée — indépendamment du statut **done** des stories **25.1–25.5**. |
+| **Gated — readiness / note post-25.5 + snapshot phase 2** | Note **`2026-04-20-note-readiness-cible-post-epic25-decisions.md`**, rapports **`implementation-readiness-report-2026-04-19.md`** et **`implementation-readiness-report-2026-04-20-epic25-phase2.md`** | Stories **25.5** / **25.6** **done** au pilotage ; l’extension PWA **massive** reste **NOT READY** au sens readiness **2026-04-19** ; les promotions **ready-for-dev** lourdes kiosque/PWA restent soumises aux **autres** gates (FR/epics vision, gate API P0). |
+| **Gated — correct course / gel process (hors `25-*`)** | `sprint-change-proposal-2026-04-19-…` + addendum **`2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md`** | **Post–25.6** : levée **process** **documentée** (`GEL_DOC`) — nouvelles exécutions DS hors **`25-*`** sous **conditions** ; le YAML conserve des epics `in-progress` pour l’historique. **Distinguer** : **gel** (règle BMAD) **vs** **non** **NOT READY** PWA (readiness). |
+| **Gated — extension PWA / kiosque delivery** | Epics / stories type **13.8** (impl kiosque Peintre), **12.x** réception PWA, nouvelles stories auth kiosque nommées dans l’ADR 25-2 | **NOT READY** readiness pour un **programme massif** ; la levée **process** **25.6** **ne** remplace **pas** ce verdict. |
 | **Fondations déjà livrées (référence)** | **8-3**, **8-4**, **8-5**, **8-6** ; chaîne **22.x** / **23.x** | Déjà **done** ; cette spec **ne les remplace pas** mais **ferme les règles de projection** pour éviter les divergences futures. |
 
 ---
