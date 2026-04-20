@@ -1,4 +1,9 @@
-# last_updated: 2026-04-21 — post phase doc Epic 25 : `epic-25` **re-ouvert** **in-progress** (phase impl 25.6–25.15) apres avoir ete **done** pour la seule tranche 25.1–25.5 ; clés `25-6`…`25-15` backlog + DAG en commentaire bloc Epic 25 ; cf. aussi # last_updated ligne ~286.
+# last_updated: 2026-04-21 — story 25-6 DS post-QA2 doc : epics.md §25 Pilotage YAML + Regle directrice ↔ YAML ; harmonisation `last_updated` racine (voir lignes ~294–296)
+# last_updated: 2026-04-20 — story 25-6 Story Runner BMAD fin : CS→VS→ADR N/A→DS→GATE→QA→CR1 CHANGES→DS fix sprint-status + chemin test-summary→GATE→QA→CR2 APPROVE ; 25-6 review→done ; vs=0 qa=0 cr=1 ; `tests/test-summary-story-25-6-doc-qa.md`
+# last_updated: 2026-04-20 — story 25-6 DS retry post-CR (cr_loop=1) : clarification commentaire l.288 vs levée addendum (instantané historique + traçabilité 25-6)
+# last_updated: 2026-04-20 — story 25-6 DS bmad-dev-story Task : 25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable ready-for-dev → review ; addendum `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` ; commentaires gel epic-10/13/14/15 → levée documentée + conditions ; epic-25 inchangé in-progress ; trace DS
+# last_updated: 2026-04-20 — story 25-6 CS bmad-create-story (create) : 25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable backlog → ready-for-dev ; fichier story créé ; epic-25 inchangé in-progress ; trace CS
+# last_updated: 2026-04-21 — post phase doc Epic 25 : `epic-25` **re-ouvert** **in-progress** (phase impl 25.6–25.15) apres avoir ete **done** pour la seule tranche 25.1–25.5 ; clés `25-6`…`25-15` backlog + DAG en commentaire bloc Epic 25 ; cf. aussi # last_updated epics §25 (~l.289) + clarification levée (~l.290).
 # last_updated: 2026-04-20 — story 25-5 Story Runner BMAD fin : CS→VS→DS→GATE(git status -sb)→QA(doc)→CR APPROVE ; 25-5 review→done ; epic-25 in-progress→done ; vs=0 qa=0 cr=0 ; branche epic/25-socle-alignement-prd-architecture
 # last_updated: 2026-04-20 — story 25-5 DS bmad-dev-story Task : 25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions ready-for-dev → review ; note `_bmad-output/planning-artifacts/2026-04-20-note-readiness-cible-post-epic25-decisions.md` ; gates + rebaselining ; epic-25 inchangé in-progress
 # last_updated: 2026-04-20 — story 25-5 CS bmad-create-story (create) : 25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions backlog → ready-for-dev ; fichier story créé ; epic-25 inchangé in-progress ; trace readiness + rebaselining + candidat 13-8 + ADR N/A
@@ -284,7 +289,9 @@ generated: "2026-04-01"
 # last_updated: 2026-04-18 — story 24-3 DS bmad-dev-story Task : 24-3 ready-for-dev→review ; enrichissement SaleReversalResponse + wizard succès + tests pytest/vitest
 # last_updated: 2026-04-18 — story 24-3 Story Runner fin : 24-3 review→done (CR APPROVE ; gates pytest/vitest ciblés + lint + build)
 # last_updated: 2026-04-21 — epics.md §25 : stories **25.6–25.15** rédigées + clés YAML `25-6`…`25-15` backlog ; `epic-25` **in-progress** (phase impl) ; tranche **25-1..25-5** inchangée **done** ; gel hors `25-*` inchangé jusqu'à **25-6** livrée
+# Clarification (instantané historique §25 au 2026-04-21) : la levée **process** (nouveaux DS hors clés `25-*`) est documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + commentaires epic-10/13/14/15 une fois la traçabilité YAML alignée (story **25-6** en `review` ou `done` selon politique Story Runner) — sans contredire `epic-25: in-progress` ni rouvrir le fond des ADR.
 # last_updated: 2026-04-21 (suite) — QA post-pass : slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
+# Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
 last_updated: "2026-04-21"
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
 # last_updated: "2026-04-16" # story 22.5 DS bmad-dev-story Task : 22-5 ready-for-dev → review (journal refund + autorité exercice + OpenAPI + Peintre sales-client) ; GATE parent
@@ -413,8 +420,8 @@ development_status:
   9-8-valider-la-coherence-des-modules-complementaires-v2: backlog
   epic-9-retrospective: optional
 
-  # Gel process 2026-04-19 (correct course) : pas de nouveau bmad-dev-story hors stories 25-* tant que le gel n'est pas leve.
-  # Les statuts YAML ci-dessous (epic-10 in-progress, stories backlog/review) restent la preuve d'etat — non retconnes par le gel.
+  # Levée gel process (2026-04-20, story 25-6) : nouvelles exécutions bmad-dev-story hors clés 25-* réautorisées sous conditions — addendum `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + note readiness 2026-04-20 (gates §2/§7) ; NOT READY PWA massif ; gate API P0 si promotions Paheko/caisse ; respect ADR 25-2 / 25-3 (fond non rouvert).
+  # Gel 2026-04-19 : les statuts YAML ci-dessous restent preuve d'état — pas de rétroconduction des valeurs review/backlog.
   epic-10: in-progress
   10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: backlog
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
@@ -443,7 +450,7 @@ development_status:
   12-3-retrouver-la-mesure-et-la-qualification-reception-observables-dans-peintre-nano: backlog
   epic-12-retrospective: optional
 
-  # Gel process 2026-04-19 : idem epic-10 — execution BMAD hors 25 suspendue ; statuts inchanges pour trace audit.
+  # Levée gel process (2026-04-20, story 25-6) : idem epic-10 — DS hors 25-* réautorisé sous l'addendum et les gates (PWA NOT READY, API P0, ADR) ; statuts inchangés pour audit.
   epic-13: in-progress
   13-1-retrouver-les-ecrans-caisse-adjacents-au-kiosque-observable-dans-peintre-nano: done
   13-2-retrouver-les-variantes-caisse-explicitement-retenues-dans-la-matrice-de-parite: done
@@ -455,7 +462,7 @@ development_status:
   13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano: review
   epic-13-retrospective: optional
 
-  # Gel process 2026-04-19 : idem — pas de nouveau DS hors levée documentée.
+  # Levée gel process (2026-04-20, story 25-6) : levée documentée — même règle opérationnelle que epic-10/13 (addendum + conditions) ; pas de nouveau DS implicite sans Story Runner.
   epic-14: in-progress
   14-1-retrouver-le-shell-et-le-choix-de-contexte-admin-observables-dans-peintre-nano: done
   14-2-retrouver-les-ecrans-de-parametres-admin-simples-observables-dans-peintre-nano: done
@@ -464,7 +471,7 @@ development_status:
   14-5-retrouver-la-gestion-des-groupes-admin-observable-dans-peintre-nano: review
   epic-14-retrospective: optional
 
-  # Gel process 2026-04-19 : idem epic-13–14.
+  # Levée gel process (2026-04-20, story 25-6) : idem epic-13–14 — DS hors 25-* sous addendum ; conditions gates inchangées.
   epic-15: in-progress
   15-1-auditer-exhaustivement-les-surfaces-admin-legacy-a-porter-vers-peintre-nano: review
   15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy: review
@@ -544,7 +551,7 @@ development_status:
   24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: done
   epic-24-retrospective: optional
 
-  # Epic 25 — socle alignement + phase 2 impl (stories 25.6–25.15) ; cf. epics.md §25 ; gel hors 25-* actif jusqu'à livraison **25-6** (document levee)
+  # Epic 25 — socle alignement + phase 2 impl (stories 25.6–25.15) ; cf. epics.md §25 ; gel process hors 25-* levé 2026-04-20 (story 25-6 + addendum) — conditions gates dans addendum ; epic-25 reste in-progress jusqu'à clôture phase 2
   # Trier les cles 25-x par ordre NUMERIQUE (25-1 … 25-9 puis 25-10 … 25-15) — un tri alphabetique met 25-10 avant 25-2.
   epic-25: in-progress
   25-1-cartographier-les-exigences-importees-et-fermer-la-matrice-dalignement-vision-canonique: done
@@ -554,9 +561,9 @@ development_status:
   # 25.5 : titre epics.md contient « backlog `25-*` » ; le slug ne peut pas porter le wildcard — le fichier story devra répéter le titre complet.
   25-5-rejouer-le-gate-readiness-cible-et-rebaseliner-le-backlog-25-apres-fermeture-des-decisions: done
   # --- Phase 2 (implementation) — slugs = identifiants pilotage (fait foi vs titres longs dans epics.md) ---
-  # DAG recommande (prerequis logiques ; le YAML ne encode pas les aretes — respecter avant dev auto) :
-  #   25-6 → (25-7, parallele possible 25-12 si ressource dediee) → 25-8 → 25-9 → 25-10 ; 25-7 → 25-11 ; 25-11 → 25-13 / 25-15 ; 25-8 + 25-13 → 25-14 ; 25-15 dernier (spike PWA borne).
-  25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable: backlog
+  # DAG : fichier machine `_bmad-output/planning-artifacts/architecture/epic-25-phase2-dag-2026-04-21.yaml` (depends_on + ordre). Raccourci humain :
+  #   25-6 → (25-7, parallele possible 25-12) → 25-8 → 25-9 → 25-10 ; 25-7 → 25-11 ; 25-11 → 25-13 / 25-15 ; 25-8 + 25-13 → 25-14 ; 25-15 dernier.
+  25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable: done
   25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable: backlog
   25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse: backlog
   25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8: backlog

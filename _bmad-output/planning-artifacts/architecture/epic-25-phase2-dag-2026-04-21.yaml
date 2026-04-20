@@ -1,0 +1,76 @@
+# Epic 25 — phase 2 (stories 25.6–25.15) : graphe de dépendances lisible par outils
+# Source narrative : epics.md §25 + sprint-status.yaml commentaires 2026-04-21.
+# Convention : cles = prefixes sprint-status (25-6-..., sans valeur development_status).
+# Les scripts peuvent valider qu'une cle "ready-for-dev" n'a pas de dependance encore "backlog".
+
+meta:
+  epic: epic-25
+  date: "2026-04-21"
+  description_fr: >
+    Ordre recommande pour le pilotage humain et pour des scripts legers (ex. verifier
+    qu'on ne promote pas 25-14 avant 25-8). Ce fichier complete les commentaires dans
+    sprint-status.yaml ; en cas de conflit, epics.md §25 (AC) fait foi sur le sens,
+    ce fichier sur la structure depends_on.
+
+recommended_linear_order:
+  - "25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable"
+  - "25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable"
+  - "25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse"
+  - "25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8"
+  - "25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox"
+  - "25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa"
+  - "25-12-audit-code-ar12-redis-auxiliaire-async-paheko"
+  - "25-13-journalisation-identite-operateur-versus-poste-ou-kiosque-tranche-minimale"
+  - "25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible"
+  - "25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa"
+
+# depends_on : liste de cles qui doivent etre "done" (ou explicitement waived avec trace)
+# avant de promouvoir la story en ready-for-dev / avant merge large dependant de la suite.
+nodes:
+  25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable:
+    story_num: "25.6"
+    depends_on: []
+  25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable:
+    story_num: "25.7"
+    depends_on:
+      - "25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable"
+  25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse:
+    story_num: "25.8"
+    depends_on:
+      - "25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable"
+  25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8:
+    story_num: "25.9"
+    depends_on:
+      - "25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse"
+  25-10-supervision-causes-racines-mapping-versus-builder-versus-outbox:
+    story_num: "25.10"
+    depends_on:
+      - "25-9-projection-paheko-mapping-obligatoire-avant-succes-outbox-delta-epic-8"
+  25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa:
+    story_num: "25.11"
+    depends_on:
+      - "25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable"
+  25-12-audit-code-ar12-redis-auxiliaire-async-paheko:
+    story_num: "25.12"
+    depends_on:
+      - "25-6-lever-le-gel-process-correct-course-documenter-la-levee-et-le-pilotage-observable"
+    note: "Peut etre mene en parallele serre avec 25-7 si ressource dediee ; ne pas bloquer 25-8 si seul 25-12 manque."
+  25-13-journalisation-identite-operateur-versus-poste-ou-kiosque-tranche-minimale:
+    story_num: "25.13"
+    depends_on:
+      - "25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa"
+  25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible:
+    story_num: "25.14"
+    depends_on:
+      - "25-8-refus-par-defaut-et-erreurs-explicites-apres-bascule-site-ou-caisse"
+      - "25-13-journalisation-identite-operateur-versus-poste-ou-kiosque-tranche-minimale"
+  25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa:
+    story_num: "25.15"
+    depends_on:
+      - "25-11-spike-contrats-api-et-types-enveloppe-contexte-sans-pwa"
+
+parallel_ok:
+  - pair:
+      - "25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable"
+      - "25-12-audit-code-ar12-redis-auxiliaire-async-paheko"
+    condition: "Ressource / ownership distincts ; pas de conflit de fichiers non planifie."
