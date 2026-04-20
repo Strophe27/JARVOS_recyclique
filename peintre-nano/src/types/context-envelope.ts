@@ -3,6 +3,13 @@
  * Schéma canonique : OpenAPI `recyclique` (backend). Piste A : mocks / stubs **structurellement alignés** jusqu'à Convergence 1.
  *
  * Champs marqués « stub » : à aligner sur le schéma OpenAPI canonique (`contracts/openapi/recyclique-api.yaml`) lorsque disponible.
+ *
+ * Story 25.11 (spike) — traçabilité checklist 25.7 / spec 25.4 §2–3 (IDs `CTX-*`) :
+ * - `CTX-INV-2-1-*` / site explicite → `siteId` (ne pas inférer le site seul depuis l’UI pour du sensible).
+ * - `CTX-INV-2-2-*` → `activeRegisterId` + cohérence avec `siteId` (vérité serveur).
+ * - `CTX-INV-2-3-*` → `cashSessionId` + audit hors enveloppe UI.
+ * - `CTX-SWITCH-3-1-*` (pas de stale client) → `context-envelope-freshness` + erreurs API explicites (`CONTEXT_STALE`, etc.).
+ * ADR 25-2 / 25-3 : PIN kiosque, step-up, outbox — pas de champs supplémentaires imposés dans ce stub ; voir doc spike `_bmad-output/implementation-artifacts/2026-04-20-spike-25-11-contrats-enveloppe-contexte.md`.
  */
 
 export interface EffectivePermissions {

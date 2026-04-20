@@ -25,9 +25,11 @@ export function formatCategoryHierarchyLabel(
   while (cur && !seen.has(cur.id)) {
     seen.add(cur.id);
     parts.unshift(cur.name.trim());
-    const pid = cur.parent_id?.trim();
-    if (!pid) break;
-    cur = list.find((c) => c.id === pid);
+    const parentKey: string | undefined = cur.parent_id != null && String(cur.parent_id).trim() !== ''
+      ? String(cur.parent_id).trim()
+      : undefined;
+    if (!parentKey) break;
+    cur = list.find((c) => c.id === parentKey);
   }
   return parts.filter(Boolean).join(' › ');
 }

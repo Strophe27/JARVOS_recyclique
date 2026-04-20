@@ -22,6 +22,7 @@ def test_sale_detail_model_validate_accepts_null_sale_date() -> None:
         operator_id=None,
         operator_name=None,
         note=None,
+        lifecycle_status="completed",
     )
     detail = SaleDetail.model_validate(sale)
     assert detail.sale_date is None
@@ -42,6 +43,7 @@ def test_sale_detail_model_validate_preserves_explicit_sale_date() -> None:
         operator_id=None,
         operator_name=None,
         note=None,
+        lifecycle_status="completed",
     )
     detail = SaleDetail.model_validate(sale)
     assert detail.sale_date == ts

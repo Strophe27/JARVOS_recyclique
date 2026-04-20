@@ -73,6 +73,8 @@ export type SaleItemCreateBody = {
   weight: number;
   unit_price: number;
   total_price: number;
+  /** OpenAPI `SaleItemCreateV1.notes` — ligne ticket / correction sensible (Story 6.8). */
+  notes?: string | null;
   business_tag_kind?: BusinessTagKindV1;
   business_tag_custom?: string;
 };

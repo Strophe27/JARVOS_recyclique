@@ -1,0 +1,44 @@
+# Fragment Story 25.11 — exemples nommés pour ContextEnvelope (spike contrats).
+# Non autonome : les schémas canoniques sont dans ../recyclique-api.yaml
+# (components/schemas/ContextEnvelope, ExploitationContextIds, ContextRuntimeState).
+#
+# Usage : copier sous components.examples d'une spec OpenAPI complète, ou référence doc / revue Peintre.
+
+components:
+  examples:
+    ContextEnvelopeHappyPath25_11:
+      summary: Happy-path — site + caisse + session + permissions (checklist 25.7, spec 25.4 §2–3)
+      value:
+        runtime_state: ok
+        context:
+          site_id: a1b2c3d4-e5f6-4a5b-8c9d-111111111111
+          cash_register_id: b2c3d4e5-f6a7-5b6c-9d0e-222222222222
+          cash_session_id: c3d4e5f6-a7b8-6c7d-0e1f-333333333333
+          reception_post_id: null
+        permission_keys:
+          - caisse.access
+          - reception.access
+        computed_at: "2026-04-20T14:30:00.000000Z"
+        restriction_message: null
+        presentation_labels:
+          context.active_site_display_name: Déchetterie Centre
+
+    ContextEnvelopeNegativeForbidden25_11:
+      summary: Négatif — runtime forbidden, context null (pas d’expansion silencieuse des droits)
+      value:
+        runtime_state: forbidden
+        context: null
+        permission_keys: []
+        computed_at: "2026-04-20T14:30:00.000000Z"
+        restriction_message: Exploitation non autorisée pour ce compte.
+        presentation_labels: null
+
+    ContextStale409Body25_11:
+      summary: Négatif — 409 CONTEXT_STALE (Story 25.8, en-têtes X-Recyclique-Context-* désalignés)
+      description: >
+        Structure alignée sur les tests API ; le champ detail/message peut varier selon l’enveloppeur d’erreurs.
+      value:
+        code: CONTEXT_STALE
+        detail: Le site annoncé par le client ne correspond plus au contexte serveur — rafraîchir l'enveloppe puis réessayer.
+        retryable: false
+        correlation_id: 550e8400-e29b-41d4-a716-446655440000
