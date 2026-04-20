@@ -478,6 +478,7 @@ export type CloseCashSessionOptions = {
   stepUpPin: string;
   idempotencyKey?: string;
   requestId?: string;
+  readonly contextBinding?: RecycliqueContextBinding;
 };
 
 /**
@@ -502,6 +503,7 @@ export async function postCloseCashSession(
   const idem = opts.idempotencyKey?.trim() || crypto.randomUUID();
   headers['Idempotency-Key'] = idem;
   headers['X-Request-Id'] = opts.requestId?.trim() || crypto.randomUUID();
+  applyRecycliqueContextBindingHeaders(headers, opts.contextBinding);
 
   let res: Response;
   try {
@@ -567,6 +569,7 @@ export type ExceptionalRefundOptions = {
   stepUpPin: string;
   idempotencyKey?: string;
   requestId?: string;
+  readonly contextBinding?: RecycliqueContextBinding;
 };
 
 /**
@@ -591,6 +594,7 @@ export async function postExceptionalRefund(
   const idem = opts.idempotencyKey?.trim() || crypto.randomUUID();
   headers['Idempotency-Key'] = idem;
   headers['X-Request-Id'] = opts.requestId?.trim() || crypto.randomUUID();
+  applyRecycliqueContextBindingHeaders(headers, opts.contextBinding);
 
   let res: Response;
   try {

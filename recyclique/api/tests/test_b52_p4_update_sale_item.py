@@ -409,7 +409,9 @@ class TestUpdateSaleItem:
             headers={"Authorization": f"Bearer {user_token}"},
         )
         assert response.status_code == 400
-        assert response.json()["detail"] == "Invalid sale ID format"
+        assert response.json()["detail"] == (
+        "Invalid sale ID format (expected UUID in path)"
+    )
 
     def test_update_sale_item_invalid_item_id_format(
         self,
@@ -536,7 +538,9 @@ class TestUpdateSaleItem:
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert response.status_code == 400
-        assert response.json()["detail"] == "Invalid ID format"
+        assert response.json()["detail"] == (
+        "Invalid sale or item ID format (expected UUIDs in path)"
+    )
 
     def test_update_sale_item_other_operator_forbidden(
         self,

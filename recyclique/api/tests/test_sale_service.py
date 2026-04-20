@@ -403,9 +403,9 @@ def test_sale_service_update_sale_item_admin_updates_price(db_session: Session):
 
 def test_sale_service_update_item_weight_admin_invalid_id_format(db_session: Session):
     user, _, _ = _seed_sale_with_item(db_session)
-    with pytest.raises(ValidationError, match="Invalid ID format"):
+    with pytest.raises(ValidationError, match="Invalid sale or item ID format"):
         SaleService(db_session).update_sale_item_weight_admin("bad-sale", str(uuid.uuid4()), 1.0, user)
-    with pytest.raises(ValidationError, match="Invalid ID format"):
+    with pytest.raises(ValidationError, match="Invalid sale or item ID format"):
         SaleService(db_session).update_sale_item_weight_admin(str(uuid.uuid4()), "bad-item", 1.0, user)
 
 

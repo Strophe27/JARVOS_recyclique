@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.26-draft
+  version: 0.1.28-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -1154,6 +1154,9 @@ paths:
         **Story 25.8** — en-têtes optionnels ``X-Recyclique-Context-*`` (cf. paramètres) : s'ils sont
         envoyés, refus **409** avec ``code`` **``CONTEXT_STALE``** s'ils ne correspondent pas à
         ``GET /v1/users/me/context`` (rafraîchissement requis après bascule site / session).
+
+        **Ordre de résolution** : si ces en-têtes sont présents et désalignés, le **409** est renvoyé **avant**
+        la résolution « session introuvable » (**404**) — les tests HTTP couvrent les deux cas séparément.
       security:
         - bearerOrCookie: []
       parameters:
@@ -1190,8 +1193,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: Aligné backend ``CashSessionStepResponse`` (session_id, current_step, etc.)
+                $ref: "#/components/schemas/CashSessionStepResponse"
         "400":
           description: Étape ou transition invalide
           content:
@@ -1284,7 +1286,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "422":
-          description: Story 24.10 — rejet seuils / preuves P3 (référence obligatoire, combinaison montant × motif)
+          description: |
+            Story 24.10 — rejet seuils / preuves P3 (référence obligatoire, combinaison montant × motif).
+            Inclut aussi les erreurs de validation métier servies en **422**, par exemple un montant de
+            remboursement strictement supérieur au solde caisse disponible (aligné
+            ``test_exceptional_refund_rejects_amount_over_cash_balance``).
           content:
             application/json:
               schema:
@@ -1360,9 +1366,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/CashDisbursementResponseV1"
         "400":
-          description: Erreur de validation
+          description: |
+            Erreur de validation (corps, montants, UUID d'en-tête de contexte mal formé — **``VALIDATION_ERROR``**)
+            ou refus step-up / règle métier exprimé comme enveloppe AR21 selon route.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
         "403":
-          description: Permission ou step-up
+          description: Permission `cash.disbursement` absente, step-up requis/invalide, ou accès session refusé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
         "404":
           description: Session introuvable
         "409":
@@ -3182,10 +3198,24 @@ paths:
             Conflit métier (déjà remboursé, vente non ``completed``, session fermée, etc.) ;
             Story 22.5 : autorité exercice indisponible / périmée, ou remboursement N-1 clos sans
             parcours expert (codes stables dans ``detail`` texte).
+            **Story 25.8** — **409** avec ``code`` **``CONTEXT_STALE``** lorsque les en-têtes
+            ``X-Recyclique-Context-*`` sont fournis et **désalignés** par rapport à l'enveloppe serveur
+            (``GET /v1/users/me/context``) ; à distinguer des autres **409** via le champ ``code``
+            (idempotence, exercice, remboursement, etc.).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+              examples:
+                contextStale:
+                  summary: Story 25.8 — contexte client périmé
+                  value:
+                    code: CONTEXT_STALE
+                    detail: >-
+                      Les en-têtes X-Recyclique-Context-* ne correspondent pas au site ou à la session
+                      caisse courante ; rafraîchir l'enveloppe.
+                    retryable: false
+                    correlation_id: 550e8400-e29b-41d4-a716-446655440000
         "422":
           description: Erreur de validation (ex. motif AUTRE sans détail)
           content:
@@ -3253,6 +3283,7 @@ paths:
         **Super-admin** obligatoire ; session de caisse **ouverte** ; refus si remboursement déjà enregistré pour la vente.
         **X-Step-Up-Pin** obligatoire (aligné clôture 6.7). **Idempotency-Key** optionnel (rejouer la même réponse HTTP).
         Le ContextEnvelope n'ajoute la clé effective ``caisse.sale_correct`` que pour les profils super-admin.
+        **Story 25.8** — en-têtes optionnels ``X-Recyclique-Context-*`` : s'ils sont fournis, refus **409** ``CONTEXT_STALE`` s'ils ne correspondent pas à l'enveloppe serveur.
       security:
         - bearerOrCookie: []
       parameters:
@@ -3262,6 +3293,8 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
         - name: X-Step-Up-Pin
           in: header
           required: true
@@ -3313,7 +3346,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "409":
-          description: Session clôturée, ticket non éligible, remboursement existant, ou conflit idempotence
+          description: |
+            Session clôturée, ticket non éligible, remboursement existant, conflit idempotence, ou **Story 25.8**
+            **409** ``CONTEXT_STALE`` si en-têtes ``X-Recyclique-Context-*`` présents et désalignés sur l'enveloppe serveur.
           content:
             application/json:
               schema:
@@ -3418,6 +3453,10 @@ paths:
         **Stories 6.1 / 6.2** — Lecture ticket après création ; authentification obligatoire ; revalidation
         `caisse.access`, site et opérateur (hors admin / super-admin). `data_contract` du widget ticket critique
         référence cette opération (`operationId` `recyclique_sales_getSale`).
+
+        **Story 25.8** — le refus **409** ``CONTEXT_STALE`` (en-têtes ``X-Recyclique-Context-*`` désalignés)
+        s'applique aux **mutations** caisse / ventes documentées ; **pas** sur ce **GET** (pas d'invention de 409
+        en lecture — rafraîchir l'enveloppe avant les écritures si le client envoie des en-têtes de contexte).
       security:
         - bearerOrCookie: []
       parameters:
@@ -3454,6 +3493,275 @@ paths:
                 $ref: "#/components/schemas/RecycliqueApiError"
         "404":
           description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    put:
+      operationId: recyclique_sales_updateAdminNote
+      tags:
+        - sales
+      summary: Mettre à jour la note administrateur d'un ticket
+      description: |
+        **Story B40-P4** — Édition de la note du ticket (ADMIN / SUPER_ADMIN uniquement), alignée sur
+        `PUT /api/v1/sales/{sale_id}`.
+
+        **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-Site-Id` et
+        `X-Recyclique-Context-Cash-Session-Id` : si fournis, refus **409** avec `code` **`CONTEXT_STALE`**
+        (corps `RecycliqueApiError` : `detail` texte = message métier ; `retryable` faux) lorsque le client
+        n'a pas rafraîchi l'enveloppe après bascule site ou session.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleAdminNoteUpdateV1"
+      responses:
+        "200":
+          description: Ticket mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleResponseV1"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Rôle administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: |
+            **Story 25.8** — contexte client périmé : `RecycliqueApiError` avec `code` **`CONTEXT_STALE`**
+            (message utilisateur dans `detail`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+              examples:
+                contextStale:
+                  summary: CONTEXT_STALE après bascule site ou session
+                  value:
+                    code: CONTEXT_STALE
+                    detail: >-
+                      Le site annoncé par le client ne correspond plus au contexte serveur —
+                      rafraîchir l'enveloppe (POST /v1/users/me/context/refresh) puis réessayer.
+                    retryable: false
+                    state: null
+                    correlation_id: 550e8400-e29b-41d4-a716-446655440000
+        "422":
+          description: Session fermée ou conflit historique (métier caisse)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/{sale_id}/items/{item_id}:
+    patch:
+      operationId: recyclique_sales_updateSaleItem
+      tags:
+        - sales
+      summary: Mettre à jour une ligne de ticket (hors correction admin poids dédiée)
+      description: |
+        **Story B52-P4** — Mise à jour partielle (preset, notes, quantité, poids, prix selon permissions).
+
+        **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-Site-Id` et
+        `X-Recyclique-Context-Cash-Session-Id` : si fournis, refus **409** avec `code` **`CONTEXT_STALE`**
+        (corps `RecycliqueApiError`) lorsque le client n'a pas rafraîchi l'enveloppe après bascule site ou session
+        (même garde que `PATCH …/weight` et `PUT …/sales/{sale_id}`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleItemUpdateV1"
+      responses:
+        "200":
+          description: Ligne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleItemResponseV1"
+        "400":
+          description: Validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié ou utilisateur absent en base
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Permission opérateur / refus édition prix (non admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente ou ligne introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: |
+            **Story 25.8** — `CONTEXT_STALE` : `RecycliqueApiError` avec `code` **`CONTEXT_STALE`**
+            (message dans `detail`) si en-têtes de contexte désalignés ; **422** pour d'autres conflits métier caisse.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+              examples:
+                contextStale:
+                  summary: CONTEXT_STALE après bascule site ou session
+                  value:
+                    code: CONTEXT_STALE
+                    detail: >-
+                      Le site annoncé par le client ne correspond plus au contexte serveur —
+                      rafraîchir l'enveloppe (POST /v1/users/me/context/refresh) puis réessayer.
+                    retryable: false
+                    state: null
+                    correlation_id: 550e8400-e29b-41d4-a716-446655440002
+        "422":
+          description: Conflit métier caisse
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+  /v1/sales/{sale_id}/items/{item_id}/weight:
+    patch:
+      operationId: recyclique_sales_updateSaleItemWeight
+      tags:
+        - sales
+      summary: Corriger le poids d'une ligne de ticket (admin)
+      description: |
+        **Story B52-P2** — Ajustement du poids (kg) par un administrateur ; aligné sur
+        `PATCH /api/v1/sales/{sale_id}/items/{item_id}/weight`.
+
+        **Story 25.8** — mêmes en-têtes de contexte optionnels que les autres mutations ventes ; **409**
+        `CONTEXT_STALE` si désalignés avec l'enveloppe serveur (`RecycliqueApiError`).
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/RecycliqueContextSiteIdHeader"
+        - $ref: "#/components/parameters/RecycliqueContextCashSessionIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleItemWeightUpdateV1"
+      responses:
+        "200":
+          description: Ligne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleItemResponseV1"
+        "400":
+          description: Poids ou identifiant invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Administrateur requis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Vente ou ligne introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: |
+            **Story 25.8** — `CONTEXT_STALE` : `RecycliqueApiError` avec `code` **`CONTEXT_STALE`**
+            (message dans `detail`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+              examples:
+                contextStale:
+                  summary: CONTEXT_STALE (session caisse)
+                  value:
+                    code: CONTEXT_STALE
+                    detail: >-
+                      La session caisse annoncée par le client ne correspond plus au contexte serveur —
+                      rafraîchir l'enveloppe puis réessayer.
+                    retryable: false
+                    state: null
+                    correlation_id: 550e8400-e29b-41d4-a716-446655440001
+        "422":
+          description: Conflit métier caisse
           content:
             application/json:
               schema:
@@ -9013,11 +9321,19 @@ components:
             IDEMPOTENCY_KEY_CONFLICT, STEP_UP_LOCKED).
         detail:
           description: |
-            Message texte (4xx/5xx hors validation) ou liste d'erreurs de validation (422 — équivalent
-            ancien corps FastAPI `detail` tableau).
+            Corps principal du message d'erreur. **Forme** : chaîne pour la plupart des 4xx/5xx hors
+            validation de schéma ; tableau d'objets pour les erreurs de validation (**422**, équivalent
+            historique FastAPI). **Sémantique** : ne pas se fier à la forme seule — le discriminant
+            contractuel est le couple statut HTTP + ``code`` (ex. **409** + ``CONTEXT_STALE`` = désalignement
+            contexte Story 25.8 ; autres **409** = codes machine distincts dans le même schéma).
           oneOf:
             - type: string
+              description: |
+                Texte opérateur pour erreurs métier ou transverses ; le champ ``code`` précise la cause
+                stable (ex. ``CONTEXT_STALE``, ``IDEMPOTENCY_KEY_CONFLICT``).
             - type: array
+              description: |
+                Détails de validation Pydantic / FastAPI (typiquement réponses **422**).
               items:
                 type: object
                 additionalProperties: true
@@ -9072,6 +9388,43 @@ components:
         variance_comment:
           type: string
           nullable: true
+      additionalProperties: false
+    CashSessionStep:
+      type: string
+      enum:
+        - ENTRY
+        - SALE
+        - EXIT
+      description: Étape du workflow caisse (aligné backend ``CashSessionStep``).
+    CashSessionStepResponse:
+      type: object
+      description: |
+        Métriques d'étape — aligné schéma Pydantic ``CashSessionStepResponse`` (``GET``/``PUT`` …/step).
+      required:
+        - session_id
+      properties:
+        session_id:
+          type: string
+          description: ID de la session
+        current_step:
+          anyOf:
+            - $ref: "#/components/schemas/CashSessionStep"
+            - type: "null"
+          description: Étape actuelle du workflow
+        step_start_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Début de l'étape actuelle
+        last_activity:
+          type: string
+          format: date-time
+          nullable: true
+          description: Dernière activité utilisateur
+        step_duration_seconds:
+          type: number
+          nullable: true
+          description: Durée écoulée dans l'étape actuelle
       additionalProperties: false
     CashSessionTotalsV1:
       type: object
@@ -10922,6 +11275,47 @@ components:
               nullable: true
               description: Story 24.9 — tag métier effectif (ligne > ticket > legacy).
           additionalProperties: false
+    SaleAdminNoteUpdateV1:
+      type: object
+      properties:
+        note:
+          type: string
+          nullable: true
+          description: Note affichée sur le ticket (édition admin).
+      additionalProperties: false
+    SaleItemUpdateV1:
+      type: object
+      description: |
+        Mise à jour ciblée d'une ligne (Story B52-P4), alignée sur `SaleItemUpdate` backend.
+        Au moins un champ doit être fourni selon les règles de validation serveur.
+      properties:
+        quantity:
+          type: integer
+          nullable: true
+        weight:
+          type: number
+          nullable: true
+        unit_price:
+          type: number
+          nullable: true
+        preset_id:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      additionalProperties: false
+    SaleItemWeightUpdateV1:
+      type: object
+      required:
+        - weight
+      properties:
+        weight:
+          type: number
+          exclusiveMinimum: 0
+          description: Poids en kg (strictement positif), aligné sur `SaleItemWeightUpdate` backend.
+      additionalProperties: false
     SaleResponseV1:
       type: object
       required:

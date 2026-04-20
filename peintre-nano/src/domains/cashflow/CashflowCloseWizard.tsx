@@ -76,6 +76,11 @@ function fmtEur(n: number): string {
  */
 export function CashflowCloseWizard(_props: RegisteredWidgetProps): ReactNode {
   const entry = useCloseEntryBlock();
+  const envelope = useContextEnvelope();
+  const contextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
   const auth = useAuthPort();
   const draft = useCashflowDraft();
   const stale = draft.widgetDataState === 'DATA_STALE';
@@ -152,7 +157,7 @@ export function CashflowCloseWizard(_props: RegisteredWidgetProps): ReactNode {
           variance_comment: varianceComment.trim() || null,
         },
         auth,
-        { stepUpPin: pinTrim },
+        { stepUpPin: pinTrim, contextBinding },
       );
       if (!res.ok) {
         const base = recycliqueClientFailureFromSalesHttp(res);

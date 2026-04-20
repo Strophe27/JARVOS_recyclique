@@ -30,13 +30,33 @@ Source normative (texte aligné mot à mot) : `_bmad-output/planning-artifacts/e
 
 **Lecture côté spec 25.4 (§3.1–3.2)** : la **revalidation** et le **refus par défaut** après bascule s’appuient sur l’**ADR 25-2** (`_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`) pour tout ce qui est PIN opérateur / kiosque / secret de poste ; la **matrice exhaustive** des scénarios step-up est **25.14** (hors périmètre fonctionnel de 25.8). Le verdict **NOT READY** PWA et la story **13.8** ne sont pas levés par 25.8.
 
+### Types de preuve — intégration vs e2e vs Vitest (une colonne)
+
+| Qui prouve quoi |
+|-----------------|
+| **Pytest (`recyclique/api/tests/test_context_stale_story25_8.py`)** — intégration API : `enforce_optional_client_context_binding` / `enforce_optional_client_context_binding_from_claim` avant effet métier ; **409** + `code` **`CONTEXT_STALE`** lorsque les en-têtes `X-Recyclique-Context-*` sont **envoyés**, **UUID valides**, et **désalignés** de l’enveloppe serveur ; **400** + `code` **`VALIDATION_ERROR`** si un en-tête attendu comme UUID est **mal formé**, ou si des en-têtes sont présents alors que le **`sub` JWT** n’est **pas** un UUID exploitable (ne pas confondre avec **409**). |
+| **Vitest** — unitaires navigateur hors e2e : `context-binding-headers` (`Record` **et** `Headers`, `clear` / reset) et `context-envelope-freshness` (blocage local si enveloppe locale périmée). |
+| **e2e** (Playwright, etc.) — parcours opérateur bout-en-bout ; **non requis** pour l’AC « au moins un chemin automatisé » si pytest + Vitest sont verts ; recommandé pour **checklist terrain** (voir `test-summary-story-25-8-context-stale.md`). |
+
+### En-têtes optionnels — un seul « signal » site et/ou caisse ; 400 vs 409 (§AC)
+
+- **Un seul couple logique** : le client peut envoyer **le site**, **la session caisse**, ou **les deux** — ce qui compte est qu’il n’y ait **pas** de valeurs **résiduelles** d’un écran précédent (Peintre : `applyRecycliqueContextBindingHeaders` efface les deux clés avant réécriture ; pas deux vérités concurrentes sans passage par cette fonction).
+- **Sans** `X-Recyclique-Context-Site-Id` **ni** `X-Recyclique-Context-Cash-Session-Id` : le garde **ne s’applique pas** — **aucun** **409** `CONTEXT_STALE` **ni** **400** de validation 25.8 **uniquement** parce que le contexte serveur aurait changé : le client n’a pas fourni de signal à contrôler.
+- **Avec** en-têtes **mal formés** (non-UUID là où un UUID est requis) : **400** **`VALIDATION_ERROR`** — pas **409** « contextual ».
+- **Avec** en-têtes **bien formés** mais **désalignés** après bascule : **409** **`CONTEXT_STALE`**, effet métier bloqué (aligné **§AC Then / And**).
+
+### Pas de retry aveugle — critère observable
+
+- **API** : réponse **409** `CONTEXT_STALE` avec **`retryable: false`** dans l’enveloppe d’erreur (vérifiable dans pytest, corps AR21).
+- **Client** : pas de mutation tant que `isEnvelopeStale` est vrai ; les tests Vitest `context-envelope-freshness` ancrent le comportement sans dépendre d’un navigateur.
+
 ### Checklist développeur (VS) — exécution et preuves
 
 | # | Action | Critère de refus / erreur corrélée | Où prouver (cible repo) |
 |---|--------|-----------------------------------|-------------------------|
-| 1 | **AC Then** : refus après bascule de contexte | Réponse API avec **code / `message_id` stable** (pas 500 générique, pas chaîne libre non documentée) | Nouveau ou étendre `recyclique/api/tests/test_context_envelope.py` **ou** e2e Peintre (ex. hub caisse) avec assertion sur le corps d’erreur |
-| 2 | **AC And (stale)** : garde serveur avant mutation sensible | **409 / 428 / 422** (selon convention projet une fois choisie) + même code stable si enveloppe / session ≠ couple site+caisse attendu | Même fichier pytest **ou** test d’intégration route métier choisie ; corrélation **OpenAPI** `contracts/openapi/recyclique-api.yaml` |
-| 3 | **AC And (stale)** : client sans continuation silencieuse | UI ou couche HTTP affiche le **code stable** ; pas de retry aveugle sans refresh d’enveloppe | `peintre-nano/src/runtime/context-envelope-freshness.ts` + tests `peintre-nano/tests/unit/context-envelope-freshness.test.ts` (et/ou e2e) |
+| 1 | **AC Then** : refus après bascule de contexte | Réponse API avec **code / `message_id` stable** (pas 500 générique, pas chaîne libre non documentée) | `recyclique/api/tests/test_context_stale_story25_8.py` (liste exhaustive § test-summary **25.8**) ; e2e Peintre en complément si campagne dédiée |
+| 2 | **AC And (stale)** : garde serveur avant mutation sensible | **409** + `code` **`CONTEXT_STALE`** (convention Story **25.8**) + corps `RecycliqueApiError` ; autres **409** (idempotence, remboursement, correction sensible) restent des codes distincts documentés par route | `test_context_stale_story25_8.py` + **OpenAPI** `contracts/openapi/recyclique-api.yaml` (`PUT /v1/sales/{sale_id}`, `PATCH …/weight`, caisse `…/step`, `PATCH …/corrections`, etc.) |
+| 3 | **AC And (stale)** : client sans continuation silencieuse | UI ou couche HTTP affiche le **code stable** ; pas de retry aveugle sans refresh d’enveloppe | Liaison HTTP : `peintre-nano/src/api/context-binding-headers.ts` + `peintre-nano/tests/unit/context-binding-headers.test.ts` ; fraîcheur locale : `peintre-nano/src/runtime/context-envelope-freshness.ts` + `peintre-nano/tests/unit/context-envelope-freshness.test.ts` (e2e optionnel) |
 | 4 | **AC And (scope)** | Pas d’implémentation **file offline**, **SW**, **PIN PWA kiosque complet** | Revue de PR + commentaire renvoyant **25.14** / **13.8** si zone limite |
 
 ### Cartographie checklist 25.7 (§3 — à tracer dans test-summary / PR)
@@ -55,10 +75,16 @@ Source normative (texte aligné mot à mot) : `_bmad-output/planning-artifacts/e
 - **Matrice exhaustive** step-up / PIN kiosque / secret de poste pour tous les scénarios : story **25.14** ; 25.8 pose le **socle** refus + erreurs corrélées + au moins un chemin de preuve automatisé.
 - **Nouvelle ADR** : **non requise** si l'implémentation **respecte** les ADR **25-2** et **25-3** existantes ; toute évolution substantielle des invariants → **correct course** ou ADR dédiée (comme pour les autres stories Epic 25).
 
+### Mutations « couvertes » par la preuve pytest 25.8 vs AC backend (honnêteté)
+
+Les **AC** exigent une **garde serveur** et un **refus explicite** sur l’ensemble des **mutations sensibles** listées en DoD (hold, création vente, reversals, finalize/abandon held, édition vente, etc.). La **preuve automatisée** de cette story dans `test_context_stale_story25_8.py` porte sur un **échantillon de routes** représentatif : `PATCH …/corrections`, `PUT …/cash-sessions/{id}/step`, `PUT …/sales/{id}` (note admin), `PATCH …/items/{id}` et `PATCH …/weight`.
+
+Les mutations **également protégées au code** (`enforce_optional_client_context_binding_from_claim` dans `sales.py` / `cash_sessions.py`) mais **sans** test dédié dans ce fichier — **hold**, **POST vente**, **reversal**, **finalize-held**, **abandon-held**, **décaissements / transferts caisse**, etc. — restent **dans le périmètre fonctionnel 25.8** (comportement attendu + OpenAPI) ; l’absence de ligne pytest par route **ne réduit pas** les AC : elle fixe où se situe la **preuve répétable** la plus légère. Une **matrice exhaustive** « une assertion par route / variante » est explicitement **hors périmètre** de cette story si elle implique des **centaines** de tests nouveaux : la tracer en **AC Story 25.10** (supervision / campagnes étendues), **sans** bloquer 25.8.
+
 ## Definition of Done
 
-- [x] **Contrat d'erreur stable** : code API **`CONTEXT_STALE`** (corps `RecycliqueApiError` / HTTP **409**) documenté dans **OpenAPI** (`contracts/openapi/recyclique-api.yaml`) + en-têtes optionnels `X-Recyclique-Context-Site-Id` / `X-Recyclique-Context-Cash-Session-Id`.
-- [x] **Backend** : mutations ventes sensibles (`POST /v1/sales/hold`, `POST /v1/sales/`, `POST /v1/sales/reversals`, `finalize-held`, `abandon-held`) — garde **`enforce_optional_client_context_binding`** avant `SaleService` lorsque le client envoie les en-têtes (alignement `build_context_envelope`).
+- [x] **Contrat d'erreur stable** : code API **`CONTEXT_STALE`** (corps `RecycliqueApiError` / HTTP **409**) documenté dans **OpenAPI** (`contracts/openapi/recyclique-api.yaml`), y compris **`PATCH /v1/sales/{sale_id}/items/{item_id}`** (hors `/weight`) + en-têtes optionnels `X-Recyclique-Context-Site-Id` / `X-Recyclique-Context-Cash-Session-Id`.
+- [x] **Backend** : mutations ventes sensibles (`POST /v1/sales/hold`, `POST /v1/sales/`, `POST /v1/sales/reversals`, `finalize-held`, `abandon-held`, `PUT /v1/sales/{sale_id}` note admin, `PATCH …/items/{item_id}`, `PATCH …/weight`) — garde **`enforce_optional_client_context_binding`** avant effet métier lorsque le client envoie les en-têtes (alignement `build_context_envelope`).
 - [x] **Client (Peintre_nano)** : en-têtes de liaison sur les POST ventes ; blocage local si `isEnvelopeStale` ; alerte titre dédié pour **`CONTEXT_STALE`** (`RecycliqueClientErrorAlert`).
 - [x] **Preuve automatisée** : pytest `recyclique/api/tests/test_context_stale_story25_8.py` (bascule `user.site_id` + refus 409) ; Vitest unitaires `context-envelope-freshness` / `context-binding-headers`.
 - [x] **Trace checklist** : `_bmad-output/implementation-artifacts/tests/test-summary-story-25-8-context-stale.md` (IDs `CTX-SWITCH-3-1-*`, `CTX-SWITCH-3-2-*`).
@@ -149,7 +175,10 @@ _(néant)_
 
 ### Completion Notes List
 
-- Garde serveur **25.8** : `enforce_optional_client_context_binding` — en-têtes optionnels pour rétrocompat ; si présents, refus **409** + **`CONTEXT_STALE`**.
+- Post-QA2 (lot F1–F8) : OpenAPI — `PUT /v1/sales/{sale_id}` + `PATCH …/items/{item_id}` + `PATCH …/items/{item_id}/weight` avec en-têtes **25.8**, **409** `CONTEXT_STALE` + exemples `RecycliqueApiError` ; `pnpm run generate` → `generated/recyclique-api.ts` ; pytest `test_context_stale_story25_8.py` inclut **PATCH** ligne (`notes`) **409** contexte.
+- Post-QA2 P2 : doc story (intégration / Vitest / e2e ; en-têtes absents ; retry observable) ; `context-binding-headers` nettoie les clés avant réécriture ; test-summary ordre aligné sur pytest ; OpenAPI **`PATCH …/items/{item_id}`** explicite.
+- Post-QA2 P2 (lot doc/OpenAPI/Peintre/backend) : **400** `VALIDATION_ERROR` pour en-tête non-UUID ou `sub` non-UUID avec en-têtes ; `enforce_optional_client_context_binding_from_claim` ; OpenAPI **`POST …/disbursements`** — **400**/**403** avec schéma `RecycliqueApiError` ; Peintre : `Headers` + `clearRecycliqueContextBindingHeaders` ; GET vente / held **sans** en-têtes de liaison ; test-summary + tableau routes / **25.10**.
+- Garde serveur **25.8** : en-têtes optionnels pour rétrocompat ; si présents et UUID valides, comparaison enveloppe ; désalignement → **409** + **`CONTEXT_STALE`**.
 - Client : liaison `X-Recyclique-Context-*` sur POST ventes ; `isEnvelopeStale` pour éviter mutation sur enveloppe locale périmée sans refresh.
 - `npm run build` Peintre : échecs TS préexistants (`CashflowSaleCorrectionWizard` / `category-hierarchy-display`) — hors diff 25-8.
 

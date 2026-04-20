@@ -7,6 +7,11 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 from recyclic_api.core.auth import create_access_token
+from recyclic_api.core.context_binding_guard import (
+    CONTEXT_STALE_CODE,
+    CONTEXT_VALIDATION_CODE,
+    HEADER_CONTEXT_SITE_ID,
+)
 from recyclic_api.core.security import hash_password
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.exceptional_refund import ExceptionalRefund
@@ -233,3 +238,79 @@ def test_exceptional_refund_requires_idempotency_key(
         headers=_auth_headers(operator_user, pin=_PIN, idempotency_key=None),
     )
     assert r.status_code == 400
+
+
+def _assert_409_context_stale_ar21(body: dict) -> None:
+    assert body["code"] == CONTEXT_STALE_CODE
+    assert isinstance(body["detail"], str)
+    assert body.get("retryable") is False
+    assert "correlation_id" in body
+    assert isinstance(body["correlation_id"], str)
+
+
+def _assert_400_validation_ar21(body: dict) -> None:
+    assert body["code"] == CONTEXT_VALIDATION_CODE
+    assert isinstance(body["detail"], str)
+    assert body.get("retryable") is False
+    assert "correlation_id" in body
+
+
+def test_exceptional_refund_400_when_site_context_header_not_valid_uuid(
+    client: TestClient,
+    db_session,
+    memory_redis,
+    operator_user,
+    open_session,
+):
+    """Story 25.8 — en-tête site présent mais non UUID : 400 ``VALIDATION_ERROR`` (garde caisse)."""
+    grant_user_caisse_sale_eligibility(db_session, operator_user, open_session.site_id)
+    grant_user_exceptional_refund_permission(db_session, operator_user)
+
+    payload = {
+        "amount": 8.0,
+        "refund_payment_method": "cash",
+        "reason_code": "ERREUR_SAISIE",
+        "justification": "Header invalide.",
+        "detail": None,
+    }
+    headers = _auth_headers(operator_user, pin=_PIN, idempotency_key="idem-ctx-bad-uuid")
+    headers[HEADER_CONTEXT_SITE_ID] = "ceci-nest-pas-un-uuid"
+    r = client.post(
+        f"{_V1}/cash-sessions/{open_session.id}/exceptional-refunds",
+        json=payload,
+        headers=headers,
+    )
+    assert r.status_code == 400
+    _assert_400_validation_ar21(r.json())
+
+
+def test_exceptional_refund_409_context_stale_when_site_header_mismatches_envelope(
+    client: TestClient,
+    db_session,
+    memory_redis,
+    operator_user,
+    open_session,
+):
+    """Story 25.8 — ``_enforce_cash_context_binding`` : 409 ``CONTEXT_STALE`` si site désaligné."""
+    grant_user_caisse_sale_eligibility(db_session, operator_user, open_session.site_id)
+    grant_user_exceptional_refund_permission(db_session, operator_user)
+    alien_site_id = uuid.uuid4()
+
+    payload = {
+        "amount": 8.0,
+        "refund_payment_method": "cash",
+        "reason_code": "ERREUR_SAISIE",
+        "justification": "Contexte stale.",
+        "detail": None,
+    }
+    headers = _auth_headers(operator_user, pin=_PIN, idempotency_key="idem-ctx-stale")
+    headers[HEADER_CONTEXT_SITE_ID] = str(alien_site_id)
+    r = client.post(
+        f"{_V1}/cash-sessions/{open_session.id}/exceptional-refunds",
+        json=payload,
+        headers=headers,
+    )
+    assert r.status_code == 409
+    body = r.json()
+    _assert_409_context_stale_ar21(body)
+    assert "site" in body["detail"].lower()

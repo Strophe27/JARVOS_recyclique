@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import Annotated, List
 from uuid import UUID
 
-from recyclic_api.core.context_binding_guard import enforce_optional_client_context_binding
+from recyclic_api.core.context_binding_guard import enforce_optional_client_context_binding_from_claim
 from recyclic_api.core.database import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
@@ -99,19 +99,9 @@ def _user_for_sale_item_patch(db: Session, user_id: str) -> User:
     return user
 
 
-def _user_uuid_or_none(user_id: str) -> UUID | None:
-    try:
-        return UUID(str(user_id))
-    except ValueError:
-        return None
-
-
 def _enforce_sales_context_binding(request: Request, db: Session, user_id: str) -> None:
     """Story 25.8 — refus 409 ``CONTEXT_STALE`` si les en-têtes de contexte ne matchent pas l'enveloppe."""
-    uid = _user_uuid_or_none(user_id)
-    if uid is None:
-        return
-    enforce_optional_client_context_binding(request, db, uid)
+    enforce_optional_client_context_binding_from_claim(request, db, user_id)
 
 
 def _require_admin_for_sale_note(db: Session, user_id: str) -> None:
@@ -297,6 +287,7 @@ async def correct_sale_sensitive(
     Une session de caisse **clôturée** n'est plus bloquante (données historiques) ; l'audit porte le statut de session.
     Step-up ``X-Step-Up-Pin`` obligatoire ; ``Idempotency-Key`` optionnel (rejouer la même réponse).
     """
+    _enforce_sales_context_binding(request, db, str(current_user.id))
     verify_step_up_pin_header(
         user=current_user,
         pin_header_value=request.headers.get(STEP_UP_PIN_HEADER),
@@ -367,6 +358,10 @@ async def get_sale(
 
     Authentification obligatoire ; revalidation permission caisse, site et opérateur
     (sauf admin / super-admin : lecture élargie).
+
+    **Story 25.8** — le contrôle de contexte « périmé » (``CONTEXT_STALE`` / en-têtes
+    ``X-Recyclique-Context-*``) s'applique aux **mutations** ; pas de **409** sur cette
+    lecture GET (rafraîchir l'enveloppe avant les écritures si le client envoie des en-têtes).
     """
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     try:
@@ -387,7 +382,11 @@ async def get_sale(
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@router.put("/{sale_id}", response_model=SaleResponse)
+@router.put(
+    "/{sale_id}",
+    response_model=SaleResponse,
+    operation_id="recyclique_sales_updateAdminNote",
+)
 async def update_sale_note(
     request: Request,
     sale_id: str,
@@ -404,6 +403,7 @@ async def update_sale_note(
     """
     user_id = _jwt_sub_from_bearer_or_cookie(request, credentials)
     _require_admin_for_sale_note(db, user_id)
+    _enforce_sales_context_binding(request, db, user_id)
 
     try:
         return SaleService(db).update_admin_note(sale_id, sale_update.note)
@@ -411,8 +411,13 @@ async def update_sale_note(
         raise_domain_exception_as_http(e, **_SALE_NOTE_UPDATE_DOMAIN_HTTP)
 
 
-@router.patch("/{sale_id}/items/{item_id}/weight", response_model=SaleItemResponse)
+@router.patch(
+    "/{sale_id}/items/{item_id}/weight",
+    response_model=SaleItemResponse,
+    operation_id="recyclique_sales_updateSaleItemWeight",
+)
 async def update_sale_item_weight(
+    request: Request,
     sale_id: str,
     item_id: str,
     weight_update: SaleItemWeightUpdate,
@@ -427,6 +432,7 @@ async def update_sale_item_weight(
     - Recalcule automatiquement les statistiques affectées
     - Log d'audit complet
     """
+    _enforce_sales_context_binding(request, db, str(current_user.id))
     try:
         return SaleService(db).update_sale_item_weight_admin(
             sale_id, item_id, weight_update.weight, current_user

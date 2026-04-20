@@ -62,6 +62,7 @@ from recyclic_api.schemas.exceptional_refund import (
     ExceptionalRefundResponse,
 )
 from recyclic_api.schemas.material_exchange import MaterialExchangeCreate, MaterialExchangeResponse
+from recyclic_api.schemas.recyclique_api_error import RecycliqueApiError
 from recyclic_api.application.cash_session_close_presentation import (
     present_close_cash_session_outcome,
 )
@@ -76,7 +77,7 @@ from recyclic_api.services.cash_internal_transfer_service import (
 )
 from recyclic_api.services.exceptional_refund_service import ExceptionalRefundService
 from recyclic_api.services.material_exchange_service import MaterialExchangeService
-from recyclic_api.core.context_binding_guard import enforce_optional_client_context_binding
+from recyclic_api.core.context_binding_guard import enforce_optional_client_context_binding_from_claim
 from recyclic_api.core.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from recyclic_api.utils.domain_exception_http import raise_domain_exception_as_http
 from uuid import UUID
@@ -101,19 +102,9 @@ _EXCEPTIONAL_REFUND_DOMAIN_HTTP = {
 logger = logging.getLogger(__name__)
 
 
-def _user_uuid_or_none(user_id: str) -> UUID | None:
-    try:
-        return UUID(str(user_id))
-    except ValueError:
-        return None
-
-
 def _enforce_cash_context_binding(request: Request, db: Session, user_id: str) -> None:
     """Story 25.8 — refus 409 ``CONTEXT_STALE`` si les en-têtes de contexte ne matchent pas l'enveloppe."""
-    uid = _user_uuid_or_none(user_id)
-    if uid is None:
-        return
-    enforce_optional_client_context_binding(request, db, uid)
+    enforce_optional_client_context_binding_from_claim(request, db, user_id)
 
 
 @router.post(
@@ -683,7 +674,13 @@ async def update_cash_session(
         422: {"description": "Validation métier P3 (preuves / seuils Story 24.10)"},
         403: {"description": "Accès non autorisé / PIN requis ou invalide"},
         404: {"description": "Session non trouvée"},
-        409: {"description": "Conflit idempotence"},
+        409: {
+            "description": (
+                "Conflit idempotence (``IDEMPOTENCY_KEY_CONFLICT``) ou **Story 25.8** — contexte périmé "
+                "(``CONTEXT_STALE`` : en-têtes ``X-Recyclique-Context-*`` désalignés sur l'enveloppe serveur)."
+            ),
+            "model": RecycliqueApiError,
+        },
     },
     tags=["Sessions de Caisse"],
 )
@@ -1238,6 +1235,14 @@ async def get_session_step_metrics(
                     }
                 }
             }
+        },
+        409: {
+            "description": (
+                "**Story 25.8** — **409** avec ``code`` **``CONTEXT_STALE``** si les en-têtes "
+                "``X-Recyclique-Context-*`` sont présents et désalignés sur l'enveloppe serveur "
+                "(résolu avant « session introuvable », **404**)."
+            ),
+            "model": RecycliqueApiError,
         },
         404: {
             "description": "Session non trouvée",

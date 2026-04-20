@@ -16,7 +16,7 @@ import { ArrowLeft, Calculator } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { needsVarianceComment, postCloseCashSession, theoreticalCloseAmount } from '../../api/cash-session-client';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
-import { useAuthPort } from '../../app/auth/AuthRuntimeProvider';
+import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
 import { useCaisseServerCurrentSession } from './use-caisse-server-current-session';
 import classes from './CaisseBrownfieldDashboardWidget.module.css';
 
@@ -41,6 +41,11 @@ export type CaisseSessionCloseSurfaceProps = {
  */
 export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfaceProps): ReactNode {
   const auth = useAuthPort();
+  const envelope = useContextEnvelope();
+  const contextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
   const { session, loading, failure, refresh } = useCaisseServerCurrentSession(auth);
   const [actualAmount, setActualAmount] = useState<number | string>('');
   const [varianceComment, setVarianceComment] = useState('');
@@ -96,7 +101,7 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
           session.id,
           { actual_amount: initial, variance_comment: null },
           auth,
-          { stepUpPin: pin },
+          { stepUpPin: pin, contextBinding },
         );
         if (!res.ok) {
           setCloseError(res.detail);
@@ -121,7 +126,7 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
           variance_comment: varianceComment.trim() || null,
         },
         auth,
-        { stepUpPin: pin },
+        { stepUpPin: pin, contextBinding },
       );
       if (!res.ok) {
         setCloseError(res.detail);
@@ -132,7 +137,7 @@ export function CaisseSessionCloseSurface({ salePath }: CaisseSessionCloseSurfac
       setCloseBusy(false);
       refresh();
     }
-  }, [auth, actualAmount, isEmpty, refresh, session, stepUpPin, theoretical, varianceComment]);
+  }, [auth, actualAmount, contextBinding, isEmpty, refresh, session, stepUpPin, theoretical, varianceComment]);
 
   if (failure && !session) {
     return (

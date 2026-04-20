@@ -130,6 +130,11 @@ export function CashflowExceptionalRefundWizard(_props: RegisteredWidgetProps): 
   const [success, setSuccess] = useState<ExceptionalRefundPayload | null>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
 
+  const contextBinding = useMemo(
+    () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
+    [envelope.siteId, envelope.cashSessionId],
+  );
+
   useEffect(() => {
     const rid = envelope.activeRegisterId?.trim();
     if (!rid) {
@@ -214,6 +219,7 @@ export function CashflowExceptionalRefundWizard(_props: RegisteredWidgetProps): 
       stepUpPin: pinTrim,
       idempotencyKey: idem,
       requestId: crypto.randomUUID(),
+      contextBinding,
     });
     setBusy(false);
 

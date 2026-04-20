@@ -255,7 +255,9 @@ class SaleService:
         try:
             sale_uuid = UUID(sale_id)
         except ValueError:
-            raise ValidationError("Invalid sale ID format") from None
+            raise ValidationError(
+                "Invalid sale ID format (expected UUID in path)"
+            ) from None
 
         try:
             user_uuid = UUID(str(user_id))
@@ -422,7 +424,7 @@ class SaleService:
         (même enchaînement flush → recalcul → log_audit → commit qu'avant extraction).
 
         Raises:
-            ValidationError: UUID invalides (détail ``Invalid ID format``) ou poids ≤ 0.
+            ValidationError: UUID invalides (détail explicite) ou poids ≤ 0.
             NotFoundError: item absent ou ne correspond pas à la vente.
         """
         db = self.db
@@ -430,7 +432,9 @@ class SaleService:
             sale_uuid = UUID(sale_id)
             item_uuid = UUID(item_id)
         except ValueError:
-            raise ValidationError("Invalid ID format") from None
+            raise ValidationError(
+                "Invalid sale or item ID format (expected UUIDs in path)"
+            ) from None
 
         if new_weight <= 0:
             raise ValidationError("Le poids doit être supérieur à 0")
@@ -490,7 +494,9 @@ class SaleService:
         try:
             sale_uuid = UUID(sale_id)
         except ValueError:
-            raise ValidationError("Invalid sale ID format") from None
+            raise ValidationError(
+                "Invalid sale ID format (expected UUID in path)"
+            ) from None
 
         db = self.db
         sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
@@ -1020,7 +1026,9 @@ class SaleService:
         try:
             sale_uuid = UUID(sale_id)
         except ValueError:
-            raise ValidationError("Invalid sale ID format") from None
+            raise ValidationError(
+                "Invalid sale ID format (expected UUID in path)"
+            ) from None
 
         sale = (
             db.query(Sale)
@@ -1177,7 +1185,9 @@ class SaleService:
         try:
             sale_uuid = UUID(sale_id)
         except ValueError:
-            raise ValidationError("Invalid sale ID format") from None
+            raise ValidationError(
+                "Invalid sale ID format (expected UUID in path)"
+            ) from None
 
         sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
         if not sale:
@@ -1312,7 +1322,9 @@ class SaleService:
         try:
             source_uuid = UUID(str(payload.source_sale_id))
         except ValueError:
-            raise ValidationError("Invalid sale ID format") from None
+            raise ValidationError(
+                "Invalid sale ID format (expected UUID in path)"
+            ) from None
 
         sale = (
             db.query(Sale)
@@ -1590,7 +1602,9 @@ class SaleService:
         try:
             sale_uuid = UUID(sale_id)
         except ValueError:
-            raise ValidationError("Invalid sale ID format") from None
+            raise ValidationError(
+                "Invalid sale ID format (expected UUID in path)"
+            ) from None
 
         sale = (
             db.query(Sale)

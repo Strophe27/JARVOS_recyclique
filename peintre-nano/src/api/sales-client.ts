@@ -357,7 +357,8 @@ export async function postCreateSale(
 export async function getSale(
   saleId: string,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
-  options?: SalesMutationOptions,
+  /** Réservé extensions ; pas d'en-têtes de contexte 25.8 sur ce GET (mutations uniquement). */
+  _options?: SalesMutationOptions,
 ): Promise<GetSaleResult> {
   const base = getLiveSnapshotBasePrefix();
   const url = `${base}/v1/sales/${encodeURIComponent(saleId)}`;
@@ -368,7 +369,8 @@ export async function getSale(
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
+  /** Story 25.8 — la garde ``CONTEXT_STALE`` ne s'applique pas aux GET ; ne pas envoyer les en-têtes
+   *  de liaison sur la lecture seule (évite d'impliquer à tort une corrélation serveur). */
 
   let res: Response;
   try {
@@ -474,7 +476,8 @@ export async function getHeldSalesForSession(
   cashSessionId: string,
   auth: Pick<AuthContextPort, 'getAccessToken'>,
   limit = 50,
-  options?: SalesMutationOptions,
+  /** Pas d'en-têtes de contexte 25.8 sur ce GET (mutations uniquement). */
+  _options?: SalesMutationOptions,
 ): Promise<HeldSalesListResult> {
   const base = getLiveSnapshotBasePrefix();
   const q = new URLSearchParams({ cash_session_id: cashSessionId, limit: String(limit) });
@@ -482,7 +485,6 @@ export async function getHeldSalesForSession(
   const headers: Record<string, string> = { Accept: 'application/json' };
   const token = auth.getAccessToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
-  applyRecycliqueContextBindingHeaders(headers, options?.contextBinding);
 
   let res: Response;
   try {

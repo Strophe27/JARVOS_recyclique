@@ -752,7 +752,9 @@ class TestSalesIntegration:
             headers={"Authorization": f"Bearer {admin_token_real}"},
         )
         assert response.status_code == 400
-        assert response.json().get("detail") == "Invalid sale ID format"
+        assert response.json().get("detail") == (
+            "Invalid sale ID format (expected UUID in path)"
+        )
 
     def test_update_sale_note_super_admin_success(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, db_session):
         """

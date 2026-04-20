@@ -410,6 +410,9 @@ export interface paths {
          *     **Story 25.8** — en-têtes optionnels ``X-Recyclique-Context-*`` (cf. paramètres) : s'ils sont
          *     envoyés, refus **409** avec ``code`` **``CONTEXT_STALE``** s'ils ne correspondent pas à
          *     ``GET /v1/users/me/context`` (rafraîchissement requis après bascule site / session).
+         *
+         *     **Ordre de résolution** : si ces en-têtes sont présents et désalignés, le **409** est renvoyé **avant**
+         *     la résolution « session introuvable » (**404**) — les tests HTTP couvrent les deux cas séparément.
          */
         put: operations["recyclique_cashSessions_updateSessionStep"];
         post?: never;
@@ -1200,6 +1203,7 @@ export interface paths {
          *     **Super-admin** obligatoire ; session de caisse **ouverte** ; refus si remboursement déjà enregistré pour la vente.
          *     **X-Step-Up-Pin** obligatoire (aligné clôture 6.7). **Idempotency-Key** optionnel (rejouer la même réponse HTTP).
          *     Le ContextEnvelope n'ajoute la clé effective ``caisse.sale_correct`` que pour les profils super-admin.
+         *     **Story 25.8** — en-têtes optionnels ``X-Recyclique-Context-*`` : s'ils sont fournis, refus **409** ``CONTEXT_STALE`` s'ils ne correspondent pas à l'enveloppe serveur.
          */
         patch: operations["recyclique_sales_correctSaleSensitive"];
         trace?: never;
@@ -1245,14 +1249,77 @@ export interface paths {
          * @description **Stories 6.1 / 6.2** — Lecture ticket après création ; authentification obligatoire ; revalidation
          *     `caisse.access`, site et opérateur (hors admin / super-admin). `data_contract` du widget ticket critique
          *     référence cette opération (`operationId` `recyclique_sales_getSale`).
+         *
+         *     **Story 25.8** — le refus **409** ``CONTEXT_STALE`` (en-têtes ``X-Recyclique-Context-*`` désalignés)
+         *     s'applique aux **mutations** caisse / ventes documentées ; **pas** sur ce **GET** (pas d'invention de 409
+         *     en lecture — rafraîchir l'enveloppe avant les écritures si le client envoie des en-têtes de contexte).
          */
         get: operations["recyclique_sales_getSale"];
-        put?: never;
+        /**
+         * Mettre à jour la note administrateur d'un ticket
+         * @description **Story B40-P4** — Édition de la note du ticket (ADMIN / SUPER_ADMIN uniquement), alignée sur
+         *     `PUT /api/v1/sales/{sale_id}`.
+         *
+         *     **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-Site-Id` et
+         *     `X-Recyclique-Context-Cash-Session-Id` : si fournis, refus **409** avec `code` **`CONTEXT_STALE`**
+         *     (corps `RecycliqueApiError` : `detail` texte = message métier ; `retryable` faux) lorsque le client
+         *     n'a pas rafraîchi l'enveloppe après bascule site ou session.
+         */
+        put: operations["recyclique_sales_updateAdminNote"];
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/sales/{sale_id}/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mettre à jour une ligne de ticket (hors correction admin poids dédiée)
+         * @description **Story B52-P4** — Mise à jour partielle (preset, notes, quantité, poids, prix selon permissions).
+         *
+         *     **Story 25.8** — en-têtes optionnels `X-Recyclique-Context-Site-Id` et
+         *     `X-Recyclique-Context-Cash-Session-Id` : si fournis, refus **409** avec `code` **`CONTEXT_STALE`**
+         *     (corps `RecycliqueApiError`) lorsque le client n'a pas rafraîchi l'enveloppe après bascule site ou session
+         *     (même garde que `PATCH …/weight` et `PUT …/sales/{sale_id}`).
+         */
+        patch: operations["recyclique_sales_updateSaleItem"];
+        trace?: never;
+    };
+    "/v1/sales/{sale_id}/items/{item_id}/weight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Corriger le poids d'une ligne de ticket (admin)
+         * @description **Story B52-P2** — Ajustement du poids (kg) par un administrateur ; aligné sur
+         *     `PATCH /api/v1/sales/{sale_id}/items/{item_id}/weight`.
+         *
+         *     **Story 25.8** — mêmes en-têtes de contexte optionnels que les autres mutations ventes ; **409**
+         *     `CONTEXT_STALE` si désalignés avec l'enveloppe serveur (`RecycliqueApiError`).
+         */
+        patch: operations["recyclique_sales_updateSaleItemWeight"];
         trace?: never;
     };
     "/v1/sales/{sale_id}/finalize-held": {
@@ -3355,8 +3422,11 @@ export interface components {
              */
             code: string;
             /**
-             * @description Message texte (4xx/5xx hors validation) ou liste d'erreurs de validation (422 — équivalent
-             *     ancien corps FastAPI `detail` tableau).
+             * @description Corps principal du message d'erreur. **Forme** : chaîne pour la plupart des 4xx/5xx hors
+             *     validation de schéma ; tableau d'objets pour les erreurs de validation (**422**, équivalent
+             *     historique FastAPI). **Sémantique** : ne pas se fier à la forme seule — le discriminant
+             *     contractuel est le couple statut HTTP + ``code`` (ex. **409** + ``CONTEXT_STALE`` = désalignement
+             *     contexte Story 25.8 ; autres **409** = codes machine distincts dans le même schéma).
              */
             detail: string | {
                 [key: string]: unknown;
@@ -3395,6 +3465,30 @@ export interface components {
         CashSessionCloseBody: {
             actual_amount: number;
             variance_comment?: string | null;
+        };
+        /**
+         * @description Étape du workflow caisse (aligné backend ``CashSessionStep``).
+         * @enum {string}
+         */
+        CashSessionStep: "ENTRY" | "SALE" | "EXIT";
+        /** @description Métriques d'étape — aligné schéma Pydantic ``CashSessionStepResponse`` (``GET``/``PUT`` …/step). */
+        CashSessionStepResponse: {
+            /** @description ID de la session */
+            session_id: string;
+            /** @description Étape actuelle du workflow */
+            current_step?: components["schemas"]["CashSessionStep"] | null;
+            /**
+             * Format: date-time
+             * @description Début de l'étape actuelle
+             */
+            step_start_time?: string | null;
+            /**
+             * Format: date-time
+             * @description Dernière activité utilisateur
+             */
+            last_activity?: string | null;
+            /** @description Durée écoulée dans l'étape actuelle */
+            step_duration_seconds?: number | null;
         };
         /** @description Agrégats clôture / Story 6.4 — net = sales_completed + refunds (refunds ≤ 0 typiquement). */
         CashSessionTotalsV1: {
@@ -4238,6 +4332,26 @@ export interface components {
             sale_id: string;
             /** @description Story 24.9 — tag métier effectif (ligne > ticket > legacy). */
             effective_business_tag?: string | null;
+        };
+        SaleAdminNoteUpdateV1: {
+            /** @description Note affichée sur le ticket (édition admin). */
+            note?: string | null;
+        };
+        /**
+         * @description Mise à jour ciblée d'une ligne (Story B52-P4), alignée sur `SaleItemUpdate` backend.
+         *     Au moins un champ doit être fourni selon les règles de validation serveur.
+         */
+        SaleItemUpdateV1: {
+            quantity?: number | null;
+            weight?: number | null;
+            unit_price?: number | null;
+            /** Format: uuid */
+            preset_id?: string | null;
+            notes?: string | null;
+        };
+        SaleItemWeightUpdateV1: {
+            /** @description Poids en kg (strictement positif), aligné sur `SaleItemWeightUpdate` backend. */
+            weight: number;
         };
         SaleResponseV1: {
             id: string;
@@ -5971,7 +6085,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["CashSessionStepResponse"];
                 };
             };
             /** @description Étape ou transition invalide */
@@ -6105,7 +6219,12 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Story 24.10 — rejet seuils / preuves P3 (référence obligatoire, combinaison montant × motif) */
+            /**
+             * @description Story 24.10 — rejet seuils / preuves P3 (référence obligatoire, combinaison montant × motif).
+             *     Inclut aussi les erreurs de validation métier servies en **422**, par exemple un montant de
+             *     remboursement strictement supérieur au solde caisse disponible (aligné
+             *     ``test_exceptional_refund_rejects_amount_over_cash_balance``).
+             */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6156,19 +6275,26 @@ export interface operations {
                     "application/json": components["schemas"]["CashDisbursementResponseV1"];
                 };
             };
-            /** @description Erreur de validation */
+            /**
+             * @description Erreur de validation (corps, montants, UUID d'en-tête de contexte mal formé — **``VALIDATION_ERROR``**)
+             *     ou refus step-up / règle métier exprimé comme enveloppe AR21 selon route.
+             */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
             };
-            /** @description Permission ou step-up */
+            /** @description Permission `cash.disbursement` absente, step-up requis/invalide, ou accès session refusé */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
             };
             /** @description Session introuvable */
             404: {
@@ -8142,6 +8268,10 @@ export interface operations {
              * @description Conflit métier (déjà remboursé, vente non ``completed``, session fermée, etc.) ;
              *     Story 22.5 : autorité exercice indisponible / périmée, ou remboursement N-1 clos sans
              *     parcours expert (codes stables dans ``detail`` texte).
+             *     **Story 25.8** — **409** avec ``code`` **``CONTEXT_STALE``** lorsque les en-têtes
+             *     ``X-Recyclique-Context-*`` sont fournis et **désalignés** par rapport à l'enveloppe serveur
+             *     (``GET /v1/users/me/context``) ; à distinguer des autres **409** via le champ ``code``
+             *     (idempotence, exercice, remboursement, etc.).
              */
             409: {
                 headers: {
@@ -8224,6 +8354,17 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
                 /** @description PIN opérateur — preuve step-up ; ne pas logger. */
                 "X-Step-Up-Pin": string;
                 /** @description Rejouer la même intention (corps identique) sans effet de bord supplémentaire. */
@@ -8285,7 +8426,10 @@ export interface operations {
                     "application/json": components["schemas"]["RecycliqueApiError"];
                 };
             };
-            /** @description Session clôturée, ticket non éligible, remboursement existant, ou conflit idempotence */
+            /**
+             * @description Session clôturée, ticket non éligible, remboursement existant, conflit idempotence, ou **Story 25.8**
+             *     **409** ``CONTEXT_STALE`` si en-têtes ``X-Recyclique-Context-*`` présents et désalignés sur l'enveloppe serveur.
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8449,6 +8593,293 @@ export interface operations {
             };
             /** @description Vente introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_updateAdminNote: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleAdminNoteUpdateV1"];
+            };
+        };
+        responses: {
+            /** @description Ticket mis à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleResponseV1"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Rôle administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /**
+             * @description **Story 25.8** — contexte client périmé : `RecycliqueApiError` avec `code` **`CONTEXT_STALE`**
+             *     (message utilisateur dans `detail`).
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Session fermée ou conflit historique (métier caisse) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_updateSaleItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
+            path: {
+                sale_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleItemUpdateV1"];
+            };
+        };
+        responses: {
+            /** @description Ligne mise à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleItemResponseV1"];
+                };
+            };
+            /** @description Validation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié ou utilisateur absent en base */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Permission opérateur / refus édition prix (non admin) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente ou ligne introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /**
+             * @description **Story 25.8** — `CONTEXT_STALE` : `RecycliqueApiError` avec `code` **`CONTEXT_STALE`**
+             *     (message dans `detail`) si en-têtes de contexte désalignés ; **422** pour d'autres conflits métier caisse.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit métier caisse */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_sales_updateSaleItemWeight: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description **Story 25.8** — Dernier `context.site_id` connu côté client (`ContextEnvelope`). Si l'en-tête est
+                 *     envoyé, il doit correspondre à la vérité serveur ; sinon **409** avec `code` **`CONTEXT_STALE`**
+                 *     (corps `RecycliqueApiError`).
+                 */
+                "X-Recyclique-Context-Site-Id"?: components["parameters"]["RecycliqueContextSiteIdHeader"];
+                /**
+                 * @description **Story 25.8** — Dernier `context.cash_session_id` connu côté client. Si présent, doit correspondre
+                 *     à l'enveloppe serveur courante ; sinon **409** `CONTEXT_STALE`.
+                 */
+                "X-Recyclique-Context-Cash-Session-Id"?: components["parameters"]["RecycliqueContextCashSessionIdHeader"];
+            };
+            path: {
+                sale_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleItemWeightUpdateV1"];
+            };
+        };
+        responses: {
+            /** @description Ligne mise à jour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleItemResponseV1"];
+                };
+            };
+            /** @description Poids ou identifiant invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Administrateur requis */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Vente ou ligne introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /**
+             * @description **Story 25.8** — `CONTEXT_STALE` : `RecycliqueApiError` avec `code` **`CONTEXT_STALE`**
+             *     (message dans `detail`).
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit métier caisse */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
