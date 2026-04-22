@@ -27,8 +27,8 @@ RUN chmod +x create_admin.sh
 COPY alembic.ini .
 COPY migrations/ ./migrations/
 
-# Copy pytest configuration
-COPY pytest.ini .
+# Configuration pytest : pyproject.toml ([tool.pytest.ini_options])
+COPY pyproject.toml .
 
 # Add src to Python path
 ENV PYTHONPATH=/app/src
@@ -40,5 +40,5 @@ ENV TESTING=true
 RUN useradd -m -u 1000 recyclic && chown -R recyclic:recyclic /app
 USER recyclic
 
-# Commande par défaut pour les tests
-CMD ["bash", "-lc", "alembic upgrade head && python -m pytest -v --tb=short"]
+# Options verbeux / tb : uniquement via pyproject.toml ([tool.pytest.ini_options].addopts), pas en CLI.
+CMD ["bash", "-lc", "alembic upgrade head && python -m pytest"]

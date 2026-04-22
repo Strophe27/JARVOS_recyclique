@@ -57,8 +57,10 @@ where = ["src"]
 [tool.setuptools.package-dir]
 "" = "src"
 
-# Configuration pytest : source de vérité unique (remplace un éventuel pytest.ini).
-# Le sous-ensemble minimal (auth + infra) est listé explicitement dans run_tests.sh et tests/README.md.
+# Configuration pytest — source de vérité unique (Epic 26 / story 26-1, Option A).
+# Ancien recyclique/api/pytest.ini supprimé : marqueurs + filterwarnings migrés ici pour éviter
+# configfile/pyproject dual (finding F6 audit brownfield).
+# Le sous-ensemble minimal (auth + infra) est listé dans run_tests.sh et tests/README.md.
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
@@ -68,5 +70,14 @@ addopts = [
     "--tb=short",
 ]
 markers = [
+    "integration_db: tests nécessitant Postgres/Redis",
+    "performance: tests de performance (longs, peuvent être exclus de la CI rapide)",
     "no_db: pas de session DB ni d'autouse liée à la base (voir tests/conftest.py).",
+]
+filterwarnings = [
+    "ignore:Type google\\._upb\\._message.*:DeprecationWarning",
+    "ignore:'crypt' is deprecated.*:DeprecationWarning",
+    "ignore:datetime\\.datetime\\.utcnow\\(\\) is deprecated.*:DeprecationWarning",
+    "ignore:Use 'content=<...>' to upload raw bytes/text content\\.:DeprecationWarning",
+    "ignore:transaction already deassociated from connection:sqlalchemy.exc.SAWarning",
 ]
