@@ -1,51 +1,51 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing import Optional, List
+from typing import List
 from datetime import datetime
 from decimal import Decimal
 
 
 class CategoryBase(BaseModel):
     name: str  # Nom court/rapide (obligatoire, inchangé)
-    official_name: Optional[str] = None  # Story B48-P5: Nom complet officiel (optionnel)
+    official_name: str | None = None  # Story B48-P5: Nom complet officiel (optionnel)
 
 
 class CategoryCreate(CategoryBase):
-    parent_id: Optional[str] = None
-    price: Optional[Decimal] = None
-    max_price: Optional[Decimal] = None
-    display_order: Optional[int] = 0
-    display_order_entry: Optional[int] = 0  # Story B48-P4: Ordre pour ENTRY/DEPOT
-    is_visible: Optional[bool] = True
-    shortcut_key: Optional[str] = None
+    parent_id: str | None = None
+    price: Decimal | None = None
+    max_price: Decimal | None = None
+    display_order: int | None = 0
+    display_order_entry: int | None = 0  # Story B48-P4: Ordre pour ENTRY/DEPOT
+    is_visible: bool | None = True
+    shortcut_key: str | None = None
     # official_name hérité de CategoryBase (optionnel)
 
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    official_name: Optional[str] = None  # Story B48-P5: Nom complet officiel (optionnel)
-    is_active: Optional[bool] = None
-    parent_id: Optional[str] = None
-    price: Optional[Decimal] = None
-    max_price: Optional[Decimal] = None
-    display_order: Optional[int] = None
-    display_order_entry: Optional[int] = None  # Story B48-P4: Ordre pour ENTRY/DEPOT
-    is_visible: Optional[bool] = None
-    shortcut_key: Optional[str] = None
+    name: str | None = None
+    official_name: str | None = None  # Story B48-P5: Nom complet officiel (optionnel)
+    is_active: bool | None = None
+    parent_id: str | None = None
+    price: Decimal | None = None
+    max_price: Decimal | None = None
+    display_order: int | None = None
+    display_order_entry: int | None = None  # Story B48-P4: Ordre pour ENTRY/DEPOT
+    is_visible: bool | None = None
+    shortcut_key: str | None = None
 
 
 class CategoryRead(CategoryBase):
     id: str
     is_active: bool
-    parent_id: Optional[str] = None
-    price: Optional[Decimal] = None
-    max_price: Optional[Decimal] = None
+    parent_id: str | None = None
+    price: Decimal | None = None
+    max_price: Decimal | None = None
     display_order: int
     display_order_entry: int  # Story B48-P4: Ordre pour ENTRY/DEPOT
     is_visible: bool
-    shortcut_key: Optional[str] = None
+    shortcut_key: str | None = None
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
     # name et official_name hérités de CategoryBase
 
     model_config = ConfigDict(from_attributes=True)
@@ -68,7 +68,7 @@ class CategoryWithChildren(CategoryRead):
 
 
 class CategoryImportAnalyzeResponse(BaseModel):
-    session_id: Optional[str]
+    session_id: str | None
     summary: dict
     sample: List[dict]
     errors: List[str]
@@ -84,15 +84,15 @@ class CategoryDisplay(BaseModel):
     """Story B48-P5: Schéma pour l'API opérationnelle - retourne name (nom court) directement"""
     id: str
     name: str  # Nom court/rapide (toujours utilisé pour l'affichage)
-    official_name: Optional[str] = None  # Nom complet officiel (pour tooltips)
+    official_name: str | None = None  # Nom complet officiel (pour tooltips)
     is_active: bool
-    parent_id: Optional[str] = None
-    price: Optional[Decimal] = None
-    max_price: Optional[Decimal] = None
+    parent_id: str | None = None
+    price: Decimal | None = None
+    max_price: Decimal | None = None
     display_order: int
     display_order_entry: int  # Story B48-P4: Ordre pour ENTRY/DEPOT
     is_visible: bool
-    shortcut_key: Optional[str] = None
+    shortcut_key: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

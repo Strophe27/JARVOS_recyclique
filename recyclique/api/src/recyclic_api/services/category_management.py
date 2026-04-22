@@ -18,7 +18,7 @@ class CategoryManagementService:
         self.db = db
         self.category_service = CategoryService(db)
     
-    async def get_visible_categories(
+    def get_visible_categories(
         self, 
         is_active: Optional[bool] = True,
         for_entry_tickets: bool = True
@@ -58,7 +58,7 @@ class CategoryManagementService:
         categories = query.all()
         return [CategoryRead.model_validate(cat) for cat in categories]
     
-    async def update_category_visibility(
+    def update_category_visibility(
         self, 
         category_id: str, 
         is_visible: bool
@@ -110,7 +110,7 @@ class CategoryManagementService:
         
         return CategoryRead.model_validate(category)
     
-    async def update_display_order(
+    def update_display_order(
         self, 
         category_id: str, 
         display_order: int
@@ -146,7 +146,7 @@ class CategoryManagementService:
 
         return CategoryRead.model_validate(category)
 
-    async def update_display_order_entry(
+    def update_display_order_entry(
         self,
         category_id: str,
         display_order_entry: int
@@ -182,7 +182,7 @@ class CategoryManagementService:
 
         return CategoryRead.model_validate(category)
 
-    async def get_categories_for_entry_tickets(
+    def get_categories_for_entry_tickets(
         self,
         is_active: Optional[bool] = True
     ) -> List[CategoryRead]:
@@ -191,9 +191,9 @@ class CategoryManagementService:
         
         This is the main method to use when displaying categories in ENTRY/DEPOT tickets.
         """
-        return await self.get_visible_categories(is_active=is_active, for_entry_tickets=True)
+        return self.get_visible_categories(is_active=is_active, for_entry_tickets=True)
     
-    async def get_categories_for_sale_tickets(
+    def get_categories_for_sale_tickets(
         self,
         is_active: Optional[bool] = True
     ) -> List[CategoryRead]:
@@ -202,9 +202,9 @@ class CategoryManagementService:
         
         This method ignores visibility settings as per story requirements.
         """
-        return await self.get_visible_categories(is_active=is_active, for_entry_tickets=False)
+        return self.get_visible_categories(is_active=is_active, for_entry_tickets=False)
     
-    async def get_category_hierarchy_with_visibility(
+    def get_category_hierarchy_with_visibility(
         self,
         for_entry_tickets: bool = True,
         is_active: Optional[bool] = True
@@ -216,14 +216,14 @@ class CategoryManagementService:
         selectable (AC 1.2.2).
         """
         # Get all categories
-        all_categories = await self.category_service.get_categories(is_active=is_active)
+        all_categories = self.category_service.get_categories(is_active=is_active)
         
         if not for_entry_tickets:
             # For sale tickets, return all categories
             return all_categories
         
         # For entry tickets, filter by visibility
-        visible_categories = await self.get_visible_categories(
+        visible_categories = self.get_visible_categories(
             is_active=is_active,
             for_entry_tickets=True
         )

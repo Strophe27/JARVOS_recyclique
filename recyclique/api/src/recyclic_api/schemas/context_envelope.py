@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,10 +20,10 @@ class ExploitationContextIdsOut(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    site_id: Optional[str] = None
-    cash_register_id: Optional[str] = None
-    cash_session_id: Optional[str] = None
-    reception_post_id: Optional[str] = None
+    site_id: str | None = None
+    cash_register_id: str | None = None
+    cash_session_id: str | None = None
+    reception_post_id: str | None = None
 
 
 class ContextEnvelopeResponse(BaseModel):
@@ -35,14 +35,14 @@ class ContextEnvelopeResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     runtime_state: ContextRuntimeState
-    context: Optional[ExploitationContextIdsOut] = None
+    context: ExploitationContextIdsOut | None = None
     permission_keys: List[str] = Field(default_factory=list)
     computed_at: datetime
-    restriction_message: Optional[str] = Field(
+    restriction_message: str | None = Field(
         default=None,
         description="Précision serveur pour degraded / forbidden (pas de logique métier côté client).",
     )
-    presentation_labels: Optional[Dict[str, str]] = Field(
+    presentation_labels: Dict[str, str] | None = Field(
         default=None,
         description="Map label_key CREOS → libellé affichable (Story 5.5) ; présentation uniquement.",
     )

@@ -2,6 +2,14 @@
 
 
 
+## Convention `def` vs `async` + ORM synchrone (Epic 26)
+
+Pour les **revues de PR** sur l’API v1 : lorsque le code n’utilise que **`sqlalchemy.orm.Session`** et des opérations **synchrones** (`query`, `commit`, etc.), le **défaut** est **`def`** sur les **routes** et **services** — éviter l’`async` **ornemental** (cf. audit F2). **Exception** : route avec **vrai** `await` (fichiers upload, I/O async, etc.) — à **nommer** en commentaire ou dans la note d’architecture.
+
+**Source normative (dépôt) :** [_bmad-output/planning-artifacts/architecture/2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md](../../../_bmad-output/planning-artifacts/architecture/2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md). **Pilote code** (story 26-3) : `endpoints/categories.py`, `category_service.py`, `category_management.py`.
+
+
+
 ## Guide pour les agents
 
 
@@ -198,7 +206,7 @@ Utiliser `@pytest.mark.no_db` sur un test qui ne doit pas activer les fixtures D
 
 - Config pytest : uniquement `api/pyproject.toml` (`[tool.pytest.ini_options]` ; pas de `pytest.ini`)
 
-- Guide stabilisation : le fichier historique `api/TESTS_STABILIZATION_GUIDE.md` **n’est pas présent** dans ce dépôt (constat 2026-04-19). En attendant restitution ou réécriture du guide : stratégie pytest et dettes associées dans [`references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](../../../references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md) §6 ; détail fixtures dans ce dossier via `conftest.py`.
+- **Stratégie stabilisation tests (clôture dette « guide fantôme », story 26.5)** : il **n’existe pas** et **ne sera pas** requis de fichier monolithique `TESTS_STABILIZATION_GUIDE.md` à la racine du paquet API. Décision tracée : [_bmad-output/planning-artifacts/architecture/2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md](../../../_bmad-output/planning-artifacts/architecture/2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md). Contexte audit et dettes historiques : [`references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](../../../references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md) §6 ; détail fixtures : `conftest.py` et sections ci-dessus.
 
 
 

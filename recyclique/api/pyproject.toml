@@ -1,7 +1,9 @@
 # Runtime : mêmes versions que requirements.txt (source de vérité pip / image Docker).
 # Développement local typique : pip install -r requirements.txt -r requirements-dev.txt && pip install -e ".[dev]"
-# Écart Docker : quand INSTALL_DEV=1, le Dockerfile n'installe que requirements-dev.txt (pytest, etc.), pas les
-# outils de formatage / lint listés uniquement dans [project.optional-dependencies].dev (black, isort, flake8).
+# Écart Docker (audit F10) : quand INSTALL_DEV=1, le Dockerfile n'installe que requirements-dev.txt (pytest, etc.), pas les
+# outils listés uniquement dans [project.optional-dependencies].dev (black, isort, flake8, ruff).
+# Ruff : `ruff format` est aligné Black (88 cols). Ne pas enchaîner `black` puis `ruff format` sur les mêmes fichiers sans besoin.
+# `ruff check` utilise un jeu minimal (E9) pour rester vert sur la legacy ; élargir les règles (I, F, …) au fil des PR.
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -49,6 +51,7 @@ dev = [
     "black",
     "isort",
     "flake8",
+    "ruff==0.9.10",
 ]
 
 [tool.setuptools.packages.find]
@@ -81,3 +84,25 @@ filterwarnings = [
     "ignore:Use 'content=<...>' to upload raw bytes/text content\\.:DeprecationWarning",
     "ignore:transaction already deassociated from connection:sqlalchemy.exc.SAWarning",
 ]
+
+# Ruff — story Epic 26 / 26-5 : format style Black ; isort pour `ruff check` quand la sélection inclut "I".
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false
+
+[tool.ruff.lint]
+# Jeu minimal : syntaxe / erreurs d’exécution (E9) — la base ne passe pas un `ruff check` complet (F/I) sans chantier dédié.
+# Exemples d’élargissement local : `ruff check --select I`, ou rapprocher flake8 au fil des PR.
+select = ["E9"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["recyclic_api"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]

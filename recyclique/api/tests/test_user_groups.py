@@ -1,6 +1,8 @@
 """
 Tests pour l'assignation de groupes aux utilisateurs.
 """
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -108,17 +110,26 @@ class TestUserGroups:
         db_session.add(test_user)
         db_session.commit()
 
-        response = client.put(
-            f"{_V1}/admin/users/{test_user.id}/groups",
-            json={
-                "group_ids": ["invalid-group-id"],
-            },
-            headers=_bearer_headers(admin_user),
-        )
+        with patch(
+            "recyclic_api.api.api_v1.endpoints.admin_users_groups.log_admin_access",
+        ) as mock_log:
+            response = client.put(
+                f"{_V1}/admin/users/{test_user.id}/groups",
+                json={
+                    "group_ids": ["invalid-group-id"],
+                },
+                headers=_bearer_headers(admin_user),
+            )
 
         assert response.status_code == 400
         data = response.json()
         assert "ID de groupe invalide" in data["detail"]
+        failures = [
+            c for c in mock_log.call_args_list if c.kwargs.get("success") is False
+        ]
+        assert len(failures) == 1
+        assert "invalid-group-id" in failures[0].kwargs["error_message"]
+        assert "ID de groupe invalide" in failures[0].kwargs["error_message"]
 
     def test_update_user_groups_nonexistent_group(self, client: TestClient, db_session: Session, admin_user: User):
         """Test de mise à jour avec un groupe inexistant."""
@@ -134,17 +145,26 @@ class TestUserGroups:
         db_session.commit()
 
         fake_group_id = str(uuid4())
-        response = client.put(
-            f"{_V1}/admin/users/{test_user.id}/groups",
-            json={
-                "group_ids": [fake_group_id],
-            },
-            headers=_bearer_headers(admin_user),
-        )
+        with patch(
+            "recyclic_api.api.api_v1.endpoints.admin_users_groups.log_admin_access",
+        ) as mock_log:
+            response = client.put(
+                f"{_V1}/admin/users/{test_user.id}/groups",
+                json={
+                    "group_ids": [fake_group_id],
+                },
+                headers=_bearer_headers(admin_user),
+            )
 
         assert response.status_code == 404
         data = response.json()
         assert f"Groupe non trouvé: {fake_group_id}" in data["detail"]
+        failures = [
+            c for c in mock_log.call_args_list if c.kwargs.get("success") is False
+        ]
+        assert len(failures) == 1
+        assert fake_group_id in failures[0].kwargs["error_message"]
+        assert "Groupe non trouvé" in failures[0].kwargs["error_message"]
 
     def test_update_user_groups_empty_list(self, client: TestClient, db_session: Session, admin_user: User):
         """Test de mise à jour avec une liste vide de groupes."""
