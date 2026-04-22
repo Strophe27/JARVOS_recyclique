@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { Stack, Text } from '@mantine/core';
 import classes from './LiveAuthShell.module.css';
 import type { AuthContextPort, AuthSessionState } from './auth-context-port';
-import type { ContextEnvelopeStub } from '../../types/context-envelope';
 import type { PageManifest } from '../../types/page-manifest';
 import { AuthRuntimeProvider } from './AuthRuntimeProvider';
 import {
@@ -19,6 +18,10 @@ import { buildPageManifestRegions } from '../PageRenderer';
 import { LiveAuthLoginControllerProvider, type LiveAuthLoginController } from './LiveAuthLoginControllerContext';
 import { LiveAuthActionsProvider } from './LiveAuthActionsContext';
 import { LiveActivityPresenceBridge } from './LiveActivityPresenceBridge';
+import { LiveEnvelopeRefreshProvider } from './LiveAuthEnvelopeRefreshContext';
+import { clearAllCashflowDraftSessionKeys, resetCashflowDraft } from '../../domains/cashflow/cashflow-draft-store';
+import { CONTEXT_ENVELOPE_SILENT_REFRESH_INTERVAL_MS } from '../../runtime/context-envelope-freshness';
+import type { ContextEnvelopeStub } from '../../types/context-envelope';
 
 type Phase = 'idle' | 'restoring' | 'ready';
 
@@ -105,6 +108,8 @@ export function LiveAuthShell({ children }: LiveAuthShellProps) {
   }, []);
 
   const clearSession = useCallback(() => {
+    resetCashflowDraft();
+    clearAllCashflowDraftSessionKeys();
     persistAccessToken(null);
     setAccessToken(undefined);
     setEnvelope(null);
@@ -112,6 +117,20 @@ export function LiveAuthShell({ children }: LiveAuthShellProps) {
     setPhase('idle');
     replacePath('/login');
   }, []);
+
+  const refreshEnvelope = useCallback(async (): Promise<ContextEnvelopeStub | null> => {
+    const token = accessToken ?? readStoredAccessToken();
+    if (!token) return null;
+    const ctx = await fetchRecycliqueContextEnvelope(token);
+    if (!ctx.ok) {
+      if (ctx.status === 401) {
+        clearSession();
+      }
+      return null;
+    }
+    setEnvelope(ctx.envelope);
+    return ctx.envelope;
+  }, [accessToken, clearSession]);
 
   const loadContextForToken = useCallback(
     async (token: string, userIdHint?: string): Promise<boolean> => {
@@ -159,6 +178,27 @@ export function LiveAuthShell({ children }: LiveAuthShellProps) {
       replacePath(CANONICAL_POST_LOGIN_PATH);
     }
   }, [phase]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (phase !== 'ready') return;
+    const id = window.setInterval(() => {
+      void refreshEnvelope();
+    }, CONTEXT_ENVELOPE_SILENT_REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [phase, refreshEnvelope]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (phase !== 'ready') return;
+    const onVis = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshEnvelope();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [phase, refreshEnvelope]);
 
   const adapter: AuthContextPort | null = useMemo(() => {
     if (!envelope) return null;
@@ -251,10 +291,12 @@ export function LiveAuthShell({ children }: LiveAuthShellProps) {
 
   return (
     <LiveAuthActionsProvider value={{ requestLogout: () => void onLogout() }}>
-      <AuthRuntimeProvider adapter={adapter}>
-        <LiveActivityPresenceBridge />
-        {children}
-      </AuthRuntimeProvider>
+      <LiveEnvelopeRefreshProvider value={{ refreshEnvelope }}>
+        <AuthRuntimeProvider adapter={adapter}>
+          <LiveActivityPresenceBridge />
+          {children}
+        </AuthRuntimeProvider>
+      </LiveEnvelopeRefreshProvider>
     </LiveAuthActionsProvider>
   );
 }

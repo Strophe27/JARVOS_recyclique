@@ -1,9 +1,14 @@
 import { Button, Modal, Text, Textarea, TextInput } from '@mantine/core';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
+import {
+  CONTEXT_ENVELOPE_ACTION_BLOCKED_MESSAGE,
+  isEnvelopeStale,
+} from '../../runtime/context-envelope-freshness';
 import { recycliqueClientFailureFromSalesHttp } from '../../api/recyclique-api-error';
 import { postCreateSale, postFinalizeHeldSale, type SaleCreateBody, type SalePaymentMethodOption } from '../../api/sales-client';
 import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { useLiveEnvelopeRefresh } from '../../app/auth/LiveAuthEnvelopeRefreshContext';
+import type { ContextEnvelopeStub } from '../../types/context-envelope';
 import {
   labelForCode,
   paymentMethodLabelMapFromOptions,
@@ -144,6 +149,7 @@ export function KioskFinalizeSaleDock(): ReactNode {
     !paymentMethodsLoading && paymentMethodsError === null && methodOptions.length > 0;
   const pmLabelMap = useMemo(() => paymentMethodLabelMapFromOptions(methodOptions), [methodOptions]);
   const envelope = useContextEnvelope();
+  const liveRefresh = useLiveEnvelopeRefresh();
   const saleContextBinding = useMemo(
     () => ({ siteId: envelope.siteId, cashSessionId: envelope.cashSessionId }),
     [envelope.siteId, envelope.cashSessionId],
@@ -446,10 +452,15 @@ export function KioskFinalizeSaleDock(): ReactNode {
 
   const onSubmit = async () => {
     clearCashflowDraftSubmitError();
-    if (isEnvelopeStale(envelope)) {
-      setCashflowDraftLocalSubmitError(
-        'Enveloppe de contexte périmée — rafraîchir le contexte avant d’enregistrer la vente.',
-      );
+    let env: ContextEnvelopeStub = envelope;
+    if (isEnvelopeStale(env) && liveRefresh) {
+      const fresh = await liveRefresh.refreshEnvelope();
+      if (fresh) {
+        env = fresh;
+      }
+    }
+    if (isEnvelopeStale(env)) {
+      setCashflowDraftLocalSubmitError(CONTEXT_ENVELOPE_ACTION_BLOCKED_MESSAGE);
       return;
     }
     setBusy(true);

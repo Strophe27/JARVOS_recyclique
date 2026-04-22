@@ -2,13 +2,23 @@
 
 ---
 
+## 2026-04-22 — Intégrée (Epic 25 clôturé)
+
+**Passage à `archive`.** L’intention Kanban est **portée par l’Epic 25** (« socle d’alignement PRD / multisite / kiosque / permissions »), exécutée sur **`epic/25-socle-alignement-prd-architecture`** : **15** stories **25.1 → 25.15** (**done**), puis **`epic-25`** → **`done`** dans **`_bmad-output/implementation-artifacts/sprint-status.yaml`** ; **rétrospective** [**`epic-25-retro-2026-04-22.md`**](../../../_bmad-output/implementation-artifacts/epic-25-retro-2026-04-22.md).
+
+Synthèse volée : ADR **25-2** (PIN kiosque / opérateur / step-up), ADR **25-3** (async Paheko — outbox durable PG, Redis auxiliaire), spec multisite **25.4**, levée de gel process (**25.6**), **`CONTEXT_STALE`** (**25.8**), projection mapping Paheko avant outbox (**25.9**), contrats enveloppe (**25.11**), audits / logs / step-up / spike IndexedDB sans PWA (**25.12–25.15**).
+
+**Suivi hors fiche :** readiness PWA programme toujours **NOT READY** (notes **2026-04-20**) ; chantier refactor API → fiche [**`../a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`**](../a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md).
+
+---
+
 ## 2026-04-19 — Strophe + agent
 
 Cartonner un **chantier de convergence** entre l’état réel du repo (API Recyclic, Peintre_nano, Paheko) et le PRD cible multisites / permissions / kiosques PWA.
 
 **PRD source (vision projet)** : `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`
 
-**Intention :** a-faire (le **livrable research + intégration `prd.md`** est clos — voir §Preuve de sortie ; cette fiche reste ouverte pour **suivi** : ADR PIN kiosque / ADR sync Redis, `bmad-check-implementation-readiness`, éventuel `bmad-correct-course` sur epics).
+**Intention :** *(historique 2026-04-19 — après archivage Epic 25, voir §2026-04-22)* a-faire (le **livrable research + intégration `prd.md`** est clos — voir §Preuve de sortie ; suivi ADR / readiness alors encore ouvert — désormais couvert par **25.1–25.15**).
 
 **Gel exécution BMAD (2026-04-19) :** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` — pas de **`bmad-dev-story`** hors stories **25-*** tant que le gel n’est pas levé par décision tracée. Synthèse des réponses QA2 : `references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md`.
 

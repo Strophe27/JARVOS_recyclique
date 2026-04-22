@@ -1,3 +1,4 @@
+# last_updated: 2026-04-22 — skill `bmad-retrospective` Epic 25 : **`epic-25`** → **`done`** ; **`epic-25-retrospective`** → **`done`** ; artefact **`epic-25-retro-2026-04-22.md`**
 # last_updated: 2026-04-21 — alignement doc `epics.md` §25 (phase 2 **25.12–25.15** **done** au pilotage ; distinction **`epic-25` in-progress** vs cloture epic) + note spike **25-15** (`2026-04-20-spike-25-15-indexeddb-cache-local-faisabilite.md`) ; cle racine `last_updated` **2026-04-21** ; **`development_status.epic-25` inchangé `in-progress`**
 # last_updated: 2026-04-20 — story 25-15 Story Runner BMAD fin (reprise) : **CR** APPROVE → **GATE** (compileall + pytest `test_story_25_15_spike_faisabilite_indexeddb_cache_local_sans_pwa.py`) PASS ; `25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa` **review**→**done** ; `epic-25` inchangé **in-progress** ; vs_loop=0 qa_loop=0 cr_loop=0 ; rapport `_bmad-output/implementation-artifacts/2026-04-20-spike-25-15-indexeddb-cache-local-faisabilite.md` + pytest gate
 # last_updated: 2026-04-20 — story 25-15 DS bmad-dev-story Task : `25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa` **backlog** → **`review`** ; rapport `_bmad-output/implementation-artifacts/2026-04-20-spike-25-15-indexeddb-cache-local-faisabilite.md` + pytest `recyclique/api/tests/test_story_25_15_spike_faisabilite_indexeddb_cache_local_sans_pwa.py` ; `epic-25` inchangé **in-progress** ; prochaine étape **GATE** parent
@@ -324,7 +325,7 @@ generated: "2026-04-01"
 # Clarification (instantané historique §25) : la levée **process** (nouveaux DS hors clés `25-*`) reste documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` ; phase 2 impl : stories **25-13…25-15** livrées **done** au YAML au 2026-04-20/21 — `epic-25: in-progress` tant que l'epic n'est pas clôturé narrativement.
 # last_updated: 2026-04-20 (suite doc §25) — slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
 # Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
-last_updated: "2026-04-21"
+last_updated: "2026-04-22"
 # last_updated: 2026-04-20 — story 25-7 DS bmad-dev-story Task : 25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable ready-for-dev → review ; checklist `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md` ; epic-25 inchangé in-progress
 # last_updated: 2026-04-20 — story 25-7 Story Runner fin : 25-7 review→done (CR×2, cr_loop=1 ; gates git ; QA doc `_bmad-output/implementation-artifacts/25-7-qa-checklist-verification.md`) ; correctifs YAML/story post-CR1 ; epic-25 inchangé in-progress
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
@@ -585,9 +586,9 @@ development_status:
   24-10-preuves-enrichies-pieces-jointes-seuils-et-audit-avance-p3: done
   epic-24-retrospective: optional
 
-  # Epic 25 — socle alignement + phase 2 : en `development_status`, **`25-6`…`25-15`** **done** (lignes ci-dessous) ; **`epic-25`** **in-progress** jusqu'à décision de clôture epic / rétro — **chaque ligne de clé prime** sur tout résumé générique.
+  # Epic 25 — socle alignement + phase 2 : en `development_status`, **`25-6`…`25-15`** **done** (lignes ci-dessous) ; **`epic-25`** **done** après rétrospective **`epic-25-retro-2026-04-22.md`** — **chaque ligne de clé prime** sur tout résumé générique.
   # Trier les cles 25-x par ordre NUMERIQUE (25-1 … 25-9 puis 25-10 … 25-15) — un tri alphabetique met 25-10 avant 25-2.
-  epic-25: in-progress
+  epic-25: done
   25-1-cartographier-les-exigences-importees-et-fermer-la-matrice-dalignement-vision-canonique: done
   25-2-fermer-adr-pin-kiosque-versus-pin-operateur-et-secret-de-poste: done
   25-3-fermer-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride: done
@@ -608,4 +609,4 @@ development_status:
   25-13-journalisation-identite-operateur-versus-poste-ou-kiosque-tranche-minimale: done
   25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible: done
   25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa: done
-  epic-25-retrospective: optional
+  epic-25-retrospective: done

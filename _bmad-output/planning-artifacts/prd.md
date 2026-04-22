@@ -30,7 +30,7 @@ inputDocuments:
   - references/operations-speciales-recyclique/2026-04-18_prompt-ultra-operationnel-operations-speciales-recyclique_v1-1.md
   - references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md
   - _bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md
-  - references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md
+  - references/idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md
   - references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
   - references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md
   - _bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md
@@ -111,7 +111,7 @@ editHistory:
 
 - **PRD vision (detail epics 1–4, NFR) :** `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`
 - **Recherche technique — ecarts brownfield vs ce PRD (priorites, ADR, QA) :** `_bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md`
-- **Fiche chantier (Kanban) :** `references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md`
+- **Fiche chantier (Kanban, archivée) :** `references/idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md`
 
 **Tableau — gouvernance des exigences importees ou divergentes** (cloture QA2 documentaire 2026-04-19) :
 

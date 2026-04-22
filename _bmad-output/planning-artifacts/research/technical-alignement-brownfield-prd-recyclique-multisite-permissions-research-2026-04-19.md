@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
-  - references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md
+  - references/idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md
   - references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md
@@ -34,7 +34,7 @@ scope_confirmed_by_user_request: true
 **Date :** 2026-04-19  
 **Auteur :** Strophe (assisté agent)  
 **Type :** Recherche technique (BMAD `bmad-technical-research`)  
-**Document d’amorce :** `references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md`
+**Document d’amorce :** `references/idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md`
 
 ---
 
@@ -255,7 +255,7 @@ La fiche Kanban suggère un artefact daté sous `**references/artefacts/`** (pre
 
 ### Dépôt
 
-- `references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md`
+- `references/idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md`
 - `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`
 - `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`
 - `_bmad-output/planning-artifacts/epics.md`

@@ -28,7 +28,7 @@
 - `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md`
-- `references/idees-kanban/a-faire/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md` (pointeur)
+- `references/idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md` (pointeur, archivée)
 - `references/artefacts/index.md` (entrée d’index)
 
 ---

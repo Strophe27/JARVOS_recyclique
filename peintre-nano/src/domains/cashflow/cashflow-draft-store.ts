@@ -80,6 +80,193 @@ const initialState: CashflowDraftState = {
 let state: CashflowDraftState = initialState;
 const listeners = new Set<() => void>();
 
+/** Préfixe sessionStorage — suffixe `:${userKey}` (userId ou `anonymous`). */
+export const CASHFLOW_DRAFT_SESSION_STORAGE_PREFIX = 'peintre-nano.cashflow-draft.v1';
+
+const PERSIST_SCHEMA = 'cashflow-draft-v1' as const;
+
+type PersistedCashflowDraftV1 = {
+  readonly schema: typeof PERSIST_SCHEMA;
+  readonly lines: readonly TicketLine[];
+  readonly totalAmount: number;
+  readonly paymentMethod: string;
+  readonly cashSessionIdInput: string;
+  readonly operatingMode: CashflowOperatingMode | null;
+  readonly widgetDataState: WidgetDataState;
+  readonly lastSaleId: string | null;
+  readonly activeHeldSaleId: string | null;
+  readonly heldTicketsRefreshToken: number;
+  readonly ticketBusinessTagKind: string;
+  readonly ticketBusinessTagCustom: string;
+};
+
+function draftStorageKey(userKey: string): string {
+  return `${CASHFLOW_DRAFT_SESSION_STORAGE_PREFIX}:${userKey}`;
+}
+
+function parsePersistedDraft(raw: string): Partial<CashflowDraftState> | null {
+  try {
+    const j = JSON.parse(raw) as unknown;
+    if (j === null || typeof j !== 'object') return null;
+    const o = j as Record<string, unknown>;
+    if (o.schema !== PERSIST_SCHEMA) return null;
+    if (!Array.isArray(o.lines)) return null;
+    const lines: TicketLine[] = [];
+    for (const row of o.lines) {
+      if (row === null || typeof row !== 'object') return null;
+      const L = row as Record<string, unknown>;
+      if (typeof L.id !== 'string' || typeof L.category !== 'string') return null;
+      if (typeof L.quantity !== 'number' || typeof L.weight !== 'number') return null;
+      if (typeof L.unitPrice !== 'number' || typeof L.totalPrice !== 'number') return null;
+      lines.push({
+        id: L.id,
+        category: L.category,
+        ...(typeof L.displayLabel === 'string' ? { displayLabel: L.displayLabel } : {}),
+        quantity: L.quantity,
+        weight: L.weight,
+        unitPrice: L.unitPrice,
+        totalPrice: L.totalPrice,
+        ...(typeof L.businessTagKind === 'string' ? { businessTagKind: L.businessTagKind } : {}),
+        ...(typeof L.businessTagCustom === 'string' ? { businessTagCustom: L.businessTagCustom } : {}),
+      });
+    }
+    const totalAmount = typeof o.totalAmount === 'number' ? o.totalAmount : null;
+    if (totalAmount === null || !Number.isFinite(totalAmount)) return null;
+    const paymentMethod = typeof o.paymentMethod === 'string' ? o.paymentMethod : '';
+    const cashSessionIdInput = typeof o.cashSessionIdInput === 'string' ? o.cashSessionIdInput : '';
+    const om = o.operatingMode;
+    const operatingMode =
+      om === null || om === undefined
+        ? null
+        : om === 'real' || om === 'virtual' || om === 'deferred'
+          ? om
+          : null;
+    const wds = o.widgetDataState === 'DATA_STALE' || o.widgetDataState === 'NOMINAL' ? o.widgetDataState : 'NOMINAL';
+    const lastSaleId =
+      o.lastSaleId === null || o.lastSaleId === undefined
+        ? null
+        : typeof o.lastSaleId === 'string'
+          ? o.lastSaleId
+          : null;
+    const activeHeldSaleId =
+      o.activeHeldSaleId === null || o.activeHeldSaleId === undefined
+        ? null
+        : typeof o.activeHeldSaleId === 'string'
+          ? o.activeHeldSaleId
+          : null;
+    const heldTicketsRefreshToken =
+      typeof o.heldTicketsRefreshToken === 'number' && Number.isFinite(o.heldTicketsRefreshToken)
+        ? o.heldTicketsRefreshToken
+        : 0;
+    const ticketBusinessTagKind = typeof o.ticketBusinessTagKind === 'string' ? o.ticketBusinessTagKind : '';
+    const ticketBusinessTagCustom = typeof o.ticketBusinessTagCustom === 'string' ? o.ticketBusinessTagCustom : '';
+    return {
+      lines,
+      totalAmount,
+      paymentMethod,
+      cashSessionIdInput,
+      operatingMode,
+      widgetDataState: wds,
+      lastSaleId,
+      activeHeldSaleId,
+      heldTicketsRefreshToken,
+      ticketBusinessTagKind,
+      ticketBusinessTagCustom,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function serializeDraft(s: CashflowDraftState): PersistedCashflowDraftV1 {
+  return {
+    schema: PERSIST_SCHEMA,
+    lines: [...s.lines],
+    totalAmount: s.totalAmount,
+    paymentMethod: s.paymentMethod,
+    cashSessionIdInput: s.cashSessionIdInput,
+    operatingMode: s.operatingMode,
+    widgetDataState: s.widgetDataState,
+    lastSaleId: s.lastSaleId,
+    activeHeldSaleId: s.activeHeldSaleId,
+    heldTicketsRefreshToken: s.heldTicketsRefreshToken,
+    ticketBusinessTagKind: s.ticketBusinessTagKind,
+    ticketBusinessTagCustom: s.ticketBusinessTagCustom,
+  };
+}
+
+/** À appeler à la déconnexion — supprime tous les brouillons persistés de l’onglet. */
+export function clearAllCashflowDraftSessionKeys(): void {
+  if (typeof sessionStorage === 'undefined') {
+    return;
+  }
+  const prefix = `${CASHFLOW_DRAFT_SESSION_STORAGE_PREFIX}:`;
+  const toRemove: string[] = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i);
+    if (k?.startsWith(prefix)) {
+      toRemove.push(k);
+    }
+  }
+  for (const k of toRemove) {
+    sessionStorage.removeItem(k);
+  }
+}
+
+/**
+ * Hydratation + persistance debouncée du brouillon caisse (sessionStorage, survit au F5).
+ * À activer depuis le wizard nominal quand l’utilisateur est connu.
+ */
+export function attachCashflowDraftSessionPersistence(userKey: string): () => void {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+  const key = draftStorageKey(userKey.trim() || 'anonymous');
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (raw) {
+      const partial = parsePersistedDraft(raw);
+      if (partial && (partial.lines?.length || (partial.totalAmount ?? 0) > 0 || partial.cashSessionIdInput?.trim())) {
+        state = {
+          ...state,
+          ...partial,
+          submitError: null,
+          localIssueMessage: null,
+        };
+        emit();
+      }
+    }
+  } catch {
+    /* noop */
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  const persist = () => {
+    try {
+      sessionStorage.setItem(key, JSON.stringify(serializeDraft(state)));
+    } catch {
+      /* quota */
+    }
+  };
+
+  const unsub = subscribeCashflowDraft(() => {
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => {
+      timeout = null;
+      persist();
+    }, 300);
+  });
+
+  return () => {
+    unsub();
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+  };
+}
+
 function emit() {
   listeners.forEach((l) => l());
 }

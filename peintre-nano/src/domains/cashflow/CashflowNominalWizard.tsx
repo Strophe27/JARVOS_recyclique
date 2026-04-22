@@ -20,17 +20,23 @@ import {
   PERMISSION_CASHFLOW_SPECIAL_ENCAISSEMENT,
   PERMISSION_CASHFLOW_VIRTUAL,
 } from '../../app/auth/default-demo-auth-adapter';
-import { useAuthPort, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { useAuthPort, useAuthSession, useContextEnvelope } from '../../app/auth/AuthRuntimeProvider';
+import { useLiveEnvelopeRefresh } from '../../app/auth/LiveAuthEnvelopeRefreshContext';
 import { spaNavigateTo } from '../../app/demo/spa-navigate';
 import type { RegisteredWidgetProps } from '../../registry/widget-registry';
+import type { ContextEnvelopeStub } from '../../types/context-envelope';
 import { CategoryHierarchyPicker } from '../../widgets/category-hierarchy-picker/CategoryHierarchyPicker';
 import { CONTEXT_ACTIVE_SITE_DISPLAY_NAME_KEY } from '../../runtime/context-presentation-keys';
-import { isEnvelopeStale } from '../../runtime/context-envelope-freshness';
+import {
+  CONTEXT_ENVELOPE_ACTION_BLOCKED_MESSAGE,
+  isEnvelopeStale,
+} from '../../runtime/context-envelope-freshness';
 import { FlowRenderer } from '../../flows/FlowRenderer';
 import {
   addTicketLine,
   applyServerHeldSaleToDraft,
   bumpHeldTicketsListRefresh,
+  attachCashflowDraftSessionPersistence,
   clearCashflowDraftSubmitError,
   getCashflowDraftSnapshot,
   linesSubtotal,
@@ -981,6 +987,7 @@ function LinesStep({
   const [kioskWeightInput, setKioskWeightInput] = useState('');
   const [kioskPriceInput, setKioskPriceInput] = useState('5');
   const [kioskShowManualCategoryEdit, setKioskShowManualCategoryEdit] = useState(false);
+  const liveRefresh = useLiveEnvelopeRefresh();
 
   const goKioskBrowse = useCallback(() => {
     setKioskMicroPhase('browse');
@@ -1068,10 +1075,15 @@ function LinesStep({
     const sid = draft.cashSessionIdInput.trim();
     if (!sid || draft.lines.length === 0) return;
     clearCashflowDraftSubmitError();
-    if (isEnvelopeStale(envelope)) {
-      setCashflowDraftLocalSubmitError(
-        'Enveloppe de contexte périmée — rafraîchir le contexte avant de mettre en attente.',
-      );
+    let env: ContextEnvelopeStub = envelope;
+    if (isEnvelopeStale(env) && liveRefresh) {
+      const fresh = await liveRefresh.refreshEnvelope();
+      if (fresh) {
+        env = fresh;
+      }
+    }
+    if (isEnvelopeStale(env)) {
+      setCashflowDraftLocalSubmitError(CONTEXT_ENVELOPE_ACTION_BLOCKED_MESSAGE);
       return;
     }
     setHoldBusy(true);
@@ -1387,6 +1399,7 @@ function PaymentStep({
   const { options: methodOptions, loading: pmLoading, error: pmError } = useCaissePaymentMethodOptions(auth);
   const paymentMethodsReady = !pmLoading && pmError === null && methodOptions.length > 0;
   const envelope = useContextEnvelope();
+  const liveRefresh = useLiveEnvelopeRefresh();
   const stale = draft.widgetDataState === 'DATA_STALE';
   const [busy, setBusy] = useState(false);
 
@@ -1421,10 +1434,15 @@ function PaymentStep({
 
   const onSubmit = async () => {
     clearCashflowDraftSubmitError();
-    if (isEnvelopeStale(envelope)) {
-      setCashflowDraftLocalSubmitError(
-        'Enveloppe de contexte périmée — rafraîchir le contexte avant d’enregistrer la vente.',
-      );
+    let env: ContextEnvelopeStub = envelope;
+    if (isEnvelopeStale(env) && liveRefresh) {
+      const fresh = await liveRefresh.refreshEnvelope();
+      if (fresh) {
+        env = fresh;
+      }
+    }
+    if (isEnvelopeStale(env)) {
+      setCashflowDraftLocalSubmitError(CONTEXT_ENVELOPE_ACTION_BLOCKED_MESSAGE);
       return;
     }
     setBusy(true);
@@ -1666,9 +1684,15 @@ export function CashflowNominalWizard(props: RegisteredWidgetProps): ReactNode {
   /** Surface vente kiosque unifiée (alias `/cash-register/sale` + grille catégories) : chrome métier, sans panneaux techniques. */
   const kioskSaleSurface = saleKioskCategoryWorkspace;
   const auth = useAuthPort();
+  const session = useAuthSession();
   const envelope = useContextEnvelope();
   const draft = useCashflowDraft();
   const entry = useCashflowEntryBlock();
+
+  useEffect(() => {
+    const uid = session.userId?.trim() || 'anonymous';
+    return attachCashflowDraftSessionPersistence(uid);
+  }, [session.userId]);
   const {
     session: serverSession,
     loading: serverSessionLoading,

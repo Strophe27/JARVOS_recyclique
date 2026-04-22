@@ -18,7 +18,7 @@
 
 ### Ce que ce chantier n’est pas
 
-- Ce n’est **pas** l’alignement **PRD produit** multisite / permissions — voir la fiche **[2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md](2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md)** ; les deux chantiers sont **complémentaires**.
+- Ce n’est **pas** l’alignement **PRD produit** multisite / permissions — voir la fiche **[2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md](../archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md)** (**archivée**, clos Epic 25) ; les deux chantiers sont **complémentaires**.
 
 ### Backlog rappel (détail dans l’artefact §9)
 

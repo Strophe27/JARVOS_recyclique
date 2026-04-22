@@ -1,6 +1,6 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-04-21
+Mis a jour : 2026-04-22
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
 
@@ -39,6 +39,8 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 **Architecture complétée** (2026-02-26) : `_bmad-output/planning-artifacts/architecture.md` — décisions techniques, patterns, structure projet, validation ; statut READY FOR IMPLEMENTATION. Points à trancher en v0.1 : [checklist 2026-02-26_03](artefacts/2026-02-26_03_checklist-v0.1-architecture.md).
 
 ## Derniere session
+
+2026-04-22 — **Epic 25 — Socle alignement PRD / brownfield / multisite & phase 2** : travail consolidé sur la branche **`epic/25-socle-alignement-prd-architecture`** ; **25.1 … 25.15** livrées (cadrage vision + ADR PIN/async Paheko + spec multisite + levée gel BMAD + `CONTEXT_STALE` + chaîne Paheko/outbox + contrats enveloppe + audits Redis + logs opérateur + step-up + spikes sans PWA). **`epic-25`** → **`done`** dans **`_bmad-output/implementation-artifacts/sprint-status.yaml`** ; **rétrospective** [Epic 25 — 2026-04-22](../_bmad-output/implementation-artifacts/epic-25-retro-2026-04-22.md). Fiche Kanban alignement PRD → [archive](idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md).
 
 2026-04-21 — **Epic 24 — merge dans `master`** : la branche **`epic/24-operations-speciales-orchestration`** est **fusionnée** dans `master` (validation Strophe). Le journal du **2026-04-19** ci-dessous reste la trace d’état *avant* merge ; la suite = recette continue sur `master` si besoin, sans carte Kanban « à faire » pour l’Epic 24.
 
