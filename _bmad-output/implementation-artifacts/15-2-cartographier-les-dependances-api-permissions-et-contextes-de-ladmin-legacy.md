@@ -1,6 +1,6 @@
 # Story 15.2 : Cartographier les dependances API, permissions et contextes de l'admin legacy
 
-Status: review
+Status: done
 
 **Story key :** `15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy`  
 **Epic :** 15
@@ -107,3 +107,12 @@ Composer (agent Cursor) � execution Story Runner sous-agent, reprise `resume_a
 - `references/artefacts/index.md`
 - `_bmad-output/implementation-artifacts/15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Clôture et obsolescence (2026-04-23)
+
+Story en **`done`** avec clôture **Epic 15**. L’artefact `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md` est **historique** ; les gaps OpenAPI / sécurité nommés ont été traités ou recadrés dans les epics ultérieurs (**notamment Epic 16**). En cas de doute, privilégier **`contracts/openapi/recyclique-api.yaml`** et le code actuel.
+
+### Review Findings
+
+- [x] [Review][Patch] Entête artefact — phrase sur l’absence du livrable **15.1** : **corrigée** dans le fichier `references/artefacts/` (note datée 2026-04-23).
+- [x] [Review][Defer] Les alertes « bloquant » du livrable (ex. **G-OA-03**) — vérifier l’état **actuel** du backend avant usage ; la revue **n’avalide** pas cet instantané au-delà de la cloture archive.

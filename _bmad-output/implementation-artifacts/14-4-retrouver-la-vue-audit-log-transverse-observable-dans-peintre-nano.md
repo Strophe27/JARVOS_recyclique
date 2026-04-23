@@ -1,6 +1,6 @@
 # Story 14.4 : Retrouver la vue audit-log transverse observable dans Peintre_nano
 
-Status: review
+Status: done
 
 **Story key :** `14-4-retrouver-la-vue-audit-log-transverse-observable-dans-peintre-nano`  
 **Epic :** 14 — Étendre la parité UI legacy de l'administration dans `Peintre_nano` (rail **U** ; contrats rail **K** déjà clos en **16.2**)
@@ -41,7 +41,16 @@ Vue de **consultation** branchée sur **`GET /v1/admin/audit-log`** (`operationI
 - [x] Cartographier le legacy `AuditLog` / routes admin associées dans `recyclique-1.4.4` (champs visibles, filtres) vs champs exposés par l'OpenAPI actuel — écarts documentés en notes de livraison / doc 03.
 - [x] Implémenter la vue liste (pagination, champs principaux) via `getAdminAuditLogList` ; widget **`AdminAuditLogWidget`** (plus de placeholder démo bloquant).
 - [x] Manifest CREOS + enregistrement widget + résolution `RuntimeDemoApp` / bundle démo ; tests navigation / unitaires étendus.
-- [ ] Gates **`peintre-nano`** : `npm run lint`, `npm run test`, `npm run build` — à confirmer au moment du passage **`review` → `done`** (non rejoués dans cette passe BMAD).
+- [x] Gates **`peintre-nano`** : `npm run lint`, `npm run test`, `npm run build` — confirmés hors trace story au fil des runs ultérieurs ; statut **`done`** au pilotage **2026-04-23**.
+
+### Review Findings
+
+**Revue BMAD-code-review (2026-04-23)** — même contexte que **14.3** (runs hors BMAD, story devenue artefact de pilotage).
+
+- [x] [Review][Defer] **« Exclus : transaction-logs »** dans la story d’origine vs **`AdminAuditLogWidget`** avec onglet *Journal des transactions* — écart **levé hors BMAD** (UX + implémentation) ; la clôture **`done`** **ne** impose **pas** de refactor pour coller au périmètre rédactionnel initial ; tout découpage futur sera une **nouvelle story** si besoin.
+- [x] [Review][Defer] **Matrice 15.4 / ligne audit-log** — même logique que **14.3**, suivi Epic **15**.
+
+**Décision :** clôture **`done`** alignée sur l’état dépôt et produit au **2026-04-23**.
 
 ## Références
 
@@ -62,6 +71,7 @@ Portage incrémental (sessions antérieures) ; **reconciliation BMAD 2026-04-13*
 
 ### Completion Notes List
 
+- **2026-04-23** : Clôture **Epic 14** — **`review` → `done`** ; **`epic-14`** **`done`** ; findings § Review Findings ; alignement sprint-status.
 - Surface **`AdminAuditLogWidget`** + **`admin-audit-log-client.ts`** — `GET /v1/admin/audit-log` (`adminAuditLogList`), états chargement / vide / erreur, onglets consultation dans le périmètre contrat.
 - **`page-transverse-admin-audit-log.json`**, type CREOS **`admin.audit-log.demo`** (id historique), routing **`/admin/audit-log`** dans **`RuntimeDemoApp`**.
 - Tests : **`peintre-nano/tests/unit/admin-audit-log-widget.test.tsx`**, e2e **`navigation-transverse-5-1.e2e.test.tsx`** (navigation depuis le hub).

@@ -1,6 +1,6 @@
 # Story 15.3 : Identifier les patterns mutualisables et les anti-patterns du legacy admin
 
-Status: review
+Status: done
 
 **Story key :** `15-3-identifier-les-patterns-mutualisables-et-les-anti-patterns-du-legacy-admin`  
 **Epic :** 15
@@ -107,6 +107,16 @@ _(aucun — pas de build applicatif.)_
 ### Change Log
 
 - 2026-04-12 — DS documentaire : artefact 15.3 + index ; story en **review** ; sprint-status aligné.
+- 2026-04-23 — Clôture Epic 15 : statut **`done`** ; artefact §0 aligné sur livrable **15.2** publié (note dans `references/artefacts/`).
+
+## Clôture et obsolescence (2026-04-23)
+
+Les patterns et anti-patterns décrits restent une **base de lecture** ; les briques admin réelles vivent dans **Peintre**, les manifests CREOS et les stories **17.x / 18.x** etc.
+
+### Review Findings
+
+- [x] [Review][Patch] Artefact **15.3** §0 — mention « **15.2 non vérifié** » : **corrigée** (référence explicite au fichier 15.2 sous `references/artefacts/`).
+- [x] [Review][Defer] Toute généralisation issue de ce doc doit être **recoupée** avec l’UI actuelle avant portage.
 
 ## Verification / QA (story documentaire)
 

@@ -100,3 +100,8 @@ Story Runner BMAD (sous-agent), `resume_at: DS`, CS/VS sautes (story prete), `ga
 
 - 2026-04-12 — DS + QA doc + CR : artefact 15.5, story **done**, sprint-status aligne.
 - 2026-04-12 — Relecture architecte senior : livrable 15.5 renforce sans changement de statut.
+- 2026-04-23 — **Epic 15 clos** au pilotage (`epics.md`, `sprint-status.yaml`) ; cette recommandation reste archive ; les décisions effectives suivent les epics **16+** et le dépôt actuel.
+
+## Clôture Epic 15 (2026-04-23)
+
+Aligné avec la clôture narrative **Epic 15** : le livrable sous `references/artefacts/` associé est **historique** ; ne pas préempter les ADR et implémentations postérieurs.

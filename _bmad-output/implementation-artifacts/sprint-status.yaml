@@ -1,3 +1,5 @@
+# last_updated: 2026-04-23 — pilotage : **`epic-10`** **`in-progress`** → **`backlog`** ; stories **10.x** inchangées (dont **10.6b–10.6e** **`done`**).
+# last_updated: 2026-04-23 — clôture pilotage **Epic 14** / stories **14.3–14.5** : **`14-3`…`14-5`** **`review`** → **`done`** ; **`epic-14`** **`in-progress`** → **`done`** ; **`epic-14-retrospective`** **`optional`** → **`done`** ; artefact **`epic-14-retro-2026-04-23.md`** ; travaux résiduels et validations poursuivis hors traces BMAD (runs ultérieurs), alignement documentaire demandé par l'équipe
 # last_updated: 2026-04-23 — clôture pilotage **Epic 13** / **Story 13.8** : **`13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano`** **`review`** → **`done`** ; **`epic-13`** **`in-progress`** → **`done`** (stories **13.1–13.8** **`done`**) ; **`epic-13-retrospective`** **`optional`** → **`done`** ; artefact **`epic-13-retro-2026-04-23.md`** ; compléments **T2/T4** réalisés hors fichier story (runs ultérieurs sur `peintre-nano`, voir story § Dev Agent Record)
 # last_updated: 2026-04-23 — skill `bmad-retrospective` Epic 26 : **`epic-26-retrospective`** **`optional`** → **`done`** ; artefact **`epic-26-retro-2026-04-23.md`**
 # last_updated: 2026-04-22 — story **26-5** Story Runner BMAD fin : CS→VS→DS→GATE→QA→CR **APPROVE** ; **`26-5-outillage-et-doc-p2-ruff-repository-guide-tests`** **`review`** → **`done`** ; **`epic-26`** **`in-progress`** → **`done`** (stories **26.1–26.5** **done** ; trace F7–F11 checklist `epic-26-cloture-f7-f11-trace.md`) ; vs_loop=0 qa_loop=0 cr_loop=0 ; gates `compileall` + `pytest tests/test_infrastructure.py` **exit 0** ; prochaine étape Epic Runner : **`bmad-retrospective`** **`epic-26-retrospective`** (optionnel selon équipe)
@@ -347,6 +349,7 @@ generated: "2026-04-01"
 # Clarification (instantané historique §25) : la levée **process** (nouveaux DS hors clés `25-*`) reste documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` ; phase 2 impl : stories **25-13…25-15** livrées **done** au YAML au 2026-04-20/21 — `epic-25: in-progress` tant que l'epic n'est pas clôturé narrativement.
 # last_updated: 2026-04-20 (suite doc §25) — slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
 # Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
+# last_updated: 2026-04-23 — epic-15 **done** ; 15-1…15-4 **review→done** (clôture fondation admin obsolète vs chantier 16–19+ ; détail `epics.md` §15 + fiches story).
 last_updated: "2026-04-23"
 # last_updated: 2026-04-20 — story 25-7 DS bmad-dev-story Task : 25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable ready-for-dev → review ; checklist `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md` ; epic-25 inchangé in-progress
 # last_updated: 2026-04-20 — story 25-7 Story Runner fin : 25-7 review→done (CR×2, cr_loop=1 ; gates git ; QA doc `_bmad-output/implementation-artifacts/25-7-qa-checklist-verification.md`) ; correctifs YAML/story post-CR1 ; epic-25 inchangé in-progress
@@ -479,7 +482,7 @@ development_status:
 
   # Levée gel process (2026-04-20, story 25-6) : nouvelles exécutions bmad-dev-story hors clés 25-* réautorisées sous conditions — addendum `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + note readiness 2026-04-20 (gates §2/§7) ; NOT READY PWA massif ; gate API P0 si promotions Paheko/caisse ; respect ADR 25-2 / 25-3 (fond non rouvert).
   # Gel 2026-04-19 : les statuts YAML ci-dessous restent preuve d'état — pas de rétroconduction des valeurs review/backlog.
-  epic-10: in-progress
+  epic-10: backlog
   10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: backlog
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: backlog
@@ -521,20 +524,22 @@ development_status:
   epic-13-retrospective: done
 
   # Levée gel process (2026-04-20, story 25-6) : levée documentée — même règle opérationnelle que epic-10/13 (addendum + conditions) ; pas de nouveau DS implicite sans Story Runner.
-  epic-14: in-progress
+  # Epic 14 : toutes stories 14.x done ; rétrospective epic-14-retro-2026-04-23.md
+  epic-14: done
   14-1-retrouver-le-shell-et-le-choix-de-contexte-admin-observables-dans-peintre-nano: done
   14-2-retrouver-les-ecrans-de-parametres-admin-simples-observables-dans-peintre-nano: done
-  14-3-retrouver-les-vues-admin-de-supervision-simple-observables-dans-peintre-nano: review
-  14-4-retrouver-la-vue-audit-log-transverse-observable-dans-peintre-nano: review
-  14-5-retrouver-la-gestion-des-groupes-admin-observable-dans-peintre-nano: review
-  epic-14-retrospective: optional
+  14-3-retrouver-les-vues-admin-de-supervision-simple-observables-dans-peintre-nano: done
+  14-4-retrouver-la-vue-audit-log-transverse-observable-dans-peintre-nano: done
+  14-5-retrouver-la-gestion-des-groupes-admin-observable-dans-peintre-nano: done
+  epic-14-retrospective: done
 
   # Levée gel process (2026-04-20, story 25-6) : idem epic-13–14 — DS hors 25-* sous addendum ; conditions gates inchangées.
-  epic-15: in-progress
-  15-1-auditer-exhaustivement-les-surfaces-admin-legacy-a-porter-vers-peintre-nano: review
-  15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy: review
-  15-3-identifier-les-patterns-mutualisables-et-les-anti-patterns-du-legacy-admin: review
-  15-4-etendre-la-matrice-de-parite-admin-stricte-et-la-couverture-des-preuves: review
+  # Epic 15 : clos 2026-04-23 — fondation documentaire dépassée par le chantier réel (16–19+, contrats, UI) ; stories 15-1…15-4 review→done ; voir epics.md § Epic 15 et fiches story (clôture / Review Findings).
+  epic-15: done
+  15-1-auditer-exhaustivement-les-surfaces-admin-legacy-a-porter-vers-peintre-nano: done
+  15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy: done
+  15-3-identifier-les-patterns-mutualisables-et-les-anti-patterns-du-legacy-admin: done
+  15-4-etendre-la-matrice-de-parite-admin-stricte-et-la-couverture-des-preuves: done
   15-5-produire-la-recommandation-darchitecture-pour-un-admin-peintre-nano-mutualise: done
   15-6-preparer-la-passe-danalyse-approfondie-et-le-decoupage-des-futurs-epics-de-portage-admin: done
   epic-15-retrospective: optional

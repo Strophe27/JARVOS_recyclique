@@ -1,6 +1,6 @@
 # Story 15.4 : Etendre la matrice de parite admin stricte et la couverture des preuves
 
-Status: review
+Status: done
 
 **Story key :** `15-4-etendre-la-matrice-de-parite-admin-stricte-et-la-couverture-des-preuves`  
 **Epic :** 15
@@ -105,6 +105,16 @@ Story Runner BMAD (sous-agent), resume_at DS, gates HITL skip.
 ### Change Log
 
 - 2026-04-12 — DS Story 15.4 : extension matrice admin + statut story `review` + sprint-status `review`.
+- 2026-04-23 — Clôture Epic 15 : statut **`done`** ; matrice vivante désormais portée par le dépôt et les epics admin ultérieurs.
+
+## Clôture et obsolescence (2026-04-23)
+
+L’extension **Story 15.4** dans `references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md` est **gelée comme trace** ; les colonnes « état » et preuves doivent être relues contre **l’état actuel** des stories **18.x / 19.x** et du code si elles servent encore de pilotage.
+
+### Review Findings
+
+- [x] [Review][Patch] Ligne **`ui-admin-15-4-categories`** : composant **`AdminCategories.tsx`** → **`Categories.tsx`** — **corrigé** dans la matrice (alignement inventaire 15.1).
+- [x] [Review][Defer] Les statuts `Backlog` / `En cours` dans la matrice datée ne préjugent pas du backlog **actuel**.
 
 ## QA documentaire (substitut `bmad-qa-generate-e2e-tests`)
 

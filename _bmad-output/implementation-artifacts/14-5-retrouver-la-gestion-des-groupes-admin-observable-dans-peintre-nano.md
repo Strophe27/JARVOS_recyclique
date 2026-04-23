@@ -1,6 +1,6 @@
 # Story 14.5 : Retrouver la gestion des groupes admin observable dans Peintre_nano
 
-Status: review
+Status: done
 
 **Story key :** `14-5-retrouver-la-gestion-des-groupes-admin-observable-dans-peintre-nano`  
 **Epic :** 14 — Étendre la parité UI legacy de l'administration dans `Peintre_nano` (rail **U** ; contrats rail **K** en **16.2**)
@@ -44,6 +44,15 @@ So that ACL administration regains observable parity with the legacy reference w
 - [x] Implémenter liste + détail (+ mutations si dans le périmètre) ; mettre à jour manifest + registre + tests e2e/contrat.
 - [x] Gates **`peintre-nano`** : `npm run lint`, `npm run test`, `npm run build` ; gates backend ciblés si touchés.
 
+### Review Findings
+
+**Revue BMAD-code-review (2026-04-23)** — même contexte « **obsolescence pilotage / runs hors BMAD** » que **14.3** et **14.4**.
+
+- [x] [Review][Defer] **Non-régression pytest backend / absence de 500** — validée dans la continuité du projet sans journaliser chaque gate dans cette fiche ; la clôture **`done`** repose sur la **validation équipe + état dépôt** au **2026-04-23**.
+- [x] [Review][Defer] **Matrice 15.4 / ligne groups** — suivi Epic **15** si besoin de preuves détaillées.
+
+**Décision :** clôture **`done`** ; écarts legacy déjà nommés dans les Completion Notes restent la référence pour tout travail futur (**Epic 21** pour users, etc.).
+
 ## Références
 
 - `_bmad-output/planning-artifacts/epics.md` — Epic 14, Story 14.5
@@ -65,6 +74,7 @@ Story Runner / exécution directe (session 2026-04-12).
 
 ### Completion Notes List
 
+- **2026-04-23** : Clôture **Epic 14** — **`review` → `done`** ; **`epic-14`** **`done`** ; findings § Review Findings ; alignement sprint-status.
 - **2026-04-13 (BMAD)** : note de synchronisation pilotage — statut **review** maintenu en attendant validation humaine ou CR pour passage **done** ; cette passe BMAD n'a pas rejoué les gates ni les tests.
 - Widget **`AdminGroupsWidget`** + client **`admin-groups-client.ts`** : liste `adminGroupsList`, détail `adminGroupsGetById`, CRUD groupe, rattachements permissions/utilisateurs alignés OpenAPI 16.2.
 - Écarts legacy nommés : pas de GET catalogue permissions / liste utilisateurs admin dans le périmètre YAML pour MultiSelect ; POST add via saisie UUID ; `adminUsersGroupsPut` hors 14.5.

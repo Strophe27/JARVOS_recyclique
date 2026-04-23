@@ -10,7 +10,7 @@
 ## 0. Corpus et dépendances 15.1 / 15.2
 
 - **15.1** : inventaire publié — `references/artefacts/2026-04-12_01_inventaire-surfaces-admin-legacy-15-1.md` (source de vérité routes / écrans retenus). Les exemples du **§1** restent cohérents avec ce périmètre.
-- **15.2** : livrable fichier de cartographie API / permissions **non vérifié** dans cette session ; ne pas inférer d'autorité depuis le JSX seul — à croiser quand `15.2` sera dans `references/artefacts/`.
+- **15.2** : livrable publié — `references/artefacts/2026-04-12_01_cartographie-api-permissions-contextes-admin-legacy-15-2.md` (**note 2026-04-23 :** correction de la phrase « non vérifié » obsolète ; croiser toujours ce fichier plutôt que le JSX seul pour l’autorité backend).
 
 **Preuves directes complémentaires** (patterns, implémentations) :
 

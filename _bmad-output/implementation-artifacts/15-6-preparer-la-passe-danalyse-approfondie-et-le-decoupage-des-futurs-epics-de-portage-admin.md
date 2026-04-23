@@ -56,3 +56,7 @@ Assembler le package final de fondation pour une passe d'analyse plus forte, pui
 ## Notes
 
 - Risque documentaire : normalisation typographique sur `_bmad-output/implementation-artifacts` — ne pas s'en servir comme corpus pour la passe forte sans revue humaine.
+
+## Clôture Epic 15 (2026-04-23)
+
+**Epic 15** est **clos** au pilotage (`epics.md`, `sprint-status.yaml`). Le package fondation et le découpage envisagé ont été **dépassés** par l’exécution réelle (**Epic 16–19** et suivants) ; utiliser cette story comme **trace**, pas comme backlog actif.

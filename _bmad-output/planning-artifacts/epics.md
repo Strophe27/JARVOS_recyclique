@@ -2799,7 +2799,7 @@ L'equipe peut retrouver dans `Peintre_nano` les vues d'administration legacy pri
 
 **Repere de lecture operationnel :** s'appuyer sur les invariants multi-contextes, les permissions du `ContextEnvelope`, les manifests de navigation, puis trancher avec DevTools legacy et code `recyclique-1.4.4` avant toute extension admin.
 
-**Suivi BMAD (reconciliation code 2026-04-13) :** les stories **14.3**, **14.4** et **14.5** ont des surfaces Peintre deja implementees (dashboard legacy sur `/admin`, audit-log, groupes) — detail et statuts dans les fichiers story sous `_bmad-output/implementation-artifacts/` et dans `implementation-artifacts/sprint-status.yaml`. L'Epic **14** reste **in-progress** tant que ces stories ne sont pas toutes en **done** (passage **review** vers **done** apres validation, CR et gates selon le workflow projet).
+**Suivi BMAD (clôture documentaire 2026-04-23) :** les stories **14.3**, **14.4** et **14.5** sont **`done`** au pilotage (`_bmad-output/implementation-artifacts/sprint-status.yaml`). Une partie du travail et des validations s'est poursuivie dans des runs **sans** mise à jour des fiches BMAD au fil de l'eau ; les fichiers story ont été alignés à la clôture (findings + statut). Voir **`_bmad-output/implementation-artifacts/epic-14-retro-2026-04-23.md`** pour le contexte et l'historique « pourquoi le YAML était resté en **review** ».
 
 ### Story 14.1: Retrouver le shell et le choix de contexte admin observables dans `Peintre_nano`
 
@@ -2892,6 +2892,8 @@ So that ACL configuration regains a recognizable UI aligned with the legacy refe
 **And** parity notes reference the Epic 15 matrix line(s) for groups rather than ad hoc screenshots alone
 
 ## Epic 15: Fonder le portage admin strict mutualise vers `Peintre_nano`
+
+**Statut (2026-04-23) — Epic clos au pilotage.** Les stories **15.1 à 15.6** sont en **done**. Les artefacts de fondation (notamment sous `references/artefacts/` datés **2026-04-12**) restent une **archive de raisonnement** ; le développement ultérieur (**Epic 16–19**, contrats backend, portages CREOS/admin réels, matrice vivante) **supplante** ces livrables comme source de vérité opérationnelle. Ne pas rouvrir une « discovery » à partir seulement de ces documents sans recouper le dépôt actuel.
 
 L'equipe construit un socle d'audit, de mutualisation et de recommandation d'architecture pour porter l'administration legacy vers `Peintre_nano` avec une **parite stricte cote usages**, sans recopier les divergences historiques du code legacy ecran par ecran.
 
@@ -3268,7 +3270,7 @@ So that the final users epic delivers observable parity without smuggling unreso
 
 L'equipe ajoute un rail correctif dedie pour aligner la caisse, la cloture de session, le parametrage comptable et la synchronisation `Paheko` sur le PRD du `2026-04-15`, sans reecrire artificiellement l'historique **done** des Epics 6 et 8. Cet epic introduit la chaine canonique **referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable fige -> builder d'ecritures `Paheko` -> batch outbox idempotent par session**.
 
-**Note agents (create-story / review) :** cet epic est un rail correctif **CASH-COMPTA**. Il rebase les verites metier et comptables sans invalider la fondation historique de terrain (`Epic 6`) ni la fondation transport/sync (`Epic 8`). Les dependances critiques sont : `Epic 10` pour les preuves et gates, `Epic 16` pour les controles super-admin sensibles, `Epic 13` (**terminé**, 2026-04-23) — la contrainte historique « **finish-only** » sur le portage kiosque **13.8** ne s’applique plus aux décisions **post-clôture** ; `Epic 14.3` / `14.4` / `14.5` en **pause par defaut** des que la semantique comptable ou le parametrage sensible est en jeu, et `Epic 18` conserve uniquement une valeur de preuve UI historique, sans autorite sur la future semantique comptable.
+**Note agents (create-story / review) :** cet epic est un rail correctif **CASH-COMPTA**. Il rebase les verites metier et comptables sans invalider la fondation historique de terrain (`Epic 6`) ni la fondation transport/sync (`Epic 8`). Les dependances critiques sont : `Epic 10` pour les preuves et gates, `Epic 16` pour les controles super-admin sensibles, `Epic 13` (**terminé**, 2026-04-23) — la contrainte historique « **finish-only** » sur le portage kiosque **13.8** ne s’applique plus aux décisions **post-clôture** ; `Epic 14` (**terminé**, 2026-04-23, parité admin Peintre **14.1–14.5**) ; `Epic 18` conserve uniquement une valeur de preuve UI historique, sans autorite sur la future semantique comptable.
 
 **FRs covered:** FR4, FR24, FR25, FR26, FR27, FR28, FR39, FR42, FR57, FR66, FR67, FR69, FR70
 
