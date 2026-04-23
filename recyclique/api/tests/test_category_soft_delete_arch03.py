@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -17,29 +17,26 @@ from recyclic_api.services.category_service import CategoryService
 _V1 = settings.API_V1_STR.rstrip("/")
 
 
-@pytest.mark.asyncio
-async def test_soft_delete_invalid_uuid_returns_none():
+def test_soft_delete_invalid_uuid_returns_none():
     db = MagicMock()
     service = CategoryService(db)
-    result = await service.soft_delete_category("not-a-uuid")
+    result = service.soft_delete_category("not-a-uuid")
     assert result is None
     db.query.assert_not_called()
 
 
-@pytest.mark.asyncio
-async def test_soft_delete_not_found_returns_none():
+def test_soft_delete_not_found_returns_none():
     db = MagicMock()
     chain_find = MagicMock()
     db.query.return_value = chain_find
     chain_find.filter.return_value.first.return_value = None
     service = CategoryService(db)
-    result = await service.soft_delete_category(str(uuid4()))
+    result = service.soft_delete_category(str(uuid4()))
     assert result is None
     db.commit.assert_not_called()
 
 
-@pytest.mark.asyncio
-async def test_soft_delete_with_active_children_raises_conflict():
+def test_soft_delete_with_active_children_raises_conflict():
     db = MagicMock()
     chain_find = MagicMock()
     chain_count = MagicMock()
@@ -49,7 +46,7 @@ async def test_soft_delete_with_active_children_raises_conflict():
     service = CategoryService(db)
     cid = str(uuid4())
     with pytest.raises(ConflictError) as exc_info:
-        await service.soft_delete_category(cid)
+        service.soft_delete_category(cid)
     d = exc_info.value.detail
     assert isinstance(d, dict)
     assert d["active_children_count"] == 3
@@ -58,8 +55,7 @@ async def test_soft_delete_with_active_children_raises_conflict():
     db.commit.assert_not_called()
 
 
-@pytest.mark.asyncio
-async def test_soft_delete_success_commits():
+def test_soft_delete_success_commits():
     db = MagicMock()
     chain_find = MagicMock()
     chain_count = MagicMock()
@@ -84,7 +80,7 @@ async def test_soft_delete_success_commits():
         "recyclic_api.services.category_service.CategoryRead.model_validate",
         return_value=read,
     ):
-        result = await service.soft_delete_category(str(uuid4()))
+        result = service.soft_delete_category(str(uuid4()))
     assert result is read
     db.commit.assert_called_once()
     db.refresh.assert_called_once_with(category)
@@ -100,7 +96,7 @@ def test_delete_category_route_maps_conflict_to_422_structured(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryService"
     ) as mock_cls:
-        mock_cls.return_value.soft_delete_category = AsyncMock(
+        mock_cls.return_value.soft_delete_category = MagicMock(
             side_effect=ConflictError(detail)
         )
         response = admin_client.delete(f"{_V1}/categories/{cid}")
@@ -126,7 +122,7 @@ def test_delete_category_route_success_returns_200(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryService"
     ) as mock_cls:
-        mock_cls.return_value.soft_delete_category = AsyncMock(return_value=read)
+        mock_cls.return_value.soft_delete_category = MagicMock(return_value=read)
         response = admin_client.delete(f"{_V1}/categories/{read.id}")
     assert response.status_code == 200
     body = response.json()

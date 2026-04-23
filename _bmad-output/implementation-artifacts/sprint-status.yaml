@@ -1,3 +1,27 @@
+# last_updated: 2026-04-23 — pilotage : **`epic-10`** **`in-progress`** → **`backlog`** ; stories **10.x** inchangées (dont **10.6b–10.6e** **`done`**).
+# last_updated: 2026-04-23 — clôture pilotage **Epic 14** / stories **14.3–14.5** : **`14-3`…`14-5`** **`review`** → **`done`** ; **`epic-14`** **`in-progress`** → **`done`** ; **`epic-14-retrospective`** **`optional`** → **`done`** ; artefact **`epic-14-retro-2026-04-23.md`** ; travaux résiduels et validations poursuivis hors traces BMAD (runs ultérieurs), alignement documentaire demandé par l'équipe
+# last_updated: 2026-04-23 — clôture pilotage **Epic 13** / **Story 13.8** : **`13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano`** **`review`** → **`done`** ; **`epic-13`** **`in-progress`** → **`done`** (stories **13.1–13.8** **`done`**) ; **`epic-13-retrospective`** **`optional`** → **`done`** ; artefact **`epic-13-retro-2026-04-23.md`** ; compléments **T2/T4** réalisés hors fichier story (runs ultérieurs sur `peintre-nano`, voir story § Dev Agent Record)
+# last_updated: 2026-04-23 — skill `bmad-retrospective` Epic 26 : **`epic-26-retrospective`** **`optional`** → **`done`** ; artefact **`epic-26-retro-2026-04-23.md`**
+# last_updated: 2026-04-22 — story **26-5** Story Runner BMAD fin : CS→VS→DS→GATE→QA→CR **APPROVE** ; **`26-5-outillage-et-doc-p2-ruff-repository-guide-tests`** **`review`** → **`done`** ; **`epic-26`** **`in-progress`** → **`done`** (stories **26.1–26.5** **done** ; trace F7–F11 checklist `epic-26-cloture-f7-f11-trace.md`) ; vs_loop=0 qa_loop=0 cr_loop=0 ; gates `compileall` + `pytest tests/test_infrastructure.py` **exit 0** ; prochaine étape Epic Runner : **`bmad-retrospective`** **`epic-26-retrospective`** (optionnel selon équipe)
+# last_updated: 2026-04-22 — story **26-5** DS bmad-dev-story (Task) : **`26-5-outillage-et-doc-p2-ruff-repository-guide-tests`** **`ready-for-dev`** → **`review`** ; ruff + doc F1 / ADR guide tests + README ; gates `compileall` + `pytest tests/test_infrastructure.py` **exit 0** ; `epic-26` inchangé **in-progress** ; prochaine étape **GATE** parent / **QA**
+# last_updated: 2026-04-22 — story **26-5** CS bmad-create-story (create, Task Story Runner) : **`26-5-outillage-et-doc-p2-ruff-repository-guide-tests`** **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/26-5-outillage-et-doc-p2-ruff-repository-guide-tests.md` ; `epic-26` inchangé **in-progress** ; trace CS ; vs_loop=0 qa_loop=0 cr_loop=0 ; prochaine étape **VS** (validate)
+# last_updated: 2026-04-22 — story **26-4** reprise **DS documentaire** (trace F7–F11) : alignement `epic-26-cloture-f7-f11-trace.md` — **26-4** **`done`**, **26-5** **`backlog`** (cohérent `sprint-status` + `epics.md`) ; gate `compileall` (parent) **exit 0** ; `development_status` inchangé ; aucun changement code
+# last_updated: 2026-04-22 — story **26-4** Story Runner BMAD fin : CS→VS→DS→GATE→QA→CR **APPROVE** ; **`26-4-schemas-pep604-convention-et-premiere-vague`** **`review`** → **`done`** ; `epic-26` inchangé **in-progress** ; vs_loop=0 qa_loop=0 cr_loop=0 ; gates `compileall` + pytest `test_infrastructure` + `test_schemas_pep604_wave1_story_26_4` **exit 0** ; prochaine story **26-5** backlog
+# last_updated: 2026-04-22 — story **26-4** DS bmad-dev-story (Task) : **`26-4-schemas-pep604-convention-et-premiere-vague`** **`ready-for-dev`** → **`review`** ; PEP 604 vague 1 (`category`, `context_envelope`, `email_log`) + note `architecture/index.md` § Epic 26 ; gates `compileall` + pytest `test_infrastructure` + `-k categor` **exit 0** ; `epic-26` inchangé **in-progress** ; prochaine étape **GATE** parent (rejeu si besoin) / **QA**
+# last_updated: 2026-04-22 — story **26-4** CS bmad-create-story (create, Task Story Runner) : **`26-4-schemas-pep604-convention-et-premiere-vague`** **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/26-4-schemas-pep604-convention-et-premiere-vague.md` ; `epic-26` inchangé **in-progress** ; trace CS ; vs_loop=0 qa_loop=0 cr_loop=0 ; prochaine étape **VS**
+# last_updated: 2026-04-22 — story **26-3** passe doc post-QA2 (DS documentaire uniquement) : `epics.md` § Epic 26 pilotage **26.3** **`done`** + backlog résiduel **26.4–26.5** ; `architecture/index.md` TOC convention Epic 26 ; typo convention `accéder` ; **`development_status` / cle `26-3`** inchangés **`done`** ; gate `compileall` réservé parent
+# last_updated: 2026-04-22 — story **26-3** Story Runner BMAD fin : CS→VS→DS→GATE (compileall + pytest `-k categor` 176 sél. + `test_infrastructure` 6) →QA→CR **PASS** ; **`26-3-normaliser-async-orm-sync-pilote-categories`** **`review`** → **`done`** ; `epic-26` inchangé **in-progress** ; vs_loop=0 qa_loop=0 cr_loop=0 ; prochaine story **26-4** backlog
+# last_updated: 2026-04-22 — story **26-3** DS bmad-dev-story (Task) : **`26-3-normaliser-async-orm-sync-pilote-categories`** **`in-progress`** → **`review`** ; convention `def` + ORM sync (pilote categories) ; note `_bmad-output/planning-artifacts/architecture/2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md` + fragment `recyclique/api/tests/README.md` ; gates `compileall` + pytest peloton (151) incl. `test_infrastructure` **exit 0** ; `epic-26` inchangé **in-progress**
+# last_updated: 2026-04-22 — story **26-3** CS bmad-create-story (create, Task Story Runner) : **`26-3-normaliser-async-orm-sync-pilote-categories`** **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/26-3-normaliser-async-orm-sync-pilote-categories.md` ; `epic-26` inchangé **in-progress** ; trace CS ; vs_loop=0 qa_loop=0 cr_loop=0 ; prochaine étape **VS**
+# last_updated: 2026-04-22 — story **26-2** Story Runner BMAD fin : CS→VS→DS→GATE→QA→CR1 **CHANGES_REQUESTED**→DS (`cr_loop=1`)→GATE→QA→CR2 **APPROVE** ; **`26-2-extraire-admin-users-groups-vers-service`** **`review`** → **`done`** ; `epic-26` inchangé **in-progress** ; vs_loop=0 qa_loop=0 cr_loop=1 ; gates `compileall` + pytest peloton 34 tests **exit 0** ; prochaine story **26-3** backlog
+# last_updated: 2026-04-22 — story **26-2** DS (`bmad-dev-story` Task) : **`26-2-extraire-admin-users-groups-vers-service`** **`ready-for-dev`** → **`review`** ; extraction `admin_user_groups_assignment_service.py` ; gates `compileall` + pytest `test_infrastructure.py` `test_user_groups.py` `test_admin_user_management.py` **exit 0** ; peloton complémentaire `test_admin_users_groups_routes.py` + `TestAdminUsersGroupsContract` **exit 0** ; `epic-26` inchangé **in-progress** ; trace DS ; **qa_loop=0 cr_loop=0** inchangés (DS)
+# last_updated: 2026-04-22 — **Lecture canonique :** la source de vérité est la cle YAML `last_updated` **racine** du présent fichier et le mapping `development_status` ; les lignes `# last_updated:` suivantes = **journal** (instantanés historiques), pas un second état normatif isolé.
+# last_updated: 2026-04-22 — story **26-2** CS bmad-create-story (create) : **`26-2-extraire-admin-users-groups-vers-service`** **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/26-2-extraire-admin-users-groups-vers-service.md` ; `epic-26` inchangé **in-progress** ; trace CS ; vs_loop=0 qa_loop=0 cr_loop=0 ; prochaine étape **VS**
+# last_updated: 2026-04-22 — Epic **26** doc : QA2 adversarial passes **1–3** **terminées** sur livrables epics / clôture P0 / bloc YAML / trace F7–F11 (`_bmad-output/implementation-artifacts/epic-26-cloture-f7-f11-trace.md` — statuts « reporté » documentés au 2026-04-22)
+# last_updated: 2026-04-22 — Epic **26** backlog post-**26-1** : **`26-2`**…**`26-5`** **`backlog`** ; `epics.md` § Epic 26 (risque AdminService + tableau P1/P2) ; `last_updated` racine inchangé
+# last_updated: 2026-04-22 — story **26-1** clôture impl. (CR + QA2 **code**) : **`26-1-p0-pytest-maitre-et-sort-admin-service`** **`review`** → **`done`** ; correctifs doc/Dockerfile ; QA2 **impl.** RAS (ne pas confondre avec QA **documentaire** Epic 26 ci-dessus)
+# last_updated: 2026-04-22 — story **26-1** DS (`bmad-dev-story`) : **`26-1-p0-pytest-maitre-et-sort-admin-service`** **`ready-for-dev`** → **`review`** ; Option A pytest + suppression `AdminService` ; gate pytest `test_infrastructure.py` ; `epic-26` **`in-progress`**
+# last_updated: 2026-04-22 — Epic **26** / story **26-1** : CS (`ready-for-dev`) puis **VS validate PASS** ; `development_status` **26-1** inchangé **`ready-for-dev`** ; `epic-26` **`in-progress`** ; vs_loop=0 ; prochaine étape **DS** (`bmad-dev-story`)
 # last_updated: 2026-04-22 — skill `bmad-retrospective` Epic 25 : **`epic-25`** → **`done`** ; **`epic-25-retrospective`** → **`done`** ; artefact **`epic-25-retro-2026-04-22.md`**
 # last_updated: 2026-04-21 — alignement doc `epics.md` §25 (phase 2 **25.12–25.15** **done** au pilotage ; distinction **`epic-25` in-progress** vs cloture epic) + note spike **25-15** (`2026-04-20-spike-25-15-indexeddb-cache-local-faisabilite.md`) ; cle racine `last_updated` **2026-04-21** ; **`development_status.epic-25` inchangé `in-progress`**
 # last_updated: 2026-04-20 — story 25-15 Story Runner BMAD fin (reprise) : **CR** APPROVE → **GATE** (compileall + pytest `test_story_25_15_spike_faisabilite_indexeddb_cache_local_sans_pwa.py`) PASS ; `25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa` **review**→**done** ; `epic-25` inchangé **in-progress** ; vs_loop=0 qa_loop=0 cr_loop=0 ; rapport `_bmad-output/implementation-artifacts/2026-04-20-spike-25-15-indexeddb-cache-local-faisabilite.md` + pytest gate
@@ -325,7 +349,8 @@ generated: "2026-04-01"
 # Clarification (instantané historique §25) : la levée **process** (nouveaux DS hors clés `25-*`) reste documentée dans `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` ; phase 2 impl : stories **25-13…25-15** livrées **done** au YAML au 2026-04-20/21 — `epic-25: in-progress` tant que l'epic n'est pas clôturé narrativement.
 # last_updated: 2026-04-20 (suite doc §25) — slugs **25-10** / **25-13** alignes titres epics (`versus` / `poste-ou-kiosque`) ; DAG en commentaire sous bloc phase 2 ; note readiness §3 + rapport readiness encadre ; matrice convention 25.2 vs ADR 25-2.
 # Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
-last_updated: "2026-04-22"
+# last_updated: 2026-04-23 — epic-15 **done** ; 15-1…15-4 **review→done** (clôture fondation admin obsolète vs chantier 16–19+ ; détail `epics.md` §15 + fiches story).
+last_updated: "2026-04-23"
 # last_updated: 2026-04-20 — story 25-7 DS bmad-dev-story Task : 25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable ready-for-dev → review ; checklist `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md` ; epic-25 inchangé in-progress
 # last_updated: 2026-04-20 — story 25-7 Story Runner fin : 25-7 review→done (CR×2, cr_loop=1 ; gates git ; QA doc `_bmad-output/implementation-artifacts/25-7-qa-checklist-verification.md`) ; correctifs YAML/story post-CR1 ; epic-25 inchangé in-progress
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
@@ -457,7 +482,7 @@ development_status:
 
   # Levée gel process (2026-04-20, story 25-6) : nouvelles exécutions bmad-dev-story hors clés 25-* réautorisées sous conditions — addendum `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + note readiness 2026-04-20 (gates §2/§7) ; NOT READY PWA massif ; gate API P0 si promotions Paheko/caisse ; respect ADR 25-2 / 25-3 (fond non rouvert).
   # Gel 2026-04-19 : les statuts YAML ci-dessous restent preuve d'état — pas de rétroconduction des valeurs review/backlog.
-  epic-10: in-progress
+  epic-10: backlog
   10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: backlog
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: backlog
@@ -486,7 +511,8 @@ development_status:
   epic-12-retrospective: optional
 
   # Levée gel process (2026-04-20, story 25-6) : idem epic-10 — DS hors 25-* réautorisé sous l'addendum et les gates (PWA NOT READY, API P0, ADR) ; statuts inchangés pour audit.
-  epic-13: in-progress
+  # Epic 13 : toutes stories 13.1–13.8 done ; rétrospective epic-13-retro-2026-04-23.md
+  epic-13: done
   13-1-retrouver-les-ecrans-caisse-adjacents-au-kiosque-observable-dans-peintre-nano: done
   13-2-retrouver-les-variantes-caisse-explicitement-retenues-dans-la-matrice-de-parite: done
   13-3-retrouver-la-cloture-ou-fin-de-session-caisse-observable-dans-peintre-nano: done
@@ -494,24 +520,26 @@ development_status:
   13-5-aligner-la-transition-hub-vers-vente-plein-cadre-rcn-02: done
   13-6-certifier-lequivalence-utilisateur-legacy-de-la-caisse-observable-dans-peintre-nano: done
   13-7-auditer-et-traduire-le-kiosque-legacy-vers-un-plan-de-portage-peintre-nano: done
-  13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano: review
-  epic-13-retrospective: optional
+  13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano: done
+  epic-13-retrospective: done
 
   # Levée gel process (2026-04-20, story 25-6) : levée documentée — même règle opérationnelle que epic-10/13 (addendum + conditions) ; pas de nouveau DS implicite sans Story Runner.
-  epic-14: in-progress
+  # Epic 14 : toutes stories 14.x done ; rétrospective epic-14-retro-2026-04-23.md
+  epic-14: done
   14-1-retrouver-le-shell-et-le-choix-de-contexte-admin-observables-dans-peintre-nano: done
   14-2-retrouver-les-ecrans-de-parametres-admin-simples-observables-dans-peintre-nano: done
-  14-3-retrouver-les-vues-admin-de-supervision-simple-observables-dans-peintre-nano: review
-  14-4-retrouver-la-vue-audit-log-transverse-observable-dans-peintre-nano: review
-  14-5-retrouver-la-gestion-des-groupes-admin-observable-dans-peintre-nano: review
-  epic-14-retrospective: optional
+  14-3-retrouver-les-vues-admin-de-supervision-simple-observables-dans-peintre-nano: done
+  14-4-retrouver-la-vue-audit-log-transverse-observable-dans-peintre-nano: done
+  14-5-retrouver-la-gestion-des-groupes-admin-observable-dans-peintre-nano: done
+  epic-14-retrospective: done
 
   # Levée gel process (2026-04-20, story 25-6) : idem epic-13–14 — DS hors 25-* sous addendum ; conditions gates inchangées.
-  epic-15: in-progress
-  15-1-auditer-exhaustivement-les-surfaces-admin-legacy-a-porter-vers-peintre-nano: review
-  15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy: review
-  15-3-identifier-les-patterns-mutualisables-et-les-anti-patterns-du-legacy-admin: review
-  15-4-etendre-la-matrice-de-parite-admin-stricte-et-la-couverture-des-preuves: review
+  # Epic 15 : clos 2026-04-23 — fondation documentaire dépassée par le chantier réel (16–19+, contrats, UI) ; stories 15-1…15-4 review→done ; voir epics.md § Epic 15 et fiches story (clôture / Review Findings).
+  epic-15: done
+  15-1-auditer-exhaustivement-les-surfaces-admin-legacy-a-porter-vers-peintre-nano: done
+  15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy: done
+  15-3-identifier-les-patterns-mutualisables-et-les-anti-patterns-du-legacy-admin: done
+  15-4-etendre-la-matrice-de-parite-admin-stricte-et-la-couverture-des-preuves: done
   15-5-produire-la-recommandation-darchitecture-pour-un-admin-peintre-nano-mutualise: done
   15-6-preparer-la-passe-danalyse-approfondie-et-le-decoupage-des-futurs-epics-de-portage-admin: done
   epic-15-retrospective: optional
@@ -610,3 +638,14 @@ development_status:
   25-14-step-up-et-revalidation-apres-changement-de-contexte-sensible: done
   25-15-spike-faisabilite-indexeddb-cache-local-sans-livraison-pwa: done
   epic-25-retrospective: done
+
+  # Epic 26 — dette qualité API (audit brownfield 2026-04-19 / recherche 2026-04-22). Transverse ; pas de lien d’exécution DS avec les clés `25-*` fermées.
+  # Trier les clés `26-x` par ordre NUMÉRIQUE (`26-1` … `26-9` puis `26-10` …) — un tri alphabétique met `26-10` avant `26-2` dans certains outils (idem règle Epic 24 / 25).
+  # Carte stories / audit §9 : voir `_bmad-output/planning-artifacts/epics.md` ## Epic 26 ; risque coordination AdminService documenté sous « Risques / arbitrages post-26-1 ».
+  epic-26: done
+  26-1-p0-pytest-maitre-et-sort-admin-service: done
+  26-2-extraire-admin-users-groups-vers-service: done
+  26-3-normaliser-async-orm-sync-pilote-categories: done
+  26-4-schemas-pep604-convention-et-premiere-vague: done
+  26-5-outillage-et-doc-p2-ruff-repository-guide-tests: done
+  epic-26-retrospective: done

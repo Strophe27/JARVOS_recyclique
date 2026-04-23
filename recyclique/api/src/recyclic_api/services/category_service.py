@@ -1,6 +1,5 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 from datetime import datetime, timezone
@@ -37,7 +36,7 @@ class CategoryService:
                 
         return depth
 
-    async def create_category(self, category_data: CategoryCreate) -> CategoryRead:
+    def create_category(self, category_data: CategoryCreate) -> CategoryRead:
         """Create a new category with unique name validation and optional parent"""
 
         # Check if category name already exists
@@ -107,7 +106,7 @@ class CategoryService:
 
         return CategoryRead.model_validate(new_category)
 
-    async def get_categories(self, is_active: Optional[bool] = None, include_archived: bool = False) -> List[CategoryRead]:
+    def get_categories(self, is_active: Optional[bool] = None, include_archived: bool = False) -> List[CategoryRead]:
         """Get all categories, optionally filtered by active status.
         
         Story B48-P1: Par défaut, exclut les catégories archivées (deleted_at IS NULL).
@@ -128,7 +127,7 @@ class CategoryService:
 
         return [CategoryRead.model_validate(cat) for cat in categories]
 
-    async def get_category_by_id(self, category_id: str) -> Optional[CategoryRead]:
+    def get_category_by_id(self, category_id: str) -> Optional[CategoryRead]:
         """Get a single category by ID"""
 
         try:
@@ -143,7 +142,7 @@ class CategoryService:
 
         return CategoryRead.model_validate(category)
 
-    async def update_category(self, category_id: str, category_data: CategoryUpdate) -> Optional[CategoryRead]:
+    def update_category(self, category_id: str, category_data: CategoryUpdate) -> Optional[CategoryRead]:
         """Update a category"""
 
         try:
@@ -250,7 +249,7 @@ class CategoryService:
 
         return CategoryRead.model_validate(category)
 
-    async def get_categories_hierarchy(self, is_active: Optional[bool] = None, include_archived: bool = False) -> List[CategoryWithChildren]:
+    def get_categories_hierarchy(self, is_active: Optional[bool] = None, include_archived: bool = False) -> List[CategoryWithChildren]:
         """Get all categories with their children in a hierarchical structure.
         
         Story B48-P1: Par défaut, exclut les catégories archivées (deleted_at IS NULL).
@@ -296,7 +295,7 @@ class CategoryService:
         payload["children"] = children
         return CategoryWithChildren.model_validate(payload)
     
-    async def get_category_children(self, category_id: str) -> List[CategoryRead]:
+    def get_category_children(self, category_id: str) -> List[CategoryRead]:
         """Get direct children of a category.
         
         Story B48-P1: Exclut les enfants archivés (deleted_at IS NULL).
@@ -315,7 +314,7 @@ class CategoryService:
         
         return [CategoryRead.model_validate(child) for child in children]
     
-    async def get_category_parent(self, category_id: str) -> Optional[CategoryRead]:
+    def get_category_parent(self, category_id: str) -> Optional[CategoryRead]:
         """Get parent of a category"""
         
         try:
@@ -335,7 +334,7 @@ class CategoryService:
         
         return CategoryRead.model_validate(parent) if parent else None
 
-    async def get_category_breadcrumb(self, category_id: str) -> List[CategoryRead]:
+    def get_category_breadcrumb(self, category_id: str) -> List[CategoryRead]:
         """Get the full breadcrumb path from root to category"""
         
         try:
@@ -365,7 +364,7 @@ class CategoryService:
         
         return breadcrumb
 
-    async def soft_delete_category(self, category_id: str) -> Optional[CategoryRead]:
+    def soft_delete_category(self, category_id: str) -> Optional[CategoryRead]:
         """Soft delete a category by setting deleted_at timestamp.
         
         Story B48-P1: Validation hiérarchie - empêche la désactivation si la catégorie
@@ -407,7 +406,7 @@ class CategoryService:
 
         return CategoryRead.model_validate(category)
 
-    async def hard_delete_category(self, category_id: str) -> None:
+    def hard_delete_category(self, category_id: str) -> None:
         """Hard delete a category from the database.
 
         Guard: refuse deletion if the category has active or inactive children.
@@ -436,7 +435,7 @@ class CategoryService:
         self.db.delete(category)
         self.db.commit()
 
-    async def restore_category(self, category_id: str) -> Optional[CategoryRead]:
+    def restore_category(self, category_id: str) -> Optional[CategoryRead]:
         """Restore a soft-deleted category by setting deleted_at to NULL.
         
         Story B48-P1: Restauration d'une catégorie archivée.
@@ -464,7 +463,7 @@ class CategoryService:
 
         return CategoryRead.model_validate(category)
 
-    async def has_usage(self, category_id: str) -> bool:
+    def has_usage(self, category_id: str) -> bool:
         """Check if a category has any usage (ligne_depot, preset_buttons, children, or sale_items).
         
         Returns True if the category is used anywhere, False if it can be safely hard-deleted.

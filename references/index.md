@@ -30,6 +30,9 @@
 - **`guide-pilotage-v2.md`** (BMAD) — [_bmad-output/planning-artifacts/guide-pilotage-v2.md](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) : document maître d’**exécution** v2 — réconciliation des deux récits de rythme (séquence PRD / décision directrice vs Pistes A/B et convergences), **jalons à cocher** (Convergence 1–3, Epics 1–10) synchronisés aux grands jalons avec `sprint-status.yaml` pour le grain fin, **carte des emplacements** pour audits, données, rapports de tests et handoffs, frictions connues, **prompt type** agent superviseur, lien **correct course**. Ne remplace pas le PRD ni l’index `references/` pour le détail métier.
   _(Charger si : pilotage multi-chantiers, agent superviseur, reprise après branches ou écrans multiples, besoin de savoir où ranger un livrable documentaire.)_
 
+- **Synthèse tests (QA / bmad-qa)** — [_bmad-output/implementation-artifacts/tests/test-summary.md](../_bmad-output/implementation-artifacts/tests/test-summary.md) : agrégat des rapports de passes **bmad-qa-generate-e2e-tests** (Epic 26 en tête, 2026-04-22) ; commandes de rejeu et critères par story.
+  _(Charger si : traçabilité pytest, gates post-story Recyclique API, ou lecture transversale après plusieurs QA.)_
+
 ---
 
 ## Conventions et règles

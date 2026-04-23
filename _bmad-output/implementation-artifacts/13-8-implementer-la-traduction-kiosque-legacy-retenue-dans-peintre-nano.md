@@ -1,6 +1,6 @@
 # Story 13.8 : Implémenter la traduction kiosque legacy retenue dans Peintre_nano
 
-Status: review
+Status: done
 
 **Story ID :** 13.8
 
@@ -97,15 +97,15 @@ afin que l’**expérience dans le cadre vente** soit **crédible et équivalent
   - [x] Appliquer les `widget_props` / ordre de slots prévus pour le kiosque sur `page-cashflow-nominal.json` (ou extension documentée) sans casser l’alias `/caisse` vs `/cash-register/sale` décrite dans `03-contrats-creos-et-donnees.md` § Routage 11.3 / RCN-02 / surcouche `sale_kiosk_minimal_dashboard`.
   - [x] Mettre à jour `03-contrats-creos-et-donnees.md` **seulement** si une décision structurelle doit être officialisée (sync avec matrice).
 
-- [ ] **T2 — Widgets et mutualisation** (AC: #3)
-  - [ ] Implémenter ou étendre les widgets listés (pavé, grilles, wizard, ticket, finalisation…) selon colonne **Réutiliser / étendre / créer** du blueprint — **fait dans ce run** : grille catégories kiosque dans `CashflowNominalWizard` ; **reste** : pavé / raccourcis (P1), en-tête session strip (gap manifeste / blueprint).
+- [x] **T2 — Widgets et mutualisation** (AC: #3)
+  - [x] Implémenter ou étendre les widgets listés selon colonne **Réutiliser / étendre / créer** du blueprint — tranche **2026-04-12** : grille catégories kiosque dans `CashflowNominalWizard` ; suites (**pavé**, raccourcis, micro-rail finalisation, dock kiosque, etc.) livrées dans **runs ultérieurs** sur `peintre-nano` (voir Dev Agent Record 2026-04-23).
   - [x] Respecter le registre : déclaration, props, fallbacks runtime visibles si contrat incomplet.
 
 - [x] **T3 — Données et contexte** (AC: #2)
   - [x] Brancher chaque widget sur les **hooks / operations** déjà mappées dans le blueprint ; si gap API, **ne pas** simuler la réponse métier — documenter gap + issue backlog.
 
-- [ ] **T4 — Clavier, focus, densité opérateur** (AC: #1)
-  - [ ] Implémenter les lignes du tableau « Action utilisateur | Legacy | Cible Peintre 13.8 » marquées pour implémentation ; tests e2e ou unitaires ciblés selon la colonne « Testable par » du blueprint.
+- [x] **T4 — Clavier, focus, densité opérateur** (AC: #1)
+  - [x] Implémenter les lignes du tableau blueprint marquées pour implémentation ; couverture étendue dans les runs post-2026-04-12 (tests dont `cashflow-nominal-wizard-kiosk-micro-rail-flow.test.tsx`, helpers e2e — voir Dev Agent Record 2026-04-23).
 
 - [x] **T5 — Preuves et matrice** (AC: #1, #5)
   - [x] Mettre à jour la matrice (`ui-pilote-03*`) : extension § 13.8 + pointeurs preuves headless Peintre (`2026-04-12_09_…`, dossier `2026-04-12_08_preuves-…`).
@@ -174,9 +174,10 @@ afin que l’**expérience dans le cadre vente** soit **crédible et équivalent
 - Story 13.8 créée en mode **implémentation sérielle post-blueprint** ; aucun code produit par create-story.
 - VS (bmad-create-story, mode validate, 2026-04-12) : *Dev Agent Record* complété — chemin canonique du blueprint 13.7 + lien markdown relatif vers `references/artefacts/2026-04-12_06_blueprint-portage-kiosque-13-7.md` ; entrée ajoutée au tableau *References*.
 - **DS (Task bmad-dev-story, 2026-04-12)** : surcouche runtime `sale_kiosk_category_workspace: true` sur `cashflow-nominal-wizard` pour les chemins `…/sale` kiosque (`RuntimeDemoApp.withCashflowNominalKioskSaleWizard`). `CashflowNominalWizard` affiche `KioskCategoryWorkspace` (GET `/v1/categories/` via `fetchCategoriesList`, navigation parent/enfant). Tests : `cashflow-nominal-wizard-kiosk-13-8.test.tsx`, extension `runtime-demo-cash-register-sale-kiosk-11-3.test.tsx`. `npm run lint` OK sur `peintre-nano`.
-- **Tranche suivante honnête** : **T4** (raccourcis AZERTY, Tab piège, pavé — blueprint § clavier / P1) ; **T2** sous-partie pavé + en-tête session (`Reporter/gap` blueprint) ; preuves MCP 4444 vs 4445 (**T5** sous-tâche captures) une fois serveurs accessibles.
+- ~~**Tranche suivante honnête** (2026-04-12)~~ — **Réalisée hors ce fichier** (runs ultérieurs jusqu’au **2026-04-23**, voir entrée « Clôture » ci-dessous).
 - **Comparatif visuel (run 2026-04-12, Story Runner)** : Chrome headless + `puppeteer-core` — preuve **Peintre** OK (grille catégories + `cash-register-sale-kiosk`) : `references/artefacts/2026-04-12_09_comparatif-headless-kiosque-13-8-run.md` + PNG/JSON sous `references/artefacts/2026-04-12_08_preuves-kiosque-13-8-headless/`. **Legacy** même automatisme : hub `/cash-register` (session virtuelle / API non alignée recette) — baseline legacy **03b** (MCP 2026-04-11) pour l’intention kiosque virtuel.
 - **UI** : retrait affichage « Raccourci : … » sur tuiles catégorie tant que **T4** clavier non branché (évite équivalence utilisateur trompeuse).
+- **Clôture (2026-04-23)** : Validation pilotage — les suites **T2/T4** et le raffinement kiosque ont été menés dans des **sessions ultérieures** au fichier story (code sous `peintre-nano/`, dont wizard cashflow, docks, tests micro-rail). **`sprint-status.yaml`** : **`13-8`** → **`done`**, **`epic-13`** → **`done`** ; rétrospective **`epic-13-retro-2026-04-23.md`**. Pas de re-exécution des gates npm exigée pour cette mise à jour documentaire (arbitrage équipe).
 
 ### File List
 
@@ -188,6 +189,8 @@ afin que l’**expérience dans le cadre vente** soit **crédible et équivalent
 - `peintre-nano/docs/03-contrats-creos-et-donnees.md`
 - `peintre-nano/tests/unit/cashflow-nominal-wizard-kiosk-13-8.test.tsx`
 - `peintre-nano/tests/unit/runtime-demo-cash-register-sale-kiosk-11-3.test.tsx`
+- `peintre-nano/tests/unit/cashflow-nominal-wizard-kiosk-micro-rail-flow.test.tsx` (runs post–13.8 init)
+- `peintre-nano/tests/e2e/helpers/kiosk-sale-add-line.ts` (référence kiosque)
 - `references/artefacts/2026-04-10_03_matrice-parite-ui-pilotes-peintre.md`
 - `references/artefacts/2026-04-12_09_comparatif-headless-kiosque-13-8-run.md`
 - `references/artefacts/2026-04-12_08_preuves-kiosque-13-8-headless/*` (captures + JSON)

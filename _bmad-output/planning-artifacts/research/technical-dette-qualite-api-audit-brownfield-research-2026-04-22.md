@@ -2,7 +2,7 @@
 stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md
-  - references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
+  - references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
   - recyclique/api/pyproject.toml
   - recyclique/api/pytest.ini
 workflowType: research
@@ -34,7 +34,7 @@ qa2_review:
 **Auteur :** Strophe (assisté agent)  
 **Type :** Recherche technique (workflow BMAD `bmad-technical-research`, adapté au terrain dépôt)  
 **Artefact de référence :** `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`  
-**Fiche Kanban :** `references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`
+**Fiche Kanban :** `references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` (**archivée**, clos Epic 26 au 2026-04-23)
 
 ---
 

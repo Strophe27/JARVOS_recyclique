@@ -2,13 +2,21 @@
 
 ---
 
+## 2026-04-23 — Clôture (Epic 26 + rétro)
+
+**Passage à `archive`.** Exécution BMAD **Epic 26** « dette qualité API » : stories **26.1 → 26.5** **done**, **`epic-26`** **done**, **`epic-26-retrospective`** **done** dans **`_bmad-output/implementation-artifacts/sprint-status.yaml`** ; **rétrospective** [**`epic-26-retro-2026-04-23.md`**](../../../_bmad-output/implementation-artifacts/epic-26-retro-2026-04-23.md). Trace **F7–F11** : **`epic-26-cloture-f7-f11-trace.md`**. Branche de travail typique : **`epic/26`**.
+
+L’intention Kanban initiale (P0–P2 audit **2026-04-19**) est **couverte** par cet epic ; les **reports résiduels** éventuels sont **tracés** dans la clôture F7–F11, pas comme dette ouverte non nommée.
+
+---
+
 ## 2026-04-19 — Strophe + agent
 
 **Chantier transverse** : exécuter le **backlog refactor** et ancrer les **garde-fous** issus de l’audit de style / architecture sur `recyclique/api/` — avant que la dette ne se cumule avec les gros chantiers caisse, Paheko, multisite.
 
 **Source unique (vérité)** : `[references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md](../../artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md)`
 
-**Intention :** a-faire
+**Intention :** *(historique — clos Epic 26, voir §2026-04-23)* a-faire
 
 ### Pourquoi c’est visible
 

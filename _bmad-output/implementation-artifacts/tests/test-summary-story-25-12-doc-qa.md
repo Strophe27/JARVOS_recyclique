@@ -23,7 +23,7 @@
 | **Tests API / backend (pytest)** | **Couvert** | Fichier unique : garde-fou statique sur les sources du périmètre « async Paheko » qualifié (`_REL_PATHS` × interdits `get_redis` / import `redis`). |
 | **E2E navigateur (Playwright / Cypress / etc.)** | **NA** | La story n’introduit pas de flux produit ni d’écran à valider ; l’AC « runtime » est satisfaite par **pytest API** + audit Markdown, pas par un e2e UI. |
 
-**Framework détecté :** pytest (`recyclique/api/pytest.ini`), aligné avec le reste du backend.
+**Framework détecté :** pytest via `recyclique/api/pyproject.toml` (`[tool.pytest.ini_options]`), aligné avec le reste du backend.
 
 ---
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -14,16 +14,14 @@ from recyclic_api.services.category_management import CategoryManagementService
 _V1 = settings.API_V1_STR.rstrip("/")
 
 
-@pytest.mark.asyncio
-async def test_visibility_invalid_uuid_raises_validation_error():
+def test_visibility_invalid_uuid_raises_validation_error():
     db = MagicMock()
     service = CategoryManagementService(db)
     with pytest.raises(ValidationError, match="Invalid category ID format"):
-        await service.update_category_visibility("not-a-uuid", True)
+        service.update_category_visibility("not-a-uuid", True)
 
 
-@pytest.mark.asyncio
-async def test_visibility_not_found_raises_not_found():
+def test_visibility_not_found_raises_not_found():
     db = MagicMock()
     chain = MagicMock()
     db.query.return_value = chain
@@ -31,11 +29,10 @@ async def test_visibility_not_found_raises_not_found():
     service = CategoryManagementService(db)
     cid = str(uuid4())
     with pytest.raises(NotFoundError, match=cid):
-        await service.update_category_visibility(cid, True)
+        service.update_category_visibility(cid, True)
 
 
-@pytest.mark.asyncio
-async def test_visibility_hide_last_visible_raises_conflict():
+def test_visibility_hide_last_visible_raises_conflict():
     cid = uuid4()
     category = MagicMock()
     chain = MagicMock()
@@ -45,19 +42,17 @@ async def test_visibility_hide_last_visible_raises_conflict():
     chain.filter.return_value.count.return_value = 0
     service = CategoryManagementService(db)
     with pytest.raises(ConflictError, match="at least one category must remain visible"):
-        await service.update_category_visibility(str(cid), False)
+        service.update_category_visibility(str(cid), False)
 
 
-@pytest.mark.asyncio
-async def test_display_order_invalid_uuid_raises_validation_error():
+def test_display_order_invalid_uuid_raises_validation_error():
     db = MagicMock()
     service = CategoryManagementService(db)
     with pytest.raises(ValidationError, match="Invalid category ID format"):
-        await service.update_display_order("bad", 1)
+        service.update_display_order("bad", 1)
 
 
-@pytest.mark.asyncio
-async def test_display_order_entry_not_found_raises_not_found():
+def test_display_order_entry_not_found_raises_not_found():
     db = MagicMock()
     chain = MagicMock()
     db.query.return_value = chain
@@ -65,14 +60,14 @@ async def test_display_order_entry_not_found_raises_not_found():
     service = CategoryManagementService(db)
     cid = str(uuid4())
     with pytest.raises(NotFoundError, match=cid):
-        await service.update_display_order_entry(cid, 2)
+        service.update_display_order_entry(cid, 2)
 
 
 def test_put_visibility_route_maps_validation_error(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryManagementService"
     ) as mock_cls:
-        mock_cls.return_value.update_category_visibility = AsyncMock(
+        mock_cls.return_value.update_category_visibility = MagicMock(
             side_effect=ValidationError("Invalid category ID format: 'x'")
         )
         response = admin_client.put(
@@ -88,7 +83,7 @@ def test_put_visibility_route_maps_not_found(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryManagementService"
     ) as mock_cls:
-        mock_cls.return_value.update_category_visibility = AsyncMock(
+        mock_cls.return_value.update_category_visibility = MagicMock(
             side_effect=NotFoundError(msg)
         )
         response = admin_client.put(
@@ -104,7 +99,7 @@ def test_put_visibility_route_maps_conflict_to_422(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryManagementService"
     ) as mock_cls:
-        mock_cls.return_value.update_category_visibility = AsyncMock(
+        mock_cls.return_value.update_category_visibility = MagicMock(
             side_effect=ConflictError(detail)
         )
         response = admin_client.put(
@@ -119,7 +114,7 @@ def test_put_display_order_route_maps_validation_error(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryManagementService"
     ) as mock_cls:
-        mock_cls.return_value.update_display_order = AsyncMock(
+        mock_cls.return_value.update_display_order = MagicMock(
             side_effect=ValidationError("Invalid category ID format: 'x'")
         )
         response = admin_client.put(
@@ -135,7 +130,7 @@ def test_put_display_order_route_maps_not_found(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryManagementService"
     ) as mock_cls:
-        mock_cls.return_value.update_display_order = AsyncMock(
+        mock_cls.return_value.update_display_order = MagicMock(
             side_effect=NotFoundError(msg)
         )
         response = admin_client.put(
@@ -150,7 +145,7 @@ def test_put_display_order_entry_route_maps_validation_error(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryManagementService"
     ) as mock_cls:
-        mock_cls.return_value.update_display_order_entry = AsyncMock(
+        mock_cls.return_value.update_display_order_entry = MagicMock(
             side_effect=ValidationError("Invalid category ID format: 'x'")
         )
         response = admin_client.put(
@@ -166,7 +161,7 @@ def test_put_display_order_entry_route_maps_not_found(admin_client):
     with patch(
         "recyclic_api.api.api_v1.endpoints.categories.CategoryManagementService"
     ) as mock_cls:
-        mock_cls.return_value.update_display_order_entry = AsyncMock(
+        mock_cls.return_value.update_display_order_entry = MagicMock(
             side_effect=NotFoundError(msg)
         )
         response = admin_client.put(

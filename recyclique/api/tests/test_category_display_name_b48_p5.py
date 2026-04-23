@@ -46,30 +46,27 @@ class TestCategoryOfficialName:
         assert disp.name == "EEE"
         assert disp.official_name is None
 
-    @pytest.mark.asyncio
-    async def test_create_category_with_official_name(self, db_session: Session):
+    def test_create_category_with_official_name(self, db_session: Session):
         service = CategoryService(db_session)
         data = CategoryCreate(
             name="Bricot",
             official_name="Articles de bricolage et jardinage thermique",
         )
-        result = await service.create_category(data)
+        result = service.create_category(data)
         assert result.name == "Bricot"
         assert result.official_name == "Articles de bricolage et jardinage thermique"
 
-    @pytest.mark.asyncio
-    async def test_create_category_without_official_name(self, db_session: Session):
+    def test_create_category_without_official_name(self, db_session: Session):
         service = CategoryService(db_session)
         data = CategoryCreate(
             name="EEE",
             official_name=None,
         )
-        result = await service.create_category(data)
+        result = service.create_category(data)
         assert result.name == "EEE"
         assert result.official_name is None
 
-    @pytest.mark.asyncio
-    async def test_update_category_official_name(self, db_session: Session):
+    def test_update_category_official_name(self, db_session: Session):
         category = Category(
             id=uuid4(),
             name="Textile",
@@ -80,14 +77,13 @@ class TestCategoryOfficialName:
         db_session.commit()
 
         service = CategoryService(db_session)
-        result = await service.update_category(
+        result = service.update_category(
             str(category.id), CategoryUpdate(official_name="Textile et habillement (officiel)")
         )
         assert result.name == "Textile"
         assert result.official_name == "Textile et habillement (officiel)"
 
-    @pytest.mark.asyncio
-    async def test_update_category_clear_official_name(self, db_session: Session):
+    def test_update_category_clear_official_name(self, db_session: Session):
         category = Category(
             id=uuid4(),
             name="Textile",
@@ -98,7 +94,7 @@ class TestCategoryOfficialName:
         db_session.commit()
 
         service = CategoryService(db_session)
-        result = await service.update_category(str(category.id), CategoryUpdate(official_name=None))
+        result = service.update_category(str(category.id), CategoryUpdate(official_name=None))
         assert result.name == "Textile"
         assert result.official_name is None
 

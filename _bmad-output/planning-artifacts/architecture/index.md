@@ -4,6 +4,14 @@
 
 - **[guide-pilotage-v2.md](../guide-pilotage-v2.md)** — Document maître d’exécution : réconciliation séquence PRD / décision directrice et **Pistes A/B** ; jalons Convergence 1–3 et Epics 1–10 (cases à cocher aux grands jalons) ; **où ranger** audits, schémas BDD, handoffs, rapports de tests ; frictions ; prompt type agent superviseur ; **correct course**. Abstract canonique : [references/index.md](../../../references/index.md) (État et suivi).
 
+## Dette qualité API (Epic 26)
+
+- **[2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md](./2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md)** — Règles **revue PR** : `def` vs `async` lorsque l’**ORM** est **`Session` synchrone** (option par défaut, exceptions nommées) ; **pilote** : routeur + services **categories** ; distinct de l’ADR **async Paheko** (Epic 25). Rappel court : [recyclique/api/tests/README.md](../../../recyclique/api/tests/README.md#convention-def-vs-async-orm-synchrone-epic-26).
+- **Typage schémas Pydantic (PEP 604, audit F5)** — Dans les fichiers `schemas/*.py` **touchés par une PR**, préférer **`T | None`** à **`Optional[T]`** et éviter le mélange des deux styles dans un même fichier. **Vague 1 (story 26.4)** : `schemas/category.py`, `schemas/context_envelope.py`, `schemas/email_log.py` ; périmètre et règle hors-vague : [_bmad-output/implementation-artifacts/26-4-schemas-pep604-convention-et-premiere-vague.md](../../implementation-artifacts/26-4-schemas-pep604-convention-et-premiere-vague.md).
+- **Double norme « repository » (audit F1, story 26.5)** — Le dépôt applique explicitement un patron **repository** pour la **réception** (`recyclic_api/repositories/reception.py`, utilisé avec les services / routes réception). **Ailleurs**, les services qui enchaînent l’**ORM** (`Session`, requêtes SQLAlchemy) **sans** couche repository dédiée restent **acceptables** tant que la PR le assume (cohérence locale, pas de dette cachée). Il n’y a **aucune** obligation silencieuse de **migrer massivement** tout le backend vers des repositories pour « rattraper » la réception : toute généralisation du pattern se fait par **domaine** et avec **borne** (pas de big-bang). Référence : [audit §5–§6 / finding F1](../../../references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md).
+- **Outillage lint/format (audit §6.6, story 26.5)** — **Ruff** est ajouté dans `[project.optional-dependencies].dev` avec configuration dans `recyclique/api/pyproject.toml` (`ruff format` aligné **Black 88** ; `known-first-party` isort = `recyclic_api`). Jeu `ruff check` minimal (E9) documenté dans le pyproject pour rester vert sur la legacy ; **black / isort / flake8** restent co-présents jusqu’à convergence éventuelle. Écart **Docker vs `[dev]`** (finding F10) : l’image / `requirements-dev.txt` seuls ne garantissent pas ruff — installation locale via `pip install -e ".[dev]"` (voir README API).
+- **Guide stabilisation tests** — Décision : **pas** de fichier `TESTS_STABILIZATION_GUIDE.md` séparé ; sources de vérité = `tests/README.md` + `[tool.pytest]` + `conftest.py` + audit §6. ADR : [2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md](./2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md).
+
 ## Infrastructure / données (décisions récentes)
 
 - **[cash-accounting-paheko-canonical-chain.md](./cash-accounting-paheko-canonical-chain.md)** — Delta architecture du correct course `2026-04-15` pour la chaine **caisse -> compta -> `Paheko`** : referentiel des moyens de paiement, journal detaille des transactions de paiement, snapshot comptable fige de session, builder d'ecritures `Paheko`, **1 batch outbox idempotent par session** avec **N sous-ecritures deterministes**, separation calcul local / transport / integration, et autorite explicite pour les remboursements sur exercice anterieur clos.
@@ -32,6 +40,7 @@
 ## Table of Contents
 
 - [Architecture Decision Document](#table-of-contents)
+  - [Convention routes/services ORM synchrone — Epic 26 (revue PR)](./2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md)
   - [ADR — PostgreSQL 17 (migration)](./adr-postgresql-17-migration.md)
   - [ADR — PIN kiosque vs PIN opérateur / secret de poste (Epic 25)](./2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md)
   - [ADR — Async Paheko : outbox durable PostgreSQL, Redis auxiliaire (Epic 25)](./2026-04-20-adr-async-paheko-outbox-durable-redis-auxiliaire-ou-trajectoire-hybride.md)

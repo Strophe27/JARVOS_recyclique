@@ -48,7 +48,7 @@ class DisplayOrderEntryUpdate(BaseModel):
     summary="Create a new category",
     description="Create a new category. Requires ADMIN or SUPER_ADMIN role."
 )
-async def create_category(
+def create_category(
     category_data: CategoryCreate,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
@@ -56,7 +56,7 @@ async def create_category(
     """Create a new category"""
     service = CategoryService(db)
     try:
-        return await service.create_category(category_data)
+        return service.create_category(category_data)
     except ValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
@@ -69,7 +69,7 @@ async def create_category(
     summary="List all categories",
     description="Get all categories, optionally filtered by active status. Story B48-P1: Exclut les catégories archivées par défaut. Requires authentication."
 )
-async def get_categories(
+def get_categories(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     include_archived: bool = Query(False, description="Story B48-P1: Include archived categories (deleted_at IS NOT NULL)"),
     current_user: User = Depends(get_current_user),
@@ -81,7 +81,7 @@ async def get_categories(
     Utiliser include_archived=True pour voir toutes les catégories (admin).
     """
     service = CategoryService(db)
-    return await service.get_categories(is_active=is_active, include_archived=include_archived)
+    return service.get_categories(is_active=is_active, include_archived=include_archived)
 
 
 @router.get(
@@ -90,14 +90,14 @@ async def get_categories(
     summary="Get categories hierarchy",
     description="Get all categories in a hierarchical structure with their children. Requires authentication."
 )
-async def get_categories_hierarchy(
+def get_categories_hierarchy(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get categories in hierarchical structure"""
     service = CategoryService(db)
-    return await service.get_categories_hierarchy(is_active=is_active)
+    return service.get_categories_hierarchy(is_active=is_active)
 
 
 # Enregistrés avant /{category_id} pour éviter que « entry-tickets » / « sale-tickets »
@@ -108,14 +108,14 @@ async def get_categories_hierarchy(
     summary="Get categories for ENTRY tickets",
     description="Get categories filtered by visibility for ENTRY/DEPOT tickets. Requires authentication."
 )
-async def get_categories_for_entry_tickets(
+def get_categories_for_entry_tickets(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get categories for ENTRY tickets (respects visibility settings)"""
     service = CategoryManagementService(db)
-    return await service.get_categories_for_entry_tickets(is_active=is_active)
+    return service.get_categories_for_entry_tickets(is_active=is_active)
 
 
 @router.get(
@@ -124,14 +124,14 @@ async def get_categories_for_entry_tickets(
     summary="Get categories for SALE tickets",
     description="Get all categories for SALE/CASH REGISTER tickets (ignores visibility). Requires authentication."
 )
-async def get_categories_for_sale_tickets(
+def get_categories_for_sale_tickets(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get categories for SALE tickets (always shows all categories)"""
     service = CategoryManagementService(db)
-    return await service.get_categories_for_sale_tickets(is_active=is_active)
+    return service.get_categories_for_sale_tickets(is_active=is_active)
 
 
 @router.get(
@@ -139,7 +139,7 @@ async def get_categories_for_sale_tickets(
     summary="Export categories configuration",
     description="Export all categories to PDF, Excel or CSV format. Requires ADMIN or SUPER_ADMIN role."
 )
-async def export_categories(
+def export_categories(
     format: str = Query(..., description="Export format: 'pdf' or 'xls' or 'csv'"),
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
@@ -185,7 +185,7 @@ async def export_categories(
     summary="Télécharger le modèle CSV d'import des catégories",
     description="Retourne un fichier CSV modèle avec les colonnes requises. Nécessite ADMIN ou SUPER_ADMIN.",
 )
-async def download_categories_import_template(
+def download_categories_import_template(
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
@@ -199,6 +199,7 @@ async def download_categories_import_template(
     )
 
 
+# Epic 26.3 (Option B) : route async ici seulement pour await file.read() (UploadFile) — I/O asynchrone réel.
 @router.post(
     "/import/analyze",
     response_model=CategoryImportAnalyzeResponse,
@@ -224,7 +225,7 @@ async def analyze_categories_import(
     summary="Exécuter un import de catégories depuis une session",
     description="Exécute l'upsert transactionnel à partir d'une session d'analyse. Nécessite ADMIN ou SUPER_ADMIN.",
 )
-async def execute_categories_import(
+def execute_categories_import(
     payload: CategoryImportExecuteRequest,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
@@ -240,14 +241,14 @@ async def execute_categories_import(
     summary="Get a category by ID",
     description="Retrieve a single category by its ID. Requires authentication."
 )
-async def get_category(
+def get_category(
     category_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get a category by ID"""
     service = CategoryService(db)
-    category = await service.get_category_by_id(category_id)
+    category = service.get_category_by_id(category_id)
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -261,7 +262,7 @@ async def get_category(
     summary="Update a category",
     description="Update a category's information. Requires ADMIN or SUPER_ADMIN role."
 )
-async def update_category(
+def update_category(
     category_id: str,
     category_data: CategoryUpdate,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
@@ -270,7 +271,7 @@ async def update_category(
     """Update a category"""
     service = CategoryService(db)
     try:
-        category = await service.update_category(category_id, category_data)
+        category = service.update_category(category_id, category_data)
     except ValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
@@ -292,7 +293,7 @@ async def update_category(
     summary="Soft delete a category",
     description="Story B48-P1: Soft delete a category by setting deleted_at timestamp. Requires ADMIN or SUPER_ADMIN role."
 )
-async def delete_category(
+def delete_category(
     category_id: str,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
@@ -300,7 +301,7 @@ async def delete_category(
     """Soft delete a category (Story B48-P1: uses deleted_at instead of is_active)"""
     service = CategoryService(db)
     try:
-        category = await service.soft_delete_category(category_id)
+        category = service.soft_delete_category(category_id)
     except ConflictError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -319,7 +320,7 @@ async def delete_category(
     summary="Restore a soft-deleted category",
     description="Story B48-P1: Restore a category by setting deleted_at to NULL. Requires ADMIN or SUPER_ADMIN role."
 )
-async def restore_category(
+def restore_category(
     category_id: str,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
@@ -327,7 +328,7 @@ async def restore_category(
     """Restore a soft-deleted category (Story B48-P1)"""
     service = CategoryService(db)
     try:
-        category = await service.restore_category(category_id)
+        category = service.restore_category(category_id)
     except ValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
@@ -345,14 +346,14 @@ async def restore_category(
     description="Delete a category permanently if it has no children. Requires ADMIN or SUPER_ADMIN role.",
     status_code=204,
 )
-async def hard_delete_category(
+def hard_delete_category(
     category_id: str,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     service = CategoryService(db)
     try:
-        await service.hard_delete_category(category_id)
+        service.hard_delete_category(category_id)
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
@@ -374,14 +375,14 @@ async def hard_delete_category(
     summary="Check if category has usage",
     description="Check if a category is used in any transactions, preset buttons, or has children. Returns True if it can be safely hard-deleted (no usage), False otherwise. Requires authentication."
 )
-async def check_category_usage(
+def check_category_usage(
     category_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Check if a category has any usage"""
     service = CategoryService(db)
-    has_usage = await service.has_usage(category_id)
+    has_usage = service.has_usage(category_id)
     return {"has_usage": has_usage, "can_hard_delete": not has_usage}
 
 
@@ -391,14 +392,14 @@ async def check_category_usage(
     summary="Get category children",
     description="Get direct children of a category. Requires authentication."
 )
-async def get_category_children(
+def get_category_children(
     category_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get direct children of a category"""
     service = CategoryService(db)
-    return await service.get_category_children(category_id)
+    return service.get_category_children(category_id)
 
 
 @router.get(
@@ -407,14 +408,14 @@ async def get_category_children(
     summary="Get category parent",
     description="Get parent of a category. Requires authentication."
 )
-async def get_category_parent(
+def get_category_parent(
     category_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get parent of a category"""
     service = CategoryService(db)
-    parent = await service.get_category_parent(category_id)
+    parent = service.get_category_parent(category_id)
     
     if not parent:
         raise HTTPException(status_code=404, detail="Category has no parent or parent not found")
@@ -428,14 +429,14 @@ async def get_category_parent(
     summary="Get category breadcrumb",
     description="Get the full breadcrumb path from root to category. Requires authentication."
 )
-async def get_category_breadcrumb(
+def get_category_breadcrumb(
     category_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get the full breadcrumb path from root to category"""
     service = CategoryService(db)
-    breadcrumb = await service.get_category_breadcrumb(category_id)
+    breadcrumb = service.get_category_breadcrumb(category_id)
 
     if not breadcrumb:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -449,7 +450,7 @@ async def get_category_breadcrumb(
     summary="Update category visibility",
     description="Update category visibility for ENTRY tickets. Requires ADMIN or SUPER_ADMIN role."
 )
-async def update_category_visibility(
+def update_category_visibility(
     category_id: str,
     visibility_data: VisibilityUpdate,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
@@ -458,7 +459,7 @@ async def update_category_visibility(
     """Update category visibility (for ENTRY tickets only)"""
     service = CategoryManagementService(db)
     try:
-        return await service.update_category_visibility(category_id, visibility_data.is_visible)
+        return service.update_category_visibility(category_id, visibility_data.is_visible)
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
@@ -480,7 +481,7 @@ async def update_category_visibility(
     summary="Update category display order",
     description="Update category display order. Requires ADMIN or SUPER_ADMIN role."
 )
-async def update_category_display_order(
+def update_category_display_order(
     category_id: str,
     order_data: DisplayOrderUpdate,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
@@ -489,7 +490,7 @@ async def update_category_display_order(
     """Update category display order"""
     service = CategoryManagementService(db)
     try:
-        return await service.update_display_order(category_id, order_data.display_order)
+        return service.update_display_order(category_id, order_data.display_order)
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
@@ -506,7 +507,7 @@ async def update_category_display_order(
     summary="Update category display order for ENTRY/DEPOT",
     description="Story B48-P4: Update category display order for ENTRY/DEPOT tickets. Requires ADMIN or SUPER_ADMIN role."
 )
-async def update_category_display_order_entry(
+def update_category_display_order_entry(
     category_id: str,
     order_data: DisplayOrderEntryUpdate,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
@@ -515,7 +516,7 @@ async def update_category_display_order_entry(
     """Story B48-P4: Update category display order for ENTRY/DEPOT tickets"""
     service = CategoryManagementService(db)
     try:
-        return await service.update_display_order_entry(
+        return service.update_display_order_entry(
             category_id, order_data.display_order_entry
         )
     except NotFoundError as exc:

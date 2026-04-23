@@ -13,6 +13,8 @@ sources:
 
 > **ARCHIVÉ — photo du 2026-04-20 seulement (ce n’est pas l’état courant après le 2026-04-21).** À cette date, après clôture documentaire des stories **25-1** à **25-5** : dans `sprint-status.yaml`, **`epic-25` : `done`** et **`25-1`** … **`25-5`** : **`done`** chacune. Les phrases plus bas dans ce fichier qui racontent une séquence « en cours » (ex. **25-5** en review) sont le **fil de rédaction** au moment de la rédaction. **État courant (ancre)** : **`_bmad-output/implementation-artifacts/sprint-status.yaml`** (clé racine `last_updated` + `development_status`) — **ne pas** conclure depuis ce seul encadré.
 
+**Addendum (2026-04-23)** — **Gate qualité API (audit brownfield P0)** : au pilotage **post–Epic 26**, le chantier associé à la fiche Kanban refactor et aux **P0–P2** §9 audit est **clos** (`epic-26` **done**, **`epic-26-retro-2026-04-23.md`**). La ligne tableau §2 « Gate qualité API » **Ouvert** ci-dessous reste une **photo du 2026-04-20** ; pour l’état **courant** des gates, croiser **`sprint-status.yaml`** et la trace **`epic-26-cloture-f7-f11-trace.md`**.
+
 **Addendum (2026-04-21)** — La tranche **documentaire 25.1–25.5** reste décrite par l’instantané archivé ci-dessus. **Post–story 25.6 livrée** : la **levée process** du gel hors `25-*` est documentée dans **`_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md`** (`GEL_DOC`) ; les stories **25-7 à 25-15** (phase **impl**) sont dans **`epics.md`** §25 et en **`backlog`** dans **`sprint-status.yaml`** sauf **`25-6`** → **`done`** ; **`epic-25`** est **`in-progress`** pour cette phase. Voir **§3.a** / **§3.b**, le rapport **`implementation-readiness-report-2026-04-20-epic25-phase2.md`**, et le fichier machine **`_bmad-output/planning-artifacts/architecture/epic-25-phase2-dag-2026-04-21.yaml`** (ordre des dépendances).
 
 **Objectif :** rejouer le raisonnement du rapport de readiness du **2026-04-19** à la lumière des livrables **25.1 à 25.4** (sans refaire tout le workflow readiness global), puis **rebaseliner** la séquence **`25-*`** et le pilotage (`sprint-status`, candidat première story d'impl).
@@ -55,6 +57,8 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 - **Pour le cœur v2** : le **GO conditionnel** du 19 continue de s'appliquer ; les **nouveaux** DS hors **`25-*`** sont **autorisés** sous les **conditions** du **`GEL_DOC`** (distinct du verdict **NOT READY** PWA massif).
 - **Cas `13-8`** : la clé `13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano` est déjà en **`review`** dans `_bmad-output/implementation-artifacts/sprint-status.yaml` (travaux amorcés avant gel / cycle existant). La note **ne** promeut **pas** une nouvelle vague kiosque **sans** les prérequis ci-dessus ; le **candidat** pour une future passe **`bmad-create-story`** (rafraîchissement de contexte, suites) reste **13-8**, aligné spec **25.4** §5 (« Gated — extension PWA / kiosque delivery ») et `epics.md` Epic 13.
 
+**Addendum 2026-04-23 :** la story **13.8** et l’**Epic 13** sont désormais **`done`** dans `sprint-status.yaml` ; le paragraphe ci-dessus reste un **instantané** au **2026-04-20**. Toute **nouvelle** vague kiosque / PWA relève de **nouvelles** stories après l’état YAML courant (cf. `epic-13-retro-2026-04-23.md`).
+
 ---
 
 ## 3. Rebaselining backlog `25-*` (pilotage)
@@ -86,7 +90,7 @@ Le rapport `_bmad-output/planning-artifacts/implementation-readiness-report-2026
 Les trois sources suivantes sont rappelées **ici** (exigence AC story 25.5), avec usage :
 
 1. **`_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md`** — baseline **NOT READY** PWA / kiosque, **GO conditionnel** v2, **NO-GO** programme massif ; référence § synthèse exécutive, § extension PWA offline-first, § synthèse finale (étape 6).  
-2. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — vérité opérationnelle des clés `development_status` (instantané **post–25.6 livrée** : **`25-1`** … **`25-6`** en **`done`**, **`25-7`** … **`25-15`** en **`backlog`**, **`epic-25`** en **`in-progress`** ; commentaires de levée sous epics **10 / 13–15** ; **`13-8`** selon valeur courante dans le YAML — **toujours** rouvrir le fichier pour l’instantané exact).  
+2. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — vérité opérationnelle des clés `development_status` (instantané **post–25.6 livrée** : **`25-1`** … **`25-6`** en **`done`**, **`25-7`** … **`25-15`** en **`backlog`**, **`epic-25`** en **`in-progress`** ; commentaires de levée sous epics **10 / 13–15** ; **`13-8`** / **`epic-13`** : voir **instantané courant** dans le YAML — **addendum 2026-04-23** : **`done`** ; le présent document conserve des phrases datées **2026-04-20** — **toujours** rouvrir le fichier pour l’instantané exact).  
 3. **Livrables Epic 25 approuvés pour le pilotage (chemins)** :  
    - **25.1** — `references/vision-projet/2026-04-19_matrice-alignement-vision-canonical-epic25-25-1.md`  
    - **25.2** — `_bmad-output/planning-artifacts/architecture/2026-04-19-adr-pin-kiosque-vs-pin-operateur-secret-poste-step-up-lockout-offline.md`  
@@ -97,12 +101,14 @@ Les trois sources suivantes sont rappelées **ici** (exigence AC story 25.5), av
 
 ## 5. Candidat principal pour une future passe `bmad-create-story` (impl kiosque Peintre)
 
+**Mise à jour 2026-04-23 :** cette story (**13.8**) est **close** (**`done`** au YAML). Les paragraphes ci-dessous sont conservés comme **historique de pilotage** ; une extension **PWA / kiosque** relève de **nouvelles** stories rédigées après consultation du **`sprint-status.yaml`** courant et de **`epics.md`**.
+
 **Clé story :** `13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano`
 
 **Références :**
 
 - `_bmad-output/planning-artifacts/epics.md` — Epic 13, story **13.8**  
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` — clé ci-dessus (**review** au 2026-04-20)  
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — clé ci-dessus (**done** au 2026-04-23 — était **review** au 2026-04-20 ; voir addendum §2)  
 - Spec **25.4** — `_bmad-output/planning-artifacts/architecture/2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md` §5 (ligne « **Gated — extension PWA / kiosque delivery** », epics type **13.8**)
 
 **Si le produit tranche un autre ordre** (ex. **12-1** réception avant **13-8**) : justifier dans un futur brief en croisant `epics.md` et `guide-pilotage-v2.md` ; la présente note conserve **13-8** comme **candidat principal** aligné sur la trajectoire documentée spec 25.4.

@@ -39,6 +39,17 @@ pip install -r requirements.txt -r requirements-dev.txt
 pip install -e ".[dev]"
 ```
 
+Le groupe **`[dev]`** (défini dans `pyproject.toml`) installe notamment **pytest**, **black**, **isort**, **flake8** et **ruff** (story Epic **26.5**). En conteneur, seul `requirements-dev.txt` est garanti si `INSTALL_DEV=1` — les outils listés **uniquement** dans `[project.optional-dependencies].dev` peuvent manquer (finding **F10** audit) ; installer le paquet en mode éditable avec **`[dev]`** en local pour le lint/format.
+
+**Ruff (optionnel au quotidien, recommandé pour le format)** — depuis ce dossier :
+
+```bash
+ruff format src tests
+ruff check src/recyclic_api
+```
+
+`ruff format` suit une ligne de **88** colonnes compatible **Black**. Le jeu de règles par défaut de `ruff check` dans ce dépôt est **minimal** (voir `[tool.ruff.lint]` dans `pyproject.toml`) pour ne pas bloquer la legacy ; **black / isort / flake8** restent utilisables pour des passes plus larges au fil des PR.
+
 Pour le détail (Docker, premier admin, etc.), voir **`README.md` à la racine du mono-repo** puis `recyclique-1.4.4/README.md`.
 
 ## Migrations en conteneur

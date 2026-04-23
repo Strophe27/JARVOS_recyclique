@@ -2633,6 +2633,8 @@ L'equipe peut prolonger la parite UI amorcee par la story 11.3 sur les ecrans et
 
 **Repere de lecture operationnel :** repartir de la matrice et des preuves de l'Epic 11, puis ouvrir un pack dedie pour les extensions caisse encore visibles au legacy (variants, retours, cloture, signaux, raccourcis si confirmes).
 
+**Pilotage YAML :** `epic-13` **done** au 2026-04-23 (`_bmad-output/implementation-artifacts/sprint-status.yaml`) ; stories **13.1–13.8** **done**. La story **13.8** matérialise la traduction kiosque post-blueprint **13.7** ; les compléments après la tranche documentée au **2026-04-12** sont traçables dans le fichier story **13.8** (Dev Agent Record) et dans `peintre-nano/docs/03-contrats-creos-et-donnees.md`. Rétrospective : `epic-13-retro-2026-04-23.md`.
+
 ### Story 13.1: Retrouver les ecrans caisse adjacents au kiosque observable dans `Peintre_nano`
 
 As a cashier with an active session,
@@ -2797,7 +2799,7 @@ L'equipe peut retrouver dans `Peintre_nano` les vues d'administration legacy pri
 
 **Repere de lecture operationnel :** s'appuyer sur les invariants multi-contextes, les permissions du `ContextEnvelope`, les manifests de navigation, puis trancher avec DevTools legacy et code `recyclique-1.4.4` avant toute extension admin.
 
-**Suivi BMAD (reconciliation code 2026-04-13) :** les stories **14.3**, **14.4** et **14.5** ont des surfaces Peintre deja implementees (dashboard legacy sur `/admin`, audit-log, groupes) — detail et statuts dans les fichiers story sous `_bmad-output/implementation-artifacts/` et dans `implementation-artifacts/sprint-status.yaml`. L'Epic **14** reste **in-progress** tant que ces stories ne sont pas toutes en **done** (passage **review** vers **done** apres validation, CR et gates selon le workflow projet).
+**Suivi BMAD (clôture documentaire 2026-04-23) :** les stories **14.3**, **14.4** et **14.5** sont **`done`** au pilotage (`_bmad-output/implementation-artifacts/sprint-status.yaml`). Une partie du travail et des validations s'est poursuivie dans des runs **sans** mise à jour des fiches BMAD au fil de l'eau ; les fichiers story ont été alignés à la clôture (findings + statut). Voir **`_bmad-output/implementation-artifacts/epic-14-retro-2026-04-23.md`** pour le contexte et l'historique « pourquoi le YAML était resté en **review** ».
 
 ### Story 14.1: Retrouver le shell et le choix de contexte admin observables dans `Peintre_nano`
 
@@ -2890,6 +2892,8 @@ So that ACL configuration regains a recognizable UI aligned with the legacy refe
 **And** parity notes reference the Epic 15 matrix line(s) for groups rather than ad hoc screenshots alone
 
 ## Epic 15: Fonder le portage admin strict mutualise vers `Peintre_nano`
+
+**Statut (2026-04-23) — Epic clos au pilotage.** Les stories **15.1 à 15.6** sont en **done**. Les artefacts de fondation (notamment sous `references/artefacts/` datés **2026-04-12**) restent une **archive de raisonnement** ; le développement ultérieur (**Epic 16–19**, contrats backend, portages CREOS/admin réels, matrice vivante) **supplante** ces livrables comme source de vérité opérationnelle. Ne pas rouvrir une « discovery » à partir seulement de ces documents sans recouper le dépôt actuel.
 
 L'equipe construit un socle d'audit, de mutualisation et de recommandation d'architecture pour porter l'administration legacy vers `Peintre_nano` avec une **parite stricte cote usages**, sans recopier les divergences historiques du code legacy ecran par ecran.
 
@@ -3266,7 +3270,7 @@ So that the final users epic delivers observable parity without smuggling unreso
 
 L'equipe ajoute un rail correctif dedie pour aligner la caisse, la cloture de session, le parametrage comptable et la synchronisation `Paheko` sur le PRD du `2026-04-15`, sans reecrire artificiellement l'historique **done** des Epics 6 et 8. Cet epic introduit la chaine canonique **referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable fige -> builder d'ecritures `Paheko` -> batch outbox idempotent par session**.
 
-**Note agents (create-story / review) :** cet epic est un rail correctif **CASH-COMPTA**. Il rebase les verites metier et comptables sans invalider la fondation historique de terrain (`Epic 6`) ni la fondation transport/sync (`Epic 8`). Les dependances critiques sont : `Epic 10` pour les preuves et gates, `Epic 16` pour les controles super-admin sensibles, `Epic 13.8` en mode **finish-only si compatible transition**, `Epic 14.3` / `14.4` / `14.5` en **pause par defaut** des que la semantique comptable ou le parametrage sensible est en jeu, et `Epic 18` conserve uniquement une valeur de preuve UI historique, sans autorite sur la future semantique comptable.
+**Note agents (create-story / review) :** cet epic est un rail correctif **CASH-COMPTA**. Il rebase les verites metier et comptables sans invalider la fondation historique de terrain (`Epic 6`) ni la fondation transport/sync (`Epic 8`). Les dependances critiques sont : `Epic 10` pour les preuves et gates, `Epic 16` pour les controles super-admin sensibles, `Epic 13` (**terminé**, 2026-04-23) — la contrainte historique « **finish-only** » sur le portage kiosque **13.8** ne s’applique plus aux décisions **post-clôture** ; `Epic 14` (**terminé**, 2026-04-23, parité admin Peintre **14.1–14.5**) ; `Epic 18` conserve uniquement une valeur de preuve UI historique, sans autorite sur la future semantique comptable.
 
 **FRs covered:** FR4, FR24, FR25, FR26, FR27, FR28, FR39, FR42, FR57, FR66, FR67, FR69, FR70
 
@@ -3824,3 +3828,130 @@ So that future PWA work has an honest go/no-go without pretending the global **N
 **Then** a report cites that report’s PWA sections and `_bmad-output/planning-artifacts/2026-04-20-note-readiness-cible-post-epic25-decisions.md` and lists hard **stop criteria** (no production persistent client store, no silent bypass of gel or readiness)
 **And** the spike ends with **go / no-go / later** with estimated cost bands for a future epic, not a disguised production feature flag
 **And** this spike must not be interpreted alone as lifting the **NOT READY** programme verdict
+
+## Epic 26: Dette qualité API Recyclique (`recyclique/api/`)
+
+**Goal:** Réduire la dette de style, de structure et d’outillage décrite dans l’audit brownfield du **2026-04-19**, en traitant en priorité les actions **P1** du tableau §9 (stories **26.2–26.4**, **`done`**) puis les actions **P2** (**26.5**, **`done`** au pilotage **2026-04-22**). Les **P2** ont pu **démarrer en parallèle** des **P1** lorsque le périmètre restait borné (outillage, documentation, **ruff**) et **sans conflit** avec les fichiers touchés par **26.3** / **26.4** ; sinon **26.5** était planifiée après ou en chevauchement contrôlé. Ne pas élargir hors constats d’audit (§7 **F1–F11**, §9). **Traçabilité :** **F6** (double configuration pytest) **clos** avec **26.1** ; **F3** (`AdminService` orphelin) **clos** avec **26.1**. L’Epic est **transverse backend** ; il ne remplace pas les epics métier (caisse, Paheko, admin Peintre) mais cadre les refactors localisés et les garde-fous CI/doc. **État :** toutes les stories **26.1–26.5** sont **`done`** ; **`epic-26`** et **`epic-26-retrospective`** sont **`done`** dans `sprint-status.yaml` ; **rétrospective** `_bmad-output/implementation-artifacts/epic-26-retro-2026-04-23.md`.
+
+**Périmètre:** package `recyclique/api/` — routes, services, schémas, tests, configuration pytest/outillage tel que nommé par l’audit.
+
+**Pilotage `26-*` vs historique `25-*` :** les décisions opérationnelles sur ce chantier sont dans **`development_status`** (`epic-26`, clés **`26-*`**) et dans cette section. Les nombreuses lignes **`# last_updated`** du fichier `sprint-status.yaml` qui évoquent le **gel**, les stories **`25-*`** ou le **correct course** constituent un **journal** ; elles **ne remplacent pas** la lecture des clés **`26-*`** ni des addenda **25-6** pour le gel process — éviter de déduire le pilotage Epic 26 depuis une ligne d’historique isolée.
+
+**Sources prioritaires:**
+
+- Audit : `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md` (§7 findings, §8 checklist PR, §9 backlog **P0–P2**).
+- Recherche état dépôt : `_bmad-output/planning-artifacts/research/technical-dette-qualite-api-audit-brownfield-research-2026-04-22.md`.
+- Kanban chantier (**archivée**, clos Epic 26) : `references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`.
+
+**État au pilotage (2026-04-23, post-rétro):**
+
+- **Story 26.1** (**P0**) — **`done`** : pytest **une seule source de vérité** (`pyproject.toml`, suppression de `pytest.ini`) ; **`AdminService`** **supprimé** (code orphelin, aucun appel sous `recyclique/api/`). Story : `_bmad-output/implementation-artifacts/26-1-p0-pytest-maitre-et-sort-admin-service.md`. Trace P0 : `_bmad-output/implementation-artifacts/2026-04-22-cloture-p0-pytest-story-26-1.md`.
+- **Story 26.2** (**P1**) — **`done`** : logique `admin_users_groups` extraite vers un service dédié (`admin_user_groups_assignment_service` — pas de restauration du nom **`AdminService`**), endpoint allégé, régression testée. Story : `_bmad-output/implementation-artifacts/26-2-extraire-admin-users-groups-vers-service.md`.
+- **Story 26.3** (**P1**) — **`done`** : convention **`def`** vs **`async def`** lorsque l’**ORM** est **`Session` synchrone** ; pilote **categories** (routeur + services) ; note architecture + fragment tests. Story : `_bmad-output/implementation-artifacts/26-3-normaliser-async-orm-sync-pilote-categories.md`. Convention : `_bmad-output/planning-artifacts/architecture/2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md`.
+- **Story 26.4** (**P1**) — **`done`** : convention **PEP 604** **`Optional[T]` → `T | None`** sur la **première vague** schémas (`category`, `context_envelope`, `email_log`) ; note `architecture/index.md` § Epic 26 ; pytest smoke dédié story 26.4. Story : `_bmad-output/implementation-artifacts/26-4-schemas-pep604-convention-et-premiere-vague.md`.
+- **Story 26.5** (**P2**) — **`done`** : **ruff** + doc F1 (repository) + ADR guide tests + README ; détail : `_bmad-output/implementation-artifacts/26-5-outillage-et-doc-p2-ruff-repository-guide-tests.md`. **Backlog stories Epic 26 :** **aucun** — périmètre audit P0–P2 table §9 adressé au pilotage.
+
+### Risques / arbitrages post-26-1
+
+La suppression du module **`AdminService`** (**F3**, décision P0 audit) **n’a pas causé de panne en production** : aucune route ni service ne l’importait. Le risque résiduel est **organisationnel** : dans quelques mois, une équipe peut vouloir une **couche admin asynchrone** (p. ex. gestion utilisateurs) et ne pas savoir qu’un squelette avait été **retiré volontairement** avec la story **26.1**.
+
+**Règle explicite :** toute **nouvelle** introduction d’une couche admin async doit passer par un **nouveau module**, une **revue de code** et, si le périmètre le justifie, une **ADR courte** (sessions async vs sync, boundaries, tests). Il est **interdit** de « réparer » en restaurant **sans analyse** le fichier supprimé via copie ou revert Git du seul historique **26.1**.
+
+**Traçabilité P0 / clôture pytest + AdminService :** `_bmad-output/implementation-artifacts/2026-04-22-cloture-p0-pytest-story-26-1.md`.
+
+### Tableau audit §9 → pilotage Epic 26 (P0–P2 **livrés** au pilotage **2026-04-22**)
+
+| Priorité audit | Rappel action §9 | Finding(s) | Story Epic 26 cible |
+|----------------|------------------|--------------|---------------------|
+| **P0** (**clos**) | Une config pytest maîtresse ; décider du sort de **`AdminService`** | **F6**, **F3** (§7, §9 P0) | **26.1** — statut **`done`** |
+| **P1** (**clos** au pilotage) | Extraire la logique **admin groups** vers un **service** | **F4** | **26.2** — statut **`done`** |
+| **P1** (**clos** au pilotage) | Normaliser **async** vs **ORM synchrone** (categories & similaires) | **F2** | **26.3** — statut **`done`** |
+| **P1** (**clos** au pilotage) | Convention **`Optional` → `T \| None`** sur fichiers touchés | **F5** | **26.4** — statut **`done`** |
+| **P2** (**clos** au pilotage) | **Ruff** (lint + format) aligné black/isort ; stratégie **repository** au-delà réception ; clôture « guide stabilisation » par **ADR** datée (fichier canon `2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md`, pas un artefact nommé littéralement `TESTS_STABILIZATION_GUIDE`) | **F1**, §6.6, §8.7 | **26.5** — statut **`done`** |
+
+**Findings hors lignes P\* du tableau §9** (**F7** isolation tests, **F8** langue docstrings, **F9** `ConflictError.detail`, **F10** Docker/`[dev]`, **F11** `collect_ignore`) : traités comme **garde-fous** dans la checklist §8 audit et la **Definition of Done** des stories **26.x** **dès qu’une PR modifie un fichier concerné** ; pas d’épique élargie hors dette audit sans arbitrage produit séparé. **Lien avec la story 26.5 :** la *Note* sous **26.5** précise le même distinguo — « hors livrable obligatoire isolé » **≠** dispense si le fichier est touché.
+
+### Dépendances entre stories (ordre recommandé)
+
+- **Priorité métier :** les **P1** **26.2**, **26.3**, **26.4** et le **P2** **26.5** sont **`done`** au pilotage (**2026-04-22**).
+- **26.4** (**`done`**) : vague schémas PEP 604 livrée ; toute PR future qui édite d’autres `schemas/*.py` doit **finaliser** la forme **`T | None`** dans le fichier touché (règle story 26.4).
+- **26.5** (**`done`**) : ruff, doc F1, ADR « pas de guide séparé » (`_bmad-output/planning-artifacts/architecture/2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md`) — livrés story **26.5** (pas de chevauchement résiduel à documenter ici ; ne pas confondre avec un fichier nommé littéralement `TESTS_STABILIZATION_GUIDE`).
+
+### Checklist clôture Epic 26 (F7–F11 hors lignes P\* du tableau)
+
+**Clôture au pilotage (2026-04-22) :** ces critères ont été vérifiés pour **`epic-26`** **`done`** dans `sprint-status.yaml` — une **revue** ou des **PR** sur les zones concernées ont soit **traité**, soit **explicitement reporté avec propriétaire** les points **F7–F11** pertinents (tests, docstrings, `ConflictError`, Docker/`[dev]`, `collect_ignore`), conformément aux garde-fous ci-dessus — ou documenté pourquoi un point reste volontairement ouvert hors périmètre audit.
+
+**Trace obligatoire :** remplir (ou remplacer par équivalent signé en rétrospective) le fichier `_bmad-output/implementation-artifacts/epic-26-cloture-f7-f11-trace.md` avec le tableau **F7–F11** × statut et références — c’est la preuve vérifiable attendue pour la clôture process.
+
+### Story 26.1: P0 — pytest maître unique et sort `AdminService` (**done**)
+
+**Cle pilotage YAML :** `26-1-p0-pytest-maitre-et-sort-admin-service` — statut **`done`**. Détail et preuves : `_bmad-output/implementation-artifacts/26-1-p0-pytest-maitre-et-sort-admin-service.md`, `_bmad-output/implementation-artifacts/2026-04-22-cloture-p0-pytest-story-26-1.md`.
+
+### Story 26.2: P1 — Extraire `admin_users_groups` vers un service dédié (**done**)
+
+**Cle pilotage YAML :** `26-2-extraire-admin-users-groups-vers-service` — statut **`done`**. Détail : `_bmad-output/implementation-artifacts/26-2-extraire-admin-users-groups-vers-service.md`.
+
+**Note équipe :** tout besoin futur de persistance ou de **couche admin async** est un **nouveau** chantier (revue / ADR), pas une restauration du module `AdminService` retiré en **26.1** ; rappel : bloc « Risques / arbitrages post-26-1 » ci-dessus et `_bmad-output/implementation-artifacts/2026-04-22-cloture-p0-pytest-story-26-1.md`.
+
+As a maintainer of the Recyclique API,
+I want the ORM logic and validations for admin users/groups moved out of the fat endpoint module,
+So that routes stay thin and consistent with the reception-style layering (**F4**, audit §5.4, §9 P1).
+
+**Acceptance Criteria:**
+
+**Given** `recyclique/api/src/recyclic_api/api/api_v1/endpoints/admin_users_groups.py` still carries substantial inline logic (per audit)
+**When** this story is delivered
+**Then** a dedicated service module owns the transactional work and the endpoint delegates
+**And** regression coverage exists (API tests or equivalent) for the affected operations
+**And** checklist §8 audit (alignement architectural) is satisfied for the touched files
+**And** aucune nouvelle classe ou module ne réutilise le **nom canon** `AdminService` comme simple fichier « neuf » pour contourner la règle post-26.1 — tout besoin métier porte un **identifiant distinct** (suffixe domaine) et une revue explicite
+
+### Story 26.3: P1 — Clarifier async vs ORM synchrone (pilote categories + convention) (**done**)
+
+**Cle pilotage YAML :** `26-3-normaliser-async-orm-sync-pilote-categories` — statut **`done`**. Détail : `_bmad-output/implementation-artifacts/26-3-normaliser-async-orm-sync-pilote-categories.md`. Convention revue PR : `_bmad-output/planning-artifacts/architecture/2026-04-22-convention-routes-services-sync-orm-api-v1-epic-26.md` ; rappel tests : `recyclique/api/tests/README.md` (fragment convention Epic 26).
+
+As a backend developer,
+I want a clear convention for `async def` endpoints and services that only use synchronous SQLAlchemy,
+So that we do not imply false async benefits (**F2**, audit §5.5, §9 P1).
+
+**Acceptance Criteria:**
+
+**Given** the categories path is the documented pilot in the audit
+**When** this story is delivered
+**Then** categories-related routes/services follow the retained convention (`def` vs real async vs documented exception)
+**And** a short in-repo note (README fragment, ADR stub, or comment policy in `architecture` index) states the rule for future PRs
+**And** tests still pass for the touched modules
+
+### Story 26.4: P1 — Schémas : convention PEP 604 et première vague ciblée (**done**)
+
+**Cle pilotage YAML :** `26-4-schemas-pep604-convention-et-premiere-vague` — statut **`done`**. Détail : `_bmad-output/implementation-artifacts/26-4-schemas-pep604-convention-et-premiere-vague.md`. Rappel convention : `_bmad-output/planning-artifacts/architecture/index.md` (section Epic 26, PEP 604).
+
+As a maintainer,
+I want optional fields in touched schema files to migrate toward `T | None` consistently,
+So that the codebase converges without a one-shot mass edit (**F5**, audit §5.8, §9 P1).
+
+**Acceptance Criteria:**
+
+**Given** the large volume of `Optional[` in `schemas/` (audit)
+**When** this story is delivered
+**Then** a written scope lists which files or domains are in the first wave and the rule for files not yet touched
+**And** modified schemas do not mix styles in the same file without justification
+**And** no unrelated product schema change is bundled
+
+### Story 26.5: P2 — Outillage et documentation : ruff, stratégie repository, traçabilité tests (**done**)
+
+**Cle pilotage YAML :** `26-5-outillage-et-doc-p2-ruff-repository-guide-tests` — statut **`done`**. Détail : `_bmad-output/implementation-artifacts/26-5-outillage-et-doc-p2-ruff-repository-guide-tests.md` ; ADR guide tests : `_bmad-output/planning-artifacts/architecture/2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md`.
+
+As a tech lead,
+I want automated lint/format alignment and documented decisions on repository pattern beyond reception and on test guide lineage,
+So that P2 items from the audit do not stall as tribal knowledge (**F1**, §6.6, §9 P2 ; checklist §8.7).
+
+**Acceptance Criteria:**
+
+**Given** black/isort/flake8 baseline exists in dev dependencies
+**When** this story is delivered
+**Then** **ruff** is introduced or rejected with a recorded rationale ; if introduced, configuration matches team conventions and CI/doc points contributors to install paths
+**And** the double norme reception-vs-rest is either generalized minimally or documented with boundaries (no silent obligation to rewrite all services)
+**And** the legacy missing `TESTS_STABILIZATION_GUIDE.md` situation is closed by restoring content, archiving, or an explicit ADR « no separate guide » plus README alignment
+
+**Note (périmètre story vs garde-fous F7–F11) :** les livrables **obligatoires isolés** de **26.5** sont **ruff** / stratégie repository / traçabilité guide tests (cf. AC). Les points **F9**, **F11**, **F8** (et, par extension, **F7**, **F10**) ne sont **pas** des micro-stories forcées dans **26.5**. **En revanche**, dès qu’une **PR** modifie `exceptions.py`, `conftest.py`, les schémas, le `Dockerfile`, etc., les **garde-fous** du paragraphe « Findings hors lignes P* » **s’appliquent** dans le **DoD de cette PR** — ce n’est **pas** une autorisation à les ignorer tant que le fichier est ouvert.

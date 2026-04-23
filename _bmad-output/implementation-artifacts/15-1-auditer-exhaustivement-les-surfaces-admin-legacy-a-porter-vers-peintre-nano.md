@@ -1,6 +1,6 @@
 # Story 15.1 : Auditer exhaustivement les surfaces admin legacy a porter vers Peintre_nano
 
-Status: review
+Status: done
 
 **Story key :** `15-1-auditer-exhaustivement-les-surfaces-admin-legacy-a-porter-vers-peintre-nano`  
 **Epic :** 15
@@ -115,3 +115,12 @@ Reutiliser comme socle observabilite admin Peintre : shell / hub transverse admi
 ## Change Log
 
 - 2026-04-12 - DS Story Runner : inventaire admin legacy 15.1, statut `review`, sprint-status aligne.
+- 2026-04-23 — Clôture Epic 15 : statut **`done`** ; sprint-status **`epic-15: done`** ; fondation documentaire considérée comme **historique** face au chantier réel (**Epic 16+**).
+
+## Clôture et obsolescence (2026-04-23)
+
+Le livrable `references/artefacts/2026-04-12_01_inventaire-surfaces-admin-legacy-15-1.md` reste une **photo d’audit** ; le développement ultérieur (contrats, portages admin Peintre, epics **16–19**) **supplante** cette entrée comme référence opérationnelle.
+
+### Review Findings (bmad-code-review consolidée)
+
+- [x] [Review][Defer] **Fraîcheur** — tout écart décrit dans l’artefact face au legacy peut être **dépassé** par le code et les epics postérieurs ; ne pas rouvrir une découverte sans recouper le dépôt actuel.

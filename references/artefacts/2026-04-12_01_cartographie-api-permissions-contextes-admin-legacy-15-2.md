@@ -2,7 +2,7 @@
 
 **Date :** 2026-04-12  
 **Story :** `15-2-cartographier-les-dependances-api-permissions-et-contextes-de-ladmin-legacy`  
-**Perimetre ecrans :** routes `/admin/*` declarees dans `recyclique-1.4.4/frontend/src/App.jsx` + items de navigation `recyclique-1.4.4/frontend/src/config/adminRoutes.js` (le livrable 15.1 inventaire date n'est pas encore present dans `references/artefacts/` ; ce document **fige** la liste des routes telles que le code React les enregistre).
+**Perimetre ecrans :** routes `/admin/*` declarees dans `recyclique-1.4.4/frontend/src/App.jsx` + items de navigation `recyclique-1.4.4/frontend/src/config/adminRoutes.js` (**Note 2026-04-23 :** au moment de la redaction initiale le livrable **15.1** n’était pas encore dans le dépôt ; depuis publication : `2026-04-12_01_inventaire-surfaces-admin-legacy-15-1.md`.) Ce document **fige** la liste des routes telles que le code React les enregistre au fil de l’audit.
 
 **Sources de verite citees :** handlers FastAPI sous `recyclique/api/src/recyclic_api/api/api_v1/endpoints/`, `recyclique/api/src/recyclic_api/core/auth.py`, services frontend `recyclique-1.4.4/frontend/src/services/`, `contracts/openapi/recyclique-api.yaml`, `peintre-nano/docs/03-contrats-creos-et-donnees.md` (cadre CREOS / ContextEnvelope pour le portage).
 

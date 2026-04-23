@@ -37,11 +37,6 @@ class UserRoleUpdate(BaseModel):
     """Schéma pour la modification du rôle d'un utilisateur"""
     role: UserRole = Field(..., description="Nouveau rôle à assigner à l'utilisateur")
 
-class AdminUserList(BaseModel):
-    """Schéma pour la réponse de la liste des utilisateurs avec pagination"""
-    users: List[AdminUser]
-    pagination: "PaginationInfo"
-
 class PaginationInfo(BaseModel):
     """Schéma pour les informations de pagination"""
     page: int = Field(..., ge=1, description="Page actuelle")
