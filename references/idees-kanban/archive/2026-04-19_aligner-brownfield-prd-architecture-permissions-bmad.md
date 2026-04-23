@@ -8,7 +8,7 @@
 
 Synthèse volée : ADR **25-2** (PIN kiosque / opérateur / step-up), ADR **25-3** (async Paheko — outbox durable PG, Redis auxiliaire), spec multisite **25.4**, levée de gel process (**25.6**), **`CONTEXT_STALE`** (**25.8**), projection mapping Paheko avant outbox (**25.9**), contrats enveloppe (**25.11**), audits / logs / step-up / spike IndexedDB sans PWA (**25.12–25.15**).
 
-**Suivi hors fiche :** readiness PWA programme toujours **NOT READY** (notes **2026-04-20**) ; chantier refactor API → fiche [**`../a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`**](../a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md).
+**Suivi hors fiche :** readiness PWA programme toujours **NOT READY** (notes **2026-04-20**) ; chantier refactor API → **clos Epic 26** — fiche [**`2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`**](2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md).
 
 ---
 

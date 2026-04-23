@@ -2,7 +2,7 @@
 
 Une ligne par idée. Mise à jour par le skill `idees-kanban` à chaque création, note, transition ou archivage.
 
-**Chantier prioritaire (backend — ne pas noyer)** : refactor et garde-fous `recyclique/api` d’après l’audit brownfield — fiche [**a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md**](a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md) ; artefact source [`references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](../artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md).
+**Chantier qualité API (audit 2026-04-19)** : **clos** — **Epic 26** (26.1–26.5) + rétro [`epic-26-retro-2026-04-23.md`](../../_bmad-output/implementation-artifacts/epic-26-retro-2026-04-23.md) ; fiche Kanban [**archive**](archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md). Artefact source audit : [`references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md`](../artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md). **Aucune** fiche en **`a-faire/`** pour l’instant.
 
 **Point de situation (photographies par stade, inventaire)** : voir [point-situation.md](point-situation.md) — liens vers les artefacts datés dans `references/artefacts/`.
 
@@ -30,4 +30,4 @@ Une ligne par idée. Mise à jour par le skill `idees-kanban` à chaque créatio
 | 2026-04-18_durcissement-sync-paheko-outbox-post-audit.md | Durcissement sync Paheko outbox (post-audit Red Team, seeds BMAD, gaps tests) | archive | 2026-04-18 | 2026-04-18 |
 | 2026-03-01_workflow-evenements-caisse-recyclique-paheko.md | Workflow evenements caisse RecyClique vers Paheko (couvert par clôture Paheko + admin — mis de côté) | archive | 2026-03-01 | 2026-04-21 |
 | 2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md | Aligner brownfield vs PRD multisite — **clos Epic 25** (15 stories + rétro 2026-04-22) | archive | 2026-04-19 | 2026-04-22 |
-| 2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md | **PRIORITAIRE** — Refactor API Recyclique (audit brownfield F1–F8, backlog P0–P2, checklist PR) | a-faire | 2026-04-19 | 2026-04-19 |
+| 2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md | Qualité API / audit brownfield — **clos Epic 26** (26.1–26.5 + rétro 2026-04-23) | archive | 2026-04-19 | 2026-04-23 |

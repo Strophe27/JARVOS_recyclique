@@ -1,6 +1,6 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-04-22
+Mis a jour : 2026-04-23
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md) (v0.1.0 → v1.0.0).
 
@@ -39,6 +39,8 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 **Architecture complétée** (2026-02-26) : `_bmad-output/planning-artifacts/architecture.md` — décisions techniques, patterns, structure projet, validation ; statut READY FOR IMPLEMENTATION. Points à trancher en v0.1 : [checklist 2026-02-26_03](artefacts/2026-02-26_03_checklist-v0.1-architecture.md).
 
 ## Derniere session
+
+2026-04-23 — **Epic 26 — Dette qualité API (`recyclique/api/`, audit brownfield 2026-04-19)** : stories **26.1 … 26.5** livrées (pytest canonique + retrait `AdminService` orphelin, extraction service admin users/groups, convention async/ORM pilote catégories, PEP 604 vague 1 schémas, ruff + repository + ADR guide tests + trace **F7–F11**). **`epic-26`** et **`epic-26-retrospective`** → **`done`** dans **`_bmad-output/implementation-artifacts/sprint-status.yaml`** ; **rétrospective** [Epic 26 — 2026-04-23](../_bmad-output/implementation-artifacts/epic-26-retro-2026-04-23.md). Travail sur la branche **`epic/26`** ; fiche Kanban refactor API → [archive](idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md).
 
 2026-04-22 — **Epic 25 — Socle alignement PRD / brownfield / multisite & phase 2** : travail consolidé sur la branche **`epic/25-socle-alignement-prd-architecture`** ; **25.1 … 25.15** livrées (cadrage vision + ADR PIN/async Paheko + spec multisite + levée gel BMAD + `CONTEXT_STALE` + chaîne Paheko/outbox + contrats enveloppe + audits Redis + logs opérateur + step-up + spikes sans PWA). **`epic-25`** → **`done`** dans **`_bmad-output/implementation-artifacts/sprint-status.yaml`** ; **rétrospective** [Epic 25 — 2026-04-22](../_bmad-output/implementation-artifacts/epic-25-retro-2026-04-22.md). Fiche Kanban alignement PRD → [archive](idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md).
 

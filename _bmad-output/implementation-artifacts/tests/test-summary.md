@@ -1,5 +1,7 @@
 # Synthèse tests automatisés (bmad-qa-generate-e2e-tests)
 
+**Navigation Epic 26 :** sections regroupées en tête de fichier (`Story 26.5` → `26.2`). Recherche IDE : `## Story 26.` Point d’entrée catalogue : entrée **Synthèse tests (QA / bmad-qa)** dans `references/index.md`.
+
 ---
 
 ## Story 26.5 — P2 outillage : ruff, F1 repository, ADR guide tests, README (2026-04-22)

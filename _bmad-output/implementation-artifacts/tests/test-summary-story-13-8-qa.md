@@ -4,6 +4,8 @@
 
 **Date (gate QA)** : 2026-04-12
 
+**Clôture pilotage (2026-04-23)** : story **13.8** et **Epic 13** portés **`done`** dans `sprint-status.yaml` ; compléments **T2/T4** et tests additionnels (ex. `cashflow-nominal-wizard-kiosk-micro-rail-flow.test.tsx`) réalisés dans des runs ultérieurs — voir fichier story `_bmad-output/implementation-artifacts/13-8-implementer-la-traduction-kiosque-legacy-retenue-dans-peintre-nano.md` et `epic-13-retro-2026-04-23.md`.
+
 ## Tests validés (exécution Task Story Runner)
 
 ### Intégration UI (`peintre-nano/tests/unit/`)

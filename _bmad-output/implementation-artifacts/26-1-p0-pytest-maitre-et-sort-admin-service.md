@@ -10,7 +10,7 @@ Status: done
 
 - **Recherche BMAD** (état des lieux dépôt + QA2) : `_bmad-output/planning-artifacts/research/technical-dette-qualite-api-audit-brownfield-research-2026-04-22.md` — vérités à implémenter : **`pytest.ini`** encore résolu comme **`inifile`** / **`configfile`** en présence de **`pyproject.toml`** ; **`AdminService`** sans consommateur sous `recyclique/api/`.
 - **Audit source** : `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md` — backlog §9 **P0** (pytest maître unique ; sort `AdminService`), findings **F3**, **F6**, checklist §8 (pytest / async).
-- **Kanban** : `references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` — intention « dette qualité API » (orthogonal epic produit fermé).
+- **Kanban** : `references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` — intention « dette qualité API » (**archivée**, clos Epic 26).
 
 ## Décision produit / tech à figer avant ou au début du DS (NEEDS_HITL acceptable)
 

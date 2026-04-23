@@ -31,7 +31,7 @@ inputDocuments:
   - references/vision-projet/2026-04-19_prd-recyclique-architecture-permissions-multisite-kiosques-bmad.md
   - _bmad-output/planning-artifacts/research/technical-alignement-brownfield-prd-recyclique-multisite-permissions-research-2026-04-19.md
   - references/idees-kanban/archive/2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md
-  - references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
+  - references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
   - references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md
   - _bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md
   - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
@@ -127,7 +127,7 @@ editHistory:
 
 **Gate :** avant d'epaissir massivement les stories sur le perimetre kiosque, executer le workflow **`bmad-check-implementation-readiness`** (PRD + architecture + epics alignes).
 
-**Chantier qualite API en parallele (pilotage, pas normatif produit au titre d'un PRD)** : `references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md` et `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md` — les **P0** audit sont un **garde-fou** pour les PR qui touchent Paheko/caisse. Ces deux chemins sont aussi listes en **`inputDocuments`** pour **tracabilite YAML** ; ils **ne remplacent pas** la hierarchie (1)–(4) ci-dessus.
+**Chantier qualite API (pilotage, pas normatif produit au titre d'un PRD) — clos Epic 26 au 2026-04-23** : trace Kanban **`references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`** et audit source `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md` ; exécution BMAD **`epic-26`** + rétro **`epic-26-retro-2026-04-23.md`**. Ces chemins restent en **`inputDocuments`** pour **tracabilite YAML** ; ils **ne remplacent pas** la hierarchie (1)–(4) ci-dessus.
 
 ### Stack Peintre_nano (figée)
 

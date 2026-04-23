@@ -19,6 +19,7 @@
 
 ## CONTEXT BOUNDARIES:
 
+- Resolve **`planning_artifacts`**, **`project_knowledge`**, **`output_folder`** using **`../workflow.md`** section « Résolution des chemins (config BMM) » — do not leave `{planning_artifacts}` / `{project_knowledge}` unresolved.
 - Variables from workflow.md are available in memory
 - Focus on existing project files and architecture decisions
 - Look for patterns, conventions, and unique requirements
@@ -44,12 +45,14 @@ Load and analyze project files to identify technologies:
 
 **Architecture Document:**
 
-- Look for `{planning_artifacts}/architecture.md`
+- Prefer `{planning_artifacts}/architecture/index.md` (or the project’s architecture entry file under `architecture/`). Only if missing, try `{planning_artifacts}/architecture.md` or `archive/architecture.md`.
+- **Exclude** legacy tree `recyclique-1.4.4/` from architecture/stack discovery unless the user explicitly asks for a legacy audit (see `../workflow.md` « Périmètre dépôt »).
 - Extract technology choices with specific versions
 - Note architectural decisions that affect implementation
 
 **Package Files:**
 
+- **JARVOS / Recyclique :** périmètre canon — **`peintre-nano/package.json`** (front **peintre-nano**) ; **`recyclique/api/pyproject.toml`** et `requirements.txt` (back **Recyclique API**). Ne pas prendre les dépendances du dossier legacy **`recyclique-1.4.4/`** comme vérité par défaut (`../workflow.md`).
 - Check for `package.json`, `requirements.txt`, `Cargo.toml`, etc.
 - Extract exact versions of all dependencies
 - Note development vs production dependencies

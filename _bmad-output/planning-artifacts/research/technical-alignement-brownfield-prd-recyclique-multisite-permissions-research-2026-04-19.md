@@ -7,7 +7,7 @@ inputDocuments:
   - _bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md
   - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
   - references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md
-  - references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
+  - references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md
   - references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md
   - _bmad-output/planning-artifacts/epics.md
   - _bmad/bmm/config.yaml
@@ -42,7 +42,7 @@ scope_confirmed_by_user_request: true
 
 Le PRD « vision » du 2026-04-19 fixe une cible forte : **PWA offline-first**, **PIN / identité kiosque** avec règles fines (soft-lock, escalade), **file Redis** pour toute écriture Paheko, **analytique multi-sites** immuable après première vente. L’API Recyclique couvre déjà des briques proches : **auth opérateur par PIN côté serveur** (hash en base) suivie d’un **JWT de session** (changement d’opérateur caisse) — à ne pas confondre avec le **token matériel kiosque** et le **PIN « local au secret kiosque »** décrits au PRD pour le poste PWA. **Outbox Paheko transactionnelle en base** et **site_id** sur caisse complètent le rapprochement brownfield, avec écarts sur **outbox SQL vs « job Redis »** et **modèle de confiance PIN** (serveur vs local PRD).
 
-**Recommandation courte :** matière première pour **`bmad-edit-prd`** (skill Cursor) et ADR ; gate **`bmad-check-implementation-readiness`** avant d’alourdir les epics. En parallèle, le **chantier refactor API** (P0 audit : pytest unique, `AdminService`) reste **orthogonal** au multisite mais constitue un **prérequis de qualité** pour toucher Paheko/caisse sans dette explosive — aligner conventions (voir §4 et §7).
+**Recommandation courte :** matière première pour **`bmad-edit-prd`** (skill Cursor) et ADR ; gate **`bmad-check-implementation-readiness`** avant d’alourdir les epics. Le **chantier refactor API** (P0 audit : pytest unique, `AdminService`) était **orthogonal** au multisite ; il est **clos** (**Epic 26**, 2026-04-23) — aligner conventions sur les livrables **`epic-26-*`** si besoin (voir §4 et §7).
 
 **Convention d’invocation BMAD dans ce dépôt :** les skills installés sous `.cursor/skills/` portent des noms **courts** (`bmad-edit-prd`, `bmad-correct-course`, `bmad-check-implementation-readiness`, `bmad-document-project`). Le fichier `_bmad/_config/bmad-help.csv` peut les préfixer `**bmad-bmm-*`** : **même intention**, commande affichée différente selon l’entrée (chat skill vs catalogue CSV).
 

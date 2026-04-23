@@ -2633,6 +2633,8 @@ L'equipe peut prolonger la parite UI amorcee par la story 11.3 sur les ecrans et
 
 **Repere de lecture operationnel :** repartir de la matrice et des preuves de l'Epic 11, puis ouvrir un pack dedie pour les extensions caisse encore visibles au legacy (variants, retours, cloture, signaux, raccourcis si confirmes).
 
+**Pilotage YAML :** `epic-13` **done** au 2026-04-23 (`_bmad-output/implementation-artifacts/sprint-status.yaml`) ; stories **13.1–13.8** **done**. La story **13.8** matérialise la traduction kiosque post-blueprint **13.7** ; les compléments après la tranche documentée au **2026-04-12** sont traçables dans le fichier story **13.8** (Dev Agent Record) et dans `peintre-nano/docs/03-contrats-creos-et-donnees.md`. Rétrospective : `epic-13-retro-2026-04-23.md`.
+
 ### Story 13.1: Retrouver les ecrans caisse adjacents au kiosque observable dans `Peintre_nano`
 
 As a cashier with an active session,
@@ -3266,7 +3268,7 @@ So that the final users epic delivers observable parity without smuggling unreso
 
 L'equipe ajoute un rail correctif dedie pour aligner la caisse, la cloture de session, le parametrage comptable et la synchronisation `Paheko` sur le PRD du `2026-04-15`, sans reecrire artificiellement l'historique **done** des Epics 6 et 8. Cet epic introduit la chaine canonique **referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable fige -> builder d'ecritures `Paheko` -> batch outbox idempotent par session**.
 
-**Note agents (create-story / review) :** cet epic est un rail correctif **CASH-COMPTA**. Il rebase les verites metier et comptables sans invalider la fondation historique de terrain (`Epic 6`) ni la fondation transport/sync (`Epic 8`). Les dependances critiques sont : `Epic 10` pour les preuves et gates, `Epic 16` pour les controles super-admin sensibles, `Epic 13.8` en mode **finish-only si compatible transition**, `Epic 14.3` / `14.4` / `14.5` en **pause par defaut** des que la semantique comptable ou le parametrage sensible est en jeu, et `Epic 18` conserve uniquement une valeur de preuve UI historique, sans autorite sur la future semantique comptable.
+**Note agents (create-story / review) :** cet epic est un rail correctif **CASH-COMPTA**. Il rebase les verites metier et comptables sans invalider la fondation historique de terrain (`Epic 6`) ni la fondation transport/sync (`Epic 8`). Les dependances critiques sont : `Epic 10` pour les preuves et gates, `Epic 16` pour les controles super-admin sensibles, `Epic 13` (**terminé**, 2026-04-23) — la contrainte historique « **finish-only** » sur le portage kiosque **13.8** ne s’applique plus aux décisions **post-clôture** ; `Epic 14.3` / `14.4` / `14.5` en **pause par defaut** des que la semantique comptable ou le parametrage sensible est en jeu, et `Epic 18` conserve uniquement une valeur de preuve UI historique, sans autorite sur la future semantique comptable.
 
 **FRs covered:** FR4, FR24, FR25, FR26, FR27, FR28, FR39, FR42, FR57, FR66, FR67, FR69, FR70
 
@@ -3827,7 +3829,7 @@ So that future PWA work has an honest go/no-go without pretending the global **N
 
 ## Epic 26: Dette qualité API Recyclique (`recyclique/api/`)
 
-**Goal:** Réduire la dette de style, de structure et d’outillage décrite dans l’audit brownfield du **2026-04-19**, en traitant en priorité les actions **P1** du tableau §9 (stories **26.2–26.4**, **`done`**) puis les actions **P2** (**26.5**, **`done`** au pilotage **2026-04-22**). Les **P2** ont pu **démarrer en parallèle** des **P1** lorsque le périmètre restait borné (outillage, documentation, **ruff**) et **sans conflit** avec les fichiers touchés par **26.3** / **26.4** ; sinon **26.5** était planifiée après ou en chevauchement contrôlé. Ne pas élargir hors constats d’audit (§7 **F1–F11**, §9). **Traçabilité :** **F6** (double configuration pytest) **clos** avec **26.1** ; **F3** (`AdminService` orphelin) **clos** avec **26.1**. L’Epic est **transverse backend** ; il ne remplace pas les epics métier (caisse, Paheko, admin Peintre) mais cadre les refactors localisés et les garde-fous CI/doc. **État :** toutes les stories **26.1–26.5** sont **`done`** ; **`epic-26`** est **`done`** dans `sprint-status.yaml` — prochaine étape process : rétrospective **`epic-26-retrospective`** (optionnelle selon équipe).
+**Goal:** Réduire la dette de style, de structure et d’outillage décrite dans l’audit brownfield du **2026-04-19**, en traitant en priorité les actions **P1** du tableau §9 (stories **26.2–26.4**, **`done`**) puis les actions **P2** (**26.5**, **`done`** au pilotage **2026-04-22**). Les **P2** ont pu **démarrer en parallèle** des **P1** lorsque le périmètre restait borné (outillage, documentation, **ruff**) et **sans conflit** avec les fichiers touchés par **26.3** / **26.4** ; sinon **26.5** était planifiée après ou en chevauchement contrôlé. Ne pas élargir hors constats d’audit (§7 **F1–F11**, §9). **Traçabilité :** **F6** (double configuration pytest) **clos** avec **26.1** ; **F3** (`AdminService` orphelin) **clos** avec **26.1**. L’Epic est **transverse backend** ; il ne remplace pas les epics métier (caisse, Paheko, admin Peintre) mais cadre les refactors localisés et les garde-fous CI/doc. **État :** toutes les stories **26.1–26.5** sont **`done`** ; **`epic-26`** et **`epic-26-retrospective`** sont **`done`** dans `sprint-status.yaml` ; **rétrospective** `_bmad-output/implementation-artifacts/epic-26-retro-2026-04-23.md`.
 
 **Périmètre:** package `recyclique/api/` — routes, services, schémas, tests, configuration pytest/outillage tel que nommé par l’audit.
 
@@ -3837,9 +3839,9 @@ So that future PWA work has an honest go/no-go without pretending the global **N
 
 - Audit : `references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md` (§7 findings, §8 checklist PR, §9 backlog **P0–P2**).
 - Recherche état dépôt : `_bmad-output/planning-artifacts/research/technical-dette-qualite-api-audit-brownfield-research-2026-04-22.md`.
-- Kanban chantier : `references/idees-kanban/a-faire/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`.
+- Kanban chantier (**archivée**, clos Epic 26) : `references/idees-kanban/archive/2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md`.
 
-**État au pilotage (2026-04-22):**
+**État au pilotage (2026-04-23, post-rétro):**
 
 - **Story 26.1** (**P0**) — **`done`** : pytest **une seule source de vérité** (`pyproject.toml`, suppression de `pytest.ini`) ; **`AdminService`** **supprimé** (code orphelin, aucun appel sous `recyclique/api/`). Story : `_bmad-output/implementation-artifacts/26-1-p0-pytest-maitre-et-sort-admin-service.md`. Trace P0 : `_bmad-output/implementation-artifacts/2026-04-22-cloture-p0-pytest-story-26-1.md`.
 - **Story 26.2** (**P1**) — **`done`** : logique `admin_users_groups` extraite vers un service dédié (`admin_user_groups_assignment_service` — pas de restauration du nom **`AdminService`**), endpoint allégé, régression testée. Story : `_bmad-output/implementation-artifacts/26-2-extraire-admin-users-groups-vers-service.md`.
@@ -3863,7 +3865,7 @@ La suppression du module **`AdminService`** (**F3**, décision P0 audit) **n’a
 | **P1** (**clos** au pilotage) | Extraire la logique **admin groups** vers un **service** | **F4** | **26.2** — statut **`done`** |
 | **P1** (**clos** au pilotage) | Normaliser **async** vs **ORM synchrone** (categories & similaires) | **F2** | **26.3** — statut **`done`** |
 | **P1** (**clos** au pilotage) | Convention **`Optional` → `T \| None`** sur fichiers touchés | **F5** | **26.4** — statut **`done`** |
-| **P2** (**clos** au pilotage) | **Ruff** (lint + format) aligné black/isort ; stratégie **repository** au-delà réception ; **guide stabilisation tests** ou ADR « pas de guide séparé » | **F1**, §6.6, §8.7 | **26.5** — statut **`done`** |
+| **P2** (**clos** au pilotage) | **Ruff** (lint + format) aligné black/isort ; stratégie **repository** au-delà réception ; clôture « guide stabilisation » par **ADR** datée (fichier canon `2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md`, pas un artefact nommé littéralement `TESTS_STABILIZATION_GUIDE`) | **F1**, §6.6, §8.7 | **26.5** — statut **`done`** |
 
 **Findings hors lignes P\* du tableau §9** (**F7** isolation tests, **F8** langue docstrings, **F9** `ConflictError.detail`, **F10** Docker/`[dev]`, **F11** `collect_ignore`) : traités comme **garde-fous** dans la checklist §8 audit et la **Definition of Done** des stories **26.x** **dès qu’une PR modifie un fichier concerné** ; pas d’épique élargie hors dette audit sans arbitrage produit séparé. **Lien avec la story 26.5 :** la *Note* sous **26.5** précise le même distinguo — « hors livrable obligatoire isolé » **≠** dispense si le fichier est touché.
 
@@ -3871,11 +3873,11 @@ La suppression du module **`AdminService`** (**F3**, décision P0 audit) **n’a
 
 - **Priorité métier :** les **P1** **26.2**, **26.3**, **26.4** et le **P2** **26.5** sont **`done`** au pilotage (**2026-04-22**).
 - **26.4** (**`done`**) : vague schémas PEP 604 livrée ; toute PR future qui édite d’autres `schemas/*.py` doit **finaliser** la forme **`T | None`** dans le fichier touché (règle story 26.4).
-- **26.5** (**`done`**) : ruff, doc F1, ADR `TESTS_STABILIZATION_GUIDE` — livrés story **26.5** (pas de chevauchement résiduel à documenter ici).
+- **26.5** (**`done`**) : ruff, doc F1, ADR « pas de guide séparé » (`_bmad-output/planning-artifacts/architecture/2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md`) — livrés story **26.5** (pas de chevauchement résiduel à documenter ici ; ne pas confondre avec un fichier nommé littéralement `TESTS_STABILIZATION_GUIDE`).
 
 ### Checklist clôture Epic 26 (F7–F11 hors lignes P\* du tableau)
 
-Avant de porter **`epic-26`** au statut **`done`** dans `sprint-status.yaml` : confirmer qu’une **revue** ou des **PR** ayant traversé les zones concernées ont soit **traité**, soit **explicitement reporté avec propriétaire** les points **F7–F11** pertinents (tests, docstrings, `ConflictError`, Docker/`[dev]`, `collect_ignore`), conformément aux garde-fous ci-dessus — ou documenter pourquoi un point reste volontairement ouvert hors périmètre audit.
+**Clôture au pilotage (2026-04-22) :** ces critères ont été vérifiés pour **`epic-26`** **`done`** dans `sprint-status.yaml` — une **revue** ou des **PR** sur les zones concernées ont soit **traité**, soit **explicitement reporté avec propriétaire** les points **F7–F11** pertinents (tests, docstrings, `ConflictError`, Docker/`[dev]`, `collect_ignore`), conformément aux garde-fous ci-dessus — ou documenté pourquoi un point reste volontairement ouvert hors périmètre audit.
 
 **Trace obligatoire :** remplir (ou remplacer par équivalent signé en rétrospective) le fichier `_bmad-output/implementation-artifacts/epic-26-cloture-f7-f11-trace.md` avec le tableau **F7–F11** × statut et références — c’est la preuve vérifiable attendue pour la clôture process.
 
@@ -3934,8 +3936,6 @@ So that the codebase converges without a one-shot mass edit (**F5**, audit §5.8
 **And** modified schemas do not mix styles in the same file without justification
 **And** no unrelated product schema change is bundled
 
-**Cle YAML prévue :** `26-4-schemas-pep604-convention-et-premiere-vague`
-
 ### Story 26.5: P2 — Outillage et documentation : ruff, stratégie repository, traçabilité tests (**done**)
 
 **Cle pilotage YAML :** `26-5-outillage-et-doc-p2-ruff-repository-guide-tests` — statut **`done`**. Détail : `_bmad-output/implementation-artifacts/26-5-outillage-et-doc-p2-ruff-repository-guide-tests.md` ; ADR guide tests : `_bmad-output/planning-artifacts/architecture/2026-04-22-adr-tests-stabilization-no-separate-guide-epic-26.md`.
@@ -3951,7 +3951,5 @@ So that P2 items from the audit do not stall as tribal knowledge (**F1**, §6.6,
 **Then** **ruff** is introduced or rejected with a recorded rationale ; if introduced, configuration matches team conventions and CI/doc points contributors to install paths
 **And** the double norme reception-vs-rest is either generalized minimally or documented with boundaries (no silent obligation to rewrite all services)
 **And** the legacy missing `TESTS_STABILIZATION_GUIDE.md` situation is closed by restoring content, archiving, or an explicit ADR « no separate guide » plus README alignment
-
-**Cle YAML prévue :** `26-5-outillage-et-doc-p2-ruff-repository-guide-tests`
 
 **Note (périmètre story vs garde-fous F7–F11) :** les livrables **obligatoires isolés** de **26.5** sont **ruff** / stratégie repository / traçabilité guide tests (cf. AC). Les points **F9**, **F11**, **F8** (et, par extension, **F7**, **F10**) ne sont **pas** des micro-stories forcées dans **26.5**. **En revanche**, dès qu’une **PR** modifie `exceptions.py`, `conftest.py`, les schémas, le `Dockerfile`, etc., les **garde-fous** du paragraphe « Findings hors lignes P* » **s’appliquent** dans le **DoD de cette PR** — ce n’est **pas** une autorisation à les ignorer tant que le fichier est ouvert.
