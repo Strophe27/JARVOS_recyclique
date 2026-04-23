@@ -6,7 +6,7 @@
 
 - **`planning-artifacts/`** — livrables actifs : PRD, architecture, epics, UX, recherche, etc. (à produire via les workflows BMAD).
 - **`planning-artifacts/guide-pilotage-v2.md`** — pilotage d’**exécution** v2 (deux récits de rythme, convergences, jalons à cocher, carte des emplacements documentaires, frictions, prompt superviseur). **Abstract canonique** : [references/index.md](../references/index.md) (section État et suivi).
-- **`implementation-artifacts/`** — sprint, stories, statuts d’implémentation.
+- **`implementation-artifacts/`** — sprint, stories, statuts d’implémentation ; **source de vérité du statut** : `sprint-status.yaml` — **cle racine** `last_updated` + **`development_status`** (les lignes `# last_updated:` en tête de fichier sont un **journal** opérationnel, pas l’état normatif ; détail : [`guide-pilotage-v2.md`](planning-artifacts/guide-pilotage-v2.md) §1 — ordre de chargement agent).
 - **Repères Epics 6 a 10** — point d’entrée documentaire pour les flows critiques, la sync `Paheko`, les modules complémentaires et la readiness : [references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md](../references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md) puis [references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md](../references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md).
 
 ## Archive
