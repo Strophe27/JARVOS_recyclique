@@ -32,6 +32,10 @@
 - **[epic-25-phase2-dag-2026-04-21.yaml](./epic-25-phase2-dag-2026-04-21.yaml)** — **Graphe machine** des stories **25.6–25.15** (`depends_on`, ordre recommandé) pour pilotage et agents ; complète `sprint-status.yaml` et `epics.md` §25.
 - **[2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md](./2026-04-20-spec-socle-multisite-permissions-invariants-poste-kiosque-projection-recyclique-paheko.md)** — **Spec convergée** (story **25.4**) : invariants `site` / `caisse` / `session` / poste·kiosque, permissions additives, changement de contexte (renvoi **ADR 25-2**), règles de projection vers Paheko (mapping obligatoire, échec visible, pas de substitution silencieuse, blocage / supervision / quarantaine), stories aval prêtes vs gated ; cite explicitement `prd.md`, PRD vision 2026-04-19, research multisite, readiness 2026-04-19.
 
+## Modularité v2 (pack protocole — ADR-007)
+
+- **[2026-05-20-adr-007-reconciliation-modularite-v01-v2.md](./2026-05-20-adr-007-reconciliation-modularite-v01-v2.md)** — **Accepted** HITL Strophe 2026-05-20 : abandon v0.1 (TOML UI, `ModuleBase`, EventBus module) ; v2 = CREOS + JSON `module_key` + routers explicites. Source pack : [`references/protocole-modules-recyclique/07-MOD-adr-reconciliation-v01-v02.md`](../../../references/protocole-modules-recyclique/07-MOD-adr-reconciliation-v01-v02.md) · reco : [`references/artefacts/2026-05-20_06_reco-hitl-post-bouclage-modules-v2.md`](../../../references/artefacts/2026-05-20_06_reco-hitl-post-bouclage-modules-v2.md).
+
 ## Hypothèses post-V2 (hors backlog, non sprint)
 
 - **[post-v2-hypothesis-marketplace-modules.md](./post-v2-hypothesis-marketplace-modules.md)** — Marketplace / modules complémentaires (distribution, activation) **séparé** du cœur métier Recyclique ; alignement avec contrats v2 ; pas d’epic tant que non promu. Visible depuis [references/index.md](../../../references/index.md).

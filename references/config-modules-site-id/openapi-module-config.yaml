@@ -1,3 +1,6 @@
+# DEPRECATED — merged into contracts/openapi/recyclique-api.yaml on 2026-05-20.
+# Ne pas consommer ce fichier seul pour codegen ou contrats CREOS ; utiliser le contrat canonique.
+
 openapi: 3.1.0
 info:
   title: Recyclique — Configuration par module et par site (brouillon)

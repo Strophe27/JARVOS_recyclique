@@ -8,12 +8,12 @@
     ],
     "beforeSubmitPrompt": [
       {
-        "command": "cmd /c python .cursor/hooks/cursor_hooks_diagnostic.py"
+        "command": "cmd /c python .cursor/hooks/log_before_submit_prompt.py"
       }
     ],
     "afterAgentResponse": [
       {
-        "command": "cmd /c python .cursor/hooks/log_after_agent_response.py"
+        "command": "cmd /c python .cursor/hooks/log_after_agent_orchestrator.py"
       }
     ]
   }

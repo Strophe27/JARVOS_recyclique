@@ -21,3 +21,9 @@ Pattern retenu dans `references/artefacts/2026-02-24_07_design-systeme-modules.m
 A creuser : implementation concrete du hook React `useModuleExtensions`, registre des slots cote frontend.
 
 Passage a a-creuser.
+
+---
+
+## 2026-05-20 — Gardien du seuil (conscience d'affichage)
+
+Au-delà des slots CREOS : une **couche agent** peut valider ou corriger l'ergonomie avant/après insertion dynamique d'un widget — voir [`2026-05-20_peintre-gardeien-seuil-conscience-affichage.md`](2026-05-20_peintre-gardeien-seuil-conscience-affichage.md). Réceptacles v2 même si bypass initial.

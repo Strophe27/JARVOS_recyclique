@@ -2,6 +2,7 @@ from ..core.database import Base
 
 from .user import User, UserRole, UserStatus
 from .site import Site
+from .site_module_config import SiteModuleConfig
 from .deposit import Deposit
 from .sale import Sale
 from .sale_reversal import SaleReversal, RefundReasonCode
@@ -46,6 +47,7 @@ __all__ = [
     "UserRole",
     "UserStatus",
     "Site",
+    "SiteModuleConfig",
     "Deposit",
     "Sale",
     "SaleReversal",

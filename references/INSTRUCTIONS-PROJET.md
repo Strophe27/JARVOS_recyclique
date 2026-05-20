@@ -23,6 +23,7 @@
 | `dumps/` | Dumps BDD sensibles (Paheko, Recyclic prod) pour analyse locale — gitignore |
 | `vrac/` | Fichiers non classes ou sensibles (gitignore) |
 | `ecosysteme/` | References ecosysteme JARVOS Recyclique (gitignore). **Referencer, ne pas copier** : les docs ecosysteme ont un seul emplacement canonique. |
+| `jarvos-agentique/` | Memoire agentique : porte d'entree normative, patterns, index plans ; fiches session courtes sous `sessions/` |
 
 **Regle** : ne pas deposer de fichiers directement a la racine de `references/` sans raison justifiee. Toujours utiliser le bon sous-dossier.
 

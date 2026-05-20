@@ -1,0 +1,1 @@
+{"schema_version":"0.1","line_kind":"response","session_id":"demo-session-001","recorded_at":"2026-05-21T10:00:02Z","conversation_id":"00000000-0000-4000-8000-000000000001","generation_id":"00000000-0000-4000-8000-000000000003","hook_event":"afterAgentResponse","model":"default","text_len":42,"source":"fixture"}

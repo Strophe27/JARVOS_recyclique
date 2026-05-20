@@ -31,3 +31,4 @@ Une ligne par idée. Mise à jour par le skill `idees-kanban` à chaque créatio
 | 2026-03-01_workflow-evenements-caisse-recyclique-paheko.md | Workflow evenements caisse RecyClique vers Paheko (couvert par clôture Paheko + admin — mis de côté) | archive | 2026-03-01 | 2026-04-21 |
 | 2026-04-19_aligner-brownfield-prd-architecture-permissions-bmad.md | Aligner brownfield vs PRD multisite — **clos Epic 25** (15 stories + rétro 2026-04-22) | archive | 2026-04-19 | 2026-04-22 |
 | 2026-04-19_chantier-refactor-api-recyclique-audit-brownfield-handoff.md | Qualité API / audit brownfield — **clos Epic 26** (26.1–26.5 + rétro 2026-04-23) | archive | 2026-04-19 | 2026-04-23 |
+| 2026-05-20_peintre-gardeien-seuil-conscience-affichage.md | Peintre — gardien du seuil / conscience d'affichage (agent IA, ergonomie, hooks v2) | a-creuser | 2026-05-20 | 2026-05-20 |

@@ -4,6 +4,8 @@ Pack **normatif** pour la configuration des modules **persistée serveur**, **sc
 
 **Ce n’est pas** une implémentation backend : les chemins OpenAPI sont un **brouillon** avant fusion dans `contracts/openapi/recyclique-api.yaml`.
 
+**Crosswalk pack (écarts L-04 / L-06, plan T-MOD-3) :** [`references/protocole-modules-recyclique/18-MOD-config-modules-crosswalk.md`](../protocole-modules-recyclique/18-MOD-config-modules-crosswalk.md).
+
 ---
 
 ## Fichiers principaux
@@ -33,3 +35,5 @@ Répertoire [schemas/](schemas/README.md) : schémas **payload** par `module_key
 ---
 
 _Charger ce dossier pour : session **implémentation** configuration modules, **revue sécu**, **story OpenAPI**, ou alignement **Peintre** bandeau / SuperAdmin._
+
+> **Gate (2026-05-20, T-MOD-3)** : `openapi-module-config.yaml` est deprecie ; les routes `GET`/`PATCH` `/v1/sites/{site_id}/module-config/{module_key}` et le schema `ModuleConfigDocument` sont dans `contracts/openapi/recyclique-api.yaml` uniquement. Ne pas generer de client depuis le YAML standalone.

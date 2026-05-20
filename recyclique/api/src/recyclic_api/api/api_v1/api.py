@@ -32,6 +32,7 @@ from .endpoints import (
     admin_paheko_outbox_router as admin_paheko_outbox,
     admin_paheko_mapping_router as admin_paheko_mapping,
     admin_accounting_expert_router as admin_accounting_expert,
+    module_config_router as module_config,
 )
 
 api_router = APIRouter()
@@ -40,6 +41,7 @@ api_router = APIRouter()
 api_router.include_router(health, prefix="/health", tags=["health"])
 api_router.include_router(users, prefix="/users", tags=["users"])
 api_router.include_router(sites, prefix="/sites", tags=["sites"])
+api_router.include_router(module_config, prefix="/sites", tags=["ModuleConfig"])
 api_router.include_router(deposits, prefix="/deposits", tags=["deposits"])
 api_router.include_router(sales, prefix="/sales", tags=["sales"])
 api_router.include_router(cash_sessions, prefix="/cash-sessions", tags=["cash-sessions"])

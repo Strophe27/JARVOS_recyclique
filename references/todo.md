@@ -33,5 +33,6 @@
 - [x] Formaliser checklist "copy+consolidate+security" pour import code depuis 1.4.4 — fait : references/ancien-repo/checklist-import-1.4.4.md (appliquer à chaque pioche dans 1.4.4)
 - [x] Inventorier usages LLM actuels dans Recyclic 1.4.4 — fait : import Excel, categories non normees → rapprochement LLM (2026-02-25)
 - [ ] Definir strategie LLM/IA : hardcodé + placeholder Ganglion vs. JARVOS Nano/Mini — reportee apres brief (v0.1.0 = placeholder)
+- [ ] Peintre — gardien du seuil / conscience d'affichage (hooks v2, bypass, outils agent TBD) — idée Kanban 2026-05-20 · pack **L-16** / **T-PEINT-1** · [`04-MOD-protocole-front-creos.md`](protocole-modules-recyclique/04-MOD-protocole-front-creos.md) §17
 - [x] Mise en place de la structure de travail (2026-02-24)
 - [x] Plan Git : tests, procedure, subagent @git-specialist, regle git-workflow (2026-02-24)

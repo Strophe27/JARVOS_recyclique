@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://references.jarvos.recyclique/config-modules-site-id/schemas/config-admin-simple.v1.json",
+  "title": "Module config-admin-simple payload v1 (placeholder Story 9.6)",
+  "description": "Placeholder P1 2026-05-20. La config admin simple (activation modules, ordre blocs simples) est surtout portee par merge manifests build + surcharges PostgreSQL ADR P2 ; ce payload JSON reste minimal tant que le perimetre module_key n'est pas fige en HITL.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

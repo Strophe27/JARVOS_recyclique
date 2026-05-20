@@ -15,3 +15,9 @@ Intention : a-creuser
 **Inventaire** : usage LLM dans 1.4.4 = assistance import Excel (categories non normees → appels LLM pour rapprochement vers categories de l'app). Pas d'autre usage identifie.
 
 **Decision** : v0.1.0 = placeholder (Ganglion) + decision strategique reportee apres le Brief. Imports intelligents (Excel, papier, vocal) = potentiellement modules optionnels open core, a trancher plus tard.
+
+---
+
+## 2026-05-20 — Lien gardien du seuil Peintre
+
+Couche **conscience d'affichage** / agent « pense la page » : fiche dédiée [`2026-05-20_peintre-gardeien-seuil-conscience-affichage.md`](2026-05-20_peintre-gardeien-seuil-conscience-affichage.md) — complémentaire aux modules « intelligents » métier (import, classification) ; concerne **toute** modification d'UI dynamique (module CREOS, agent Cursor).

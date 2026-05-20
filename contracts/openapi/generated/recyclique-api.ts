@@ -2864,10 +2864,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sites/{site_id}/module-config/{module_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lire la configuration d'un module pour un site
+         * @description **API interne Recyclique** (tag `ModuleConfig`) : non stable pour applications JARVOS externes tant que Story 9.6 n'est pas livree.
+         *     Reponse **specifique au tenant et au sujet authentifie** ; en-tetes cache appropries (`private` ou `no-store` selon politique).
+         *     Le serveur ne doit pas faire confiance au seul `site_id` d'URL : verifier **membership** et **droits sur `module_key`**.
+         */
+        get: operations["recyclique_moduleConfig_getSiteModuleConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mettre a jour la configuration d'un module pour un site
+         * @description **API interne Recyclique** (tag `ModuleConfig`) : non stable pour applications JARVOS externes tant que Story 9.6 n'est pas livree.
+         *     Corps valide contre le JSON Schema du **module** et de sa **schema_version**.
+         *     **If-Match** : pour une detection stricte des conflits, envoyer la valeur **ETag** du dernier GET ;
+         *     si elle ne correspond pas a la version persistee -> **409**. Si **If-Match** est **absent**, le comportement
+         *     doit etre defini explicitement a l'implementation (ex. derniere ecriture gagnante toleree, ou refus **428**
+         *     / erreur metier si politique stricte - a figer avant implementation).
+         *     Rejet taille corps / profondeur **avant** travail couteux (reject-early). Limites globales du document
+         *     JSON sont imposees **cote serveur** (middleware / parse borne) : voir `references/config-modules-site-id/livrable-normatif-architecture.md`.
+         */
+        patch: operations["recyclique_moduleConfig_patchSiteModuleConfig"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Enveloppe commune configuration module par site. Plafonds de **taille totale** et **profondeur** du JSON
+         *     imposes par la configuration serveur (reject-early) ; voir livrable normatif config-modules-site-id.
+         */
+        ModuleConfigDocument: {
+            /**
+             * @description Version du schema **du module** (SemVer recommande).
+             * @example 1.0.0
+             */
+            schema_version: string;
+            /** @description Charge utile validee par le schema JSON du module pour `schema_version`. Voir `references/config-modules-site-id/schemas/`. */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** @description Optionnel - contrepartie entiere de l'ETag si le produit prefere un corps explicite. */
+            version?: number;
+        };
         /** @enum {string} */
         AdminBulkExportFormat: "csv" | "excel";
         AdminBulkCashSessionsExportRequest: {
@@ -13425,6 +13475,174 @@ export interface operations {
             };
             /** @description Erreur serveur */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_moduleConfig_getSiteModuleConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifiant du site. Non suffisant seul pour autoriser (membership serveur obligatoire). */
+                site_id: string;
+                /** @description Cle **liste blanche** alignee registre serveur / CREOS (ex. `kpi-live-banner`). */
+                module_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document de configuration courant */
+            200: {
+                headers: {
+                    /** @description Version opaque pour optimistic locking (RFC 7232 / usage projet). */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleConfigDocument"];
+                };
+            };
+            /** @description Non authentifie */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Authentifie mais interdit pour ce site ou ce module */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Site inconnu, module inconnu (liste blanche), ou droits insuffisants masques en 404 si politique anti-fuite */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Reponse trop volumineuse si limite serveur (exceptionnel en GET) */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requetes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+        };
+    };
+    recyclique_moduleConfig_patchSiteModuleConfig: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag attendu pour optimistic locking (aligne sur le GET). */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description Identifiant du site. Non suffisant seul pour autoriser (membership serveur obligatoire). */
+                site_id: string;
+                /** @description Cle **liste blanche** alignee registre serveur / CREOS (ex. `kpi-live-banner`). */
+                module_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleConfigDocument"];
+            };
+        };
+        responses: {
+            /** @description Configuration mise a jour */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleConfigDocument"];
+                };
+            };
+            /** @description Non authentifie */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Authentifie mais interdit pour ce site ou ce module */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Idem GET */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Conflit de version (document modifie entre-temps ou politique de concurrence) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Payload trop volumineux */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description JSON invalide ou hors schema pour ce `module_key` / `schema_version` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecycliqueApiError"];
+                };
+            };
+            /** @description Trop de requetes */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

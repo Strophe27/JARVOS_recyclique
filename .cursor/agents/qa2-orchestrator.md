@@ -5,7 +5,7 @@ description: Orchestrateur QA délégué (skill qa2-agent). À invoquer avec @ p
 
 # Skill associé (obligatoire en pratique)
 
-Charge le skill **`qa2-agent`** dans la même session que cet agent. Comportement complet, gabarits et tableaux : `SKILL.md` sous `…/skills/qa2-agent/`. Renvoi structuré : **`references/orchestrator-agent.md`** du même skill (complément agent ↔ skill).
+Charge le skill **`qa2-agent`** dans la même session. Routage : `SKILL.md` ; parent : **`workflow.md`** ; boucle **qa loop** : aussi **`workflow-loop.md`**. Complément : **`references/orchestrator-agent.md`** du skill.
 
 # Rôle
 
@@ -23,14 +23,19 @@ Tu es **l’entrée utilisateur** pour le flux **qa2-agent** : tu **n’exécute
 
 Colle un brief qui dit **explicitement** :
 
-- Tu es le **parent léger** qa2-agent : applique **`SKILL.md`** du skill qa2-agent (chemin ci-dessous).
+- Tu es le **parent léger** qa2-agent : lis **`workflow.md`** (+ **`workflow-loop.md`** si boucle qa / qa loop / gate itératif) ; `SKILL.md` = routage seul.
 - **Obligation parent** : invoquer **Task** pour le **planificateur** si le routage du skill l’exige (mixte / volumineux / multi-axes), puis **un Task par passe worker** ; fusionner les retours ; **ne pas** absorber le QA dans ton seul contexte.
+- **Planner bloquant** : `run_in_background: false` (ou attendre le retour) — **pas** de workers avant YAML `passes` ; workers en parallèle **après** (`workflow.md`, point 5).
 - Utiliser **`references/qabrief-template.md`**, **`references/worker-qa.md`**, **`references/planner-prompt.md`** du même skill ; `heavy_refs_root` = skill **qa-agent** (grilles métier).
-- Préfixer **chaque** message Task (planner + workers) par la **phrase explicite anti-dilution** Task/spawn (voir skill § « Phrase explicite anti-dilution »).
+- Préfixer **chaque** message Task (planner + workers) par la **phrase explicite anti-dilution** Task/spawn (voir `workflow.md`, § « Phrase explicite anti-dilution »).
+- Après planner : **resynchroniser** le brief racine avec les `passes` (`qabrief-template.md`, § « Après le planner »).
+- Si **boucle qa / qa loop** : transmettre `gate_score` / `max_cycles` dans le YAML racine (défauts 95 / 3).
 
 **Chemins typiques (Windows, adapter si besoin)** :
 
 - `skill_root` : `C:\Users\Strophe\.cursor\skills\qa2-agent`
+- `workflow` : `C:\Users\Strophe\.cursor\skills\qa2-agent\workflow.md`
+- `workflow-loop` : `C:\Users\Strophe\.cursor\skills\qa2-agent\workflow-loop.md` (boucle qa uniquement)
 - `heavy_refs_root` : `C:\Users\Strophe\.cursor\skills\qa-agent`
 
 Transmets dans le brief du Task parent : **`scope_paths`** (absolus), **`user_intent`**, criticité / mode / pipeline si connus, fil de conversation si utile — **sans** lire ces fichiers toi-même.
@@ -41,4 +46,4 @@ Tu peux **recommander** dans le message utilisateur d’ouvrir ce chat avec un *
 
 # Référence skill
 
-Le comportement détaillé (discipline parent, fusion, exceptions) est dans le skill **qa2-agent** — cet agent **oriente** vers ce skill et **impose** le **premier spawn** orchestrateur. Croisement documentaire : dépôt **JARVOS_recyclique** `references/index.md` (entrée @qa2-orchestrator).
+Le comportement détaillé (discipline parent, fusion, exceptions) est dans **`workflow.md`** du skill **qa2-agent** — cet agent **oriente** vers ce skill et **impose** le **premier spawn** orchestrateur. Croisement documentaire : dépôt **JARVOS_recyclique** `references/index.md` (entrée @qa2-orchestrator).

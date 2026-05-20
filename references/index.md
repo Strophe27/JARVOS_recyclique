@@ -1,4 +1,4 @@
-# Index — JARVOS Recyclique v0.1.0
+﻿# Index — JARVOS Recyclique v0.1.0
 
 **Ligne directrice (2026-03-31) :** évolution **incrémentale** à partir du code **`recyclique-1.4.4`** stabilisé et nettoyé ; pas de réécriture « from scratch » comme plan conducteur. Les sorties BMAD actives ont été réinitialisées ; l’historique PRD/epics est sous `_bmad-output/archive/2026-03-31_pivot-brownfield-recyclique-1.4.4/`. Solo dev : Strophe. **Module BMM** : version **installateur 6.2.1** (voir `_bmad/bmm/config.yaml`) — ne pas se fier à d'éventuelles mentions d'une version BMAD plus ancienne dans les archives ou résumés datés.
 
@@ -49,8 +49,8 @@
 - **Subagent @git-specialist** — Expert Git du projet. Workflow et limites : voir `procedure-git-cursor.md`. Fichier : `.cursor/agents/git-specialist.md`.
   _(Charger si : délégation d’opérations Git à l’agent spécialisé.)_
 
-- **Subagent @qa2-orchestrator** — Entrée **orchestrateur** pour le skill personnel **qa2-agent** (QA délégué : planner YAML puis workers Task). Force un **premier `Task`** qui incarne le **parent** au lieu d’enchaîner toute la chaîne dans le chat (utile avec petits modèles). Fichier : `.cursor/agents/qa2-orchestrator.md`. Skills (deux dossiers distincts) : `~/.cursor/skills/qa2-agent/` et `~/.cursor/skills/qa-agent/` (Windows : `%USERPROFILE%\.cursor\skills\qa2-agent` et `…\qa-agent`).
-  _(Charger si : `/qa2-agent`, QA multi-passes, ou besoin de planificateur puis N sous-QA.)_
+- **Subagent @qa2-orchestrator** — Entrée **orchestrateur** pour le skill personnel **qa2-agent** (QA délégué : planner YAML bloquant puis workers Task). Force un **premier `Task`** parent au lieu d’enchaîner planner + N workers dans le chat. Fichier agent (dépôt) : [`.cursor/agents/qa2-orchestrator.md`](../.cursor/agents/qa2-orchestrator.md). Complément skill (poste local) : `%USERPROFILE%\.cursor\skills\qa2-agent\references\orchestrator-agent.md`. Skills : `qa2-agent` (`SKILL.md` trigger ; `workflow.md` parent ; `workflow-loop.md` si boucle QA) + `qa-agent`.
+  _(Charger si : `@qa2-orchestrator`, skill **qa2-agent**, QA2, **boucle qa** / **qa loop**, QA multi-passes.)_
 
 ---
 
@@ -64,6 +64,7 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`idees-kanban/`** — Kanban d’idées. Vue globale : **idees-kanban/index.md**. Gestion : skill idees-kanban.
   _(Charger : idée à capturer, note / transition / archivage, ou session d’idéation.)_
 
+
 - **`recherche/`** — Prompts et réponses de recherche externe (Perplexity, Claude.ai, GPT, etc.). Détail : **recherche/index.md**.
   _(Charger : fichiers mentionnés dans ou-on-en-est ou sur demande explicite.)_
 
@@ -73,6 +74,12 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 - **`config-modules-site-id/`** — Pack normatif **configuration modules** : JSON serveur scoping **`site_id`**, registre **`module_key`**, CREOS comme adressage, livrable QA2, **ADR-001**, OpenAPI brouillon `GET`/`PATCH` `/v1/sites/{site_id}/module-config/{module_key}`, schémas JSON (pilote bandeau KPI). Détail : **config-modules-site-id/index.md**.
   _(Charger : persistance transverse SuperAdmin / Peintre, sécu multi-tenant, story contrat API ou fusion OpenAPI.)_
 
+- **`protocole-modules-recyclique/`** — Pack **protocole modules v2** (2026-05-20, QA2 **97 %** GO, cycle 4 v2) : protocoles consommateurs `00`–`09` + cookbook [`06`](protocole-modules-recyclique/06-MOD-cookbook-nouveau-module-optionnel.md) ; **lecture enrichie** `10`–`22` (cartographie, synthèses, ponts BMAD/config, T-MOD) ; porte d'entrée **[protocole-modules-recyclique/index.md](protocole-modules-recyclique/index.md)**. **Meta :** rédaction [`00-MOD-plan-redaction-modules.md`](protocole-modules-recyclique/00-MOD-plan-redaction-modules.md) ; enrichissement v1 clos ; **plan v2** [`00-MOD-plan-enrichissement-v2-2026-05-20.md`](protocole-modules-recyclique/00-MOD-plan-enrichissement-v2-2026-05-20.md) (cohérence transversale post-QA2). **Hubs enrichis :** [`10-MOD-cartographie-sources-modules.md`](protocole-modules-recyclique/10-MOD-cartographie-sources-modules.md) · [`11-MOD-synthese-recherches-modularite.md`](protocole-modules-recyclique/11-MOD-synthese-recherches-modularite.md) · [`12-MOD-index-transcripts-modularite.md`](protocole-modules-recyclique/12-MOD-index-transcripts-modularite.md) · [`15-MOD-matrice-gaps-bmad-story-9-6.md`](protocole-modules-recyclique/15-MOD-matrice-gaps-bmad-story-9-6.md) · [`18-MOD-config-modules-crosswalk.md`](protocole-modules-recyclique/18-MOD-config-modules-crosswalk.md) · [`22-MOD-dossier-architecte-pont-t-mod.md`](protocole-modules-recyclique/22-MOD-dossier-architecte-pont-t-mod.md). **Outillage mai 2026 :** artefacts [`2026-05-20_01_*`](artefacts/2026-05-20_01_recommandations-outillage-cursor-bmad-jarvos.md), [`2026-05-20_02_*`](artefacts/2026-05-20_02_marketplace-cursor-com-evaluation-jarvos.md) ; pack [`17-MOD-outillage-cursor-modules-2026-05-20.md`](protocole-modules-recyclique/17-MOD-outillage-cursor-modules-2026-05-20.md).
+  _(Charger : créer/activer un module optionnel, réconciliation TOML/CREOS, T-MOD-*, pont dossier architecte, avant impl sans parcourir 15 dossiers.)_ **Gardien du seuil Peintre (T-PEINT-1)** : [`04-MOD-protocole-front-creos.md`](protocole-modules-recyclique/04-MOD-protocole-front-creos.md) §17.
+
+- **`dossier-architecte-externe-v2/`** — Pack **onboarding architecte externe** v2 (8 chapitres : métier, archi globale, backend, Paheko, Peintre/CREOS, backlog, questions, **prompt §08**). Détail : **dossier-architecte-externe-v2/index.md** · prompt : [08-ARCH-prompt-architecte-externe.md](dossier-architecte-externe-v2/08-ARCH-prompt-architecte-externe.md).
+  _(Charger : onboarding tiers, revue architecture v2, handoff sans parcourir tout `_bmad-output/`.)_
+
 - **`ecosysteme/`** — Références JARVOS_ecosysteme et JARVOS_fondations. Confidentiel. Gitignore. Détail : **ecosysteme/index.md**. Les documents écosystème sont **références** (liens, index), jamais **copies** ailleurs.
   _(Charger : sur demande explicite uniquement.)_
 
@@ -81,6 +88,9 @@ Chaque dossier liste son contenu dans son propre **index** : `references/<dossie
 
 - **`automatisation-bmad/`** — Recueil technique pour **orchestrer** le cycle BMAD dans Cursor (chemins, `sprint-status`, **mapping colonne CSV → skills Cursor**, anytime vs phase 4, HITL, graphe minimal, **§15 cadre : pas d'exécution automatique headless**). Spec runners : **automatisation-bmad/epic-story-runner-spec.md** ; agents **`.cursor/agents/bmad-epic-runner.md`** / **`bmad-story-runner.md`** ; skill **`bmad-epic-runner`**. Index : **automatisation-bmad/index.md**.
   _(Charger : skill orchestrateur, pipeline story par story, gates tests/CI, contrat d'exécution au-dessus de BMAD.)_
+
+- **`jarvos-agentique/`** — Pack **memoire agentique** (plan v2.3, Phase 0.B, 2026-05-21) : porte d'entree normative **4 types de session** (`bmad-dev-story`, `jarvos-discovery`, `orchestration-graph`, `mixte`), postures **Ombre / Archi / Arbitre**, matrice charger/ne pas charger, registre patterns, index plans `.cursor/plans/`, privacy / promotion `~/.cursor`. **Source normative :** [jarvos-agentique/00-porte-entree-contexte.md](jarvos-agentique/00-porte-entree-contexte.md) · hub : [jarvos-agentique/index.md](jarvos-agentique/index.md) · handoff : [artefacts/2026-05-21_07_contexte-chantier-memoire-jarvos.md](artefacts/2026-05-21_07_contexte-chantier-memoire-jarvos.md).
+  _(Charger : toute session agent Recyclique sans story ciblee ; reprise apres chat perdu ; orchestration long-run ; remplace progressivement le seul artefact 06 pour les types listes.)_
 
 - **`migration-paheko/`** — Guides Paheko/RecyClique, TODO, comptes-rendus, décla éco-organismes, specs d'intégration tiers (ex. HelloAsso). Croiser avec **consolidation-1.4.5/** pour le code. Détail : **migration-paheko/index.md**. **PRD caisse / compta / Paheko (v1.0, 2026-04-15)** : [migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md](migration-paheko/2026-04-15_prd-recyclique-caisse-compta-paheko.md).
   _(Charger : intégration Paheko, décla éco-organismes, historique décisions, cadrage HelloAsso / paiements en ligne.)_

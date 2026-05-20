@@ -8,6 +8,8 @@ Prompts et réponses de recherche externe (Perplexity, Claude.ai, GPT, etc.) et 
 
 > Charger les fichiers mentionnes dans `ou-on-en-est.md` ou sur demande explicite. Prioriser les dates les plus recentes.
 
+**Synthèse pack modules (readonly)** — distillat des recherches Perplexity/BMAD fév.–mars 2026 vers la matrice v0.1↔v2 : [`references/protocole-modules-recyclique/11-MOD-synthese-recherches-modularite.md`](../protocole-modules-recyclique/11-MOD-synthese-recherches-modularite.md). Les prompts/réponses sources restent dans ce dossier ; ne pas dupliquer le distillat ici.
+
 ---
 
 ## Fichiers

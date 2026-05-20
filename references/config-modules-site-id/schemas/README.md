@@ -7,6 +7,7 @@ Chaque fichier décrit le **`payload`** attendu à l’intérieur d’un `Module
 | Fichier | `module_key` (exemple) | `schema_version` | Rôle |
 |---------|------------------------|------------------|------|
 | [kpi-live-banner.v1.json](kpi-live-banner.v1.json) | `kpi-live-banner` | `1.0.0` | Bandeau KPI live (affichage caisse / réception, période de rafraîchissement) — **pilote** documentaire. |
+| [config-admin-simple.v1.json](config-admin-simple.v1.json) | `config-admin-simple` | `1.0.0` | **Placeholder** Story **9.6** — payload minimal ; merge manifests + PG P2 hors god-namespace JSON. |
 
 **Règles** : schémas **locaux** uniquement (pas de `$ref` http/https vers des ressources distantes) ; patterns et `maxLength` **bornés** pour limiter ReDoS ; alignement sur le [livrable normatif](../livrable-normatif-architecture.md) (validation par module, pas de secrets non masqués en sortie).
 

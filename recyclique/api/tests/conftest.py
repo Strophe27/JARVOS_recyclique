@@ -252,6 +252,7 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from tests.memory_redis_for_tests import MemoryRedisForTests
 from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.models.site import Site
+from recyclic_api.models.site_module_config import SiteModuleConfig
 from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.deposit import Deposit
 from recyclic_api.models.payment_method import PaymentMethodDefinition
@@ -947,6 +948,7 @@ def create_tables_if_not_exist():
                     user_groups,
                     # Sessions caisse / ventes (tests admin maintenance, cash_session_*, etc.)
                     Site.__table__,
+                    SiteModuleConfig.__table__,
                     # FK site_id — requis pour DELETE sites (UoW SQLAlchemy charge la relation)
                     RegistrationRequest.__table__,
                     AdminSetting.__table__,

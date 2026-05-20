@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Recyclique API v2
-  version: 0.1.28-draft
+  version: 0.1.29-draft
   description: |
     Fichier OpenAPI reviewable (draft) — **Piste B**.
     `Recyclique` est le writer canonique : la generation depuis le code FastAPI doit
@@ -18,6 +18,13 @@ servers:
     description: Prefixe nominal v2 (ajuster selon deploiement)
 # Gate CI (Epic 10) : lorsque ce fichier contient des operations, verifier que chaque
 # data_contract.operation_id des manifests CREOS reviewables a un operationId ici.
+
+tags:
+  - name: ModuleConfig
+    description: |
+      Configuration JSON generique par site et `module_key` (liste blanche serveur).
+      **API interne Recyclique** : non stable pour applications JARVOS externes tant que Story 9.6 n'est pas livree.
+
 paths:
   /v1/auth/login:
     post:
@@ -7954,6 +7961,175 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecycliqueApiError"
+
+  /v1/sites/{site_id}/module-config/{module_key}:
+    get:
+      operationId: recyclique_moduleConfig_getSiteModuleConfig
+      tags:
+        - ModuleConfig
+      summary: Lire la configuration d'un module pour un site
+      description: |
+        **API interne Recyclique** (tag `ModuleConfig`) : non stable pour applications JARVOS externes tant que Story 9.6 n'est pas livree.
+        Reponse **specifique au tenant et au sujet authentifie** ; en-tetes cache appropries (`private` ou `no-store` selon politique).
+        Le serveur ne doit pas faire confiance au seul `site_id` d'URL : verifier **membership** et **droits sur `module_key`**.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: site_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Identifiant du site. Non suffisant seul pour autoriser (membership serveur obligatoire)."
+        - name: module_key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            maxLength: 128
+          description: Cle **liste blanche** alignee registre serveur / CREOS (ex. `kpi-live-banner`).
+      responses:
+        "200":
+          description: Document de configuration courant
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Version opaque pour optimistic locking (RFC 7232 / usage projet).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleConfigDocument"
+        "401":
+          description: Non authentifie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Authentifie mais interdit pour ce site ou ce module
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Site inconnu, module inconnu (liste blanche), ou droits insuffisants masques en 404 si politique anti-fuite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "413":
+          description: Reponse trop volumineuse si limite serveur (exceptionnel en GET)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requetes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+    patch:
+      operationId: recyclique_moduleConfig_patchSiteModuleConfig
+      tags:
+        - ModuleConfig
+      summary: Mettre a jour la configuration d'un module pour un site
+      description: |
+        **API interne Recyclique** (tag `ModuleConfig`) : non stable pour applications JARVOS externes tant que Story 9.6 n'est pas livree.
+        Corps valide contre le JSON Schema du **module** et de sa **schema_version**.
+        **If-Match** : pour une detection stricte des conflits, envoyer la valeur **ETag** du dernier GET ;
+        si elle ne correspond pas a la version persistee -> **409**. Si **If-Match** est **absent**, le comportement
+        doit etre defini explicitement a l'implementation (ex. derniere ecriture gagnante toleree, ou refus **428**
+        / erreur metier si politique stricte - a figer avant implementation).
+        Rejet taille corps / profondeur **avant** travail couteux (reject-early). Limites globales du document
+        JSON sont imposees **cote serveur** (middleware / parse borne) : voir `references/config-modules-site-id/livrable-normatif-architecture.md`.
+      security:
+        - bearerOrCookie: []
+      parameters:
+        - name: site_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Identifiant du site. Non suffisant seul pour autoriser (membership serveur obligatoire)."
+        - name: module_key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            maxLength: 128
+          description: Cle **liste blanche** alignee registre serveur / CREOS (ex. `kpi-live-banner`).
+        - name: If-Match
+          in: header
+          required: false
+          schema:
+            type: string
+          description: ETag attendu pour optimistic locking (aligne sur le GET).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModuleConfigDocument"
+      responses:
+        "200":
+          description: Configuration mise a jour
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleConfigDocument"
+        "401":
+          description: Non authentifie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "403":
+          description: Authentifie mais interdit pour ce site ou ce module
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "404":
+          description: Idem GET
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "409":
+          description: Conflit de version (document modifie entre-temps ou politique de concurrence)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "413":
+          description: Payload trop volumineux
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "422":
+          description: JSON invalide ou hors schema pour ce `module_key` / `schema_version`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+        "429":
+          description: Trop de requetes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecycliqueApiError"
+
 components:
   parameters:
     RecycliqueContextSiteIdHeader:
@@ -7994,6 +8170,30 @@ components:
         **403** « Not authenticated » si ni Bearer ni cookie (au lieu du **401** typique de `require_admin_role` sans jeton).
         Toujours exiger ensuite rôle ADMIN ou SUPER_ADMIN (403 « Accès refusé - rôle administrateur requis » si USER).
   schemas:
+
+    ModuleConfigDocument:
+      type: object
+      description: |
+        Enveloppe commune configuration module par site. Plafonds de **taille totale** et **profondeur** du JSON
+        imposes par la configuration serveur (reject-early) ; voir livrable normatif config-modules-site-id.
+      additionalProperties: false
+      required:
+        - schema_version
+        - payload
+      properties:
+        schema_version:
+          type: string
+          description: Version du schema **du module** (SemVer recommande).
+          pattern: '^[0-9]+\\.[0-9]+\\.[0-9]+$'
+          example: "1.0.0"
+        payload:
+          type: object
+          description: Charge utile validee par le schema JSON du module pour `schema_version`. Voir `references/config-modules-site-id/schemas/`.
+          additionalProperties: true
+        version:
+          type: integer
+          minimum: 0
+          description: Optionnel - contrepartie entiere de l'ETag si le produit prefere un corps explicite.
     AdminBulkExportFormat:
       type: string
       enum:
