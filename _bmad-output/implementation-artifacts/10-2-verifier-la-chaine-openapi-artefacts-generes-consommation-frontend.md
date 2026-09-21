@@ -218,4 +218,12 @@ Composer 2.5 (Amelia / `bmad-dev-story`)
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
 - **QA3 :** boucle gate 95+ (2026-09-21) — score **96** ; 0 P0 / 0 P1 ; correctifs intégrés (tableau 10.1 `review`, gates `git diff` + `recyclique-api.ts`, `--emit-contracts` indicatif aligné tâche script) — rapport projet `internal/qa3-story-10-2.md`
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` sans écart bloquant ; QA3 **96** préservé ; dettes résiduelles (audit écart chaîne, politique merge `description` YAML, Dev Agent Record) reportées **DS**
-- **Prochaine étape BMAD :** **DS** (`bmad-dev-story`) — pas de re-pass CS sans changement de périmètre epic
+- **CR :** **APPROVE** (2026-09-21, commit `3c63744`) — 0 P0 / 0 P1 ; gates CR rejouées (pytest 10.2, smoke infra, Vitest contrats 97) ; rapport projet `internal/code-review-10-2.md`
+- **Prochaine étape BMAD :** coordinateur — QA3 si requis epic, puis `done` 10.2 ; **10.1** inchangé `review`
+
+### Review Findings
+
+- [x] [Review][Defer] Variables `DATABASE_URL` / `REDIS_URL` dans `contracts-openapi` sans services — acceptable tant que l’export n’ouvre pas de connexion ; surveiller imports futurs [`.github/workflows/ci-minimal.yml:117-121`] — deferred, risque CI latent
+- [x] [Review][Defer] Assertion smoke `openapi-snapshot.json` ou `generated/` trop permissive [`tests/infra/test_story_10_2_openapi_chain_ci_smoke.py:24`] — deferred
+- [x] [Review][Defer] Test idempotence double `--emit-contracts` sur YAML non automatisé — deferred
+- [x] [Review][Defer] `load_yaml_spec` : `assert` au lieu d’erreur explicite [`recyclique/api/src/recyclic_api/openapi_chain.py:286`] — deferred
