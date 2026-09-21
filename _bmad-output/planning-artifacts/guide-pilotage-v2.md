@@ -12,7 +12,9 @@
 
 Ce guide **ne recopie pas** un état story par story (il vieillit). Il pose **principes de pilotage**, **chemins canoniques**, **rituel léger**, **frictions**, **prompt superviseur** et renvoie au YAML pour tout fait d’état.
 
-**Mise à jour** : **2026-04-23** (alignée sur `last_updated` racine de `sprint-status.yaml`). Maintenir ce guide aux **jalons** (convergence, fin d’epic majeur, gate bandeau), pas à chaque story.
+**Mise à jour** : **2026-09-21** (recadrage process D1 / D8 — epics **9–10** alignés sur `last_updated` racine YAML **2026-05-30**). Maintenir ce guide aux **jalons** (convergence, fin d’epic majeur, gate bandeau, sprint-change process), pas à chaque story.
+
+**Process BMAD (post-D1, 2026-09-21) :** le gel avril 2026 est **levé partiellement** — règles **L0 / L1 / L2** dans [`sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`](./sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md) et encart PRD. Le fichier [`sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`](./sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md) reste **historique** (non amendé).
 
 ---
 
@@ -70,18 +72,27 @@ Ce guide **ne recopie pas** un état story par story (il vieillit). Il pose **pr
 - **Convergence 2** — **Bandeau live** : chaîne complète backend → contrat → manifest CREOS → registre Peintre → slot → rendu → fallback (gate décision directrice). Preuve technique historique : `references/artefacts/2026-04-07_03_preuve-convergence-2-bandeau-live.md` + E2E `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` (story 4.6), puis validation humaine sur l’application réellement servie (story 4.6b).
 
 - **Convergence 3** — Flows **cashflow** et **réception** avec données réelles, `data_contract` / `DATA_STALE` ou équivalents selon PRD §10.  
-  *État fichier : epics **6** et **7** sont **`done`** au YAML au 2026-04-23. La **correspondance exacte** avec chaque sous-critère PRD / enrichissements ultérieurs (ex. Epic 25) relève d’une **revue critères** si un chantier rouvre caisse ou réception — **à vérifier contre critères ci-dessous** plutôt que d’inférer depuis ce guide seul.*
+  *État fichier : epics **6** et **7** sont **`done`** au YAML. **Revue PO post-C2b** avant de requalifier automatiquement la convergence comme « vendable » ou clos définitif — **à vérifier contre critères ci-dessous** et le YAML, pas depuis ce guide seul.*
 
 ### 5.2 Carte condensée des epics (sans dupliquer les stories)
 
 Titres et profondeur : **`epics.md`**. Statut **`done` / `backlog` / `in-progress`** : **`sprint-status.yaml` uniquement**.
 
-**Instantané aligné avec `development_status` au 2026-04-23** (à recroiser systématiquement avec le YAML avant toute décision) :
+**Instantané aligné avec `development_status` au 2026-05-30** (`last_updated` racine du YAML — **recroiser obligatoirement** avant toute décision) :
 
 | Position | Epics (`epic-*`) | Commentaire |
 | -------- | ---------------- | ----------- |
-| **Encore `backlog` (cle epic)** | **9**, **10**, **12**, **20**, **21** | L’Epic **10** mélange stories déjà **`done`** (ex. **10.6b–10.6e**) et stories **`backlog`** — seul le YAML fait foi. |
+| **`in-progress`** | **9** | Stories **9.6** et **9.10** **`done`** (infra modules + liaison Paheko clôture) ; suite **9.7+** et modules **D** selon **L1** (une story D à la fois). |
+| **`backlog` (cle epic)** | **10**, **12**, **20**, **21** | L’Epic **10** mélange stories déjà **`done`** (ex. **10.6b–10.6e**) et stories **`backlog`** — seul le YAML fait foi. Travaux ship **10.1–10.8** autorisés en **L0** si PO valide. |
 | **`done` (cle epic)** | **1–8**, **11**, **13–19**, **22–26** | Nombre total d’epics documentés > **10** ; ne pas se limiter à la numérotation 1–10 pour le pilotage. |
+
+### 5.3 Niveaux de release v2.0 / 2.0.x / vendable
+
+| Niveau | Sens | Références |
+| ------ | ---- | ---------- |
+| **G-plancher** | Socle **A+B+C** minimal ; tag **`v2.0.0`** **après C2b** uniquement | [`references/versioning.md`](../../references/versioning.md), plan post-9.6, sprint-change **2026-09-21** |
+| **2.0.x** | Modules métier **L1** (un module à la fois) | `references/ou-on-en-est.md` § stratégie 2026-05-26 |
+| **G-vendable** | Objectif **PRD §13.2** (non modifié par D1) | PRD §13.2 — exige couches **D** complètes |
 
 Pour toute **create-story / dev-story** sur les stories **6.x à 10.x**, conserver les repères : [pack 02](../../references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md) et [tableau 03](../../references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md).
 

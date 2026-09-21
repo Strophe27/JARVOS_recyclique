@@ -1,6 +1,6 @@
 # Ou on en est — JARVOS Recyclique
 
-Mis a jour : 2026-05-27
+Mis a jour : 2026-09-21
 
 **Perimetre par version** : voir [references/versioning.md](versioning.md). **Ce depot Git** = developpement **JARVOS Recyclique v2.0** ; la prod actuelle **1.4.4** vit dans **un autre depot** (reference brownfield : `recyclique-1.4.4/` dans ce mono-repo).
 
@@ -22,7 +22,9 @@ Dans les sections historiques **datées d’avant le 2026-03-31**, lorsqu’un j
 
 Projet JARVOS Recyclique v0.1.0 initialise. **Analyse brownfield 1.4.4 disponible** dans `references/ancien-repo/`. **Analyse brownfield Paheko faite** : extensions (plugins/modules), API HTTP, gestion des fichiers et upload, WebDAV — voir [references/paheko/analyse-brownfield-paheko.md](paheko/analyse-brownfield-paheko.md) (index : [references/paheko/index.md](paheko/index.md)). Workflow Git en place. **Code et contrats dans le mono-repo** : notamment `recyclique/`, `peintre-nano/`, reference d'import `recyclique-1.4.4/`, contrats `contracts/` ; le grain fin des stories = `_bmad-output/implementation-artifacts/sprint-status.yaml`.
 
-**Pilotage BMAD (instantane — cle racine `last_updated` du YAML : **2026-05-26**) :** epics **1** … **8**, **11**, **13** … **15**, **16** … **19**, **22** … **26** = **`done`** au niveau `epic-*`. **Epic 9** = **`in-progress`** — story [**9.6**](../_bmad-output/implementation-artifacts/9-6-config-admin-simple-modules.md) **`done`** (Story Runner BMAD 2026-05-26 : CR2 APPROVE, `cr_loop=1`). Prochaine candidate Epic 9 : **9.7** (ACL minimales, **`backlog`**). Epics **10**, **12**, **20**, **21** restent **`backlog`** (sous-ensemble **10.6b** … **10.6e** deja **`done`**).
+**Gel PRD / process BMAD :** levée partielle **L0–L2** (D1, **2026-09-21**) — sprint-change canonique **`sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`** (`_bmad-output/planning-artifacts/`). Le fichier **`sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`** reste l'historique du gel avril (non amendé).
+
+**Pilotage BMAD (instantane — cle racine `last_updated` du YAML : **2026-05-30**) :** epics **1** … **8**, **11**, **13** … **15**, **16** … **19**, **22** … **26** = **`done`** au niveau `epic-*`. **Epic 9** = **`in-progress`** — stories **9.6** et **9.10** **`done`** ; prochaine candidate typique : **9.7** (ACL, **`backlog`**) ou module **D** selon **L1** (une story à la fois). Epics **10**, **12**, **20**, **21** = **`backlog`** (sous-ensemble **10.6b** … **10.6e** deja **`done`**). Pour epics **9–10**, ne pas s'appuyer sur le guide pilotage seul : recroiser **`sprint-status.yaml`** et [`guide-pilotage-v2.md`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) (maj **2026-09-21**).
 
 **Repere BMAD Epics 6 a 10** : pour toute reprise ou create-story / dev-story sur la suite `6.x` a `10.x`, utiliser comme point d'entree documentaire [references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md](artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md) puis [references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md](artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md). Le pack `02` donne la vue de lecture par epic et le corpus de captures ; le tableau `03` donne la navigation **story par story**. Pour l'etat **story par story** (y compris cloture des Epics 6, 7, 8), se fier a `sprint-status.yaml` ; le pack et le tableau restent la lecture operationnelle des captures et de la matrice.
 
