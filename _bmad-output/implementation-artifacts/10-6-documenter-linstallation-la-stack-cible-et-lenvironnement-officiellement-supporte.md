@@ -41,9 +41,9 @@ Les **six piliers** du lot d'installabilité (alignés `epics.md` Story 10.6 + P
 
 Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6** (traduction exécutable ci-dessous). Traçabilité : **PRD §11.5**, **§13.2** (matrice environnements avant RC v2).
 
-1. **Manifeste machine-readable de la stack officielle** — Étant donné que v2 cible une stack de déploiement de référence, quand la documentation d'installation est préparée, alors le dépôt contient **`doc/supported-stack-official.yaml`** avec : `version`, `story: "10.6"` ; section **`official_os`** (`debian`, version minimale **documentée** — ex. Debian 12 bookworm ou équivalent explicite dans le YAML) ; section **`services`** listant **exactement** les clés `recyclique_api`, `peintre_nano`, `paheko`, `postgresql`, `redis` avec pour chacune : `role`, `canonical_path` (si applicable), `compose_service` (nom service dans `docker-compose.yml` racine ou `null` si externe), `default_local_port` (si exposé), `required_for_minimal_install` (bool) ; section **`sub_stories_index`** pointant vers les fichiers story **10.6b–10.6e** `done` et leurs livrables (chemins, **sans** dupliquer le corps des runbooks) ; section **`doc_anchors`** listant les chemins Markdown que la doc humaine **doit** maintenir synchronisés.
+1. **Manifeste machine-readable de la stack officielle** — Étant donné que v2 cible une stack de déploiement de référence, quand la documentation d'installation est préparée, alors le dépôt contient **`doc/supported-stack-official.yaml`** avec : `version`, `story: "10.6"` ; section **`official_os`** (`debian`, version minimale **documentée** — ex. Debian 12 bookworm ou équivalent explicite dans le YAML) ; section **`installability_pillars`** reprenant **exactement** les six clés du Story Preparation Gate (`stack_services`, `debian_reference`, `docker_entrypoint`, `postgresql_17`, `browser_matrix`, `nominal_install_complete`) avec pour chacune un `summary` (1 ligne) et les `ac_refs` associés ; section **`services`** listant **exactement** les clés `recyclique_api`, `peintre_nano`, `paheko`, `postgresql`, `redis` avec pour chacune : `role`, `canonical_path` (si applicable), `compose_service` (nom du service dans `docker-compose.yml` racine — ex. `api`, `frontend`, `paheko`, `postgres`, `redis` — ou `null` si externe), `default_local_port` (si exposé), `required_for_minimal_install` (bool) ; section **`compose_auxiliary_services`** listant les services **hors** install minimale v2 documentée (ex. `api-migrations`, `frontend-legacy`) avec `role` et `excluded_from_minimal_up` (bool) ; section **`sub_stories_index`** pointant vers les fichiers story **10.6b–10.6e** `done` et leurs livrables (chemins, **sans** dupliquer le corps des runbooks) ; section **`doc_anchors`** listant les chemins Markdown que la doc humaine **doit** maintenir synchronisés.
 
-2. **Guide d'installation humain (chemin minimal)** — Étant donné qu'un adoptant part d'un hôte **Debian** vierge ou d'une VM de référence, quand il suit la doc **10.6**, alors **`doc/installation-stack-officielle.md`** décrit un **chemin minimal ordonné** (numéroté) : prérequis hôte (Docker Engine + Compose plugin, utilisateur, ports **8000 / 4444 / 5432 / 6379** — ajuster si doc) ; création `.env` (renvoi `recyclique-1.4.4/env.example`, variables **minimales** `POSTGRES_PASSWORD`, `SECRET_KEY`, super-admin si première install) ; `docker compose up --build` **depuis la racine** ; `docker compose run --rm api-migrations` ; vérification **`GET /health`** (liveness — aligné **10.5** / compose) ; accès UI **`http://localhost:4444`** ; critère **PRD** « install nominale complète » (shell authentifié + premier contexte — étapes explicites ou renvoi procédure admin existante) ; section **Paheko** : rôle dans la stack, URL interne compose, **non** bloquant pour démarrer API+UI si variables Paheko en mode dégradé documenté **ou** démarrage service `paheko` inclus dans le chemin minimal (trancher **une** posture cohérente avec `docker-compose.yml` actuel).
+2. **Guide d'installation humain (chemin minimal)** — Étant donné qu'un adoptant part d'un hôte **Debian** vierge ou d'une VM de référence, quand il suit la doc **10.6**, alors **`doc/installation-stack-officielle.md`** décrit un **chemin minimal ordonné** (numéroté) : prérequis hôte (Docker Engine + Compose plugin, utilisateur, ports locaux documentés **8000** (API), **4444** (Peintre_nano), **8080** (Paheko), **5432** (PostgreSQL), **6379** (Redis) — **4445** (`frontend-legacy`) **hors** install v2 documentée) ; création `.env` à la racine (copie depuis `recyclique-1.4.4/env.example` — **assumption** : template legacy jusqu'à relocation future ; variables **minimales** `POSTGRES_PASSWORD`, `SECRET_KEY`, `FIRST_SUPER_ADMIN_*` si première install, `PAHEKO_*` si intégration comptable active) ; **`docker compose up --build postgres redis api-migrations api paheko frontend`** **depuis la racine** (**sans** `frontend-legacy` — aligné AC3 / frontière legacy) : le service **`api-migrations`** s'exécute **avant** `api` via `depends_on` (`service_completed_successfully`) au premier démarrage — **ne pas** présenter un second `docker compose run --rm api-migrations` comme étape obligatoire du happy path (réservé **reprise** si migrations en échec) ; vérification **`GET /health`** sur `:8000` (liveness — aligné **10.5** / compose) ; accès UI **`http://localhost:4444`** ; checklist **install nominale complète** PRD §11.5 : connexion shell authentifié + premier contexte exploitable (étapes explicites ou renvoi procédure admin / `FIRST_SUPER_ADMIN_*`) ; section **Paheko** (**posture unique figée**) : service **`paheko` inclus** dans la commande `up` ci-dessus (5ᵉ service officiel) ; rôle comptable, URL **`http://localhost:8080`**, variables `PAHEKO_*` documentées — l'API peut démarrer sans comptabilité configurée mais la stack **officielle** documentée inclut Paheko démarré.
 
 3. **Matrice support officiel vs best-effort** — Étant donné que le projet cible **Debian** comme seul environnement **officiellement supporté** v2, quand les frontières sont documentées, alors **`doc/installation-stack-officielle.md`** contient un tableau **Support** avec au minimum les lignes : **Debian** (officiel) ; **Dérivés type Ubuntu** (best-effort communauté, hors matrice support) ; **Windows / macOS** (dev via Docker Desktop — **hors support officiel**, renvoi `README.md` existant) ; **Navigateurs** : matrice PRD (Chromium stable, Firefox ESR = support nominal ; Edge récent = best-effort) ; **HelloAsso** : présent au catalogue connecteurs, **pas** prérequis install cœur ; **staging/prod legacy** sous `recyclique-1.4.4/` : transitoire, **non** chemin d'install v2 documenté.
 
@@ -51,7 +51,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 
 5. **Lien observabilité post-install (10.5)** — Étant donné qu'une install réussie doit rester **diagnostiquable**, quand la doc **10.6** est complète, alors une section **« Après installation — support »** renvoie vers **`doc/observability-support-runbook.md`** (santé canonique, corrélation, fil sync) — **sans** dupliquer le runbook.
 
-6. **Industrialisation doc / CI** — Étant donné le même workflow **`ci-minimal.yml`**, quand **10.6** est livrée, alors **`doc/ci-minimal.md`** contient une section **§10.6** listant les commandes de **smoke doc install** ; **`tests/infra/test_story_10_6_installation_doc_smoke.py`** vérifie : existence `doc/supported-stack-official.yaml` et `doc/installation-stack-officielle.md` ; les **5** clés `services` ; présence mot-clé **Debian** + tableau support ; liens vers runbook PG17 et `README.md` ; **`README.md` racine** contient un lien vers **`doc/installation-stack-officielle.md`** (section « Voir aussi » ou équivalent) ; smoke **`tests/infra/test_story_10_6_installation_ci_minimal_smoke.py`** *(recommandé)* vérifie §10.6 dans `doc/ci-minimal.md` ; **interdit** (FM3) : modifier les smokes **10.6c/10.6e** existants sauf correction de lien cassé ; **pas** d'ajout des smokes **10.6** dans le peloton **10.4**.
+6. **Industrialisation doc / CI** — Étant donné le même workflow **`ci-minimal.yml`**, quand **10.6** est livrée, alors **`doc/ci-minimal.md`** contient une section **§10.6** listant les commandes de **smoke doc install** ; **`tests/infra/test_story_10_6_installation_doc_smoke.py`** vérifie : existence `doc/supported-stack-official.yaml` et `doc/installation-stack-officielle.md` ; les **5** clés `services` ; section **`installability_pillars`** (six clés) ; présence mot-clé **Debian** + tableau support ; mention **ports** 8000/4444/8080/5432/6379 et exclusion explicite **4445** legacy ; liens vers runbook PG17 et `README.md` ; assertions alignées AC2 (`GET /health`, UI `:4444`, checklist install nominale) ; **`README.md` racine** contient un lien vers **`doc/installation-stack-officielle.md`** (section « Voir aussi » ou équivalent) ; smoke **`tests/infra/test_story_10_6_installation_ci_minimal_smoke.py`** (**obligatoire** pour DoD / gates Story Runner) vérifie §10.6 dans `doc/ci-minimal.md` ; **interdit** (FM3) : modifier les smokes **10.6c/10.6e** existants sauf correction de lien cassé ; **pas** d'ajout des smokes **10.6** dans le peloton **10.4**.
 
 7. **Hors scope explicite** — Étant donné les frontières Epic 10, quand cette story est revue, alors **ne pas** livrer : **10.7** / **10.8** ; playbook déploiement production automatisé ; migration données prod réelle ; extension support OS au-delà de la matrice ; refonte **10.5** ; correction **10.1** bandeau-live ; portage fonctionnel **`recyclique-1.4.4/`** ; matériel minimal performance (PRD §11.4) — **mention** autorisée comme renvoi futur « guide performance » si absent, **sans** bloquer 10.6.
 
@@ -68,7 +68,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 
 | AC | Tâches (Tasks / Subtasks) | Fichiers / artefacts | Gate Story Runner |
 |----|---------------------------|----------------------|-------------------|
-| **1** Manifeste YAML | Créer `supported-stack-official.yaml` | `doc/supported-stack-official.yaml` | 5 services + `official_os` |
+| **1** Manifeste YAML | Créer `supported-stack-official.yaml` | `doc/supported-stack-official.yaml` | 5 services + `official_os` + **`installability_pillars`** + auxiliaires compose |
 | **2** Guide install | Rédiger chemin minimal Debian/Docker | `doc/installation-stack-officielle.md` | Étapes ordonnées + critère shell auth |
 | **3** Matrice support | Tableau officiel / best-effort | `doc/installation-stack-officielle.md` | Debian + navigateurs PRD |
 | **4** Index 10.6b–e | Liens, note PG15→17 artefact | guide + YAML `sub_stories_index` | Pas de copie runbook PG |
@@ -78,7 +78,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 
 ## Tasks / Subtasks
 
-- [ ] **`doc/supported-stack-official.yaml`** — Structure gate §1 : `official_os`, `services` (5 clés), `sub_stories_index`, `doc_anchors`. (AC : 1, 4)
+- [ ] **`doc/supported-stack-official.yaml`** — Structure gate §1 : `official_os`, **`installability_pillars`** (6 clés gate), `services` (5 clés + `compose_service` / ports), `compose_auxiliary_services`, `sub_stories_index`, `doc_anchors`. (AC : 1, 4)
 
 - [ ] **`doc/installation-stack-officielle.md`** — Chemin minimal ; matrice support ; index 10.6b–e ; navigateurs PRD ; section post-install → observabilité **10.5**. (AC : 2, 3, 4, 5)
 
@@ -86,11 +86,11 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 
 - [ ] **Note artefact validation locale** — Ajouter en tête de `references/artefacts/2026-04-07_01_validation-stack-locale-peintre-nano.md` une note « historique PG15 → voir PG17 / runbook 10.6c » **ou** renvoi équivalent depuis le guide uniquement (choix minimal). (AC : 4)
 
-- [ ] **`doc/ci-minimal.md` §10.6** — Commandes : `pytest tests/infra/test_story_10_6_installation_doc_smoke.py` (+ smoke CI minimal recommandé). (AC : 6)
+- [ ] **`doc/ci-minimal.md` §10.6** — Commandes : `pytest tests/infra/test_story_10_6_installation_doc_smoke.py` **et** `pytest tests/infra/test_story_10_6_installation_ci_minimal_smoke.py`. (AC : 6)
 
-- [ ] **Smoke doc install** — `tests/infra/test_story_10_6_installation_doc_smoke.py` : parse YAML ; assertions Markdown (Debian, 5 services, liens runbook/README). (AC : 1, 6)
+- [ ] **Smoke doc install** — `tests/infra/test_story_10_6_installation_doc_smoke.py` : parse YAML (`installability_pillars`, auxiliaires compose) ; assertions Markdown (Debian, 5 services, ports, commande `up` sans legacy, health/UI/install nominale, liens runbook/README). (AC : 1, 2, 6)
 
-- [ ] **Smoke CI minimal** *(recommandé AC6)* — `tests/infra/test_story_10_6_installation_ci_minimal_smoke.py` : §10.6 présent et cohérent avec le smoke doc. (AC : 6)
+- [ ] **Smoke CI minimal** *(obligatoire DoD AC6)* — `tests/infra/test_story_10_6_installation_ci_minimal_smoke.py` : §10.6 présent et cohérent avec le smoke doc. (AC : 6)
 
 - [ ] **Frontière peloton / infra existante** — Ne pas modifier `doc/critical-core-peloton.yaml` ; ne pas dupliquer assertions `test_story_10_6c_pg17_doc_smoke.py` — seulement **référencer**. (AC : 6, FM3)
 
@@ -109,9 +109,19 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 | PostgreSQL 17 | — | Runbook + compose + smoke Alembic | **Index** + note PG15 artefact | — |
 | Installabilité produit | Hors scope install | Pièces techniques | **Doc officielle** + matrice Debian | Gates beta / readiness globale |
 
+### Hypothèses explicites (DS — ne pas rouvrir 10.6b–e)
+
+| ID | Hypothèse | Validation DS (sans rouvrir stories `done`) |
+|----|-----------|-----------------------------------------------|
+| **A1** | Brownfield ci-dessus = état repo au DS | Checklist fichiers listés + `docker compose config` |
+| **A2** | Livrables **10.6b–10.6e** / **10.5** stables aux chemins cités | Assertions existence chemins dans smokes **10.6** (pas re-audit contenu stories) |
+| **A5** | `api-migrations` / `frontend-legacy` **hors** manifeste 5 services | Refléter dans YAML `compose_auxiliary_services` + guide |
+| **A6** | Runbook **10.5** inchangé | Smoke doc : lien relatif valide |
+| **A7** | `.env` template sous `recyclique-1.4.4/env.example` jusqu'à relocation | Documenter dans guide + note dans YAML |
+
 ### État des lieux (brownfield — ne pas réécrire)
 
-- **Compose racine** : `docker-compose.yml` — `postgres:17`, `redis:7-alpine`, `api`, `frontend` (`peintre-nano`), `frontend-legacy`, `paheko`, migrations `api-migrations`.
+- **Compose racine** : `docker-compose.yml` — `postgres:17`, `redis:7-alpine`, `api`, `frontend` (`peintre-nano`), `paheko`, `api-migrations` ; **`frontend-legacy`** (:4445) présent mais **exclu** du chemin minimal v2 documenté (AC2/AC3).
 - **CI** : `ci-minimal.yml` — PG17 ; smokes **10.5** après peloton **10.4**.
 - **Docs existantes** : `README.md` (Docker dev) ; runbook PG spike ; stories **10.6b–10.6e** ; **pas** encore de `doc/installation-stack-officielle.md` ni manifeste YAML dédié **10.6**.
 - **Staging/prod** : fichiers sous `recyclique-1.4.4/` — documenter comme **transitoire**, pas comme install v2 cible.
@@ -144,12 +154,18 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 | FM4 | Présenter legacy 1.4.4 comme officiel | Mauvaise install | Tableau support AC3 | **3**, **7** |
 | FM5 | Scope creep 10.7 gates | Detour roadmap | Hors scope AC7 | **7** |
 | FM6 | Casser smokes infra PG17 | Régression | Pas de modif 10.6c/e sauf lien | **6** |
+| FM7 | Paheko omis ou posture floue | Stack officielle incomplète | Posture AC2 unique + port **8080** + FM7 dans guide | **1**, **2** |
+| FM8 | Volume PG15 vs image **PG17** | Échec démarrage DB | Renvoi runbook **10.6c** + branche install neuve vs upgrade | **2**, **4** |
+| FM9 | Ordre migrations mal documenté | Adoptant relance migrations inutilement | Happy path `depends_on` ; `run --rm` = reprise seulement | **2** |
+| FM10 | Install nominale sans preuve auth | Non-conformité §11.5 | Checklist explicite + smoke doc mots-clés shell auth | **2**, **6** |
+| FM11 | `docker compose up` naïf inclut legacy | Contredit AC3 | Liste services explicite AC2 ; FM11 dans guide | **2**, **3**, **7** |
+| FM12 | §10.6 CI absent | Régression doc | Smoke CI minimal **obligatoire** DoD | **6** |
 
 ### Definition of Done (Story 10.6)
 
 - [ ] Les **7 AC** sont couverts : manifeste, guide, matrice, index sous-stories, lien 10.5, §10.6 CI, hors scope revu.
 - [ ] Les **six piliers** du Story Preparation Gate sont nommés dans le YAML et le guide.
-- [ ] Smokes infra **10.6** verts localement (`python3 -m pytest tests/infra/test_story_10_6_installation_doc_smoke.py -q`).
+- [ ] Smokes infra **10.6** verts localement (`python3 -m pytest tests/infra/test_story_10_6_installation_doc_smoke.py -q` **et** `test_story_10_6_installation_ci_minimal_smoke.py -q`).
 - [ ] **Ne pas** forcer **10.1** à `done` ; **ne pas** rouvrir **10.5** ni **10.6b–10.6e**.
 - [ ] Story Runner : `sprint-status.yaml` → **review** après DS.
 
