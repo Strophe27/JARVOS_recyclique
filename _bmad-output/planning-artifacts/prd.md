@@ -35,6 +35,7 @@ inputDocuments:
   - references/artefacts/2026-04-19_01_audit-brownfield-recyclic-api-architecture-style-handoff.md
   - _bmad-output/planning-artifacts/architecture/cash-accounting-paheko-canonical-chain.md
   - _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md
+  - _bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md
   - _bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md
   - references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md
 source_of_truth: references/vision-projet/2026-03-31_decision-directrice-v2.md
@@ -48,8 +49,10 @@ validationReportChainNote: >-
 priorValidationReport: _bmad-output/planning-artifacts/prd-validation-report-2026-04-01.md
 document_date: '2026-03-31'
 # document_date = date de redaction initiale ; revisions ulterieures : lastEdited ci-dessous et editHistory.
-lastEdited: '2026-04-19'
+lastEdited: '2026-09-21'
 editHistory:
+  - date: '2026-09-21'
+    changes: 'Post-D1 QA3 Ombre — encart levée partielle gel L0/L1/L2 ; §7.1 plancher L0 vs modules D / HelloAsso parking D3 ; §12.1 pont process courant sprint-change 2026-09-21 vs gel 2026-04-19 historique ; §13 G-plancher (v2.0.0 + C2b) distinct de §13.2 G-vendable ; inputDocuments sprint-change 2026-09-21.'
   - date: '2026-04-19'
     changes: 'Post-QA doc — §2.4 et §17 : aligner libelles readiness PWA (NON PRÊTE tableau vs NOT READY synthese, meme gate).'
   - date: '2026-04-19'
@@ -85,7 +88,7 @@ editHistory:
 **Statut :** Actif — base pour architecture et epics  
 **Documentation de travail Peintre (pipeline, extraits, index) :** `references/peintre/index.md` — alignee PRD ; en cas d'ecart, ce PRD et l'architecture BMAD font foi.
 
-**Pilotage BMAD (gel) :** depuis **2026-09-21** (D1 — levée partielle, jarvos.01), la règle d'exécution **`bmad-dev-story`** est **L0 / L1 / L2** définie dans `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md` (**L0** = plancher / maintenance / C2b prep / Epic 10 gates ; **L1** = un module métier **D** à la fois ; **L2** = vision / spikes ADR uniquement). Le sprint-change **2026-04-19** (`sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`) reste **historique** (gel Epic 25 / socle vision) — **non amendé**. Le **YAML** `sprint-status.yaml` = **preuve historique** des statuts ; la règle process ne retcon pas les `done`. Voir commentaire racine du YAML et `references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md`.
+**Pilotage BMAD (levée partielle gel — L0/L1/L2) :** depuis **2026-09-21** (D1 — jarvos.01), la **règle de process courante** pour **`bmad-dev-story`** est **L0 / L1 / L2** dans `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md` (**L0** = plancher / maintenance / C2b / Epic **10.1–10.8** si PO valide ; **L1** = un module métier **D** à la fois, **après** priorité ship **10.1–10.3** et HITL **D2/D7** ; **L2** = vision / spikes ADR uniquement). Le sprint-change **2026-04-19** (`sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`) = **gel historique** (Epic 25 / socle vision) — **non amendé**, **ne prime plus** sur L0/L1/L2. Le **YAML** `sprint-status.yaml` = **preuve historique** des statuts ; la règle process ne retcon pas les `done`. Voir commentaire racine du YAML et `references/artefacts/2026-04-19_03_qa2-findings-revisions-cloture-bmad-passe.md`.
 
 **Precedence documentaire unique (meme ordre partout dans ce depot) :** (1) `references/vision-projet/2026-03-31_decision-directrice-v2.md` = **source amont** de cadrage ; (2) le present `_bmad-output/planning-artifacts/prd.md` = **canonique produit v2** ; (3) PRD **specialises** et dossier **architecture BMAD** = detail de sous-domaine ; (4) `epics.md` / stories = decoupage execution. Le **PRD vision 2026-04-19** (kiosque / multisite / permissions) = **cible complementaire non canonique** tant que les **ADR** du tableau « gouvernance des exigences importees » ne l'absorbent pas — il **informe** backlog et spikes mais **ne prime pas** sur (1) ou (2) sans decision explicite.
 
@@ -575,8 +578,10 @@ Toute l'UI v2 passe par Peintre_nano, du login au dernier ecran. Ce qui est phas
 | Declaration eco-organismes | Obligatoire | Premier grand module metier |
 | Adherents / vie associative minimale | Obligatoire | Preuve metier complementaire, evite biais mono-module |
 | Synchronisation Paheko | Obligatoire | Articulation terrain/compta |
-| Integration HelloAsso | Obligatoire | Capacite confirmee dans le brief |
-| Config admin simple | Obligatoire (v2 vendable) | Pilotage minimal du shell et des modules |
+| Integration HelloAsso | Obligatoire (**G-vendable** §13.2) ; **parking PO** en plancher **L0** (**D3**) | Capacite confirmee dans le brief ; pas de dev large HelloAsso avant arbitrage PO |
+| Config admin simple | Obligatoire (socle **L0** — story **9.6** **done**) | Pilotage minimal du shell et des modules |
+
+**Lecture plancher Option C (post-D1) :** le tableau ci-dessus décrit la **cible G-vendable**. Pour le **plancher L0** déjà livré ou en cours sans élargir **L1** : socle caisse/réception/sync (**epics 6–8**), **config admin simple** (**9.6**), liaison clôture (**9.10**), gates ship **Epic 10** ; les **modules métier D** (éco-org, adhérents, HelloAsso, etc.) = **L1** — **un à la fois**, **après** tranche **10.1–10.3** et décision **D2/D7**. HelloAsso : **parking** tant que **D3** ouvert (stories **9.4/9.5** = cadrage doc).
 
 **Lecture du statut « Obligatoire » dans ce tableau :** il impose de livrer le **minimum v2** decrit dans les sous-sections du perimetre (parcours ou capacites utilisables, reprises manuelles encadrees lorsque le PRD les prevoit). Il **n'exige pas** une automatisation maximale lorsqu'une sous-section renvoie explicitement a une **etude ou un livrable d'architecture** pour fixer le niveau exact — cas **HelloAsso** : le **Scope minimum HelloAsso** (SS 7.1) et l'etude de cadrage (deux voies API / plugin Paheko) definissent l'ampleur **sans** contredire l'obligation de couvrir le parcours adherents a ce minimum.
 
@@ -1046,7 +1051,9 @@ L'ordre suivant minimise le risque systemique et doit etre respecte comme prefer
 
 **Delta structurant 2026-04-15 :** pour le sous-domaine caisse/compta/Paheko, la sequence doit aussi expliciter la chaine `referentiel des moyens de paiement -> journal detaille des transactions de paiement -> snapshot comptable de session -> lot de synchronisation Paheko`, ainsi que son articulation avec les epics `6`, `8`, `10`, `13`, `14`, `16` et `18` via le correct course approuve. Le **rail correctif comptable** et la **ventilation Paheko** sont portes par les epics **`22`**, **`23`** ; le chantier **parcours operations speciales / tags** est porte par l'**Epic `24`** (voir `epics.md` et PRD `references/operations-speciales-recyclique/`).
 
-**Rappel gel BMAD 2026-04-19 :** le **correct course** `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` impose une **pause d'execution** hors **Epic 25** au profit du socle PRD vision / brownfield / ADR. Cette pause **ne reecrit pas** retroactivement les lignes du tableau ci-dessus : elle **priorise** les prochains travaux documentaires et de code BMAD. Voir **§2.4** et l'en-tête `sprint-status.yaml`.
+**Règle de process courante (2026-09-21) :** le sprint-change `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md` fixe **L0 / L1 / L2** pour `bmad-dev-story` et `bmad-create-story` sur périmètre **D** — voir encart **Pilotage BMAD (levée partielle gel)** en tête de ce document et [`guide-pilotage-v2.md`](guide-pilotage-v2.md) §1 (ordre de chargement §5 du sprint-change).
+
+**Gel BMAD 2026-04-19 (historique uniquement) :** le correct course `_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md` a imposé une pause hors **Epic 25** ; **remplacé pour l'exécution** par la levée partielle **2026-09-21** (fichier avril **non amendé**). Ce gel **ne reecrit pas** les lignes du tableau structurant ci-dessus ; il reste une **trace** de priorisation socle vision. Voir **§2.4** et `sprint-status.yaml`.
 
 ### 12.2 Sequence de validation produit
 
@@ -1090,6 +1097,17 @@ Regle de preemption : en cas de conflit entre un choix UI/contrat et un invarian
 ---
 
 ## 13. Gates de sortie
+
+### 13.0 G-plancher (release 2.0.x — Option C)
+
+| Critere | Description |
+|---------|-------------|
+| Socle livré | Équivalence **robuste** avec **1.4.4** sur parcours déjà couverts : caisse, réception, compta/sync, **9.6** modules admin, **9.10** liaison clôture v1 (**done** au YAML) |
+| C2b terrain | Session **HITL** plan post-9.6 § **C2b** — **obligatoire** avant tag |
+| Tag | **`v2.0.0`** = **premier** tag plancher — **interdit** avant C2b validé (Coordinateur + PO) ; **`v2.0.1+`** = modules métier **L1** (un module à la fois) |
+| Non confondu avec vendable | **G-plancher** **ne satisfait pas** **§13.2** (couches **D** complètes, HelloAsso au minimum vendable, etc.) |
+
+Références : [`references/versioning.md`](../../references/versioning.md), [`references/ou-on-en-est.md`](../../references/ou-on-en-est.md) § stratégie 2026-05-26, sprint-change **2026-09-21** §4.
 
 ### 13.1 Beta interne ressourcerie test
 

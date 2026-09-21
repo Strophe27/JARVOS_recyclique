@@ -20,10 +20,13 @@ Ce guide **ne recopie pas** un état story par story (il vieillit). Il pose **pr
 
 ## 1. Ordre de chargement recommandé (agent)
 
-1. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — qui est **done / backlog / in-progress**, fraîcheur **`last_updated`** racine (les lignes `# last_updated:` en tête du fichier sont un **journal**, pas l’état normatif ; voir commentaire YAML « Lecture canonique »).
-2. **`references/ou-on-en-est.md`** — journal daté et paragraphe **Pilotage BMAD** / instantané.
-3. **`_bmad-output/planning-artifacts/guide-pilotage-v2.md`** (ce fichier) — règles A/B, convergences, emplacements, frictions.
-4. **`_bmad-output/planning-artifacts/epics.md`** + éventuellement fichier story sous `_bmad-output/implementation-artifacts/{story-key}.md` — détail et critères d’acceptation.
+Aligné sur [`sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`](./sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md) **§5** :
+
+1. **`_bmad-output/implementation-artifacts/sprint-status.yaml`** — **`last_updated`** racine + **`development_status`** (les lignes `# last_updated:` en tête = **journal**, pas l’état normatif).
+2. **`references/ou-on-en-est.md`** — journal daté, **Action immédiate post-D1**, paragraphe **Pilotage BMAD**.
+3. **`_bmad-output/planning-artifacts/prd.md`** — encart **Pilotage BMAD (levée partielle gel — L0/L1/L2)** ; §12.1 / §13 **G-plancher**.
+4. **`_bmad-output/planning-artifacts/guide-pilotage-v2.md`** (ce fichier) — règles A/B, jalons, frictions.
+5. **`_bmad-output/planning-artifacts/epics.md`** + fichier story `_bmad-output/implementation-artifacts/{story-key}.md` si besoin.
 
 ---
 
@@ -55,24 +58,24 @@ Ce guide **ne recopie pas** un état story par story (il vieillit). Il pose **pr
 | --------- | ------------------- | --------------------- |
 | **Fin de session utile** | Journal daté dans `references/ou-on-en-est.md` | Optionnel (synthèse humaine) |
 | **Changement de statut story / epic** | **`sprint-status.yaml`** : `development_status` + **`last_updated`** racine | Non (pas de doublon d’état) |
-| **Jalon convergence ou gate objectivement franchi** | YAML si stories impactées ; journal | Cocher **uniquement** si critère **objectivement** rempli |
-| **Fin d’epic majeur** | YAML + entrée dans `ou-on-en-est.md` | Cases jalons si critère epic/convergence associé franchi |
+| **Jalon convergence ou gate objectivement franchi** | YAML si stories impactées ; journal | Mettre **`- [x]`** §5 **uniquement** si critère **objectivement** rempli |
+| **Fin d’epic majeur** | YAML + entrée dans `ou-on-en-est.md` | Cases §5 si critère epic/convergence associé franchi |
 
 ---
 
-## 5. Jalons — cases à cocher
+## 5. Jalons — suivi (cases optionnelles)
 
-**État des epics** : tout détail **`epic-*` / stories** vit dans **`development_status`** du YAML. Ci-dessous : **critères de jalon** ; les cocher quand le critère est **objectivement** rempli (livrable reviewable ou gate franchi).
+**État des epics** : tout détail **`epic-*` / stories** vit dans **`development_status`** du YAML. Ci-dessous : **critères de jalon** ; cocher **`- [x]`** dans ce fichier **uniquement** quand le critère est **objectivement** rempli (livrable reviewable ou gate franchi) — sinon laisser **`- [ ]`**.
 
 ### 5.1 Convergences
 
-- **Convergence 1** — Types / client depuis OpenAPI + hooks réels (plus seulement mocks pour les slices concernés) ; `ContextEnvelope` aligné serveur / UI.  
-  *État fichier : epics **1–4** sont **`done`** au YAML au 2026-04-23. Pour une session qui rouvre les slices concernés, **à vérifier contre critères ci-dessous** et contre le code / contrats vivants.*
+- [x] **Convergence 1** — Types / client depuis OpenAPI + hooks réels (plus seulement mocks pour les slices concernés) ; `ContextEnvelope` aligné serveur / UI.  
+  *État fichier : epics **1–4** **`done`** au YAML (2026-04-23). Rouvrir une slice = revérifier critères + code / contrats.*
 
-- **Convergence 2** — **Bandeau live** : chaîne complète backend → contrat → manifest CREOS → registre Peintre → slot → rendu → fallback (gate décision directrice). Preuve technique historique : `references/artefacts/2026-04-07_03_preuve-convergence-2-bandeau-live.md` + E2E `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` (story 4.6), puis validation humaine sur l’application réellement servie (story 4.6b).
+- [x] **Convergence 2** — **Bandeau live** : chaîne complète backend → contrat → manifest CREOS → registre Peintre → slot → rendu → fallback. Preuves : `references/artefacts/2026-04-07_03_preuve-convergence-2-bandeau-live.md` + E2E story 4.6 / 4.6b.
 
-- **Convergence 3** — Flows **cashflow** et **réception** avec données réelles, `data_contract` / `DATA_STALE` ou équivalents selon PRD §10.  
-  *État fichier : epics **6** et **7** sont **`done`** au YAML. **Revue PO post-C2b** avant de requalifier automatiquement la convergence comme « vendable » ou clos définitif — **à vérifier contre critères ci-dessous** et le YAML, pas depuis ce guide seul.*
+- [ ] **Convergence 3** — Flows **cashflow** et **réception** avec données réelles, `data_contract` / `DATA_STALE` ou équivalents selon PRD §10.  
+  *Epics **6** et **7** **`done`** au YAML ; **revue PO post-C2b** avant de qualifier « vendable » — recroiser YAML, pas ce guide seul.*
 
 ### 5.2 Carte condensée des epics (sans dupliquer les stories)
 
@@ -82,7 +85,7 @@ Titres et profondeur : **`epics.md`**. Statut **`done` / `backlog` / `in-progres
 
 | Position | Epics (`epic-*`) | Commentaire |
 | -------- | ---------------- | ----------- |
-| **`in-progress`** | **9** | Stories **9.6** et **9.10** **`done`** (infra modules + liaison Paheko clôture) ; suite **9.7+** et modules **D** selon **L1** (une story D à la fois). |
+| **`in-progress`** | **9** | Stories **9.6** et **9.10** **`done`** ; suite **9.7+** et modules **D** en **L1** (**une** story D à la fois) — **après** Epic **10.1–10.3** et arbitrage PO **D2/D7** (priorité module **D** avant tout `bmad-dev-story` sur un autre module **D**). |
 | **`backlog` (cle epic)** | **10**, **12**, **20**, **21** | L’Epic **10** mélange stories déjà **`done`** (ex. **10.6b–10.6e**) et stories **`backlog`** — seul le YAML fait foi. Travaux ship **10.1–10.8** autorisés en **L0** si PO valide. |
 | **`done` (cle epic)** | **1–8**, **11**, **13–19**, **22–26** | Nombre total d’epics documentés > **10** ; ne pas se limiter à la numérotation 1–10 pour le pilotage. |
 
@@ -140,18 +143,24 @@ Le détail produit est dans **PRD** et **epics** :
 Copier-coller et adapter l’epic / la branche en cours :
 
 ```text
-Tu pilotes une session JARVOS Recyclique v2. Charge dans l'ordre :
+Tu pilotes une session JARVOS Recyclique v2. Charge dans l'ordre (sprint-change 2026-09-21 §5) :
 1) _bmad-output/implementation-artifacts/sprint-status.yaml (last_updated racine + development_status)
-2) references/ou-on-en-est.md
-3) _bmad-output/planning-artifacts/guide-pilotage-v2.md
-4) epics.md + sprint-status / fichier story si besoin
+2) references/ou-on-en-est.md (Action immédiate post-D1 si présente)
+3) _bmad-output/planning-artifacts/prd.md (encart L0/L1/L2)
+4) _bmad-output/planning-artifacts/guide-pilotage-v2.md
+5) epics.md + fichier story sous implementation-artifacts/ si besoin
+
+Process BMAD (post-D1) :
+- Règles L0/L1/L2 : _bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md
+- L0 : plancher, C2b, Epic 10.1–10.8 si PO valide ; L1 : un module D à la fois après 10.1–10.3 et D2/D7 ; L2 : spikes ADR seulement
+- Gel avril 2026 = historique (ne pas appliquer comme règle courante)
 
 Règles :
 - Respecter la règle d'or Piste A/B (contrat B qui ancère A).
-- Ne pas déclarer un jalon coché sans livrable reviewable ou sans recoupement YAML.
-- Si la session touche Peintre_nano sur les Epics 5 à 10 (et extensions parité), charger aussi references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md.
-- Si la session touche les stories 6.x à 10.x, charger aussi references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md et references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md.
-- En fin de session : mettre à jour references/ou-on-en-est.md ; mettre à jour sprint-status.yaml pour tout changement de statut ; ne mettre à jour les cases jalons du guide que si un critère objectivement franchi.
+- Ne pas déclarer un jalon [x] sans livrable reviewable ou sans recoupement YAML.
+- Peintre Epics 5–10 : references/artefacts/2026-04-07_03_checklist-pr-peintre-sans-metier.md
+- Stories 6.x–10.x : pack 2026-04-08_02 et tableau 2026-04-08_03
+- Fin de session : ou-on-en-est.md + sprint-status.yaml si changement de statut ; jalons guide §5 seulement si critère objectif franchi.
 ```
 
 ---
@@ -177,7 +186,7 @@ Avant toute validation terrain Epic 6, vérifier explicitement :
 ### Règle caisse Peintre vs legacy (2026-04-12)
 
 - **En bref** : équivalence utilisateur legacy → **traduite dans** Peintre (CREOS, widgets, slots, API) — pas de contournement du modèle contractuel ; texte complet et DoD : [`sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md`](./sprint-change-proposal-2026-04-12-parite-caisse-legacy-stricte.md).
-- **Preuve visuelle / structurelle (gate stories parité caisse)** : outil MCP Cursor **user-chrome-devtools** (flux `list_pages` → `select_page` → `navigate_page` → `take_snapshot` ; réseau seulement si requêtes listées) — **obligatoire à chaque PR** qui touche une ligne `ui-pilote-03*` caisse, `ui-pilote-03a`–`03e`, ou une story **Epic 11 / Epic 13** caisse ; exécution **locale ou CI** selon disponibilité MCP. Optionnel : même scénario sur **main** en **nightly** si la chaîne CI expose le MCP (sinon gate manuel documenté).
+- **Preuve visuelle / structurelle (gate stories parité caisse)** : **primaire** = navigateur / session interactive (parcours opérateur réel sur stack locale) ; **secours** = MCP Cursor **user-chrome-devtools** (`list_pages` → `select_page` → `navigate_page` → `take_snapshot`) si le browser MCP ou l’environnement cloud ne permet pas le parcours complet. Gate **obligatoire** à chaque PR touchant `ui-pilote-03*` caisse, `ui-pilote-03a`–`03e`, ou story **Epic 11 / Epic 13** caisse — preuve documentée dans l’artefact de story ou la PR (browser ou devtools, méthode indiquée).
 
 ---
 

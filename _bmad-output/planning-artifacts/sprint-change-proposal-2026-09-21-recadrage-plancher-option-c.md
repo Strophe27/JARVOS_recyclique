@@ -31,7 +31,8 @@ proposition_store: correct-course-v2 (QA3 PASS 96)
 
 **Autorisé** sans décision PO supplémentaire :
 
-- Maintenance et correctifs sur le **plancher** déjà livré (Peintre 3–7, 11, 13–15 ; Paheko 8, 22–23, 25 ; infra **9.6** ; liaison clôture **9.10** sous réserve EC prod).
+- Maintenance et correctifs sur le **plancher** déjà livré (Peintre 3–7, 11, 13–15 ; Paheko 8, 22–23, 25 ; infra **9.6** ; liaison clôture **9.10**).
+- **EC prod (9.10)** : retour métier compta (ex. courrier Corinne/Caro) = **gate terrain / reprise L0** si écarts — **n’annule pas** le `done` YAML ni la livraison technique v1 ; ajustements = maintenance ou stories ciblées.
 - Préparation et exécution **C2b** terrain (gate tag **`v2.0.0`** / **G-plancher** — **interdit** de taguer avant C2b validé).
 - Epic **10** (gates ship : **10.1–10.8**) en **L0** si PO valide la priorité ship.
 - Correctifs parité **13.8** ou maintenance L0 si PO ouvre la story.
@@ -40,7 +41,8 @@ proposition_store: correct-course-v2 (QA3 PASS 96)
 
 - **Une story module D à la fois** après journal PO + `bmad-create-story` dédiée.
 - **Pas de parallélisme** entre modules **D** (éco-org **9.1**, adhérents **9.3**, HelloAsso **9.4–9.5**, **9.8**, etc.).
-- **`bmad-dev-story`** sur périmètre **D** : **après D1** (cette publication) **et** priorité module tranchée (**D2/D7** — hors scope de ce fichier).
+- **`bmad-dev-story`** sur périmètre **D** : **après D1**, **après** priorité ship Epic **10.1–10.3** (L0), **et** module tranché (**D2/D7**).
+- **`bmad-create-story` / `bmad-dev-story`** : périmètre **L0** = stories plancher / Epic 10 gates / maintenance ; **L1** = fichier story module **D** dédié après journal PO ; **L2** = pas de dev prod (spikes ADR seulement).
 
 ### Niveau L2 — Vision long terme (couche F)
 
@@ -88,14 +90,18 @@ Le fichier **`sprint-status.yaml`** reste la **preuve historique** des statuts ;
 
 ## 6. Décisions HITL ouvertes (hors D1)
 
-| ID | Sujet | Statut |
-|----|--------|--------|
-| **D1** | Gel → L0/L1/L2 | **Tranché** 2026-09-21 |
-| **D2/D7** | Priorité post-C2b | Ouvert |
-| **D3** | HelloAsso / PRD §7.1 | Ouvert |
-| **D4–D10** | Voir proposition store §5 | Ouvert |
+| ID | Sujet | Statut | Tranche / note |
+|----|--------|--------|----------------|
+| **D1** | Gel → L0/L1/L2 | **Tranché** 2026-09-21 | Publication process |
+| **D2/D7** | Priorité **modules D** post-C2b | Ouvert | **Après** Epic **10.1–10.3** ; PO tranche **un** module **D** avant `bmad-create-story` |
+| **D3** | HelloAsso / PRD §7.1 | Ouvert — **parking PO** | Pas de dev large ; **9.4/9.5** = doc ; cible **G-vendable** §13.2, pas plancher **L0** |
+| **D4–D10** | Voir proposition store §5 | Ouvert | Grille SoT agents (ne pas confondre D9/D10 inventaire vision) |
 
-Grille SoT agents : proposition Correct Course V2 store — **§5** (ne pas confondre D9/D10 inventaire vision).
+**Livrables doc alignés sur D1 (checklist)** : PRD §12.1 pont L0/L1/L2 ; PRD §7.1 plancher vs **D** ; PRD §13 **G-plancher** ; `guide-pilotage-v2.md` ordre §5 ; ce journal [`references/ou-on-en-est.md`](../../references/ou-on-en-est.md).
+
+**Epic 9 — classement indicatif L0 vs L1** (YAML fait foi) : **L0** — **9.6**, **9.10** (`done`) ; maintenance / correctifs liaison = **L0**. **L1** — **9.1–9.3**, **9.7+**, modules métier **D** (dont **9.8** etc.) : **une story à la fois** après **D2/D7** et tranche **10.1–10.3**.
+
+**Miroir décisions store** : la proposition Correct Course V2 (**proposition_store: correct-course-v2**) reste la grille HITL détaillée ; les chemins canoniques de publication restent `_bmad-output/planning-artifacts/` et `references/ou-on-en-est.md` — pas de second dépôt inventé pour D1.
 
 ---
 
