@@ -91,12 +91,21 @@ jobs:
           npm run test
 
   contracts-openapi:
-    name: Contrats — régénération OpenAPI TypeScript
+    name: Contrats — chaîne OpenAPI (FastAPI → snapshot → YAML → TS)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python (export FastAPI)
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: recyclique/api/.python-version
+          cache: pip
+          cache-dependency-path: |
+            recyclique/api/requirements.txt
+            recyclique/api/requirements-dev.txt
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -105,9 +114,17 @@ jobs:
           cache: npm
           cache-dependency-path: contracts/openapi/package-lock.json
 
-      - name: generate et working tree propre
-        working-directory: contracts/openapi
+      - name: Export contrats, codegen et working tree propre
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          REDIS_URL: redis://localhost:6379
+          SECRET_KEY: ci-openapi-export
         run: |
+          pip install --upgrade pip
+          pip install -r recyclique/api/requirements.txt -r recyclique/api/requirements-dev.txt
+          cd recyclique/api
+          python generate_openapi.py --emit-contracts
+          cd ../../contracts/openapi
           npm ci
           npm run generate
-          git diff --exit-code generated/recyclique-api.ts
+          git diff --exit-code generated/openapi-snapshot.json recyclique-api.yaml generated/recyclique-api.ts

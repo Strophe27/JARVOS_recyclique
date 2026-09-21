@@ -14,7 +14,7 @@ Frontend Recyclique v2 — React, TypeScript, Vite, Mantine v8 (P1), CSS Modules
 
 ## Types OpenAPI (backend / Peintre_nano)
 
-Source reviewable unique : `../contracts/openapi/recyclique-api.yaml`. Génération des types TS : depuis `../contracts/openapi/`, `npm install` puis `npm run generate` — sortie `../contracts/openapi/generated/recyclique-api.ts`. Importer ce fichier dans l’app (chemin relatif au monorepo) plutôt que recopier les DTO à la main ; détail dans `../contracts/README.md`.
+Chaîne contrats (Story 10.2) : export backend `cd ../recyclique/api && python generate_openapi.py --emit-contracts`, puis `cd ../contracts/openapi && npm run generate`. **Import canonique des types** : `../contracts/openapi/generated/recyclique-api.ts` (ex. `src/api/*`, domaines) — entrée codegen = YAML reviewable aligné sur le snapshot ; ne pas recopier les DTO à la main. Détail : `../contracts/README.md` et `../doc/ci-minimal.md`.
 
 ## Tests
 

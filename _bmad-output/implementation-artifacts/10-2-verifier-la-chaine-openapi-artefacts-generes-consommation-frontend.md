@@ -1,6 +1,6 @@
 # Story 10.2 : Vérifier la chaîne OpenAPI → artefacts générés → consommation frontend
 
-Status: ready-for-dev
+Status: review
 
 **Story ID :** 10.2  
 **Story key :** `10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend`  
@@ -51,19 +51,19 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.2**
 
 ## Tasks / Subtasks
 
-- [ ] **Audit écart chaîne (état CS 2026-09-21)** — Cartographier : (a) `app.openapi()` via fixture `openapi_schema` ; (b) `recyclique/api/openapi.json` (export historique tests/Docker) ; (c) `contracts/openapi/recyclique-api.yaml` (~13k lignes, enrichi manuellement au fil des epics) ; (d) `contracts/openapi/generated/recyclique-api.ts` (codegen **depuis YAML uniquement** aujourd'hui). Documenter dans les Dev Notes du fichier story les **écarts connus** (préfixes `/v1` vs `/api`, champs `description` reviewables, fragments `contracts/openapi/fragments/`). (AC : 1, 2, 4)
+- [x] **Audit écart chaîne (état CS 2026-09-21)** — Cartographier : (a) `app.openapi()` via fixture `openapi_schema` ; (b) `recyclique/api/openapi.json` (export historique tests/Docker) ; (c) `contracts/openapi/recyclique-api.yaml` (~13k lignes, enrichi manuellement au fil des epics) ; (d) `contracts/openapi/generated/recyclique-api.ts` (codegen **depuis YAML uniquement** aujourd'hui). Documenter dans les Dev Notes du fichier story les **écarts connus** (préfixes `/v1` vs `/api`, champs `description` reviewables, fragments `contracts/openapi/fragments/`). (AC : 1, 2, 4)
 
-- [ ] **Politique snapshot unique** — Trancher et **écrire** (PO technique = équipe, pas HITL supplémentaire Ombre) : format du snapshot sous `contracts/openapi/generated/` (JSON normalisé recommandé pour diff stable ; YAML optionnel si outillage unique) ; règle de mise à jour de **`recyclique-api.yaml`** (écrasement contrôlé vs merge sélectif des `description` — si merge, script **explicite** et testé). Mettre à jour **`contracts/README.md`** § tableau `openapi/` et **`doc/ci-minimal.md`** § hors 10.1 → intégrer **10.2**. (AC : 1, 2, 3)
+- [x] **Politique snapshot unique** — Trancher et **écrire** (PO technique = équipe, pas HITL supplémentaire Ombre) : format du snapshot sous `contracts/openapi/generated/` (JSON normalisé recommandé pour diff stable ; YAML optionnel si outillage unique) ; règle de mise à jour de **`recyclique-api.yaml`** (écrasement contrôlé vs merge sélectif des `description` — si merge, script **explicite** et testé). Mettre à jour **`contracts/README.md`** § tableau `openapi/` et **`doc/ci-minimal.md`** § hors 10.1 → intégrer **10.2**. (AC : 1, 2, 3)
 
-- [ ] **Script export / sync** — Implémenter un chemin **une commande** depuis `recyclique/api/` (ex. `python generate_openapi.py --emit-contracts` ou script shell `scripts/sync-openapi-chain.sh` à la racine) qui : charge l'app FastAPI ; écrit le snapshot dans `contracts/openapi/generated/` ; synchronise `recyclique-api.yaml` selon la politique ; **ne modifie pas** la sémantique métier des routes (pas de refonte API). Préserver **`operationId`** stables (custom OpenAPI route decorators existants — grep `operation_id` / `openapi_extra` avant toute refonte). (AC : 1, 2)
+- [x] **Script export / sync** — Implémenter un chemin **une commande** depuis `recyclique/api/` (ex. `python generate_openapi.py --emit-contracts` ou script shell `scripts/sync-openapi-chain.sh` à la racine) qui : charge l'app FastAPI ; écrit le snapshot dans `contracts/openapi/generated/` ; synchronise `recyclique-api.yaml` selon la politique ; **ne modifie pas** la sémantique métier des routes (pas de refonte API). Préserver **`operationId`** stables (custom OpenAPI route decorators existants — grep `operation_id` / `openapi_extra` avant toute refonte). (AC : 1, 2)
 
-- [ ] **Intégration CI** — Étendre le job **`contracts-openapi`** dans `ci-minimal.yml` (préféré) : installer deps Python minimales pour l'export (réutiliser cache/setup du job `api-minimal` **ou** step léger `pip install` ciblé) ; exécuter le script chaîne ; `npm ci && npm run generate` ; `git diff --exit-code` sur **tous** les artefacts déclarés en politique snapshot. **Interdit** : `paths:` sur ce workflow ; `continue-on-error`. (AC : 2, 5)
+- [x] **Intégration CI** — Étendre le job **`contracts-openapi`** dans `ci-minimal.yml` (préféré) : installer deps Python minimales pour l'export (réutiliser cache/setup du job `api-minimal` **ou** step léger `pip install` ciblé) ; exécuter le script chaîne ; `npm ci && npm run generate` ; `git diff --exit-code` sur **tous** les artefacts déclarés en politique snapshot. **Interdit** : `paths:` sur ce workflow ; `continue-on-error`. (AC : 2, 5)
 
-- [ ] **Tests détection drift** — Ajouter `recyclique/api/tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (nom indicative) : compare au minimum les ensembles **`operationId`** entre `app.openapi()` et le YAML parse (PyYAML ou `json` si snapshot JSON intermédiaire) ; tolérance documentée pour opérations **volontairement** absentes du YAML (liste vide attendue après audit — sinon faire converger). Ajouter `tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` : assert que `ci-minimal.yml` référence le script/export et les diffs git sur la chaîne (pattern **10.1** smoke). (AC : 4, 5)
+- [x] **Tests détection drift** — Ajouter `recyclique/api/tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (nom indicative) : compare au minimum les ensembles **`operationId`** entre `app.openapi()` et le YAML parse (PyYAML ou `json` si snapshot JSON intermédiaire) ; tolérance documentée pour opérations **volontairement** absentes du YAML (liste vide attendue après audit — sinon faire converger). Ajouter `tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` : assert que `ci-minimal.yml` référence le script/export et les diffs git sur la chaîne (pattern **10.1** smoke). (AC : 4, 5)
 
-- [ ] **Doc consommation frontend** — Vérifier / ajuster une seule section dans `peintre-nano/README.md` + `contracts/README.md` : entrée = snapshot aligné → `recyclique-api.yaml` → `npm run generate` → import `../../../contracts/openapi/generated/recyclique-api` (chemins relatifs existants). (AC : 3)
+- [x] **Doc consommation frontend** — Vérifier / ajuster une seule section dans `peintre-nano/README.md` + `contracts/README.md` : entrée = snapshot aligné → `recyclique-api.yaml` → `npm run generate` → import `../../../contracts/openapi/generated/recyclique-api` (chemins relatifs existants). (AC : 3)
 
-- [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
+- [x] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
 
 ## Dev Notes
 
@@ -87,6 +87,18 @@ Ordre **cible** (`core-architectural-decisions.md` § Contrat frontend) :
 5. **`peintre-nano`** importe les types (clients sous `src/api/`, domaines bandeau-live, etc.).
 
 Références : `project-structure-boundaries.md` (Piste B, Convergence 1), pivot `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` § drift / copies dérivées.
+
+### Audit écart chaîne (DS 2026-09-21)
+
+| Source | Rôle | Écart constaté avant DS |
+|--------|------|-------------------------|
+| `app.openapi()` | Writer exécutable | ~238 `operationId` auto ; ~35 alignés mot pour mot avec le YAML |
+| `recyclique/api/openapi.json` | Export diagnostic tests/Docker | Hors snapshot CI (`contracts/`) — inchangé |
+| `contracts/openapi/recyclique-api.yaml` | Reviewable | ~155 ops ; `operationId` stables ; schémas enrichis (`ContextEnvelope`, Story 5.5) ; ping gouvernance **sans** route FastAPI |
+| `contracts/openapi/generated/recyclique-api.ts` | Codegen Peintre | Entrée YAML seule ; régénéré après sync |
+| `contracts/openapi/fragments/` | Exemples reviewables | Non fusionnés dans le YAML par le script (inchangé) |
+
+**Politique retenue :** snapshot `generated/openapi-snapshot.json` (JSON trié) ; sync YAML = chemins + `components` FastAPI avec **conservation** des `operationId`/descriptions/tags reviewables et des propriétés schéma absentes de FastAPI ; version OpenAPI reviewable **3.1.0** conservée ; seule exception path/méthode hors FastAPI : `GET /v2/_contract-governance/ping`.
 
 ### Intelligence story 10.1 (prédécesseur immédiat)
 
@@ -167,16 +179,42 @@ cd ../recyclique/api && python -m pytest tests/test_openapi_validation.py -q
 
 ### Agent Model Used
 
-_(à remplir en DS)_
+Composer 2.5 (Amelia / `bmad-dev-story`)
 
 ### Debug Log References
 
+- Gates DS : `pytest tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (3) ; `pytest tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` (2) ; `npx vitest run tests/contract/` (97 passed).
+
 ### Completion Notes List
+
+- Module `recyclic_api.openapi_chain` + `generate_openapi.py --emit-contracts`.
+- CI `contracts-openapi` : export Python + diff `openapi-snapshot.json`, `recyclique-api.yaml`, `recyclique-api.ts`.
+- **10.1** non passé à `done` ; bandeau-live hors scope.
 
 ### File List
 
+- `recyclique/api/src/recyclic_api/openapi_chain.py` (nouveau)
+- `recyclique/api/generate_openapi.py`
+- `recyclique/api/requirements-dev.txt`
+- `recyclique/api/tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (nouveau)
+- `contracts/openapi/generated/openapi-snapshot.json` (nouveau)
+- `contracts/openapi/recyclique-api.yaml`
+- `contracts/openapi/generated/recyclique-api.ts`
+- `.github/workflows/ci-minimal.yml`
+- `doc/ci-minimal.md`
+- `contracts/README.md`
+- `peintre-nano/README.md`
+- `tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` (nouveau)
+- `tests/infra/test_story_10_1_ci_minimal_smoke.py`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+### Change Log
+
+- 2026-09-21 — DS story 10.2 : chaîne OpenAPI testable FastAPI → snapshot → YAML → codegen + gates CI/doc/tests.
+
 ## Story completion status
 
+- **DS :** implémentation **review** (2026-09-21) — gates contract Vitest + pytest 10.2 verts ; pas de push.
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
 - **QA3 :** boucle gate 95+ (2026-09-21) — score **96** ; 0 P0 / 0 P1 ; correctifs intégrés (tableau 10.1 `review`, gates `git diff` + `recyclique-api.ts`, `--emit-contracts` indicatif aligné tâche script) — rapport projet `internal/qa3-story-10-2.md`
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` sans écart bloquant ; QA3 **96** préservé ; dettes résiduelles (audit écart chaîne, politique merge `description` YAML, Dev Agent Record) reportées **DS**

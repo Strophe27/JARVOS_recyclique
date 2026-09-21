@@ -8,11 +8,13 @@ Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workfl
 |--------------|------|
 | `api-minimal` | PostgreSQL **17** + Redis ; `compileall` + `ruff check` + `pytest -m "not performance"` |
 | `peintre-nano-minimal` | `npm ci` ; `npm run lint` ; `npm run test` (inclut `peintre-nano/tests/contract/`) |
-| `contracts-openapi` | `npm ci` + `npm run generate` ; working tree propre sur `generated/recyclique-api.ts` |
+| `contracts-openapi` | Export FastAPI (`generate_openapi.py --emit-contracts`) ; `npm ci` + `npm run generate` ; working tree propre sur `generated/openapi-snapshot.json`, `recyclique-api.yaml`, `generated/recyclique-api.ts` |
 
-Politique par défaut : tout changement OpenAPI doit régénérer et **committer** `contracts/openapi/generated/recyclique-api.ts`. Toute variante doit être documentée **ici** avant merge.
+Politique par défaut : tout changement d’API backend doit régénérer et **committer** la chaîne complète (snapshot JSON, YAML reviewable aligné, types TS). Détail : [`contracts/README.md`](../contracts/README.md) § chaîne OpenAPI.
 
-**Hors périmètre 10.1 :** `recyclique-1.4.4/` ; déploiement prod legacy ([`deploy.yaml`](../.github/workflows/deploy.yaml)) ; chaîne FastAPI → YAML reviewable (**10.2**) ; validation CREOS `operationId` complète (**10.3**).
+**Hors périmètre 10.1 / couvert par 10.2 :** chaîne FastAPI → snapshot → YAML → codegen (ci-dessus).
+
+**Hors périmètre Epic 10 :** `recyclique-1.4.4/` ; déploiement prod legacy ([`deploy.yaml`](../.github/workflows/deploy.yaml)) ; validation CREOS `operationId` complète (**10.3**).
 
 **Séquence plancher L0 :** **10.1 → 10.2 → 10.3** avant tout module métier **D** (pilotage PO D2/D7).
 
@@ -29,9 +31,15 @@ Installer `ruff` en local : `pip install ruff` (non listé dans `requirements.tx
 Depuis la racine du dépôt :
 
 ```bash
-cd peintre-nano && npm ci && npm run lint && npm run test
-cd ../contracts/openapi && npm ci && npm run generate && git diff --exit-code generated/recyclique-api.ts
-cd ../../recyclique/api && pip install -r requirements.txt -r requirements-dev.txt && pip install ruff
+cd recyclique/api && pip install -r requirements.txt -r requirements-dev.txt
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recyclic_test
+export REDIS_URL=redis://localhost:6379
+export SECRET_KEY=local-openapi-export
+python generate_openapi.py --emit-contracts
+cd ../../contracts/openapi && npm ci && npm run generate
+git diff --exit-code generated/openapi-snapshot.json recyclique-api.yaml generated/recyclique-api.ts
+cd ../../peintre-nano && npm ci && npm run lint && npm run test
+cd ../recyclique/api && pip install ruff
 python -m compileall src/recyclic_api -q
 python -m ruff check src/recyclic_api
 export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recyclic_test
@@ -45,7 +53,13 @@ Tests contractuels Peintre (détail) : [`peintre-nano/tests/contract/README.md`]
 Smoke infra optionnel (verrou YAML) :
 
 ```bash
-python -m pytest tests/infra/test_story_10_1_ci_minimal_smoke.py -q
+python -m pytest tests/infra/test_story_10_1_ci_minimal_smoke.py tests/infra/test_story_10_2_openapi_chain_ci_smoke.py -q
+```
+
+Tests drift chaîne OpenAPI (API) :
+
+```bash
+cd recyclique/api && python -m pytest tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py -q
 ```
 
 ## Protection de branche `master` (organisation GitHub)
