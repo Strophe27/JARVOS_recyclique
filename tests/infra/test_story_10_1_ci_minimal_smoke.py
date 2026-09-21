@@ -26,6 +26,7 @@ def test_ci_minimal_workflow_exists_and_targets_master() -> None:
     assert "branches: [master]" in body or "branches:\n      - master" in body
     assert "pull_request:" in body
     assert "image: postgres:17" in body
+    assert "POSTGRES_DB: recyclic_test" in body
 
 
 def test_ci_minimal_three_jobs_without_path_filters() -> None:

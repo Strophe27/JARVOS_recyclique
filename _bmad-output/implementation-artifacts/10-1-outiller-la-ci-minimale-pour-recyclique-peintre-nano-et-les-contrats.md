@@ -217,3 +217,9 @@ Dettes **Info** non bloquantes — clôture intégrale par documentation (aucun 
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist sans écart bloquant ; QA3 gate **96** — risques résiduels documentés ci-dessus
 - **DS :** Amelia — **review** (2026-09-21) ; workflow `ci-minimal.yml` + doc + smoke infra
 - **Prochaine étape BMAD :** **code-review** puis **QA3** (coordinateur) ; `sprint-status` **done** via Story Runner après gates
+
+### Review Findings (CR Amelia · 2026-09-21)
+
+- [x] [Review][Patch] Postgres CI : ajouter `POSTGRES_DB: recyclic_test` au service du job `api-minimal` [`.github/workflows/ci-minimal.yml`] — **corrigé en CR** (+ assert smoke)
+- [x] [Review][Defer] Peloton Peintre `npm run test` : 3 échecs + erreurs mock/fetch (bandeau-live, presence) — **préexistant**, hors diff `ab9dfff` ; baseline CI rouge tant que non corrigé — deferred, pre-existing
+- [x] [Review][Defer] Triggers `main`/`develop` dans `deploy.yaml` — dette historique ; couverture `master` via `ci-minimal` — deferred, pre-existing
