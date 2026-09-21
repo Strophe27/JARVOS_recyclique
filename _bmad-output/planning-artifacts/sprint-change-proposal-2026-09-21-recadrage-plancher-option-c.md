@@ -19,7 +19,7 @@ proposition_store: correct-course-v2 (QA3 PASS 96)
 
 ## 1. Synthèse / déclencheur
 
-**Constat :** après le gel d’avril 2026, le dépôt a livré le **plancher Option C** (story **9.6**, **9.10**, epics **25–26** **done** au YAML `last_updated` racine **2026-05-30**) sans amendement formel du gel. Les agents qui lisent le PRD (encart gel) ou le guide pilotage (**2026-04-23**) entrent en contradiction avec `sprint-status.yaml`.
+**Constat :** après le gel d’avril 2026, le dépôt a livré le **plancher Option C** (story **9.6**, **9.10**, epics **25–26** **done** au YAML `last_updated` racine **2026-05-30**) sans amendement formel du gel. Les agents qui s’appuyaient sur le PRD (**encart gel**, pré-D1) ou sur le guide pilotage **seul** (sans recroiser `sprint-status.yaml` pour les epics **9–10**) entraient en contradiction avec le YAML — corrigé par D1 (encart **levée partielle L0/L1/L2**, guide maj **2026-09-21** §5.2).
 
 **Décision :** **levée partielle** du gel d’exécution BMAD ; remplacement de la règle « hors stories 25-* » par **trois niveaux L0 / L1 / L2**. **Aucun rollback** des statuts **done** ni du code livré.
 
@@ -40,7 +40,7 @@ proposition_store: correct-course-v2 (QA3 PASS 96)
 ### Niveau L1 — Modules métier (couche D)
 
 - **Une story module D à la fois** après journal PO + `bmad-create-story` dédiée.
-- **Pas de parallélisme** entre modules **D** (éco-org **9.1**, adhérents **9.3**, HelloAsso **9.4–9.5**, **9.8**, etc.).
+- **Pas de parallélisme** entre modules **D** en **L1** (éco-org **9.1**, adhérents **9.3**, **9.7+**, **9.8**, etc.) — **HelloAsso 9.4–9.5 hors L1** (**D3** parking ; stories = cadrage doc uniquement).
 - **`bmad-dev-story`** sur périmètre **D** : **après D1**, **après** priorité ship Epic **10.1–10.3** (L0), **et** module tranché (**D2/D7**).
 - **`bmad-create-story` / `bmad-dev-story`** : périmètre **L0** = stories plancher / Epic 10 gates / maintenance ; **L1** = fichier story module **D** dédié après journal PO ; **L2** = pas de dev prod (spikes ADR seulement).
 
@@ -99,7 +99,7 @@ Le fichier **`sprint-status.yaml`** reste la **preuve historique** des statuts ;
 
 **Livrables doc alignés sur D1 (checklist)** : PRD §12.1 pont L0/L1/L2 ; PRD §7.1 plancher vs **D** ; PRD §13 **G-plancher** ; `guide-pilotage-v2.md` ordre §5 ; ce journal [`references/ou-on-en-est.md`](../../references/ou-on-en-est.md).
 
-**Epic 9 — classement indicatif L0 vs L1** (YAML fait foi) : **L0** — **9.6**, **9.10** (`done`) ; maintenance / correctifs liaison = **L0**. **L1** — **9.1–9.3**, **9.7+**, modules métier **D** (dont **9.8** etc.) : **une story à la fois** après **D2/D7** et tranche **10.1–10.3**.
+**Epic 9 — classement indicatif L0 vs L1** (YAML fait foi) : **L0** — **9.6**, **9.10** (`done`) ; maintenance / correctifs liaison = **L0**. **L1** — **9.1–9.3**, **9.7+**, modules métier **D** (dont **9.8** etc.) : **une story à la fois** après **D2/D7** et tranche **10.1–10.3**. **9.4–9.5** HelloAsso = **hors L0/L1** tant que **D3** parking (aligné PRD §7.1).
 
 **Miroir décisions store** : la proposition Correct Course V2 (**proposition_store: correct-course-v2**) reste la grille HITL détaillée ; les chemins canoniques de publication restent `_bmad-output/planning-artifacts/` et `references/ou-on-en-est.md` — pas de second dépôt inventé pour D1.
 

@@ -85,7 +85,7 @@ Titres et profondeur : **`epics.md`**. Statut **`done` / `backlog` / `in-progres
 
 | Position | Epics (`epic-*`) | Commentaire |
 | -------- | ---------------- | ----------- |
-| **`in-progress`** | **9** | Stories **9.6** et **9.10** **`done`** ; suite **9.7+** et modules **D** en **L1** (**une** story D à la fois) — **après** Epic **10.1–10.3** et arbitrage PO **D2/D7** (priorité module **D** avant tout `bmad-dev-story` sur un autre module **D**). |
+| **`in-progress`** | **9** | Stories **9.6** et **9.10** **`done`** ; suite **9.7+** et modules **D** en **L1** (**une** story D à la fois) — **après** Epic **10.1–10.3** et arbitrage PO **D2/D7** ; **9.4–9.5** HelloAsso **hors L1** (**D3** parking). |
 | **`backlog` (cle epic)** | **10**, **12**, **20**, **21** | L’Epic **10** mélange stories déjà **`done`** (ex. **10.6b–10.6e**) et stories **`backlog`** — seul le YAML fait foi. Travaux ship **10.1–10.8** autorisés en **L0** si PO valide. |
 | **`done` (cle epic)** | **1–8**, **11**, **13–19**, **22–26** | Nombre total d’epics documentés > **10** ; ne pas se limiter à la numérotation 1–10 pour le pilotage. |
 

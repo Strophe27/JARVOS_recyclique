@@ -43,7 +43,7 @@ Projet JARVOS Recyclique v0.1.0 initialise. **Analyse brownfield 1.4.4 disponibl
 | **v2.0.0** | Tag **plancher** **apres C2b** + gate Coordinateur (premier tag 2.0.x — **pas** `v2.0.1`) |
 | **v2.0.1, v2.0.2…** | **Un module metier L1 a la fois** apres **v2.0.0** ; story **9.10** **`done`** (2026-05-27) |
 | **HelloAsso** | **Parking** — module prevu, **pas** priorite maintenant ; ne pas perdre (stories 9.4/9.5 = doc / arbitrage sans dev large) |
-| **Ordre Epic 9** | **9.6** **done** ; modules metier **un par un** (9.1–9.5, 9.7+) **en L1** apres **L0** **10.1–10.3** si retenu (**D2/D7**) ; note dans [`epics.md`](../_bmad-output/planning-artifacts/epics.md) § Epic 9 |
+| **Ordre Epic 9** | **9.6** **done** ; modules metier **un par un** (**9.1–9.3**, **9.7+** en **L1**) apres **L0** **10.1–10.3** si retenu (**D2/D7**) ; **9.4–9.5** HelloAsso **hors L1** (**D3** parking) ; note dans [`epics.md`](../_bmad-output/planning-artifacts/epics.md) § Epic 9 |
 
 **Chantier Jarvos mémoire sessions (2026-05-21) :** Phases **0–3** livrées (pack [`jarvos-agentique/`](../references/jarvos-agentique/index.md), hooks `log/cursor-agent/`, scripts `jarvos-memoire-sessions/dev/`, skill `jarvos-session-memory`). **Batch Phase 5 partiel** : `consolidate_manifest` + triage `--limit 10` + fiche `c8a645ab` → [`sessions/`](../references/jarvos-agentique/sessions/) ; sync [`jarvos-memoire-sessions/00_SYNC_STATUS.md`](../jarvos-memoire-sessions/00_SYNC_STATUS.md). **Recharger la fenêtre Cursor** pour activer les hooks. QA2 mémoire : **pending**.
 
