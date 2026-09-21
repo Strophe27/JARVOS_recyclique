@@ -168,23 +168,25 @@ targets:
 ### Gates Story Runner (référence DS)
 
 ```bash
-# 1) Guard + peloton API
-cd recyclique/api
+# 1) Guard manifeste (racine dépôt — pattern infra 10.1–10.3)
 export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recyclic_test
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recyclic_test
 export REDIS_URL=redis://localhost:6379
-python -m pytest tests/test_story_10_4_critical_core_peloton_guard.py -q
-bash scripts/run_critical_core_peloton.sh   # après implémentation
+python -m pytest tests/infra/test_story_10_4_critical_core_peloton_guard.py -q
 
-# 2) Peloton Peintre
+# 2) Peloton API (après implémentation)
+cd recyclique/api
+bash scripts/run_critical_core_peloton.sh
+
+# 3) Peloton Peintre
 cd ../../peintre-nano && npm ci
 npm run test:critical-core
 
-# 3) Parité CI (racine dépôt)
-# Voir doc/ci-minimal.md §10.4
+# 4) Parité CI (racine dépôt)
+cd .. && # voir doc/ci-minimal.md §10.4
 
-# 4) Smoke infra optionnel
-cd .. && python -m pytest tests/infra/test_story_10_4_ci_minimal_critical_core_smoke.py -q
+# 5) Smoke infra optionnel (racine dépôt)
+python -m pytest tests/infra/test_story_10_4_ci_minimal_critical_core_smoke.py -q
 ```
 
 ### Project context
@@ -202,6 +204,13 @@ cd .. && python -m pytest tests/infra/test_story_10_4_ci_minimal_critical_core_s
 - [Source: `references/artefacts/2026-04-08_01_transverse-shell-coherence-gaps-epic5.md` — Chaîne module / shell]
 - [Source: `references/consolidation-1.4.5/2026-03-23_audit-backend-tests-1.4.4.md` — Utile vs bruit]
 - [Source: `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md` — Story 10.4]
+
+## Story completion status
+
+- **CS :** fichier story — **ready-for-dev** (2026-09-21)
+- **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_185500_jarvos_recyclique`) — score **96** ; fused_coverage **92** ; 0 P0 / 0 P1 ; correctifs intégrés (module_chain API, AC5/FM4 steps 10.3, guard `collect-only`, sync_sensitive 8.1, C12) — rapport projet `internal/qa3-story-10-4.md` ; `TELEMETRY_APPEND_FAILED` (télémétrie) **ne bloque pas** VS
+- **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` ; correctif Gates (chemin guard `tests/infra/…` depuis racine dépôt) ; QA3 **96** préservé — rapport projet `internal/validate-story-10-4.md`
+- **Prochaine étape BMAD :** **DS** story 10.4 (`bmad-dev-story`) ; **ne pas** promouvoir **10.1** depuis 10.4 ; **10.2** / **10.3** restent **`done`**
 
 ## Dev Agent Record
 
