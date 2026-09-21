@@ -24,13 +24,13 @@ Projet JARVOS Recyclique v0.1.0 initialise. **Analyse brownfield 1.4.4 disponibl
 
 **Gel PRD / process BMAD :** levée partielle **L0–L2** (D1, **2026-09-21**) — sprint-change canonique **`sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`** (`_bmad-output/planning-artifacts/`). Le fichier **`sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`** reste l'historique du gel avril (non amendé).
 
-**Pilotage BMAD (instantane — cle racine `last_updated` du YAML : **2026-05-30**) :** epics **1** … **8**, **11**, **13** … **15**, **16** … **19**, **22** … **26** = **`done`** au niveau `epic-*`. **Epic 9** = **`in-progress`** — stories **9.6** et **9.10** **`done`** ; prochaine candidate typique : **9.7** (ACL, **`backlog`**) ou module **D** selon **L1** (une story à la fois). Epics **10**, **12**, **20**, **21** = **`backlog`** (sous-ensemble **10.6b** … **10.6e** deja **`done`**). Pour epics **9–10**, ne pas s'appuyer sur le guide pilotage seul : recroiser **`sprint-status.yaml`** et [`guide-pilotage-v2.md`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) (maj **2026-09-21**).
+**Pilotage BMAD (instantane — cle racine `last_updated` du YAML : **2026-05-30**) :** epics **1** … **8**, **11**, **13** … **15**, **16** … **19**, **22** … **26** = **`done`** au niveau `epic-*`. **Epic 9** = **`in-progress`** — stories **9.6** et **9.10** **`done`**. **L0 (ship)** : Epic **10.1–10.3** si PO priorise avant toute story **L1** (**9.7**, module **D**) — arbitrage **D2/D7** requis. **L1** : ensuite **une** story à la fois (**9.7** ACL ou module **D**, pas HelloAsso large — **D3** parking). Epics **10**, **12**, **20**, **21** = **`backlog`** (sous-ensemble **10.6b** … **10.6e** deja **`done`**). Pour epics **9–10**, ne pas s'appuyer sur le guide pilotage seul : recroiser **`sprint-status.yaml`** et [`guide-pilotage-v2.md`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) (maj **2026-09-21**).
 
 **Repere BMAD Epics 6 a 10** : pour toute reprise ou create-story / dev-story sur la suite `6.x` a `10.x`, utiliser comme point d'entree documentaire [references/artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md](artefacts/2026-04-08_02_pack-lecture-epics-6-10-et-corpus-captures.md) puis [references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md](artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md). Le pack `02` donne la vue de lecture par epic et le corpus de captures ; le tableau `03` donne la navigation **story par story**. Pour l'etat **story par story** (y compris cloture des Epics 6, 7, 8), se fier a `sprint-status.yaml` ; le pack et le tableau restent la lecture operationnelle des captures et de la matrice.
 
 **Plan post-9.6 (parallele A/B) :** [`.cursor/plans/post-9.6_plancher_et_compta_3341de2e.plan.md`](../.cursor/plans/post-9.6_plancher_et_compta_3341de2e.plan.md). **Agent A** **clos**. **Agent B** **clos (2026-05-27)** — story [`9-10-liaison-paheko-cloture-caisse-v1`](../_bmad-output/implementation-artifacts/9-10-liaison-paheko-cloture-caisse-v1.md) **done** ; QA2 boucle [`2026-05-27_04`](artefacts/2026-05-27_04_qa2-loop-story-9-10-liaison-paheko-cloture-caisse-v1.md) **96 % P0=0 GO**. **C2b** terrain puis tag plancher **`v2.0.0`** (pas **`v2.0.1`**) : voir plan § C2b et sprint-change **2026-09-21** §4 **G-plancher**.
 
-**Pack protocole modules v2 (2026-05-20) :** [`protocole-modules-recyclique/index.md`](protocole-modules-recyclique/index.md) — **P0 clos**. **Story 9.6** **`done`**. **Story 9.10** liaison Paheko clôture **`done`** (2026-05-27). **Prochaine Epic 9** : eco-org / 9.7 selon priorité. Brief PM [`2026-05-26_02`](artefacts/2026-05-26_02_brief-bmad-remise-a-flot-modules-9-6.md).
+**Pack protocole modules v2 (2026-05-20) :** [`protocole-modules-recyclique/index.md`](protocole-modules-recyclique/index.md) — **P0 clos**. **Story 9.6** **`done`**. **Story 9.10** liaison Paheko clôture **`done`** (2026-05-27). **Suite (post-D1)** : **L0** **10.1–10.3** si ship prioritaire ; **L1** eco-org / **9.7** / module **D** **après** tranche 10 et **D2/D7** — pas en parallèle implicite. Brief PM [`2026-05-26_02`](artefacts/2026-05-26_02_brief-bmad-remise-a-flot-modules-9-6.md).
 
 **Addendum terrain 23/05 :** [`2026-05-23_01_addendum`](artefacts/2026-05-23_01_addendum-transcripts-1423-visions-rec-pko.md) — **+24 idees** (VIS, ORG/WFL) ; **reserve produit** (pas dans 9.6). Finaux : [1423](../.transcription/meetings/2026-05-23-terrain-1423/final/2026-05-23-terrain-1423.md), [visions](../.transcription/meetings/2026-05-23-recyclique-bilans-audit-visions/final/2026-05-23-recyclique-bilans-audit-visions.md).
 
@@ -43,7 +43,7 @@ Projet JARVOS Recyclique v0.1.0 initialise. **Analyse brownfield 1.4.4 disponibl
 | **v2.0.0** | Tag **plancher** **apres C2b** + gate Coordinateur (premier tag 2.0.x — **pas** `v2.0.1`) |
 | **v2.0.1, v2.0.2…** | **Un module metier L1 a la fois** apres **v2.0.0** ; story **9.10** **`done`** (2026-05-27) |
 | **HelloAsso** | **Parking** — module prevu, **pas** priorite maintenant ; ne pas perdre (stories 9.4/9.5 = doc / arbitrage sans dev large) |
-| **Ordre Epic 9** | **9.6** **done** ; modules metier **un par un** (9.1–9.5, 9.7+) ; note dans [`epics.md`](../_bmad-output/planning-artifacts/epics.md) § Epic 9 |
+| **Ordre Epic 9** | **9.6** **done** ; modules metier **un par un** (9.1–9.5, 9.7+) **en L1** apres **L0** **10.1–10.3** si retenu (**D2/D7**) ; note dans [`epics.md`](../_bmad-output/planning-artifacts/epics.md) § Epic 9 |
 
 **Chantier Jarvos mémoire sessions (2026-05-21) :** Phases **0–3** livrées (pack [`jarvos-agentique/`](../references/jarvos-agentique/index.md), hooks `log/cursor-agent/`, scripts `jarvos-memoire-sessions/dev/`, skill `jarvos-session-memory`). **Batch Phase 5 partiel** : `consolidate_manifest` + triage `--limit 10` + fiche `c8a645ab` → [`sessions/`](../references/jarvos-agentique/sessions/) ; sync [`jarvos-memoire-sessions/00_SYNC_STATUS.md`](../jarvos-memoire-sessions/00_SYNC_STATUS.md). **Recharger la fenêtre Cursor** pour activer les hooks. QA2 mémoire : **pending**.
 
@@ -76,7 +76,7 @@ BMAD 6.0.3 installe. Cursor rules actives. Dossier `references/` operationnel.
 - **Process courant** : **L0 / L1 / L2** — [`sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`](../_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md) (gel avril = historique).
 - **Priorité ship (L0)** : Epic **10.1–10.3** avant tout module **D** en **L1** (HITL **D2/D7** : quel module métier après C2b).
 - **HelloAsso** : **parking PO** (**D3**) — pas de `bmad-dev-story` large sans arbitrage ; stories **9.4/9.5** = doc / cadrage.
-- **Suite doc D1** : alignement PRD §12.1, §7.1, §13 **G-plancher** ; guide pilotage ordre de chargement §5 du sprint-change.
+- **Suite doc D1** : alignements PRD §12.1, §7.1, §13 **G-plancher** et guide §5 — **faits** (session 2026-09-21, commit doc post-QA3).
 
 ---
 
@@ -111,7 +111,7 @@ Realise :
 
 A faire (action humaine) :
 - **Avant prod 2.0** : session verification **parite gestes** caisse / reception vs 1.4.4 (hors scope 9.6).
-- **Epic 9 suite** : story **9.7** ou premier module metier via **cookbook** (cockpit compta, eco-organismes, etc.).
+- **Epic 9 suite** *(historique 2026-05-27 — voir **Action immédiate post-D1** pour priorité L0/L1)* : story **9.7** ou module metier **uniquement** apres **10.1–10.3** + **D2/D7**.
 
 2026-05-26 — **Decision PM plancher v2.0 + lancement 9.6** :
 
