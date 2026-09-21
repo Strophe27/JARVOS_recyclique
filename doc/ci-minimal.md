@@ -34,6 +34,9 @@ cd ../contracts/openapi && npm ci && npm run generate && git diff --exit-code ge
 cd ../../recyclique/api && pip install -r requirements.txt -r requirements-dev.txt && pip install ruff
 python -m compileall src/recyclic_api -q
 python -m ruff check src/recyclic_api
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recyclic_test
+export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recyclic_test
+export REDIS_URL=redis://localhost:6379
 python -m pytest tests/ -m "not performance" --tb=short
 ```
 
@@ -49,4 +52,4 @@ python -m pytest tests/infra/test_story_10_1_ci_minimal_smoke.py -q
 
 Réglage **hors dépôt** : activer les reviews et exiger le succès des jobs **`CI minimale (Recyclique · Peintre_nano · contrats)`** (`api-minimal`, `peintre-nano-minimal`, `contracts-openapi`) avant merge.
 
-Workflow migrations Alembic (chemins `migrations/` uniquement) : [`.github/workflows/alembic-check.yml`](../.github/workflows/alembic-check.yml) — complémentaire, pas substitut à la baseline 10.1.
+Workflow migrations Alembic (déclenché sur `recyclique/api/migrations/versions/**`, `recyclique/api/alembic.ini`, `.github/workflows/alembic-check.yml`) : [`.github/workflows/alembic-check.yml`](../.github/workflows/alembic-check.yml) — complémentaire, pas substitut à la baseline 10.1.

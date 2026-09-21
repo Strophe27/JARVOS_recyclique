@@ -25,8 +25,14 @@ def test_ci_minimal_workflow_exists_and_targets_master() -> None:
     body = _read(WORKFLOW_CI)
     assert "branches: [master]" in body or "branches:\n      - master" in body
     assert "pull_request:" in body
+    assert re.search(
+        r"pull_request:\s*\n\s*branches:\s*\[master\]",
+        body,
+    ), "pull_request doit cibler branches: [master] (AC4)"
     assert "image: postgres:17" in body
     assert "POSTGRES_DB: recyclic_test" in body
+    assert "image: redis:7" in body
+    assert "REDIS_URL: redis://localhost:6379" in body
 
 
 def test_ci_minimal_three_jobs_without_path_filters() -> None:
@@ -34,6 +40,7 @@ def test_ci_minimal_three_jobs_without_path_filters() -> None:
     assert "api-minimal:" in body
     assert "peintre-nano-minimal:" in body
     assert "contracts-openapi:" in body
+    assert "requirements-dev.txt" in body
     assert "compileall src/recyclic_api" in body
     assert 'pytest tests/ -m "not performance"' in body or '-m "not performance"' in body
     assert "ruff check src/recyclic_api" in body
@@ -50,7 +57,7 @@ def test_ci_minimal_doc_and_readme_entry() -> None:
     assert DOC_CI.is_file()
     doc = DOC_CI.read_text(encoding="utf-8")
     assert "ci-minimal.yml" in doc
-    assert "10.1" in doc or "10.2" in doc
+    assert "story 10.1" in doc.lower() or "10.1" in doc
 
     readme = _read(README)
     assert "doc/ci-minimal.md" in readme

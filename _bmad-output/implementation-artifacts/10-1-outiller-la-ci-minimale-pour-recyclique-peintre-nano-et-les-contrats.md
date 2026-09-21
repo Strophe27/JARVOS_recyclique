@@ -97,7 +97,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.1**
 ### État actuel du dépôt (intelligence CS)
 
 - **Workflows** : `deploy.yaml` (tests rapides + deploy legacy sur `main` uniquement pour tests complets perf) ; `alembic-check.yml` (PR migrations seulement).
-- **Branche** : **`master`** = intégration (`origin/HEAD`) ; **`main` / `develop`** = absents sur `origin` — triggers `deploy.yaml` = dette YAML, pas branches actives ; **écart connu** = CI non déclenchée sur `master` aujourd'hui.
+- **Branche** : **`master`** = intégration (`origin/HEAD`) ; **`main` / `develop`** = absents sur `origin` — triggers `deploy.yaml` = dette YAML, pas branches actives ; baseline **`ci-minimal.yml`** déclenche API + Peintre + contrats sur **`master`** (livraison DS 2026-09-21).
 - **PostgreSQL** : **17** sur compose racine + CI (**10.6d** done) — ne pas repasser à 15.
 - **Tests contrats** : `peintre-nano/tests/contract/*.test.ts` (README liste stories 1.4–1.7, 4.1, 5.1, 6.x, 7.x, etc.) — **doivent tourner en CI**.
 - **Codegen** : `contracts/openapi/package.json` → `npm run generate` → `generated/recyclique-api.ts` (versionné).
@@ -146,7 +146,7 @@ python -m pytest tests/ -m "not performance" --tb=short
 
 ### Intelligence git récente
 
-- Commits récents = **docs pilotage L0/L1** (D1, guide v2) — pas de changement CI depuis **10.6d** ; **10.1** comble l'écart **master** + **contrats** + **ruff/compileall**.
+- Livraison **10.1** (DS 2026-09-21) : workflow **`ci-minimal.yml`** + `doc/ci-minimal.md` + smoke infra — comble l'écart **master** + **contrats** + **ruff/compileall** (après spikes **10.6d** PG17).
 
 ### Latest tech (2026-09)
 
@@ -180,7 +180,7 @@ Composer 2.5 (Amelia · bmad-dev-story)
 
 ### Completion Notes List
 
-- ✅ AC1–4, 6 : `.github/workflows/ci-minimal.yml` + `doc/ci-minimal.md` + lien README ; smoke `tests/infra/test_story_10_1_ci_minimal_smoke.py` (4 tests verts).
+- ✅ AC1–4, 6 : `.github/workflows/ci-minimal.yml` + `doc/ci-minimal.md` + lien README ; smoke `tests/infra/test_story_10_1_ci_minimal_smoke.py` (4 tests verts). **Note cohérence** : le job Peintre exécute `npm run test` complet — échecs **bandeau-live** préexistants (CR defer) rendent la baseline **rouge** tant qu'ils ne sont pas corrigés (**hors scope 10.1**), sans invalider la définition du workflow.
 - ✅ AC5 : aucun job 10.1 sur `recyclique-1.4.4/` ; étapes deploy prod intactes.
 - Tests locaux DS : contrats OpenAPI `generate` + diff OK ; Peintre `lint` OK ; Vitest `tests/contract/` 97/97 ; `compileall` + `ruff` OK ; peloton API pytest non exécuté ici (pas de Postgres/Redis sur l’agent cloud). `npm run test` complet Peintre : 3 échecs bandeau-live (fetch count) — préexistants, hors diff 10.1.
 - `sprint-status.yaml` : story **review**.
@@ -201,7 +201,7 @@ Dettes **Info** non bloquantes — clôture intégrale par documentation (aucun 
 
 | Sujet | Clôture QA3 | Mitigation / report |
 |--------|-------------|---------------------|
-| Smoke infra **`tests/infra/test_story_10_1_ci_minimal_smoke.py`** | **Reporté** (optionnel) | Tâche smoke **recommandée** ; nom canonique aligné matrice AC4 / FM1 — absence = détection partielle triggers YAML, pas blocage VS |
+| Smoke infra **`tests/infra/test_story_10_1_ci_minimal_smoke.py`** | **Fermé** (livrée) | Verrou YAML optionnel livré (AC4 / FM1) ; durcissement asserts (Redis, deps API) = amélioration continue, pas blocage VS |
 | **`deploy.yaml`** triggers **`main`/`develop`** vs **`master`** | **Fermé** (doc) | AC4 + Dev Notes : dette YAML historique ; livraison **10.1** = workflow **`ci-minimal`** sur **`master`** ; ajuster triggers legacy **uniquement** si fausse couverture (AC4), sans refonte deploy prod (AC5) |
 | **AR18** / **FR73** (inventaire epic complet) | **Fermé** (doc) | AC1 : jalon CI **10.1** seulement ; FM5 + découpage AR18 — chaîne OpenAPI reviewable (**10.2**), CREOS/`operationId` + smoke rendu (**10.3**), e2e navigateur dédié |
 | **Branch protection** GitHub (required checks) | **Reporté** (HITL org) | Tâche Doc : checklist protection **`master`** (reviews + jobs `ci-minimal`) — réglage **hors repo** |
