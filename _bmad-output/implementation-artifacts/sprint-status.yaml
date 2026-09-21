@@ -1,4 +1,5 @@
 # Process BMAD (gel) : règle « gel hors Epic 25 » (sprint-change 2026-04-19) remplacée par levée partielle L0/L1/L2 — D1 tranchée 2026-09-21 (jarvos.01). Canon process : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`. Ce fichier conserve les statuts `development_status` comme preuve historique (pas de retcon des `done`).
+# last_updated: 2026-09-21 — story 10.3 DS Amelia : `10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques` **ready-for-dev** → **`review`** ; gates CREOS + smoke + doc §10.3 ; **`10-1`** / **`10-2`** inchangés **`review`** ; prochaine étape **CR** / **QA3**
 # last_updated: 2026-09-21 — story 10.3 CS bmad-create-story : `10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques.md` ; **`10-1`** / **`10-2`** inchangés **`review`** (ne pas forcer `done`) ; trace CS Ombre D2/D7 ; prochaine étape **VS** puis **DS** 10.3
 # last_updated: 2026-09-21 — story 10.2 DS Amelia : `10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend` **ready-for-dev** → **`review`** ; chaîne `generate_openapi.py --emit-contracts` + CI `contracts-openapi` ; **`10-1`** inchangé **`review`** ; prochaine étape **CR** / **QA3**
 # last_updated: 2026-09-21 — story 10.2 CS bmad-create-story : `10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend.md` ; **`10-1`** inchangé **`review`** (CR+QA3 OK, bandeau-live hors scope) ; **`epic-10`** inchangé **in-progress** ; trace CS Ombre D2/D7 ; prochaine étape **VS** puis **DS** 10.2
@@ -500,7 +501,7 @@ development_status:
   epic-10: in-progress
   10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: review
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: review
-  10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: ready-for-dev
+  10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: review
   10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: backlog
   10-5-rendre-lobservabilite-et-le-support-exploitables-en-environnement-reel: backlog
   10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte: backlog

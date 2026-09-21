@@ -1,6 +1,6 @@
 # Story 10.3 : Valider les manifests CREOS et les parcours de rendu critiques
 
-Status: ready-for-dev
+Status: review
 
 **Story ID :** 10.3  
 **Story key :** `10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques`  
@@ -52,25 +52,25 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.3**
 
 ## Tasks / Subtasks
 
-- [ ] **Périmètre manifests reviewables** — Documenter dans **`contracts/creos/manifests/README.md`** (créer si absent) : tout `*.json` sous ce dossier est **reviewable** sauf fichiers listés **sandbox démo** (`page-demo-home.json`, `page-demo-guarded-page.json`, `page-demo-unknown-widget.json`) pour lesquels seuls les contrôles **structurels** s’appliquent et **`operation_id` ↔ OpenAPI** est **ignoré** s’il n’y a pas de `data_contract` ; les autres fichiers **doivent** passer AC2. (AC : 1, 2, 6)
+- [x] **Périmètre manifests reviewables** — Documenter dans **`contracts/creos/manifests/README.md`** (créer si absent) : tout `*.json` sous ce dossier est **reviewable** sauf fichiers listés **sandbox démo** (`page-demo-home.json`, `page-demo-guarded-page.json`, `page-demo-unknown-widget.json`) pour lesquels seuls les contrôles **structurels** s’appliquent et **`operation_id` ↔ OpenAPI** est **ignoré** s’il n’y a pas de `data_contract` ; les autres fichiers **doivent** passer AC2. (AC : 1, 2, 6)
 
-- [ ] **Aligner dette `operation_id` connue (pré-gate)** — Avant ou avec la gate globale AC2 : corriger les `operation_id` reviewables **absents** du YAML aligné **10.2** (dette documentée : `widgets-catalog-cashflow-nominal.json` → `legacy_list_categories` **non** présent dans `contracts/openapi/recyclique-api.yaml` au snapshot courant — **remplacement attendu** côté manifest vers un `operationId` existant, ex. `recyclique_categories_listCategories` sur `GET /v1/categories/`, **sans** réintroduire un alias `legacy_*` dans le YAML reviewable) ; sinon la gate 10.3 **échoue** à tort sur un écart déjà connu. (AC : 2)
+- [x] **Aligner dette `operation_id` connue (pré-gate)** — Avant ou avec la gate globale AC2 : corriger les `operation_id` reviewables **absents** du YAML aligné **10.2** (dette documentée : `widgets-catalog-cashflow-nominal.json` → `legacy_list_categories` **non** présent dans `contracts/openapi/recyclique-api.yaml` au snapshot courant — **remplacement attendu** côté manifest vers un `operationId` existant, ex. `recyclique_categories_listCategories` sur `GET /v1/categories/`, **sans** réintroduire un alias `legacy_*` dans le YAML reviewable) ; sinon la gate 10.3 **échoue** à tort sur un écart déjà connu. (AC : 2)
 
-- [ ] **Utilitaire crosswalk OpenAPI** — Créer `peintre-nano/tests/contract/lib/creos-openapi-operation-ids.ts` (ou équivalent) : `collectOperationIdsFromOpenApi(yaml)` + `collectOperationIdsFromJsonTree(manifest)` en ne collectant que les **propriétés JSON** nommées `operation_id` (pas les mentions textuelles dans `widget_props.body` / blocs `demo.text.block`) ; messages d’erreur avec **chemin fichier + widget.type / page_key**. (AC : 2, 3)
+- [x] **Utilitaire crosswalk OpenAPI** — Créer `peintre-nano/tests/contract/lib/creos-openapi-operation-ids.ts` (ou équivalent) : `collectOperationIdsFromOpenApi(yaml)` + `collectOperationIdsFromJsonTree(manifest)` en ne collectant que les **propriétés JSON** nommées `operation_id` (pas les mentions textuelles dans `widget_props.body` / blocs `demo.text.block`) ; messages d’erreur avec **chemin fichier + widget.type / page_key**. (AC : 2, 3)
 
-- [ ] **Gate globale manifests** — Ajouter `peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts` : pour chaque JSON du périmètre reviewable, (a) parse + conventions AC1(a) ; (b) pour chaque `widgets-catalog-*.json`, valider chaque widget contre le schéma (ajouter **`ajv`** en `devDependency` **ou** réutiliser une validation JSON Schema déjà présente — **choix documenté** dans Dev Agent Record) ; (c) **une fois** par livraison, `validateManifestBundle` / `loadManifestBundle` sur le **lot servi produit** (`navigation-transverse-served.json` + pages référencées — AC1(c), réutiliser règles existantes) ; (d) crosswalk AC2 sur l’arborescence **sauf** manifests sandbox démo sans nœud `data_contract` (règle README / AC2). (AC : 1, 2)
+- [x] **Gate globale manifests** — Ajouter `peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts` : pour chaque JSON du périmètre reviewable, (a) parse + conventions AC1(a) ; (b) pour chaque `widgets-catalog-*.json`, valider chaque widget contre le schéma (ajouter **`ajv`** en `devDependency` **ou** réutiliser une validation JSON Schema déjà présente — **choix documenté** dans Dev Agent Record) ; (c) **une fois** par livraison, `validateManifestBundle` / `loadManifestBundle` sur le **lot servi produit** (`navigation-transverse-served.json` + pages référencées — AC1(c), réutiliser règles existantes) ; (d) crosswalk AC2 sur l’arborescence **sauf** manifests sandbox démo sans nœud `data_contract` (règle README / AC2). (AC : 1, 2)
 
-- [ ] **Refactor tests épars (crosswalk)** — Faire appeler **7.1** l’utilitaire central (supprimer `collectOperationIdsFromOpenApi` local + boucle `secondary_sources`) et **4.1** l’utilitaire pour la partie **operation_id** bandeau (garder les assertions slots/navigation 4.1) ; **ne pas** exiger de refactor crosswalk sur **11.1** (hors périmètre `operation_id`). (AC : 3)
+- [x] **Refactor tests épars (crosswalk)** — Faire appeler **7.1** l’utilitaire central (supprimer `collectOperationIdsFromOpenApi` local + boucle `secondary_sources`) et **4.1** l’utilitaire pour la partie **operation_id** bandeau (garder les assertions slots/navigation 4.1) ; **ne pas** exiger de refactor crosswalk sur **11.1** (hors périmètre `operation_id`). (AC : 3)
 
-- [ ] **Suite smoke rendu** — Créer `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (ou nom aligné conventions) : 5 parcours AC4 ; en-tête **`// @vitest-environment jsdom`** ; factoriser setup Mantine/registry/mocks depuis `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` ; **ne pas** dupliquer toute la suite e2e bandeau — smoke = rendu slot/page **minimal** + pas de crash ; **imposer** le harness `loadManifestBundle` + nav JSON par parcours (AC4) et `defaultAllowedWidgetTypeSet()` sauf login page-seule. (AC : 4)
+- [x] **Suite smoke rendu** — Créer `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (ou nom aligné conventions) : 5 parcours AC4 ; en-tête **`// @vitest-environment jsdom`** ; factoriser setup Mantine/registry/mocks depuis `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` ; **ne pas** dupliquer toute la suite e2e bandeau — smoke = rendu slot/page **minimal** + pas de crash ; **imposer** le harness `loadManifestBundle` + nav JSON par parcours (AC4) et `defaultAllowedWidgetTypeSet()` sauf login page-seule. (AC : 4)
 
-- [ ] **DS — Doc `ci-minimal.md` §10.3** — Rédiger la section dédiée **10.3** (commandes locales gates CREOS + smoke, parité job `peintre-nano-minimal` / `creos-manifests`) ; **obligatoire au DS / DoD AC5**, **pas** prérequis **CS/VS** (`doc/ci-minimal.md` ne cite encore 10.3 qu’en hors périmètre). (AC : 5)
+- [x] **DS — Doc `ci-minimal.md` §10.3** — Rédiger la section dédiée **10.3** (commandes locales gates CREOS + smoke, parité job `peintre-nano-minimal` / `creos-manifests`) ; **obligatoire au DS / DoD AC5**, **pas** prérequis **CS/VS** (`doc/ci-minimal.md` ne cite encore 10.3 qu’en hors périmètre). (AC : 5)
 
-- [ ] **DS — Vitest `tests/smoke/`** — Étendre `peintre-nano/vitest.config.ts` → `test.include` avec `tests/smoke/**/*.{test.ts,test.tsx}` (glob **absent** au CS) pour que `npm run test` exécute la suite smoke AC4 ; **obligatoire au DS / DoD** (FM9), **pas** blocage story `ready-for-dev`. (AC : 4, 5)
+- [x] **DS — Vitest `tests/smoke/`** — Étendre `peintre-nano/vitest.config.ts` → `test.include` avec `tests/smoke/**/*.{test.ts,test.tsx}` (glob **absent** au CS) pour que `npm run test` exécute la suite smoke AC4 ; **obligatoire au DS / DoD** (FM9), **pas** blocage story `ready-for-dev`. (AC : 4, 5)
 
-- [ ] **CI workflow (DS)** — Si besoin, expliciter dans `.github/workflows/ci-minimal.yml` que `npm run test` couvre contract + smoke (souvent déjà vrai après include smoke) ; optionnel : `tests/infra/test_story_10_3_ci_minimal_creos_smoke.py` vérifiant que `ci-minimal.yml` référence la suite (pattern 10.1/10.2). (AC : 5)
+- [x] **CI workflow (DS)** — Si besoin, expliciter dans `.github/workflows/ci-minimal.yml` que `npm run test` couvre contract + smoke (souvent déjà vrai après include smoke) ; optionnel : `tests/infra/test_story_10_3_ci_minimal_creos_smoke.py` vérifiant que `ci-minimal.yml` référence la suite (pattern 10.1/10.2). (AC : 5)
 
-- [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
+- [x] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
 
 ## Dev Notes
 
@@ -159,12 +159,12 @@ Référence : `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epi
 
 ### Definition of Done (Story 10.3)
 
-- [ ] Les **6 AC** sont couverts par des gates automatisés (Vitest contract + smoke, CI `ci-minimal.yml` sans `paths:` / `continue-on-error` sur les jobs CREOS).
-- [ ] `contracts/creos/manifests/README.md` documente reviewable vs sandbox ; gate globale respecte les exceptions AC2.
-- [ ] Utilitaire `creos-openapi-operation-ids.ts` partagé ; tests crosswalk **4.1 / 7.1** refactorés sans perte d’assertions ; dette `legacy_list_categories` résolue ou documentée comme bloquante.
-- [ ] `doc/ci-minimal.md` section **10.3** + `vitest.config.ts` inclut `tests/smoke/`.
-- [ ] Story Runner (commandes ci-dessous) **verts** sur la branche de livraison ; dette bandeau-live **hors** smoke/contract 10.3 documentée en CR si `npm run test` global reste partiellement rouge.
-- [ ] `sprint-status.yaml` → **review** (pas **done** sans DS) ; **ne pas** forcer **10.1 / 10.2** à **done** depuis cette story.
+- [x] Les **6 AC** sont couverts par des gates automatisés (Vitest contract + smoke, CI `ci-minimal.yml` sans `paths:` / `continue-on-error` sur les jobs CREOS).
+- [x] `contracts/creos/manifests/README.md` documente reviewable vs sandbox ; gate globale respecte les exceptions AC2.
+- [x] Utilitaire `creos-openapi-operation-ids.ts` partagé ; tests crosswalk **4.1 / 7.1** refactorés sans perte d’assertions ; dette `legacy_list_categories` résolue ou documentée comme bloquante.
+- [x] `doc/ci-minimal.md` section **10.3** + `vitest.config.ts` inclut `tests/smoke/`.
+- [x] Story Runner (commandes ci-dessous) **verts** sur la branche de livraison ; dette bandeau-live **hors** smoke/contract 10.3 documentée en CR si `npm run test` global reste partiellement rouge.
+- [x] `sprint-status.yaml` → **review** (pas **done** sans DS) ; **ne pas** forcer **10.1 / 10.2** à **done** depuis cette story.
 
 ### Gates Story Runner (référence DS)
 
@@ -207,11 +207,19 @@ python -m pytest tests/infra/test_story_10_3_ci_minimal_creos_smoke.py -q
 
 ### Agent Model Used
 
-_(vide — à remplir au DS)_
+Composer 2.5 (Amelia · DS bmad-dev-story · 2026-09-21)
 
 ### Debug Log References
 
+- Gates Vitest 10.3 : `creos-manifests-governance-10-3` 4/4 ; `tests/contract/` 101/101 ; smoke 6/6 ; infra `test_story_10_3_ci_minimal_creos_smoke.py` 4/4 (`python3`).
+
 ### Completion Notes List
+
+- Validation schéma widget : **ajv** v8 (`ajv/dist/2020`) en `devDependency` — choix documenté (pas d’autre validateur JSON Schema dans le dépôt).
+- Dette **`legacy_list_categories`** → `recyclique_categories_listCategories` dans `widgets-catalog-cashflow-nominal.json`.
+- Smoke login : `LiveAuthLoginControllerProvider` requis par `PublicLoginWidget` (même pattern que test 11.1).
+- **`10-1`** / **`10-2`** : statuts sprint inchangés **`review`**.
+- Dette **bandeau-live** hors périmètre smoke/contract : notée dans `doc/ci-minimal.md` §10.3 pour CR.
 
 ### Risques résiduels et notes VS (QA3 · clôture intégrale Info)
 
@@ -228,6 +236,23 @@ Dettes **Info** post-fusion QA3 — fermées par documentation (0 P0/P1). Le **D
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
 - **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_174651_jarvos_recyclique`) — score **96** ; fused_coverage **99** ; 0 P0 / 0 P1 ; correctifs intégrés (AC4 jsdom/smoke, frontières 10.1/10.2/10.4, FMEA FM7–FM11, dette `legacy_list_categories`, tâches DS `vitest.config` + `doc/ci-minimal.md` §10.3) — rapport projet `internal/qa3-story-10-3.md`
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` sans écart bloquant ; QA3 **96** préservé ; livrables DS (`tests/smoke/`, README manifests, gates CREOS) explicitement tâchés — rapport projet `internal/validate-story-10-3.md`
-- **Prochaine étape BMAD :** **DS** story 10.3 (`bmad-dev-story`) ; **10.1** / **10.2** restent **`review`** (ne pas forcer `done` depuis 10.3)
+- **DS :** bmad-dev-story (Amelia) — **review** (2026-09-21) ; gates CREOS + smoke + doc §10.3 ; rapport projet `internal/dev-story-10-3.md`
+- **Prochaine étape BMAD :** **CR** + **QA3** story 10.3 ; **10.1** / **10.2** restent **`review`**
 
 ### File List
+
+- `contracts/creos/manifests/README.md` (créé)
+- `contracts/creos/manifests/widgets-catalog-cashflow-nominal.json` (operation_id aligné OpenAPI)
+- `peintre-nano/tests/contract/lib/creos-openapi-operation-ids.ts` (créé)
+- `peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts` (créé)
+- `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (créé)
+- `peintre-nano/tests/contract/creos-bandeau-live-manifests-4-1.test.ts`
+- `peintre-nano/tests/contract/creos-reception-nominal-manifests-7-1.test.ts`
+- `peintre-nano/vitest.config.ts`
+- `peintre-nano/package.json` / `peintre-nano/package-lock.json` (ajv)
+- `peintre-nano/tests/contract/README.md`
+- `doc/ci-minimal.md`
+- `.github/workflows/ci-minimal.yml`
+- `tests/infra/test_story_10_3_ci_minimal_creos_smoke.py` (créé)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques.md`

@@ -1,4 +1,4 @@
-# Baseline CI Epic 10 — Stories 10.1 + 10.2
+# Baseline CI Epic 10 — Stories 10.1 + 10.2 + 10.3 (gate CREOS + smoke rendu via npm run test Peintre)
 # Gouvernance exécutable : chaque PR et chaque push sur `master` exécute API + Peintre + contrats (chaîne OpenAPI complète).
 # Pas de filtre `paths:` sur ces jobs (AC2) — ne pas contourner avec continue-on-error ou scripts parallèles.
 name: CI minimale (Recyclique · Peintre_nano · contrats)
@@ -69,7 +69,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
 
   peintre-nano-minimal:
-    name: Peintre_nano — lint et tests (dont contrats Vitest)
+    name: Peintre_nano — lint et tests (contrats + smoke CREOS 10.3)
     runs-on: ubuntu-latest
 
     steps:

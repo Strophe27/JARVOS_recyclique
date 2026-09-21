@@ -176,7 +176,7 @@
       },
       "data_contract": {
         "source": "stats-legacy",
-        "operation_id": "legacy_list_categories",
+        "operation_id": "recyclique_categories_listCategories",
         "endpoint_hint": "GET /v1/categories/",
         "refresh": "manual",
         "critical": false

@@ -1,4 +1,4 @@
-# CI minimale (baseline Epic 10 — stories 10.1 + 10.2)
+# CI minimale (baseline Epic 10 — stories 10.1 + 10.2 + 10.3)
 
 Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workflows/ci-minimal.yml).
 
@@ -14,7 +14,33 @@ Politique par défaut : tout changement d’API backend doit régénérer et **c
 
 **Story 10.2 (intégrée) :** le job `contracts-openapi` ci-dessus exécute la chaîne FastAPI → `generated/openapi-snapshot.json` → `recyclique-api.yaml` → `generated/recyclique-api.ts` (voir [`contracts/README.md`](../contracts/README.md)).
 
-**Hors périmètre Epic 10 :** `recyclique-1.4.4/` ; déploiement prod legacy ([`deploy.yaml`](../.github/workflows/deploy.yaml)) ; validation CREOS `operationId` complète (**10.3**).
+**Hors périmètre Epic 10 :** `recyclique-1.4.4/` ; déploiement prod legacy ([`deploy.yaml`](../.github/workflows/deploy.yaml)).
+
+## Story 10.3 — manifests CREOS + smoke rendu (intégrée)
+
+Le job **`peintre-nano-minimal`** exécute `npm run test`, qui inclut désormais :
+
+- **Gate globale CREOS** : `peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts` (structure, schéma widget sur les catalogues, bundle servi `navigation-transverse-served.json`, crosswalk `operation_id` ↔ `recyclique-api.yaml`).
+- **Smoke rendu jsdom (NFR28)** : `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (login public, dashboard, bandeau live, caisse nominale, réception nominale).
+
+Périmètre manifests reviewables : [`contracts/creos/manifests/README.md`](../contracts/creos/manifests/README.md).
+
+Commandes locales (parité gates Story Runner 10.3) :
+
+```bash
+cd peintre-nano && npm ci
+npx vitest run tests/contract/creos-manifests-governance-10-3.test.ts
+npx vitest run tests/contract/
+npx vitest run tests/smoke/creos-critical-render-paths-10-3.test.tsx
+```
+
+Smoke infra optionnel (verrou YAML workflow + doc) :
+
+```bash
+python -m pytest tests/infra/test_story_10_3_ci_minimal_creos_smoke.py -q
+```
+
+**Dette connue (hors smoke / contract 10.3)** : certains tests **bandeau-live** legacy sous `tests/e2e/` ou `tests/unit/` peuvent rester rouges — defer stories **10.1** / correctifs dédiés ; ne pas bloquer la livraison 10.3 sur `npm run test` global si les gates ci-dessus sont verts.
 
 **Séquence plancher L0 :** **10.1 → 10.2 → 10.3** avant tout module métier **D** (pilotage PO D2/D7).
 

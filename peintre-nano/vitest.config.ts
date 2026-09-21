@@ -13,6 +13,7 @@ export default mergeConfig(
       'tests/unit/**/*.{test.ts,test.tsx}',
       'tests/e2e/**/*.{test.ts,test.tsx}',
       'tests/contract/**/*.{test.ts,test.tsx}',
+      'tests/smoke/**/*.{test.ts,test.tsx}',
     ],
   },
   }),

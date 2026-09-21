@@ -7,6 +7,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
+import {
+  collectOperationIdsFromJsonTree,
+  loadOpenApiOperationIdSet,
+} from "./lib/creos-openapi-operation-ids";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "../../..");
@@ -83,6 +87,10 @@ describe("contracts/creos/manifests — bandeau live (Story 4.1)", () => {
     expect(bandeau!.data_contract?.endpoint_hint).toMatch(
       /\/v2\/exploitation\/live-snapshot/i,
     );
+    const openApiIds = loadOpenApiOperationIdSet(OPENAPI_PATH);
+    for (const entry of collectOperationIdsFromJsonTree(catalog)) {
+      expect(openApiIds.has(entry.operationId), entry.operationId).toBe(true);
+    }
   });
 
   it("déclare version 1 sur les trois manifests", () => {

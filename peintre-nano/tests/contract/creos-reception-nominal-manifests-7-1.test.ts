@@ -4,12 +4,14 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
+import {
+  collectOperationIdsFromJsonTree,
+  loadOpenApiOperationIdSet,
+} from "./lib/creos-openapi-operation-ids";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "../../..");
-const OPENAPI_PATH = join(REPO_ROOT, "contracts/openapi/recyclique-api.yaml");
 const CATALOG_PATH = join(
   REPO_ROOT,
   "contracts/creos/manifests/widgets-catalog-reception-nominal.json",
@@ -30,28 +32,21 @@ function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T;
 }
 
-function collectOperationIdsFromOpenApi(openapi: {
-  paths?: Record<string, Record<string, { operationId?: string }>>;
-}): Set<string> {
-  const ids = new Set<string>();
-  const paths = openapi.paths ?? {};
-  for (const methods of Object.values(paths)) {
-    for (const op of Object.values(methods)) {
-      if (op?.operationId) ids.add(op.operationId);
-    }
-  }
-  return ids;
-}
-
 describe("contracts/creos/manifests — réception nominal (Story 7.1)", () => {
-  const openapiRaw = readFileSync(OPENAPI_PATH, "utf8");
-  const openapi = parse(openapiRaw) as {
-    paths?: Record<string, Record<string, { operationId?: string }>>;
-  };
-  const opIds = collectOperationIdsFromOpenApi(openapi);
+  const opIds = loadOpenApiOperationIdSet(
+    join(REPO_ROOT, "contracts/openapi/recyclique-api.yaml"),
+  );
   const catalog = readJson<WidgetsCatalogManifest>(CATALOG_PATH);
 
   it("déclare recyclique_reception_* présents dans OpenAPI pour chaque widget du catalogue réception", () => {
+    const collected = collectOperationIdsFromJsonTree(catalog);
+    expect(collected.length).toBeGreaterThan(0);
+    for (const entry of collected) {
+      expect(
+        opIds.has(entry.operationId),
+        `${entry.widgetType ?? "widget"} : ${entry.operationId}`,
+      ).toBe(true);
+    }
     for (const widget of catalog.widgets) {
       const primary = widget.data_contract?.operation_id;
       expect(primary, `${widget.type} : operation_id primaire`).toBeTruthy();
