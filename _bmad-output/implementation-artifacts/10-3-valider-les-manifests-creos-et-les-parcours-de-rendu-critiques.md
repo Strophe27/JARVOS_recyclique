@@ -37,17 +37,17 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.3**
 
 5. **Industrialisation sur 10.1–10.2** — Étant donné qu’**Epic 10** industrialise sans refaire le métier, quand **10.3** est fermée, alors les commandes sont documentées dans **`doc/ci-minimal.md`** (section dédiée **10.3**) et exécutées dans le job **`peintre-nano-minimal`** **ou** un quatrième job **`creos-manifests`** dans le **même** workflow `ci-minimal.yml` (**préférence** : étendre `peintre-nano-minimal` si durée acceptable ; job séparé seulement si isolation claire) ; **interdit** : nouveau workflow parallèle avec `paths:` qui contourne la baseline PR.
 
-6. **Hors scope explicite** — Étant donné les frontières Epic 10, quand cette story est revue, alors **ne pas** livrer : suite **Spectral** OpenAPI complète (**hors scope Epic 10**, y compris **10.2** — pas de Spectral partiel implicite) ; gate **`data_contract.source` ↔ tags OpenAPI** (jalon futur — seuil 3 manifests + tags stabilisés, voir architecture) sauf si trivial après AC2 ; correction globale des tests **bandeau-live** legacy hors smoke ; **e2e Puppeteer** / navigateur réel nouveaux ; validation des seuls manifests **démo** sous `peintre-nano/public/manifests/` ou `src/fixtures/` (hors promotion `contracts/`) ; **10.4** (noyau parcours **pytest / intégration backend / e2e métier** — sync-sensitive, assertions terrain ; **distinct** des smokes **rendu React** AC4) ; extension baseline à **`recyclique-1.4.4/`**.
+6. **Hors scope explicite** — Étant donné les frontières Epic 10, quand cette story est revue, alors **ne pas** livrer : suite **Spectral** OpenAPI complète (**hors scope Epic 10**, y compris **10.2** — pas de Spectral partiel implicite) ; gate **`data_contract.source` ↔ tags OpenAPI** (jalon futur — seuil 3 manifests + tags stabilisés, voir architecture) sauf si trivial après AC2 ; correction globale des tests **bandeau-live** legacy hors smoke ; **e2e Puppeteer** / navigateur réel nouveaux ; validation des seuls manifests **démo** sous `peintre-nano/public/manifests/` ou `src/fixtures/` (hors promotion `contracts/`) ; **Story 10.4** (*Poser la couverture de tests ciblée sur un premier noyau de parcours critiques* — `epics.md`) : lot **Story Preparation Gate** (1× module chain, 1× caisse nominale, 1× réception nominale, 1× sync-sensitive) à la profondeur adaptée au risque (**backend**, bornes **contrat**, **intégration**, smoke **e2e** métier — **pas** les smokes **rendu React** jsdom AC4) ; extension baseline à **`recyclique-1.4.4/`**.
 
 ## Matrice de traçabilité (C12)
 
 | AC | Tâches | Fichiers / artefacts | Gate Story Runner |
 |----|--------|----------------------|-------------------|
-| **1** Structure CREOS | Périmètre ; Validation schéma + bundle | `contracts/creos/manifests/**` ; `widget-declaration.schema.json` ; `load-manifest-bundle.ts` ; `validate-bundle-rules.ts` | Vitest gate CREOS **verts** |
+| **1** Structure CREOS | Périmètre ; Validation schéma + bundle | `contracts/creos/manifests/**` ; `contracts/creos/schemas/widget-declaration.schema.json` ; `peintre-nano/src/runtime/load-manifest-bundle.ts` ; `peintre-nano/src/validation/validate-bundle-rules.ts` | Vitest gate CREOS **verts** |
 | **2** `operation_id` | Utilitaire crosswalk ; Intégration CI | `recyclique-api.yaml` ; nouveau test `test_story_10_3_*` ou `creos-manifests-governance-10-3.test.ts` | `npm run test` inclut gate ; échec si id fantôme |
 | **3** Consolidation | Refactor crosswalk **4.1 / 7.1** → utilitaire | `peintre-nano/tests/contract/lib/creos-openapi-operation-ids.ts` ; `creos-bandeau-live-manifests-4-1.test.ts` ; `creos-reception-nominal-manifests-7-1.test.ts` | 4.1 / 7.1 + gate 10.3 **verts** ; 11.1 inchangé (hors crosswalk) |
 | **4** Smoke rendu | Suite smoke parcours critiques | `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` ; manifests listés AC4 ; pattern `bandeau-live-sandbox-compose.e2e.test.tsx` | Vitest smoke **verts** (jsdom) |
-| **5** CI + doc | `ci-minimal.yml` ; `doc/ci-minimal.md` ; smoke infra optionnel | `.github/workflows/ci-minimal.yml` ; `tests/infra/test_story_10_3_*` (verrou YAML) | Parité local = CI |
+| **5** CI + doc | `ci-minimal.yml` ; **DS** §10.3 `doc/ci-minimal.md` ; **DS** `vitest.config.ts` smoke ; smoke infra optionnel | `.github/workflows/ci-minimal.yml` ; `doc/ci-minimal.md` ; `peintre-nano/vitest.config.ts` (`tests/smoke/**`) ; `tests/infra/test_story_10_3_*` (verrou YAML) | Parité local = CI |
 | **6** Hors scope | Revue périmètre | Dev Notes § Hors scope | Pas de Spectral / legacy 1.4.4 |
 
 ## Tasks / Subtasks
@@ -64,7 +64,11 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.3**
 
 - [ ] **Suite smoke rendu** — Créer `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (ou nom aligné conventions) : 5 parcours AC4 ; en-tête **`// @vitest-environment jsdom`** ; factoriser setup Mantine/registry/mocks depuis `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` ; **ne pas** dupliquer toute la suite e2e bandeau — smoke = rendu slot/page **minimal** + pas de crash ; **imposer** le harness `loadManifestBundle` + nav JSON par parcours (AC4) et `defaultAllowedWidgetTypeSet()` sauf login page-seule. (AC : 4)
 
-- [ ] **CI + doc** — Mettre à jour `doc/ci-minimal.md` (commandes locales 10.3) ; étendre `peintre-nano/vitest.config.ts` → `test.include` avec `tests/smoke/**/*.{test.ts,test.tsx}` (absent aujourd’hui) pour que `npm run test` exécute la suite smoke ; optionnel : `tests/infra/test_story_10_3_ci_minimal_creos_smoke.py` vérifiant que `ci-minimal.yml` référence la suite (pattern 10.1/10.2). (AC : 5)
+- [ ] **DS — Doc `ci-minimal.md` §10.3** — Rédiger la section dédiée **10.3** (commandes locales gates CREOS + smoke, parité job `peintre-nano-minimal` / `creos-manifests`) ; **obligatoire au DS / DoD AC5**, **pas** prérequis **CS/VS** (`doc/ci-minimal.md` ne cite encore 10.3 qu’en hors périmètre). (AC : 5)
+
+- [ ] **DS — Vitest `tests/smoke/`** — Étendre `peintre-nano/vitest.config.ts` → `test.include` avec `tests/smoke/**/*.{test.ts,test.tsx}` (glob **absent** au CS) pour que `npm run test` exécute la suite smoke AC4 ; **obligatoire au DS / DoD** (FM9), **pas** blocage story `ready-for-dev`. (AC : 4, 5)
+
+- [ ] **CI workflow (DS)** — Si besoin, expliciter dans `.github/workflows/ci-minimal.yml` que `npm run test` couvre contract + smoke (souvent déjà vrai après include smoke) ; optionnel : `tests/infra/test_story_10_3_ci_minimal_creos_smoke.py` vérifiant que `ci-minimal.yml` référence la suite (pattern 10.1/10.2). (AC : 5)
 
 - [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
 
@@ -77,9 +81,11 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.3**
 | CI `ci-minimal.yml` | 3 jobs baseline (API + Peintre + contrats OpenAPI) | Chaîne FastAPI → snapshot → YAML → TS | **Même workflow** sans `paths:` : gates CREOS + smoke dans **`peintre-nano-minimal`** (préféré) **ou** 4ᵉ job **`creos-manifests`** (AC5) | Ajoute couverture **métier** ciblée (pytest / intégration), pas un 2ᵉ workflow |
 | OpenAPI drift | Diff TS ; tests gouvernance YAML | FastAPI ↔ YAML ↔ snapshot | Consomme YAML **aligné** (prérequis) | — |
 | CREOS | Vitest schéma widget (1.4) partiel | Hors scope (AC6) | **Tous manifests reviewables** + crosswalk `operation_id` | Pas de re-validation schéma CREOS globale |
-| Rendu / « e2e » | Table 10.1 : pas d’e2e navigateur en baseline | — | **Smoke rendu** Vitest **jsdom** AC4 (montage React, marqueurs DOM) — **pas** Puppeteer ; factorise setup depuis `tests/e2e/*.tsx` sans reprendre la suite métier | **Parcours métier** nommés (`epics.md` gate 4 cibles) : backend, sync, régression terrain — **pas** le remplacement des smokes AC4 |
+| Rendu / « e2e » | Table 10.1 : pas d’e2e navigateur en baseline | — | **Smoke rendu** Vitest **jsdom** AC4 (montage React, marqueurs DOM) — **pas** Puppeteer ; factorise setup depuis `tests/e2e/*.tsx` sans reprendre la suite métier | **10.4** : couverture ciblée *premier noyau de parcours critiques* — 4 cibles `epics.md` (module chain, caisse nominale, réception nominale, sync-sensitive) ; profondeur **backend / contrat / intégration / e2e** métier — **ne remplace pas** AC4 |
 | Spectral OpenAPI | Hors scope | Hors scope (suite complète) | Hors scope (AC6 — ne pas réintroduire via CREOS) | Hors scope |
-| Peintre `npm run test` | Tout Vitest | Hors fix bandeau-live | Inclut contract + **`tests/smoke/`** ; dette **bandeau-live** hors smoke 10.3 documentée en CR | Extension couverture au-delà du noyau 10.4 |
+| Peintre `npm run test` | Tout Vitest | Hors fix bandeau-live | Inclut contract + **`tests/smoke/`** (glob Vitest = **tâche DS**) ; dette **bandeau-live** hors smoke 10.3 documentée en CR | Extension couverture au-delà du noyau **10.4** |
+
+**Note frontière 10.3 ↔ 10.4 (`epics.md`)** : **10.3** industrialise **validation CREOS** + **smokes rendu runtime** (NFR28 / AR18 couche UI) ; **10.4** pose la **couverture automatisée ciblée** sur le *premier noyau* de parcours produit (4 cibles minimales du **Story Preparation Gate** 10.4) avec tests **backend, intégration et e2e** au bon niveau de risque — les libellés « caisse / réception » en AC4 désignent des **pages CREOS reviewables** et la non-crashe du rendu, **pas** les parcours métier pytest/e2e de **10.4**.
 
 ### Périmètre manifests (`contracts/creos/manifests/`)
 
@@ -193,7 +199,7 @@ python -m pytest tests/infra/test_story_10_3_ci_minimal_creos_smoke.py -q
 - [Source: `_bmad-output/implementation-artifacts/10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend.md` — Prérequis OpenAPI]
 - [Source: `_bmad-output/implementation-artifacts/1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope.md`]
 - [Source: `doc/ci-minimal.md`, `peintre-nano/tests/contract/README.md`]
-- [Source: `peintre-nano/src/validation/validate-bundle-rules.ts`, `load-manifest-bundle.ts`]
+- [Source: `peintre-nano/src/validation/validate-bundle-rules.ts`, `peintre-nano/src/runtime/load-manifest-bundle.ts`]
 - [Source: `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md` — ligne 10.3]
 - [Source: `references/peintre/2026-04-01_pipeline-presentation-workflow-invariants.md`, `references/peintre/2026-04-01_instruction-cursor-contrats-donnees.md`]
 
@@ -206,5 +212,15 @@ _(vide — à remplir au DS)_
 ### Debug Log References
 
 ### Completion Notes List
+
+### Risques résiduels et notes VS (QA3 · clôture intégrale Info)
+
+Dettes **Info** post-fusion QA3 — fermées par documentation (0 P0/P1). Le **DS** exécute les tâches **DS —** ci-dessus ; elles ne rouvrent pas le périmètre **CS/VS** sauf décision PO.
+
+| ID / sujet | Statut | Note |
+|------------|--------|------|
+| C12 chemin `load-manifest-bundle` | **Fermé** | Matrice AC1 + References : `peintre-nano/src/runtime/load-manifest-bundle.ts` |
+| Wording frontière **10.4** vs `epics.md` | **Fermé** | AC6 + Dev Notes (table + note frontière 10.3↔10.4) |
+| `vitest.config.ts` smoke + `doc/ci-minimal.md` §10.3 | **Fermé** (doc → **DS**) | Tâches **DS —** explicites ; absent au repo au CS — **pas** blocage story `ready-for-dev` |
 
 ### File List
