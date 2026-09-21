@@ -1,0 +1,4 @@
+# Journal local machine — ne pas committer
+*.jsonl
+*.csv
+.tmp/
