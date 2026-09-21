@@ -512,7 +512,7 @@ development_status:
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: done
   10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: done
   10-5-rendre-lobservabilite-et-le-support-exploitables-en-environnement-reel: done
-  10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte: ready-for-dev
+  10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte: review
   10-6b-clarifier-le-point-dentree-docker-local-du-mono-repo: done
   10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy: done
   10-6d-aligner-le-compose-racine-et-la-ci-non-legacy-sur-postgresql-17: done

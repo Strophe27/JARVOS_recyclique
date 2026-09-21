@@ -1,5 +1,7 @@
 # Validation stack locale — peintre-nano
 
+> **Note 10.6 (2026-09-21) :** cet artefact décrit une validation historique avec **PostgreSQL 15** (`jarvos_recyclique_pg15fresh`). La stack canonique v2 documentée utilise **PostgreSQL 17** — voir [`runbook-spike-postgresql-15-vers-17.md`](../../_bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md) et [`doc/installation-stack-officielle.md`](../../doc/installation-stack-officielle.md).
+
 Date : 2026-04-07
 
 ## Objet

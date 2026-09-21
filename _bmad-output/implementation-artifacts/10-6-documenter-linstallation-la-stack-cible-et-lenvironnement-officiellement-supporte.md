@@ -1,6 +1,6 @@
 # Story 10.6 : Documenter l'installation, la stack cible et l'environnement officiellement supporté
 
-Status: ready-for-dev
+Status: review
 
 **Story ID :** 10.6  
 **Story key :** `10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte`  
@@ -78,25 +78,25 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 
 ## Tasks / Subtasks
 
-- [ ] **`doc/supported-stack-official.yaml`** — Structure gate §1 : `official_os`, **`installability_pillars`** (6 clés gate), `services` (5 clés + `compose_service` / ports), `compose_auxiliary_services`, `sub_stories_index`, `doc_anchors`. (AC : 1, 4)
+- [x] **`doc/supported-stack-official.yaml`** — Structure gate §1 : `official_os`, **`installability_pillars`** (6 clés gate), `services` (5 clés + `compose_service` / ports), `compose_auxiliary_services`, `sub_stories_index`, `doc_anchors`. (AC : 1, 4)
 
-- [ ] **`doc/installation-stack-officielle.md`** — Chemin minimal ; matrice support ; index 10.6b–e ; navigateurs PRD ; section post-install → observabilité **10.5**. (AC : 2, 3, 4, 5)
+- [x] **`doc/installation-stack-officielle.md`** — Chemin minimal ; matrice support ; index 10.6b–e ; navigateurs PRD ; section post-install → observabilité **10.5**. (AC : 2, 3, 4, 5)
 
-- [ ] **`README.md` racine** — Lien visible vers `doc/installation-stack-officielle.md` ; conserver cohérence avec section Docker existante (pas de contradiction de point d'entrée). (AC : 6)
+- [x] **`README.md` racine** — Lien visible vers `doc/installation-stack-officielle.md` ; conserver cohérence avec section Docker existante (pas de contradiction de point d'entrée). (AC : 6)
 
-- [ ] **Note artefact validation locale** — Ajouter en tête de `references/artefacts/2026-04-07_01_validation-stack-locale-peintre-nano.md` une note « historique PG15 → voir PG17 / runbook 10.6c » **ou** renvoi équivalent depuis le guide uniquement (choix minimal). (AC : 4)
+- [x] **Note artefact validation locale** — Ajouter en tête de `references/artefacts/2026-04-07_01_validation-stack-locale-peintre-nano.md` une note « historique PG15 → voir PG17 / runbook 10.6c » **ou** renvoi équivalent depuis le guide uniquement (choix minimal). (AC : 4)
 
-- [ ] **`doc/ci-minimal.md` §10.6** — Commandes : `pytest tests/infra/test_story_10_6_installation_doc_smoke.py` **et** `pytest tests/infra/test_story_10_6_installation_ci_minimal_smoke.py`. (AC : 6)
+- [x] **`doc/ci-minimal.md` §10.6** — Commandes : `pytest tests/infra/test_story_10_6_installation_doc_smoke.py` **et** `pytest tests/infra/test_story_10_6_installation_ci_minimal_smoke.py`. (AC : 6)
 
-- [ ] **Smoke doc install** — `tests/infra/test_story_10_6_installation_doc_smoke.py` : parse YAML (`installability_pillars`, auxiliaires compose) ; assertions Markdown (Debian, 5 services, ports, commande `up` sans legacy, health/UI/install nominale, liens runbook/README). (AC : 1, 2, 6)
+- [x] **Smoke doc install** — `tests/infra/test_story_10_6_installation_doc_smoke.py` : parse YAML (`installability_pillars`, auxiliaires compose) ; assertions Markdown (Debian, 5 services, ports, commande `up` sans legacy, health/UI/install nominale, liens runbook/README). (AC : 1, 2, 6)
 
-- [ ] **Smoke CI minimal** *(obligatoire DoD AC6)* — `tests/infra/test_story_10_6_installation_ci_minimal_smoke.py` : §10.6 présent et cohérent avec le smoke doc. (AC : 6)
+- [x] **Smoke CI minimal** *(obligatoire DoD AC6)* — `tests/infra/test_story_10_6_installation_ci_minimal_smoke.py` : §10.6 présent et cohérent avec le smoke doc. (AC : 6)
 
-- [ ] **Frontière peloton / infra existante** — Ne pas modifier `doc/critical-core-peloton.yaml` ; ne pas dupliquer assertions `test_story_10_6c_pg17_doc_smoke.py` — seulement **référencer**. (AC : 6, FM3)
+- [x] **Frontière peloton / infra existante** — Ne pas modifier `doc/critical-core-peloton.yaml` ; ne pas dupliquer assertions `test_story_10_6c_pg17_doc_smoke.py` — seulement **référencer**. (AC : 6, FM3)
 
-- [ ] **Revue hors scope (AC7)** — Checklist : pas 10.7/10.8 ; pas playbook prod ; pas réouverture 10.6b–e ; pas HelloAsso obligatoire. (AC : 7)
+- [x] **Revue hors scope (AC7)** — Checklist : pas 10.7/10.8 ; pas playbook prod ; pas réouverture 10.6b–e ; pas HelloAsso obligatoire. (AC : 7)
 
-- [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
+- [x] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
 
 ## Dev Notes
 
@@ -163,11 +163,11 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 
 ### Definition of Done (Story 10.6)
 
-- [ ] Les **7 AC** sont couverts : manifeste, guide, matrice, index sous-stories, lien 10.5, §10.6 CI, hors scope revu.
-- [ ] Les **six piliers** du Story Preparation Gate sont nommés dans le YAML et le guide.
-- [ ] Smokes infra **10.6** verts localement (`python3 -m pytest tests/infra/test_story_10_6_installation_doc_smoke.py -q` **et** `test_story_10_6_installation_ci_minimal_smoke.py -q`).
-- [ ] **Ne pas** forcer **10.1** à `done` ; **ne pas** rouvrir **10.5** ni **10.6b–10.6e**.
-- [ ] Story Runner : `sprint-status.yaml` → **review** après DS.
+- [x] Les **7 AC** sont couverts : manifeste, guide, matrice, index sous-stories, lien 10.5, §10.6 CI, hors scope revu.
+- [x] Les **six piliers** du Story Preparation Gate sont nommés dans le YAML et le guide.
+- [x] Smokes infra **10.6** verts localement (`python3 -m pytest tests/infra/test_story_10_6_installation_doc_smoke.py -q` **et** `test_story_10_6_installation_ci_minimal_smoke.py -q`).
+- [x] **Ne pas** forcer **10.1** à `done` ; **ne pas** rouvrir **10.5** ni **10.6b–10.6e**.
+- [x] Story Runner : `sprint-status.yaml` → **review** après DS.
 
 ### Gates Story Runner (référence DS)
 
@@ -220,18 +220,39 @@ cd .. && python3 -m pytest tests/infra/test_story_10_5_observability_manifest_gu
 - **CS :** fichier story **ready-for-dev** (2026-09-21) — analyse contexte exhaustive ; sous-stories **10.6b–10.6e** indexées ; frontières **10.7** / legacy explicites.
 - **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_200720_jarvos_recyclique`) — score **97** ; 0 P0/P1 ; correctifs install stack Debian / Paheko / migrations / AC5 observabilité préservés (commits worktree `dbd37cf`, `4b9b4d9` — **pas de push**).
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` ; QA3 **97** préservé ; correctif Gates Story Runner `cd ..` depuis `peintre-nano` ; rapport projet `internal/validate-story-10-6.md`.
-- **Prochaine étape BMAD :** **DS** story 10.6 (`bmad-dev-story`) — manifeste YAML, guide install, smokes infra §10.6 ; **ne pas** lancer DS depuis VS.
+- **DS :** bmad-dev-story (Amelia) — 2026-09-21 ; livrables doc + smokes §10.6 ; worktree `cursor/dev-story-10-6-6941` ; **pas de push**.
+- **Prochaine étape BMAD :** **CR** / Story Runner gates (peloton 10.4, observabilité 10.5, smokes 10.6).
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
-_(à compléter au DS)_
+Composer (Cloud Agent DS story 10.6)
 
 ### Debug Log References
 
+Worktree : `/workspace/.worktrees/dev-story-10-6-6941` — branche `cursor/dev-story-10-6-6941`, base `8be34cc`.
+
 ### Completion Notes List
+
+- Manifeste `doc/supported-stack-official.yaml` (6 piliers, 5 services, auxiliaires compose, index 10.6b–e).
+- Guide `doc/installation-stack-officielle.md` : chemin minimal Debian/Docker sans `frontend-legacy`, Paheko inclus, matrice support, lien observabilité 10.5.
+- §10.6 `doc/ci-minimal.md` + smokes infra ; lien README « Voir aussi » ; note PG15→17 sur artefact validation locale.
+- Tests : 11 passed (smokes 10.6) + 7 passed / 2 skipped (10.6c/e) ; `docker compose config` non exécuté (Docker absent sur agent cloud).
+- **10.1** reste `review` ; **10.6b–e** / **10.5** non rouverts ; pas de modif `critical-core-peloton.yaml` ni workflow CI.
 
 ### File List
 
+- `doc/supported-stack-official.yaml` (créé)
+- `doc/installation-stack-officielle.md` (créé)
+- `doc/ci-minimal.md` (§10.6)
+- `README.md` (lien guide officiel)
+- `references/artefacts/2026-04-07_01_validation-stack-locale-peintre-nano.md` (note PG17)
+- `tests/infra/test_story_10_6_installation_doc_smoke.py` (créé)
+- `tests/infra/test_story_10_6_installation_ci_minimal_smoke.py` (créé)
+- `_bmad-output/implementation-artifacts/10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte.md` (DS)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (10-6 → review)
+
 ### Change Log
+
+- 2026-09-21 — DS story 10.6 : documentation install stack officielle + smokes infra §10.6.

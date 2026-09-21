@@ -1,0 +1,102 @@
+# Story 10.6 — manifeste machine-readable de la stack officielle v2 (installabilité PRD §11.5).
+version: 1
+story: "10.6"
+
+official_os:
+  family: debian
+  minimum_release: "12"
+  codename: bookworm
+  note: "Seul environnement hôte officiellement supporté pour une installation v2 documentée."
+
+installability_pillars:
+  stack_services:
+    summary: "Cinq services de la stack cible v2 (API, Peintre_nano, Paheko, PostgreSQL, Redis) avec rôles et ports locaux."
+    ac_refs: ["1", "2"]
+  debian_reference:
+    summary: "Debian comme OS hôte de référence pour l'installation documentée (prérequis Docker Engine/Compose)."
+    ac_refs: ["3"]
+  docker_entrypoint:
+    summary: "Point d'entrée Compose unique à la racine du mono-repo (story 10.6b)."
+    ac_refs: ["2", "4"]
+  postgresql_17:
+    summary: "Image canonique postgres:17 ; migration données 15→17 via runbook spike 10.6c (hors copie dans ce manifeste)."
+    ac_refs: ["1", "4"]
+  browser_matrix:
+    summary: "Navigateurs nominaux Chromium stable et Firefox ESR ; Edge récent en best-effort (PRD §web_app)."
+    ac_refs: ["3"]
+  nominal_install_complete:
+    summary: "Install nominale : shell authentifié + premier contexte exploitable (FIRST_SUPER_ADMIN_* ou procédure admin)."
+    ac_refs: ["2", "5"]
+
+services:
+  recyclique_api:
+    role: "Backend FastAPI (métier, auth, intégrations)."
+    canonical_path: recyclique/api
+    compose_service: api
+    default_local_port: 8000
+    required_for_minimal_install: true
+  peintre_nano:
+    role: "Frontend v2 (UI officielle, proxy Vite /api vers l'API)."
+    canonical_path: peintre-nano
+    compose_service: frontend
+    default_local_port: 4444
+    required_for_minimal_install: true
+  paheko:
+    role: "Comptabilité associative (service inclus dans la stack officielle documentée)."
+    canonical_path: null
+    compose_service: paheko
+    default_local_port: 8080
+    required_for_minimal_install: true
+  postgresql:
+    role: "Base de données canonique (PostgreSQL 17)."
+    canonical_path: null
+    compose_service: postgres
+    default_local_port: 5432
+    required_for_minimal_install: true
+  redis:
+    role: "Cache / files d'attente (sessions, jobs)."
+    canonical_path: null
+    compose_service: redis
+    default_local_port: 6379
+    required_for_minimal_install: true
+
+compose_auxiliary_services:
+  api-migrations:
+    role: "Job Alembic one-shot (upgrade head) avant démarrage API via depends_on."
+    excluded_from_minimal_up: false
+  frontend-legacy:
+    role: "Frontend transitoire recyclique-1.4.4 pour comparaison — hors install v2 documentée."
+    excluded_from_minimal_up: true
+
+sub_stories_index:
+  "10.6b":
+    story_file: _bmad-output/implementation-artifacts/10-6b-clarifier-le-point-dentree-docker-local-du-mono-repo.md
+    deliverables:
+      - README.md
+      - docker-compose.yml
+      - tests/infra/test_docker_compose_entrypoint.py
+  "10.6c":
+    story_file: _bmad-output/implementation-artifacts/10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-vers-17-hors-legacy.md
+    deliverables:
+      - _bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md
+      - tests/infra/test_story_10_6c_pg17_doc_smoke.py
+  "10.6d":
+    story_file: _bmad-output/implementation-artifacts/10-6d-aligner-le-compose-racine-et-la-ci-non-legacy-sur-postgresql-17.md
+    deliverables:
+      - docker-compose.yml
+      - .github/workflows/ci-minimal.yml
+  "10.6e":
+    story_file: _bmad-output/implementation-artifacts/10-6e-verifier-recyclique-api-et-alembic-sur-postgresql-17.md
+    deliverables:
+      - tests/infra/test_story_10_6e_pg17_backend_smoke.py
+
+doc_anchors:
+  - doc/installation-stack-officielle.md
+  - doc/supported-stack-official.yaml
+  - README.md
+  - doc/ci-minimal.md
+  - doc/observability-support-runbook.md
+
+env_template_note:
+  path: recyclique-1.4.4/env.example
+  remark: "Template .env à la racine jusqu'à relocation future ; variables minimales documentées dans le guide install."

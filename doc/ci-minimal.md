@@ -1,4 +1,4 @@
-# CI minimale (baseline Epic 10 — stories 10.1 + 10.2 + 10.3 + 10.4 + 10.5)
+# CI minimale (baseline Epic 10 — stories 10.1 + 10.2 + 10.3 + 10.4 + 10.5 + 10.6 doc)
 
 Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workflows/ci-minimal.yml).
 
@@ -83,6 +83,24 @@ Smoke infra recommandé :
 
 ```bash
 python3 -m pytest tests/infra/test_story_10_5_ci_minimal_observability_smoke.py -q
+```
+
+## Story 10.6 — documentation install stack officielle
+
+Manifeste et guide humain : [`doc/supported-stack-official.yaml`](./supported-stack-official.yaml), [`doc/installation-stack-officielle.md`](./installation-stack-officielle.md).
+
+| Couche | Commande locale | CI (`ci-minimal.yml`) |
+|--------|-----------------|------------------------|
+| Smoke doc install | `python3 -m pytest tests/infra/test_story_10_6_installation_doc_smoke.py -q` | (maintenance dépôt — non enregistré dans le peloton **10.4**) |
+| Smoke §10.6 ci-minimal | `python3 -m pytest tests/infra/test_story_10_6_installation_ci_minimal_smoke.py -q` | idem |
+
+**Frontière FM3 :** ne pas modifier les smokes **10.6c** / **10.6e** existants sauf lien cassé ; ne pas ajouter les smokes **10.6** dans `doc/critical-core-peloton.yaml` ni `run_critical_core_peloton.sh`.
+
+Régression PG17 (inchangée) :
+
+```bash
+python3 -m pytest tests/infra/test_story_10_6c_pg17_doc_smoke.py -q
+python3 -m pytest tests/infra/test_story_10_6e_pg17_backend_smoke.py -q
 ```
 
 ## Prérequis locaux
