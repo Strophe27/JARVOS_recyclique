@@ -281,9 +281,23 @@ def write_reviewable_yaml(path: Path, spec: dict[str, Any]) -> None:
 
 
 def load_yaml_spec(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"YAML reviewable OpenAPI introuvable : {path}. "
+            "Vérifier contracts/openapi/recyclique-api.yaml ou la doc contracts/README.md."
+        )
     with path.open(encoding="utf-8") as handle:
         loaded = yaml.safe_load(handle)
-    assert isinstance(loaded, dict)
+    if not isinstance(loaded, dict):
+        hint = (
+            " (fichier vide ou commentaires uniquement)"
+            if loaded is None
+            else f" (type {type(loaded).__name__})"
+        )
+        raise ValueError(
+            f"YAML reviewable OpenAPI invalide : {path} — "
+            f"racine OpenAPI attendue (mapping), reçu {type(loaded).__name__}{hint}."
+        )
     return loaded
 
 
