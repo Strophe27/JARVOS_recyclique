@@ -12,7 +12,7 @@ Manifeste machine-readable : [`supported-stack-official.yaml`](./supported-stack
 | `stack_services` | Cinq services : API, Peintre_nano, Paheko, PostgreSQL 17, Redis |
 | `debian_reference` | Hôte **Debian** (référence unique supportée) |
 | `docker_entrypoint` | `docker-compose.yml` à la **racine** du dépôt ([story 10.6b](../_bmad-output/implementation-artifacts/10-6b-clarifier-le-point-dentree-docker-local-du-mono-repo.md)) |
-| `postgresql_17` | Image `postgres:17` ; upgrade 15→17 : [runbook spike](../_bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md) ([10.6c](../_bmad-output/implementation-artifacts/10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-vers-17-hors-legacy.md)) |
+| `postgresql_17` | Image `postgres:17` ; upgrade 15→17 : [runbook spike](../_bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md) ([10.6c](../_bmad-output/implementation-artifacts/10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy.md)) |
 | `browser_matrix` | Voir tableau **Support** ci-dessous |
 | `nominal_install_complete` | Shell authentifié + premier contexte exploitable (checklist §6) |
 

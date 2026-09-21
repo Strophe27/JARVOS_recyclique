@@ -76,7 +76,7 @@ sub_stories_index:
       - docker-compose.yml
       - tests/infra/test_docker_compose_entrypoint.py
   "10.6c":
-    story_file: _bmad-output/implementation-artifacts/10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-vers-17-hors-legacy.md
+    story_file: _bmad-output/implementation-artifacts/10-6c-documenter-et-valider-le-spike-de-migration-postgresql-15-17-hors-legacy.md
     deliverables:
       - _bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md
       - tests/infra/test_story_10_6c_pg17_doc_smoke.py
