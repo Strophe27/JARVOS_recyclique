@@ -1,0 +1,31 @@
+planner_done: true
+routing_rationale: "shards parallel then cross_cutting serial"
+passes:
+  - id: pass-code
+    kind: code
+    execution_tier: shard
+    scope_paths:
+      - "D:/proj/src/porte.py"
+    objective: "Code porte"
+  - id: pass-tests
+    kind: code
+    execution_tier: shard
+    scope_paths:
+      - "D:/proj/tests/test_porte.py"
+    objective: "Tests porte"
+  - id: pass-contradiction
+    kind: system
+    execution_tier: cross_cutting
+    technique_pass: contradiction
+    scope_paths:
+      - "D:/proj/docs/registry.yaml"
+      - "D:/proj/src/porte.py"
+    objective: "Contradiction registry vs code"
+  - id: pass-traceability
+    kind: prd
+    execution_tier: cross_cutting
+    technique_pass: traceability
+    scope_paths:
+      - "D:/proj/specs/SPEC.md"
+      - "D:/proj/src/porte.py"
+    objective: "Traceability spec to code"

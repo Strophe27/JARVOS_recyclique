@@ -1,0 +1,21 @@
+planner_done: true
+routing_rationale: "three disjoint shards for parallel batch"
+passes:
+  - id: pass-code
+    kind: code
+    execution_tier: shard
+    scope_paths:
+      - "D:/proj/src/module_a.py"
+    objective: "Audit code module A"
+  - id: pass-tests
+    kind: code
+    execution_tier: shard
+    scope_paths:
+      - "D:/proj/tests/test_module_a.py"
+    objective: "Audit tests module A"
+  - id: pass-doc
+    kind: document
+    execution_tier: shard
+    scope_paths:
+      - "D:/proj/docs/README.md"
+    objective: "Audit doc"

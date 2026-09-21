@@ -1,0 +1,15 @@
+planner_done: true
+routing_rationale: "overlapping shards must serialize"
+passes:
+  - id: pass-a
+    kind: code
+    execution_tier: shard
+    scope_paths:
+      - "D:/proj/src/validator.py"
+    objective: "Audit validator"
+  - id: pass-b
+    kind: code
+    execution_tier: shard
+    scope_paths:
+      - "D:/proj/src/validator.py"
+    objective: "Regression validator"
