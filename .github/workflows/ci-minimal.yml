@@ -1,5 +1,5 @@
-# Baseline CI Epic 10 — Story 10.1
-# Gouvernance exécutable : chaque PR et chaque push sur `master` exécute API + Peintre + contrats.
+# Baseline CI Epic 10 — Stories 10.1 + 10.2
+# Gouvernance exécutable : chaque PR et chaque push sur `master` exécute API + Peintre + contrats (chaîne OpenAPI complète).
 # Pas de filtre `paths:` sur ces jobs (AC2) — ne pas contourner avec continue-on-error ou scripts parallèles.
 name: CI minimale (Recyclique · Peintre_nano · contrats)
 

@@ -38,16 +38,16 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.2**
 
 6. **Hors scope explicite** — Étant donné les frontières Epic 10, quand cette story est revue, alors **ne pas** livrer : validation **CREOS `data_contract.operation_id` ↔ OpenAPI** sur tous les manifests reviewables (**10.3**) ; suite **Spectral** complète ; correction des tests Peintre **bandeau-live** ; extension de la baseline à **`recyclique-1.4.4/`** ; faire de **`recyclique/api/openapi.json`** une seconde source de vérité reviewable (autorisé : export **diagnostic** local/tests **si** documenté comme **dérivé** du même `app.openapi()` et **non** comparé en CI comme contrat canonique distinct du snapshot `contracts/`).
 
-## Matrice de traçabilité
+## Matrice de traçabilité (C12)
 
-| AC | Tâches | Fichiers / artefacts | Gate Story Runner |
-|----|--------|----------------------|-------------------|
-| **1** Writer FastAPI | Politique snapshot ; Script export/sync ; Intégration CI | `recyclique/api/generate_openapi.py` (étendre) ou `recyclique/api/scripts/…` ; `contracts/openapi/generated/*` | Export + diff git propre |
-| **2** YAML aligné | Script export/sync ; Intégration CI ; Doc | `contracts/openapi/recyclique-api.yaml` ; `contracts/README.md` | `git diff --exit-code` sur artefacts chaîne |
-| **3** Chemin Peintre | Doc | `contracts/openapi/package.json` ; `peintre-nano/README.md` | `npm run generate` inchangé ou documenté |
-| **4** Détection drift | Tests chaîne | `recyclique/api/tests/test_story_10_2_*.py` et/ou `tests/infra/test_story_10_2_*.py` | pytest ciblé vert |
-| **5** Sur 10.1 | Intégration CI ; Doc | `.github/workflows/ci-minimal.yml` ; `doc/ci-minimal.md` | Rejouer bloc Gates ci-dessous |
-| **6** Hors scope | Revue périmètre | — | Checklist AC6 |
+| AC | Tâches | Fichiers / artefacts (périmètre story + doc chaîne) | Gate Story Runner |
+|----|--------|------------------------------------------------------|-------------------|
+| **1** Writer FastAPI | Politique snapshot ; Script export/sync ; Intégration CI | `recyclique/api/generate_openapi.py` ; `recyclique/api/src/recyclic_api/openapi_chain.py` ; `contracts/openapi/generated/openapi-snapshot.json` | `python generate_openapi.py --emit-contracts` puis `git diff` triplet chaîne (AC2) |
+| **2** YAML aligné | Politique snapshot ; Script export/sync ; Intégration CI ; Doc | `openapi_chain.py` ; `contracts/openapi/recyclique-api.yaml` ; `contracts/openapi/generated/openapi-snapshot.json` ; `contracts/README.md` ; `doc/ci-minimal.md` | `git diff --exit-code generated/openapi-snapshot.json recyclique-api.yaml generated/recyclique-api.ts` (CI + doc) |
+| **3** Chemin Peintre | Politique snapshot ; Doc consommation frontend | `contracts/openapi/package.json` (`generate` ← YAML seul) ; `contracts/README.md` ; `peintre-nano/README.md` (import `generated/recyclique-api.ts`) | `npm run generate` ; Vitest `peintre-nano/tests/contract/` (hors bandeau-live defer) |
+| **4** Détection drift | Tests détection drift | `recyclique/api/tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (4 tests : snapshot, paths, `operationId`, idempotence) ; `tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` (verrou YAML CI) | `pytest` modules ci-dessus **verts** |
+| **5** Sur 10.1 | Intégration CI ; Doc | `.github/workflows/ci-minimal.yml` (job `contracts-openapi`) ; `doc/ci-minimal.md` ; smoke `tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` | Même workflow **sans** `paths:` / `continue-on-error` ; parité commandes § Gates |
+| **6** Hors scope | Audit écart ; Revue périmètre | Dev Notes § Hors scope ; `recyclique/api/openapi.json` = diagnostic seul | Aucun job Spectral / CREOS manifests / legacy 1.4.4 dans chaîne CI |
 
 ## Tasks / Subtasks
 
@@ -103,9 +103,8 @@ Références : `project-structure-boundaries.md` (Piste B, Convergence 1), pivot
 ### Intelligence story 10.1 (prédécesseur immédiat)
 
 - Workflow **`ci-minimal.yml`** : Postgres **17**, `POSTGRES_DB: recyclic_test`, Redis, ruff + compileall + pytest `-m "not performance"`.
-- Job **`contracts-openapi`** actuel : **uniquement** `openapi-typescript recyclique-api.yaml` — **ne prouve pas** l'alignement FastAPI ↔ YAML.
-- **`doc/ci-minimal.md`** ligne 15 : chaîne FastAPI explicitement **reportée 10.2**.
-- Dette : **`recyclique/api/openapi.json`** généré par `main.py` / `run_tests.sh` — à **requalifier** (AC6) dans README API si touché.
+- Job **`contracts-openapi`** (étendu **10.2**) : `generate_openapi.py --emit-contracts` puis `npm run generate` ; `git diff --exit-code` sur snapshot JSON, YAML reviewable et `recyclique-api.ts` — aligné **`doc/ci-minimal.md`** et gates Story Runner § ci-dessous.
+- Dette : **`recyclique/api/openapi.json`** généré par `main.py` / `run_tests.sh` — export **diagnostic** (AC6), pas second snapshot CI sous `contracts/`.
 
 ### Outils et versions (ne pas upgrader sans nécessité)
 
@@ -183,7 +182,7 @@ Composer 2.5 (Amelia / `bmad-dev-story`)
 
 ### Debug Log References
 
-- Gates DS : `pytest tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (3) ; `pytest tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` (2) ; `npx vitest run tests/contract/` (97 passed).
+- Gates DS : `pytest tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (4, dont idempotence YAML/snapshot) ; `pytest tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` (2) ; `npx vitest run tests/contract/` (97 passed).
 
 ### Completion Notes List
 
@@ -217,6 +216,9 @@ Composer 2.5 (Amelia / `bmad-dev-story`)
 - **DS :** implémentation **review** (2026-09-21) — gates contract Vitest + pytest 10.2 verts ; pas de push.
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
 - **QA3 :** boucle gate 95+ (2026-09-21) — score **96** ; 0 P0 / 0 P1 ; correctifs intégrés (tableau 10.1 `review`, gates `git diff` + `recyclique-api.ts`, `--emit-contracts` indicatif aligné tâche script) — rapport projet `internal/qa3-story-10-2.md`
+- **QA3 :** passe `pass-docs` (2026-09-21, run `20260921_173245_jarvos`) — score **96** ; 0 P0 / 0 P1 après correctifs (`doc/ci-minimal.md` périmètre 10.2 vs tableau jobs ; Dev Notes 10.1 obsolètes)
+- **QA3 :** passe `pass-contradiction` (2026-09-21, run `20260921_173245_jarvos`) — alignement story ↔ code ↔ CI ↔ tests smoke (findings CR obsolètes levés dans Review Findings)
+- **QA3 :** passe `pass-traceability` (2026-09-21, run `20260921_173245_jarvos`) — matrice C12 AC1–AC6 ↔ artefacts ; 0 orphelin dans périmètre 7 fichiers ; **10.1** inchangé `review`
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` sans écart bloquant ; QA3 **96** préservé ; dettes résiduelles (audit écart chaîne, politique merge `description` YAML, Dev Agent Record) reportées **DS**
 - **CR :** **APPROVE** (2026-09-21, commit `3c63744`) — 0 P0 / 0 P1 ; gates CR rejouées (pytest 10.2, smoke infra, Vitest contrats 97) ; rapport projet `internal/code-review-10-2.md`
 - **Prochaine étape BMAD :** coordinateur — QA3 si requis epic, puis `done` 10.2 ; **10.1** inchangé `review`
@@ -224,6 +226,6 @@ Composer 2.5 (Amelia / `bmad-dev-story`)
 ### Review Findings
 
 - [x] [Review][Defer] Variables `DATABASE_URL` / `REDIS_URL` dans `contracts-openapi` sans services — acceptable tant que l’export n’ouvre pas de connexion ; surveiller imports futurs [`.github/workflows/ci-minimal.yml:117-121`] — deferred, risque CI latent
-- [x] [Review][Defer] Assertion smoke `openapi-snapshot.json` ou `generated/` trop permissive [`tests/infra/test_story_10_2_openapi_chain_ci_smoke.py:24`] — deferred
-- [x] [Review][Defer] Test idempotence double `--emit-contracts` sur YAML non automatisé — deferred
-- [x] [Review][Defer] `load_yaml_spec` : `assert` au lieu d’erreur explicite [`recyclique/api/src/recyclic_api/openapi_chain.py:286`] — deferred
+- [x] [Review][Dismiss] Smoke infra : assertion sur le triplet `git diff` (snapshot, YAML, TS) — couvert par `test_ci_contracts_job_runs_openapi_chain_and_full_git_diff` [`tests/infra/test_story_10_2_openapi_chain_ci_smoke.py`]
+- [x] [Review][Dismiss] Idempotence double `--emit-contracts` — `test_emit_contracts_chain_idempotent_on_yaml_and_snapshot` [`recyclique/api/tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py`]
+- [x] [Review][Dismiss] `load_yaml_spec` lève `ValueError` / `FileNotFoundError` explicites (plus d’`assert` racine) [`recyclique/api/src/recyclic_api/openapi_chain.py`]

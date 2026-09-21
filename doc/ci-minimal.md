@@ -1,4 +1,4 @@
-# CI minimale (baseline Epic 10 — story 10.1)
+# CI minimale (baseline Epic 10 — stories 10.1 + 10.2)
 
 Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workflows/ci-minimal.yml).
 
@@ -12,7 +12,7 @@ Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workfl
 
 Politique par défaut : tout changement d’API backend doit régénérer et **committer** la chaîne complète (snapshot JSON, YAML reviewable aligné, types TS). Détail : [`contracts/README.md`](../contracts/README.md) § chaîne OpenAPI.
 
-**Hors périmètre 10.1 / couvert par 10.2 :** chaîne FastAPI → snapshot → YAML → codegen (ci-dessus).
+**Story 10.2 (intégrée) :** le job `contracts-openapi` ci-dessus exécute la chaîne FastAPI → `generated/openapi-snapshot.json` → `recyclique-api.yaml` → `generated/recyclique-api.ts` (voir [`contracts/README.md`](../contracts/README.md)).
 
 **Hors périmètre Epic 10 :** `recyclique-1.4.4/` ; déploiement prod legacy ([`deploy.yaml`](../.github/workflows/deploy.yaml)) ; validation CREOS `operationId` complète (**10.3**).
 
@@ -66,4 +66,4 @@ cd recyclique/api && python -m pytest tests/test_story_10_2_openapi_chain_fastap
 
 Réglage **hors dépôt** : activer les reviews et exiger le succès des jobs **`CI minimale (Recyclique · Peintre_nano · contrats)`** (`api-minimal`, `peintre-nano-minimal`, `contracts-openapi`) avant merge.
 
-Workflow migrations Alembic (déclenché sur `recyclique/api/migrations/versions/**`, `recyclique/api/alembic.ini`, `.github/workflows/alembic-check.yml`) : [`.github/workflows/alembic-check.yml`](../.github/workflows/alembic-check.yml) — complémentaire, pas substitut à la baseline 10.1.
+Workflow migrations Alembic (déclenché sur `recyclique/api/migrations/versions/**`, `recyclique/api/alembic.ini`, `.github/workflows/alembic-check.yml`) : [`.github/workflows/alembic-check.yml`](../.github/workflows/alembic-check.yml) — complémentaire, pas substitut à la baseline Epic 10 (10.1 + 10.2).

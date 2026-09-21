@@ -15,6 +15,7 @@ from recyclic_api.main import app
 from recyclic_api.openapi_chain import (
     YAML_ONLY_PATH_METHODS,
     collect_operation_ids,
+    emit_contracts_chain,
     fastapi_spec_with_yaml_operation_ids,
     load_yaml_spec,
     normalize_openapi_spec,
@@ -85,3 +86,17 @@ def test_operation_ids_aligned_with_reviewable_overrides(
         "operationId manquants dans le YAML après projection — régénérer / committer la chaîne : "
         f"{sorted(missing)[:15]}"
     )
+
+
+def test_emit_contracts_chain_idempotent_on_yaml_and_snapshot(fastapi_spec: dict) -> None:
+    """Deux exports consécutifs ne doivent pas faire dériver snapshot ni YAML reviewable."""
+    yaml_path = reviewable_yaml_path(REPO_ROOT)
+    snap = snapshot_path(REPO_ROOT)
+
+    emit_contracts_chain(fastapi_spec, REPO_ROOT, sync_yaml=True)
+    yaml_after_first = yaml_path.read_bytes()
+    snap_after_first = snap.read_bytes()
+
+    emit_contracts_chain(fastapi_spec, REPO_ROOT, sync_yaml=True)
+    assert yaml_path.read_bytes() == yaml_after_first
+    assert snap.read_bytes() == snap_after_first
