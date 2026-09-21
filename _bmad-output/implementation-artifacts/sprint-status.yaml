@@ -1,4 +1,5 @@
 # Process BMAD (gel) : règle « gel hors Epic 25 » (sprint-change 2026-04-19) remplacée par levée partielle L0/L1/L2 — D1 tranchée 2026-09-21 (jarvos.01). Canon process : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`. Ce fichier conserve les statuts `development_status` comme preuve historique (pas de retcon des `done`).
+# last_updated: 2026-09-21 — story 10.2 CS bmad-create-story : `10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend.md` ; **`10-1`** inchangé **`review`** (CR+QA3 OK, bandeau-live hors scope) ; **`epic-10`** inchangé **in-progress** ; trace CS Ombre D2/D7 ; prochaine étape **VS** puis **DS** 10.2
 # last_updated: 2026-09-21 — story 10.1 DS Amelia : `10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats` **ready-for-dev** → **`review`** ; workflow `ci-minimal.yml` + `doc/ci-minimal.md` + smoke infra ; prochaine étape **code-review** / **QA3** coordinateur
 # last_updated: 2026-09-21 — story 10.1 CS bmad-create-story : `10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats.md` ; **`epic-10`** **`backlog`** → **`in-progress`** ; trace CS Ombre D2/D7 ; prochaine étape **VS** puis chaîne **10.2–10.3**
 # last_updated: 2026-05-27 — Agent B fin : **`9-10-liaison-paheko-cloture-caisse-v1`** **review** → **`done`** ; QA2 96 % P0=0 ; CR APPROVE ; pytest peloton vert
@@ -496,7 +497,7 @@ development_status:
   # Gel 2026-04-19 : les statuts YAML ci-dessous restent preuve d'état — pas de rétroconduction des valeurs review/backlog.
   epic-10: in-progress
   10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: review
-  10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
+  10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: ready-for-dev
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: backlog
   10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: backlog
   10-5-rendre-lobservabilite-et-le-support-exploitables-en-environnement-reel: backlog

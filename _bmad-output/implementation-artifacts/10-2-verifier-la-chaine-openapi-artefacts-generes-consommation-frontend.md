@@ -1,0 +1,181 @@
+# Story 10.2 : Vérifier la chaîne OpenAPI → artefacts générés → consommation frontend
+
+Status: ready-for-dev
+
+**Story ID :** 10.2  
+**Story key :** `10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend`  
+**Epic :** epic-10 — Industrialiser, valider et rendre la v2 deployable  
+
+<!-- Ultimate context engine analysis completed — BMAD create-story (CS) 2026-09-21. -->
+
+## Story
+
+En tant qu'**équipe produit pilotée par les contrats**,  
+je veux une **chaîne OpenAPI testable et reviewable de bout en bout**,  
+afin que le **backend** et le **frontend** restent alignés à mesure que le produit évolue.
+
+## Décisions Ombre / pilotage (2026-09-21)
+
+- **Séquence L0** : **10.1** (CI minimale, statut **`review`** — CR+QA3 OK, ne pas forcer **`done`** depuis cette story) → **10.2** (cette story) → **10.3** avant module métier **D** (**D2/D7**).
+- **Prérequis technique** : s'appuyer sur **`.github/workflows/ci-minimal.yml`** et **`doc/ci-minimal.md`** (job `contracts-openapi` : `npm run generate` + diff `recyclique-api.ts`) — **10.2** ajoute la preuve **FastAPI → snapshot reviewable → codegen**, pas un second workflow parallèle silencieux.
+- **Bandeau-live Peintre** : échecs Vitest bandeau-live **préexistants** (CR 10.1 defer) — **hors scope** ; ne pas bloquer la chaîne OpenAPI sur leur correction.
+- **C2b / `v2.0.0`** : hors scope.
+- **D10** : Epic **12** gelé — pas de jobs « parité legacy » dans la chaîne OpenAPI.
+
+## Acceptance Criteria
+
+Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.2** (traduction exécutable ci-dessous).
+
+1. **Writer canonique FastAPI** — Étant donné que le backend est le **writer canonique** d'OpenAPI (`core-architectural-decisions.md` § API, Piste B), quand le chemin de génération est exercé (local **et** CI), alors le dépôt expose **un pipeline documenté et reproductible** qui part de `app.openapi()` (via `recyclique/api/generate_openapi.py` ou script successeur **sans** dupliquer la logique métier) et produit un **snapshot versionné** sous `contracts/openapi/generated/` (fichier(s) nommé(s) explicitement dans la doc — ex. JSON normalisé et/ou YAML intermédiaire) **avant** la régénération TypeScript ; **interdit** de maintenir en parallèle une « seconde vérité » non reliée au pipeline (édition manuelle des `paths` du YAML reviewable sans passer par l'export FastAPI + commit du snapshot).
+
+2. **YAML reviewable aligné** — Étant donné la chaîne documentée (`generated/` + `recyclique-api.yaml` + codegen), quand le pipeline tourne sur une branche propre, alors **`contracts/openapi/recyclique-api.yaml`** est **aligné** sur le **même snapshot** que `contracts/openapi/generated/` (copie, re-export ou étape unique documentée — choix d'outillage **écrit** dans `contracts/README.md` et `doc/ci-minimal.md`) ; la CI **échoue** si l'export FastAPI + synchronisation laisse un `git diff` non commité sur les artefacts de la chaîne (**au minimum** : snapshot `generated/` retenu + `recyclique-api.yaml` + `generated/recyclique-api.ts` selon la politique fixée en tâche « Politique snapshot »).
+
+3. **Consommation Peintre nommée** — Étant donné que `peintre-nano` consomme les types générés, quand la story est livrée, alors la documentation d'équipe nomme **explicitement** le chemin d'import canonique : **`contracts/openapi/generated/recyclique-api.ts`** (déjà utilisé par `peintre-nano/src/api/*` et domaines) ; le script **`contracts/openapi/package.json` → `npm run generate`** prend **une seule entrée** documentée (YAML reviewable aligné sur le snapshot — pas de second fichier d'entrée caché).
+
+4. **Détection d'incohérences avant la UI** — Étant donné que le produit dépend d'enums, `operationId` et DTO stables, quand la chaîne est validée, alors au moins **un test automatisé** (pytest sous `recyclique/api/tests/` **ou** `tests/infra/` pour verrous doc/CI) détecte une **divergence majeure** entre `app.openapi()` et `contracts/openapi/recyclique-api.yaml` (minimum recommandé : ensemble des **`operationId`** + présence des chemins critiques déjà couverts par `tests/test_openapi_validation.py` et les tests Vitest `peintre-nano/tests/contract/recyclique-openapi-governance.test.ts`) ; l'échec est **actionnable** (message indiquant régénérer / committer la chaîne).
+
+5. **Industrialisation sur 10.1** — Étant donné qu'**Epic 10** industrialise sans refaire le métier, quand **10.2** est fermée, alors le pipeline s'intègre à la **baseline CI 10.1** (extension du job `contracts-openapi` **ou** job frère dans le **même** workflow `ci-minimal.yml`, **sans** filtre `paths:` qui contourne AC2 de **10.1**) **et** les commandes locales dans `doc/ci-minimal.md` incluent la **séquence complète** FastAPI → contrats → codegen (parité gates Story Runner).
+
+6. **Hors scope explicite** — Étant donné les frontières Epic 10, quand cette story est revue, alors **ne pas** livrer : validation **CREOS `data_contract.operation_id` ↔ OpenAPI** sur tous les manifests reviewables (**10.3**) ; suite **Spectral** complète ; correction des tests Peintre **bandeau-live** ; extension de la baseline à **`recyclique-1.4.4/`** ; faire de **`recyclique/api/openapi.json`** une seconde source de vérité reviewable (autorisé : export **diagnostic** local/tests **si** documenté comme **dérivé** du même `app.openapi()` et **non** comparé en CI comme contrat canonique distinct du snapshot `contracts/`).
+
+## Matrice de traçabilité
+
+| AC | Tâches | Fichiers / artefacts | Gate Story Runner |
+|----|--------|----------------------|-------------------|
+| **1** Writer FastAPI | Politique snapshot ; Script export/sync ; Intégration CI | `recyclique/api/generate_openapi.py` (étendre) ou `recyclique/api/scripts/…` ; `contracts/openapi/generated/*` | Export + diff git propre |
+| **2** YAML aligné | Script export/sync ; Intégration CI ; Doc | `contracts/openapi/recyclique-api.yaml` ; `contracts/README.md` | `git diff --exit-code` sur artefacts chaîne |
+| **3** Chemin Peintre | Doc | `contracts/openapi/package.json` ; `peintre-nano/README.md` | `npm run generate` inchangé ou documenté |
+| **4** Détection drift | Tests chaîne | `recyclique/api/tests/test_story_10_2_*.py` et/ou `tests/infra/test_story_10_2_*.py` | pytest ciblé vert |
+| **5** Sur 10.1 | Intégration CI ; Doc | `.github/workflows/ci-minimal.yml` ; `doc/ci-minimal.md` | Rejouer bloc Gates ci-dessous |
+| **6** Hors scope | Revue périmètre | — | Checklist AC6 |
+
+## Tasks / Subtasks
+
+- [ ] **Audit écart chaîne (état CS 2026-09-21)** — Cartographier : (a) `app.openapi()` via fixture `openapi_schema` ; (b) `recyclique/api/openapi.json` (export historique tests/Docker) ; (c) `contracts/openapi/recyclique-api.yaml` (~13k lignes, enrichi manuellement au fil des epics) ; (d) `contracts/openapi/generated/recyclique-api.ts` (codegen **depuis YAML uniquement** aujourd'hui). Documenter dans les Dev Notes du fichier story les **écarts connus** (préfixes `/v1` vs `/api`, champs `description` reviewables, fragments `contracts/openapi/fragments/`). (AC : 1, 2, 4)
+
+- [ ] **Politique snapshot unique** — Trancher et **écrire** (PO technique = équipe, pas HITL supplémentaire Ombre) : format du snapshot sous `contracts/openapi/generated/` (JSON normalisé recommandé pour diff stable ; YAML optionnel si outillage unique) ; règle de mise à jour de **`recyclique-api.yaml`** (écrasement contrôlé vs merge sélectif des `description` — si merge, script **explicite** et testé). Mettre à jour **`contracts/README.md`** § tableau `openapi/` et **`doc/ci-minimal.md`** § hors 10.1 → intégrer **10.2**. (AC : 1, 2, 3)
+
+- [ ] **Script export / sync** — Implémenter un chemin **une commande** depuis `recyclique/api/` (ex. `python generate_openapi.py --emit-contracts` ou script shell `scripts/sync-openapi-chain.sh` à la racine) qui : charge l'app FastAPI ; écrit le snapshot dans `contracts/openapi/generated/` ; synchronise `recyclique-api.yaml` selon la politique ; **ne modifie pas** la sémantique métier des routes (pas de refonte API). Préserver **`operationId`** stables (custom OpenAPI route decorators existants — grep `operation_id` / `openapi_extra` avant toute refonte). (AC : 1, 2)
+
+- [ ] **Intégration CI** — Étendre le job **`contracts-openapi`** dans `ci-minimal.yml` (préféré) : installer deps Python minimales pour l'export (réutiliser cache/setup du job `api-minimal` **ou** step léger `pip install` ciblé) ; exécuter le script chaîne ; `npm ci && npm run generate` ; `git diff --exit-code` sur **tous** les artefacts déclarés en politique snapshot. **Interdit** : `paths:` sur ce workflow ; `continue-on-error`. (AC : 2, 5)
+
+- [ ] **Tests détection drift** — Ajouter `recyclique/api/tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py` (nom indicative) : compare au minimum les ensembles **`operationId`** entre `app.openapi()` et le YAML parse (PyYAML ou `json` si snapshot JSON intermédiaire) ; tolérance documentée pour opérations **volontairement** absentes du YAML (liste vide attendue après audit — sinon faire converger). Ajouter `tests/infra/test_story_10_2_openapi_chain_ci_smoke.py` : assert que `ci-minimal.yml` référence le script/export et les diffs git sur la chaîne (pattern **10.1** smoke). (AC : 4, 5)
+
+- [ ] **Doc consommation frontend** — Vérifier / ajuster une seule section dans `peintre-nano/README.md` + `contracts/README.md` : entrée = snapshot aligné → `recyclique-api.yaml` → `npm run generate` → import `../../../contracts/openapi/generated/recyclique-api` (chemins relatifs existants). (AC : 3)
+
+- [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
+
+## Dev Notes
+
+### Frontières avec 10.1 et 10.3
+
+| Sujet | **10.1 (done / review)** | **10.2 (cette story)** | **10.3** |
+|--------|---------------------------|-------------------------|----------|
+| CI `master` + 3 jobs | Baseline API + Peintre + `generate` TS depuis YAML | Ajoute export **FastAPI → snapshot + YAML** + diffs git | — |
+| OpenAPI | Diff `recyclique-api.ts` seulement | **Alignement YAML ↔ FastAPI** + snapshot `generated/` | — |
+| CREOS / manifests | Vitest gouvernance schéma | Inchangé | `operation_id` ↔ `operationId` sur manifests reviewables + smoke rendu |
+| Peintre e2e | `npm run test` complet (bandeau-live rouge = defer) | Ne pas conditionner la chaîne au vert bandeau-live | Smoke rendu modules critiques |
+
+### Chaîne normative (architecture)
+
+Ordre **cible** (`core-architectural-decisions.md` § Contrat frontend) :
+
+1. Code **`recyclique/api/src/recyclic_api/`** (FastAPI) — seule source exécutable.
+2. Export CI → **`contracts/openapi/generated/`** (snapshot diff).
+3. **`contracts/openapi/recyclique-api.yaml`** — fichier **reviewable** (humains, liens doc, Vitest gouvernance).
+4. **`npm run generate`** → **`contracts/openapi/generated/recyclique-api.ts`**.
+5. **`peintre-nano`** importe les types (clients sous `src/api/`, domaines bandeau-live, etc.).
+
+Références : `project-structure-boundaries.md` (Piste B, Convergence 1), pivot `references/artefacts/2026-04-02_04_gouvernance-contractuelle-openapi-creos-contextenvelope.md` § drift / copies dérivées.
+
+### Intelligence story 10.1 (prédécesseur immédiat)
+
+- Workflow **`ci-minimal.yml`** : Postgres **17**, `POSTGRES_DB: recyclic_test`, Redis, ruff + compileall + pytest `-m "not performance"`.
+- Job **`contracts-openapi`** actuel : **uniquement** `openapi-typescript recyclique-api.yaml` — **ne prouve pas** l'alignement FastAPI ↔ YAML.
+- **`doc/ci-minimal.md`** ligne 15 : chaîne FastAPI explicitement **reportée 10.2**.
+- Dette : **`recyclique/api/openapi.json`** généré par `main.py` / `run_tests.sh` — à **requalifier** (AC6) dans README API si touché.
+
+### Outils et versions (ne pas upgrader sans nécessité)
+
+- **openapi-typescript** `^7.4.4` (`contracts/openapi/package.json`).
+- **FastAPI** `app.openapi()` — fixture `openapi_schema` dans `recyclique/api/tests/conftest.py`.
+- Tests Vitest existants : `peintre-nano/tests/contract/recyclique-openapi-governance.test.ts` (parse YAML reviewable — **doit rester verts** après sync).
+
+### Fichiers cibles probables
+
+| Fichier | Action attendue |
+|---------|-----------------|
+| `recyclique/api/generate_openapi.py` | Étendre ou remplacer par script chaîne documenté |
+| `contracts/openapi/generated/` | Ajouter snapshot(s) ; conserver `recyclique-api.ts` |
+| `contracts/openapi/recyclique-api.yaml` | Régénéré / synchronisé par pipeline (pas d'édition manuelle des paths en PR normale) |
+| `contracts/openapi/package.json` | Entrée `generate` documentée si changement |
+| `.github/workflows/ci-minimal.yml` | Étendre job `contracts-openapi` |
+| `doc/ci-minimal.md` | Séquence complète 10.2 |
+| `contracts/README.md` | Politique snapshot + chaîne unique |
+| `recyclique/api/tests/test_story_10_2_*.py` | Gate drift |
+| `tests/infra/test_story_10_2_*.py` | Smoke CI YAML |
+
+**Hors scope :** `recyclique-1.4.4/**`, Spectral complet, gate CREOS manifests (**10.3**), fix tests bandeau-live, promotion nouveaux manifests CREOS.
+
+### Modes de défaillance ciblés (FMEA)
+
+| ID | Mode | Effet | Mitigation (10.2) |
+|----|------|-------|-------------------|
+| FM1 | Édition manuelle YAML sans export FastAPI | Frontend / doc sur contrat fantôme | CI `git diff` après export ; test `operationId` |
+| FM2 | Deux snapshots (`openapi.json` racine API vs `contracts/`) | Drift silencieux | Doc AC6 ; un seul snapshot canonique sous `contracts/` |
+| FM3 | Job CI export sauté (`paths:` / script optionnel) | Merge casse codegen | Étendre `contracts-openapi` sans `paths:` |
+| FM4 | Normalisation JSON instable (ordre clés) | Diff bruyant | Tri/normalisation documentée dans script |
+| FM5 | Scope creep Spectral + CREOS + 10.3 | Surcharge | AC6 + tableau frontières |
+
+### Gates Story Runner (référence DS)
+
+```bash
+# 1) Chaîne contrats (après implémentation script — chemins exacts = File List DS)
+cd recyclique/api && pip install -r requirements.txt -r requirements-dev.txt
+python generate_openapi.py   # ou commande documentée post-10.2
+cd ../../contracts/openapi && npm ci && npm run generate
+git diff --exit-code generated/ recyclique-api.yaml   # ajuster selon politique snapshot
+
+# 2) Tests drift + smoke infra
+cd ../../recyclique/api && python -m pytest tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py -q
+cd ../.. && python -m pytest tests/infra/test_story_10_2_openapi_chain_ci_smoke.py -q
+
+# 3) Non-régression contrats Peintre (hors bandeau-live si encore rouge — noter dans CR)
+cd peintre-nano && npm ci && npm run lint && npx vitest run tests/contract/
+
+# 4) Peloton API (si touché backend) — Postgres 17 + Redis
+cd ../recyclique/api && python -m pytest tests/test_openapi_validation.py -q
+```
+
+### Project context
+
+- `_bmad-output/project-context.md` — chemins canoniques ; pas de push sans accord (workflow humain).
+
+## References
+
+- [Source: `_bmad-output/planning-artifacts/epics.md` — Epic 10, Story 10.2]
+- [Source: `_bmad-output/planning-artifacts/architecture/core-architectural-decisions.md` — Chaîne OpenAPI unique]
+- [Source: `_bmad-output/planning-artifacts/architecture/project-structure-boundaries.md` — Piste B, `contracts/openapi/generated/`]
+- [Source: `_bmad-output/planning-artifacts/architecture/implementation-patterns-consistency-rules.md` — Jalons CI codegen / CREOS]
+- [Source: `_bmad-output/implementation-artifacts/10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats.md` — Frontières 10.2]
+- [Source: `_bmad-output/implementation-artifacts/1-4-fermer-la-gouvernance-contractuelle-openapi-creos-contextenvelope.md`]
+- [Source: `_bmad-output/implementation-artifacts/2-6-exposer-les-premiers-contrats-backend-versionnes-pour-les-slices-v2.md` — Codegen Peintre]
+- [Source: `contracts/README.md`, `doc/ci-minimal.md`, `peintre-nano/tests/contract/README.md`]
+- [Source: `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md` — ligne 10.2]
+
+## Dev Agent Record
+
+### Agent Model Used
+
+_(à remplir en DS)_
+
+### Debug Log References
+
+### Completion Notes List
+
+### File List
+
+## Story completion status
+
+- **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
+- **Prochaine étape BMAD :** **VS** (validate-create-story), puis **DS** (`bmad-dev-story`) — **pas** de QA3 ni dev dans ce run CS.
