@@ -174,7 +174,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.6**
 ```bash
 # Racine dépôt — smoke doc install 10.6
 python3 -m pytest tests/infra/test_story_10_6_installation_doc_smoke.py -q
-python3 -m pytest tests/infra/test_story_10_6_installation_ci_minimal_smoke.py -q  # si créé
+python3 -m pytest tests/infra/test_story_10_6_installation_ci_minimal_smoke.py -q
 
 # Régression infra PG17 (inchangée — ne pas casser)
 python3 -m pytest tests/infra/test_story_10_6c_pg17_doc_smoke.py -q
@@ -186,7 +186,9 @@ docker compose config --quiet
 # Peloton 10.4 + observabilité 10.5 — régression L0
 cd recyclique/api && bash scripts/run_critical_core_peloton.sh
 cd ../../peintre-nano && npm run test:critical-core
-python3 -m pytest tests/infra/test_story_10_5_observability_manifest_guard.py -q
+
+# Racine dépôt — depuis peintre-nano : un niveau vers la racine (cf. story 10.5)
+cd .. && python3 -m pytest tests/infra/test_story_10_5_observability_manifest_guard.py -q
 ```
 
 ### Intelligence story précédente (10.5)
@@ -216,7 +218,9 @@ python3 -m pytest tests/infra/test_story_10_5_observability_manifest_guard.py -q
 ## Story completion status
 
 - **CS :** fichier story **ready-for-dev** (2026-09-21) — analyse contexte exhaustive ; sous-stories **10.6b–10.6e** indexées ; frontières **10.7** / legacy explicites.
-- **Prochaine étape BMAD :** **VS** (`validate-create-story`) puis **DS** story 10.6.
+- **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_200720_jarvos_recyclique`) — score **97** ; 0 P0/P1 ; correctifs install stack Debian / Paheko / migrations / AC5 observabilité préservés (commits worktree `dbd37cf`, `4b9b4d9` — **pas de push**).
+- **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` ; QA3 **97** préservé ; correctif Gates Story Runner `cd ..` depuis `peintre-nano` ; rapport projet `internal/validate-story-10-6.md`.
+- **Prochaine étape BMAD :** **DS** story 10.6 (`bmad-dev-story`) — manifeste YAML, guide install, smokes infra §10.6 ; **ne pas** lancer DS depuis VS.
 
 ## Dev Agent Record
 
