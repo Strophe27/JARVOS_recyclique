@@ -82,7 +82,7 @@ Le fichier **`sprint-status.yaml`** reste la **preuve historique** des statuts ;
 
 1. `_bmad-output/implementation-artifacts/sprint-status.yaml` (`last_updated` **racine** + `development_status`)
 2. `references/ou-on-en-est.md`
-3. `_bmad-output/planning-artifacts/prd.md` (encart **Pilotage BMAD (gel)** → L0/L1/L2)
+3. `_bmad-output/planning-artifacts/prd.md` (encart **Pilotage BMAD (levée partielle gel — L0/L1/L2)**)
 4. `_bmad-output/planning-artifacts/guide-pilotage-v2.md` (epics **9–10** : recroiser YAML, pas guide seul)
 5. `epics.md` + fichier story si besoin
 
