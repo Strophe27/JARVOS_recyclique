@@ -29,11 +29,11 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.3**
 
 1. **Validation structurelle industrialisée** — Étant donné que la composition modulaire est centrale à la v2, quand la validation des manifests est industrialisée, alors le dépôt exécute **automatiquement** (local **et** CI, sans filtre `paths:` sur le workflow Epic 10) des contrôles sur **tous les JSON sous `contracts/creos/manifests/`** du **périmètre reviewable** (voir § Périmètre manifests) : (a) **parse JSON** + conventions minimales (`version` sur catalogues widgets quand présent) ; (b) **catalogues widgets** (`widgets-catalog-*.json`) validés contre **`contracts/creos/schemas/widget-declaration.schema.json`** pour chaque entrée `widgets[]` ; (c) **cohérence bundle** pour le lot servi produit (`navigation-transverse-served.json` + pages référencées) via les règles existantes `validateManifestBundle` / `loadManifestBundle` (pas de duplication de logique métier — **réutiliser** `peintre-nano/src/validation/validate-bundle-rules.ts`) ; les échecs sont **bloquants** en CI (pas `continue-on-error`).
 
-2. **Gate `operation_id` ↔ OpenAPI (même snapshot)** — Étant donné que les widgets peuvent déclarer `data_contract.operation_id` et que l’OpenAPI reviewable contient des opérations, quand un manifest **reviewable** référence un `operation_id` (y compris `secondary_sources[].operation_id` si présent), alors un test ou script unique parcourt **récursivement** le JSON et vérifie que chaque id existe comme **`operationId`** dans **`contracts/openapi/recyclique-api.yaml`** (même snapshot que la chaîne **10.2** — pas `recyclique/api/openapi.json` diagnostic) ; l’échec **bloque** le merge (job Peintre ou job frère dans `ci-minimal.yml`, **sans** `paths:`).
+2. **Gate `operation_id` ↔ OpenAPI (même snapshot)** — Étant donné que les widgets peuvent déclarer `data_contract.operation_id` et que l’OpenAPI reviewable contient des opérations, quand un manifest **reviewable** référence un `operation_id` (y compris `secondary_sources[].operation_id` si présent), alors un test ou script unique parcourt **récursivement** le JSON et vérifie que chaque id existe comme **`operationId`** dans **`contracts/openapi/recyclique-api.yaml`** (même snapshot que la chaîne **10.2** — pas `recyclique/api/openapi.json` diagnostic) ; l’échec **bloque** le merge (job Peintre ou job frère dans `ci-minimal.yml`, **sans** `paths:`). **Exception périmètre** : fichiers sandbox démo listés dans `contracts/creos/manifests/README.md` — crosswalk **ignoré** tant qu’aucun nœud `data_contract` (avec `operation_id` ou `secondary_sources`) n’est présent ; dès qu’un `data_contract` existe, appliquer AC2 comme pour les autres manifests.
 
 3. **Consolidation des garde-fous épars** — Étant donné que des tests contractuels **par story** existent déjà (`creos-bandeau-live-manifests-4-1.test.ts`, `creos-reception-nominal-manifests-7-1.test.ts`, `page-login-public-creos-11-1.test.ts`, etc.), quand **10.3** est livrée, alors la logique **`operation_id` ↔ OpenAPI** est **centralisée** (un module utilitaire partagé sous `peintre-nano/tests/contract/` ou `peintre-nano/tests/contract/lib/`) et les tests historiques **restent verts** (refactor sans perte de couverture — pas de suppression silencieuse).
 
-4. **Smoke rendu runtime (NFR28 / AR18)** — Étant donné qu’un artefact **schéma-valide** peut encore casser le rendu React, quand les parcours critiques sont testés, alors une suite **smoke** Vitest (jsdom, **sans** navigateur réel) monte le runtime (`loadManifestBundle`, `buildPageManifestRegions` / `PageRenderer`, registre widgets importé) pour un **noyau explicite** de modules **déjà reviewables** : **connexion publique** (`page-login-public.json`), **dashboard transverse** (`page-transverse-dashboard.json` ou équivalent servi), **bandeau live** (lot `navigation-bandeau-live-slice` + `page-bandeau-live-sandbox` + `widgets-catalog-bandeau-live` — réutiliser le pattern `bandeau-live-sandbox-compose.e2e.test.tsx` en **smoke** plus court si pertinent), **caisse nominale** (`page-cashflow-nominal.json` + catalogue associé), **réception nominale** (`page-reception-nominal.json` + `widgets-catalog-reception-nominal.json`) ; chaque cas **assert** au minimum : pas d’exception React non capturée, présence d’un **marqueur DOM** stable déjà utilisé dans les tests existants (éviter nouveaux sélecteurs fragiles) ; les mocks HTTP restent **autorisés** (pas d’exigence backend réel en CI smoke).
+4. **Smoke rendu runtime (NFR28 / AR18)** — Étant donné qu’un artefact **schéma-valide** peut encore casser le rendu React, quand les parcours critiques sont testés, alors une suite **smoke** Vitest (jsdom, **sans** navigateur réel) monte le runtime (`loadManifestBundle`, `buildPageManifestRegions` / `PageRenderer`, registre widgets importé) pour un **noyau explicite** de modules **déjà reviewables** : **connexion publique** (`page-login-public.json`), **dashboard transverse** (`page-transverse-dashboard.json` ou équivalent servi), **bandeau live** (lot `navigation-bandeau-live-slice.json` + `page-bandeau-live-sandbox.json` + `widgets-catalog-bandeau-live.json` — réutiliser le setup de `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` en **smoke** plus court si pertinent), **caisse nominale** (`page-cashflow-nominal.json` + `widgets-catalog-cashflow-nominal.json`), **réception nominale** (`page-reception-nominal.json` + `widgets-catalog-reception-nominal.json`) ; chaque fichier smoke déclare **`// @vitest-environment jsdom`** en tête (convention `tests/e2e/`, défaut Vitest = `node` dans `vitest.config.ts`) ; chaque cas **assert** au minimum : pas d’exception React non capturée, présence d’un **marqueur DOM** stable déjà utilisé dans les tests existants (éviter nouveaux sélecteurs fragiles) ; les mocks HTTP restent **autorisés** (pas d’exigence backend réel en CI smoke).
 
 5. **Industrialisation sur 10.1–10.2** — Étant donné qu’**Epic 10** industrialise sans refaire le métier, quand **10.3** est fermée, alors les commandes sont documentées dans **`doc/ci-minimal.md`** (section dédiée **10.3**) et exécutées dans le job **`peintre-nano-minimal`** **ou** un quatrième job **`creos-manifests`** dans le **même** workflow `ci-minimal.yml` (**préférence** : étendre `peintre-nano-minimal` si durée acceptable ; job séparé seulement si isolation claire) ; **interdit** : nouveau workflow parallèle avec `paths:` qui contourne la baseline PR.
 
@@ -56,13 +56,13 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.3**
 
 - [ ] **Utilitaire crosswalk OpenAPI** — Créer `peintre-nano/tests/contract/lib/creos-openapi-operation-ids.ts` (ou équivalent) : `collectOperationIdsFromOpenApi(yaml)` + `collectOperationIdsFromJsonTree(manifest)` (clés `operation_id` à tout niveau) ; messages d’erreur avec **chemin fichier + widget.type / page_key**. (AC : 2, 3)
 
-- [ ] **Gate globale manifests** — Ajouter `peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts` : pour chaque JSON du périmètre AC1, exécuter crosswalk AC2 ; pour chaque `widgets-catalog-*.json`, valider chaque widget contre le schéma (ajouter **`ajv`** en `devDependency` **ou** réutiliser une validation JSON Schema déjà présente — **choix documenté** dans Dev Agent Record). (AC : 1, 2)
+- [ ] **Gate globale manifests** — Ajouter `peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts` : pour chaque JSON du périmètre AC1, exécuter crosswalk AC2 **sauf** manifests sandbox démo sans nœud `data_contract` (règle README / AC2) ; pour chaque `widgets-catalog-*.json`, valider chaque widget contre le schéma (ajouter **`ajv`** en `devDependency` **ou** réutiliser une validation JSON Schema déjà présente — **choix documenté** dans Dev Agent Record). (AC : 1, 2)
 
 - [ ] **Refactor tests épars** — Faire appeler les tests Story 4.1 / 7.1 / 11.1 l’utilitaire central (supprimer duplication `collectOperationIdsFromOpenApi` locale). (AC : 3)
 
-- [ ] **Suite smoke rendu** — Créer `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (ou nom aligné conventions) : 5 parcours AC4 ; factoriser setup Mantine/jsdom/registry comme `bandeau-live-sandbox-compose.e2e.test.tsx` ; **ne pas** dupliquer toute la suite e2e bandeau — smoke = rendu slot/page **minimal** + pas de crash. (AC : 4)
+- [ ] **Suite smoke rendu** — Créer `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (ou nom aligné conventions) : 5 parcours AC4 ; en-tête **`// @vitest-environment jsdom`** ; factoriser setup Mantine/registry/mocks depuis `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` ; **ne pas** dupliquer toute la suite e2e bandeau — smoke = rendu slot/page **minimal** + pas de crash. (AC : 4)
 
-- [ ] **CI + doc** — Mettre à jour `doc/ci-minimal.md` (commandes locales 10.3) ; s’assurer que `npm run test` / `vitest.config.ts` inclut `tests/smoke/` ; optionnel : `tests/infra/test_story_10_3_ci_minimal_creos_smoke.py` vérifiant que `ci-minimal.yml` référence la suite (pattern 10.1/10.2). (AC : 5)
+- [ ] **CI + doc** — Mettre à jour `doc/ci-minimal.md` (commandes locales 10.3) ; étendre `peintre-nano/vitest.config.ts` → `test.include` avec `tests/smoke/**/*.{test.ts,test.tsx}` (absent aujourd’hui) pour que `npm run test` exécute la suite smoke ; optionnel : `tests/infra/test_story_10_3_ci_minimal_creos_smoke.py` vérifiant que `ci-minimal.yml` référence la suite (pattern 10.1/10.2). (AC : 5)
 
 - [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
 
@@ -79,7 +79,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.3**
 
 ### Périmètre manifests (`contracts/creos/manifests/`)
 
-- **~48 fichiers JSON** (navigation, pages, catalogues widgets) — source reviewable unique pour slices produit partagés (gouvernance **§1 bis** pivot 1.4).
+- **~49 fichiers JSON** (navigation, pages, catalogues widgets) — source reviewable unique pour slices produit partagés (gouvernance **§1 bis** pivot 1.4).
 - **Lot servi transverse** : `navigation-transverse-served.json` + pages importées dans `runtime-demo-manifest.ts` — test **5.1** déjà valide le bundle ; **10.3** généralise la règle **`operation_id`** à **tous** les catalogues/pages qui déclarent `data_contract`.
 - **Sandbox démo** : fichiers `page-demo-*` — ne pas exiger d’`operation_id` OpenAPI s’ils n’en déclarent pas ; s’ils en déclarent un jour, appliquer AC2.
 
@@ -102,7 +102,7 @@ Référence : `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epi
 |---------|-------------------------------------|
 | Login public | `page-login-public.json` — `page-login-public-creos-11-1.test.ts` |
 | Dashboard | `page-transverse-dashboard.json` — runtime servi 5.1 |
-| Bandeau live | `bandeau-live-sandbox-compose.e2e.test.tsx` (réduire pour smoke) |
+| Bandeau live | `peintre-nano/tests/e2e/bandeau-live-sandbox-compose.e2e.test.tsx` (réduire pour smoke) |
 | Caisse nominale | `page-cashflow-nominal.json`, `widgets-catalog-cashflow-nominal.json` — tests runtime-demo caisse |
 | Réception nominale | `page-reception-nominal.json`, `widgets-catalog-reception-nominal.json` — 7.1 |
 
@@ -138,6 +138,15 @@ Référence : `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epi
 | FM4 | Job CI CREOS avec `paths:` | Merge casse manifests | AC5 — même workflow sans filtre |
 | FM5 | Scope creep Spectral + 10.4 e2e métier | Surcharge | AC6 |
 | FM6 | Dupliquer logique métier dans tests | Dette | Réutiliser `validateManifestBundle` |
+
+### Definition of Done (Story 10.3)
+
+- [ ] Les **6 AC** sont couverts par des gates automatisés (Vitest contract + smoke, CI `ci-minimal.yml` sans `paths:` / `continue-on-error` sur les jobs CREOS).
+- [ ] `contracts/creos/manifests/README.md` documente reviewable vs sandbox ; gate globale respecte les exceptions AC2.
+- [ ] Utilitaire `creos-openapi-operation-ids.ts` partagé ; tests **4.1 / 7.1 / 11.1** refactorés sans perte d’assertions.
+- [ ] `doc/ci-minimal.md` section **10.3** + `vitest.config.ts` inclut `tests/smoke/`.
+- [ ] Story Runner (commandes ci-dessous) **verts** sur la branche de livraison ; dette bandeau-live **hors** smoke/contract 10.3 documentée en CR si `npm run test` global reste partiellement rouge.
+- [ ] `sprint-status.yaml` → **review** (pas **done** sans DS) ; **ne pas** forcer **10.1 / 10.2** à **done** depuis cette story.
 
 ### Gates Story Runner (référence DS)
 
