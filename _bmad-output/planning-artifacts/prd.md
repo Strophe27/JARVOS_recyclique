@@ -83,7 +83,7 @@ editHistory:
 
 **Auteur :** Strophe  
 **Date de redaction initiale :** 2026-03-31  
-**Derniere revision documentaire :** 2026-04-19 (harmonisation libelles readiness PWA §2.4 §17 ; post-QA2 cloture : readiness + artefact synthese findings, gel corps §12.1, validationReportChainNote) ; meme jour (gouvernance importee, PIN dual, ADR sync Redis) ; precedemment 2026-04-18 (operations speciales / Epic 24) ; precedemment 2026-04-15 (delta caisse/compta/Paheko + validation BMAD)  
+**Derniere revision documentaire :** **2026-09-21** (D1 — encart L0/L1/L2, §7.1 plancher vs modules D, §12.1 pont process, §13 **G-plancher**) ; precedemment **2026-04-19** (harmonisation libelles readiness PWA §2.4 §17 ; post-QA2 cloture : readiness + artefact synthese findings, gel corps §12.1, validationReportChainNote) ; precedemment 2026-04-18 (operations speciales / Epic 24) ; precedemment 2026-04-15 (delta caisse/compta/Paheko + validation BMAD)  
 **Source de verite de cadrage :** `references/vision-projet/2026-03-31_decision-directrice-v2.md`  
 **Statut :** Actif — base pour architecture et epics  
 **Documentation de travail Peintre (pipeline, extraits, index) :** `references/peintre/index.md` — alignee PRD ; en cas d'ecart, ce PRD et l'architecture BMAD font foi.
@@ -578,7 +578,7 @@ Toute l'UI v2 passe par Peintre_nano, du login au dernier ecran. Ce qui est phas
 | Declaration eco-organismes | Obligatoire | Premier grand module metier |
 | Adherents / vie associative minimale | Obligatoire | Preuve metier complementaire, evite biais mono-module |
 | Synchronisation Paheko | Obligatoire | Articulation terrain/compta |
-| Integration HelloAsso | Obligatoire (**G-vendable** §13.2) ; **parking PO** en plancher **L0** (**D3**) | Capacite confirmee dans le brief ; pas de dev large HelloAsso avant arbitrage PO |
+| Integration HelloAsso | Obligatoire (**G-vendable** §13.2) ; **parking PO** (**D3**) — **hors L0/L1** tant que PO n'arbitre pas (pas de dev large) | Capacite confirmee dans le brief ; stories **9.4/9.5** = cadrage doc |
 | Config admin simple | Obligatoire (socle **L0** — story **9.6** **done**) | Pilotage minimal du shell et des modules |
 
 **Lecture plancher Option C (post-D1) :** le tableau ci-dessus décrit la **cible G-vendable**. Pour le **plancher L0** déjà livré ou en cours sans élargir **L1** : socle caisse/réception/sync (**epics 6–8**), **config admin simple** (**9.6**), liaison clôture (**9.10**), gates ship **Epic 10** ; les **modules métier D** (éco-org, adhérents, HelloAsso, etc.) = **L1** — **un à la fois**, **après** tranche **10.1–10.3** et décision **D2/D7**. HelloAsso : **parking** tant que **D3** ouvert (stories **9.4/9.5** = cadrage doc).
