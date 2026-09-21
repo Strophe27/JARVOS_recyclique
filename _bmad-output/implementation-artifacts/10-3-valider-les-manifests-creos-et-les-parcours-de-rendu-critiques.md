@@ -223,4 +223,11 @@ Dettes **Info** post-fusion QA3 — fermées par documentation (0 P0/P1). Le **D
 | Wording frontière **10.4** vs `epics.md` | **Fermé** | AC6 + Dev Notes (table + note frontière 10.3↔10.4) |
 | `vitest.config.ts` smoke + `doc/ci-minimal.md` §10.3 | **Fermé** (doc → **DS**) | Tâches **DS —** explicites ; absent au repo au CS — **pas** blocage story `ready-for-dev` |
 
+## Story completion status
+
+- **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
+- **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_174651_jarvos_recyclique`) — score **96** ; fused_coverage **99** ; 0 P0 / 0 P1 ; correctifs intégrés (AC4 jsdom/smoke, frontières 10.1/10.2/10.4, FMEA FM7–FM11, dette `legacy_list_categories`, tâches DS `vitest.config` + `doc/ci-minimal.md` §10.3) — rapport projet `internal/qa3-story-10-3.md`
+- **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` sans écart bloquant ; QA3 **96** préservé ; livrables DS (`tests/smoke/`, README manifests, gates CREOS) explicitement tâchés — rapport projet `internal/validate-story-10-3.md`
+- **Prochaine étape BMAD :** **DS** story 10.3 (`bmad-dev-story`) ; **10.1** / **10.2** restent **`review`** (ne pas forcer `done` depuis 10.3)
+
 ### File List
