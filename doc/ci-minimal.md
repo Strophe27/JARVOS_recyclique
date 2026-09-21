@@ -77,7 +77,17 @@ Installer `ruff` en local : `pip install ruff` (non listé dans `requirements.tx
 
 ## Commandes locales (parité gates Story Runner)
 
-Depuis la racine du dépôt :
+**Peloton merge (10.3 + 10.4, bloquant en CI)** — avant la suite API complète ou `npm run test` intégral (non bloquant si dette **10.1**) :
+
+```bash
+cd peintre-nano && npm ci && npm run lint
+npx vitest run tests/contract/creos-manifests-governance-10-3.test.ts
+npx vitest run tests/smoke/creos-critical-render-paths-10-3.test.tsx
+npm run test:critical-core
+cd ../recyclique/api && bash scripts/run_critical_core_peloton.sh
+```
+
+Depuis la racine du dépôt (chaîne OpenAPI + pytest API complet) :
 
 ```bash
 cd recyclique/api && pip install -r requirements.txt -r requirements-dev.txt

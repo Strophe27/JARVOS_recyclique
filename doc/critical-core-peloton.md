@@ -46,11 +46,7 @@ cd recyclique/api && bash scripts/run_critical_core_peloton.sh
 cd ../../peintre-nano && npm ci && npm run test:critical-core
 ```
 
-Filtre optionnel (marqueur déclaré, peloton piloté par le manifeste) :
-
-```bash
-cd recyclique/api && python3 -m pytest -m critical_core --tb=short
-```
+Marqueur **`critical_core`** (déclaré dans `recyclique/api/pyproject.toml`) : **réservé** si les fonctions ancrées sont annotées plus tard. En livraison **manifest-only** (Story 10.4 — Dev Agent Record), le peloton API s’exécute via **`run_critical_core_peloton.sh`** (liste issue du YAML) ; `pytest -m critical_core` **ne sélectionne aucun test** tant qu’aucune fonction n’est marquée — ne pas l’utiliser comme gate locale.
 
 ## CI
 
