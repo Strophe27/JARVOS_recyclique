@@ -237,7 +237,16 @@ Dettes **Info** post-fusion QA3 — fermées par documentation (0 P0/P1). Le **D
 - **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_174651_jarvos_recyclique`) — score **96** ; fused_coverage **99** ; 0 P0 / 0 P1 ; correctifs intégrés (AC4 jsdom/smoke, frontières 10.1/10.2/10.4, FMEA FM7–FM11, dette `legacy_list_categories`, tâches DS `vitest.config` + `doc/ci-minimal.md` §10.3) — rapport projet `internal/qa3-story-10-3.md`
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` sans écart bloquant ; QA3 **96** préservé ; livrables DS (`tests/smoke/`, README manifests, gates CREOS) explicitement tâchés — rapport projet `internal/validate-story-10-3.md`
 - **DS :** bmad-dev-story (Amelia) — **review** (2026-09-21) ; gates CREOS + smoke + doc §10.3 ; rapport projet `internal/dev-story-10-3.md`
-- **Prochaine étape BMAD :** **CR** + **QA3** story 10.3 ; **10.1** / **10.2** restent **`review`**
+- **CR :** bmad-code-review (Amelia) — **APPROVE** (2026-09-21, commit `6cb94fd`) ; 0 P0 / 0 P1 ; rapport projet `internal/code-review-10-3.md`
+- **Prochaine étape BMAD :** **QA3** story 10.3 (si requis) ; **10.1** / **10.2** restent **`review`**
+
+### Review Findings
+
+- [x] [Review][Defer] Duplication `TRANSVERSE_SERVED_PAGES_JSON` vs `runtime-demo-manifest.ts` — deferred, dérive maintenance
+- [x] [Review][Defer] Bundle AC1c (allowlist demo) vs smoke AC4 (`defaultAllowedWidgetTypeSet`) — deferred, factorisation future
+- [x] [Review][Defer] Crosswalk OpenAPI limité à `paths` — deferred, YAML actuel suffisant
+- [x] [Review][Defer] Scan manifests non récursif — deferred, répertoire plat
+- [x] [Review][Defer] Ajv `strict: false` — deferred, documenter si schéma durcit
 
 ### File List
 

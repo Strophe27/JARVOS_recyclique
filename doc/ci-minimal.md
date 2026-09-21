@@ -7,7 +7,7 @@ Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workfl
 | Job workflow | Rôle |
 |--------------|------|
 | `api-minimal` | PostgreSQL **17** + Redis ; `compileall` + `ruff check` + `pytest -m "not performance"` |
-| `peintre-nano-minimal` | `npm ci` ; `npm run lint` ; `npm run test` (inclut `peintre-nano/tests/contract/`) |
+| `peintre-nano-minimal` | `npm ci` ; `npm run lint` ; `npm run test` (inclut `peintre-nano/tests/contract/` et `peintre-nano/tests/smoke/`) |
 | `contracts-openapi` | Export FastAPI (`generate_openapi.py --emit-contracts`) ; `npm ci` + `npm run generate` ; working tree propre sur `generated/openapi-snapshot.json`, `recyclique-api.yaml`, `generated/recyclique-api.ts` |
 
 Politique par défaut : tout changement d’API backend doit régénérer et **committer** la chaîne complète (snapshot JSON, YAML reviewable aligné, types TS). Détail : [`contracts/README.md`](../contracts/README.md) § chaîne OpenAPI.
@@ -40,7 +40,10 @@ Smoke infra optionnel (verrou YAML workflow + doc) :
 python -m pytest tests/infra/test_story_10_3_ci_minimal_creos_smoke.py -q
 ```
 
-**Dette connue (hors smoke / contract 10.3)** : certains tests **bandeau-live** legacy sous `tests/e2e/` ou `tests/unit/` peuvent rester rouges — defer stories **10.1** / correctifs dédiés ; ne pas bloquer la livraison 10.3 sur `npm run test` global si les gates ci-dessus sont verts.
+**Dette connue (hors smoke / contract 10.3)** : certains tests legacy Peintre (ex. **bandeau-live** sous `tests/e2e/` ou `tests/unit/`, parfois `live-activity-presence-bridge`) peuvent rester rouges — defer stories **10.1** / correctifs dédiés.
+
+- **Revue story 10.3 / gates CREOS** : les commandes ciblées ci-dessus (governance 10.3 + smoke 10.3) suffisent pour valider le périmètre 10.3.
+- **Merge sur `master` via CI** : le job `peintre-nano-minimal` exécute **`npm run test` intégral** ; tant que la dette 10.1 n’est pas résolue, ce job peut échouer **même si** les gates 10.3 isolées sont vertes — ne pas confondre « livrable 10.3 OK » et « pipeline Peintre vert ».
 
 **Séquence plancher L0 :** **10.1 → 10.2 → 10.3** avant tout module métier **D** (pilotage PO D2/D7).
 
