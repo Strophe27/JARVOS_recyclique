@@ -1,0 +1,127 @@
+# Story 10.5 — inventaire machine-readable des flux observables (quatre piliers gate).
+version: 1
+story: "10.5"
+pillars:
+  health_readiness:
+    intention: "Contrat santé / readiness pour ops (Docker, stack locale, admin)"
+    health_endpoints:
+      - path: /health
+        method: GET
+        role: liveness_canonical
+      - path: /v1/health/
+        method: GET
+        role: documented_alias
+      - path: /v1/admin/health/public
+        method: GET
+        role: readiness_admin
+      - path: /v1/admin/health
+        method: GET
+        role: readiness_admin
+      - path: /v1/admin/health/database
+        method: GET
+        role: documented_alias
+    openapi_operation_ids:
+      - health_check_health_get
+      - health_check_v1_health__get
+      - adminHealthPublicGet
+      - adminHealthSystemGet
+      - adminHealthDatabaseGet
+    api_paths:
+      - /health
+      - /v1/health/
+      - /v1/admin/health/public
+      - /v1/admin/health
+    peintre_widgets:
+      - path: src/domains/admin-config/AdminSystemHealthWidget.tsx
+        widget_type: admin.system.health
+        data_testid: admin-system-health-widget
+    api_source_files:
+      - src/recyclic_api/main.py
+      - src/recyclic_api/api/api_v1/endpoints/admin_health.py
+    log_anchors:
+      - recyclic_api/api/api_v1/endpoints/admin_health.py
+    screenshot_refs:
+      - _bmad-output/implementation-artifacts/screenshots/admin/platform/11-0__admin2-02-health.png
+
+  http_correlation:
+    intention: "X-Request-Id bout-en-bout → RecycliqueApiError.correlation_id → UI support"
+    peloton_target: module_chain
+    openapi_operation_ids:
+      - recyclique_users_getContextEnvelope
+    api_paths:
+      - /v1/users/me/context
+      - /v1/sales/
+      - /v1/reception/postes/open
+    peintre_widgets:
+      - path: src/api/recyclique-client-error-alert.tsx
+        widget_type: recyclique.client.error.alert
+      - path: src/api/recyclique-api-error.ts
+      - path: src/api/cash-session-client.ts
+    api_source_files:
+      - src/recyclic_api/middleware/request_correlation.py
+      - src/recyclic_api/schemas/recyclique_api_error.py
+      - src/recyclic_api/main.py
+    log_anchors:
+      - recyclic_api/middleware/request_correlation.py
+    peloton_correlation_routes:
+      module_chain:
+        method: GET
+        path: /v1/users/me/context
+        expected_status: [401, 403]
+      caisse_nominal:
+        method: POST
+        path: /v1/sales/
+        expected_status: [401]
+      reception_nominal:
+        method: POST
+        path: /v1/reception/postes/open
+        expected_status: [401, 403]
+      sync_sensitive:
+        method: GET
+        path: /v1/admin/paheko-outbox/by-correlation/{correlation_id}
+        expected_status: [403]
+    screenshot_refs: []
+
+  sync_support_trail:
+    intention: "Fil sync-sensitive exploitable (outbox, timeline, journaux)"
+    peloton_target: sync_sensitive
+    openapi_operation_ids:
+      - recyclique_pahekoOutbox_getCorrelationTimeline
+      - recyclique_pahekoOutbox_listItems
+      - recyclique_pahekoOutbox_getItem
+    api_paths:
+      - /v1/admin/paheko-outbox/by-correlation/{correlation_id}
+      - /v1/admin/paheko-outbox/items
+      - /v1/admin/transaction-logs
+      - /v1/admin/audit-log
+    peintre_widgets:
+      - path: src/domains/admin-config/AdminPahekoDiagnosticsSection.tsx
+      - path: src/api/admin-paheko-outbox-client.ts
+    api_source_files:
+      - src/recyclic_api/api/api_v1/endpoints/admin_paheko_outbox.py
+    log_anchors:
+      - recyclic_api/services/paheko_outbox_processor.py
+    screenshot_refs:
+      - _bmad-output/implementation-artifacts/screenshots/admin/platform/11-0__admin2-03-audit-log.png
+      - _bmad-output/implementation-artifacts/screenshots/admin/platform/11-0__admin2-04-logs-transactionnels.png
+
+  admin_journals:
+    intention: "Journaux admin transaction / audit / email avec filtres et corrélation"
+    openapi_operation_ids:
+      - adminTransactionLogsList
+      - adminAuditLogList
+      - adminEmailLogsList
+    api_paths:
+      - /v1/admin/transaction-logs
+      - /v1/admin/audit-log
+      - /v1/admin/email-logs
+    peintre_widgets:
+      - path: src/domains/admin-config/AdminAuditLogWidget.tsx
+        widget_type: admin.audit-log.demo
+      - path: src/api/admin-transaction-logs-client.ts
+    api_source_files:
+      - src/recyclic_api/api/api_v1/endpoints/admin_observability.py
+    log_anchors:
+      - recyclic_api/api/api_v1/endpoints/admin_observability.py
+    screenshot_refs:
+      - _bmad-output/implementation-artifacts/screenshots/admin/platform/11-0__admin2-06-email-logs.png

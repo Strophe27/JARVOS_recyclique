@@ -1,4 +1,4 @@
-# CI minimale (baseline Epic 10 — stories 10.1 + 10.2 + 10.3 + 10.4)
+# CI minimale (baseline Epic 10 — stories 10.1 + 10.2 + 10.3 + 10.4 + 10.5)
 
 Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workflows/ci-minimal.yml).
 
@@ -6,7 +6,7 @@ Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workfl
 
 | Job workflow | Rôle |
 |--------------|------|
-| `api-minimal` | PostgreSQL **17** + Redis ; `compileall` + `ruff check` ; **`pytest critical core peloton`** (10.4, `run_critical_core_peloton.sh`) ; `pytest -m "not performance"` |
+| `api-minimal` | PostgreSQL **17** + Redis ; `compileall` + `ruff check` ; **`pytest critical core peloton`** (10.4) ; **smokes observabilité 10.5** ; guard manifeste 10.5 ; `pytest -m "not performance"` |
 | `peintre-nano-minimal` | `npm ci` ; `npm run lint` ; gates **10.3** (governance CREOS + smoke rendu) ; **`npm run test:critical-core`** (10.4) ; `npm run test` intégral (**non bloquant** — dette bandeau-live **10.1**) |
 | `contracts-openapi` | Export FastAPI (`generate_openapi.py --emit-contracts`) ; `npm ci` + `npm run generate` ; working tree propre sur `generated/openapi-snapshot.json`, `recyclique-api.yaml`, `generated/recyclique-api.ts` |
 
@@ -65,6 +65,24 @@ Smoke infra recommandé :
 
 ```bash
 python3 -m pytest tests/infra/test_story_10_4_ci_minimal_critical_core_smoke.py -q
+```
+
+## Story 10.5 — observabilité support (intégrée)
+
+Manifeste et runbook : [`doc/observability-critical-flows.yaml`](./observability-critical-flows.yaml), [`doc/observability-support-runbook.md`](./observability-support-runbook.md).
+
+| Couche | Commande locale | CI (`ci-minimal.yml` → `api-minimal`) |
+|--------|-----------------|----------------------------------------|
+| Guard manifeste | `python3 -m pytest tests/infra/test_story_10_5_observability_manifest_guard.py -q` | étape **observability manifest guard (10.5)** |
+| Corrélation HTTP peloton | `cd recyclique/api && python3 -m pytest tests/test_story_10_5_http_correlation_peloton.py -q` | étape **pytest observability smokes (10.5)** |
+| Fil sync support | `cd recyclique/api && python3 -m pytest tests/test_story_10_5_sync_support_trail_smoke.py -q` | idem (après peloton **10.4**, fail-fast FM2) |
+
+**Frontière FM3 :** ne pas enregistrer les tests **10.5** dans `doc/critical-core-peloton.yaml` ni `scripts/run_critical_core_peloton.sh` — le peloton **10.4** reste la barrière métier.
+
+Smoke infra recommandé :
+
+```bash
+python3 -m pytest tests/infra/test_story_10_5_ci_minimal_observability_smoke.py -q
 ```
 
 ## Prérequis locaux

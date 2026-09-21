@@ -1,4 +1,4 @@
-# Baseline CI Epic 10 — Stories 10.1 + 10.2 + 10.3 + 10.4 (peloton critical core + gates CREOS 10.3)
+# Baseline CI Epic 10 — Stories 10.1 + 10.2 + 10.3 + 10.4 + 10.5 (peloton + observabilité support)
 # Gouvernance exécutable : chaque PR et chaque push sur `master` exécute API + Peintre + contrats (chaîne OpenAPI complète).
 # Pas de filtre `paths:` sur ces jobs (AC2) — ne pas contourner avec continue-on-error ou scripts parallèles.
 name: CI minimale (Recyclique · Peintre_nano · contrats)
@@ -67,6 +67,19 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
           REDIS_URL: redis://localhost:6379
+
+      - name: pytest observability smokes (10.5)
+        working-directory: recyclique/api
+        run: |
+          python -m pytest tests/test_story_10_5_http_correlation_peloton.py -q
+          python -m pytest tests/test_story_10_5_sync_support_trail_smoke.py -q
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: observability manifest guard (10.5)
+        run: python -m pytest tests/infra/test_story_10_5_observability_manifest_guard.py -q
 
       - name: pytest (hors performance)
         working-directory: recyclique/api
