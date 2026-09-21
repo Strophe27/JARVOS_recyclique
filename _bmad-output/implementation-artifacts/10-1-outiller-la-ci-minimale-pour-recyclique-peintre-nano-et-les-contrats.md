@@ -29,7 +29,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.1**
 1. **Gouvernance exécutable** — Étant donné que l'architecture exige une gouvernance **exécutable** (`core-architectural-decisions.md` § CI/CD ; inventaire **`epics.md` AR18**, **FR73** jalon CI — AR18 complet = Epic **10** au-delà de **10.1**), quand la baseline CI est en place, alors **chaque PR** vers la branche d'intégration canonique (**`master`**) et **chaque push** sur cette branche déclenchent un workflow GitHub Actions qui exécute, sans intervention humaine, au minimum :
    - **Recyclique API** : installation deps + **pytest** sur `recyclique/api/tests/` avec marqueur **`-m "not performance"`** (services **PostgreSQL 17** + **Redis** alignés **10.6d**).
    - **Peintre_nano** : `npm ci` + **`npm run lint`** (`tsc -b`) + **`npm run test`** (Vitest, **incluant** `peintre-nano/tests/contract/`).
-   - **Contrats** : au minimum les **tests contractuels Vitest** déjà présents ; plus un **contrôle de régénération** OpenAPI TypeScript (`contracts/openapi`: `npm ci` + `npm run generate` puis **working tree propre** sur `generated/recyclique-api.ts` — politique par défaut **obligatoire** ; toute variante doit être **écrite** dans `doc/ci-minimal.md` **avant** merge, pas en silence) — **sans** maintenir deux snapshots divergents en silence).
+   - **Contrats** : au minimum les **tests contractuels Vitest** déjà présents ; plus un **contrôle de régénération** OpenAPI TypeScript (`contracts/openapi` : `npm ci` + `npm run generate` puis **working tree propre** sur `generated/recyclique-api.ts` — politique par défaut **obligatoire** ; toute variante doit être **écrite** dans `doc/ci-minimal.md` **avant** merge, pas en silence) — **sans** maintenir deux snapshots divergents en silence.
    - Le résultat devient la **baseline partagée** documentée (README racine ou `doc/ci-minimal.md` court) pour les contributeurs et le Story Runner.
 
 2. **Dérive contractuelle visible** — Étant donné que le projet dépend d'une évolution **gouvernée** des contrats, **en complément de l'exécution systématique des jobs contrats + Peintre sur chaque PR (AC1)** : quand une PR touche `contracts/**`, `peintre-nano/tests/contract/**`, ou les chemins OpenAPI/CREOS consommés par Peintre, alors la CI **échoue** si les tests contractuels échouent ou si la régénération OpenAPI TS laisse un diff non commité (selon la politique fixée en AC1). **Interdit** : `paths:` / filtres qui n'exécutent les jobs contrats **que** sur ces chemins (contournement AC1). **Ne pas** implémenter ici la preuve bout-en-bout « FastAPI export → YAML reviewable → codegen » (**Story 10.2**) ni la validation **CREOS ↔ operationId** sur tous les manifests (**Story 10.3**).
@@ -198,5 +198,5 @@ Dettes **Info** non bloquantes — clôture intégrale par documentation (aucun 
 ## Story completion status
 
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
-- **VS :** QA3 clôture intégrale — risques résiduels ci-dessus ; gate story **95+** pour implémentation
-- **Prochaine étape BMAD :** **DS** (`bmad-dev-story`) — **pas** de dev dans le périmètre CS/VS
+- **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist sans écart bloquant ; QA3 gate **96** — risques résiduels documentés ci-dessus
+- **Prochaine étape BMAD :** **DS** (`bmad-dev-story`)
