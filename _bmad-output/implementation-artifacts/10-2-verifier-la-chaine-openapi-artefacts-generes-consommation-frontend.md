@@ -69,7 +69,7 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.2**
 
 ### Frontières avec 10.1 et 10.3
 
-| Sujet | **10.1 (done / review)** | **10.2 (cette story)** | **10.3** |
+| Sujet | **10.1 (review — CR+QA3 OK, pas `done`)** | **10.2 (cette story)** | **10.3** |
 |--------|---------------------------|-------------------------|----------|
 | CI `master` + 3 jobs | Baseline API + Peintre + `generate` TS depuis YAML | Ajoute export **FastAPI → snapshot + YAML** + diffs git | — |
 | OpenAPI | Diff `recyclique-api.ts` seulement | **Alignement YAML ↔ FastAPI** + snapshot `generated/` | — |
@@ -132,9 +132,9 @@ Références : `project-structure-boundaries.md` (Piste B, Convergence 1), pivot
 ```bash
 # 1) Chaîne contrats (après implémentation script — chemins exacts = File List DS)
 cd recyclique/api && pip install -r requirements.txt -r requirements-dev.txt
-python generate_openapi.py   # ou commande documentée post-10.2
+python generate_openapi.py --emit-contracts   # ou commande unique documentée (tâche Script export / sync, L58)
 cd ../../contracts/openapi && npm ci && npm run generate
-git diff --exit-code generated/ recyclique-api.yaml   # ajuster selon politique snapshot
+git diff --exit-code generated/ recyclique-api.yaml generated/recyclique-api.ts   # aligné AC2 (politique snapshot)
 
 # 2) Tests drift + smoke infra
 cd ../../recyclique/api && python -m pytest tests/test_story_10_2_openapi_chain_fastapi_vs_reviewable_yaml.py -q
@@ -178,4 +178,4 @@ _(à remplir en DS)_
 ## Story completion status
 
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
-- **Prochaine étape BMAD :** **VS** (validate-create-story), puis **DS** (`bmad-dev-story`) — **pas** de QA3 ni dev dans ce run CS.
+- **Prochaine étape BMAD :** **VS** (validate-create-story), puis **DS** (`bmad-dev-story`). **QA3** boucle gate 95+ exécutée sur ce livrable (2026-09-21) — micro-correctifs P1 intégrés (gates ↔ AC2, statut 10.1).
