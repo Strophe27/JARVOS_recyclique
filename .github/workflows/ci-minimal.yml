@@ -1,0 +1,112 @@
+# Baseline CI Epic 10 — Story 10.1
+# Gouvernance exécutable : chaque PR et chaque push sur `master` exécute API + Peintre + contrats.
+# Pas de filtre `paths:` sur ces jobs (AC2) — ne pas contourner avec continue-on-error ou scripts parallèles.
+name: CI minimale (Recyclique · Peintre_nano · contrats)
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  api-minimal:
+    name: API — compileall, ruff, pytest
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: recyclique/api/.python-version
+          cache: pip
+          cache-dependency-path: |
+            recyclique/api/requirements.txt
+            recyclique/api/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: recyclique/api
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install ruff
+
+      - name: compileall
+        working-directory: recyclique/api
+        run: python -m compileall src/recyclic_api -q
+
+      - name: ruff check
+        working-directory: recyclique/api
+        run: python -m ruff check src/recyclic_api
+
+      - name: pytest (hors performance)
+        working-directory: recyclique/api
+        run: python -m pytest tests/ -m "not performance" --tb=short
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          REDIS_URL: redis://localhost:6379
+
+  peintre-nano-minimal:
+    name: Peintre_nano — lint et tests (dont contrats Vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: peintre-nano/package-lock.json
+
+      - name: Install, lint, test
+        working-directory: peintre-nano
+        run: |
+          npm ci
+          npm run lint
+          npm run test
+
+  contracts-openapi:
+    name: Contrats — régénération OpenAPI TypeScript
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: contracts/openapi/package-lock.json
+
+      - name: generate et working tree propre
+        working-directory: contracts/openapi
+        run: |
+          npm ci
+          npm run generate
+          git diff --exit-code generated/recyclique-api.ts

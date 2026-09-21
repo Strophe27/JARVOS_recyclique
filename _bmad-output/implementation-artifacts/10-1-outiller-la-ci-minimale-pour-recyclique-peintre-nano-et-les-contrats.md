@@ -1,6 +1,6 @@
 # Story 10.1 : Outiller la CI minimale pour Recyclique, Peintre_nano et les contrats
 
-Status: ready-for-dev
+Status: review
 
 **Story ID :** 10.1  
 **Story key :** `10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats`  
@@ -59,14 +59,14 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.1**
 
 ## Tasks / Subtasks
 
-- [ ] **Audit écart CI** — Lister l'état actuel : `.github/workflows/deploy.yaml`, `.github/workflows/alembic-check.yml`, branches déclenchées, étapes manquantes (contrats, ruff, `master`). **Checklist AC5** : confirmer que la baseline **10.1** ne cible pas `recyclique-1.4.4/` et que le deploy prod legacy reste hors refactor sauf régression tests. (AC : 1, 4, 5)
-- [ ] **Workflow « CI minimale »** — Créer ou refactoriser un workflow dédié (nom explicite, ex. `ci-minimal.yml`) **ou** corriger `deploy.yaml` pour séparer **test** vs **deploy** si cela simplifie la maintenance (**refactor prod `deploy.yaml` limité** : pas de changement des étapes de déploiement legacy hors régression tests). Déclencheurs **`master`** + PR vers **`master`** ; jobs contrats + API + Peintre **obligatoires sur chaque PR** (AC2 satisfait sans path-filter silencieux). **Anti-patte FMEA** : ne pas se limiter à ajouter `master` aux triggers de `deploy.yaml` sans jobs **contrats** + **ruff/compileall** (état actuel = Peintre+pytest seulement). **Anti-abus CI** : sur les trois jobs, **interdit** `continue-on-error: true`, `if:` qui saute le job sur PR/push normaux (dont `[skip ci]` / draft utilisé pour contourner), et commandes alternatives (`vitest … --exclude tests/contract`, pytest sans `-m "not performance"`) — le job Peintre appelle **`npm run test`** tel que défini dans `peintre-nano/package.json` (même entrée que le bloc Gates). Les trois jobs doivent être **requis** pour merge (checks GitHub / doc `doc/ci-minimal.md`). (AC : 1, 2, 4)
-- [ ] **Job API** — Postgres **17** + Redis ; `pip install -r requirements.txt -r requirements-dev.txt` **et** `pip install ruff` (ou `pip install -e ".[dev]"`) ; `compileall` + `ruff check` + `pytest -m "not performance"`. Réutiliser variables d'env déjà présentes dans `deploy.yaml` (`DATABASE_URL`, `TEST_DATABASE_URL`, `REDIS_URL`). (AC : 1, 6)
-- [ ] **Job Peintre_nano** — Cache `package-lock.json` ; `npm ci` ; `lint` + **`npm run test`** (**incl.** `peintre-nano/tests/contract/` via `vitest.config.ts` — ne pas ajouter de script CI parallèle qui exclut `tests/contract/` ; gouvernance OpenAPI/CREOS déjà couverte par Vitest, pas la validation manifest ↔ `operationId` **10.3**). (AC : 1, 2)
-- [ ] **Job contrats** — `cd contracts/openapi && npm ci && npm run generate` ; vérifier que `generated/recyclique-api.ts` est à jour (`git diff --exit-code` ou équivalent). Les tests Vitest contractuels restent dans le job Peintre. (AC : 1, 2)
-- [ ] **Doc contributeur** — Section courte : prérequis, commandes locales identiques à la CI, lien vers `recyclique/api/tests/README.md` et `peintre-nano/tests/contract/README.md` ; documenter la **baseline partagée** exigée par AC1 ; checklist **protection branche `master`** (reviews + statuts requis = jobs `ci-minimal`) et rappel séquence **10.1→10.2→10.3** avant module **D** (D2/D7 — pas de gate CI pour D dans cette story). (AC : 1, 3)
-- [ ] **Smoke verrou infra (optionnel mais recommandé)** — Ajouter `tests/infra/test_story_10_1_ci_minimal_smoke.py` (pattern **10.6d**, voir `test_story_10_6c_pg17_doc_smoke.py`) : assert workflow **10.1** référence `master` et chemins canoniques. (AC : 4)
-- [ ] **Sprint / story** — Après DS : mettre à jour ce fichier (Dev Agent Record, File List) et `sprint-status.yaml` (**review** → **done** via Story Runner). (process BMAD)
+- [x] **Audit écart CI** — Lister l'état actuel : `.github/workflows/deploy.yaml`, `.github/workflows/alembic-check.yml`, branches déclenchées, étapes manquantes (contrats, ruff, `master`). **Checklist AC5** : confirmer que la baseline **10.1** ne cible pas `recyclique-1.4.4/` et que le deploy prod legacy reste hors refactor sauf régression tests. (AC : 1, 4, 5)
+- [x] **Workflow « CI minimale »** — Créer ou refactoriser un workflow dédié (nom explicite, ex. `ci-minimal.yml`) **ou** corriger `deploy.yaml` pour séparer **test** vs **deploy** si cela simplifie la maintenance (**refactor prod `deploy.yaml` limité** : pas de changement des étapes de déploiement legacy hors régression tests). Déclencheurs **`master`** + PR vers **`master`** ; jobs contrats + API + Peintre **obligatoires sur chaque PR** (AC2 satisfait sans path-filter silencieux). **Anti-patte FMEA** : ne pas se limiter à ajouter `master` aux triggers de `deploy.yaml` sans jobs **contrats** + **ruff/compileall** (état actuel = Peintre+pytest seulement). **Anti-abus CI** : sur les trois jobs, **interdit** `continue-on-error: true`, `if:` qui saute le job sur PR/push normaux (dont `[skip ci]` / draft utilisé pour contourner), et commandes alternatives (`vitest … --exclude tests/contract`, pytest sans `-m "not performance"`) — le job Peintre appelle **`npm run test`** tel que défini dans `peintre-nano/package.json` (même entrée que le bloc Gates). Les trois jobs doivent être **requis** pour merge (checks GitHub / doc `doc/ci-minimal.md`). (AC : 1, 2, 4)
+- [x] **Job API** — Postgres **17** + Redis ; `pip install -r requirements.txt -r requirements-dev.txt` **et** `pip install ruff` (ou `pip install -e ".[dev]"`) ; `compileall` + `ruff check` + `pytest -m "not performance"`. Réutiliser variables d'env déjà présentes dans `deploy.yaml` (`DATABASE_URL`, `TEST_DATABASE_URL`, `REDIS_URL`). (AC : 1, 6)
+- [x] **Job Peintre_nano** — Cache `package-lock.json` ; `npm ci` ; `lint` + **`npm run test`** (**incl.** `peintre-nano/tests/contract/` via `vitest.config.ts` — ne pas ajouter de script CI parallèle qui exclut `tests/contract/` ; gouvernance OpenAPI/CREOS déjà couverte par Vitest, pas la validation manifest ↔ `operationId` **10.3**). (AC : 1, 2)
+- [x] **Job contrats** — `cd contracts/openapi && npm ci && npm run generate` ; vérifier que `generated/recyclique-api.ts` est à jour (`git diff --exit-code` ou équivalent). Les tests Vitest contractuels restent dans le job Peintre. (AC : 1, 2)
+- [x] **Doc contributeur** — Section courte : prérequis, commandes locales identiques à la CI, lien vers `recyclique/api/tests/README.md` et `peintre-nano/tests/contract/README.md` ; documenter la **baseline partagée** exigée par AC1 ; checklist **protection branche `master`** (reviews + statuts requis = jobs `ci-minimal`) et rappel séquence **10.1→10.2→10.3** avant module **D** (D2/D7 — pas de gate CI pour D dans cette story). (AC : 1, 3)
+- [x] **Smoke verrou infra (optionnel mais recommandé)** — Ajouter `tests/infra/test_story_10_1_ci_minimal_smoke.py` (pattern **10.6d**, voir `test_story_10_6c_pg17_doc_smoke.py`) : assert workflow **10.1** référence `master` et chemins canoniques. (AC : 4)
+- [x] **Sprint / story** — Après DS : mettre à jour ce fichier (Dev Agent Record, File List) et `sprint-status.yaml` (**review** → **done** via Story Runner). (process BMAD)
 
 ## Dev Notes
 
@@ -171,13 +171,29 @@ python -m pytest tests/ -m "not performance" --tb=short
 
 ### Agent Model Used
 
-_(à remplir en DS)_
+Composer 2.5 (Amelia · bmad-dev-story)
 
 ### Debug Log References
 
+- Audit : `deploy.yaml` = Peintre+pytest sur `main`/`develop` uniquement ; pas de contrats/ruff/`master`. `alembic-check.yml` = PG17, hors baseline PR complète.
+- Livraison : workflow dédié `ci-minimal.yml` (3 jobs parallèles, sans `paths:`) ; note 10.1 dans `deploy.yaml` (prod inchangé).
+
 ### Completion Notes List
 
+- ✅ AC1–4, 6 : `.github/workflows/ci-minimal.yml` + `doc/ci-minimal.md` + lien README ; smoke `tests/infra/test_story_10_1_ci_minimal_smoke.py` (4 tests verts).
+- ✅ AC5 : aucun job 10.1 sur `recyclique-1.4.4/` ; étapes deploy prod intactes.
+- Tests locaux DS : contrats OpenAPI `generate` + diff OK ; Peintre `lint` OK ; Vitest `tests/contract/` 97/97 ; `compileall` + `ruff` OK ; peloton API pytest non exécuté ici (pas de Postgres/Redis sur l’agent cloud). `npm run test` complet Peintre : 3 échecs bandeau-live (fetch count) — préexistants, hors diff 10.1.
+- `sprint-status.yaml` : story **review**.
+
 ### File List
+
+- `.github/workflows/ci-minimal.yml` (nouveau)
+- `.github/workflows/deploy.yaml` (commentaire 10.1)
+- `doc/ci-minimal.md` (nouveau)
+- `README.md` (section CI minimale)
+- `tests/infra/test_story_10_1_ci_minimal_smoke.py` (nouveau)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats.md`
 
 ### Risques résiduels et notes VS (QA3 · run `20260921_161439_jarvos_recyclique`)
 
@@ -199,4 +215,5 @@ Dettes **Info** non bloquantes — clôture intégrale par documentation (aucun 
 
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist sans écart bloquant ; QA3 gate **96** — risques résiduels documentés ci-dessus
-- **Prochaine étape BMAD :** **DS** (`bmad-dev-story`)
+- **DS :** Amelia — **review** (2026-09-21) ; workflow `ci-minimal.yml` + doc + smoke infra
+- **Prochaine étape BMAD :** **code-review** puis **QA3** (coordinateur) ; `sprint-status` **done** via Story Runner après gates

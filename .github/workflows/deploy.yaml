@@ -1,6 +1,8 @@
 # CI/CD — mono-repo JARVOS_recyclique
 # CI rapide frontend : peintre-nano
 # Déploiement production : frontend legacy brownfield tant qu'un chantier dédié ne l'a pas migré
+# Story 10.1 : intégration canonique `master` → `.github/workflows/ci-minimal.yml` (API + Peintre + contrats).
+# Triggers `main` / `develop` ci-dessous = dette historique (branches absentes sur origin) ; deploy prod inchangé (AC5).
 name: CI/CD Pipeline
 
 on:

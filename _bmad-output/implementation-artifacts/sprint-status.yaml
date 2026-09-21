@@ -1,4 +1,5 @@
 # Process BMAD (gel) : règle « gel hors Epic 25 » (sprint-change 2026-04-19) remplacée par levée partielle L0/L1/L2 — D1 tranchée 2026-09-21 (jarvos.01). Canon process : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`. Ce fichier conserve les statuts `development_status` comme preuve historique (pas de retcon des `done`).
+# last_updated: 2026-09-21 — story 10.1 DS Amelia : `10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats` **ready-for-dev** → **`review`** ; workflow `ci-minimal.yml` + `doc/ci-minimal.md` + smoke infra ; prochaine étape **code-review** / **QA3** coordinateur
 # last_updated: 2026-09-21 — story 10.1 CS bmad-create-story : `10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats.md` ; **`epic-10`** **`backlog`** → **`in-progress`** ; trace CS Ombre D2/D7 ; prochaine étape **VS** puis chaîne **10.2–10.3**
 # last_updated: 2026-05-27 — Agent B fin : **`9-10-liaison-paheko-cloture-caisse-v1`** **review** → **`done`** ; QA2 96 % P0=0 ; CR APPROVE ; pytest peloton vert
 # last_updated: 2026-05-27 — Agent B DS : **`9-10-liaison-paheko-cloture-caisse-v1`** **in-progress** → **`review`** ; T3 batch + D33 seuil site + comptes 658/758 ; pytest peloton vert ; Peintre vitest close OK ; QA2 + CR en cours
@@ -494,7 +495,7 @@ development_status:
   # Levée gel process (2026-04-20, story 25-6) : nouvelles exécutions bmad-dev-story hors clés 25-* réautorisées sous conditions — addendum `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + note readiness 2026-04-20 (gates §2/§7) ; NOT READY PWA massif ; gate API P0 si promotions Paheko/caisse ; respect ADR 25-2 / 25-3 (fond non rouvert).
   # Gel 2026-04-19 : les statuts YAML ci-dessous restent preuve d'état — pas de rétroconduction des valeurs review/backlog.
   epic-10: in-progress
-  10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: ready-for-dev
+  10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: review
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: backlog
   10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: backlog
