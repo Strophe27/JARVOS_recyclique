@@ -178,4 +178,6 @@ _(à remplir en DS)_
 ## Story completion status
 
 - **CS :** fichier story créé — **ready-for-dev** (2026-09-21)
-- **Prochaine étape BMAD :** **VS** (validate-create-story), puis **DS** (`bmad-dev-story`). **QA3** boucle gate 95+ exécutée sur ce livrable (2026-09-21) — micro-correctifs P1 intégrés (gates ↔ AC2, statut 10.1).
+- **QA3 :** boucle gate 95+ (2026-09-21) — score **96** ; 0 P0 / 0 P1 ; correctifs intégrés (tableau 10.1 `review`, gates `git diff` + `recyclique-api.ts`, `--emit-contracts` indicatif aligné tâche script) — rapport projet `internal/qa3-story-10-2.md`
+- **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` sans écart bloquant ; QA3 **96** préservé ; dettes résiduelles (audit écart chaîne, politique merge `description` YAML, Dev Agent Record) reportées **DS**
+- **Prochaine étape BMAD :** **DS** (`bmad-dev-story`) — pas de re-pass CS sans changement de périmètre epic
