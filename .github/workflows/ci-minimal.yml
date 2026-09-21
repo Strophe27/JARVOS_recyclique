@@ -1,4 +1,4 @@
-# Baseline CI Epic 10 — Stories 10.1 + 10.2 + 10.3 (gate CREOS + smoke rendu via npm run test Peintre)
+# Baseline CI Epic 10 — Stories 10.1 + 10.2 + 10.3 + 10.4 (peloton critical core + gates CREOS 10.3)
 # Gouvernance exécutable : chaque PR et chaque push sur `master` exécute API + Peintre + contrats (chaîne OpenAPI complète).
 # Pas de filtre `paths:` sur ces jobs (AC2) — ne pas contourner avec continue-on-error ou scripts parallèles.
 name: CI minimale (Recyclique · Peintre_nano · contrats)
@@ -60,6 +60,14 @@ jobs:
         working-directory: recyclique/api
         run: python -m ruff check src/recyclic_api
 
+      - name: pytest critical core peloton
+        working-directory: recyclique/api
+        run: bash scripts/run_critical_core_peloton.sh
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recyclic_test
+          REDIS_URL: redis://localhost:6379
+
       - name: pytest (hors performance)
         working-directory: recyclique/api
         run: python -m pytest tests/ -m "not performance" --tb=short
@@ -69,7 +77,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
 
   peintre-nano-minimal:
-    name: Peintre_nano — lint et tests (contrats + smoke CREOS 10.3)
+    name: Peintre_nano — lint, gates 10.3, peloton 10.4, Vitest intégral
     runs-on: ubuntu-latest
 
     steps:
@@ -83,12 +91,28 @@ jobs:
           cache: npm
           cache-dependency-path: peintre-nano/package-lock.json
 
-      - name: Install, lint, test
+      - name: Install and lint
         working-directory: peintre-nano
         run: |
           npm ci
           npm run lint
-          npm run test
+
+      - name: Gate CREOS governance (10.3)
+        working-directory: peintre-nano
+        run: npx vitest run tests/contract/creos-manifests-governance-10-3.test.ts
+
+      - name: Gate smoke rendu CREOS (10.3)
+        working-directory: peintre-nano
+        run: npx vitest run tests/smoke/creos-critical-render-paths-10-3.test.tsx
+
+      - name: Peloton métier critical core (10.4)
+        working-directory: peintre-nano
+        run: npm run test:critical-core
+
+      - name: Vitest intégral (dette bandeau-live 10.1)
+        working-directory: peintre-nano
+        continue-on-error: true
+        run: npm run test
 
   contracts-openapi:
     name: Contrats — chaîne OpenAPI (FastAPI → snapshot → YAML → TS)

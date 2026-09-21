@@ -1,0 +1,28 @@
+# Peloton métier Story 10.4 — quatre parcours critiques (gate figé au CS).
+# Smokes CREOS 10.3 : hors de ce manifeste (voir doc/critical-core-peloton.md).
+version: 1
+story: "10.4"
+targets:
+  module_chain:
+    peintre:
+      - tests/contract/navigation-transverse-served-5-1.test.ts
+      - tests/e2e/runtime-demo-compose.e2e.test.tsx
+    api:
+      - tests/test_context_envelope.py::TestContextEnvelope::test_context_presentation_labels_nav_transverse_dashboard
+      - tests/test_context_envelope.py::TestContextEnvelope::test_context_envelope_payload_shape
+  caisse_nominal:
+    peintre:
+      - tests/e2e/cashflow-nominal-6-1.e2e.test.tsx
+    api:
+      - tests/test_sales_integration.py::TestSalesIntegration::test_create_sale_success
+  reception_nominal:
+    peintre:
+      - tests/e2e/reception-nominal-7-1.e2e.test.tsx
+    api:
+      - tests/test_reception_endpoints.py::test_reception_happy_path
+  sync_sensitive:
+    api:
+      - tests/test_story_8_1_paheko_outbox_slice.py::test_close_non_empty_creates_outbox_same_commit
+      - tests/test_story_8_1_paheko_outbox_slice.py::test_admin_get_after_processor_403_shows_en_quarantaine
+      - tests/test_story_8_1_paheko_outbox_slice.py::test_processor_http_500_schedules_retry_pending
+      - tests/test_story_8_1_paheko_outbox_slice.py::test_admin_list_and_get_item

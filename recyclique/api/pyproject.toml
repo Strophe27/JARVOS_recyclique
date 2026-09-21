@@ -76,6 +76,7 @@ markers = [
     "integration_db: tests nécessitant Postgres/Redis",
     "performance: tests de performance (longs, peuvent être exclus de la CI rapide)",
     "no_db: pas de session DB ni d'autouse liée à la base (voir tests/conftest.py).",
+    "critical_core: peloton Story 10.4 (sélection manifeste doc/critical-core-peloton.yaml).",
 ]
 filterwarnings = [
     "ignore:Type google\\._upb\\._message.*:DeprecationWarning",

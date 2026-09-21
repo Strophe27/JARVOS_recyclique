@@ -1,4 +1,4 @@
-# CI minimale (baseline Epic 10 — stories 10.1 + 10.2 + 10.3)
+# CI minimale (baseline Epic 10 — stories 10.1 + 10.2 + 10.3 + 10.4)
 
 Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workflows/ci-minimal.yml).
 
@@ -6,8 +6,8 @@ Pipeline GitHub Actions : [`.github/workflows/ci-minimal.yml`](../.github/workfl
 
 | Job workflow | Rôle |
 |--------------|------|
-| `api-minimal` | PostgreSQL **17** + Redis ; `compileall` + `ruff check` + `pytest -m "not performance"` |
-| `peintre-nano-minimal` | `npm ci` ; `npm run lint` ; `npm run test` (inclut `peintre-nano/tests/contract/` et `peintre-nano/tests/smoke/`) |
+| `api-minimal` | PostgreSQL **17** + Redis ; `compileall` + `ruff check` ; **`pytest critical core peloton`** (10.4, `run_critical_core_peloton.sh`) ; `pytest -m "not performance"` |
+| `peintre-nano-minimal` | `npm ci` ; `npm run lint` ; gates **10.3** (governance CREOS + smoke rendu) ; **`npm run test:critical-core`** (10.4) ; `npm run test` intégral (**non bloquant** — dette bandeau-live **10.1**) |
 | `contracts-openapi` | Export FastAPI (`generate_openapi.py --emit-contracts`) ; `npm ci` + `npm run generate` ; working tree propre sur `generated/openapi-snapshot.json`, `recyclique-api.yaml`, `generated/recyclique-api.ts` |
 
 Politique par défaut : tout changement d’API backend doit régénérer et **committer** la chaîne complète (snapshot JSON, YAML reviewable aligné, types TS). Détail : [`contracts/README.md`](../contracts/README.md) § chaîne OpenAPI.
@@ -18,10 +18,12 @@ Politique par défaut : tout changement d’API backend doit régénérer et **c
 
 ## Story 10.3 — manifests CREOS + smoke rendu (intégrée)
 
-Le job **`peintre-nano-minimal`** exécute `npm run test`, qui inclut désormais :
+Le job **`peintre-nano-minimal`** exécute en étapes **bloquantes** nommées (avant le peloton métier **10.4**) :
 
 - **Gate globale CREOS** : `peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts` (structure, schéma widget sur les catalogues, bundle servi `navigation-transverse-served.json`, crosswalk `operation_id` ↔ `recyclique-api.yaml`).
 - **Smoke rendu jsdom (NFR28)** : `peintre-nano/tests/smoke/creos-critical-render-paths-10-3.test.tsx` (login public, dashboard, bandeau live, caisse nominale, réception nominale).
+
+`npm run test` intégral reste lancé en fin de job pour couvrir le reste de la suite Vitest, mais avec **`continue-on-error: true`** tant que la dette **bandeau-live** (**10.1**) n’est pas résolue (voir §10.4).
 
 Périmètre manifests reviewables : [`contracts/creos/manifests/README.md`](../contracts/creos/manifests/README.md).
 
@@ -43,9 +45,27 @@ python -m pytest tests/infra/test_story_10_3_ci_minimal_creos_smoke.py -q
 **Dette connue (hors smoke / contract 10.3)** : certains tests legacy Peintre (ex. **bandeau-live** sous `tests/e2e/` ou `tests/unit/`, parfois `live-activity-presence-bridge`) peuvent rester rouges — defer stories **10.1** / correctifs dédiés.
 
 - **Revue story 10.3 / gates CREOS** : les commandes ciblées ci-dessus (governance 10.3 + smoke 10.3) suffisent pour valider le périmètre 10.3.
-- **Merge sur `master` via CI** : le job `peintre-nano-minimal` exécute **`npm run test` intégral** ; tant que la dette 10.1 n’est pas résolue, ce job peut échouer **même si** les gates 10.3 isolées sont vertes — ne pas confondre « livrable 10.3 OK » et « pipeline Peintre vert ».
+- **Merge sur `master` via CI** : les gates **10.3** + **`test:critical-core` (10.4)** sont **bloquantes** ; l’échec de `npm run test` intégral **ne bloque plus** le job tant que l’arbitrage §10.4 est en vigueur.
 
-**Séquence plancher L0 :** **10.1 → 10.2 → 10.3** avant tout module métier **D** (pilotage PO D2/D7).
+**Séquence plancher L0 :** **10.1 → 10.2 → 10.3 → 10.4** avant tout module métier **D** (pilotage PO D2/D7).
+
+## Story 10.4 — peloton critical core (intégrée)
+
+Manifeste et doc humaine : [`doc/critical-core-peloton.yaml`](../critical-core-peloton.yaml), [`doc/critical-core-peloton.md`](../critical-core-peloton.md).
+
+| Couche | Commande locale | CI (`ci-minimal.yml`) |
+|--------|-----------------|------------------------|
+| Garde-fou manifeste | `python3 -m pytest tests/infra/test_story_10_4_critical_core_peloton_guard.py -q` | (maintenance dépôt) |
+| API peloton | `cd recyclique/api && bash scripts/run_critical_core_peloton.sh` | `api-minimal` → **pytest critical core peloton** (avant pytest complet) |
+| Peintre peloton | `cd peintre-nano && npm run test:critical-core` | `peintre-nano-minimal` → étape **Peloton métier critical core (10.4)** |
+
+**Arbitrage dette 10.1 (bandeau-live)** : `npm run test` dans `peintre-nano-minimal` utilise `continue-on-error: true`. Les étapes **bloquantes** restent : lint ; governance CREOS **10.3** ; smoke rendu **10.3** ; **`npm run test:critical-core`**. Ne pas retirer les gates **10.3** au profit du seul peloton métier.
+
+Smoke infra recommandé :
+
+```bash
+python3 -m pytest tests/infra/test_story_10_4_ci_minimal_critical_core_smoke.py -q
+```
 
 ## Prérequis locaux
 

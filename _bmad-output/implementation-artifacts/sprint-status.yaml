@@ -1,4 +1,5 @@
 # Process BMAD (gel) : règle « gel hors Epic 25 » (sprint-change 2026-04-19) remplacée par levée partielle L0/L1/L2 — D1 tranchée 2026-09-21 (jarvos.01). Canon process : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`. Ce fichier conserve les statuts `development_status` comme preuve historique (pas de retcon des `done`).
+# last_updated: 2026-09-21 — story 10.4 DS Amelia : `10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques` **ready-for-dev** → **`review`** ; peloton manifeste/guard/CI §10.4 ; **`10-1`** inchangé **`review`** ; **`10-2`** / **`10-3`** inchangés **`done`** ; prochaine étape **CR**
 # last_updated: 2026-09-21 — story 10.4 CS bmad-create-story : `10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques.md` ; **`10-1`** inchangé **`review`** ; **`10-2`** / **`10-3`** inchangés **`done`** (ne pas rouvrir) ; trace CS Ombre D2/D7 ; prochaine étape **VS** puis **DS** 10.4
 # last_updated: 2026-09-21 — sprint-status Bob (Ombre HITL post-10.3) : **`10-2`** / **`10-3`** **review** → **`done`** (CR APPROVE + QA3 97 / 96) ; **`10-1`** inchangé **`review`** (Vitest bandeau-live hors scope — ne pas `done`) ; **`epic-10`** inchangé **in-progress** ; preuves store `code-review-10-2.md`, `qa3-openapi-10-2.md`, `code-review-10-3.md`, `qa3-creos-10-3.md` ; prochaine étape typique **`create-story` 10.4**
 # last_updated: 2026-09-21 — story 10.3 DS Amelia : `10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques` **ready-for-dev** → **`review`** ; gates CREOS + smoke + doc §10.3 ; **`10-1`** / **`10-2`** inchangés **`review`** ; prochaine étape **CR** / **QA3**
@@ -504,7 +505,7 @@ development_status:
   10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: review
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: done
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: done
-  10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: ready-for-dev
+  10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: review
   10-5-rendre-lobservabilite-et-le-support-exploitables-en-environnement-reel: backlog
   10-6-documenter-linstallation-la-stack-cible-et-lenvironnement-officiellement-supporte: backlog
   10-6b-clarifier-le-point-dentree-docker-local-du-mono-repo: done

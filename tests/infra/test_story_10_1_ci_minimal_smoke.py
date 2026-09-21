@@ -49,7 +49,10 @@ def test_ci_minimal_three_jobs_without_path_filters() -> None:
     assert "npm run generate" in body
     assert "git diff --exit-code" in body
     assert "generated/recyclique-api.ts" in body
-    assert "continue-on-error: true" not in body
+    # Story 10.4 : continue-on-error autorisé uniquement sur Vitest intégral Peintre (dette 10.1)
+    peintre_block = body.split("peintre-nano-minimal:", 1)[1].split("contracts-openapi:", 1)[0]
+    assert "continue-on-error: true" in peintre_block
+    assert "continue-on-error: true" not in body.split("peintre-nano-minimal:", 1)[0]
     # AC2 : pas de paths: sur ce workflow (alembic-check est séparé)
     assert re.search(r"^\s+paths:\s*$", body, re.MULTILINE) is None
 

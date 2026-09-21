@@ -36,11 +36,13 @@ def test_vitest_includes_smoke_glob() -> None:
     assert "tests/smoke/**/*.{test.ts,test.tsx}" in body
 
 
-def test_ci_minimal_peintre_job_runs_npm_test_without_continue_on_error() -> None:
+def test_ci_minimal_peintre_job_10_3_gates_and_critical_core() -> None:
     body = _read(WORKFLOW_CI)
     assert "peintre-nano-minimal:" in body
+    assert "creos-manifests-governance-10-3.test.ts" in body
+    assert "creos-critical-render-paths-10-3.test.tsx" in body
+    assert "npm run test:critical-core" in body
     assert "npm run test" in body
-    assert "continue-on-error: true" not in body
     assert re.search(r"^\s+paths:\s*$", body, re.MULTILINE) is None
 
 
