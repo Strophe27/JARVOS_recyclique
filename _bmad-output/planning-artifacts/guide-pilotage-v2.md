@@ -12,7 +12,7 @@
 
 Ce guide **ne recopie pas** un état story par story (il vieillit). Il pose **principes de pilotage**, **chemins canoniques**, **rituel léger**, **frictions**, **prompt superviseur** et renvoie au YAML pour tout fait d’état.
 
-**Mise à jour** : **2026-09-21** (recadrage process D1 / D8 — epics **9–10** alignés sur `last_updated` racine YAML **2026-05-30**). Maintenir ce guide aux **jalons** (convergence, fin d’epic majeur, gate bandeau, sprint-change process), pas à chaque story.
+**Mise à jour** : **2026-09-21** (recadrage process **D1** — epics **9–10** alignés sur `last_updated` racine YAML **2026-05-30**). Maintenir ce guide aux **jalons** (convergence, fin d’epic majeur, gate bandeau, sprint-change process), pas à chaque story.
 
 **Process BMAD (post-D1, 2026-09-21) :** le gel avril 2026 est **levé partiellement** — règles **L0 / L1 / L2** dans [`sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`](./sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md) et encart PRD. Le fichier [`sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md`](./sprint-change-proposal-2026-04-19-pause-backlog-priorite-socle-prd-kiosque.md) reste **historique** (non amendé).
 
