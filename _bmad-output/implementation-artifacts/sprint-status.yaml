@@ -1,4 +1,5 @@
 # Process BMAD (gel) : règle « gel hors Epic 25 » (sprint-change 2026-04-19) remplacée par levée partielle L0/L1/L2 — D1 tranchée 2026-09-21 (jarvos.01). Canon process : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`. Ce fichier conserve les statuts `development_status` comme preuve historique (pas de retcon des `done`).
+# last_updated: 2026-09-21 — story 10.1 CS bmad-create-story : `10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats` **backlog** → **`ready-for-dev`** ; fichier story `_bmad-output/implementation-artifacts/10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats.md` ; **`epic-10`** **`backlog`** → **`in-progress`** ; trace CS Ombre D2/D7 ; prochaine étape **VS** puis chaîne **10.2–10.3**
 # last_updated: 2026-05-27 — Agent B fin : **`9-10-liaison-paheko-cloture-caisse-v1`** **review** → **`done`** ; QA2 96 % P0=0 ; CR APPROVE ; pytest peloton vert
 # last_updated: 2026-05-27 — Agent B DS : **`9-10-liaison-paheko-cloture-caisse-v1`** **in-progress** → **`review`** ; T3 batch + D33 seuil site + comptes 658/758 ; pytest peloton vert ; Peintre vitest close OK ; QA2 + CR en cours
 # last_updated: 2026-05-27 — Agent B (create-story) : **`9-10-liaison-paheko-cloture-caisse-v1`** **backlog** → **`ready-for-dev`** ; fichier `_bmad-output/implementation-artifacts/9-10-liaison-paheko-cloture-caisse-v1.md` ; `epic-9` inchangé **in-progress** ; trace CS Agent B plan post-9.6 ; prochaine étape **VS** puis **GO DS** (`bmad-dev-story`)
@@ -359,7 +360,7 @@ generated: "2026-04-01"
 # Fraicheur canonique pour outils / grep : utiliser la cle YAML `last_updated` (racine) ci-dessous ; les lignes `# last_updated:` en tete de fichier sont historique operationnel (ne pas les confondre avec la racine).
 # last_updated: 2026-05-30 — PM/BMAD documentaire : ajout **Epic 27** postes partages enroles + PIN operateur + PWA installable non-offline ; `epic-27` + stories `27-1`…`27-10` en backlog ; QA2 PM 96/100 GO ; runbook `references/artefacts/2026-05-29_04_runbook-orchestration-epic-27-postes-partages-pin.md` ; aucun dev lance.
 # last_updated: 2026-04-23 — epic-15 **done** ; 15-1…15-4 **review→done** (clôture fondation admin obsolète vs chantier 16–19+ ; détail `epics.md` §15 + fiches story).
-last_updated: "2026-05-30"
+last_updated: "2026-09-21"
 # last_updated: 2026-04-20 — story 25-7 DS bmad-dev-story Task : 25-7-traduire-la-spec-25-4-sections-2-3-en-checklist-developpement-executable ready-for-dev → review ; checklist `_bmad-output/implementation-artifacts/checklists/25-7-checklist-spec-25-4-sections-2-3.md` ; epic-25 inchangé in-progress
 # last_updated: 2026-04-20 — story 25-7 Story Runner fin : 25-7 review→done (CR×2, cr_loop=1 ; gates git ; QA doc `_bmad-output/implementation-artifacts/25-7-qa-checklist-verification.md`) ; correctifs YAML/story post-CR1 ; epic-25 inchangé in-progress
 # last_updated: "2026-04-16" # story 22.5 Story Runner fin : VS→DS→GATE→QA→CR APPROVE ; 22-5 review→done ; vs=0 qa=0 cr=0 ; gates pytest+npm (e2e 22-5 inclus post-QA)
@@ -492,8 +493,8 @@ development_status:
 
   # Levée gel process (2026-04-20, story 25-6) : nouvelles exécutions bmad-dev-story hors clés 25-* réautorisées sous conditions — addendum `_bmad-output/planning-artifacts/2026-04-20-addendum-levee-gel-process-correct-course-story-25-6.md` + note readiness 2026-04-20 (gates §2/§7) ; NOT READY PWA massif ; gate API P0 si promotions Paheko/caisse ; respect ADR 25-2 / 25-3 (fond non rouvert).
   # Gel 2026-04-19 : les statuts YAML ci-dessous restent preuve d'état — pas de rétroconduction des valeurs review/backlog.
-  epic-10: backlog
-  10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: backlog
+  epic-10: in-progress
+  10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats: ready-for-dev
   10-2-verifier-la-chaine-openapi-artefacts-generes-consommation-frontend: backlog
   10-3-valider-les-manifests-creos-et-les-parcours-de-rendu-critiques: backlog
   10-4-poser-la-couverture-de-tests-ciblee-sur-un-premier-noyau-de-parcours-critiques: backlog
