@@ -71,11 +71,11 @@ python3 -m pytest tests/infra/test_story_10_4_ci_minimal_critical_core_smoke.py 
 
 Manifeste et runbook : [`doc/observability-critical-flows.yaml`](./observability-critical-flows.yaml), [`doc/observability-support-runbook.md`](./observability-support-runbook.md).
 
-| Couche | Commande locale | CI (`ci-minimal.yml` → `api-minimal`) |
-|--------|-----------------|----------------------------------------|
-| Guard manifeste | `python3 -m pytest tests/infra/test_story_10_5_observability_manifest_guard.py -q` | étape **observability manifest guard (10.5)** |
-| Corrélation HTTP peloton | `cd recyclique/api && python3 -m pytest tests/test_story_10_5_http_correlation_peloton.py -q` | étape **pytest observability smokes (10.5)** |
-| Fil sync support | `cd recyclique/api && python3 -m pytest tests/test_story_10_5_sync_support_trail_smoke.py -q` | idem (après peloton **10.4**, fail-fast FM2) |
+| Ordre CI | Couche | Commande locale | CI (`ci-minimal.yml` → `api-minimal`) |
+|----------|--------|-----------------|----------------------------------------|
+| 1 (après peloton **10.4**) | Corrélation HTTP peloton | `cd recyclique/api && python3 -m pytest tests/test_story_10_5_http_correlation_peloton.py -q` | étape **pytest observability smokes (10.5)** |
+| 2 | Fil sync support | `cd recyclique/api && python3 -m pytest tests/test_story_10_5_sync_support_trail_smoke.py -q` | idem (même étape, séquence HTTP puis sync) |
+| 3 | Guard manifeste | `python3 -m pytest tests/infra/test_story_10_5_observability_manifest_guard.py -q` | étape **observability manifest guard (10.5)** |
 
 **Frontière FM3 :** ne pas enregistrer les tests **10.5** dans `doc/critical-core-peloton.yaml` ni `scripts/run_critical_core_peloton.sh` — le peloton **10.4** reste la barrière métier.
 

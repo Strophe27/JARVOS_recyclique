@@ -1,6 +1,7 @@
 # Runbook support — observabilité flux critiques (Story 10.5)
 
 Manifeste machine-readable : [`observability-critical-flows.yaml`](./observability-critical-flows.yaml).  
+Guide de pilotage (Epic 10) : [`guide-pilotage-v2.md`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md).  
 Peloton métier **10.4** (inchangé) : [`critical-core-peloton.yaml`](./critical-core-peloton.yaml).  
 Corrélation sync **8.5** : timeline `recyclique_pahekoOutbox_getCorrelationTimeline`.
 

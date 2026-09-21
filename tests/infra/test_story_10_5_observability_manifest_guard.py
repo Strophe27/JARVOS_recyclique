@@ -101,6 +101,31 @@ def test_health_readiness_roles_and_endpoints() -> None:
     assert any(e.get("path") == "/health" for e in liveness)
 
 
+def test_peloton_correlation_routes_align_with_http_correlation_tests() -> None:
+    """Manifeste peloton_correlation_routes ↔ parametrize test_story_10_5_http_correlation_peloton."""
+    data = _load_manifest()
+    routes = data["pillars"]["http_correlation"].get("peloton_correlation_routes") or {}
+    assert isinstance(routes, dict) and routes, "peloton_correlation_routes requis"
+    test_path = API_ROOT / "tests/test_story_10_5_http_correlation_peloton.py"
+    text = test_path.read_text(encoding="utf-8")
+    for label, spec in routes.items():
+        assert isinstance(spec, dict), f"route {label} invalide"
+        method = str(spec.get("method", "")).upper()
+        path = str(spec.get("path", ""))
+        assert label in text, f"label pytest manquant pour {label}"
+        assert method in text, f"méthode {method} absente du test pour {label}"
+        if label == "sync_sensitive":
+            assert "by-correlation" in text
+            assert "/v1/admin/paheko-outbox/by-correlation" in path
+        else:
+            path_tail = path.removeprefix("/v1")
+            assert path in text or path_tail in text, (
+                f"path manifeste {path} absent du test ({label})"
+            )
+        for status in spec.get("expected_status") or []:
+            assert isinstance(status, int)
+
+
 def test_openapi_operation_ids_when_listed() -> None:
     assert OPENAPI_REVIEWABLE.is_file()
     known = _collect_openapi_operation_ids(OPENAPI_REVIEWABLE)

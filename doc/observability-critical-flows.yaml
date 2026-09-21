@@ -20,12 +20,16 @@ pillars:
       - path: /v1/admin/health/database
         method: GET
         role: documented_alias
+      - path: /v1/admin/health/scheduler
+        method: GET
+        role: documented_alias
     openapi_operation_ids:
       - health_check_health_get
       - health_check_v1_health__get
       - adminHealthPublicGet
       - adminHealthSystemGet
       - adminHealthDatabaseGet
+      - adminHealthSchedulerGet
     api_paths:
       - /health
       - /v1/health/
