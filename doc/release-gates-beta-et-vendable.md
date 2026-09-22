@@ -2,7 +2,7 @@
 
 Manifeste machine-readable : [`release-gates-official.yaml`](./release-gates-official.yaml) · critères figés : [`release-gates-criterion-ids.yaml`](./release-gates-criterion-ids.yaml).
 
-**Séquence jalons (D1 — ne pas inverser)** : **beta interne** (terrain ressourcerie test, sans tag vendable) → **G-plancher** (socle L0 + C2b validé terrain **avant** tag **`v2.0.0`**) → **G-vendable** / tag **`v2.0.0`** seulement si critères PRD §13.2 + modules **D**.
+**Séquence jalons (D1 — ne pas inverser)** : **beta interne** (terrain ressourcerie test, sans tag vendable) → **G-plancher** (socle L0 + C2b validé terrain **avant** le **premier tag plancher** **`v2.0.0`** — voir [`references/versioning.md`](../references/versioning.md) / `gp_tag_v200`) → **G-vendable** (critères PRD §13.2 + modules **D** ; jalon commercial **distinct** du tag plancher post-C2b).
 
 Renvois : [`_bmad-output/planning-artifacts/guide-pilotage-v2.md`](../_bmad-output/planning-artifacts/guide-pilotage-v2.md) §5.3 · [`references/versioning.md`](../references/versioning.md) · sprint-change **2026-09-21** [`_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md`](../_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md) §4.
 
@@ -12,7 +12,7 @@ Renvois : [`_bmad-output/planning-artifacts/guide-pilotage-v2.md`](../_bmad-outp
 |------|----------|--------------|----------------------|-----------|
 | **Beta interne** | Valider terrain ressourcerie test (PRD §13.1) : cashflow/réception, sync, bandeau, contexte | Pas de tag **`v2.0.0`** ; jalon terrain | **`not_signed`** — validation HITL terrain **non signée** au CS (colonne = état, pas une signature formelle) | Hors scope modules **D** backlog (9.1, 9.3, HelloAsso) |
 | **G-plancher** | Socle L0 + parité gestes 1.4.4 + **C2b** avant premier tag plancher | **`v2.0.0`** **interdit** tant que C2b non validé | **`not_signed`** — tag bloqué jusqu'à HITL Coordinateur + PO | **Ne satisfait pas** §13.2 (pas vendable) |
-| **G-vendable** | V2 commercialisable (PRD §13.2) : D complet, HelloAsso min., install OS | **`v2.0.0`** ou tag vendable **uniquement** après C2b **et** critères §13.2 | **`not_signed`** au CS — **interdit tag v2.0.0 sans C2b** validé terrain | **eco-organismes**, **adhérents**, **HelloAsso (D3)** requis |
+| **G-vendable** | V2 commercialisable (PRD §13.2) : D complet, HelloAsso min., install OS | Jalon **vendable** (tag **`v2.0.1+`** / critères §13.2) **après** plancher **`v2.0.0`** — ne pas confondre avec le tag plancher seul | **`not_signed`** au CS — **interdit tag plancher `v2.0.0` sans C2b** validé terrain | **eco-organismes**, **adhérents**, **HelloAsso (D3)** requis |
 
 ## C2b et tag `v2.0.0`
 

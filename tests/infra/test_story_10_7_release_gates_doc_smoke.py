@@ -4,7 +4,6 @@ Smoke doc — story 10.7 : manifeste gates release + guide humain + cohérence p
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 import yaml
@@ -15,6 +14,11 @@ GUIDE = PROJECT_ROOT / "doc/release-gates-beta-et-vendable.md"
 CRITERION_IDS = PROJECT_ROOT / "doc/release-gates-criterion-ids.yaml"
 
 REQUIRED_GATE_KEYS = ("g_plancher", "beta_interne", "g_vendable")
+EXPECTED_NON_CONFUSABLE: dict[str, frozenset[str]] = {
+    "g_plancher": frozenset({"g_vendable", "beta_interne"}),
+    "beta_interne": frozenset({"g_plancher", "g_vendable"}),
+    "g_vendable": frozenset({"g_plancher", "beta_interne"}),
+}
 REQUIRED_PILLARS = (
     "g_plancher",
     "beta_interne",
@@ -93,7 +97,8 @@ def test_manifest_story_gates_pillars_c2b() -> None:
         assert gate.get("prd_section")
         assert gate.get("summary")
         ncu = gate.get("non_confusable_with")
-        assert isinstance(ncu, list) and len(ncu) >= 2
+        assert isinstance(ncu, list)
+        assert frozenset(ncu) == EXPECTED_NON_CONFUSABLE[key]
 
     pillars = data.get("release_gate_pillars")
     assert isinstance(pillars, dict)
