@@ -52,7 +52,7 @@ assessment_dimensions:
 
 sprint_status_snapshot:
   captured_at: "2026-09-22T00:00:00Z"
-  git_short_hash: "74d5b02"
+  git_short_hash: "ec9c47f"
   stories:
     "10-1": review
     "10-2": done
@@ -61,7 +61,7 @@ sprint_status_snapshot:
     "10-5": done
     "10-6": done
     "10-7": done
-  snapshot_notes: "Statuts lus depuis sprint-status.yaml au DS — 10-1 review inchangé ; pas de promotion 10.1."
+  snapshot_notes: "Statuts lus depuis sprint-status.yaml au DS — 10-1 review inchangé ; pas de promotion 10.1. Hash ec9c47f = commit readiness 10.8 (post-DS, QA3)."
 
 c2b_hitl:
   status: not_signed

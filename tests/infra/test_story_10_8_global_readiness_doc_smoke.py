@@ -195,10 +195,25 @@ def test_readiness_md_keywords_links_c2b() -> None:
     assert "sans c2b" in lower or "non signé" in lower
     assert "non signé" in lower or "non signe" in lower.replace("é", "e")
 
-    # Anti-FM12 : pas de formulation C2b validé/signé (hors « non signé »)
-    assert "c2b signé" not in lower
-    assert "c2b signed" not in lower
-    assert not re.search(r"c2b[^.\n]{0,24}(?<!non )signé", lower)
+    # Anti-FM12 : pas de formulation C2b validé/signé (hors « non signé » / « sans C2b validé »)
+    forbidden_c2b_positive = (
+        "c2b signé",
+        "c2b signed",
+        "c2b approuvé",
+        "c2b approuve",
+        "c2b go",
+        "hitl c2b signé",
+        "hitl c2b signed",
+        "c2b : signé",
+        "c2b: signé",
+    )
+    for phrase in forbidden_c2b_positive:
+        assert phrase not in lower
+    assert not re.search(
+        r"(?<!sans )c2b[^.\n]{0,24}(?<!non )sign[ée]e?(?!d)",
+        lower,
+    )
+    assert not re.search(r"c2b[^.\n]{0,16}:\s*sign[ée]e?", lower)
 
     for token in MD_REQUIRED_LINKS:
         assert token in body

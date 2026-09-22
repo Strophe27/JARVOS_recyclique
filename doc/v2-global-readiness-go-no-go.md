@@ -2,7 +2,7 @@
 
 Synthèse humaine pour pilotage PO : agrégation des preuves **10.1–10.7** et verdicts release **Option C** (trois gates distincts). Manifeste machine-readable : [`v2-global-readiness-official.yaml`](./v2-global-readiness-official.yaml). Gates définis en **10.7** : [`release-gates-official.yaml`](./release-gates-official.yaml), [`release-gates-beta-et-vendable.md`](./release-gates-beta-et-vendable.md).
 
-**Date snapshot sprint :** 2026-09-22 · **Hash court :** `74d5b02`
+**Date snapshot sprint :** 2026-09-22 · **Hash court :** `ec9c47f` (commit readiness 10.8)
 
 ## Trois gates — trois verdicts
 
