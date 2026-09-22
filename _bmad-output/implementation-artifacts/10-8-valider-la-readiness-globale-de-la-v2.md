@@ -203,7 +203,9 @@ python3 -m pytest tests/infra/test_story_10_7_release_gates_ci_minimal_smoke.py 
 ## Story completion status
 
 - **CS :** fichier story **ready-for-dev** (2026-09-22) — sept dimensions readiness globale ; verdicts **séparés** G-plancher / beta / G-vendable ; C2b **`not_signed`** ; hors scope tag **`v2.0.0`**, C2b réel, **`epic-10 done`**, promotion **10.1**.
-- **Prochaine étape BMAD :** **VS** (validate-create-story) puis **DS** 10.8 — **pas** QA3/VS/DS lancés au CS.
+- **QA3 :** gate **97**, couverture **98**, confiance audit **95**, 0 P0/P1 (2026-09-22, run `20260922_003100_jarvos_recyclique`) — correctifs cycle 1 sur fichier story (worktree `qa3-story-10-8`, HEAD **`9170206`**, commits **locaux** — pas push).
+- **VS :** **PASS** (2026-09-22) — checklist `bmad-create-story/checklist.md` ; prêt **DS**.
+- **Prochaine étape BMAD :** **DS** 10.8 (`bmad-dev-story`) — `doc/v2-global-readiness-official.yaml`, MD go/no-go, smokes infra, §10.8 `doc/ci-minimal.md` ; **pas** tag **`v2.0.0`**, pas exécution **C2b**, pas promotion **10.1** ; merge/cherry-pick QA3+VS côté humain si besoin.
 
 ## Dev Agent Record
 
