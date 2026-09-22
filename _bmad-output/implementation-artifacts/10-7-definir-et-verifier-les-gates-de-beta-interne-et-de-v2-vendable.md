@@ -195,6 +195,13 @@ cd ../../peintre-nano && npm run test:critical-core
 - [Source: `references/versioning.md`]
 - [Source: `references/artefacts/2026-04-08_03_tableau-ultra-operationnel-epics-6-10.md`]
 
+## Story completion status
+
+- **CS :** fichier story **ready-for-dev** (2026-09-21) — six piliers gates release (Option C / D1) ; séquence beta → G-plancher → G-vendable ; C2b **`not_signed`** ; hors scope tag **`v2.0.0`**, essai prod, **10.8**.
+- **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_235100_jarvos_recyclique`) — score **96** ; couverture **100** ; 0 P0/P1 ; correctifs cycle 1 préservés (commits worktree `qa3-story-10-7` : `86ac96e`, `c97a331` — **pas de push** / pas de tag).
+- **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` ; QA3 **96** non contredit ; Gates Story Runner vérifiés (régression L0 depuis racine + `cd ../../peintre-nano` après peloton) ; rapport projet `internal/validate-story-10-7.md`.
+- **Prochaine étape BMAD :** **DS** (`bmad-dev-story`) — `doc/release-gates-official.yaml`, guide humain, smokes infra §10.7, lien README/install ; **10.1** inchangé **`review`** ; **10.2**–**10.6** / **10.6b**–**10.6e** **`done`**.
+
 ## Dev Agent Record
 
 ### Agent Model Used
