@@ -1,6 +1,6 @@
 # Story 10.8 : Valider la readiness globale de la v2
 
-Status: ready-for-dev
+Status: review
 
 **Story ID :** 10.8  
 **Story key :** `10-8-valider-la-readiness-globale-de-la-v2`  
@@ -83,19 +83,19 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.8**
 
 ## Tasks / Subtasks
 
-- [ ] **`doc/v2-global-readiness-official.yaml`** — Dimensions §1, snapshot sprint, verdicts, risques, lien manifeste **10.7**, `c2b_hitl.not_signed`. (AC : 1, 5, 6)
+- [x] **`doc/v2-global-readiness-official.yaml`** — Dimensions §1, snapshot sprint, verdicts, risques, lien manifeste **10.7**, `c2b_hitl.not_signed`. (AC : 1, 5, 6)
 
-- [ ] **`doc/v2-global-readiness-go-no-go.md`** — Déclaration humaine ; template décision PO ; anti-confusion trois gates. (AC : 2, 6)
+- [x] **`doc/v2-global-readiness-go-no-go.md`** — Déclaration humaine ; template décision PO ; anti-confusion trois gates. (AC : 2, 6)
 
-- [ ] **Smokes infra** — `test_story_10_8_global_readiness_doc_smoke.py` + `test_story_10_8_global_readiness_ci_minimal_smoke.py`. (AC : 3)
+- [x] **Smokes infra** — `test_story_10_8_global_readiness_doc_smoke.py` + `test_story_10_8_global_readiness_ci_minimal_smoke.py`. (AC : 3)
 
-- [ ] **`doc/ci-minimal.md` §10.8** — Commandes pytest ; lien vers MD readiness. (AC : 4)
+- [x] **`doc/ci-minimal.md` §10.8** — Commandes pytest ; lien vers MD readiness. (AC : 4)
 
-- [ ] **Lien découverte** — `doc/release-gates-beta-et-vendable.md` ou `README.md` → guide **10.8**. (AC : 4)
+- [x] **Lien découverte** — `doc/release-gates-beta-et-vendable.md` ou `README.md` → guide **10.8**. (AC : 4)
 
-- [ ] **Revue hors scope (AC6)** — Pas C2b réel ; pas tag ; pas `epic-10 done` ; pas promotion **10.1** ; `c2b_hitl.status` reste `not_signed`. (AC : 6)
+- [x] **Revue hors scope (AC6)** — Pas C2b réel ; pas tag ; pas `epic-10 done` ; pas promotion **10.1** ; `c2b_hitl.status` reste `not_signed`. (AC : 6)
 
-- [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
+- [x] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
 
 ## Dev Notes
 
@@ -147,12 +147,12 @@ Le DS **ne contredit pas** ces règles pour « faire joli » : un smoke **10.8**
 
 ### Definition of Done (Story 10.8)
 
-- [ ] Les **6 AC** couverts : manifeste, déclaration MD, smokes, §10.8 CI, agrégation, hors scope revu.
-- [ ] Les **7 dimensions** nommées dans YAML et MD.
-- [ ] Smokes infra **10.8** verts localement (`python3 -m pytest tests/infra/test_story_10_8_global_readiness_doc_smoke.py -q` et `test_story_10_8_global_readiness_ci_minimal_smoke.py -q`).
-- [ ] **`c2b_hitl.status`** **`not_signed`** ; **aucun** tag Git **`v2.0.0`**.
-- [ ] **`10-1`** reste **`review`** ; **10.2–10.7** inchangés **`done`** sauf resync documentée.
-- [ ] Story Runner : `sprint-status.yaml` → **review** après DS.
+- [x] Les **6 AC** couverts : manifeste, déclaration MD, smokes, §10.8 CI, agrégation, hors scope revu.
+- [x] Les **7 dimensions** nommées dans YAML et MD.
+- [x] Smokes infra **10.8** verts localement (`python3 -m pytest tests/infra/test_story_10_8_global_readiness_doc_smoke.py -q` et `test_story_10_8_global_readiness_ci_minimal_smoke.py -q`).
+- [x] **`c2b_hitl.status`** **`not_signed`** ; **aucun** tag Git **`v2.0.0`**.
+- [x] **`10-1`** reste **`review`** ; **10.2–10.7** inchangés **`done`** sauf resync documentée.
+- [x] Story Runner : `sprint-status.yaml` → **review** après DS.
 
 ### Gates Story Runner (référence DS)
 
@@ -205,16 +205,37 @@ python3 -m pytest tests/infra/test_story_10_7_release_gates_ci_minimal_smoke.py 
 - **CS :** fichier story **ready-for-dev** (2026-09-22) — sept dimensions readiness globale ; verdicts **séparés** G-plancher / beta / G-vendable ; C2b **`not_signed`** ; hors scope tag **`v2.0.0`**, C2b réel, **`epic-10 done`**, promotion **10.1**.
 - **QA3 :** gate **97**, couverture **98**, confiance audit **95**, 0 P0/P1 (2026-09-22, run `20260922_003100_jarvos_recyclique`) — correctifs cycle 1 sur fichier story (worktree `qa3-story-10-8`, HEAD **`9170206`**, commits **locaux** — pas push).
 - **VS :** **PASS** (2026-09-22) — checklist `bmad-create-story/checklist.md` ; prêt **DS**.
-- **Prochaine étape BMAD :** **DS** 10.8 (`bmad-dev-story`) — `doc/v2-global-readiness-official.yaml`, MD go/no-go, smokes infra, §10.8 `doc/ci-minimal.md` ; **pas** tag **`v2.0.0`**, pas exécution **C2b**, pas promotion **10.1** ; merge/cherry-pick QA3+VS côté humain si besoin.
+- **DS :** livrables readiness globale + smokes §10.8 (2026-09-22, worktree `dev-story-10-8`, base **`74d5b02`**) ; story **`review`** ; **pas** push / tag.
+- **Prochaine étape BMAD :** **CR** story 10.8 ; puis QA3 impl si coordinateur ; **pas** tag **`v2.0.0`**, pas exécution **C2b**, pas promotion **10.1**.
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
-_(à compléter au DS)_
+Composer 2.5 (Cloud Agent DS — Amelia / bmad-dev-story)
 
 ### Debug Log References
 
+- Worktree : `/workspace/.worktrees/dev-story-10-8` · branche `cursor/dev-story-10-8` · auteur `jarvos-eu`
+
 ### Completion Notes List
 
+- Manifeste `doc/v2-global-readiness-official.yaml` : 7 dimensions, snapshot sprint aligné, verdicts **g_plancher** `conditional`, **beta_interne** `conditional`, **g_vendable** `no_go`, C2b **`not_signed`**, `epic_10_closure.ready_for_retrospective: false`.
+- MD `doc/v2-global-readiness-go-no-go.md` : tableau trois gates, risques, template PO vide, liens preuves Epic 10.
+- Smokes **10.8** verts ; régression smokes **10.7** OK ; pas de step CI workflow (pattern 10.7).
+- Lien découverte : section **Readiness globale v2 (10.8)** dans `doc/release-gates-beta-et-vendable.md`.
+
 ### File List
+
+- `doc/v2-global-readiness-official.yaml` (nouveau)
+- `doc/v2-global-readiness-go-no-go.md` (nouveau)
+- `tests/infra/test_story_10_8_global_readiness_doc_smoke.py` (nouveau)
+- `tests/infra/test_story_10_8_global_readiness_ci_minimal_smoke.py` (nouveau)
+- `doc/ci-minimal.md` (§10.8)
+- `doc/release-gates-beta-et-vendable.md` (lien 10.8)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (10-8 → review)
+- `_bmad-output/implementation-artifacts/10-8-valider-la-readiness-globale-de-la-v2.md` (DS record)
+
+## Change Log
+
+- 2026-09-22 — DS story 10.8 : readiness globale YAML/MD, smokes infra, §10.8 CI, lien guide gates ; C2b `not_signed` ; pas tag v2.0.0.

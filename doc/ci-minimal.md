@@ -116,6 +116,19 @@ Manifeste et guide humain : [`doc/release-gates-official.yaml`](./release-gates-
 
 **Choix DS 10.7 :** pas de step workflow supplémentaire (les smokes **10.6** install ne sont pas dans `ci-minimal.yml` non plus) ; §10.7 + smokes verts localement pour **review**.
 
+## Story 10.8 — readiness globale v2 (go/no-go)
+
+Manifeste et déclaration humaine : [`doc/v2-global-readiness-official.yaml`](./v2-global-readiness-official.yaml), [`doc/v2-global-readiness-go-no-go.md`](./v2-global-readiness-go-no-go.md) (gates **10.7** : [`release-gates-official.yaml`](./release-gates-official.yaml)).
+
+| Couche | Commande locale | CI (`ci-minimal.yml`) |
+|--------|-----------------|------------------------|
+| Smoke doc readiness | `python3 -m pytest tests/infra/test_story_10_8_global_readiness_doc_smoke.py -q` | (maintenance dépôt — même pattern que **10.7**) |
+| Smoke §10.8 ci-minimal | `python3 -m pytest tests/infra/test_story_10_8_global_readiness_ci_minimal_smoke.py -q` | idem |
+
+**Frontière :** ne pas ajouter les smokes **10.8** dans `doc/critical-core-peloton.yaml`. **C2b** reste `not_signed` — pas de tag **`v2.0.0`** ; **`10-1`** reste **`review`** (pas promotion au DS). Verdicts **G-plancher**, **beta interne** et **G-vendable** restent **distincts** dans le manifeste readiness.
+
+**Choix DS 10.8 :** pas de step workflow supplémentaire ; §10.8 + smokes verts localement pour **review**.
+
 ## Prérequis locaux
 
 - **Node.js 20** + npm (Peintre_nano, contrats OpenAPI)

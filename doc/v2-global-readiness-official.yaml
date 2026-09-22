@@ -1,0 +1,155 @@
+# Story 10.8 — manifeste machine-readable readiness globale Epic 10 (agrégation preuves 10.1–10.7).
+version: 1
+story: "10.8"
+
+upstream_manifest:
+  path: doc/release-gates-official.yaml
+  story: "10.7"
+
+assessment_dimensions:
+  critical_flows:
+    ac_refs: ["1", "2", "5"]
+    evidence_story_keys: ["10.4"]
+    evidence_paths:
+      - doc/critical-core-peloton.yaml
+      - doc/critical-core-peloton.md
+  contracts_creos:
+    ac_refs: ["1", "2", "5"]
+    evidence_story_keys: ["10.2", "10.3"]
+    evidence_paths:
+      - contracts/openapi/recyclique-api.yaml
+      - contracts/creos/manifests/README.md
+  observability_support:
+    ac_refs: ["1", "2", "5"]
+    evidence_story_keys: ["10.5"]
+    evidence_paths:
+      - doc/observability-critical-flows.yaml
+      - doc/observability-support-runbook.md
+  installation_stack:
+    ac_refs: ["1", "2", "5"]
+    evidence_story_keys: ["10.6", "10.6b", "10.6c", "10.6d", "10.6e"]
+    evidence_paths:
+      - doc/supported-stack-official.yaml
+      - doc/installation-stack-officielle.md
+  release_gates:
+    ac_refs: ["1", "2", "5"]
+    evidence_story_keys: ["10.7"]
+    evidence_paths:
+      - doc/release-gates-official.yaml
+      - doc/release-gates-beta-et-vendable.md
+  ci_industrialization:
+    ac_refs: ["1", "2", "4", "6"]
+    evidence_story_keys: ["10.1"]
+    evidence_paths:
+      - .github/workflows/ci-minimal.yml
+      - doc/ci-minimal.md
+  go_no_go_verdicts:
+    ac_refs: ["1", "2", "3", "6"]
+    evidence_story_keys: ["10.7", "10.8"]
+    evidence_paths:
+      - doc/v2-global-readiness-official.yaml
+      - doc/v2-global-readiness-go-no-go.md
+
+sprint_status_snapshot:
+  captured_at: "2026-09-22T00:00:00Z"
+  git_short_hash: "74d5b02"
+  stories:
+    "10-1": review
+    "10-2": done
+    "10-3": done
+    "10-4": done
+    "10-5": done
+    "10-6": done
+    "10-7": done
+  snapshot_notes: "Statuts lus depuis sprint-status.yaml au DS — 10-1 review inchangé ; pas de promotion 10.1."
+
+c2b_hitl:
+  status: not_signed
+  blocking_tag: v2.0.0
+  source: doc/release-gates-official.yaml
+  note: "Validation terrain Coordinateur + PO (plan post-9.6 § C2b) — non exécutée au DS 10.8."
+
+beta_interne_checklist_13_1:
+  status: partial
+  prd_section: "13.1"
+  source_manifest: doc/release-gates-official.yaml
+  note: "Checklist beta PRD §13.1 indexée via manifeste 10.7 — terrain HITL et constats ressourcerie non finalisés ; 10.1 reste review."
+
+gate_verdicts:
+  g_plancher:
+    verdict: conditional
+    rationale: >
+      Le socle industrialisé 10.2–10.7 est documenté et couvert par preuves indexées, mais la session C2b
+      n'est pas signée — le premier tag plancher v2.0.0 reste interdit.
+    blocking_factors:
+      - c2b_hitl_not_signed
+      - gp_c2b_terrain_pending
+    evidence_refs:
+      - doc/release-gates-official.yaml
+      - doc/critical-core-peloton.md
+      - _bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md
+  beta_interne:
+    verdict: conditional
+    rationale: >
+      Les preuves peloton, observabilité et install sont référencées, mais la story 10.1 reste en review
+      et la checklist §13.1 n'est que partiellement documentée ; décision Epic 24 beta en attente PO.
+    blocking_factors:
+      - story_10_1_review
+      - beta_checklist_13_1_partial
+      - epic_24_beta_scope_pending_po
+    evidence_refs:
+      - doc/ci-minimal.md
+      - doc/release-gates-official.yaml#epic_24_beta_scope
+      - doc/critical-core-peloton.md
+  g_vendable:
+    verdict: no_go
+    rationale: >
+      Le manifeste 10.7 place plusieurs modules obligatoires en blocking sur g_vendable (9.1, 9.3, HelloAsso, bandeau live) —
+      la v2 n'est pas commercialisable au sens PRD §13.2.
+    blocking_factors:
+      - mandatory_module_eco_organismes_blocking
+      - mandatory_module_adherents_blocking
+      - mandatory_module_helloasso_blocking
+      - mandatory_module_bandeau_live_blocking
+    evidence_refs:
+      - doc/release-gates-official.yaml#mandatory_modules
+      - doc/release-gates-beta-et-vendable.md
+      - doc/installation-stack-officielle.md
+
+residual_risks:
+  - risk_id: RR_10_1_bandeau_ci
+    summary: "Dette bandeau-live — story 10.1 en review ; npm run test Peintre non bloquant en CI."
+    severity: P1
+    owner_hint: "Epic 10 / équipe front"
+    linked_story_or_gate: "10-1 / ci_industrialization"
+  - risk_id: RR_C2B_unsigned
+    summary: "C2b non signé — tag v2.0.0 et G-plancher go interdits jusqu'à HITL Coordinateur + PO."
+    severity: P0
+    owner_hint: "PO + Coordinateur terrain"
+    linked_story_or_gate: "c2b_hitl / g_plancher"
+  - risk_id: RR_MODULES_D_BACKLOG
+    summary: "Modules D (9.1, 9.3, HelloAsso) blocking G-vendable dans manifeste 10.7."
+    severity: P1
+    owner_hint: "Pilotage L1 post D2/D7"
+    linked_story_or_gate: "g_vendable / mandatory_modules"
+  - risk_id: RR_PWA_NOT_READY
+    summary: "Gate planification PWA NOT READY (rapport 2026-04-19) — non levé par Epic 10 seul."
+    severity: P2
+    owner_hint: "Planification produit"
+    linked_story_or_gate: "planning_readiness_baseline"
+
+planning_readiness_baseline:
+  report_path: _bmad-output/planning-artifacts/implementation-readiness-report-2026-04-19.md
+  verdict_historical: "GO conditionnel cœur ; PWA NOT READY — baseline phase 3→4, distincte de la readiness opérationnelle 10.8."
+  not_superseded_by_10_8: true
+
+epic_10_closure:
+  ready_for_retrospective: false
+  final_statement_one_liner: >
+    Epic 10 a industrialisé et indexé les preuves ship 10.1–10.7, mais aucun des trois gates release
+    n'est en go complet : C2b non signé, beta conditionnelle, G-vendable no_go — pas de tag v2.0.0 au DS.
+
+doc_anchors:
+  - doc/v2-global-readiness-go-no-go.md
+  - doc/release-gates-beta-et-vendable.md
+  - references/ou-on-en-est.md

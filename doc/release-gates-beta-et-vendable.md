@@ -103,6 +103,10 @@ Tag Git : aucun automatique — interdit v2.0.0 sans C2b validé
 - [`doc/observability-critical-flows.yaml`](./observability-critical-flows.yaml) · [`doc/installation-stack-officielle.md`](./installation-stack-officielle.md)
 - [`doc/ci-minimal.md`](./ci-minimal.md)
 
+## Readiness globale v2 (10.8)
+
+Synthèse go/no-go Epic 10 (verdicts **G-plancher**, **beta interne**, **G-vendable** séparés) : [`doc/v2-global-readiness-go-no-go.md`](./v2-global-readiness-go-no-go.md) · manifeste [`doc/v2-global-readiness-official.yaml`](./v2-global-readiness-official.yaml) · smokes §10.8 dans [`doc/ci-minimal.md`](./ci-minimal.md).
+
 ## Hors périmètre story 10.7
 
-Exécution **C2b** terrain ; création de tag **`v2.0.0`** ; essai prod Recycliq ; story **10.8** ; implémentation HelloAsso ; correction globale bandeau (**10.1**) — seulement risque documenté.
+Exécution **C2b** terrain ; création de tag **`v2.0.0`** ; essai prod Recycliq ; implémentation HelloAsso ; correction globale bandeau (**10.1**) — seulement risque documenté. (La story **10.8** agrège les preuves sans exécuter C2b ni créer de tag.)
