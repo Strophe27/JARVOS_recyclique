@@ -1,0 +1,235 @@
+# Story 10.7 — manifeste machine-readable des gates release (PRD §13.0–13.2, §7.1).
+version: 1
+story: "10.7"
+sprint_status_resync: true
+
+gates:
+  g_plancher:
+    prd_section: "13.0"
+    summary: "Socle L0 + C2b terrain validé avant le premier tag plancher v2.0.0 — distinct de beta interne et de G-vendable."
+    non_confusable_with:
+      - g_vendable
+      - beta_interne
+  beta_interne:
+    prd_section: "13.1"
+    summary: "Beta ressourcerie test : terrain, compta acceptable, modularité partielle, zéro fuite de contexte — sans tag vendable."
+    non_confusable_with:
+      - g_plancher
+      - g_vendable
+  g_vendable:
+    prd_section: "13.2"
+    summary: "V2 commercialisable : couches D complètes, HelloAsso minimum, install OS, ouverture communautaire."
+    non_confusable_with:
+      - g_plancher
+      - beta_interne
+
+release_gate_pillars:
+  g_plancher:
+    ac_refs: ["1", "2"]
+  beta_interne:
+    ac_refs: ["1", "2", "5"]
+  g_vendable:
+    ac_refs: ["1", "2"]
+  mandatory_module_map:
+    ac_refs: ["1", "2"]
+  evidence_index:
+    ac_refs: ["1", "5"]
+  c2b_hitl_boundary:
+    ac_refs: ["1", "2", "6"]
+
+c2b_hitl:
+  status: not_signed
+  blocking_tag: v2.0.0
+  note: "Validation terrain Coordinateur + PO (plan post-9.6 § C2b) — non signée au DS story 10.7."
+
+criteria:
+  g_plancher:
+    - criterion_id: gp_socle_livre
+      text: "Équivalence robuste avec 1.4.4 sur parcours déjà couverts : caisse, réception, compta/sync, 9.6 modules admin, 9.10 liaison clôture v1 (done au YAML)."
+    - criterion_id: gp_c2b_terrain
+      text: "Session HITL plan post-9.6 § C2b — obligatoire avant tag."
+    - criterion_id: gp_tag_v200
+      text: "v2.0.0 = premier tag plancher — interdit avant C2b validé (Coordinateur + PO) ; v2.0.1+ = modules métier L1 (un module à la fois)."
+    - criterion_id: gp_non_confondu_vendable
+      text: "G-plancher ne satisfait pas §13.2 (couches D complètes, HelloAsso au minimum vendable, etc.)."
+  beta_interne:
+    - criterion_id: bi_terrain_fiable
+      text: "Scénarios nominaux et de dégradation critiques cashflow et reception flow exécutés sans défaut bloquant ouvert sur le contexte ou la perte de donnée."
+    - criterion_id: bi_compta_acceptable
+      text: "Scénarios critiques de sync/reconciliation documentés et vérifiés sur les parcours prioritaires."
+    - criterion_id: bi_modularite_partielle
+      text: "Bandeau live prouve la chaîne modulaire minimale et le passage d'un contrat CREOS au rendu effectif."
+    - criterion_id: bi_zero_fuite_contexte
+      text: "Aucun défaut critique détecté sur site, caisse, session, poste."
+    - criterion_id: bi_preuve_scenarios_liste
+      text: "Liste de scénarios critiques exécutés avec résultat documenté."
+    - criterion_id: bi_preuve_fallback_quarantaine
+      text: "Vérification explicite des comportements de fallback, blocage et quarantaine sur les parcours prioritaires."
+    - criterion_id: bi_constats_terrain_ressourcerie
+      text: "Constats terrain remontés sur au moins un contexte réel de ressourcerie test."
+    - criterion_id: bi_preuve_caisse_compta_mixte
+      text: "Preuve explicite sur paiements mixtes, don en surplus, gratuité, remboursement standard, remboursement sur exercice antérieur clos, snapshot de session et lot de synchronisation associé."
+    - criterion_id: bi_epic_24_preuves
+      text: "Lorsque le chantier operations speciales (Epic 24) est dans le périmètre de la release considérée : preuves documentées alignées sur epics.md Epic 24 et le PRD operations speciales."
+    - criterion_id: bi_decision_epic_24_scope
+      text: "Décision produit documentée : inclusion ou exclusion explicite d'Epic 24 dans le scope beta de la release ; si Epic 24 est hors scope, mention écrite « beta sans parcours operations speciales completes » dans les notes de gate."
+    - criterion_id: bi_preuve_bandeau_module_manifest
+      text: "Preuve documentée qu'un ModuleManifest, ses contributions de slot et son rendu nominal peuvent être validés sans convention locale non versionnée."
+  g_vendable:
+    - criterion_id: gv_terrain_fiable
+      text: "Parcours cashflow, reception flow et cloture exécutés sur environnement supporté avec preuves documentées et sans défaut critique ouvert sur perte de donnée ou fuite de contexte."
+    - criterion_id: gv_compta_propre
+      text: "Politique de reconciliation explicite, parcours critiques vérifiés, traitement clair des écarts de sync."
+    - criterion_id: gv_modularite_front_e2e
+      text: "Preuves confirmées sur bandeau live, eco-organismes et adherents."
+    - criterion_id: gv_zero_fuite_contexte
+      text: "Aucun défaut critique sur les contextes sensibles."
+    - criterion_id: gv_config_admin_minimale
+      text: "Un responsable habilité peut modifier activation, ordre et variante simple sur environnement supporté, avec audit et sans redeploiement."
+    - criterion_id: gv_installation_oss
+      text: "Installation nominale documentée, reproductible et vérifiée sur environnement cible officiel, jusqu'au shell authentifié et au premier contexte exploitable."
+    - criterion_id: gv_ouverture_communautaire
+      text: "Contrats, documentation d'installation et guide de contribution minimum publiés de façon cohérente avec la gouvernance contractuelle."
+    - criterion_id: gv_preuve_scenarios_caisse_reception
+      text: "Scénarios critiques de caisse, reception, cloture et sync exécutés et documentés."
+    - criterion_id: gv_preuve_modularite_bandeau_eco_adherents
+      text: "Preuve explicite de la modularité sur bandeau live, eco-organismes et adherents."
+    - criterion_id: gv_publication_matrice_env
+      text: "Publication de la matrice d'environnements supportés et de la documentation d'installation associée."
+    - criterion_id: gv_publication_navigateurs_a11y
+      text: "Publication de la matrice navigateurs supportés et du niveau d'accessibilité cible."
+    - criterion_id: gv_absence_defaut_critique
+      text: "Absence de défaut critique ouvert sur fuite de contexte, blocage comptable ou perte de traçabilité."
+    - criterion_id: gv_preuve_paheko_lot_session
+      text: "Preuve documentée d'un lot de session complet, de sa reprise en cas d'échec et de l'absence de succès global implicite en cas d'application partielle côté Paheko."
+    - criterion_id: gv_preuve_config_admin_change
+      text: "Preuve documentée d'au moins un changement de configuration appliqué et tracé sans intervention technique hors procédure."
+
+mandatory_modules:
+  cashflow:
+    prd_label: "Cashflow (caisse)"
+    module_key: cashflow
+    story_keys: []
+    gate_readiness:
+      g_plancher: ready
+      beta_interne: ready
+      g_vendable: partial
+  reception_flow:
+    prd_label: "Reception flow"
+    module_key: reception
+    story_keys: []
+    gate_readiness:
+      g_plancher: ready
+      beta_interne: ready
+      g_vendable: partial
+  bandeau_live:
+    prd_label: "Bandeau live (kpi-live-banner)"
+    module_key: kpi-live-banner
+    story_keys: ["10.1"]
+    gate_readiness:
+      g_plancher: partial
+      beta_interne: partial
+      g_vendable: blocking
+    note_10_1_review: "Story 10.1 reste review — dette bandeau-live CI continue-on-error."
+  eco_organismes:
+    prd_label: "Éco-organismes"
+    module_key: eco-organismes
+    story_keys: ["9.1"]
+    gate_readiness:
+      g_plancher: out_of_scope
+      beta_interne: out_of_scope
+      g_vendable: blocking
+  adherents:
+    prd_label: "Adhérents"
+    module_key: adherents
+    story_keys: ["9.3"]
+    gate_readiness:
+      g_plancher: out_of_scope
+      beta_interne: out_of_scope
+      g_vendable: blocking
+  sync_paheko:
+    prd_label: "Sync Paheko"
+    module_key: null
+    story_keys: ["9.10"]
+    gate_readiness:
+      g_plancher: ready
+      beta_interne: partial
+      g_vendable: partial
+  helloasso:
+    prd_label: "HelloAsso (D3 parking)"
+    module_key: helloasso
+    story_keys: ["9.4", "9.5"]
+    gate_readiness:
+      g_plancher: out_of_scope
+      beta_interne: out_of_scope
+      g_vendable: blocking
+  config_admin_simple:
+    prd_label: "Config admin simple"
+    module_key: null
+    story_keys: ["9.6"]
+    gate_readiness:
+      g_plancher: ready
+      beta_interne: partial
+      g_vendable: partial
+
+evidence_anchors:
+  "10.1":
+    sprint_status: review
+    artifact_paths:
+      - .github/workflows/ci-minimal.yml
+      - doc/ci-minimal.md
+  "10.2":
+    sprint_status: done
+    artifact_paths:
+      - contracts/openapi/recyclique-api.yaml
+      - contracts/README.md
+  "10.3":
+    sprint_status: done
+    artifact_paths:
+      - contracts/creos/manifests/README.md
+      - peintre-nano/tests/contract/creos-manifests-governance-10-3.test.ts
+      - tests/infra/test_story_10_3_ci_minimal_creos_smoke.py
+  "10.4":
+    sprint_status: done
+    artifact_paths:
+      - doc/critical-core-peloton.yaml
+      - doc/critical-core-peloton.md
+      - recyclique/api/scripts/run_critical_core_peloton.sh
+  "10.5":
+    sprint_status: done
+    artifact_paths:
+      - doc/observability-critical-flows.yaml
+      - doc/observability-support-runbook.md
+      - tests/infra/test_story_10_5_observability_manifest_guard.py
+  "10.6":
+    sprint_status: done
+    artifact_paths:
+      - doc/supported-stack-official.yaml
+      - doc/installation-stack-officielle.md
+    sub_stories:
+      "10.6b":
+        artifact_paths:
+          - docker-compose.yml
+          - tests/infra/test_docker_compose_entrypoint.py
+      "10.6c":
+        artifact_paths:
+          - _bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md
+          - tests/infra/test_story_10_6c_pg17_doc_smoke.py
+      "10.6d":
+        artifact_paths:
+          - .github/workflows/ci-minimal.yml
+      "10.6e":
+        artifact_paths:
+          - tests/infra/test_story_10_6e_pg17_backend_smoke.py
+
+epic_24_beta_scope:
+  decision: pending_po
+  prd_ref: "PRD §13.1 — inclusion/exclusion Epic 24 (operations speciales) dans le scope beta documentée avant déclaration beta."
+  note: "Décision PO en attente — story 10.7 ne tranche pas le périmètre Epic 24."
+
+doc_anchors:
+  - doc/release-gates-beta-et-vendable.md
+  - doc/release-gates-criterion-ids.yaml
+  - _bmad-output/planning-artifacts/guide-pilotage-v2.md
+  - references/versioning.md
+  - _bmad-output/planning-artifacts/sprint-change-proposal-2026-09-21-recadrage-plancher-option-c.md

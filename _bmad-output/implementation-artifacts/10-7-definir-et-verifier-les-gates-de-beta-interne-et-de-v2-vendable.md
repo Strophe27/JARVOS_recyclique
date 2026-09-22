@@ -1,6 +1,6 @@
 # Story 10.7 : Définir et vérifier les gates de beta interne et de v2 vendable
 
-Status: ready-for-dev
+Status: review
 
 **Story ID :** 10.7  
 **Story key :** `10-7-definir-et-verifier-les-gates-de-beta-interne-et-de-v2-vendable`  
@@ -77,19 +77,19 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.7**
 
 ## Tasks / Subtasks
 
-- [ ] **`doc/release-gates-official.yaml`** — Structure gate §1 : `gates` (3 clés), `release_gate_pillars` (6 clés), `c2b_hitl`, `criteria`, `mandatory_modules` (8 entrées + `story_keys`), `evidence_anchors`, `epic_24_beta_scope` (**note PO pending** + lien PRD §13.1), `sprint_status_resync`. (AC : 1, 5, 6)
+- [x] **`doc/release-gates-official.yaml`** — Structure gate §1 : `gates` (3 clés), `release_gate_pillars` (6 clés), `c2b_hitl`, `criteria`, `mandatory_modules` (8 entrées + `story_keys`), `evidence_anchors`, `epic_24_beta_scope` (**note PO pending** + lien PRD §13.1), `sprint_status_resync`. (AC : 1, 5, 6)
 
-- [ ] **`doc/release-gates-beta-et-vendable.md`** — Guide humain ; checklists ; matrice modules ; template décision ; C2b **non signé**. (AC : 2, 6)
+- [x] **`doc/release-gates-beta-et-vendable.md`** — Guide humain ; checklists ; matrice modules ; template décision ; C2b **non signé**. (AC : 2, 6)
 
-- [ ] **Smokes infra** — `test_story_10_7_release_gates_doc_smoke.py` + `test_story_10_7_release_gates_ci_minimal_smoke.py`. (AC : 3)
+- [x] **Smokes infra** — `test_story_10_7_release_gates_doc_smoke.py` + `test_story_10_7_release_gates_ci_minimal_smoke.py`. (AC : 3)
 
-- [ ] **`doc/ci-minimal.md` §10.7** — Commandes pytest ; lien vers guide. (AC : 4)
+- [x] **`doc/ci-minimal.md` §10.7** — Commandes pytest ; lien vers guide. (AC : 4)
 
-- [ ] **Lien découverte** — `README.md` ou `doc/installation-stack-officielle.md` → guide 10.7. (AC : 4)
+- [x] **Lien découverte** — `README.md` ou `doc/installation-stack-officielle.md` → guide 10.7. (AC : 4)
 
-- [ ] **Revue hors scope (AC6)** — Checklist : pas C2b réel ; pas tag ; pas 10.8 ; pas HelloAsso dev ; `c2b_hitl.status` reste `not_signed`. (AC : 6)
+- [x] **Revue hors scope (AC6)** — Checklist : pas C2b réel ; pas tag ; pas 10.8 ; pas HelloAsso dev ; `c2b_hitl.status` reste `not_signed`. (AC : 6)
 
-- [ ] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
+- [x] **Sprint / story** — Après DS : Dev Agent Record, File List, `sprint-status.yaml` → **review** via Story Runner. (process BMAD)
 
 ## Dev Notes
 
@@ -143,12 +143,12 @@ Source normative : `_bmad-output/planning-artifacts/epics.md` — **Story 10.7**
 
 ### Definition of Done (Story 10.7)
 
-- [ ] Les **6 AC** sont couverts : manifeste, guide, smokes, §10.7 CI, index 10.x, hors scope revu.
-- [ ] Les **six piliers** du Story Preparation Gate sont nommés dans le YAML et le guide.
-- [ ] Smokes infra **10.7** verts localement (`python3 -m pytest tests/infra/test_story_10_7_release_gates_doc_smoke.py -q` et `test_story_10_7_release_gates_ci_minimal_smoke.py -q`).
-- [ ] **`c2b_hitl.status`** reste **`not_signed`** ; **aucun** tag Git créé.
-- [ ] **Ne pas** forcer **10.1** à `done` ; **ne pas** rouvrir **10.2–10.6** sauf lien cassé.
-- [ ] Story Runner : `sprint-status.yaml` → **review** après DS.
+- [x] Les **6 AC** sont couverts : manifeste, guide, smokes, §10.7 CI, index 10.x, hors scope revu.
+- [x] Les **six piliers** du Story Preparation Gate sont nommés dans le YAML et le guide.
+- [x] Smokes infra **10.7** verts localement (`python3 -m pytest tests/infra/test_story_10_7_release_gates_doc_smoke.py -q` et `test_story_10_7_release_gates_ci_minimal_smoke.py -q`).
+- [x] **`c2b_hitl.status`** reste **`not_signed`** ; **aucun** tag Git créé.
+- [x] **Ne pas** forcer **10.1** à `done` ; **ne pas** rouvrir **10.2–10.6** sauf lien cassé.
+- [x] Story Runner : `sprint-status.yaml` → **review** après DS.
 
 ### Gates Story Runner (référence DS)
 
@@ -200,16 +200,41 @@ cd ../../peintre-nano && npm run test:critical-core
 - **CS :** fichier story **ready-for-dev** (2026-09-21) — six piliers gates release (Option C / D1) ; séquence beta → G-plancher → G-vendable ; C2b **`not_signed`** ; hors scope tag **`v2.0.0`**, essai prod, **10.8**.
 - **QA3 :** boucle gate 95+ (2026-09-21, run `20260921_235100_jarvos_recyclique`) — score **96** ; couverture **100** ; 0 P0/P1 ; correctifs cycle 1 préservés (commits worktree `qa3-story-10-7` : `86ac96e`, `c97a331` — **pas de push** / pas de tag).
 - **VS :** validate-create-story (Bob SM) — **PASS** (2026-09-21) ; checklist `bmad-create-story` ; QA3 **96** non contredit ; Gates Story Runner vérifiés (régression L0 depuis racine + `cd ../../peintre-nano` après peloton) ; rapport projet `internal/validate-story-10-7.md`.
-- **Prochaine étape BMAD :** **DS** (`bmad-dev-story`) — `doc/release-gates-official.yaml`, guide humain, smokes infra §10.7, lien README/install ; **10.1** inchangé **`review`** ; **10.2**–**10.6** / **10.6b**–**10.6e** **`done`**.
+- **DS :** Amelia (`bmad-dev-story`) — 2026-09-22 ; worktree `cursor/dev-story-10-7` (base VS `235ca00`) ; livrables gates doc + smokes ; **C2b** **`not_signed`** ; pas tag / pas push.
+- **Prochaine étape BMAD :** **CR** / Story Runner (pas **10.8** avant clôture 10.7).
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
-_(à remplir au DS)_
+Composer 2.5 (Amelia / bmad-dev-story)
 
 ### Debug Log References
 
+Worktree : `/workspace/.worktrees/dev-story-10-7` · branche `cursor/dev-story-10-7`
+
 ### Completion Notes List
 
+- Manifeste `doc/release-gates-official.yaml` : 3 gates (`non_confusable_with` triplet), 6 piliers, critères PRD §13, 8 modules §7.1, `evidence_anchors` 10.1–10.6 (+ 10.6b–e), `epic_24_beta_scope.pending_po`, `c2b_hitl.status: not_signed`.
+- Guide `doc/release-gates-beta-et-vendable.md` : tableau anti-confusion, checklists `criterion_id`, matrice modules, template décision, liens preuves Epic 10.
+- Smokes infra 10.7 **13 passed** ; régression smokes 10.5 guard + 10.6 install **verts**.
+- §10.7 `doc/ci-minimal.md` : pattern **10.6** (smokes maintenance dépôt, pas de step workflow ajouté).
+- Liens découverte : `README.md` + `doc/installation-stack-officielle.md`.
+- **10.1** reste `review` ; **10.2–10.6** inchangés.
+
 ### File List
+
+- `doc/release-gates-official.yaml` (nouveau)
+- `doc/release-gates-beta-et-vendable.md` (nouveau)
+- `doc/release-gates-criterion-ids.yaml` (nouveau)
+- `tests/infra/test_story_10_7_release_gates_doc_smoke.py` (nouveau)
+- `tests/infra/test_story_10_7_release_gates_ci_minimal_smoke.py` (nouveau)
+- `doc/ci-minimal.md`
+- `README.md`
+- `doc/installation-stack-officielle.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/10-7-definir-et-verifier-les-gates-de-beta-interne-et-de-v2-vendable.md`
+
+## Change Log
+
+- 2026-09-22 — DS story 10.7 : gates release documentées et verrouillées (YAML + guide + smokes §10.7).

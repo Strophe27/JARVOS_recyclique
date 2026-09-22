@@ -1,0 +1,39 @@
+# Story 10.7 — liste figée des criterion_id (alignée PRD §13.0–13.2).
+# Référencée par tests/infra/test_story_10_7_release_gates_doc_smoke.py
+version: 1
+story: "10.7"
+
+g_plancher:
+  - gp_socle_livre
+  - gp_c2b_terrain
+  - gp_tag_v200
+  - gp_non_confondu_vendable
+
+beta_interne:
+  - bi_terrain_fiable
+  - bi_compta_acceptable
+  - bi_modularite_partielle
+  - bi_zero_fuite_contexte
+  - bi_preuve_scenarios_liste
+  - bi_preuve_fallback_quarantaine
+  - bi_constats_terrain_ressourcerie
+  - bi_preuve_caisse_compta_mixte
+  - bi_epic_24_preuves
+  - bi_decision_epic_24_scope
+  - bi_preuve_bandeau_module_manifest
+
+g_vendable:
+  - gv_terrain_fiable
+  - gv_compta_propre
+  - gv_modularite_front_e2e
+  - gv_zero_fuite_contexte
+  - gv_config_admin_minimale
+  - gv_installation_oss
+  - gv_ouverture_communautaire
+  - gv_preuve_scenarios_caisse_reception
+  - gv_preuve_modularite_bandeau_eco_adherents
+  - gv_publication_matrice_env
+  - gv_publication_navigateurs_a11y
+  - gv_absence_defaut_critique
+  - gv_preuve_paheko_lot_session
+  - gv_preuve_config_admin_change

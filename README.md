@@ -50,6 +50,7 @@ Baseline automatisée **API + Peintre_nano + contrats** : [doc/ci-minimal.md](do
 ## Voir aussi
 
 - [doc/installation-stack-officielle.md](doc/installation-stack-officielle.md) — **installation officielle v2** (Debian, stack supportée, matrice navigateurs, chemin minimal sans `frontend-legacy`) ; manifeste [`doc/supported-stack-official.yaml`](doc/supported-stack-official.yaml).
+- [doc/release-gates-beta-et-vendable.md](doc/release-gates-beta-et-vendable.md) — **Gates release (10.7)** : beta interne, G-plancher, G-vendable ; manifeste [`doc/release-gates-official.yaml`](doc/release-gates-official.yaml).
 - [_bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md](_bmad-output/planning-artifacts/operations/runbook-spike-postgresql-15-vers-17.md) — spike documenté **PostgreSQL 15 → 17** (stack canonique, hors legacy `recyclique-1.4.4/`) : backup, dump/restore, `pg_upgrade --check`, preuve minimale.
 - `recyclique/README.md` — backend, pytest, lien Docker  
 - `recyclique-1.4.4/README.md` — détail services legacy, ports, super-admin  

@@ -121,9 +121,13 @@ Une install réussie doit rester **diagnostiquable** sans dupliquer la doc obser
 - Runbook exploit : [`doc/observability-support-runbook.md`](./observability-support-runbook.md) (story **10.5** — santé canonique, corrélation HTTP, fil sync, journaux admin).
 - Manifeste flux : [`doc/observability-critical-flows.yaml`](./observability-critical-flows.yaml).
 
+## Gates release (story 10.7)
+
+Critères beta interne, G-plancher et v2 vendable (sans dupliquer ce guide) : [`release-gates-beta-et-vendable.md`](./release-gates-beta-et-vendable.md) · manifeste [`release-gates-official.yaml`](./release-gates-official.yaml).
+
 ## Hors périmètre (story 10.6)
 
-- Gates **beta / v2 vendable** (10.7) et readiness globale (10.8)
+- Readiness globale agrégée (10.8) — les gates **10.7** sont documentées ci-dessus
 - Playbook déploiement production automatisé
 - Migration données production réelle (hors runbook spike documenté)
 - Extension support OS au-delà du tableau ci-dessus

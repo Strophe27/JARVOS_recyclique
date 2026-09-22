@@ -103,6 +103,19 @@ python3 -m pytest tests/infra/test_story_10_6c_pg17_doc_smoke.py -q
 python3 -m pytest tests/infra/test_story_10_6e_pg17_backend_smoke.py -q
 ```
 
+## Story 10.7 — gates release beta / G-plancher / G-vendable
+
+Manifeste et guide humain : [`doc/release-gates-official.yaml`](./release-gates-official.yaml), [`doc/release-gates-beta-et-vendable.md`](./release-gates-beta-et-vendable.md) (critères figés : [`doc/release-gates-criterion-ids.yaml`](./release-gates-criterion-ids.yaml)).
+
+| Couche | Commande locale | CI (`ci-minimal.yml`) |
+|--------|-----------------|------------------------|
+| Smoke doc gates | `python3 -m pytest tests/infra/test_story_10_7_release_gates_doc_smoke.py -q` | (maintenance dépôt — non enregistré dans le peloton **10.4**, même pattern que **10.6**) |
+| Smoke §10.7 ci-minimal | `python3 -m pytest tests/infra/test_story_10_7_release_gates_ci_minimal_smoke.py -q` | idem |
+
+**Frontière FM3 :** ne pas ajouter les smokes **10.7** dans `doc/critical-core-peloton.yaml` ni `run_critical_core_peloton.sh`. **C2b** reste `not_signed` dans le manifeste — pas de tag **`v2.0.0`** ni essai prod dans cette story.
+
+**Choix DS 10.7 :** pas de step workflow supplémentaire (les smokes **10.6** install ne sont pas dans `ci-minimal.yml` non plus) ; §10.7 + smokes verts localement pour **review**.
+
 ## Prérequis locaux
 
 - **Node.js 20** + npm (Peintre_nano, contrats OpenAPI)
