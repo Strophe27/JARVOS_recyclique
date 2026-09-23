@@ -46,9 +46,10 @@ def test_ci_minimal_peintre_critical_core_and_10_3_gates() -> None:
     assert re.search(r"^\s+paths:\s*$", body, re.MULTILINE) is None
 
 
-def test_ci_minimal_doc_section_10_4_and_bandeau_arbitrage() -> None:
+def test_ci_minimal_doc_section_10_4_and_peintre_vitest_blocking() -> None:
     doc = _read(DOC_CI)
     assert "Story 10.4" in doc or "10.4" in doc
     assert "test:critical-core" in doc
-    assert "continue-on-error" in doc.lower()
-    assert "bandeau" in doc.lower() or "10.1" in doc
+    assert "npm run test" in doc
+    peintre_block = doc.lower()
+    assert "continue-on-error" not in peintre_block or "historique" in peintre_block

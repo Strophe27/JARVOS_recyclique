@@ -68,7 +68,7 @@ function renderBandeauLiveLive(
     ...(accessToken !== undefined ? { accessToken } : {}),
   });
   return render(
-    <RootProviders authAdapter={adapter}>
+    <RootProviders authAdapter={adapter} skipKpiLiveBannerServerLoad>
       <C widgetProps={widgetProps} />
     </RootProviders>,
   );

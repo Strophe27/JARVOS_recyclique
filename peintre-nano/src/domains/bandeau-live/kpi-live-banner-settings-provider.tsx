@@ -51,7 +51,19 @@ const KpiLiveBannerSettingsReactContext = createContext<KpiLiveBannerSettingsCon
  * Source unique pour la visibilité / intervalle du bandeau KPI — charge l’API module-config par site
  * quand `siteId` est présent dans l’enveloppe ; défauts locaux sinon.
  */
-export function KpiLiveBannerSettingsProvider({ children }: { readonly children: ReactNode }): ReactNode {
+export type KpiLiveBannerSettingsProviderProps = {
+  readonly children: ReactNode;
+  /**
+   * Tests / harness : évite un `GET module-config` parasite quand la suite compte les appels `fetch`
+   * (live snapshot, présence, etc.).
+   */
+  readonly skipServerModuleConfigLoad?: boolean;
+};
+
+export function KpiLiveBannerSettingsProvider({
+  children,
+  skipServerModuleConfigLoad = false,
+}: KpiLiveBannerSettingsProviderProps): ReactNode {
   const auth = useAuthPort();
   const siteId = auth.getContextEnvelope().siteId;
   const [settings, setSettings] = useState<KpiLiveBannerSettings>(KPI_LIVE_BANNER_DEFAULTS);
@@ -64,12 +76,13 @@ export function KpiLiveBannerSettingsProvider({ children }: { readonly children:
   const etagRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!siteId) {
+    if (!siteId || skipServerModuleConfigLoad) {
       setSettings({ ...KPI_LIVE_BANNER_DEFAULTS });
       setIsServerSource(false);
       setCanSave(false);
       etagRef.current = null;
       setSaveError(null);
+      setIsLoading(false);
       return;
     }
 
@@ -79,7 +92,18 @@ export function KpiLiveBannerSettingsProvider({ children }: { readonly children:
     setSaveError(null);
 
     void (async () => {
-      const res = await getSiteModuleConfig(auth, siteId, KPI_LIVE_BANNER_MODULE_KEY, ac.signal);
+      let res: Awaited<ReturnType<typeof getSiteModuleConfig>>;
+      try {
+        res = await getSiteModuleConfig(auth, siteId, KPI_LIVE_BANNER_MODULE_KEY, ac.signal);
+      } catch {
+        if (cancelled) return;
+        etagRef.current = null;
+        setSettings({ ...KPI_LIVE_BANNER_DEFAULTS });
+        setIsServerSource(false);
+        setCanSave(false);
+        setIsLoading(false);
+        return;
+      }
       if (cancelled) return;
       if (res.ok) {
         etagRef.current = res.etag;
@@ -110,7 +134,7 @@ export function KpiLiveBannerSettingsProvider({ children }: { readonly children:
       cancelled = true;
       ac.abort();
     };
-  }, [auth, siteId]);
+  }, [auth, siteId, skipServerModuleConfigLoad]);
 
   const updateSettings = useCallback(
     async (

@@ -1,6 +1,6 @@
 # Story 10.1 : Outiller la CI minimale pour Recyclique, Peintre_nano et les contrats
 
-Status: review
+Status: done
 
 **Story ID :** 10.1  
 **Story key :** `10-1-outiller-la-ci-minimale-pour-recyclique-peintre-nano-et-les-contrats`  

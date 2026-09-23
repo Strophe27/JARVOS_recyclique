@@ -16,18 +16,23 @@ export type RootProvidersProps = {
   readonly authAdapter?: AuthContextPort;
   /** Tests : désactive la persistance `localStorage` des prefs UI. */
   readonly disableUserPrefsPersistence?: boolean;
+  /** Tests : pas de `GET module-config` bandeau KPI (évite fetch parasite). */
+  readonly skipKpiLiveBannerServerLoad?: boolean;
 };
 
 export function RootProviders({
   children,
   authAdapter,
   disableUserPrefsPersistence = false,
+  skipKpiLiveBannerServerLoad = false,
 }: RootProvidersProps) {
   return (
     <MantineProvider theme={theme}>
       <AuthRuntimeProvider adapter={authAdapter}>
         <UserRuntimePrefsProvider disablePersistence={disableUserPrefsPersistence}>
-          <KpiLiveBannerSettingsProvider>{children}</KpiLiveBannerSettingsProvider>
+          <KpiLiveBannerSettingsProvider skipServerModuleConfigLoad={skipKpiLiveBannerServerLoad}>
+            {children}
+          </KpiLiveBannerSettingsProvider>
         </UserRuntimePrefsProvider>
       </AuthRuntimeProvider>
     </MantineProvider>

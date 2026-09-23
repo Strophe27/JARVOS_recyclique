@@ -72,7 +72,7 @@ function BandeauLiveSandboxHarness(props: {
   });
   if (!result.ok) {
     return (
-      <RootProviders>
+      <RootProviders skipKpiLiveBannerServerLoad>
         <RootShell>
           <ManifestErrorBanner issues={result.issues} />
         </RootShell>
@@ -83,7 +83,7 @@ function BandeauLiveSandboxHarness(props: {
     result.bundle.pages.find((p) => p.pageKey === 'bandeau-live-sandbox') ?? result.bundle.pages[0];
   const regions = buildPageManifestRegions(page);
   return (
-    <RootProviders>
+    <RootProviders skipKpiLiveBannerServerLoad>
       <RootShell
         regions={{
           header: regions.header,

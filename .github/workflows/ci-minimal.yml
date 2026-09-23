@@ -122,9 +122,8 @@ jobs:
         working-directory: peintre-nano
         run: npm run test:critical-core
 
-      - name: Vitest intégral (dette bandeau-live 10.1)
+      - name: Vitest intégral Peintre
         working-directory: peintre-nano
-        continue-on-error: true
         run: npm run test
 
   contracts-openapi:

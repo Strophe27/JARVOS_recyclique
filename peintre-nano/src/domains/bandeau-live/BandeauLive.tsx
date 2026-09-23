@@ -287,7 +287,7 @@ function BandeauLiveLive({ widgetProps }: BandeauLiveLiveProps) {
     kpiBannerSettings.showOnCaisse || kpiBannerSettings.showOnReception;
   const kpi = useUnifiedLiveKpiPoll({
     siteId: siteIdFromWidgetProps(widgetProps),
-    enabled: phase !== 'module_disabled' && showUnifiedKpiChrome,
+    enabled: phase === 'ready' && showUnifiedKpiChrome,
     intervalMs: kpiBannerSettings.refreshIntervalMs,
   });
 

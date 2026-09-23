@@ -50,7 +50,7 @@ describe('LiveActivityPresenceBridge', () => {
     });
 
     render(
-      <RootProviders authAdapter={adapter}>
+      <RootProviders authAdapter={adapter} skipKpiLiveBannerServerLoad>
         <LiveActivityPresenceBridge />
       </RootProviders>,
     );
