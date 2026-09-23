@@ -25,6 +25,7 @@ Les artefacts du **plan Git** (tests, procedure, subagent) sont dans `artefacts/
 
 | Fichier | Role |
 |---------|------|
+| `2026-09-21_captures-caisse-peintre-espace-agent/` | **Captures PNG** session Peintre espace agent (2026-09-21) — caisse vente/paiement, fermeture caisse, réception ; C2b non signé, P1 CLAV ; README + 4 PNG pour téléchargement GitHub (iPad). |
 | `2026-05-29_04_runbook-orchestration-epic-27-postes-partages-pin.md` | **Runbook orchestration Epic 27** — prompt/contrat pour orchestrateur global : Epic Runner unique, Story Runner sequentiel, politique HITL en cascade parent→Epic→Strophe, gates, YAML single-writer, modeles inherit, conditions de stop. |
 | `2026-05-29_03_brief-pm-epic-stories-postes-partages-pin.md` | **Brief PM pour epic/stories postes partages + PIN** — pack de transmission vers nouveau contexte BMAD : fichiers a lire, decisions gelees, hors perimetre, decoupage stories recommande, gates QA, strategie Epic Runner / Story Runner et modeles. |
 | `2026-05-29_02_mini-adr-postes-partages-pin-non-offline.md` | **Mini-ADR postes partages / PIN / PWA non-offline** — decision pre-epic : poste partage enrole, PIN operateur, intersection serveur site x poste x permissions, PWA installable sans offline, reconnexion/remplacement, audit et limites MVP. |
